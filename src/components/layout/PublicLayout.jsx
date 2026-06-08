@@ -6,17 +6,20 @@ import BrandLogo from '../ui/BrandLogo'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 
-const publicLinks = [
+const baseLinks = [
   { to: '/', label: 'Ana Sayfa' },
   { to: '/membership', label: 'Üyelikler' },
   { to: '/stories', label: 'Hikayeler' },
-  { to: '/support', label: 'Destek' },
+  { to: '/blog', label: 'Blog' },
 ]
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { isAuthenticated, isAdmin, user } = useApp()
-  const firstName = (user?.name || '').trim().split(' ')[0]
+  const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
+  const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
+  const publicLinks = isAuthenticated && !isAdmin && !isStaff
+    ? [...baseLinks, { to: '/support', label: 'Destek' }]
+    : baseLinks
 
   return (
     <div className="min-h-screen">
@@ -36,6 +39,11 @@ export default function PublicLayout() {
                 <Link to="/admin" className="flex items-center gap-2 rounded-full bg-cream-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-cream-800">
                   <LayoutDashboard className="h-4 w-4" />
                   Admin Panel
+                </Link>
+              ) : isStaff ? (
+                <Link to="/staff" className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {firstName ? `Panelim · ${firstName}` : 'Panelim'}
                 </Link>
               ) : (
                 <Link to="/profile" className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
@@ -69,6 +77,11 @@ export default function PublicLayout() {
                   <LayoutDashboard className="h-4 w-4" />
                   Admin Panel
                 </Link>
+              ) : isStaff ? (
+                <Link to="/staff" onClick={() => setMenuOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-brand-500 py-2.5 text-center text-sm font-semibold text-white">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {firstName ? `Panelim · ${firstName}` : 'Panelim'}
+                </Link>
               ) : (
                 <Link to="/profile" onClick={() => setMenuOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-brand-500 py-2.5 text-center text-sm font-semibold text-white">
                   <UserRound className="h-4 w-4" />
@@ -96,8 +109,11 @@ export default function PublicLayout() {
               <p className="text-sm font-semibold text-white">Platform</p>
               <div className="mt-3 space-y-2 text-sm text-cream-100/60">
                 <Link to="/membership" className="block hover:text-white">Üyelikler</Link>
+                <Link to="/blog" className="block hover:text-white">Blog</Link>
                 <Link to="/builder" className="block hover:text-white">Paket Oluştur</Link>
-                <Link to="/support" className="block hover:text-white">Destek</Link>
+                {isAuthenticated && !isAdmin && !isStaff && (
+                  <Link to="/support" className="block hover:text-white">Destek</Link>
+                )}
               </div>
             </div>
             <div>

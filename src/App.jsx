@@ -4,6 +4,7 @@ import { ToastProvider } from './context/ToastContext'
 import PublicLayout from './components/layout/PublicLayout'
 import AppShell from './components/layout/AppShell'
 import AdminShell from './components/layout/AdminShell'
+import StaffShell from './components/layout/StaffShell'
 
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
@@ -18,10 +19,19 @@ import DietitianSchedulePage from './pages/DietitianSchedulePage'
 import NotificationsPage from './pages/NotificationsPage'
 import SupportPage from './pages/SupportPage'
 import ProfilePage from './pages/ProfilePage'
+import ProgramsPage from './pages/ProgramsPage'
 import SuccessStoriesPage from './pages/SuccessStoriesPage'
+import BlogPage from './pages/BlogPage'
+import BlogPostPage from './pages/BlogPostPage'
+
+import StaffOverviewPage from './pages/staff/StaffOverviewPage'
+import StaffClientsPage from './pages/staff/StaffClientsPage'
+import StaffProgramsPage from './pages/staff/StaffProgramsPage'
 
 import AdminOverviewPage from './pages/admin/AdminOverviewPage'
 import AdminMembersPage from './pages/admin/AdminMembersPage'
+import AdminStaffPage from './pages/admin/AdminStaffPage'
+import AdminBlogPage from './pages/admin/AdminBlogPage'
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage'
 import AdminSessionsPage from './pages/admin/AdminSessionsPage'
 import AdminSupportPage from './pages/admin/AdminSupportPage'
@@ -43,7 +53,8 @@ export default function App() {
               <Route path="membership" element={<MembershipComparisonPage />} />
               <Route path="builder" element={<PackageBuilderPage />} />
               <Route path="stories" element={<SuccessStoriesPage />} />
-              <Route path="support" element={<SupportPage />} />
+              <Route path="blog" element={<BlogPage />} />
+              <Route path="blog/:id" element={<BlogPostPage />} />
             </Route>
 
             <Route element={<AppShell />}>
@@ -51,12 +62,22 @@ export default function App() {
               <Route path="schedule/coach" element={<CoachSchedulePage />} />
               <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
               <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="support" element={<SupportPage />} />
+              <Route path="programs" element={<ProgramsPage />} />
               <Route path="profile" element={<ProfilePage />} />
+            </Route>
+
+            <Route element={<StaffShell />}>
+              <Route path="staff" element={<StaffOverviewPage />} />
+              <Route path="staff/clients" element={<StaffClientsPage />} />
+              <Route path="staff/programs" element={<StaffProgramsPage />} />
             </Route>
 
             <Route element={<AdminShell />}>
               <Route path="admin" element={<AdminOverviewPage />} />
               <Route path="admin/members" element={<AdminMembersPage />} />
+              <Route path="admin/staff" element={<AdminStaffPage />} />
+              <Route path="admin/blog" element={<AdminBlogPage />} />
               <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
               <Route path="admin/sessions" element={<AdminSessionsPage />} />
               <Route path="admin/support" element={<AdminSupportPage />} />

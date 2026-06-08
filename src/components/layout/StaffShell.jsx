@@ -1,49 +1,45 @@
 import { Outlet, Navigate, NavLink } from 'react-router-dom'
-import {
-  LayoutDashboard, Users, CreditCard, Calendar, MessageSquare,
-  BarChart3, LogOut, Activity, Stethoscope, BookOpen,
-} from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Dumbbell, Apple } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import { BRAND } from '../../config/brand'
 
-const adminNav = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
-  { to: '/admin/members', icon: Users, label: 'Üyeler' },
-  { to: '/admin/staff', icon: Stethoscope, label: 'Koç & Diyetisyen' },
-  { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonelikler' },
-  { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
-  { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri' },
-  { to: '/admin/blog', icon: BookOpen, label: 'Blog' },
-  { to: '/admin/analytics', icon: BarChart3, label: 'Analitik' },
-  { to: '/admin/activity', icon: Activity, label: 'Aktivite' },
+const staffNav = [
+  { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
+  { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
+  { to: '/staff/programs', icon: ClipboardList, label: 'Programlar' },
 ]
 
-export default function AdminShell() {
-  const { isAdmin, logout } = useApp()
+export default function StaffShell() {
+  const { isStaff, staffUser, logout } = useApp()
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return <Navigate to="/login" replace />
   }
+
+  const isCoach = staffUser.role === 'coach'
+  const RoleIcon = isCoach ? Dumbbell : Apple
+  const roleLabel = isCoach ? 'Koç' : 'Diyetisyen'
 
   return (
     <div className="flex min-h-screen bg-cream-50">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white lg:flex">
         <div className="border-b border-cream-100 p-5">
-          <BrandLogo linkTo="/admin" />
-          <span className="mt-3 inline-block rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-            Admin Panel
+          <BrandLogo linkTo="/staff" />
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            <RoleIcon className="h-3 w-3" /> {roleLabel} Paneli
           </span>
+          {staffUser.name && <p className="mt-3 truncate text-sm text-cream-800/60">{staffUser.name}</p>}
         </div>
         <nav className="flex-1 space-y-1 p-3">
-          {adminNav.map((item) => (
+          {staffNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive ? 'bg-cream-900 text-white' : 'text-cream-800 hover:bg-cream-100'
+                  isActive ? 'bg-brand-500 text-white' : 'text-cream-800 hover:bg-cream-100'
                 }`
               }
             >
@@ -65,9 +61,9 @@ export default function AdminShell() {
 
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-cream-200 bg-white px-4 py-3 sm:px-6 lg:hidden">
-          <BrandLogo linkTo="/admin" size="sm" />
+          <BrandLogo linkTo="/staff" size="sm" />
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-cream-800/50">Admin</span>
+            <span className="text-xs font-medium text-cream-800/50">{roleLabel}</span>
             <button
               type="button"
               onClick={logout}
@@ -77,11 +73,30 @@ export default function AdminShell() {
             </button>
           </div>
         </header>
+
+        <nav className="flex gap-1 border-b border-cream-200 bg-white px-2 py-2 lg:hidden">
+          {staffNav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium ${
+                  isActive ? 'bg-brand-500 text-white' : 'text-cream-800/70'
+                }`
+              }
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
         <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
         <footer className="border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40">
-          {BRAND.name} · Yönetim Paneli · Demo veriler
+          {BRAND.name} · {roleLabel} Paneli
         </footer>
       </div>
     </div>

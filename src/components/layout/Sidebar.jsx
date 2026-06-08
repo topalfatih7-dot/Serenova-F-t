@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Star, Settings, LogOut,
+  Dumbbell, Apple, Star, Settings, LogOut, ClipboardList,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
+  { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler' },
   { to: '/stories', icon: Star, label: 'Başarı Hikayeleri' },
   { to: '/support', icon: HelpCircle, label: 'Destek' },

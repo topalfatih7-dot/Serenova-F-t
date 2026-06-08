@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
-  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle,
+  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList,
 } from 'lucide-react'
 
 const TYPE_CONFIG = {
@@ -12,6 +12,8 @@ const TYPE_CONFIG = {
   upsell: { icon: Crown, color: 'text-gold-500 bg-amber-50' },
   'health-warning': { icon: AlertTriangle, color: 'text-red-500 bg-red-50' },
   missed: { icon: Activity, color: 'text-cream-800 bg-cream-100' },
+  program: { icon: ClipboardList, color: 'text-brand-600 bg-brand-50' },
+  support: { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
 }
 
 export default function NotificationItem({ notification, onRead }) {

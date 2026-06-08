@@ -1,18 +1,15 @@
 import { Link } from 'react-router-dom'
-import { Bell, Menu } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 
-export default function TopBar({ onMenuClick, title }) {
+export default function TopBar({ title }) {
   const { notifications, user, membership } = useApp()
   const unread = notifications.filter((n) => !n.read).length
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-cream-200 bg-white/90 px-4 py-3 backdrop-blur-sm lg:px-6">
       <div className="flex items-center gap-3">
-        <button type="button" onClick={onMenuClick} className="rounded-lg p-2 lg:hidden">
-          <Menu className="h-5 w-5" />
-        </button>
         {title ? (
           <h1 className="font-display text-lg font-semibold text-cream-900">{title}</h1>
         ) : (

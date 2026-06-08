@@ -1,13 +1,33 @@
 import { DEFAULT_PACKAGE } from '../data/membershipPlans'
+import { DEFAULT_POSTS } from '../data/blogPosts'
 import { calculatePackagePrice } from './packagePricing'
-import {
-  mockCoachSessions,
-  mockDietitianSessions,
-  mockNotifications,
-  mockTasks,
-} from '../data/mockData'
 
 const DB_KEY = 'serenova-platform-v2'
+const SESSION_FLAG = 'serenova-active-session'
+const WEEKDAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+
+function markSessionActive() {
+  try {
+    sessionStorage.setItem(SESSION_FLAG, '1')
+  } catch {
+    /* sessionStorage erişilemiyor */
+  }
+}
+
+export function initSession() {
+  const db = loadDb()
+  let active = false
+  try {
+    active = !!sessionStorage.getItem(SESSION_FLAG)
+  } catch {
+    active = false
+  }
+  if (db.session && db.session.remember === false && !active) {
+    db.session = null
+    saveDb(db)
+  }
+  markSessionActive()
+}
 
 function uid(prefix = 'id') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -21,12 +41,79 @@ function nowISO() {
   return new Date().toISOString()
 }
 
+function nextWeekday(from, weekday) {
+  const d = new Date(from)
+  d.setHours(0, 0, 0, 0)
+  const diff = (Number(weekday) - d.getDay() + 7) % 7
+  d.setDate(d.getDate() + (diff === 0 ? 7 : diff))
+  return d
+}
+
+export function generateSupportSessions(packageConfig = {}, schedule, startDate = new Date()) {
+  const coachSessions = []
+  const dietitianSessions = []
+  if (!schedule) return { coachSessions, dietitianSessions }
+
+  const weeks = Number(packageConfig.durationWeeks) || 12
+  const perWeek = Number(packageConfig.coachMeetingsPerWeek) || 0
+  const perMonth = Number(packageConfig.dietitianMeetingsPerMonth) || 0
+
+  if (perWeek > 0 && schedule.coachDay != null) {
+    const [ch, cm] = String(schedule.coachTime || '10:00').split(':').map(Number)
+    const spacing = Math.max(1, Math.floor(7 / perWeek))
+    for (let w = 0; w < weeks; w++) {
+      const weekStart = nextWeekday(startDate, schedule.coachDay)
+      weekStart.setDate(weekStart.getDate() + w * 7)
+      for (let c = 0; c < perWeek; c++) {
+        const d = new Date(weekStart)
+        d.setDate(d.getDate() + c * spacing)
+        d.setHours(ch || 10, cm || 0, 0, 0)
+        coachSessions.push({
+          id: uid('cs'),
+          type: 'coach',
+          title: 'Koç Görüşmesi',
+          date: d.toISOString(),
+          duration: 30,
+          status: 'scheduled',
+          coach: 'Koçunuz',
+        })
+      }
+    }
+  }
+
+  if (perMonth > 0 && schedule.dietitianDay != null) {
+    const [dh, dm] = String(schedule.dietitianTime || '14:00').split(':').map(Number)
+    const months = Math.ceil(weeks / 4)
+    const spacingWeeks = Math.max(1, Math.floor(4 / perMonth))
+    for (let m = 0; m < months; m++) {
+      for (let k = 0; k < perMonth; k++) {
+        const d = nextWeekday(startDate, schedule.dietitianDay)
+        d.setDate(d.getDate() + (m * 4 + k * spacingWeeks) * 7)
+        d.setHours(dh || 14, dm || 0, 0, 0)
+        dietitianSessions.push({
+          id: uid('ds'),
+          type: 'dietitian',
+          title: 'Diyetisyen Görüşmesi',
+          date: d.toISOString(),
+          duration: 40,
+          status: 'scheduled',
+          coach: 'Diyetisyeniniz',
+        })
+      }
+    }
+  }
+
+  return { coachSessions, dietitianSessions }
+}
+
 function createDefaultMemberData() {
   return {
-    coachSessions: JSON.parse(JSON.stringify(mockCoachSessions)),
-    dietitianSessions: JSON.parse(JSON.stringify(mockDietitianSessions)),
-    notifications: JSON.parse(JSON.stringify(mockNotifications)),
-    tasks: JSON.parse(JSON.stringify(mockTasks)),
+    coachSessions: [],
+    dietitianSessions: [],
+    notifications: [],
+    tasks: [],
+    progress: { weight: [], workouts: [], mood: [] },
+    supportSchedule: null,
     settings: {
       theme: 'light',
       language: 'tr',
@@ -43,6 +130,9 @@ function emptyDb() {
   return {
     version: 2,
     members: [],
+    staff: [],
+    programs: [],
+    posts: JSON.parse(JSON.stringify(DEFAULT_POSTS)),
     tickets: [],
     activities: [],
     payments: [],
@@ -89,6 +179,9 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
     email,
     password: profile.password,
     age: profile.age,
+    gender: profile.gender || '',
+    weight: profile.weight || '',
+    height: profile.height || '',
     city: profile.city || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
@@ -99,6 +192,13 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
     joinedAt: today(),
     lastActiveAt: today(),
     ...createDefaultMemberData(),
+  }
+
+  if (profile.supportSchedule) {
+    member.supportSchedule = profile.supportSchedule
+    const sessions = generateSupportSessions(member.packageConfig, profile.supportSchedule)
+    member.coachSessions = sessions.coachSessions
+    member.dietitianSessions = sessions.dietitianSessions
   }
 
   db.members.push(member)
@@ -113,7 +213,12 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
   })
   addActivity(db, 'signup', `${member.name} Premium kayıt oldu`, member.id)
   addActivity(db, 'payment', `${member.name} ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`, member.id)
-  db.session = { type: 'member', memberId: member.id }
+
+  const gaps = findAvailabilityGaps(db, member.packageConfig, member.supportSchedule)
+  if (gaps.length) createAvailabilityTicket(db, member, gaps)
+
+  db.session = { type: 'member', memberId: member.id, remember: true }
+  markSessionActive()
   saveDb(db)
   return { success: true, member }
 }
@@ -130,6 +235,9 @@ export function registerMember(db, profile, membership = 'free', packageConfig =
     email,
     password: profile.password,
     age: profile.age,
+    gender: profile.gender || '',
+    weight: profile.weight || '',
+    height: profile.height || '',
     city: profile.city || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
@@ -142,28 +250,42 @@ export function registerMember(db, profile, membership = 'free', packageConfig =
     ...createDefaultMemberData(),
   }
 
+  if (profile.supportSchedule) {
+    member.supportSchedule = profile.supportSchedule
+    const sessions = generateSupportSessions(member.packageConfig, profile.supportSchedule)
+    member.coachSessions = sessions.coachSessions
+    member.dietitianSessions = sessions.dietitianSessions
+  }
+
   db.members.push(member)
   addActivity(db, 'signup', `${member.name} yeni kayıt (${membership === 'premium' ? 'Premium' : 'Ücretsiz'})`, member.id)
-  db.session = { type: 'member', memberId: member.id }
+
+  const gaps = findAvailabilityGaps(db, member.packageConfig, member.supportSchedule)
+  if (gaps.length) createAvailabilityTicket(db, member, gaps)
+
+  db.session = { type: 'member', memberId: member.id, remember: true }
+  markSessionActive()
   saveDb(db)
   return { success: true, member }
 }
 
-export function loginMember(db, email, password) {
+export function loginMember(db, email, password, remember = false) {
   const member = db.members.find(
     (m) => m.email === email.toLowerCase().trim() && m.password === password
   )
   if (!member) return { success: false, error: 'E-posta veya şifre hatalı.' }
 
   member.lastActiveAt = today()
-  db.session = { type: 'member', memberId: member.id }
+  db.session = { type: 'member', memberId: member.id, remember: !!remember }
+  markSessionActive()
   addActivity(db, 'login', `${member.name} giriş yaptı`, member.id)
   saveDb(db)
   return { success: true, member }
 }
 
-export function loginAdmin(db) {
-  db.session = { type: 'admin', memberId: null }
+export function loginAdmin(db, remember = false) {
+  db.session = { type: 'admin', memberId: null, remember: !!remember }
+  markSessionActive()
   saveDb(db)
   return { success: true }
 }
@@ -184,6 +306,20 @@ export function updateMember(db, memberId, patch) {
   db.members[idx] = { ...db.members[idx], ...patch, lastActiveAt: today() }
   saveDb(db)
   return db.members[idx]
+}
+
+export function updateSupportSchedule(db, memberId, schedule) {
+  const member = db.members.find((m) => m.id === memberId)
+  if (!member) return null
+  const sessions = generateSupportSessions(member.packageConfig, schedule)
+  const updated = updateMember(db, memberId, {
+    supportSchedule: schedule,
+    coachSessions: sessions.coachSessions,
+    dietitianSessions: sessions.dietitianSessions,
+  })
+  const gaps = findAvailabilityGaps(db, member.packageConfig, schedule)
+  if (gaps.length) createAvailabilityTicket(db, member, gaps)
+  return updated
 }
 
 export function upgradeMemberPremium(db, memberId, packageConfig, amount) {
@@ -209,8 +345,141 @@ export function upgradeMemberPremium(db, memberId, packageConfig, amount) {
   return member
 }
 
+export function registerStaff(db, data) {
+  const email = data.email?.toLowerCase().trim()
+  if (!email) return { success: false, error: 'E-posta gerekli.' }
+  if (db.staff.some((s) => s.email === email)) {
+    return { success: false, error: 'Bu e-posta zaten kayıtlı.' }
+  }
+  if (db.members.some((m) => m.email === email)) {
+    return { success: false, error: 'Bu e-posta bir üyeye ait.' }
+  }
+
+  const staff = {
+    id: uid('st'),
+    role: data.role === 'dietitian' ? 'dietitian' : 'coach',
+    name: data.name,
+    email,
+    password: data.password,
+    phone: data.phone || '',
+    specialty: data.specialty || '',
+    workDays: Array.isArray(data.workDays) ? data.workDays : [],
+    workStart: data.workStart || '09:00',
+    workEnd: data.workEnd || '17:00',
+    active: true,
+    createdAt: today(),
+  }
+  db.staff.push(staff)
+  addActivity(db, 'staff', `${staff.name} ${staff.role === 'coach' ? 'koç' : 'diyetisyen'} olarak eklendi`)
+  saveDb(db)
+  return { success: true, staff }
+}
+
+export function updateStaff(db, staffId, patch) {
+  const idx = db.staff.findIndex((s) => s.id === staffId)
+  if (idx === -1) return null
+  db.staff[idx] = { ...db.staff[idx], ...patch }
+  saveDb(db)
+  return db.staff[idx]
+}
+
+export function deleteStaff(db, staffId) {
+  db.staff = db.staff.filter((s) => s.id !== staffId)
+  saveDb(db)
+}
+
+export function loginStaff(db, email, password, remember = false) {
+  const staff = db.staff.find(
+    (s) => s.email === email.toLowerCase().trim() && s.password === password
+  )
+  if (!staff) return { success: false, error: 'E-posta veya şifre hatalı.' }
+  db.session = { type: 'staff', staffId: staff.id, remember: !!remember }
+  markSessionActive()
+  addActivity(db, 'login', `${staff.name} (${staff.role === 'coach' ? 'koç' : 'diyetisyen'}) giriş yaptı`)
+  saveDb(db)
+  return { success: true, staff }
+}
+
+export function getCurrentStaff(db) {
+  if (db.session?.type !== 'staff') return null
+  return db.staff.find((s) => s.id === db.session.staffId) || null
+}
+
+export function createProgram(db, data) {
+  const program = {
+    id: uid('prog'),
+    type: data.type === 'nutrition' ? 'nutrition' : 'workout',
+    memberId: data.memberId,
+    memberName: data.memberName || '',
+    staffId: data.staffId,
+    staffName: data.staffName || '',
+    title: data.title,
+    description: data.description || '',
+    items: Array.isArray(data.items) ? data.items : [],
+    createdAt: nowISO(),
+  }
+  db.programs.unshift(program)
+
+  const member = db.members.find((m) => m.id === data.memberId)
+  if (member) {
+    const notif = {
+      id: uid('n'),
+      type: 'program',
+      title: program.type === 'workout' ? 'Yeni antrenman programınız hazır' : 'Yeni beslenme programınız hazır',
+      message: `${program.staffName} sizin için "${program.title}" programını oluşturdu. Profilinizdeki "Programlarım" bölümünden görüntüleyebilirsiniz.`,
+      read: false,
+      createdAt: nowISO(),
+    }
+    member.notifications = [notif, ...(member.notifications || [])]
+  }
+  addActivity(
+    db,
+    'program',
+    `${program.staffName} ${program.type === 'workout' ? 'antrenman' : 'beslenme'} programı oluşturdu`,
+    data.memberId
+  )
+  saveDb(db)
+  return program
+}
+
+export function createPost(db, data) {
+  const post = {
+    id: uid('post'),
+    title: data.title,
+    category: data.category || 'Yaşam',
+    excerpt: data.excerpt || '',
+    content: data.content || '',
+    author: data.author || 'Serenova Ekibi',
+    readMinutes: data.readMinutes || Math.max(1, Math.round((data.content || '').split(/\s+/).length / 200)),
+    accent: data.accent || 'brand',
+    published: data.published !== false,
+    createdAt: today(),
+  }
+  db.posts.unshift(post)
+  addActivity(db, 'post', `Yeni blog yazısı: ${post.title}`)
+  saveDb(db)
+  return post
+}
+
+export function updatePost(db, postId, patch) {
+  const idx = db.posts.findIndex((p) => p.id === postId)
+  if (idx === -1) return null
+  db.posts[idx] = { ...db.posts[idx], ...patch }
+  saveDb(db)
+  return db.posts[idx]
+}
+
+export function deletePost(db, postId) {
+  db.posts = db.posts.filter((p) => p.id !== postId)
+  saveDb(db)
+}
+
 export function submitTicket(db, memberId, ticketData) {
   const member = db.members.find((m) => m.id === memberId)
+  const autoPriority =
+    ticketData.category === 'Teknik sorun' || ticketData.category === 'Üyelik / iptal'
+      ? 'high'
+      : 'normal'
   const ticket = {
     id: uid('t'),
     memberId,
@@ -220,8 +489,17 @@ export function submitTicket(db, memberId, ticketData) {
     subject: ticketData.subject,
     message: ticketData.message,
     status: 'open',
-    priority: ticketData.category === 'Teknik sorun' ? 'high' : ticketData.category === 'Üyelik / iptal' ? 'high' : 'normal',
+    priority: ticketData.priority || autoPriority,
+    messages: [
+      {
+        id: uid('msg'),
+        from: ticketData.system ? 'system' : 'member',
+        text: ticketData.message,
+        createdAt: nowISO(),
+      },
+    ],
     createdAt: today(),
+    updatedAt: nowISO(),
   }
   db.tickets.unshift(ticket)
   addActivity(db, 'ticket', `Destek talebi: ${ticket.subject} — ${ticket.memberName}`, memberId)
@@ -233,8 +511,77 @@ export function updateTicketStatus(db, ticketId, status) {
   const ticket = db.tickets.find((t) => t.id === ticketId)
   if (!ticket) return null
   ticket.status = status
+  ticket.updatedAt = nowISO()
   saveDb(db)
   return ticket
+}
+
+export function replyTicket(db, ticketId, from, text) {
+  const ticket = db.tickets.find((t) => t.id === ticketId)
+  if (!ticket) return null
+  const message = { id: uid('msg'), from, text, createdAt: nowISO() }
+  ticket.messages = [...(ticket.messages || [{ id: uid('msg'), from: 'member', text: ticket.message, createdAt: ticket.createdAt }]), message]
+  ticket.updatedAt = nowISO()
+
+  if (from === 'admin') {
+    if (ticket.status === 'open') ticket.status = 'in-progress'
+    const member = db.members.find((m) => m.id === ticket.memberId)
+    if (member) {
+      member.notifications = [
+        {
+          id: uid('n'),
+          type: 'support',
+          title: 'Destek talebinize yanıt geldi',
+          message: `"${ticket.subject}" talebinize destek ekibi yanıt verdi.`,
+          read: false,
+          createdAt: nowISO(),
+        },
+        ...(member.notifications || []),
+      ]
+    }
+    addActivity(db, 'ticket', `Destek yanıtı gönderildi: ${ticket.subject}`, ticket.memberId)
+  } else {
+    if (ticket.status === 'closed') ticket.status = 'open'
+    addActivity(db, 'ticket', `Üye yanıtladı: ${ticket.subject}`, ticket.memberId)
+  }
+
+  saveDb(db)
+  return ticket
+}
+
+export function findAvailabilityGaps(db, packageConfig, schedule) {
+  const gaps = []
+  if (!schedule) return gaps
+  const coaches = db.staff.filter((s) => s.role === 'coach' && s.active !== false)
+  const dietitians = db.staff.filter((s) => s.role === 'dietitian' && s.active !== false)
+
+  if ((Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && schedule.coachDay != null) {
+    const available = coaches.some((s) => (s.workDays || []).includes(Number(schedule.coachDay)))
+    if (!available) gaps.push({ role: 'coach', day: Number(schedule.coachDay), time: schedule.coachTime })
+  }
+  if ((Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && schedule.dietitianDay != null) {
+    const available = dietitians.some((s) => (s.workDays || []).includes(Number(schedule.dietitianDay)))
+    if (!available) gaps.push({ role: 'dietitian', day: Number(schedule.dietitianDay), time: schedule.dietitianTime })
+  }
+  return gaps
+}
+
+export function createAvailabilityTicket(db, member, gaps) {
+  if (!gaps.length) return null
+  const lines = gaps.map((g) => {
+    const roleTr = g.role === 'coach' ? 'koç' : 'diyetisyen'
+    return `• Seçilen gün ${WEEKDAY_NAMES[g.day]} ${g.time || ''} için uygun bir ${roleTr} bulunamadı.`
+  })
+  return submitTicket(db, member.id, {
+    category: 'Randevu / uygunluk',
+    subject: 'Seçilen güne uygun uzman bulunamadı',
+    priority: 'high',
+    system: true,
+    message:
+      `${member.name} adlı üyenin premium paketinde tercih ettiği gün(ler) için uygun uzman bulunmuyor:\n` +
+      lines.join('\n') +
+      '\nLütfen uygun bir koç/diyetisyen atayın veya üye ile alternatif gün için iletişime geçin.',
+  })
 }
 
 export function pauseMember(db, memberId, until) {

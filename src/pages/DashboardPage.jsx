@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Dumbbell, Apple, Flame, Bell, Pause, RefreshCw, Crown, MessageCircle,
+  Dumbbell, Apple, Flame, Bell, Pause, RefreshCw, Crown, MessageCircle, LineChart,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -11,14 +11,22 @@ import { WeightChart, WorkoutChart, MoodChart } from '../components/dashboard/Pr
 import Modal from '../components/ui/Modal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { mockCalendarEvents, mockProgress } from '../data/mockData'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+
+function ChartEmpty({ message = 'Henüz veri yok' }) {
+  return (
+    <div className="flex h-56 flex-col items-center justify-center gap-2 text-center text-sm text-cream-800/50">
+      <LineChart className="h-7 w-7 text-cream-800/30" />
+      {message}
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const {
     user, membership, membershipStatus, packageConfig, coachSessions, dietitianSessions,
-    tasks, toggleTask, pauseMembership, resumeMembership, renewMembership,
+    tasks, progress, toggleTask, pauseMembership, resumeMembership, renewMembership,
   } = useApp()
   const { toast } = useToast()
   const [pauseModal, setPauseModal] = useState(false)
@@ -27,6 +35,15 @@ export default function DashboardPage() {
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const taskDone = tasks.filter((t) => t.done).length
+
+  const calendarEvents = useMemo(() => [
+    ...coachSessions
+      .filter((s) => s.status !== 'cancelled')
+      .map((s) => ({ id: s.id, title: 'Koç Görüşmesi', date: s.date, type: 'coach' })),
+    ...dietitianSessions
+      .filter((s) => s.status !== 'cancelled')
+      .map((s) => ({ id: s.id, title: 'Diyetisyen', date: s.date, type: 'dietitian' })),
+  ], [coachSessions, dietitianSessions])
 
   const handlePause = () => {
     pauseMembership('2026-07-01')
@@ -94,17 +111,17 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-cream-200 bg-white p-6">
           <h3 className="font-semibold text-cream-900">Kilo Trendi</h3>
-          <WeightChart data={mockProgress.weight} />
+          {progress.weight?.length ? <WeightChart data={progress.weight} /> : <ChartEmpty message="Kilo kayıtlarınız burada görünecek" />}
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-6">
           <h3 className="font-semibold text-cream-900">Antrenman Tamamlama</h3>
-          <WorkoutChart data={mockProgress.workouts} />
+          {progress.workouts?.length ? <WorkoutChart data={progress.workouts} /> : <ChartEmpty message="Antrenman verileriniz burada görünecek" />}
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <CalendarView events={mockCalendarEvents} />
+          <CalendarView events={calendarEvents} />
         </div>
         <div className="space-y-4">
           <div className="rounded-2xl border border-cream-200 bg-white p-5">
@@ -112,7 +129,9 @@ export default function DashboardPage() {
               <Bell className="h-4 w-4 text-brand-500" /> Günlük Görevler
             </h3>
             <div className="mt-4 space-y-2">
-              {tasks.map((t) => (
+              {tasks.length === 0 ? (
+                <p className="rounded-xl bg-cream-50 p-4 text-center text-sm text-cream-800/50">Henüz görev yok</p>
+              ) : tasks.map((t) => (
                 <label key={t.id} className={`flex items-center gap-3 rounded-xl p-3 ${t.done ? 'bg-sage-50' : 'bg-cream-50'}`}>
                   <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} className="accent-brand-500" />
                   <div className="flex-1">
@@ -129,7 +148,7 @@ export default function DashboardPage() {
           </div>
           <div className="rounded-2xl border border-cream-200 bg-white p-5">
             <h3 className="font-semibold text-cream-900">Enerji & Ruh Hali</h3>
-            <MoodChart data={mockProgress.mood} />
+            {progress.mood?.length ? <MoodChart data={progress.mood} /> : <ChartEmpty message="Ruh hali verileriniz burada görünecek" />}
           </div>
         </div>
       </div>

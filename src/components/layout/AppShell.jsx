@@ -7,7 +7,7 @@ import { useApp } from '../../context/AppContext'
 import { BRAND } from '../../config/brand'
 
 export default function AppShell() {
-  const { isAuthenticated, isAdmin } = useApp()
+  const { isAuthenticated, isAdmin, isStaff } = useApp()
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -15,6 +15,10 @@ export default function AppShell() {
 
   if (isAdmin) {
     return <Navigate to="/admin" replace />
+  }
+
+  if (isStaff) {
+    return <Navigate to="/staff" replace />
   }
 
   return (

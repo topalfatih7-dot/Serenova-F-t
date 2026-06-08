@@ -4,16 +4,28 @@ import { calculatePackagePrice } from '../services/packagePricing'
 import {
   loadDb,
   saveDb,
+  initSession,
   registerMember,
   registerPremiumWithPayment,
   loginMember,
   loginAdmin,
+  loginStaff,
   logout as dbLogout,
   getCurrentMember,
+  getCurrentStaff,
   updateMember,
   upgradeMemberPremium,
+  updateSupportSchedule as dbUpdateSupportSchedule,
+  registerStaff as dbRegisterStaff,
+  updateStaff as dbUpdateStaff,
+  deleteStaff as dbDeleteStaff,
+  createProgram as dbCreateProgram,
+  createPost as dbCreatePost,
+  updatePost as dbUpdatePost,
+  deletePost as dbDeletePost,
   submitTicket,
   updateTicketStatus,
+  replyTicket as dbReplyTicket,
   pauseMember,
   cancelMember,
   renewMember,
@@ -30,9 +42,16 @@ export function AppProvider({ children }) {
   const [tick, setTick] = useState(0)
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
+  useState(() => {
+    initSession()
+    return true
+  })
+
   const db = useMemo(() => loadDb(), [tick])
   const currentMember = useMemo(() => getCurrentMember(db), [db])
+  const currentStaff = useMemo(() => getCurrentStaff(db), [db])
   const isAdmin = db.session?.type === 'admin'
+  const isStaff = db.session?.type === 'staff'
   const isAuthenticated = !!db.session
 
   const adminStats = useMemo(() => computeAdminStats(db), [db])
@@ -46,22 +65,32 @@ export function AppProvider({ children }) {
     refresh()
   }, [refresh])
 
-  const login = useCallback((email, password) => {
+  const login = useCallback((email, password, remember = false) => {
     if (
       email.toLowerCase() === ADMIN_CREDENTIALS.email.toLowerCase() &&
       password === ADMIN_CREDENTIALS.password
     ) {
       const d = loadDb()
-      loginAdmin(d)
+      loginAdmin(d, remember)
       refresh()
-      return { success: true, isAdmin: true }
+      return { success: true, role: 'admin', isAdmin: true }
     }
 
     const d = loadDb()
-    const result = loginMember(d, email, password)
-    if (!result.success) return { success: false, error: result.error, isAdmin: false }
-    refresh()
-    return { success: true, isAdmin: false }
+    const memberResult = loginMember(d, email, password, remember)
+    if (memberResult.success) {
+      refresh()
+      return { success: true, role: 'member', isAdmin: false }
+    }
+
+    const ds = loadDb()
+    const staffResult = loginStaff(ds, email, password, remember)
+    if (staffResult.success) {
+      refresh()
+      return { success: true, role: 'staff', isAdmin: false }
+    }
+
+    return { success: false, error: 'E-posta veya şifre hatalı.', isAdmin: false }
   }, [refresh])
 
   const logout = useCallback(() => {
@@ -110,6 +139,13 @@ export function AppProvider({ children }) {
     syncMember(currentMember.id, { packageConfig: config })
   }, [currentMember, syncMember])
 
+  const saveSupportSchedule = useCallback((schedule) => {
+    if (!currentMember) return
+    const d = loadDb()
+    dbUpdateSupportSchedule(d, currentMember.id, schedule)
+    refresh()
+  }, [currentMember, refresh])
+
   const pauseMembership = useCallback((until) => {
     if (!currentMember) return
     const d = loadDb()
@@ -138,6 +174,51 @@ export function AppProvider({ children }) {
     refresh()
   }, [currentMember, refresh])
 
+  const addStaff = useCallback((data) => {
+    const d = loadDb()
+    const result = dbRegisterStaff(d, data)
+    refresh()
+    return result
+  }, [refresh])
+
+  const editStaff = useCallback((id, patch) => {
+    const d = loadDb()
+    dbUpdateStaff(d, id, patch)
+    refresh()
+  }, [refresh])
+
+  const removeStaff = useCallback((id) => {
+    const d = loadDb()
+    dbDeleteStaff(d, id)
+    refresh()
+  }, [refresh])
+
+  const createProgram = useCallback((data) => {
+    const d = loadDb()
+    const program = dbCreateProgram(d, data)
+    refresh()
+    return program
+  }, [refresh])
+
+  const addPost = useCallback((data) => {
+    const d = loadDb()
+    const post = dbCreatePost(d, data)
+    refresh()
+    return post
+  }, [refresh])
+
+  const editPost = useCallback((id, patch) => {
+    const d = loadDb()
+    dbUpdatePost(d, id, patch)
+    refresh()
+  }, [refresh])
+
+  const removePost = useCallback((id) => {
+    const d = loadDb()
+    dbDeletePost(d, id)
+    refresh()
+  }, [refresh])
+
   const createTicket = useCallback((ticketData) => {
     const d = loadDb()
     const memberId = currentMember?.id || null
@@ -150,6 +231,13 @@ export function AppProvider({ children }) {
     const d = loadDb()
     updateTicketStatus(d, ticketId, status)
     refresh()
+  }, [refresh])
+
+  const sendTicketReply = useCallback((ticketId, from, text) => {
+    const d = loadDb()
+    const ticket = dbReplyTicket(d, ticketId, from, text)
+    refresh()
+    return ticket
   }, [refresh])
 
   const markNotificationRead = useCallback((id) => {
@@ -207,18 +295,29 @@ export function AppProvider({ children }) {
   const value = {
     isAuthenticated,
     isAdmin,
+    isStaff,
+    staffUser: currentStaff || {},
+    staff: db.staff || [],
+    programs: db.programs || [],
+    posts: db.posts || [],
+    myPrograms: currentMember ? (db.programs || []).filter((p) => p.memberId === currentMember.id) : [],
+    myTickets: currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : [],
     user: currentMember || {},
     membership: currentMember?.membership || 'free',
     membershipStatus: currentMember?.membershipStatus || 'active',
     packageConfig: currentMember?.packageConfig,
+    supportSchedule: currentMember?.supportSchedule || null,
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
     notifications: currentMember?.notifications || [],
     tasks: currentMember?.tasks || [],
+    progress: currentMember?.progress || { weight: [], workouts: [], mood: [] },
     settings: currentMember?.settings || {},
     pauseUntil: currentMember?.pauseUntil,
     platform: {
       members: db.members,
+      staff: db.staff || [],
+      programs: db.programs || [],
       tickets: db.tickets,
       activities: db.activities,
       payments: db.payments,
@@ -234,12 +333,21 @@ export function AppProvider({ children }) {
     processPremiumPayment,
     upgradeToPremium,
     savePackage,
+    saveSupportSchedule,
+    addStaff,
+    editStaff,
+    removeStaff,
+    createProgram,
+    addPost,
+    editPost,
+    removePost,
     pauseMembership,
     resumeMembership,
     cancelMembership,
     renewMembership,
     createTicket,
     setTicketStatus,
+    sendTicketReply,
     markNotificationRead,
     markAllNotificationsRead,
     rescheduleSession,

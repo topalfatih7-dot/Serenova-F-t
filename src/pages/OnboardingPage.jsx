@@ -10,6 +10,7 @@ import {
 import Stepper from '../components/ui/Stepper'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
 import PackageBuilder from '../components/package/PackageBuilder'
+import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE } from '../components/package/SupportScheduler'
 import PaymentForm from '../components/payment/PaymentForm'
 import Modal from '../components/ui/Modal'
 import { useApp } from '../context/AppContext'
@@ -41,7 +42,13 @@ const MEMBERSHIP_OPTIONS = [
   },
 ]
 
-const STEPS = ['Kişisel', 'Hedefler', 'Fitness', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket']
+const STEPS = ['Kişisel', 'Hedefler', 'Fitness', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket', 'Tarihler']
+
+const GENDERS = [
+  { value: 'female', label: 'Kadın' },
+  { value: 'male', label: 'Erkek' },
+  { value: 'other', label: 'Belirtmek istemiyorum' },
+]
 
 const GOALS = [
   { value: 'weight', label: 'Kilo Yönetimi', desc: 'Sağlıklı kilo verme veya alma', icon: Scale },
@@ -70,9 +77,11 @@ export default function OnboardingPage() {
   const [paying, setPaying] = useState(false)
   const [data, setData] = useState({
     name: '', email: '', password: '', confirmPassword: '', age: '', city: '',
+    gender: '', weight: '', height: '',
     goals: [], fitnessLevel: 'beginner',
     nutritionPrefs: [], healthAck: false, disclaimer: false,
     membership: 'free', packageConfig: { ...DEFAULT_PACKAGE },
+    supportSchedule: { ...DEFAULT_SUPPORT_SCHEDULE },
   })
   const { register, registerWithPayment } = useApp()
   const { toast } = useToast()
@@ -83,7 +92,8 @@ export default function OnboardingPage() {
   const canNext = () => {
     switch (step) {
       case 0:
-        return data.name && data.email.includes('@') && data.age &&
+        return data.name && data.email.includes('@') && data.age && data.gender &&
+          data.weight && data.height &&
           data.password?.length >= 6 && data.password === data.confirmPassword
       case 1: return data.goals.length > 0
       case 2: return data.fitnessLevel
@@ -91,6 +101,7 @@ export default function OnboardingPage() {
       case 4: return data.healthAck && data.disclaimer
       case 5: return data.membership
       case 6: return data.membership === 'free' || true
+      case 7: return true
       default: return true
     }
   }
@@ -101,6 +112,9 @@ export default function OnboardingPage() {
       email: data.email,
       password: data.password,
       age: data.age,
+      gender: data.gender,
+      weight: data.weight,
+      height: data.height,
       city: data.city,
       goals: data.goals,
       fitnessLevel: data.fitnessLevel,
@@ -123,10 +137,14 @@ export default function OnboardingPage() {
         email: data.email,
         password: data.password,
         age: data.age,
+        gender: data.gender,
+        weight: data.weight,
+        height: data.height,
         city: data.city,
         goals: data.goals,
         fitnessLevel: data.fitnessLevel,
         nutritionPrefs: data.nutritionPrefs,
+        supportSchedule: data.supportSchedule,
       }, data.packageConfig)
 
       setPaying(false)
@@ -153,7 +171,7 @@ export default function OnboardingPage() {
       finishFree()
       return
     }
-    if (step === 6 && data.membership === 'premium') {
+    if (step === 7 && data.membership === 'premium') {
       finish()
       return
     }
@@ -188,6 +206,16 @@ export default function OnboardingPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <input placeholder="Yaş" type="number" value={data.age} onChange={(e) => update({ age: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
                   <input placeholder="Şehir" value={data.city} onChange={(e) => update({ city: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <input placeholder="Kilo (kg)" type="number" value={data.weight} onChange={(e) => update({ weight: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+                  <input placeholder="Boy (cm)" type="number" value={data.height} onChange={(e) => update({ height: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+                  <select value={data.gender} onChange={(e) => update({ gender: e.target.value })} className={`rounded-xl border border-cream-200 px-3 py-3 text-sm ${data.gender ? 'text-cream-900' : 'text-cream-800/40'}`}>
+                    <option value="">Cinsiyet</option>
+                    {GENDERS.map((g) => (
+                      <option key={g.value} value={g.value} className="text-cream-900">{g.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             )}
@@ -420,6 +448,19 @@ export default function OnboardingPage() {
                 userProfile={{ fitnessLevel: data.fitnessLevel }}
               />
             )}
+            {step === 7 && data.membership === 'premium' && (
+              <div>
+                <h2 className="font-display text-lg font-bold text-cream-900">Destek tarihlerinizi seçin</h2>
+                <p className="mt-1 text-sm text-cream-800/60">Paketinize göre koç ve diyetisyen görüşmelerinizi ne zaman almak istersiniz?</p>
+                <div className="mt-5">
+                  <SupportScheduler
+                    schedule={data.supportSchedule}
+                    packageConfig={data.packageConfig}
+                    onChange={(s) => update({ supportSchedule: s })}
+                  />
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -429,7 +470,7 @@ export default function OnboardingPage() {
           </button>
           <button type="button" onClick={next} disabled={!canNext()} className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
             {step === 5 && data.membership === 'free' ? 'Kayıt Ol' :
-              step === 6 ? 'Ödeme Yap' : 'İleri'}
+              step === 7 ? 'Ödeme Yap' : 'İleri'}
           </button>
         </div>
       </div>

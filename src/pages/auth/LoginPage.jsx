@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const [remember, setRemember] = useState(false)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const { login } = useApp()
@@ -29,15 +30,18 @@ export default function LoginPage() {
     if (!validate()) return
     setLoading(true)
     setTimeout(() => {
-      const result = login(email, password)
+      const result = login(email, password, remember)
       setLoading(false)
       if (!result.success) {
         toast(result.error || 'Giriş başarısız', 'error')
         return
       }
-      if (result.isAdmin) {
+      if (result.role === 'admin') {
         toast('Admin paneline hoş geldiniz', 'success')
         navigate('/admin')
+      } else if (result.role === 'staff') {
+        toast('Hoş geldiniz!', 'success')
+        navigate('/staff')
       } else {
         toast('Hoş geldiniz!', 'success')
         navigate('/dashboard')
@@ -86,7 +90,16 @@ export default function LoginPage() {
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
             </div>
           </div>
-          <div className="mt-4 text-right">
+          <div className="mt-4 flex items-center justify-between">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-cream-800/80">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 rounded border-cream-300 accent-brand-500"
+              />
+              Beni hatırla
+            </label>
             <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">Şifremi unuttum</Link>
           </div>
           <button

@@ -1,23 +1,49 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
+import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE, weekdayLabel } from '../components/package/SupportScheduler'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { User, Bell, Shield, CreditCard, LogOut, Edit } from 'lucide-react'
+import { User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, Dumbbell, Apple, ClipboardList, ChevronRight } from 'lucide-react'
+
+const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
 
 export default function ProfilePage() {
-  const { user, membership, membershipStatus, settings, updateProfile, updateSettings, logout, cancelMembership } = useApp()
+  const {
+    user, membership, membershipStatus, settings, packageConfig, supportSchedule, myPrograms,
+    updateProfile, updateSettings, saveSupportSchedule, logout, cancelMembership,
+  } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
-  const [form, setForm] = useState({ name: user.name, email: user.email, city: user.city })
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [form, setForm] = useState({
+    name: user.name, email: user.email, city: user.city,
+    weight: user.weight || '', height: user.height || '', gender: user.gender || '',
+  })
+  const [scheduleForm, setScheduleForm] = useState({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
+
+  const hasSupport =
+    (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
+    (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
 
   const handleSave = () => {
     updateProfile(form)
     setEditOpen(false)
     toast('Profil güncellendi', 'success')
+  }
+
+  const openSchedule = () => {
+    setScheduleForm({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
+    setScheduleOpen(true)
+  }
+
+  const handleScheduleSave = () => {
+    saveSupportSchedule(scheduleForm)
+    setScheduleOpen(false)
+    toast('Destek tarihleriniz güncellendi', 'success')
   }
 
   const handleLogout = () => {
@@ -50,8 +76,28 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <Link
+        to="/programs"
+        className="flex items-center gap-4 rounded-2xl border border-cream-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-sm"
+      >
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+          <ClipboardList className="h-5 w-5" />
+        </span>
+        <div className="flex-1">
+          <p className="font-semibold text-cream-900">Programlarım</p>
+          <p className="text-sm text-cream-800/60">
+            {myPrograms.length > 0 ? `${myPrograms.length} antrenman/beslenme programı` : 'Koç ve diyetisyen programlarınız'}
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-cream-800/30" />
+      </Link>
+
       {[
-        { icon: User, title: 'Kişisel Bilgiler', items: [['Ad', user.name], ['Yaş', user.age], ['Şehir', user.city]] },
+        { icon: User, title: 'Kişisel Bilgiler', items: [
+          ['Ad', user.name], ['Yaş', user.age], ['Cinsiyet', GENDER_LABELS[user.gender] || '—'],
+          ['Kilo', user.weight ? `${user.weight} kg` : '—'], ['Boy', user.height ? `${user.height} cm` : '—'],
+          ['Şehir', user.city || '—'],
+        ] },
         { icon: Bell, title: 'Bildirim Ayarları', toggles: [
           { key: 'emailNotifs', label: 'E-posta bildirimleri' },
           { key: 'pushNotifs', label: 'Push bildirimleri' },
@@ -93,6 +139,50 @@ export default function ProfilePage() {
         </div>
       ))}
 
+      {membership === 'premium' && hasSupport && (
+        <div className="rounded-2xl border border-cream-200 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-brand-500" />
+              <h2 className="font-semibold text-cream-900">Destek Tarihleri</h2>
+            </div>
+            <button type="button" onClick={openSchedule} className="flex items-center gap-1.5 rounded-xl border border-cream-200 px-3 py-1.5 text-xs font-medium hover:bg-cream-50">
+              <Edit className="h-3.5 w-3.5" /> Düzenle
+            </button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {(Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
+              <div className="flex items-center gap-3 rounded-xl bg-cream-50 p-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+                  <Dumbbell className="h-4 w-4" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-cream-900">Koç Görüşmeleri</p>
+                  <p className="text-xs text-cream-800/60">Haftada {packageConfig.coachMeetingsPerWeek} görüşme</p>
+                </div>
+                <span className="text-sm font-medium text-cream-900">
+                  {supportSchedule ? `${weekdayLabel(supportSchedule.coachDay)} · ${supportSchedule.coachTime}` : 'Seçilmedi'}
+                </span>
+              </div>
+            )}
+            {(Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && (
+              <div className="flex items-center gap-3 rounded-xl bg-cream-50 p-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
+                  <Apple className="h-4 w-4" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-cream-900">Diyetisyen Görüşmeleri</p>
+                  <p className="text-xs text-cream-800/60">Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme</p>
+                </div>
+                <span className="text-sm font-medium text-cream-900">
+                  {supportSchedule ? `${weekdayLabel(supportSchedule.dietitianDay)} · ${supportSchedule.dietitianTime}` : 'Seçilmedi'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button type="button" onClick={() => setCancelOpen(true)} className="flex-1 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-600 hover:bg-red-50">
           Üyeliği İptal Et
@@ -107,8 +197,29 @@ export default function ProfilePage() {
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Ad Soyad" />
           <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="E-posta" />
           <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Şehir" />
+          <div className="grid grid-cols-3 gap-3">
+            <input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Kilo (kg)" />
+            <input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Boy (cm)" />
+            <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={`rounded-xl border border-cream-200 px-3 py-3 text-sm ${form.gender ? 'text-cream-900' : 'text-cream-800/40'}`}>
+              <option value="">Cinsiyet</option>
+              <option value="female" className="text-cream-900">Kadın</option>
+              <option value="male" className="text-cream-900">Erkek</option>
+              <option value="other" className="text-cream-900">Belirtmek istemiyorum</option>
+            </select>
+          </div>
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">Kaydet</button>
         </div>
+      </Modal>
+
+      <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Destek Tarihlerini Düzenle" size="md">
+        <SupportScheduler
+          schedule={scheduleForm}
+          packageConfig={packageConfig}
+          onChange={setScheduleForm}
+        />
+        <button type="button" onClick={handleScheduleSave} className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
+          Kaydet
+        </button>
       </Modal>
 
       <Modal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Üyelik İptali">
