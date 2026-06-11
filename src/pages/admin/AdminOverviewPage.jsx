@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import {
-  Users, Crown, UserCheck, Pause, XCircle, TrendingUp, Calendar, AlertTriangle, ArrowRight, MessageSquare,
+  Users, Crown, UserCheck, Pause, XCircle, TrendingUp, Calendar, ArrowRight, MessageSquare,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,

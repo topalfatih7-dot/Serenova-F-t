@@ -3,27 +3,37 @@ import { Link, useNavigate } from 'react-router-dom'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
 import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE, weekdayLabel } from '../components/package/SupportScheduler'
+import WeeklyAvailability from '../components/package/WeeklyAvailability'
+import AvailabilityView from '../components/package/AvailabilityView'
+import FormField from '../components/ui/FormField'
+import PhotoUpload from '../components/ui/PhotoUpload'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, Dumbbell, Apple, ClipboardList, ChevronRight } from 'lucide-react'
+import { countAvailabilitySlots } from '../services/availability'
+import { User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, CalendarRange, Dumbbell, Apple, ClipboardList, ChevronRight } from 'lucide-react'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
 
 export default function ProfilePage() {
   const {
-    user, membership, membershipStatus, settings, packageConfig, supportSchedule, myPrograms,
+    user, membership, membershipStatus, settings, packageConfig, supportSchedule, myPrograms, staff,
     updateProfile, updateSettings, saveSupportSchedule, logout, cancelMembership,
   } = useApp()
+  const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
+  const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
   const { toast } = useToast()
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [availabilityOpen, setAvailabilityOpen] = useState(false)
   const [form, setForm] = useState({
     name: user.name, email: user.email, city: user.city,
-    weight: user.weight || '', height: user.height || '', gender: user.gender || '',
+    weight: user.weight || '', height: user.height || '', waist: user.waist || '',
+    gender: user.gender || '', photo: user.photo || null,
   })
   const [scheduleForm, setScheduleForm] = useState({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
+  const [availabilityForm, setAvailabilityForm] = useState(user.availability || {})
 
   const hasSupport =
     (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
@@ -46,6 +56,17 @@ export default function ProfilePage() {
     toast('Destek tarihleriniz güncellendi', 'success')
   }
 
+  const openAvailability = () => {
+    setAvailabilityForm(user.availability || {})
+    setAvailabilityOpen(true)
+  }
+
+  const handleAvailabilitySave = () => {
+    updateProfile({ availability: availabilityForm })
+    setAvailabilityOpen(false)
+    toast('Müsaitlik bilgileriniz güncellendi', 'success')
+  }
+
   const handleLogout = () => {
     logout()
     navigate('/')
@@ -63,9 +84,13 @@ export default function ProfilePage() {
 
       <div className="rounded-2xl border border-cream-200 bg-white p-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-2xl font-bold text-brand-600">
-            {user.name.charAt(0)}
-          </div>
+          {user.photo ? (
+            <img src={user.photo} alt={user.name} className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-100" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-2xl font-bold text-brand-600">
+              {user.name.charAt(0)}
+            </div>
+          )}
           <div>
             <p className="font-semibold text-cream-900">{user.name}</p>
             <p className="text-sm text-cream-800/60">{user.email}</p>
@@ -96,6 +121,7 @@ export default function ProfilePage() {
         { icon: User, title: 'Kişisel Bilgiler', items: [
           ['Ad', user.name], ['Yaş', user.age], ['Cinsiyet', GENDER_LABELS[user.gender] || '—'],
           ['Kilo', user.weight ? `${user.weight} kg` : '—'], ['Boy', user.height ? `${user.height} cm` : '—'],
+          ['Bel çevresi', user.waist ? `${user.waist} cm` : '—'],
           ['Şehir', user.city || '—'],
         ] },
         { icon: Bell, title: 'Bildirim Ayarları', toggles: [
@@ -158,7 +184,10 @@ export default function ProfilePage() {
                 </span>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-cream-900">Koç Görüşmeleri</p>
-                  <p className="text-xs text-cream-800/60">Haftada {packageConfig.coachMeetingsPerWeek} görüşme</p>
+                  <p className="text-xs text-cream-800/60">
+                    Haftada {packageConfig.coachMeetingsPerWeek} görüşme
+                    {assignedCoach ? ` · ${assignedCoach.name}` : ' · uzman atanıyor'}
+                  </p>
                 </div>
                 <span className="text-sm font-medium text-cream-900">
                   {supportSchedule ? `${weekdayLabel(supportSchedule.coachDay)} · ${supportSchedule.coachTime}` : 'Seçilmedi'}
@@ -172,13 +201,34 @@ export default function ProfilePage() {
                 </span>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-cream-900">Diyetisyen Görüşmeleri</p>
-                  <p className="text-xs text-cream-800/60">Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme</p>
+                  <p className="text-xs text-cream-800/60">
+                    Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme
+                    {assignedDietitian ? ` · ${assignedDietitian.name}` : ' · uzman atanıyor'}
+                  </p>
                 </div>
                 <span className="text-sm font-medium text-cream-900">
                   {supportSchedule ? `${weekdayLabel(supportSchedule.dietitianDay)} · ${supportSchedule.dietitianTime}` : 'Seçilmedi'}
                 </span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {membership === 'premium' && hasSupport && (
+        <div className="rounded-2xl border border-cream-200 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-5 w-5 text-brand-500" />
+              <h2 className="font-semibold text-cream-900">Haftalık Müsaitlik</h2>
+            </div>
+            <button type="button" onClick={openAvailability} className="flex items-center gap-1.5 rounded-xl border border-cream-200 px-3 py-1.5 text-xs font-medium hover:bg-cream-50">
+              <Edit className="h-3.5 w-3.5" /> Düzenle
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-cream-800/55">Koçunuz ve diyetisyeniniz bu saatleri görerek görüşmelerinizi planlar.</p>
+          <div className="mt-4">
+            <AvailabilityView value={user.availability} emptyText="Henüz müsait saat eklemediniz. Düzenle’ye dokunarak ekleyin." />
           </div>
         </div>
       )}
@@ -193,22 +243,31 @@ export default function ProfilePage() {
       </div>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profili Düzenle">
-        <div className="space-y-3">
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Ad Soyad" />
-          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="E-posta" />
-          <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Şehir" />
+        <div className="space-y-4">
+          <FormField label="Ad Soyad" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ad Soyad" />
+          <FormField label="E-posta" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="E-posta" />
+          <FormField label="Şehir" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
           <div className="grid grid-cols-3 gap-3">
-            <input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Kilo (kg)" />
-            <input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" placeholder="Boy (cm)" />
-            <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={`rounded-xl border border-cream-200 px-3 py-3 text-sm ${form.gender ? 'text-cream-900' : 'text-cream-800/40'}`}>
-              <option value="">Cinsiyet</option>
-              <option value="female" className="text-cream-900">Kadın</option>
-              <option value="male" className="text-cream-900">Erkek</option>
-              <option value="other" className="text-cream-900">Belirtmek istemiyorum</option>
-            </select>
+            <FormField label="Kilo (kg)" type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="Kilo" />
+            <FormField label="Boy (cm)" type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder="Boy" />
+            <FormField label="Bel (cm)" type="number" value={form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value })} placeholder="Bel" />
           </div>
+          <FormField label="Cinsiyet" as="select" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={form.gender ? '' : 'text-cream-800/40'}>
+            <option value="">Belirtmek istemiyorum</option>
+            <option value="female" className="text-cream-900">Kadın</option>
+            <option value="male" className="text-cream-900">Erkek</option>
+            <option value="other" className="text-cream-900">Belirtmek istemiyorum</option>
+          </FormField>
+          <PhotoUpload value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">Kaydet</button>
         </div>
+      </Modal>
+
+      <Modal open={availabilityOpen} onClose={() => setAvailabilityOpen(false)} title="Haftalık Müsaitlik" size="lg">
+        <WeeklyAvailability value={availabilityForm} onChange={setAvailabilityForm} />
+        <button type="button" onClick={handleAvailabilitySave} className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
+          Kaydet ({countAvailabilitySlots(availabilityForm)} saat)
+        </button>
       </Modal>
 
       <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Destek Tarihlerini Düzenle" size="md">

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PackageBuilder from '../components/package/PackageBuilder'
+import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE } from '../components/package/SupportScheduler'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
 import Modal from '../components/ui/Modal'
 import PaymentForm from '../components/payment/PaymentForm'
@@ -11,13 +12,18 @@ import { DEFAULT_PACKAGE } from '../data/membershipPlans'
 import { calculatePackagePrice } from '../services/packagePricing'
 
 export default function PackageBuilderPage() {
-  const { packageConfig, savePackage, processPremiumPayment, isAuthenticated } = useApp()
+  const { packageConfig, supportSchedule, savePackage, processPremiumPayment, isAuthenticated } = useApp()
   const [config, setConfig] = useState(packageConfig || { ...DEFAULT_PACKAGE })
+  const [schedule, setSchedule] = useState({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [pricing, setPricing] = useState(null)
   const [paying, setPaying] = useState(false)
   const { toast } = useToast()
   const navigate = useNavigate()
+
+  const hasSupport =
+    (Number(config?.coachMeetingsPerWeek) || 0) > 0 ||
+    (Number(config?.dietitianMeetingsPerMonth) || 0) > 0
 
   const handleSave = (cfg) => {
     savePackage(cfg)
@@ -35,7 +41,7 @@ export default function PackageBuilderPage() {
     setTimeout(() => {
       savePackage(config)
       if (isAuthenticated) {
-        processPremiumPayment(config)
+        processPremiumPayment(config, schedule)
       } else {
         toast('Önce kayıt olun', 'warning')
         setPaying(false)
@@ -67,6 +73,16 @@ export default function PackageBuilderPage() {
             userProfile={{}}
           />
         </div>
+
+        {hasSupport && (
+          <div className="mt-10">
+            <h2 className="text-center font-display text-xl font-bold text-cream-900">Destek Tarihlerinizi Seçin</h2>
+            <p className="mt-2 text-center text-sm text-cream-800/60">Koç ve diyetisyen görüşmeleriniz için tercih ettiğiniz gün ve saat</p>
+            <div className="mx-auto mt-5 max-w-2xl">
+              <SupportScheduler schedule={schedule} packageConfig={config} onChange={setSchedule} />
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 flex justify-center">
           <button

@@ -3,7 +3,6 @@ import { ADMIN_CREDENTIALS } from '../config/brand'
 import { calculatePackagePrice } from '../services/packagePricing'
 import {
   loadDb,
-  saveDb,
   initSession,
   registerMember,
   registerPremiumWithPayment,
@@ -42,6 +41,7 @@ export function AppProvider({ children }) {
   const [tick, setTick] = useState(0)
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
+  // Oturum, ilk render'da loadDb çağrılmadan önce senkron olarak hazırlanır.
   useState(() => {
     initSession()
     return true
@@ -107,11 +107,11 @@ export function AppProvider({ children }) {
     return result
   }, [refresh])
 
-  const processPremiumPayment = useCallback((packageConfig) => {
+  const processPremiumPayment = useCallback((packageConfig, schedule) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
     const pricing = calculatePackagePrice(packageConfig)
     const d = loadDb()
-    upgradeMemberPremium(d, currentMember.id, packageConfig, pricing.total)
+    upgradeMemberPremium(d, currentMember.id, packageConfig, pricing.total, schedule)
     refresh()
     return { success: true, pricing }
   }, [currentMember, refresh])
@@ -125,11 +125,11 @@ export function AppProvider({ children }) {
     return { success: true, member: result.member, pricing }
   }, [refresh])
 
-  const upgradeToPremium = useCallback((packageConfig) => {
+  const upgradeToPremium = useCallback((packageConfig, schedule) => {
     if (!currentMember) return
     const pricing = calculatePackagePrice(packageConfig)
     const d = loadDb()
-    upgradeMemberPremium(d, currentMember.id, packageConfig, pricing.total)
+    upgradeMemberPremium(d, currentMember.id, packageConfig, pricing.total, schedule)
     refresh()
     return pricing
   }, [currentMember, refresh])

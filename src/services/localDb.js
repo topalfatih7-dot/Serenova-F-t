@@ -20,7 +20,7 @@ export function initSession() {
   try {
     active = !!sessionStorage.getItem(SESSION_FLAG)
   } catch {
-    active = false
+    /* sessionStorage erişilemiyor */
   }
   if (db.session && db.session.remember === false && !active) {
     db.session = null
@@ -49,11 +49,13 @@ function nextWeekday(from, weekday) {
   return d
 }
 
-export function generateSupportSessions(packageConfig = {}, schedule, startDate = new Date()) {
+export function generateSupportSessions(packageConfig = {}, schedule, startDate = new Date(), names = {}) {
   const coachSessions = []
   const dietitianSessions = []
   if (!schedule) return { coachSessions, dietitianSessions }
 
+  const coachName = names.coachName || 'Koçunuz'
+  const dietitianName = names.dietitianName || 'Diyetisyeniniz'
   const weeks = Number(packageConfig.durationWeeks) || 12
   const perWeek = Number(packageConfig.coachMeetingsPerWeek) || 0
   const perMonth = Number(packageConfig.dietitianMeetingsPerMonth) || 0
@@ -75,7 +77,7 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
           date: d.toISOString(),
           duration: 30,
           status: 'scheduled',
-          coach: 'Koçunuz',
+          coach: coachName,
         })
       }
     }
@@ -97,13 +99,110 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
           date: d.toISOString(),
           duration: 40,
           status: 'scheduled',
-          coach: 'Diyetisyeniniz',
+          coach: dietitianName,
         })
       }
     }
   }
 
   return { coachSessions, dietitianSessions }
+}
+
+const DEFAULT_SCHEDULE = { coachDay: 1, coachTime: '10:00', dietitianDay: 3, dietitianTime: '14:00' }
+
+function timeToMinutes(t) {
+  const [h, m] = String(t || '0:0').split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+function staffAvailableAt(staff, day, time) {
+  if (!(staff.workDays || []).includes(Number(day))) return false
+  if (!time) return true
+  const t = timeToMinutes(time)
+  return t >= timeToMinutes(staff.workStart || '09:00') && t < timeToMinutes(staff.workEnd || '17:00')
+}
+
+function findAvailableStaff(db, role, day, time) {
+  const candidates = db.staff.filter(
+    (s) => s.role === role && s.active !== false && staffAvailableAt(s, day, time)
+  )
+  if (!candidates.length) return null
+  const key = role === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
+  return candidates
+    .map((s) => ({ s, load: db.members.filter((m) => m[key] === s.id).length }))
+    .sort((a, b) => a.load - b.load)[0].s
+}
+
+function scheduleGaps(member, schedule) {
+  const gaps = []
+  if (!schedule) return gaps
+  if ((Number(member.packageConfig?.coachMeetingsPerWeek) || 0) > 0 && schedule.coachDay != null && !member.assignedCoachId) {
+    gaps.push({ role: 'coach', day: Number(schedule.coachDay), time: schedule.coachTime })
+  }
+  if ((Number(member.packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && schedule.dietitianDay != null && !member.assignedDietitianId) {
+    gaps.push({ role: 'dietitian', day: Number(schedule.dietitianDay), time: schedule.dietitianTime })
+  }
+  return gaps
+}
+
+function assignSupport(db, member, schedule) {
+  member.supportSchedule = schedule
+  const needCoach = (Number(member.packageConfig?.coachMeetingsPerWeek) || 0) > 0 && schedule?.coachDay != null
+  const needDiet = (Number(member.packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && schedule?.dietitianDay != null
+
+  const coach = needCoach ? findAvailableStaff(db, 'coach', schedule.coachDay, schedule.coachTime) : null
+  const dietitian = needDiet ? findAvailableStaff(db, 'dietitian', schedule.dietitianDay, schedule.dietitianTime) : null
+
+  member.assignedCoachId = coach?.id || null
+  member.assignedDietitianId = dietitian?.id || null
+
+  const sessions = generateSupportSessions(member.packageConfig, schedule, new Date(), {
+    coachName: coach?.name,
+    dietitianName: dietitian?.name,
+  })
+  member.coachSessions = sessions.coachSessions
+  member.dietitianSessions = sessions.dietitianSessions
+
+  return scheduleGaps(member, schedule)
+}
+
+function seedStarterContent(member) {
+  member.notifications = [
+    {
+      id: uid('n'),
+      type: 'reminder',
+      title: 'Serenova\u2019ya hoş geldiniz!',
+      message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
+      read: false,
+      createdAt: nowISO(),
+    },
+    ...(member.notifications || []),
+  ]
+  member.tasks = [
+    { id: uid('task'), type: 'water', title: 'Günlük 2L su hedefi', done: false, due: 'Bugün', progress: 0, target: 2 },
+    { id: uid('task'), type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
+    { id: uid('task'), type: 'workout', title: 'Genel hareket: 20 dk yürüyüş', done: false, due: 'Bugün' },
+  ]
+}
+
+function seedStarterProgram(db, member) {
+  db.programs.unshift({
+    id: uid('prog'),
+    type: 'workout',
+    memberId: member.id,
+    memberName: member.name,
+    staffId: null,
+    staffName: 'Serenova Ekibi',
+    title: 'Başlangıç Haftalık Genel Plan',
+    description: 'Tüm üyeler için hazırlanan genel hareket planı. Premium üyelikte koçunuz size özel program oluşturur.',
+    items: [
+      'Pazartesi: 20 dk tempolu yürüyüş',
+      'Çarşamba: 15 dk esneme + temel kuvvet (şınav, squat)',
+      'Cuma: 25 dk hafif kardiyo',
+      'Hafta sonu: Aktif dinlenme, günde ~8.000 adım',
+    ],
+    createdAt: nowISO(),
+  })
 }
 
 function createDefaultMemberData() {
@@ -114,6 +213,9 @@ function createDefaultMemberData() {
     tasks: [],
     progress: { weight: [], workouts: [], mood: [] },
     supportSchedule: null,
+    availability: {},
+    assignedCoachId: null,
+    assignedDietitianId: null,
     settings: {
       theme: 'light',
       language: 'tr',
@@ -182,6 +284,8 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
     gender: profile.gender || '',
     weight: profile.weight || '',
     height: profile.height || '',
+    waist: profile.waist || '',
+    photo: profile.photo || null,
     city: profile.city || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
@@ -192,16 +296,18 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
     joinedAt: today(),
     lastActiveAt: today(),
     ...createDefaultMemberData(),
-  }
-
-  if (profile.supportSchedule) {
-    member.supportSchedule = profile.supportSchedule
-    const sessions = generateSupportSessions(member.packageConfig, profile.supportSchedule)
-    member.coachSessions = sessions.coachSessions
-    member.dietitianSessions = sessions.dietitianSessions
+    availability: profile.availability || {},
   }
 
   db.members.push(member)
+  seedStarterContent(member)
+  seedStarterProgram(db, member)
+
+  let gaps = []
+  if (profile.supportSchedule) {
+    gaps = assignSupport(db, member, profile.supportSchedule)
+  }
+
   db.payments.unshift({
     id: uid('pay'),
     memberId: member.id,
@@ -214,7 +320,6 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
   addActivity(db, 'signup', `${member.name} Premium kayıt oldu`, member.id)
   addActivity(db, 'payment', `${member.name} ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`, member.id)
 
-  const gaps = findAvailabilityGaps(db, member.packageConfig, member.supportSchedule)
   if (gaps.length) createAvailabilityTicket(db, member, gaps)
 
   db.session = { type: 'member', memberId: member.id, remember: true }
@@ -238,6 +343,8 @@ export function registerMember(db, profile, membership = 'free', packageConfig =
     gender: profile.gender || '',
     weight: profile.weight || '',
     height: profile.height || '',
+    waist: profile.waist || '',
+    photo: profile.photo || null,
     city: profile.city || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
@@ -248,19 +355,20 @@ export function registerMember(db, profile, membership = 'free', packageConfig =
     joinedAt: today(),
     lastActiveAt: today(),
     ...createDefaultMemberData(),
-  }
-
-  if (profile.supportSchedule) {
-    member.supportSchedule = profile.supportSchedule
-    const sessions = generateSupportSessions(member.packageConfig, profile.supportSchedule)
-    member.coachSessions = sessions.coachSessions
-    member.dietitianSessions = sessions.dietitianSessions
+    availability: profile.availability || {},
   }
 
   db.members.push(member)
+  seedStarterContent(member)
+  seedStarterProgram(db, member)
+
+  let gaps = []
+  if (profile.supportSchedule) {
+    gaps = assignSupport(db, member, profile.supportSchedule)
+  }
+
   addActivity(db, 'signup', `${member.name} yeni kayıt (${membership === 'premium' ? 'Premium' : 'Ücretsiz'})`, member.id)
 
-  const gaps = findAvailabilityGaps(db, member.packageConfig, member.supportSchedule)
   if (gaps.length) createAvailabilityTicket(db, member, gaps)
 
   db.session = { type: 'member', memberId: member.id, remember: true }
@@ -311,24 +419,23 @@ export function updateMember(db, memberId, patch) {
 export function updateSupportSchedule(db, memberId, schedule) {
   const member = db.members.find((m) => m.id === memberId)
   if (!member) return null
-  const sessions = generateSupportSessions(member.packageConfig, schedule)
-  const updated = updateMember(db, memberId, {
-    supportSchedule: schedule,
-    coachSessions: sessions.coachSessions,
-    dietitianSessions: sessions.dietitianSessions,
-  })
-  const gaps = findAvailabilityGaps(db, member.packageConfig, schedule)
+  const gaps = assignSupport(db, member, schedule)
+  member.lastActiveAt = today()
+  saveDb(db)
   if (gaps.length) createAvailabilityTicket(db, member, gaps)
-  return updated
+  return member
 }
 
-export function upgradeMemberPremium(db, memberId, packageConfig, amount) {
-  const member = updateMember(db, memberId, {
-    membership: 'premium',
-    membershipStatus: 'active',
-    packageConfig,
-  })
+export function upgradeMemberPremium(db, memberId, packageConfig, amount, schedule = DEFAULT_SCHEDULE) {
+  const member = db.members.find((m) => m.id === memberId)
   if (!member) return null
+
+  member.membership = 'premium'
+  member.membershipStatus = 'active'
+  member.packageConfig = packageConfig
+  member.lastActiveAt = today()
+
+  const gaps = assignSupport(db, member, schedule)
 
   db.payments.unshift({
     id: uid('pay'),
@@ -341,6 +448,7 @@ export function upgradeMemberPremium(db, memberId, packageConfig, amount) {
   })
 
   addActivity(db, 'upgrade', `${member.name} Premium üyeliğe geçti (${amount.toLocaleString('tr-TR')}₺)`, memberId)
+  if (gaps.length) createAvailabilityTicket(db, member, gaps)
   saveDb(db)
   return member
 }
@@ -371,8 +479,55 @@ export function registerStaff(db, data) {
   }
   db.staff.push(staff)
   addActivity(db, 'staff', `${staff.name} ${staff.role === 'coach' ? 'koç' : 'diyetisyen'} olarak eklendi`)
+  fillGapsForStaff(db, staff)
   saveDb(db)
   return { success: true, staff }
+}
+
+function fillGapsForStaff(db, staff) {
+  db.members.forEach((m) => {
+    if (m.membership !== 'premium' || !m.supportSchedule) return
+    let changed = false
+
+    if (
+      staff.role === 'coach' && !m.assignedCoachId &&
+      (Number(m.packageConfig?.coachMeetingsPerWeek) || 0) > 0 &&
+      m.supportSchedule.coachDay != null &&
+      staffAvailableAt(staff, m.supportSchedule.coachDay, m.supportSchedule.coachTime)
+    ) {
+      m.assignedCoachId = staff.id
+      changed = true
+    }
+
+    if (
+      staff.role === 'dietitian' && !m.assignedDietitianId &&
+      (Number(m.packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 &&
+      m.supportSchedule.dietitianDay != null &&
+      staffAvailableAt(staff, m.supportSchedule.dietitianDay, m.supportSchedule.dietitianTime)
+    ) {
+      m.assignedDietitianId = staff.id
+      changed = true
+    }
+
+    if (!changed) return
+
+    const coachName = db.staff.find((s) => s.id === m.assignedCoachId)?.name
+    const dietitianName = db.staff.find((s) => s.id === m.assignedDietitianId)?.name
+    const sessions = generateSupportSessions(m.packageConfig, m.supportSchedule, new Date(), { coachName, dietitianName })
+    m.coachSessions = sessions.coachSessions
+    m.dietitianSessions = sessions.dietitianSessions
+    m.notifications = [
+      {
+        id: uid('n'),
+        type: 'program',
+        title: `${staff.role === 'coach' ? 'Koçunuz' : 'Diyetisyeniniz'} atandı`,
+        message: `${staff.name}, size ${staff.role === 'coach' ? 'koç' : 'diyetisyen'} olarak atandı. Randevu takviminiz güncellendi.`,
+        read: false,
+        createdAt: nowISO(),
+      },
+      ...(m.notifications || []),
+    ]
+  })
 }
 
 export function updateStaff(db, staffId, patch) {
@@ -547,23 +702,6 @@ export function replyTicket(db, ticketId, from, text) {
 
   saveDb(db)
   return ticket
-}
-
-export function findAvailabilityGaps(db, packageConfig, schedule) {
-  const gaps = []
-  if (!schedule) return gaps
-  const coaches = db.staff.filter((s) => s.role === 'coach' && s.active !== false)
-  const dietitians = db.staff.filter((s) => s.role === 'dietitian' && s.active !== false)
-
-  if ((Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && schedule.coachDay != null) {
-    const available = coaches.some((s) => (s.workDays || []).includes(Number(schedule.coachDay)))
-    if (!available) gaps.push({ role: 'coach', day: Number(schedule.coachDay), time: schedule.coachTime })
-  }
-  if ((Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && schedule.dietitianDay != null) {
-    const available = dietitians.some((s) => (s.workDays || []).includes(Number(schedule.dietitianDay)))
-    if (!available) gaps.push({ role: 'dietitian', day: Number(schedule.dietitianDay), time: schedule.dietitianTime })
-  }
-  return gaps
 }
 
 export function createAvailabilityTicket(db, member, gaps) {

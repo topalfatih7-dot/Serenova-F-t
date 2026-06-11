@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
+import PanelMobileMenu from './PanelMobileMenu'
 import { BRAND } from '../../config/brand'
 
 const adminNav = [
@@ -64,19 +65,14 @@ export default function AdminShell() {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-cream-200 bg-white px-4 py-3 sm:px-6 lg:hidden">
-          <BrandLogo linkTo="/admin" size="sm" />
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-cream-800/50">Admin</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="flex items-center gap-1.5 rounded-lg border border-cream-200 px-2.5 py-1.5 text-xs font-medium text-cream-800/70 hover:bg-cream-50"
-            >
-              <LogOut className="h-4 w-4" /> Çıkış
-            </button>
-          </div>
-        </header>
+        <PanelMobileMenu
+          navItems={adminNav}
+          brandLink="/admin"
+          badge={{ label: 'Admin Panel', className: 'bg-cream-900 text-white' }}
+          accent="admin"
+          logout={logout}
+          headerRight={<span className="text-xs font-medium text-cream-800/50">Admin</span>}
+        />
         <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>

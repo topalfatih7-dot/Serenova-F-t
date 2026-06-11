@@ -6,12 +6,16 @@ import {
   Scale, HeartPulse, Repeat, Smile,
   Sprout, Flame, Trophy,
   Salad, Carrot, Wheat, Drumstick, WheatOff,
+  User, Mail, Lock, MapPin, CalendarDays, Ruler,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
 import PackageBuilder from '../components/package/PackageBuilder'
 import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE } from '../components/package/SupportScheduler'
+import WeeklyAvailability from '../components/package/WeeklyAvailability'
 import PaymentForm from '../components/payment/PaymentForm'
+import FormField from '../components/ui/FormField'
+import PhotoUpload from '../components/ui/PhotoUpload'
 import Modal from '../components/ui/Modal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -42,7 +46,7 @@ const MEMBERSHIP_OPTIONS = [
   },
 ]
 
-const STEPS = ['Kişisel', 'Hedefler', 'Fitness', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket', 'Tarihler']
+const STEPS = ['Kişisel', 'Hedefler', 'Fitness', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket', 'Takvim']
 
 const GENDERS = [
   { value: 'female', label: 'Kadın' },
@@ -77,11 +81,12 @@ export default function OnboardingPage() {
   const [paying, setPaying] = useState(false)
   const [data, setData] = useState({
     name: '', email: '', password: '', confirmPassword: '', age: '', city: '',
-    gender: '', weight: '', height: '',
+    gender: '', weight: '', height: '', waist: '', photo: null,
     goals: [], fitnessLevel: 'beginner',
     nutritionPrefs: [], healthAck: false, disclaimer: false,
     membership: 'free', packageConfig: { ...DEFAULT_PACKAGE },
     supportSchedule: { ...DEFAULT_SUPPORT_SCHEDULE },
+    availability: {},
   })
   const { register, registerWithPayment } = useApp()
   const { toast } = useToast()
@@ -115,6 +120,8 @@ export default function OnboardingPage() {
       gender: data.gender,
       weight: data.weight,
       height: data.height,
+      waist: data.waist,
+      photo: data.photo,
       city: data.city,
       goals: data.goals,
       fitnessLevel: data.fitnessLevel,
@@ -140,11 +147,14 @@ export default function OnboardingPage() {
         gender: data.gender,
         weight: data.weight,
         height: data.height,
+        waist: data.waist,
+        photo: data.photo,
         city: data.city,
         goals: data.goals,
         fitnessLevel: data.fitnessLevel,
         nutritionPrefs: data.nutritionPrefs,
         supportSchedule: data.supportSchedule,
+        availability: data.availability,
       }, data.packageConfig)
 
       setPaying(false)
@@ -192,30 +202,55 @@ export default function OnboardingPage() {
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             {step === 0 && (
-              <div className="space-y-4">
-                <h2 className="font-semibold">Kişisel Bilgiler & Hesap</h2>
-                <input placeholder="Ad Soyad" value={data.name} onChange={(e) => update({ name: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                <input placeholder="E-posta" type="email" value={data.email} onChange={(e) => update({ email: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                <div className="grid grid-cols-2 gap-3">
-                  <input placeholder="Şifre (min. 6)" type="password" value={data.password} onChange={(e) => update({ password: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                  <input placeholder="Şifre tekrar" type="password" value={data.confirmPassword} onChange={(e) => update({ confirmPassword: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+              <div className="space-y-5">
+                <div>
+                  <h2 className="font-display text-lg font-bold text-cream-900">Kişisel Bilgiler & Hesap</h2>
+                  <p className="mt-1 text-sm text-cream-800/60">Size en uygun planı hazırlayabilmemiz için temel bilgiler</p>
                 </div>
-                {data.password && data.confirmPassword && data.password !== data.confirmPassword && (
-                  <p className="text-xs text-red-500">Şifreler eşleşmiyor</p>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <input placeholder="Yaş" type="number" value={data.age} onChange={(e) => update({ age: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                  <input placeholder="Şehir" value={data.city} onChange={(e) => update({ city: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+
+                <FormField label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
+                <FormField label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField label="Şifre" icon={Lock} type="password" placeholder="En az 6 karakter" value={data.password} onChange={(e) => update({ password: e.target.value })} />
+                  <FormField
+                    label="Şifre tekrar"
+                    icon={Lock}
+                    type="password"
+                    placeholder="Şifrenizi tekrar girin"
+                    value={data.confirmPassword}
+                    onChange={(e) => update({ confirmPassword: e.target.value })}
+                    error={data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : ''}
+                  />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <input placeholder="Kilo (kg)" type="number" value={data.weight} onChange={(e) => update({ weight: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                  <input placeholder="Boy (cm)" type="number" value={data.height} onChange={(e) => update({ height: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-                  <select value={data.gender} onChange={(e) => update({ gender: e.target.value })} className={`rounded-xl border border-cream-200 px-3 py-3 text-sm ${data.gender ? 'text-cream-900' : 'text-cream-800/40'}`}>
-                    <option value="">Cinsiyet</option>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <FormField label="Yaş" icon={CalendarDays} type="number" placeholder="Yaş" value={data.age} onChange={(e) => update({ age: e.target.value })} />
+                  <FormField label="Şehir" icon={MapPin} placeholder="Şehir" value={data.city} onChange={(e) => update({ city: e.target.value })} />
+                  <FormField label="Cinsiyet" as="select" value={data.gender} onChange={(e) => update({ gender: e.target.value })} className={data.gender ? '' : 'text-cream-800/40'}>
+                    <option value="">Seçin</option>
                     {GENDERS.map((g) => (
                       <option key={g.value} value={g.value} className="text-cream-900">{g.label}</option>
                     ))}
-                  </select>
+                  </FormField>
+                </div>
+
+                <div className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
+                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                    <Ruler className="h-4 w-4 text-brand-500" /> Vücut Ölçüleri
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <FormField label="Kilo (kg)" icon={Scale} type="number" placeholder="örn. 72" value={data.weight} onChange={(e) => update({ weight: e.target.value })} />
+                    <FormField label="Boy (cm)" icon={Ruler} type="number" placeholder="örn. 170" value={data.height} onChange={(e) => update({ height: e.target.value })} />
+                    <FormField label="Bel çevresi (cm)" icon={Ruler} type="number" placeholder="örn. 80" value={data.waist} onChange={(e) => update({ waist: e.target.value })} hint="İlerleme takibi için" />
+                  </div>
+                  <div className="mt-4">
+                    <PhotoUpload
+                      value={data.photo}
+                      onChange={(photo) => update({ photo })}
+                      hint="Koçunuz ve diyetisyeniniz başlangıç durumunuzu değerlendirebilir. Dilerseniz daha sonra profilinizden ekleyebilirsiniz."
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -449,15 +484,25 @@ export default function OnboardingPage() {
               />
             )}
             {step === 7 && data.membership === 'premium' && (
-              <div>
-                <h2 className="font-display text-lg font-bold text-cream-900">Destek tarihlerinizi seçin</h2>
-                <p className="mt-1 text-sm text-cream-800/60">Paketinize göre koç ve diyetisyen görüşmelerinizi ne zaman almak istersiniz?</p>
-                <div className="mt-5">
-                  <SupportScheduler
-                    schedule={data.supportSchedule}
-                    packageConfig={data.packageConfig}
-                    onChange={(s) => update({ supportSchedule: s })}
-                  />
+              <div className="space-y-8">
+                <div>
+                  <h2 className="font-display text-lg font-bold text-cream-900">Destek tarihlerinizi seçin</h2>
+                  <p className="mt-1 text-sm text-cream-800/60">Paketinize göre koç ve diyetisyen görüşmelerinizi ne zaman almak istersiniz?</p>
+                  <div className="mt-5">
+                    <SupportScheduler
+                      schedule={data.supportSchedule}
+                      packageConfig={data.packageConfig}
+                      onChange={(s) => update({ supportSchedule: s })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="font-display text-lg font-bold text-cream-900">Haftalık müsaitliğiniz</h2>
+                  <p className="mt-1 text-sm text-cream-800/60">Hangi gün ve saatlerde uygun olduğunuzu işaretleyin. Koçunuz ve diyetisyeniniz bu bilgiyi görerek görüşmelerinizi planlar.</p>
+                  <div className="mt-5">
+                    <WeeklyAvailability value={data.availability} onChange={(a) => update({ availability: a })} />
+                  </div>
                 </div>
               </div>
             )}

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import {
   Search, Users, Activity, Target, Salad, CalendarClock, ClipboardList,
-  Dumbbell, Apple, Mail, ChevronRight,
+  Dumbbell, Apple, Mail, ChevronRight, CalendarRange,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
+import AvailabilityView from '../../components/package/AvailabilityView'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
@@ -42,23 +43,32 @@ function ClientDetail({ member, role, onCreate }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl bg-cream-50 p-3">
-          <p className="text-xs text-cream-800/50">Vücut Kitle İndeksi</p>
-          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{bmi ?? '—'}</p>
-          <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${cat.color}`}>{cat.label}</span>
-        </div>
-        <div className="rounded-xl bg-cream-50 p-3">
-          <p className="text-xs text-cream-800/50">Kilo / Boy</p>
-          <p className="mt-1 text-sm font-medium text-cream-900">{member.weight ? `${member.weight} kg` : '—'} · {member.height ? `${member.height} cm` : '—'}</p>
-          <p className="mt-1 text-xs text-cream-800/50">Yaş: {member.age || '—'} · {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : '—'}</p>
-        </div>
-        <div className="rounded-xl bg-cream-50 p-3">
-          <p className="text-xs text-cream-800/50">Fitness Seviyesi</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900">
-            <Activity className="h-4 w-4 text-brand-500" /> {FITNESS_LABELS[member.fitnessLevel] || '—'}
-          </p>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-cream-800/50"><Mail className="h-3 w-3" /> {member.email}</p>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        {member.photo && (
+          <img src={member.photo} alt={member.name} className="h-40 w-32 shrink-0 self-center rounded-2xl border border-cream-200 object-cover sm:self-start" />
+        )}
+        <div className="grid flex-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-cream-50 p-3">
+            <p className="text-xs text-cream-800/50">Vücut Kitle İndeksi</p>
+            <p className="mt-1 font-display text-2xl font-bold text-cream-900">{bmi ?? '—'}</p>
+            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${cat.color}`}>{cat.label}</span>
+          </div>
+          <div className="rounded-xl bg-cream-50 p-3">
+            <p className="text-xs text-cream-800/50">Ölçüler</p>
+            <p className="mt-1 text-sm font-medium text-cream-900">{member.weight ? `${member.weight} kg` : '—'} · {member.height ? `${member.height} cm` : '—'}</p>
+            <p className="mt-1 text-xs text-cream-800/50">Bel: {member.waist ? `${member.waist} cm` : '—'}</p>
+          </div>
+          <div className="rounded-xl bg-cream-50 p-3">
+            <p className="text-xs text-cream-800/50">Fitness Seviyesi</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900">
+              <Activity className="h-4 w-4 text-brand-500" /> {FITNESS_LABELS[member.fitnessLevel] || '—'}
+            </p>
+            <p className="mt-1 text-xs text-cream-800/50">Yaş: {member.age || '—'} · {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : '—'}</p>
+          </div>
+          <div className="rounded-xl bg-cream-50 p-3">
+            <p className="text-xs text-cream-800/50">İletişim</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900 break-all"><Mail className="h-3.5 w-3.5 shrink-0" /> {member.email}</p>
+          </div>
         </div>
       </div>
 
@@ -71,6 +81,11 @@ function ClientDetail({ member, role, onCreate }) {
           <p className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><Salad className="h-4 w-4 text-sage-500" /> Beslenme Tercihleri</p>
           <Chips values={member.nutritionPrefs} map={NUTRITION_LABELS} />
         </div>
+      </div>
+
+      <div>
+        <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><CalendarRange className="h-4 w-4 text-brand-500" /> Haftalık Müsaitlik</p>
+        <AvailabilityView value={member.availability} emptyText="Danışan henüz müsait saat belirtmemiş." />
       </div>
 
       <div>
@@ -135,7 +150,7 @@ export default function StaffClientsPage() {
   const isCoach = staffUser.role === 'coach'
   const RoleIcon = isCoach ? Dumbbell : Apple
 
-  const clients = useMemo(() => getStaffClients(platform.members, staffUser.role), [platform.members, staffUser.role])
+  const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
   const filtered = clients.filter((m) =>
     m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
   )

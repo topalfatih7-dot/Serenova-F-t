@@ -8,11 +8,15 @@ import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/SupportScheduler'
 import { useApp } from '../../context/AppContext'
 
-export function getStaffClients(members, role) {
+export function getStaffClients(members, role, staffId) {
   return members.filter((m) => {
     if (m.membership !== 'premium') return false
-    if (role === 'coach') return (Number(m.packageConfig?.coachMeetingsPerWeek) || 0) > 0
-    return (Number(m.packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
+    if (role === 'coach') {
+      if ((Number(m.packageConfig?.coachMeetingsPerWeek) || 0) <= 0) return false
+      return m.assignedCoachId === staffId
+    }
+    if ((Number(m.packageConfig?.dietitianMeetingsPerMonth) || 0) <= 0) return false
+    return m.assignedDietitianId === staffId
   })
 }
 
@@ -35,7 +39,7 @@ export default function StaffOverviewPage() {
   const isCoach = staffUser.role === 'coach'
   const RoleIcon = isCoach ? Dumbbell : Apple
 
-  const clients = useMemo(() => getStaffClients(platform.members, staffUser.role), [platform.members, staffUser.role])
+  const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
   const appointments = useMemo(() => getStaffAppointments(clients, staffUser.role), [clients, staffUser.role])
   const myPrograms = useMemo(
     () => (platform.programs || []).filter((p) => p.staffId === staffUser.id),
