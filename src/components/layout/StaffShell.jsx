@@ -1,5 +1,5 @@
 import { Outlet, Navigate, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Dumbbell, Apple } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Dumbbell, Apple, Library } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -9,6 +9,7 @@ const staffNav = [
   { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
   { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
   { to: '/staff/programs', icon: ClipboardList, label: 'Programlar' },
+  { to: '/staff/library', icon: Library, label: 'Kütüphane' },
 ]
 
 export default function StaffShell() {

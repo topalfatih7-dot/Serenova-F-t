@@ -1,12 +1,12 @@
 export const BRAND = {
-  name: 'Serenova Fit Dönüşüm',
-  shortName: 'Serenova',
+  name: 'Yeni Form',
+  shortName: 'Yeni Form',
   tagline: 'Herkes için çevrimiçi koçluk ve wellness',
-  initials: 'SF',
+  initials: 'YF',
 }
 
 export const ADMIN_CREDENTIALS = {
   email: 'admin@serenova.fit',
   password: 'Serenova2026!',
-  name: 'Serenova Admin',
+  name: 'Yeni Form Admin',
 }

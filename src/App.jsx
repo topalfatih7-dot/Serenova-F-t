@@ -19,6 +19,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import SupportPage from './pages/SupportPage'
 import ProfilePage from './pages/ProfilePage'
 import ProgramsPage from './pages/ProgramsPage'
+import ExerciseLibraryPage from './pages/ExerciseLibraryPage'
 import SuccessStoriesPage from './pages/SuccessStoriesPage'
 import BlogPage from './pages/BlogPage'
 import BlogPostPage from './pages/BlogPostPage'
@@ -36,6 +37,9 @@ import AdminSessionsPage from './pages/admin/AdminSessionsPage'
 import AdminSupportPage from './pages/admin/AdminSupportPage'
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
 import AdminActivityPage from './pages/admin/AdminActivityPage'
+import AdminLibraryPage from './pages/admin/AdminLibraryPage'
+import AdminRequestsPage from './pages/admin/AdminRequestsPage'
+import AdminContentPage from './pages/admin/AdminContentPage'
 
 export default function App() {
   return (
@@ -63,6 +67,7 @@ export default function App() {
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="support" element={<SupportPage />} />
               <Route path="programs" element={<ProgramsPage />} />
+              <Route path="library" element={<ExerciseLibraryPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
 
@@ -70,13 +75,17 @@ export default function App() {
               <Route path="staff" element={<StaffOverviewPage />} />
               <Route path="staff/clients" element={<StaffClientsPage />} />
               <Route path="staff/programs" element={<StaffProgramsPage />} />
+              <Route path="staff/library" element={<ExerciseLibraryPage />} />
             </Route>
 
             <Route element={<AdminShell />}>
               <Route path="admin" element={<AdminOverviewPage />} />
               <Route path="admin/members" element={<AdminMembersPage />} />
+              <Route path="admin/requests" element={<AdminRequestsPage />} />
+              <Route path="admin/library" element={<AdminLibraryPage />} />
               <Route path="admin/staff" element={<AdminStaffPage />} />
               <Route path="admin/blog" element={<AdminBlogPage />} />
+              <Route path="admin/content" element={<AdminContentPage />} />
               <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
               <Route path="admin/sessions" element={<AdminSessionsPage />} />
               <Route path="admin/support" element={<AdminSupportPage />} />

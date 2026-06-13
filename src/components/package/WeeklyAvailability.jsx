@@ -1,40 +1,44 @@
-import { CalendarRange, Sun, Moon, Eraser, Check } from 'lucide-react'
-import { AVAILABILITY_HOURS, AVAILABILITY_WEEKDAYS, countAvailabilitySlots } from '../../services/availability'
+import { CalendarRange, Eraser, Check } from 'lucide-react'
+import { AVAILABILITY_WEEKDAYS, countAvailabilitySlots } from '../../services/availability'
 
-const WEEKDAY_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00']
-const EVENING_HOURS = ['18:00', '19:00', '20:00', '21:00']
+const DAY_START = 8
+const DAY_END = 22
+const DEFAULT_RANGE = { start: 9, end: 17 }
+
+const START_OPTIONS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i) // 8..21
+const fmt = (h) => `${String(h).padStart(2, '0')}:00`
+
+function hoursToRange(hours) {
+  if (!hours || !hours.length) return null
+  const nums = hours.map((h) => parseInt(h, 10)).sort((a, b) => a - b)
+  return { start: nums[0], end: nums[nums.length - 1] + 1 }
+}
+
+function rangeToHours(start, end) {
+  const out = []
+  for (let h = start; h < end; h++) out.push(fmt(h))
+  return out
+}
 
 export default function WeeklyAvailability({ value = {}, onChange }) {
   const total = countAvailabilitySlots(value)
 
-  const toggle = (day, hour) => {
-    const current = value[day] || []
-    const next = current.includes(hour)
-      ? current.filter((h) => h !== hour)
-      : [...current, hour].sort()
-    const updated = { ...value, [day]: next }
-    if (!next.length) delete updated[day]
-    onChange(updated)
-  }
-
-  const toggleDayAll = (day) => {
-    const current = value[day] || []
+  const toggleDay = (day) => {
     const updated = { ...value }
-    if (current.length === AVAILABILITY_HOURS.length) {
+    if (updated[day]?.length) {
       delete updated[day]
     } else {
-      updated[day] = [...AVAILABILITY_HOURS]
+      updated[day] = rangeToHours(DEFAULT_RANGE.start, DEFAULT_RANGE.end)
     }
     onChange(updated)
   }
 
-  const applyPreset = (days, hours) => {
-    const updated = { ...value }
-    days.forEach((d) => {
-      const merged = new Set([...(updated[d] || []), ...hours])
-      updated[d] = [...merged].sort()
-    })
-    onChange(updated)
+  const setRange = (day, patch) => {
+    const current = hoursToRange(value[day]) || { ...DEFAULT_RANGE }
+    let start = patch.start ?? current.start
+    let end = patch.end ?? current.end
+    if (end <= start) end = start + 1
+    onChange({ ...value, [day]: rangeToHours(start, end) })
   }
 
   const clearAll = () => onChange({})
@@ -44,17 +48,25 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => applyPreset([1, 2, 3, 4, 5], WEEKDAY_HOURS)}
-          className="flex items-center gap-1.5 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
+          onClick={() => {
+            const updated = { ...value }
+            ;[1, 2, 3, 4, 5].forEach((d) => { updated[d] = rangeToHours(9, 17) })
+            onChange(updated)
+          }}
+          className="rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
         >
-          <Sun className="h-3.5 w-3.5 text-gold-500" /> Hafta içi gündüz
+          Hafta içi 09:00–17:00
         </button>
         <button
           type="button"
-          onClick={() => applyPreset([1, 2, 3, 4, 5, 6, 0], EVENING_HOURS)}
-          className="flex items-center gap-1.5 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
+          onClick={() => {
+            const updated = { ...value }
+            ;[1, 2, 3, 4, 5, 6, 0].forEach((d) => { updated[d] = rangeToHours(18, 22) })
+            onChange(updated)
+          }}
+          className="rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
         >
-          <Moon className="h-3.5 w-3.5 text-brand-500" /> Akşamlar
+          Her gün akşam 18:00–22:00
         </button>
         <button
           type="button"
@@ -67,47 +79,55 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
 
       <div className="space-y-2.5">
         {AVAILABILITY_WEEKDAYS.map((d) => {
-          const selected = value[d.value] || []
-          const allOn = selected.length === AVAILABILITY_HOURS.length
+          const range = hoursToRange(value[d.value])
+          const active = !!range
+          const cur = range || DEFAULT_RANGE
           return (
-            <div key={d.value} className="rounded-2xl border border-cream-200 bg-white p-3">
-              <div className="mb-2 flex items-center justify-between">
+            <div
+              key={d.value}
+              className={`rounded-2xl border p-3 transition ${active ? 'border-brand-200 bg-brand-50/40' : 'border-cream-200 bg-white'}`}
+            >
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleDayAll(d.value)}
-                  className="flex items-center gap-2 text-sm font-semibold text-cream-900"
+                  onClick={() => toggleDay(d.value)}
+                  className="flex min-w-[7rem] items-center gap-2 text-sm font-semibold text-cream-900"
                 >
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${
-                      allOn ? 'border-brand-500 bg-brand-500 text-white' : 'border-cream-300 text-transparent'
+                      active ? 'border-brand-500 bg-brand-500 text-white' : 'border-cream-300 text-transparent'
                     }`}
                   >
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </span>
                   {d.label}
                 </button>
-                {selected.length > 0 && (
-                  <span className="text-[11px] font-medium text-brand-600">{selected.length} saat</span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {AVAILABILITY_HOURS.map((h) => {
-                  const on = selected.includes(h)
-                  return (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => toggle(d.value, h)}
-                      className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                        on
-                          ? 'bg-brand-500 text-white shadow-sm'
-                          : 'bg-cream-100 text-cream-800/70 hover:bg-brand-50 hover:text-brand-700'
-                      }`}
+
+                {active ? (
+                  <div className="flex flex-1 items-center gap-2">
+                    <select
+                      value={cur.start}
+                      onChange={(e) => setRange(d.value, { start: Number(e.target.value) })}
+                      className="rounded-lg border border-cream-200 bg-white px-2.5 py-1.5 text-sm"
                     >
-                      {h}
-                    </button>
-                  )
-                })}
+                      {START_OPTIONS.map((h) => (
+                        <option key={h} value={h}>{fmt(h)}</option>
+                      ))}
+                    </select>
+                    <span className="text-cream-800/50">—</span>
+                    <select
+                      value={cur.end}
+                      onChange={(e) => setRange(d.value, { end: Number(e.target.value) })}
+                      className="rounded-lg border border-cream-200 bg-white px-2.5 py-1.5 text-sm"
+                    >
+                      {START_OPTIONS.filter((h) => h >= cur.start).map((h) => h + 1).map((h) => (
+                        <option key={h} value={h}>{fmt(h)}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span className="text-xs text-cream-800/40">Bu gün uygun değilim</span>
+                )}
               </div>
             </div>
           )
@@ -116,7 +136,7 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
 
       <div className="flex items-center gap-2 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/60">
         <CalendarRange className="h-4 w-4 shrink-0 text-brand-400" />
-        Seçtiğiniz müsait saatler koçunuz ve diyetisyeniniz tarafından görüntülenir; görüşmeleriniz bu saatlere göre planlanır.
+        Belirttiğiniz müsait aralıklar koçunuz ve diyetisyeniniz tarafından görüntülenir; görüşmeleriniz bu saatlere göre planlanır.
         {total > 0 && <span className="ml-auto font-semibold text-brand-600">{total} saat seçildi</span>}
       </div>
     </div>

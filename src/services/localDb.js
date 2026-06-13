@@ -97,15 +97,17 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
   const perWeek = Number(packageConfig.coachMeetingsPerWeek) || 0
   const perMonth = Number(packageConfig.dietitianMeetingsPerMonth) || 0
 
-  if (perWeek > 0 && schedule.coachDay != null) {
-    const [ch, cm] = String(schedule.coachTime || '10:00').split(':').map(Number)
-    const spacing = Math.max(1, Math.floor(7 / perWeek))
+  // Koç slotları: her hafta, seçilen her gün+saat için bir görüşme
+  const coachSlots = Array.isArray(schedule.coachSlots) && schedule.coachSlots.length
+    ? schedule.coachSlots
+    : (schedule.coachDay != null ? buildFallbackCoachSlots(schedule, perWeek) : [])
+
+  if (perWeek > 0 && coachSlots.length) {
     for (let w = 0; w < weeks; w++) {
-      const weekStart = nextWeekday(startDate, schedule.coachDay)
-      weekStart.setDate(weekStart.getDate() + w * 7)
-      for (let c = 0; c < perWeek; c++) {
-        const d = new Date(weekStart)
-        d.setDate(d.getDate() + c * spacing)
+      coachSlots.forEach((slot) => {
+        const [ch, cm] = String(slot.time || '10:00').split(':').map(Number)
+        const d = nextWeekday(startDate, slot.day)
+        d.setDate(d.getDate() + w * 7)
         d.setHours(ch || 10, cm || 0, 0, 0)
         coachSessions.push({
           id: uid('cs'),
@@ -116,18 +118,24 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
           status: 'scheduled',
           coach: coachName,
         })
-      }
+      })
     }
   }
 
-  if (perMonth > 0 && schedule.dietitianDay != null) {
-    const [dh, dm] = String(schedule.dietitianTime || '14:00').split(':').map(Number)
+  // Diyetisyen slotları: her ay, seçilen her gün+saat için bir görüşme
+  const dietSlots = Array.isArray(schedule.dietitianSlots) && schedule.dietitianSlots.length
+    ? schedule.dietitianSlots
+    : (schedule.dietitianDay != null ? [{ day: schedule.dietitianDay, time: schedule.dietitianTime }] : [])
+
+  if (perMonth > 0 && dietSlots.length) {
     const months = Math.ceil(weeks / 4)
-    const spacingWeeks = Math.max(1, Math.floor(4 / perMonth))
     for (let m = 0; m < months; m++) {
-      for (let k = 0; k < perMonth; k++) {
-        const d = nextWeekday(startDate, schedule.dietitianDay)
-        d.setDate(d.getDate() + (m * 4 + k * spacingWeeks) * 7)
+      dietSlots.forEach((slot, k) => {
+        const [dh, dm] = String(slot.time || '14:00').split(':').map(Number)
+        const d = nextWeekday(startDate, slot.day)
+        // Görüşmeleri ay içine yay
+        const weekOffset = Math.min(3, Math.floor((k * 4) / Math.max(perMonth, 1)))
+        d.setDate(d.getDate() + (m * 4 + weekOffset) * 7)
         d.setHours(dh || 14, dm || 0, 0, 0)
         dietitianSessions.push({
           id: uid('ds'),
@@ -138,11 +146,23 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
           status: 'scheduled',
           coach: dietitianName,
         })
-      }
+      })
     }
   }
 
   return { coachSessions, dietitianSessions }
+}
+
+// Eski formatta tek gün kaydedilmiş ise haftaya yay
+function buildFallbackCoachSlots(schedule, perWeek) {
+  const baseDay = Number(schedule.coachDay)
+  const time = schedule.coachTime || '10:00'
+  const spacing = Math.max(1, Math.floor(7 / Math.max(perWeek, 1)))
+  const slots = []
+  for (let c = 0; c < perWeek; c++) {
+    slots.push({ day: (baseDay + c * spacing) % 7, time })
+  }
+  return slots
 }
 
 const DEFAULT_SCHEDULE = { coachDay: 1, coachTime: '10:00', dietitianDay: 3, dietitianTime: '14:00' }
@@ -208,7 +228,7 @@ function seedStarterContent(member) {
     {
       id: uid('n'),
       type: 'reminder',
-      title: 'Serenova\u2019ya hoş geldiniz!',
+      title: 'Yeni Form\u2019a hoş geldiniz!',
       message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
       read: false,
       createdAt: nowISO(),
@@ -229,7 +249,7 @@ function seedStarterProgram(db, member) {
     memberId: member.id,
     memberName: member.name,
     staffId: null,
-    staffName: 'Serenova Ekibi',
+    staffName: 'Yeni Form Ekibi',
     title: 'Başlangıç Haftalık Genel Plan',
     description: 'Tüm üyeler için hazırlanan genel hareket planı. Premium üyelikte koçunuz size özel program oluşturur.',
     items: [
@@ -275,6 +295,9 @@ function emptyDb() {
     tickets: [],
     activities: [],
     payments: [],
+    exercises: [],
+    requests: [],
+    content: { testimonials: [], faqs: [], successStories: [] },
     session: null,
   }
 }
@@ -324,6 +347,7 @@ export function registerPremiumWithPayment(db, profile, packageConfig, amount) {
     waist: profile.waist || '',
     photo: profile.photo || null,
     city: profile.city || '',
+    district: profile.district || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
@@ -383,6 +407,7 @@ export function registerMember(db, profile, membership = 'free', packageConfig =
     waist: profile.waist || '',
     photo: profile.photo || null,
     city: profile.city || '',
+    district: profile.district || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
@@ -610,6 +635,7 @@ export function createProgram(db, data) {
     title: data.title,
     description: data.description || '',
     items: Array.isArray(data.items) ? data.items : [],
+    entries: Array.isArray(data.entries) ? data.entries : [],
     createdAt: nowISO(),
   }
   db.programs.unshift(program)
@@ -643,7 +669,7 @@ export function createPost(db, data) {
     category: data.category || 'Yaşam',
     excerpt: data.excerpt || '',
     content: data.content || '',
-    author: data.author || 'Serenova Ekibi',
+    author: data.author || 'Yeni Form Ekibi',
     readMinutes: data.readMinutes || Math.max(1, Math.round((data.content || '').split(/\s+/).length / 200)),
     accent: data.accent || 'brand',
     published: data.published !== false,
@@ -871,6 +897,111 @@ export function getSessionStats(db) {
     completionRate: db.members.length ? 78 : 0,
     noResponseAlerts: db.tickets.filter((t) => t.status === 'open').length,
   }
+}
+
+// --------------------------- egzersiz kütüphanesi ---------------------------
+export function addExercise(db, data) {
+  const ex = {
+    id: uid('ex'),
+    name: data.name,
+    description: data.description || '',
+    category: data.category || 'Genel',
+    videoUrl: data.videoUrl || '',
+    createdAt: nowISO(),
+  }
+  db.exercises = [...(db.exercises || []), ex]
+  saveDb(db)
+  return ex
+}
+
+export function updateExercise(db, id, patch) {
+  db.exercises = (db.exercises || []).map((e) => (e.id === id ? { ...e, ...patch } : e))
+  saveDb(db)
+}
+
+export function deleteExercise(db, id) {
+  db.exercises = (db.exercises || []).filter((e) => e.id !== id)
+  saveDb(db)
+}
+
+// --------------------------- üyelik talepleri ---------------------------
+export function createMembershipRequest(db, member, type, requestedUntil = null, note = '') {
+  const req = {
+    id: uid('req'),
+    memberId: member.id,
+    memberName: member.name,
+    type,
+    status: 'pending',
+    requestedUntil: requestedUntil || null,
+    note: note || '',
+    createdAt: nowISO(),
+  }
+  db.requests = [req, ...(db.requests || [])]
+  addActivity(db, 'request', `${member.name} ${type} talebi oluşturdu`, member.id)
+  saveDb(db)
+  return req
+}
+
+export function resolveMembershipRequest(db, requestId, approve) {
+  const req = (db.requests || []).find((r) => r.id === requestId)
+  if (!req) return
+  req.status = approve ? 'approved' : 'rejected'
+  if (approve) {
+    const member = db.members.find((m) => m.id === req.memberId)
+    if (member) {
+      if (req.type === 'freeze') { member.membershipStatus = 'paused'; member.pauseUntil = req.requestedUntil }
+      else if (req.type === 'cancel') member.membershipStatus = 'cancelled'
+      else if (req.type === 'resume') { member.membershipStatus = 'active'; member.pauseUntil = null }
+      else if (req.type === 'renew') member.membershipStatus = 'active'
+    }
+  }
+  saveDb(db)
+}
+
+// --------------------------- site içeriği (yorum / SSS / başarı hikâyesi) ---------------------------
+const CONTENT_KEYS = { testimonial: 'testimonials', faq: 'faqs', success_story: 'successStories' }
+
+function ensureContent(db) {
+  if (!db.content) db.content = { testimonials: [], faqs: [], successStories: [] }
+  return db.content
+}
+
+export function addContent(db, kind, data) {
+  const c = ensureContent(db)
+  const key = CONTENT_KEYS[kind]
+  if (!key) return
+  c[key] = [...(c[key] || []), { id: uid('ct'), ...data }]
+  saveDb(db)
+}
+
+export function updateContent(db, id, data) {
+  const c = ensureContent(db)
+  Object.keys(c).forEach((key) => {
+    c[key] = (c[key] || []).map((item) => (item.id === id ? { ...item, ...data, id } : item))
+  })
+  saveDb(db)
+}
+
+export function deleteContent(db, id) {
+  const c = ensureContent(db)
+  Object.keys(c).forEach((key) => {
+    c[key] = (c[key] || []).filter((item) => item.id !== id)
+  })
+  saveDb(db)
+}
+
+export function submitSuccessStory(db, member, data) {
+  const c = ensureContent(db)
+  c.successStories = [...(c.successStories || []), {
+    id: uid('ct'),
+    name: member?.name || data.name || 'Üye',
+    duration: data.duration || '',
+    highlight: data.highlight || '',
+    story: data.story || '',
+    consent: true,
+    approved: false,
+  }]
+  saveDb(db)
 }
 
 export function resetPlatform() {

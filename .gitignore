@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Ortam değişkenleri (Supabase anahtarları)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

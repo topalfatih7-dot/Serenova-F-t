@@ -1,8 +1,8 @@
-import { Calendar, Clock, Crown } from 'lucide-react'
+import { Clock, Crown } from 'lucide-react'
 
 export default function PackageSummaryCard({ config, pricing }) {
   return (
-    <div className="sticky top-24 rounded-2xl border border-brand-200 bg-gradient-to-b from-brand-50 to-white p-6 shadow-lg">
+    <div className="rounded-2xl border border-brand-200 bg-gradient-to-b from-brand-50 to-white p-6 shadow-lg">
       <div className="flex items-center gap-2">
         <Crown className="h-5 w-5 text-gold-500" />
         <h3 className="font-display text-lg font-bold text-cream-900">Paket Özeti</h3>
@@ -20,16 +20,6 @@ export default function PackageSummaryCard({ config, pricing }) {
         <div className="flex justify-between">
           <span className="text-cream-800/60">Süre</span>
           <span className="font-medium">{config.durationWeeks} hafta</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-cream-800/60">İlerleme takibi</span>
-          <span className="font-medium">{config.progressTracking === 'detailed' ? 'Detaylı' : 'Haftalık'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-cream-800/60">Hatırlatıcı</span>
-          <span className="font-medium">
-            {config.reminderFrequency === 'daily' ? 'Günlük' : config.reminderFrequency === 'twice' ? 'Günde 2' : 'Minimal'}
-          </span>
         </div>
         {config.addOns?.length > 0 && (
           <div className="border-t border-cream-100 pt-3">
@@ -56,9 +46,8 @@ export default function PackageSummaryCard({ config, pricing }) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-4 text-xs text-cream-800/50">
-        <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Takvim önizlemesi</span>
-        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Anında güncellenir</span>
+      <div className="mt-4 flex items-center gap-1.5 text-xs text-cream-800/50">
+        <Clock className="h-3.5 w-3.5" /> Anında güncellenir
       </div>
     </div>
   )

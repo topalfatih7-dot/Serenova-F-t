@@ -18,18 +18,22 @@ export default function SuccessStoryCard({ story }) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-xs text-cream-800/50">{story.duration} program süresi</p>
-      <div className="mt-4 space-y-3">
-        {story.timeline.map((step, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <div className="h-2.5 w-2.5 rounded-full bg-brand-400" />
-              {i < story.timeline.length - 1 && <div className="w-0.5 flex-1 bg-brand-100" />}
+      {story.duration && <p className="mt-2 text-xs text-cream-800/50">{story.duration} program süresi</p>}
+      {Array.isArray(story.timeline) && story.timeline.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          {story.timeline.map((step, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="h-2.5 w-2.5 rounded-full bg-brand-400" />
+                {i < story.timeline.length - 1 && <div className="w-0.5 flex-1 bg-brand-100" />}
+              </div>
+              <p className="pb-3 text-sm text-cream-800/70">{step}</p>
             </div>
-            <p className="pb-3 text-sm text-cream-800/70">{step}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        story.story && <p className="mt-4 text-sm text-cream-800/70">{story.story}</p>
+      )}
       {story.consent && (
         <p className="mt-2 border-t border-cream-100 pt-3 text-[10px] text-cream-800/40">
           Paylaşım için kullanıcı onayı alınmıştır. Sonuçlar kişiden kişiye değişir.

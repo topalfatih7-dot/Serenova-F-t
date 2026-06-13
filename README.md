@@ -1,16 +1,33 @@
-# React + Vite
+# Yeni Form — Online Koçluk & Wellness
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite tabanlı online koçluk/wellness platformu. Üyelik, premium paket oluşturucu, koç/diyetisyen randevuları, blog, destek talepleri ve admin paneli içerir.
 
-Currently, two official plugins are available:
+## Çalıştırma
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+Uygulama varsayılan olarak **yerel modda** (tarayıcı localStorage) çalışır; kurulum gerektirmez.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Supabase'e bağlama
 
-## Expanding the ESLint configuration
+Verileri gerçek bir veritabanından (Supabase) çekmek için adım adım rehber:
+**[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Özetle:
+1. Supabase projesi aç, `.env` dosyasına `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` gir.
+2. `supabase/schema.sql` ve ardından `supabase/seed.sql` dosyalarını SQL Editor'da çalıştır.
+3. `admin@serenova.fit` ile kayıt olup admin paneline gir.
+
+`.env` dolu olduğunda uygulama otomatik olarak Supabase modunu kullanır.
+
+## Komutlar
+
+| Komut | Açıklama |
+|-------|----------|
+| `npm run dev` | Geliştirme sunucusu |
+| `npm run build` | Üretim derlemesi |
+| `npm run preview` | Derlemeyi önizle |
+| `npm run lint` | ESLint |

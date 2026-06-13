@@ -17,14 +17,13 @@ const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
 export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, supportSchedule, myPrograms, staff,
-    updateProfile, updateSettings, saveSupportSchedule, logout, cancelMembership,
+    updateProfile, updateSettings, saveSupportSchedule, logout,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
   const { toast } = useToast()
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
-  const [cancelOpen, setCancelOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [availabilityOpen, setAvailabilityOpen] = useState(false)
   const [form, setForm] = useState({
@@ -234,9 +233,9 @@ export default function ProfilePage() {
       )}
 
       <div className="flex gap-3">
-        <button type="button" onClick={() => setCancelOpen(true)} className="flex-1 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-600 hover:bg-red-50">
-          Üyeliği İptal Et
-        </button>
+        <Link to="/support" className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cream-200 py-3 text-sm font-medium hover:bg-cream-50">
+          Üyelik İşlemleri (Destek)
+        </Link>
         <button type="button" onClick={handleLogout} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cream-200 py-3 text-sm font-medium hover:bg-cream-50">
           <LogOut className="h-4 w-4" /> Çıkış Yap
         </button>
@@ -281,12 +280,6 @@ export default function ProfilePage() {
         </button>
       </Modal>
 
-      <Modal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Üyelik İptali">
-        <p className="text-sm text-cream-800/70">İptal işlemi demo modundadır. Gerçek iptal için destek ile iletişime geçin.</p>
-        <button type="button" onClick={() => { cancelMembership(); setCancelOpen(false); toast('Üyelik iptal edildi', 'info') }} className="mt-4 w-full rounded-xl bg-red-500 py-3 text-sm font-semibold text-white">
-          İptali Onayla
-        </button>
-      </Modal>
     </div>
   )
 }

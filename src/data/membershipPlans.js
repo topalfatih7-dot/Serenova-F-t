@@ -54,7 +54,10 @@ export const DEFAULT_PACKAGE = {
   coachMeetingsPerWeek: 2,
   dietitianMeetingsPerMonth: 1,
   durationWeeks: 12,
-  progressTracking: 'detailed',
-  reminderFrequency: 'daily',
   addOns: [],
 }
+
+export const COACH_MAX_PER_WEEK = 5
+export const DIETITIAN_MAX_PER_MONTH = 6
+export const DURATION_MIN_WEEKS = 1
+export const DURATION_MAX_WEEKS = 36

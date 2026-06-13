@@ -1,7 +1,7 @@
 import { Outlet, Navigate, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard, Calendar, MessageSquare,
-  BarChart3, LogOut, Activity, Stethoscope, BookOpen,
+  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Inbox, Sparkles,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
@@ -11,11 +11,14 @@ import { BRAND } from '../../config/brand'
 const adminNav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
   { to: '/admin/members', icon: Users, label: 'Üyeler' },
+  { to: '/admin/requests', icon: Inbox, label: 'Üyelik Talepleri' },
+  { to: '/admin/library', icon: Library, label: 'Kütüphane' },
   { to: '/admin/staff', icon: Stethoscope, label: 'Kadromuz' },
   { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonelikler' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri' },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog' },
+  { to: '/admin/content', icon: Sparkles, label: 'İçerik' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analitik' },
   { to: '/admin/activity', icon: Activity, label: 'Aktivite' },
 ]
@@ -77,7 +80,7 @@ export default function AdminShell() {
           <Outlet />
         </main>
         <footer className="border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40">
-          {BRAND.name} · Yönetim Paneli · Demo veriler
+          {BRAND.name} · Yönetim Paneli
         </footer>
       </div>
     </div>

@@ -16,7 +16,7 @@ export default function BrandLogo({ size = 'md', linkTo = '/' }) {
       </span>
       <div className="leading-tight">
         <span className={`font-display font-bold text-cream-900 ${s.text}`}>{BRAND.shortName}</span>
-        <span className="hidden text-[10px] font-medium text-cream-800/50 sm:block">Fit Dönüşüm</span>
+        <span className="hidden text-[10px] font-medium text-cream-800/50 sm:block">Online Koçluk</span>
       </div>
     </Link>
   )

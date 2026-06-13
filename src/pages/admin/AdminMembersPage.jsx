@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
-import { Search, Crown } from 'lucide-react'
+import { Search, Crown, Pause, Play, XCircle, RefreshCw, Dumbbell, Apple, Target } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
+import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../../context/ToastContext'
 
 const STATUS_LABELS = { active: 'Aktif', paused: 'Duraklatıldı', cancelled: 'İptal', expiring: 'Sona Eriyor' }
 const STATUS_STYLES = {
@@ -11,12 +13,28 @@ const STATUS_STYLES = {
   expiring: 'bg-orange-50 text-orange-700',
 }
 
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5 text-sm">
+      <span className="text-cream-800/55">{label}</span>
+      <span className="text-right font-medium text-cream-900">{value || '—'}</span>
+    </div>
+  )
+}
+
 export default function AdminMembersPage() {
-  const { platform } = useApp()
+  const { platform, adminPatchMember } = useApp()
+  const { toast } = useToast()
   const members = platform.members
+  const staff = platform.staff || []
   const [search, setSearch] = useState('')
   const [filterMembership, setFilterMembership] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [selectedId, setSelectedId] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
+  const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
 
   const filtered = useMemo(() => members.filter((m) => {
     const matchSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
@@ -24,6 +42,17 @@ export default function AdminMembersPage() {
     const matchStatus = filterStatus === 'all' || m.membershipStatus === filterStatus
     return matchSearch && matchMem && matchStatus
   }), [members, search, filterMembership, filterStatus])
+
+  const act = async (patch, msg) => {
+    if (!selected) return
+    setBusy(true)
+    try {
+      await adminPatchMember(selected.id, patch)
+      toast(msg, 'success')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -53,6 +82,7 @@ export default function AdminMembersPage() {
           <option value="active">Aktif</option>
           <option value="paused">Duraklatıldı</option>
           <option value="cancelled">İptal</option>
+          <option value="expiring">Sona Eriyor</option>
         </select>
       </div>
 
@@ -74,7 +104,11 @@ export default function AdminMembersPage() {
             </thead>
             <tbody>
               {filtered.map((m) => (
-                <tr key={m.id} className="border-b border-cream-50 hover:bg-cream-50/50">
+                <tr
+                  key={m.id}
+                  onClick={() => setSelectedId(m.id)}
+                  className="cursor-pointer border-b border-cream-50 hover:bg-cream-50/50"
+                >
                   <td className="px-4 py-3">
                     <p className="font-medium">{m.name}</p>
                     <p className="text-xs text-cream-800/50">{m.email}</p>
@@ -100,6 +134,84 @@ export default function AdminMembersPage() {
           </table>
         </div>
       )}
+
+      <Modal open={!!selected} onClose={() => setSelectedId(null)} title="Üye Detayı" size="lg">
+        {selected && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              {selected.photo ? (
+                <img src={selected.photo} alt={selected.name} className="h-14 w-14 rounded-2xl object-cover" />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-lg font-bold text-brand-600">
+                  {selected.name?.charAt(0)?.toUpperCase()}
+                </span>
+              )}
+              <div>
+                <p className="font-display text-lg font-bold text-cream-900">{selected.name}</p>
+                <p className="text-sm text-cream-800/55">{selected.email}</p>
+              </div>
+              <span className={`ml-auto rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[selected.membershipStatus]}`}>
+                {STATUS_LABELS[selected.membershipStatus]}
+              </span>
+            </div>
+
+            <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              <InfoRow label="Üyelik" value={selected.membership === 'premium' ? 'Premium' : 'Ücretsiz'} />
+              <InfoRow label="Yaş" value={selected.age} />
+              <InfoRow label="Cinsiyet" value={selected.gender === 'female' ? 'Kadın' : selected.gender === 'male' ? 'Erkek' : selected.gender} />
+              <InfoRow label="Şehir / İlçe" value={[selected.city, selected.district].filter(Boolean).join(' / ')} />
+              <InfoRow label="Kilo / Boy" value={selected.weight ? `${selected.weight} kg / ${selected.height || '—'} cm` : '—'} />
+              <InfoRow label="Kayıt tarihi" value={selected.joinedAt} />
+            </div>
+
+            {selected.membership === 'premium' && (
+              <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+                <p className="mb-2 text-sm font-semibold text-cream-900">Premium Paket</p>
+                <div className="grid gap-x-8 sm:grid-cols-2">
+                  <InfoRow label="Haftalık koç" value={`${selected.packageConfig?.coachMeetingsPerWeek ?? 0}`} />
+                  <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
+                  <InfoRow label="Süre" value={selected.packageConfig?.durationWeeks ? `${selected.packageConfig.durationWeeks} hafta` : '—'} />
+                  <div className="flex items-center gap-2 py-1.5 text-sm"><Dumbbell className="h-4 w-4 text-brand-500" /> {staffName(selected.assignedCoachId)}</div>
+                  <div className="flex items-center gap-2 py-1.5 text-sm"><Apple className="h-4 w-4 text-sage-500" /> {staffName(selected.assignedDietitianId)}</div>
+                </div>
+              </div>
+            )}
+
+            {selected.goals?.length > 0 && (
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-cream-900"><Target className="h-4 w-4 text-brand-500" /> Hedefler</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.goals.map((g) => (
+                    <span key={g} className="rounded-full bg-cream-100 px-3 py-1 text-xs text-cream-800">{g}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2 border-t border-cream-100 pt-4">
+              {selected.membershipStatus !== 'paused' && (
+                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'paused' }, 'Üyelik duraklatıldı')} className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50">
+                  <Pause className="h-4 w-4" /> Duraklat
+                </button>
+              )}
+              {selected.membershipStatus !== 'active' && (
+                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'active', pauseUntil: null }, 'Üyelik aktif edildi')} className="flex items-center gap-2 rounded-xl bg-sage-50 px-4 py-2.5 text-sm font-semibold text-sage-700 hover:bg-sage-100 disabled:opacity-50">
+                  <Play className="h-4 w-4" /> Aktifleştir
+                </button>
+              )}
+              {selected.membershipStatus === 'cancelled' ? (
+                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'active', pauseUntil: null }, 'Üyelik yenilendi')} className="flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50">
+                  <RefreshCw className="h-4 w-4" /> Yenile
+                </button>
+              ) : (
+                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'cancelled' }, 'Üyelik iptal edildi')} className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50">
+                  <XCircle className="h-4 w-4" /> İptal Et
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

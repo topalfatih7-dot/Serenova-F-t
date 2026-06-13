@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Plus, Search, Mail, Phone, Clock, Trash2, Edit, Dumbbell, Apple, Stethoscope,
+  Plus, Search, Mail, Phone, Clock, Trash2, Edit, Dumbbell, Apple, Stethoscope, Check, X,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
@@ -8,6 +8,7 @@ import PhotoUpload from '../../components/ui/PhotoUpload'
 import { WEEKDAYS, weekdayLabel } from '../../components/package/SupportScheduler'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
 
 const EMPTY_FORM = {
   role: 'coach', name: '', email: '', phone: '', password: '',
@@ -29,7 +30,12 @@ function StaffFormModal({ open, onClose, onSubmit, initial, isEdit }) {
 
   const submit = () => {
     if (!form.name || !form.email.includes('@')) { setError('Ad ve geçerli e-posta gerekli.'); return }
-    if (!isEdit && (!form.password || form.password.length < 6)) { setError('Şifre en az 6 karakter olmalı.'); return }
+    // Yeni kayıtta şifre zorunlu; düzenlemede doldurulduysa kontrol edilir.
+    const passwordRequired = !isEdit || (form.password && form.password.length > 0)
+    if (passwordRequired && !isPasswordValid(form.password)) {
+      setError('Şifre gereksinimleri karşılanmıyor (8+ karakter, büyük/küçük harf, rakam ve özel karakter).')
+      return
+    }
     if (form.workDays.length === 0) { setError('En az bir çalışma günü seçin.'); return }
     setError('')
     onSubmit(form)
@@ -72,7 +78,22 @@ function StaffFormModal({ open, onClose, onSubmit, initial, isEdit }) {
 
         <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} placeholder="Kısa açıklama (kadromuz kartında görünür)" rows={3} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
 
-        <input value={form.password} onChange={(e) => update({ password: e.target.value })} placeholder={isEdit ? 'Şifre (değiştirmek için doldurun)' : 'Şifre (min. 6)'} type="password" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+        <div>
+          <input value={form.password} onChange={(e) => update({ password: e.target.value })} placeholder={isEdit ? 'Şifre (değiştirmek için doldurun)' : 'Şifre'} type="password" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+          {form.password && (
+            <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {PASSWORD_RULES.map((r) => {
+                const ok = r.test(form.password)
+                return (
+                  <li key={r.label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-sage-600' : 'text-cream-800/50'}`}>
+                    {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />} {r.label}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          <p className="mt-1.5 text-xs text-cream-800/45">Bu bilgilerle koç/diyetisyen panele giriş yapar.</p>
+        </div>
 
         <div>
           <p className="mb-2 text-sm font-medium text-cream-800/80">Haftalık çalışma günleri</p>
@@ -128,17 +149,17 @@ export default function AdminStaffPage() {
     return matchSearch && matchRole
   })
 
-  const handleAdd = (form) => {
-    const result = addStaff(form)
-    if (!result.success) { toast(result.error, 'error'); return }
+  const handleAdd = async (form) => {
+    const result = await addStaff(form)
+    if (result && !result.success) { toast(result.error, 'error'); return }
     setAddOpen(false)
     toast('Kayıt oluşturuldu', 'success')
   }
 
-  const handleEdit = (form) => {
+  const handleEdit = async (form) => {
     const patch = { ...form }
     if (!patch.password) delete patch.password
-    editStaff(editTarget.id, patch)
+    await editStaff(editTarget.id, patch)
     setEditTarget(null)
     toast('Bilgiler güncellendi', 'success')
   }
@@ -235,6 +256,7 @@ export default function AdminStaffPage() {
       )}
       {editTarget && (
         <StaffFormModal
+          key={editTarget.id}
           open={!!editTarget}
           onClose={() => setEditTarget(null)}
           onSubmit={handleEdit}

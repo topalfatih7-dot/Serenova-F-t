@@ -38,17 +38,16 @@ export default function PackageBuilderPage() {
 
   const confirmPayment = () => {
     setPaying(true)
-    setTimeout(() => {
-      savePackage(config)
-      if (isAuthenticated) {
-        processPremiumPayment(config, schedule)
-      } else {
+    setTimeout(async () => {
+      if (!isAuthenticated) {
         toast('Önce kayıt olun', 'warning')
         setPaying(false)
         setPaymentOpen(false)
         navigate('/onboarding')
         return
       }
+      await savePackage(config)
+      await processPremiumPayment(config, schedule)
       setPaying(false)
       setPaymentOpen(false)
       toast('Premium üyeliğiniz aktif! Ödeme başarılı.', 'success')

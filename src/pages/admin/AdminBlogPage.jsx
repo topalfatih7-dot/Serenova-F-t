@@ -16,7 +16,7 @@ const ACCENTS = [
 ]
 
 const EMPTY = {
-  title: '', category: 'Beslenme', author: 'Serenova Ekibi',
+  title: '', category: 'Beslenme', author: 'Yeni Form Ekibi',
   accent: 'brand', excerpt: '', content: '', published: true,
 }
 

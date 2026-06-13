@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Shield, Loader2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { ADMIN_CREDENTIALS } from '../../config/brand'
@@ -25,13 +25,12 @@ export default function LoginPage() {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => {
-      const result = login(email, password, remember)
-      setLoading(false)
+    try {
+      const result = await login(email, password, remember)
       if (!result.success) {
         toast(result.error || 'Giriş başarısız', 'error')
         return
@@ -46,7 +45,9 @@ export default function LoginPage() {
         toast('Hoş geldiniz!', 'success')
         navigate('/dashboard')
       }
-    }, 600)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -90,23 +91,33 @@ export default function LoginPage() {
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between">
-            <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-cream-800/80">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-cream-300 accent-brand-500"
-              />
-              Beni hatırla
-            </label>
-            <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">Şifremi unuttum</Link>
+          <div className="mt-5 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setRemember((v) => !v)}
+              className="group flex select-none items-center gap-2.5 text-sm font-medium text-cream-800/80"
+            >
+              <span
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
+                  remember ? 'bg-brand-500' : 'bg-cream-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                    remember ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+              <span className={remember ? 'text-cream-900' : ''}>Beni hatırla</span>
+            </button>
+            <Link to="/forgot-password" className="text-sm font-medium text-brand-600 hover:underline">Şifremi unuttum</Link>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-xl bg-brand-500 py-3.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
           >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
           </button>
           <p className="mt-6 text-center text-sm text-cream-800/60">

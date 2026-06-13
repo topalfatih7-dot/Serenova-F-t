@@ -1,26 +1,34 @@
 import { Check } from 'lucide-react'
 
-export default function Stepper({ steps, currentStep }) {
+export default function Stepper({ steps, currentStep, onStepClick, maxReached }) {
+  const reach = maxReached ?? currentStep
   return (
     <div className="flex items-center justify-between">
       {steps.map((step, i) => {
         const done = i < currentStep
         const active = i === currentStep
+        const clickable = typeof onStepClick === 'function' && i <= reach && i !== currentStep
+        const Tag = clickable ? 'button' : 'div'
         return (
           <div key={step} className="flex flex-1 items-center">
             <div className="flex flex-col items-center">
-              <div
+              <Tag
+                type={clickable ? 'button' : undefined}
+                onClick={clickable ? () => onStepClick(i) : undefined}
                 className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${
                   done
                     ? 'bg-sage-500 text-white'
                     : active
                       ? 'bg-brand-500 text-white ring-4 ring-brand-100'
                       : 'bg-cream-200 text-cream-800/50'
-                }`}
+                } ${clickable ? 'cursor-pointer hover:ring-4 hover:ring-brand-100' : ''}`}
               >
                 {done ? <Check className="h-4 w-4" /> : i + 1}
-              </div>
-              <span className={`mt-2 hidden text-[10px] font-medium sm:block ${active ? 'text-brand-600' : 'text-cream-800/50'}`}>
+              </Tag>
+              <span
+                onClick={clickable ? () => onStepClick(i) : undefined}
+                className={`mt-2 hidden text-[10px] font-medium sm:block ${active ? 'text-brand-600' : 'text-cream-800/50'} ${clickable ? 'cursor-pointer' : ''}`}
+              >
                 {step}
               </span>
             </div>

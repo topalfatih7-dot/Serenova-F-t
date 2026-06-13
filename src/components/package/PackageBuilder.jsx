@@ -1,17 +1,17 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { RotateCcw, Sparkles } from 'lucide-react'
-import RangeSelector from '../ui/RangeSelector'
-import ToggleGroup from '../ui/ToggleGroup'
+import NumberSelector from '../ui/NumberSelector'
 import PackageSummaryCard from './PackageSummaryCard'
-import { ADD_ONS, DEFAULT_PACKAGE } from '../../data/membershipPlans'
-import { calculatePackagePrice, generateCalendarPreview, getRecommendedPackage } from '../../services/packagePricing'
-import { format } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import {
+  ADD_ONS, DEFAULT_PACKAGE,
+  COACH_MAX_PER_WEEK, DIETITIAN_MAX_PER_MONTH,
+  DURATION_MIN_WEEKS, DURATION_MAX_WEEKS,
+} from '../../data/membershipPlans'
+import { calculatePackagePrice, getRecommendedPackage } from '../../services/packagePricing'
 
 export default function PackageBuilder({ config, onChange, onSave, onReset, userProfile }) {
   const pricing = useMemo(() => calculatePackagePrice(config), [config])
-  const preview = useMemo(() => generateCalendarPreview(config), [config])
   const recommended = useMemo(() => getRecommendedPackage(userProfile), [userProfile])
 
   const toggleAddOn = (id) => {
@@ -26,7 +26,7 @@ export default function PackageBuilder({ config, onChange, onSave, onReset, user
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
+    <div className="grid items-start gap-8 lg:grid-cols-3">
       <div className="space-y-8 lg:col-span-2">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-cream-200 bg-white p-6">
           <button
@@ -43,58 +43,36 @@ export default function PackageBuilder({ config, onChange, onSave, onReset, user
             </div>
           </button>
 
-          <RangeSelector
+          <NumberSelector
             label="Haftalık koç görüşmesi"
             value={config.coachMeetingsPerWeek}
             min={1}
-            max={4}
+            max={COACH_MAX_PER_WEEK}
             onChange={(v) => onChange({ ...config, coachMeetingsPerWeek: v })}
+            hint={`Haftada en fazla ${COACH_MAX_PER_WEEK} koç görüşmesi seçebilirsiniz.`}
           />
 
           <div className="mt-6">
-            <RangeSelector
+            <NumberSelector
               label="Aylık diyetisyen görüşmesi"
               value={config.dietitianMeetingsPerMonth}
               min={0}
-              max={4}
+              max={DIETITIAN_MAX_PER_MONTH}
               onChange={(v) => onChange({ ...config, dietitianMeetingsPerMonth: v })}
+              hint={`Ayda en fazla ${DIETITIAN_MAX_PER_MONTH} diyetisyen görüşmesi seçebilirsiniz.`}
             />
           </div>
 
           <div className="mt-6">
-            <RangeSelector
+            <NumberSelector
               label="Program süresi"
               value={config.durationWeeks}
-              min={8}
-              max={24}
-              step={4}
-              onChange={(v) => onChange({ ...config, durationWeeks: v })}
+              min={DURATION_MIN_WEEKS}
+              max={DURATION_MAX_WEEKS}
+              step={1}
               unit=" hafta"
-            />
-          </div>
-
-          <div className="mt-6">
-            <ToggleGroup
-              label="İlerleme takibi"
-              options={[
-                { value: 'weekly', label: 'Haftalık' },
-                { value: 'detailed', label: 'Detaylı' },
-              ]}
-              value={config.progressTracking}
-              onChange={(v) => onChange({ ...config, progressTracking: v })}
-            />
-          </div>
-
-          <div className="mt-6">
-            <ToggleGroup
-              label="Hatırlatıcı sıklığı"
-              options={[
-                { value: 'minimal', label: 'Minimal' },
-                { value: 'daily', label: 'Günlük' },
-                { value: 'twice', label: 'Günde 2' },
-              ]}
-              value={config.reminderFrequency}
-              onChange={(v) => onChange({ ...config, reminderFrequency: v })}
+              onChange={(v) => onChange({ ...config, durationWeeks: v })}
+              hint="1 hafta aralıklarla, 36 haftaya kadar seçebilirsiniz."
             />
           </div>
         </motion.div>
@@ -124,26 +102,9 @@ export default function PackageBuilder({ config, onChange, onSave, onReset, user
             ))}
           </div>
         </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-cream-200 bg-white p-6">
-          <h3 className="font-semibold text-cream-900">Takvim Önizlemesi</h3>
-          <p className="mt-1 text-sm text-cream-800/60">İlk 4 haftalık planlanan görüşmeler</p>
-          <div className="mt-4 space-y-2">
-            {preview.slice(0, 8).map((ev, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-lg bg-cream-50 px-4 py-2.5 text-sm">
-                <span className={`h-2 w-2 rounded-full ${ev.type === 'coach' ? 'bg-brand-500' : 'bg-sage-500'}`} />
-                <span className="font-medium text-cream-900">{ev.title}</span>
-                <span className="ml-auto text-cream-800/50">
-                  {format(ev.date, 'd MMM', { locale: tr })}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 lg:sticky lg:top-24">
         <PackageSummaryCard config={config} pricing={pricing} />
         <div className="flex gap-3">
           <button

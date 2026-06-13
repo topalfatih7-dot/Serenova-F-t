@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Users, Calendar, Shield, Star, ArrowRight, Sparkles, Quote } from 'lucide-react'
+import { Heart, Users, Calendar, Shield, ArrowRight, Sparkles } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
 import FAQAccordion from '../components/landing/FAQAccordion'
 import TeamCarousel from '../components/landing/TeamCarousel'
+import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import { FREE_PLAN, PREMIUM_PLAN } from '../data/membershipPlans'
 import { BRAND } from '../config/brand'
-import { mockTestimonials, mockFAQs, defaultTeam } from '../data/mockData'
 import { useApp } from '../context/AppContext'
 
 const features = [
@@ -22,14 +22,10 @@ const stats = [
   { value: '7/24', label: 'Destek' },
 ]
 
-// Kayan yorumlar için listeyi çoğaltıp kesintisiz döngü oluşturuyoruz
-const marqueeTestimonials = [...mockTestimonials, ...mockTestimonials, ...mockTestimonials, ...mockTestimonials]
-
 export default function LandingPage() {
-  const { staff } = useApp()
-  // Admin panelinden eklenen aktif kadro varsa onu, yoksa varsayılan kadroyu göster
-  const team = (staff || []).filter((s) => s.active !== false)
-  const teamMembers = team.length > 0 ? team : defaultTeam
+  const { staff, testimonials, faqs } = useApp()
+  // Admin panelinden eklenen aktif kadro
+  const teamMembers = (staff || []).filter((s) => s.active !== false)
 
   return (
     <div className="overflow-hidden">
@@ -149,73 +145,50 @@ export default function LandingPage() {
       </section>
 
       {/* KADROMUZ */}
-      <section className="py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">
-              <Users className="h-3.5 w-3.5" />
-              Uzman Ekip
-            </span>
-            <h2 className="mt-4 font-display text-3xl font-bold text-cream-900">Kadromuz</h2>
-            <p className="mt-3 text-cream-800/60">Deneyimli koç ve diyetisyenlerimizle tanışın</p>
-          </motion.div>
-        </div>
-        <div className="mt-10">
-          <TeamCarousel members={teamMembers} />
-        </div>
-      </section>
-
-      {/* YORUMLAR - KAYAN SLIDER */}
-      <section className="overflow-hidden bg-gradient-to-b from-brand-50 to-cream-50 py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
-            Üyelerimiz Ne Diyor?
-          </motion.h2>
-          <p className="mt-3 text-center text-cream-800/60">Gerçek deneyimler, gerçek dönüşümler</p>
-        </div>
-        <div className="relative mt-12">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-cream-50 to-transparent sm:w-32" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-cream-50 to-transparent sm:w-32" />
-          <div className="flex w-max">
-            <motion.div
-              className="flex gap-6 pr-6"
-              animate={{ x: ['-50%', '0%'] }}
-              transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-            >
-              {marqueeTestimonials.map((t, i) => (
-                <div key={`${t.id}-${i}`} className="w-[300px] shrink-0 rounded-2xl border border-cream-200 bg-white p-6 shadow-sm sm:w-[340px]">
-                  <Quote className="h-7 w-7 text-brand-200" />
-                  <div className="mt-3 flex gap-1">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-gold-400 text-gold-400" />
-                    ))}
-                  </div>
-                  <p className="mt-4 text-sm leading-relaxed text-cream-800/80">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="mt-5 flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-sage-400 text-sm font-bold text-white">
-                      {t.name.charAt(0)}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-cream-900">{t.name}</p>
-                      <p className="text-xs text-cream-800/50">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {teamMembers.length > 0 && (
+        <section className="py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">
+                <Users className="h-3.5 w-3.5" />
+                Uzman Ekip
+              </span>
+              <h2 className="mt-4 font-display text-3xl font-bold text-cream-900">Kadromuz</h2>
+              <p className="mt-3 text-cream-800/60">Deneyimli koç ve diyetisyenlerimizle tanışın</p>
             </motion.div>
           </div>
-        </div>
-      </section>
+          <div className="mt-10">
+            <TeamCarousel members={teamMembers} />
+          </div>
+        </section>
+      )}
+
+      {/* YORUMLAR - MANUEL GEÇİŞLİ */}
+      {testimonials.length > 0 && (
+        <section className="overflow-hidden bg-gradient-to-b from-brand-50 to-cream-50 py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
+              Üyelerimiz Ne Diyor?
+            </motion.h2>
+            <p className="mt-3 text-center text-cream-800/60">Gerçek deneyimler, gerçek dönüşümler</p>
+          </div>
+          <div className="mt-12">
+            <TestimonialCarousel testimonials={testimonials} />
+          </div>
+        </section>
+      )}
 
       {/* SSS */}
-      <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-        <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
-          Sık Sorulan Sorular
-        </motion.h2>
-        <div className="mt-10">
-          <FAQAccordion items={mockFAQs} />
-        </div>
-      </section>
+      {faqs.length > 0 && (
+        <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+          <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
+            Sık Sorulan Sorular
+          </motion.h2>
+          <div className="mt-10">
+            <FAQAccordion items={faqs} />
+          </div>
+        </section>
+      )}
     </div>
   )
 }

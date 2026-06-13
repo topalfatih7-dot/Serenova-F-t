@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Search, Users, Activity, Target, Salad, CalendarClock, ClipboardList,
-  Dumbbell, Apple, Mail, ChevronRight, CalendarRange,
+  Dumbbell, Apple, Mail, ChevronRight, CalendarRange, Plus, Trash2, Video,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -11,28 +11,151 @@ import AvailabilityView from '../../components/package/AvailabilityView'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
+import { AVAILABILITY_WEEKDAYS } from '../../services/availability'
 import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
 
-function Chips({ values, map }) {
-  if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
+const weekdayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
+
+function entryToText(e) {
+  const amount = e.amountType === 'duration' ? `${e.amount} ${e.durationUnit || 'sn'}` : `${e.amount} tekrar`
+  return `${weekdayName(e.day)} ${e.start}-${e.end} · ${e.exerciseName} · ${amount}`
+}
+
+// Koç program oluşturucu: kütüphaneden hareket seçip gün/saat ekler
+function CoachProgramBuilder({ member, exercises, onCreate }) {
+  const { toast } = useToast()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [entries, setEntries] = useState([])
+  const [draft, setDraft] = useState({
+    day: 1, start: '12:00', end: '12:20', exerciseId: '', amountType: 'reps', amount: 12, durationUnit: 'sn', note: '',
+  })
+
+  const availableDays = AVAILABILITY_WEEKDAYS.filter((d) => (member.availability?.[d.value] || []).length)
+
+  const addEntry = () => {
+    const ex = exercises.find((x) => x.id === draft.exerciseId)
+    if (!ex) { toast('Önce kütüphaneden bir hareket seçin', 'error'); return }
+    if (draft.end <= draft.start) { toast('Bitiş saati başlangıçtan sonra olmalı', 'error'); return }
+    setEntries((list) => [...list, {
+      id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      day: Number(draft.day), start: draft.start, end: draft.end,
+      exerciseId: ex.id, exerciseName: ex.name, videoUrl: ex.videoUrl || '', description: ex.description || '',
+      amountType: draft.amountType, amount: Number(draft.amount) || 0, durationUnit: draft.durationUnit, note: draft.note.trim(),
+    }])
+    setDraft((d) => ({ ...d, note: '' }))
+  }
+
+  const removeEntry = (id) => setEntries((list) => list.filter((e) => e.id !== id))
+
+  const submit = () => {
+    if (!title.trim()) { toast('Program başlığı gerekli', 'error'); return }
+    if (entries.length === 0) { toast('En az bir hareket ekleyin', 'error'); return }
+    const ordered = [...entries].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
+    onCreate({
+      title: title.trim(),
+      description: description.trim(),
+      entries: ordered,
+      items: ordered.map(entryToText),
+    })
+    setTitle(''); setDescription(''); setEntries([])
+  }
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {values.map((v) => (
-        <span key={v} className="rounded-full bg-cream-100 px-2.5 py-1 text-xs font-medium text-cream-800">
-          {map[v] || v}
-        </span>
-      ))}
+    <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4">
+      <p className="flex items-center gap-2 font-semibold text-cream-900">
+        <ClipboardList className="h-4 w-4 text-brand-600" /> Kişiye Özel Çalışma Programı
+      </p>
+
+      {availableDays.length > 0 && (
+        <p className="mt-2 text-xs text-cream-800/55">
+          Danışanın müsait günleri: {availableDays.map((d) => d.short).join(', ')}
+        </p>
+      )}
+
+      <div className="mt-3 space-y-3">
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Program başlığı (ör. 4 Haftalık Güç Programı)" className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Genel notlar (opsiyonel)" rows={2} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+      </div>
+
+      {/* Hareket ekleme satırı */}
+      <div className="mt-4 rounded-xl border border-cream-200 bg-white p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Hareket ekle</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="text-xs text-cream-800/60">
+            Gün
+            <select value={draft.day} onChange={(e) => setDraft({ ...draft, day: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
+              {AVAILABILITY_WEEKDAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-cream-800/60">
+            Hareket
+            <select value={draft.exerciseId} onChange={(e) => setDraft({ ...draft, exerciseId: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
+              <option value="">Kütüphaneden seç…</option>
+              {exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-cream-800/60">
+            Başlangıç
+            <input type="time" value={draft.start} onChange={(e) => setDraft({ ...draft, start: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
+          </label>
+          <label className="text-xs text-cream-800/60">
+            Bitiş
+            <input type="time" value={draft.end} onChange={(e) => setDraft({ ...draft, end: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
+          </label>
+          <label className="text-xs text-cream-800/60">
+            Ölçü
+            <select value={draft.amountType} onChange={(e) => setDraft({ ...draft, amountType: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
+              <option value="reps">Tekrar sayısı</option>
+              <option value="duration">Süre</option>
+            </select>
+          </label>
+          <label className="text-xs text-cream-800/60">
+            {draft.amountType === 'duration' ? 'Süre' : 'Tekrar'}
+            <div className="mt-1 flex gap-2">
+              <input type="number" min={1} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} className="w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
+              {draft.amountType === 'duration' && (
+                <select value={draft.durationUnit} onChange={(e) => setDraft({ ...draft, durationUnit: e.target.value })} className="rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
+                  <option value="sn">sn</option>
+                  <option value="dk">dk</option>
+                </select>
+              )}
+            </div>
+          </label>
+        </div>
+        <input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Not (opsiyonel, ör. 3 set, 60sn dinlenme)" className="mt-2 w-full rounded-lg border border-cream-200 px-3 py-2 text-sm" />
+        <button type="button" onClick={addEntry} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-100 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-200">
+          <Plus className="h-4 w-4" /> Programa Ekle
+        </button>
+      </div>
+
+      {/* Eklenen hareketler */}
+      {entries.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {[...entries].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start)).map((e) => (
+            <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm">
+              <span className="flex items-center gap-2 text-cream-800">
+                {e.videoUrl && <Video className="h-3.5 w-3.5 shrink-0 text-brand-500" />}
+                <span><strong className="text-cream-900">{weekdayName(e.day)} {e.start}-{e.end}</strong> · {e.exerciseName} · {e.amountType === 'duration' ? `${e.amount} ${e.durationUnit}` : `${e.amount} tekrar`}</span>
+              </span>
+              <button type="button" onClick={() => removeEntry(e.id)} className="rounded p-1 text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button type="button" onClick={submit} className="mt-4 w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+        Programı Gönder
+      </button>
+      <p className="mt-2 text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir. Danışan hareketlere tıklayınca videolarını izleyebilir.</p>
     </div>
   )
 }
 
-function ClientDetail({ member, role, onCreate }) {
-  const isCoach = role === 'coach'
-  const bmi = calculateBMI(member.weight, member.height)
-  const cat = bmiCategory(bmi)
-  const appts = getStaffAppointments([member], role)
-  const [form, setForm] = useState({ title: '', description: '', items: '' })
+// Diyetisyen beslenme programı (serbest metin)
+function NutritionProgramForm({ onCreate }) {
   const { toast } = useToast()
+  const [form, setForm] = useState({ title: '', description: '', items: '' })
 
   const submit = () => {
     if (!form.title.trim()) { toast('Program başlığı gerekli', 'error'); return }
@@ -40,6 +163,28 @@ function ClientDetail({ member, role, onCreate }) {
     onCreate({ title: form.title.trim(), description: form.description.trim(), items })
     setForm({ title: '', description: '', items: '' })
   }
+
+  return (
+    <div className="rounded-2xl border border-sage-200 bg-sage-50/40 p-4">
+      <p className="flex items-center gap-2 font-semibold text-cream-900">
+        <ClipboardList className="h-4 w-4 text-sage-600" /> Beslenme Programı Oluştur
+      </p>
+      <div className="mt-3 space-y-3">
+        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Program başlığı (ör. Dengeli Beslenme Planı)" className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Açıklama / genel notlar" rows={2} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+        <textarea value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} placeholder={'Her satıra bir öğün/madde:\nKahvaltı: Yulaf + meyve\nÖğle: Izgara tavuk + salata\nAkşam: Sebze + protein'} rows={5} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+        <button type="button" onClick={submit} className="w-full rounded-xl bg-sage-500 py-2.5 text-sm font-semibold text-white hover:bg-sage-600">Programı Gönder</button>
+        <p className="text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir.</p>
+      </div>
+    </div>
+  )
+}
+
+function ClientDetail({ member, role, exercises, onCreate }) {
+  const isCoach = role === 'coach'
+  const bmi = calculateBMI(member.weight, member.height)
+  const cat = bmiCategory(bmi)
+  const appts = getStaffAppointments([member], role)
 
   return (
     <div className="space-y-5">
@@ -59,7 +204,7 @@ function ClientDetail({ member, role, onCreate }) {
             <p className="mt-1 text-xs text-cream-800/50">Bel: {member.waist ? `${member.waist} cm` : '—'}</p>
           </div>
           <div className="rounded-xl bg-cream-50 p-3">
-            <p className="text-xs text-cream-800/50">Fitness Seviyesi</p>
+            <p className="text-xs text-cream-800/50">Spor Seviyesi</p>
             <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900">
               <Activity className="h-4 w-4 text-brand-500" /> {FITNESS_LABELS[member.fitnessLevel] || '—'}
             </p>
@@ -104,46 +249,28 @@ function ClientDetail({ member, role, onCreate }) {
         )}
       </div>
 
-      <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4">
-        <p className="flex items-center gap-2 font-semibold text-cream-900">
-          <ClipboardList className="h-4 w-4 text-brand-600" />
-          {isCoach ? 'Çalışma Programı Oluştur' : 'Beslenme Programı Oluştur'}
-        </p>
-        <div className="mt-3 space-y-3">
-          <input
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder={isCoach ? 'Program başlığı (ör. 4 Haftalık Güç Programı)' : 'Program başlığı (ör. Dengeli Beslenme Planı)'}
-            className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm"
-          />
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Açıklama / genel notlar"
-            rows={2}
-            className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm"
-          />
-          <textarea
-            value={form.items}
-            onChange={(e) => setForm({ ...form, items: e.target.value })}
-            placeholder={isCoach
-              ? 'Her satıra bir madde:\nPazartesi: Alt vücut – 4x12\nÇarşamba: Üst vücut – 4x10\nCuma: Kardiyo 30dk'
-              : 'Her satıra bir öğün/madde:\nKahvaltı: Yulaf + meyve\nÖğle: Izgara tavuk + salata\nAkşam: Sebze + protein'}
-            rows={5}
-            className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm"
-          />
-          <button type="button" onClick={submit} className="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
-            Programı Gönder
-          </button>
-          <p className="text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir.</p>
-        </div>
-      </div>
+      {isCoach
+        ? <CoachProgramBuilder member={member} exercises={exercises} onCreate={onCreate} />
+        : <NutritionProgramForm onCreate={onCreate} />}
+    </div>
+  )
+}
+
+function Chips({ values, map }) {
+  if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((v) => (
+        <span key={v} className="rounded-full bg-cream-100 px-2.5 py-1 text-xs font-medium text-cream-800">
+          {map[v] || v}
+        </span>
+      ))}
     </div>
   )
 }
 
 export default function StaffClientsPage() {
-  const { staffUser, platform, createProgram } = useApp()
+  const { staffUser, platform, createProgram, exercises } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
@@ -225,7 +352,7 @@ export default function StaffClientsPage() {
       )}
 
       <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name} size="lg">
-        {selected && <ClientDetail member={selected} role={staffUser.role} onCreate={handleCreate} />}
+        {selected && <ClientDetail member={selected} role={staffUser.role} exercises={exercises} onCreate={handleCreate} />}
       </Modal>
     </div>
   )

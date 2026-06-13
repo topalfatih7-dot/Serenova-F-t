@@ -6,7 +6,7 @@ export const DEFAULT_POSTS = [
     title: 'Sürdürülebilir Dönüşümün 5 Temel İlkesi',
     category: 'Motivasyon',
     excerpt: 'Kalıcı değişim radikal diyetlerle değil, küçük ve tutarlı adımlarla gelir. İşte yolculuğunuzu sürdürülebilir kılacak beş ilke.',
-    author: 'Serenova Ekibi',
+    author: 'Yeni Form Ekibi',
     readMinutes: 4,
     accent: 'brand',
     published: true,
@@ -17,7 +17,7 @@ export const DEFAULT_POSTS = [
 Hedefinizi gözünüzde büyütmeyin. Haftada üç gün 20 dakikalık yürüyüş bile, hiç hareket etmemekten kat kat değerlidir. Başlangıçta sürekliliği yakalamak, yoğunluktan daha önemlidir.
 
 2. Ölçün ve takip edin
-İlerlemenizi görmek motivasyonun en güçlü kaynağıdır. Kilonuzu, enerji seviyenizi ve ruh halinizi düzenli olarak kaydedin. Serenova panelindeki grafikler tam da bunun için var.
+İlerlemenizi görmek motivasyonun en güçlü kaynağıdır. Kilonuzu, enerji seviyenizi ve ruh halinizi düzenli olarak kaydedin. Yeni Form panelindeki grafikler tam da bunun için var.
 
 3. Esneklik tanıyın
 Mükemmeliyetçilik dönüşümün en büyük düşmanıdır. Bir gün programı kaçırmanız her şeyi mahvetmez. Önemli olan ertesi gün kaldığınız yerden devam edebilmektir.
@@ -28,14 +28,14 @@ Yalnız yürünen yol uzundur. Bir koç, diyetisyen veya destekleyici bir toplul
 5. Süreci sevin
 Sadece sonuca değil, yolculuğun kendisine odaklanın. Antrenman sonrası hissettiğiniz enerjiyi, daha iyi uykuyu ve artan özgüveni fark edin.
 
-Unutmayın: Serenova Fit Dönüşüm bir wellness ve koçluk platformudur, tıbbi tedavi sunmaz. Sağlık durumunuzla ilgili kararlarda mutlaka doktorunuza danışın.`,
+Unutmayın: Yeni Form bir wellness ve koçluk platformudur, tıbbi tedavi sunmaz. Sağlık durumunuzla ilgili kararlarda mutlaka doktorunuza danışın.`,
   },
   {
     id: 'post-protein',
     title: 'Protein Hakkında Bilmeniz Gereken Her Şey',
     category: 'Beslenme',
     excerpt: 'Ne kadar protein almalısınız, hangi kaynaklar daha iyi ve öğünlere nasıl dağıtmalısınız? Dengeli beslenmenin yapı taşını inceliyoruz.',
-    author: 'Dyt. Serenova',
+    author: 'Dyt. Yeni Form',
     readMinutes: 5,
     accent: 'sage',
     published: true,
@@ -61,7 +61,7 @@ Bu içerik genel bilgilendirme amaçlıdır ve kişiye özel tıbbi beslenme ted
     title: 'Evde Ekipmansız Başlangıç Antrenmanı',
     category: 'Antrenman',
     excerpt: 'Spor salonuna gitmeden, kendi vücut ağırlığınızla güç ve dayanıklılık kazanabilirsiniz. İşte yeni başlayanlar için basit bir rutin.',
-    author: 'Koç Serenova',
+    author: 'Koç Yeni Form',
     readMinutes: 3,
     accent: 'gold',
     published: true,
@@ -91,7 +91,7 @@ Ağrı ile zorlanmayı karıştırmayın. Keskin bir ağrı hissederseniz durun.
     title: 'Uyku: Görmezden Gelinen Sağlık Süper Gücü',
     category: 'Yaşam',
     excerpt: 'İyi bir uyku; iştahtan enerjiye, ruh halinden toparlanmaya kadar her şeyi etkiler. Uyku kalitenizi artıracak pratik ipuçları.',
-    author: 'Serenova Ekibi',
+    author: 'Yeni Form Ekibi',
     readMinutes: 4,
     accent: 'brand',
     published: true,

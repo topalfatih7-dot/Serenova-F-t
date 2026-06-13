@@ -1,7 +1,7 @@
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Star, Settings, ClipboardList,
+  Dumbbell, Apple, Settings, ClipboardList, Library,
 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
@@ -16,8 +16,8 @@ const memberNav = [
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
+  { to: '/library', icon: Library, label: 'Kütüphane' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler' },
-  { to: '/stories', icon: Star, label: 'Başarı Hikayeleri' },
   { to: '/support', icon: HelpCircle, label: 'Destek' },
   { to: '/profile', icon: Settings, label: 'Profil' },
 ]

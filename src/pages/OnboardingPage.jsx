@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, X, Sparkles, Leaf, Crown,
   Scale, HeartPulse, Repeat, Smile,
-  Sprout, Flame, Trophy,
-  Salad, Carrot, Wheat, Drumstick, WheatOff,
-  User, Mail, Lock, MapPin, CalendarDays, Ruler,
+  Sprout, Flame, Trophy, Activity, Dumbbell, Moon, Heart, TrendingUp,
+  Salad, Carrot, Wheat, Drumstick, WheatOff, Apple,
+  User, UserRound, Mail, Lock, CalendarDays, Ruler, Loader2,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
@@ -21,6 +21,8 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { DEFAULT_PACKAGE, FREE_PLAN, PREMIUM_PLAN } from '../data/membershipPlans'
 import { calculatePackagePrice } from '../services/packagePricing'
+import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
+import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 
 const MEMBERSHIP_OPTIONS = [
   {
@@ -46,18 +48,23 @@ const MEMBERSHIP_OPTIONS = [
   },
 ]
 
-const STEPS = ['Kişisel', 'Hedefler', 'Fitness', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket', 'Takvim']
+const STEPS = ['Kişisel', 'Hedefler', 'Spor', 'Beslenme', 'Sağlık', 'Üyelik', 'Paket', 'Takvim']
 
 const GENDERS = [
-  { value: 'female', label: 'Kadın' },
-  { value: 'male', label: 'Erkek' },
-  { value: 'other', label: 'Belirtmek istemiyorum' },
+  { value: 'female', label: 'Kadın', icon: UserRound },
+  { value: 'male', label: 'Erkek', icon: User },
 ]
 
 const GOALS = [
   { value: 'weight', label: 'Kilo Yönetimi', desc: 'Sağlıklı kilo verme veya alma', icon: Scale },
+  { value: 'fatburn', label: 'Yağ Yakımı', desc: 'Vücut yağ oranını azaltın', icon: Flame },
+  { value: 'muscle', label: 'Kas Kazanımı', desc: 'Güç ve kas kütlesi geliştirin', icon: Dumbbell },
   { value: 'tone', label: 'Formda Kalmak', desc: 'Vücudunuzu sıkılaştırın', icon: HeartPulse },
+  { value: 'endurance', label: 'Dayanıklılık', desc: 'Kondisyon ve dayanıklılık artışı', icon: Activity },
   { value: 'habit', label: 'Sağlıklı Alışkanlık', desc: 'Kalıcı rutinler oluşturun', icon: Repeat },
+  { value: 'sleep', label: 'Daha İyi Uyku', desc: 'Uyku ve toparlanma kalitesi', icon: Moon },
+  { value: 'heart', label: 'Kalp Sağlığı', desc: 'Genel sağlığınızı güçlendirin', icon: Heart },
+  { value: 'performance', label: 'Performans', desc: 'Sportif performansınızı yükseltin', icon: TrendingUp },
   { value: 'confidence', label: 'Özgüven', desc: 'Kendinizi daha iyi hissedin', icon: Smile },
 ]
 
@@ -69,20 +76,52 @@ const FITNESS_LEVELS = [
 
 const NUTRITION_PREFS = [
   { value: 'balanced', label: 'Dengeli Beslenme', icon: Salad },
+  { value: 'high-protein', label: 'Yüksek Protein', icon: Dumbbell },
   { value: 'vegetarian', label: 'Vejetaryen', icon: Carrot },
+  { value: 'vegan', label: 'Vegan', icon: Sprout },
   { value: 'low-carb', label: 'Düşük Karbonhidrat', icon: Wheat },
-  { value: 'no-pork', label: 'Domuz Eti Yok', icon: Drumstick },
+  { value: 'keto', label: 'Ketojenik', icon: Flame },
+  { value: 'mediterranean', label: 'Akdeniz Tipi', icon: Apple },
   { value: 'gluten-free', label: 'Glutensiz', icon: WheatOff },
+  { value: 'no-pork', label: 'Domuz Eti Yok', icon: Drumstick },
+  { value: 'intermittent', label: 'Aralıklı Oruç', icon: Moon },
 ]
+
+// Mantıklı sınırlar
+const LIMITS = {
+  age: { min: 13, max: 100, label: 'Yaş 13 ile 100 arasında olmalı' },
+  weight: { min: 30, max: 300, label: 'Kilo 30 ile 300 kg arasında olmalı' },
+  height: { min: 120, max: 250, label: 'Boy 120 ile 250 cm arasında olmalı' },
+  waist: { min: 40, max: 200, label: 'Bel çevresi 40 ile 200 cm arasında olmalı' },
+}
+
+
+// Negatif/eksik değerleri engelle, sadece pozitif sayıya izin ver
+function sanitizeNumber(raw) {
+  if (raw === '') return ''
+  const cleaned = raw.replace(/[^\d.]/g, '')
+  return cleaned
+}
+
+function rangeError(field, value) {
+  if (value === '' || value == null) return ''
+  const num = Number(value)
+  const { min, max, label } = LIMITS[field]
+  if (Number.isNaN(num)) return 'Geçerli bir sayı girin'
+  if (num < min || num > max) return label
+  return ''
+}
 
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const preselectedPlan = searchParams.get('plan') === 'premium' ? 'premium' : 'free'
   const [step, setStep] = useState(0)
+  const [maxReached, setMaxReached] = useState(0)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [data, setData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', age: '', city: '',
+    name: '', email: '', password: '', confirmPassword: '', age: '', city: '', district: '',
     gender: '', weight: '', height: '', waist: '', photo: null,
     goals: [], fitnessLevel: 'beginner',
     nutritionPrefs: [], healthAck: false, disclaimer: false,
@@ -96,12 +135,32 @@ export default function OnboardingPage() {
 
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
 
+  const districts = getDistricts(data.city)
+
+  const errors = {
+    age: rangeError('age', data.age),
+    weight: rangeError('weight', data.weight),
+    height: rangeError('height', data.height),
+    waist: rangeError('waist', data.waist),
+    password: data.password && !isPasswordValid(data.password) ? 'Şifre gereksinimleri karşılanmıyor' : '',
+    confirmPassword: data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : '',
+  }
+
   const canNext = () => {
     switch (step) {
       case 0:
-        return data.name && data.email.includes('@') && data.age && data.gender &&
-          data.weight && data.height &&
-          data.password?.length >= 6 && data.password === data.confirmPassword
+        return (
+          data.name.trim() &&
+          data.email.includes('@') &&
+          data.age && !errors.age &&
+          data.gender &&
+          data.city && data.district &&
+          data.weight && !errors.weight &&
+          data.height && !errors.height &&
+          (!data.waist || !errors.waist) &&
+          isPasswordValid(data.password) &&
+          data.password === data.confirmPassword
+        )
       case 1: return data.goals.length > 0
       case 2: return data.fitnessLevel
       case 3: return true
@@ -113,35 +172,15 @@ export default function OnboardingPage() {
     }
   }
 
-  const finishFree = () => {
-    const result = register({
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      age: data.age,
-      gender: data.gender,
-      weight: data.weight,
-      height: data.height,
-      waist: data.waist,
-      photo: data.photo,
-      city: data.city,
-      goals: data.goals,
-      fitnessLevel: data.fitnessLevel,
-      nutritionPrefs: data.nutritionPrefs,
-    }, 'free')
-
-    if (!result.success) {
-      toast(result.error, 'error')
-      return
-    }
-    toast('Kayıt tamamlandı! Hoş geldiniz.', 'success')
-    navigate('/dashboard')
+  const goToStep = (target) => {
+    if (target <= maxReached) setStep(target)
   }
 
-  const handlePremiumPayment = () => {
-    setPaying(true)
-    setTimeout(() => {
-      const result = registerWithPayment({
+  const finishFree = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    try {
+      const result = await register({
         name: data.name,
         email: data.email,
         password: data.password,
@@ -152,6 +191,38 @@ export default function OnboardingPage() {
         waist: data.waist,
         photo: data.photo,
         city: data.city,
+        district: data.district,
+        goals: data.goals,
+        fitnessLevel: data.fitnessLevel,
+        nutritionPrefs: data.nutritionPrefs,
+      }, 'free')
+
+      if (!result.success) {
+        toast(result.error, 'error')
+        return
+      }
+      toast('Kayıt tamamlandı! Hoş geldiniz.', 'success')
+      navigate('/dashboard')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handlePremiumPayment = () => {
+    setPaying(true)
+    setTimeout(async () => {
+      const result = await registerWithPayment({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        age: data.age,
+        gender: data.gender,
+        weight: data.weight,
+        height: data.height,
+        waist: data.waist,
+        photo: data.photo,
+        city: data.city,
+        district: data.district,
         goals: data.goals,
         fitnessLevel: data.fitnessLevel,
         nutritionPrefs: data.nutritionPrefs,
@@ -187,7 +258,11 @@ export default function OnboardingPage() {
       finish()
       return
     }
-    setStep((s) => s + 1)
+    setStep((s) => {
+      const n = s + 1
+      setMaxReached((m) => Math.max(m, n))
+      return n
+    })
   }
 
   const pricing = data.membership === 'premium' ? calculatePackagePrice(data.packageConfig) : null
@@ -197,7 +272,12 @@ export default function OnboardingPage() {
       <h1 className="text-center font-display text-2xl font-bold text-cream-900">Hoş Geldiniz</h1>
       <p className="mt-2 text-center text-sm text-cream-800/60">Profilinizi oluşturun ve üyeliğinizi seçin</p>
       <div className="mt-8">
-        <Stepper steps={data.membership === 'premium' ? STEPS : STEPS.slice(0, 6)} currentStep={step} />
+        <Stepper
+          steps={data.membership === 'premium' ? STEPS : STEPS.slice(0, 6)}
+          currentStep={step}
+          maxReached={maxReached}
+          onStepClick={goToStep}
+        />
       </div>
 
       <div className="mt-10 rounded-2xl border border-cream-200 bg-white p-6 sm:p-8">
@@ -214,7 +294,31 @@ export default function OnboardingPage() {
                 <FormField label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Şifre" icon={Lock} type="password" placeholder="En az 6 karakter" value={data.password} onChange={(e) => update({ password: e.target.value })} />
+                  <div>
+                    <FormField
+                      label="Şifre"
+                      icon={Lock}
+                      type="password"
+                      placeholder="Güçlü bir şifre belirleyin"
+                      value={data.password}
+                      onChange={(e) => update({ password: e.target.value })}
+                    />
+                    {data.password && (
+                      <ul className="mt-2 grid gap-1">
+                        {PASSWORD_RULES.map((r) => {
+                          const ok = r.test(data.password)
+                          return (
+                            <li key={r.label} className={`flex items-center gap-1.5 text-[11px] ${ok ? 'text-sage-600' : 'text-cream-800/50'}`}>
+                              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-full ${ok ? 'bg-sage-500 text-white' : 'bg-cream-200 text-transparent'}`}>
+                                <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                              </span>
+                              {r.label}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
                   <FormField
                     label="Şifre tekrar"
                     icon={Lock}
@@ -222,17 +326,72 @@ export default function OnboardingPage() {
                     placeholder="Şifrenizi tekrar girin"
                     value={data.confirmPassword}
                     onChange={(e) => update({ confirmPassword: e.target.value })}
-                    error={data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : ''}
+                    error={errors.confirmPassword}
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <FormField label="Yaş" icon={CalendarDays} type="number" placeholder="Yaş" value={data.age} onChange={(e) => update({ age: e.target.value })} />
-                  <FormField label="Şehir" icon={MapPin} placeholder="Şehir" value={data.city} onChange={(e) => update({ city: e.target.value })} />
-                  <FormField label="Cinsiyet" as="select" value={data.gender} onChange={(e) => update({ gender: e.target.value })} className={data.gender ? '' : 'text-cream-800/40'}>
-                    <option value="">Seçin</option>
-                    {GENDERS.map((g) => (
-                      <option key={g.value} value={g.value} className="text-cream-900">{g.label}</option>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    label="Yaş"
+                    icon={CalendarDays}
+                    type="number"
+                    min={LIMITS.age.min}
+                    max={LIMITS.age.max}
+                    placeholder="Yaş"
+                    value={data.age}
+                    onChange={(e) => update({ age: sanitizeNumber(e.target.value) })}
+                    error={errors.age}
+                  />
+                  <div>
+                    <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">Cinsiyet</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {GENDERS.map((g) => {
+                        const selected = data.gender === g.value
+                        return (
+                          <button
+                            key={g.value}
+                            type="button"
+                            onClick={() => update({ gender: g.value })}
+                            className={`flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-sm font-semibold transition-all ${
+                              selected
+                                ? 'border-brand-400 bg-brand-50 text-brand-700 ring-2 ring-brand-200'
+                                : 'border-cream-200 bg-cream-50/60 text-cream-800/70 hover:border-cream-300'
+                            }`}
+                          >
+                            <g.icon className="h-4 w-4" />
+                            {g.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    label="Şehir"
+                    as="select"
+                    value={data.city}
+                    onChange={(e) => update({ city: e.target.value, district: '' })}
+                    className={data.city ? '' : 'text-cream-800/40'}
+                  >
+                    <option value="">Şehir seçin</option>
+                    {CITY_NAMES.map((c) => (
+                      <option key={c} value={c} className="text-cream-900">{c}</option>
+                    ))}
+                  </FormField>
+                  <FormField
+                    label="İlçe"
+                    as="select"
+                    value={data.district}
+                    onChange={(e) => update({ district: e.target.value })}
+                    disabled={!data.city}
+                    className={data.district ? '' : 'text-cream-800/40'}
+                    hint={!data.city ? 'Önce şehir seçin' : ''}
+                  >
+                    <option value="">{data.city ? 'İlçe seçin' : '—'}</option>
+                    {districts.map((d) => (
+                      <option key={d} value={d} className="text-cream-900">{d}</option>
                     ))}
                   </FormField>
                 </div>
@@ -242,9 +401,40 @@ export default function OnboardingPage() {
                     <Ruler className="h-4 w-4 text-brand-500" /> Vücut Ölçüleri
                   </p>
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <FormField label="Kilo (kg)" icon={Scale} type="number" placeholder="örn. 72" value={data.weight} onChange={(e) => update({ weight: e.target.value })} />
-                    <FormField label="Boy (cm)" icon={Ruler} type="number" placeholder="örn. 170" value={data.height} onChange={(e) => update({ height: e.target.value })} />
-                    <FormField label="Bel çevresi (cm)" icon={Ruler} type="number" placeholder="örn. 80" value={data.waist} onChange={(e) => update({ waist: e.target.value })} hint="İlerleme takibi için" />
+                    <FormField
+                      label="Kilo (kg)"
+                      icon={Scale}
+                      type="number"
+                      min={LIMITS.weight.min}
+                      max={LIMITS.weight.max}
+                      placeholder="örn. 72"
+                      value={data.weight}
+                      onChange={(e) => update({ weight: sanitizeNumber(e.target.value) })}
+                      error={errors.weight}
+                    />
+                    <FormField
+                      label="Boy (cm)"
+                      icon={Ruler}
+                      type="number"
+                      min={LIMITS.height.min}
+                      max={LIMITS.height.max}
+                      placeholder="örn. 170"
+                      value={data.height}
+                      onChange={(e) => update({ height: sanitizeNumber(e.target.value) })}
+                      error={errors.height}
+                    />
+                    <FormField
+                      label="Bel çevresi (cm)"
+                      icon={Ruler}
+                      type="number"
+                      min={LIMITS.waist.min}
+                      max={LIMITS.waist.max}
+                      placeholder="örn. 80"
+                      value={data.waist}
+                      onChange={(e) => update({ waist: sanitizeNumber(e.target.value) })}
+                      error={errors.waist}
+                      hint={!errors.waist ? 'İlerleme takibi için (opsiyonel)' : ''}
+                    />
                   </div>
                   <div className="mt-4">
                     <PhotoUpload
@@ -301,7 +491,7 @@ export default function OnboardingPage() {
             )}
             {step === 2 && (
               <div>
-                <h2 className="font-display text-lg font-bold text-cream-900">Mevcut fitness seviyeniz</h2>
+                <h2 className="font-display text-lg font-bold text-cream-900">Mevcut spor seviyeniz</h2>
                 <p className="mt-1 text-sm text-cream-800/60">Size en uygun planı hazırlayabilmemiz için</p>
                 <div className="mt-5 space-y-3">
                   {FITNESS_LEVELS.map((f) => {
@@ -488,8 +678,8 @@ export default function OnboardingPage() {
             {step === 7 && data.membership === 'premium' && (
               <div className="space-y-8">
                 <div>
-                  <h2 className="font-display text-lg font-bold text-cream-900">Destek tarihlerinizi seçin</h2>
-                  <p className="mt-1 text-sm text-cream-800/60">Paketinize göre koç ve diyetisyen görüşmelerinizi ne zaman almak istersiniz?</p>
+                  <h2 className="font-display text-lg font-bold text-cream-900">Görüşme tarihlerinizi seçin</h2>
+                  <p className="mt-1 text-sm text-cream-800/60">Paketinizdeki her görüşme için tercih ettiğiniz gün ve saati belirleyin.</p>
                   <div className="mt-5">
                     <SupportScheduler
                       schedule={data.supportSchedule}
@@ -501,7 +691,7 @@ export default function OnboardingPage() {
 
                 <div>
                   <h2 className="font-display text-lg font-bold text-cream-900">Haftalık müsaitliğiniz</h2>
-                  <p className="mt-1 text-sm text-cream-800/60">Hangi gün ve saatlerde uygun olduğunuzu işaretleyin. Koçunuz ve diyetisyeniniz bu bilgiyi görerek görüşmelerinizi planlar.</p>
+                  <p className="mt-1 text-sm text-cream-800/60">Her gün için hangi saat aralığında uygun olduğunuzu belirtin. Koçunuz ve diyetisyeniniz bu bilgiyi görerek görüşmelerinizi planlar.</p>
                   <div className="mt-5">
                     <WeeklyAvailability value={data.availability} onChange={(a) => update({ availability: a })} />
                   </div>
@@ -515,8 +705,9 @@ export default function OnboardingPage() {
           <button type="button" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="text-sm font-medium text-cream-800 disabled:opacity-30">
             Geri
           </button>
-          <button type="button" onClick={next} disabled={!canNext()} className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
-            {step === 5 && data.membership === 'free' ? 'Kayıt Ol' :
+          <button type="button" onClick={next} disabled={!canNext() || submitting} className="flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {step === 5 && data.membership === 'free' ? (submitting ? 'Kaydediliyor…' : 'Kayıt Ol') :
               step === 7 ? 'Ödeme Yap' : 'İleri'}
           </button>
         </div>
