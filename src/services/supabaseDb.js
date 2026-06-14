@@ -1,11 +1,11 @@
 // Supabase veri/auth katmanı.
-// localDb ile AYNI "db" şeklini üretir; böylece tüm sayfalar ve
-// compute fonksiyonları (computeAdminStats vb.) değişmeden çalışır.
+// Tüm veriler Supabase üzerinden yönetilir.
 import { supabase } from './supabaseClient'
 import { ADMIN_CREDENTIALS } from '../config/brand'
 import { DEFAULT_PACKAGE } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
-import { generateSupportSessions } from './localDb'
+import { applyStaffAssignments } from './staffAssignment'
+import { computePremiumExpiresAt, syncMembershipExpiryStatus } from './premiumMembership'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -39,15 +39,17 @@ function memberToRow(member) {
 }
 
 function rowToMember(row) {
+  const data = row.data || {}
   return {
-    ...(row.data || {}),
+    ...data,
     id: row.id,
     email: row.email,
     name: row.name,
     membership: row.membership,
     membershipStatus: row.membership_status,
-    assignedCoachId: row.assigned_coach_id,
-    assignedDietitianId: row.assigned_dietitian_id,
+    // RLS koç/diyetisyen erişimi sütunlara bağlı; JSONB yedek değerini de oku
+    assignedCoachId: row.assigned_coach_id || data.assignedCoachId || null,
+    assignedDietitianId: row.assigned_dietitian_id || data.assignedDietitianId || null,
   }
 }
 
@@ -189,9 +191,17 @@ export async function logout() {
   await supabase.auth.signOut()
 }
 
-function assignStaff(staffList, role, day) {
-  const candidates = staffList.filter((s) => s.role === role && s.active !== false && (s.workDays || []).includes(Number(day)))
-  return candidates[0] || null
+function withPremiumDates(member, packageConfig, isNewPremium = false) {
+  if (member.membership !== 'premium') return member
+  const pkg = packageConfig || member.packageConfig || DEFAULT_PACKAGE
+  const started = isNewPremium ? today() : (member.premiumStartedAt || member.joinedAt || today())
+  const expires = member.premiumExpiresAt || computePremiumExpiresAt(started, pkg.durationWeeks)
+  return syncMembershipExpiryStatus({
+    ...member,
+    premiumStartedAt: started,
+    premiumExpiresAt: expires,
+    packageConfig: { ...DEFAULT_PACKAGE, ...pkg },
+  })
 }
 
 async function buildAndPersistMember(profile, membership, packageConfig, opts = {}) {
@@ -208,21 +218,22 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   let coachSessions = []
   let dietitianSessions = []
 
-  if (membership === 'premium' && schedule) {
-    const coach = (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0
-      ? assignStaff(staffList, 'coach', schedule.coachDay) : null
-    const dietitian = (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
-      ? assignStaff(staffList, 'dietitian', schedule.dietitianDay) : null
-    assignedCoachId = coach?.id || null
-    assignedDietitianId = dietitian?.id || null
-    const sessions = generateSupportSessions(packageConfig, schedule, new Date(), {
-      coachName: coach?.name, dietitianName: dietitian?.name,
-    })
-    coachSessions = sessions.coachSessions
-    dietitianSessions = sessions.dietitianSessions
+  let memberDraft = {
+    id: user.id,
+    membership,
+    packageConfig: packageConfig || { ...DEFAULT_PACKAGE },
+    supportSchedule: schedule,
   }
 
-  const member = {
+  if (membership === 'premium' && schedule) {
+    const assignments = applyStaffAssignments(memberDraft, staffList, [], { autoAssign: true })
+    assignedCoachId = assignments.assignedCoachId
+    assignedDietitianId = assignments.assignedDietitianId
+    coachSessions = assignments.coachSessions
+    dietitianSessions = assignments.dietitianSessions
+  }
+
+  const member = withPremiumDates({
     id: user.id,
     email: user.email,
     name: profile.name,
@@ -262,7 +273,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
     streak: 0,
     pauseUntil: null,
-  }
+  }, packageConfig, membership === 'premium')
 
   await upsertMember(member)
   await addActivity('signup', `${member.name} yeni kayıt (${membership === 'premium' ? 'Premium' : 'Ücretsiz'})`, member.id)
@@ -338,7 +349,10 @@ export async function registerWithPayment(profile, packageConfig) {
 // --------------------------- member mutations ---------------------------
 // Çoğu mutasyon: bellekteki member nesnesini düzenle + upsert et.
 export async function saveMemberPatch(member, patch) {
-  const updated = { ...member, ...patch, lastActiveAt: today() }
+  let updated = { ...member, ...patch, lastActiveAt: today() }
+  if (updated.membership === 'premium') {
+    updated = syncMembershipExpiryStatus(updated)
+  }
   await upsertMember(updated)
   return updated
 }
@@ -346,19 +360,16 @@ export async function saveMemberPatch(member, patch) {
 export async function saveSupportSchedule(member, schedule) {
   const { data: staffRows } = await supabase.from('staff').select('*')
   const staffList = (staffRows || []).map(rowToStaff)
-  const pkg = member.packageConfig || {}
-  const coach = (Number(pkg.coachMeetingsPerWeek) || 0) > 0 ? assignStaff(staffList, 'coach', schedule?.coachDay) : null
-  const dietitian = (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0 ? assignStaff(staffList, 'dietitian', schedule?.dietitianDay) : null
-  const sessions = generateSupportSessions(pkg, schedule || {}, new Date(), { coachName: coach?.name, dietitianName: dietitian?.name })
-  const updated = {
+  const { data: memberRows } = await supabase.from('members').select('*')
+  const members = (memberRows || []).map(rowToMember)
+  const draft = { ...member, supportSchedule: schedule }
+  const assignments = applyStaffAssignments(draft, staffList, members, { autoAssign: true })
+  const updated = syncMembershipExpiryStatus({
     ...member,
     supportSchedule: schedule,
-    assignedCoachId: coach?.id || member.assignedCoachId || null,
-    assignedDietitianId: dietitian?.id || member.assignedDietitianId || null,
-    coachSessions: sessions.coachSessions,
-    dietitianSessions: sessions.dietitianSessions,
+    ...assignments,
     lastActiveAt: today(),
-  }
+  })
   await upsertMember(updated)
   return updated
 }
@@ -367,23 +378,23 @@ export async function processPremiumPayment(member, packageConfig, schedule) {
   const pricing = calculatePackagePrice(packageConfig)
   const { data: staffRows } = await supabase.from('staff').select('*')
   const staffList = (staffRows || []).map(rowToStaff)
+  const { data: memberRows } = await supabase.from('members').select('*')
+  const members = (memberRows || []).map(rowToMember)
 
-  const coach = (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ? assignStaff(staffList, 'coach', schedule?.coachDay) : null
-  const dietitian = (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 ? assignStaff(staffList, 'dietitian', schedule?.dietitianDay) : null
-  const sessions = generateSupportSessions(packageConfig, schedule || {}, new Date(), { coachName: coach?.name, dietitianName: dietitian?.name })
-
-  const updated = {
+  const draft = {
     ...member,
     membership: 'premium',
     membershipStatus: 'active',
     packageConfig,
     supportSchedule: schedule,
-    assignedCoachId: coach?.id || null,
-    assignedDietitianId: dietitian?.id || null,
-    coachSessions: sessions.coachSessions,
-    dietitianSessions: sessions.dietitianSessions,
-    lastActiveAt: today(),
   }
+  const assignments = applyStaffAssignments(draft, staffList, members, { autoAssign: true })
+
+  const updated = withPremiumDates({
+    ...draft,
+    ...assignments,
+    lastActiveAt: today(),
+  }, packageConfig, true)
   await upsertMember(updated)
   await supabase.from('payments').insert({
     member_id: member.id,
@@ -610,6 +621,81 @@ export async function sendTicketReply(id, from, text) {
   const status = from === 'admin' && ticket.status === 'open' ? 'in-progress' : ticket.status
   await supabase.from('tickets').update({ status, data: { ...current.data, messages } }).eq('id', id)
   return { ...ticket, messages, status }
+}
+
+/** Admin: koç/diyetisyen ataması ve seans yönetimi (süre salt okunur) */
+export async function adminUpdatePremiumMembership(memberId, options = {}) {
+  const { data: memberRows } = await supabase.from('members').select('*').eq('id', memberId).limit(1)
+  const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
+  if (!member) return { success: false, error: 'Üye bulunamadı.' }
+
+  const { data: staffRows } = await supabase.from('staff').select('*')
+  const staffList = (staffRows || []).map(rowToStaff)
+  const { data: allMemberRows } = await supabase.from('members').select('*')
+  const members = (allMemberRows || []).map(rowToMember)
+
+  const prevCoachId = member.assignedCoachId
+  const prevDietitianId = member.assignedDietitianId
+  const schedule = options.supportSchedule ?? member.supportSchedule
+
+  const draft = {
+    ...member,
+    membership: 'premium',
+    membershipStatus: member.membershipStatus || 'active',
+    packageConfig: member.packageConfig || DEFAULT_PACKAGE,
+    supportSchedule: schedule,
+    premiumExpiresAt: member.premiumExpiresAt,
+    premiumStartedAt: member.premiumStartedAt || member.joinedAt || today(),
+    assignedCoachId: options.assignedCoachId !== undefined ? options.assignedCoachId : member.assignedCoachId,
+    assignedDietitianId: options.assignedDietitianId !== undefined ? options.assignedDietitianId : member.assignedDietitianId,
+  }
+
+  const assignments = applyStaffAssignments(draft, staffList, members, {
+    autoAssign: Boolean(options.autoAssign),
+    manualCoachId: draft.assignedCoachId,
+    manualDietitianId: draft.assignedDietitianId,
+  })
+
+  let updated = {
+    ...draft,
+    ...assignments,
+    lastActiveAt: today(),
+  }
+  updated = syncMembershipExpiryStatus(updated)
+
+  const notifications = [...(updated.notifications || [])]
+  if (updated.assignedCoachId && updated.assignedCoachId !== prevCoachId) {
+    const coach = staffList.find((s) => s.id === updated.assignedCoachId)
+    notifications.unshift({
+      id: `n-${Date.now()}-coach`,
+      type: 'assignment',
+      title: 'Koçunuz atandı',
+      message: `${coach?.name || 'Koçunuz'} artık sizinle çalışacak. Profilinizden detayları görebilirsiniz.`,
+      read: false,
+      createdAt: nowISO(),
+    })
+  }
+  if (updated.assignedDietitianId && updated.assignedDietitianId !== prevDietitianId) {
+    const dietitian = staffList.find((s) => s.id === updated.assignedDietitianId)
+    notifications.unshift({
+      id: `n-${Date.now()}-diet`,
+      type: 'assignment',
+      title: 'Diyetisyeniniz atandı',
+      message: `${dietitian?.name || 'Diyetisyeniniz'} artık sizinle çalışacak.`,
+      read: false,
+      createdAt: nowISO(),
+    })
+  }
+  updated.notifications = notifications
+
+  await upsertMember(updated)
+  await addActivity(
+    'admin_premium',
+    `${updated.name} için koç/diyetisyen ataması güncellendi`,
+    updated.id
+  )
+
+  return { success: true, member: updated }
 }
 
 export async function deleteRowGeneric() { /* reserved */ }

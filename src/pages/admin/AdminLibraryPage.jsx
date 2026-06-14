@@ -10,7 +10,7 @@ const EMPTY = { name: '', category: 'Genel', description: '', videoUrl: '' }
 const CATEGORIES = ['Genel', 'Bacak', 'Göğüs', 'Sırt', 'Kol', 'Omuz', 'Karın', 'Kalça', 'Kardiyo', 'Tüm Vücut', 'Esneme']
 
 function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
-  const { uploadExerciseVideo, mode } = useApp()
+  const { uploadExerciseVideo } = useApp()
   const { toast } = useToast()
   const [form, setForm] = useState(initial || EMPTY)
   const [error, setError] = useState('')
@@ -53,20 +53,16 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
           <p className="mb-2 text-sm font-semibold text-cream-900">Video</p>
           <input value={form.videoUrl} onChange={(e) => update({ videoUrl: e.target.value })} placeholder="Video URL (YouTube veya .mp4 linki)" className="w-full rounded-xl border border-cream-200 px-4 py-2.5 text-sm" />
 
-          {mode === 'supabase' && (
-            <>
-              <p className="my-2 text-center text-xs text-cream-800/50">— veya dosya yükle —</p>
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => fileRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-white py-3 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
-              >
-                {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
-              </button>
-              <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-            </>
-          )}
+          <p className="my-2 text-center text-xs text-cream-800/50">— veya dosya yükle —</p>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-white py-3 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+          >
+            {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
+          </button>
+          <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
 
           {form.videoUrl && (
             <div className="mt-3">

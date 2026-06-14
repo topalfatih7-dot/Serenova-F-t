@@ -9,14 +9,16 @@ import { weekdayLabel } from '../../components/package/SupportScheduler'
 import { useApp } from '../../context/AppContext'
 
 export function getStaffClients(members, role, staffId) {
+  const sid = String(staffId || '')
   return members.filter((m) => {
     if (m.membership !== 'premium') return false
+    if (m.membershipStatus === 'cancelled') return false
     if (role === 'coach') {
       if ((Number(m.packageConfig?.coachMeetingsPerWeek) || 0) <= 0) return false
-      return m.assignedCoachId === staffId
+      return String(m.assignedCoachId || '') === sid
     }
     if ((Number(m.packageConfig?.dietitianMeetingsPerMonth) || 0) <= 0) return false
-    return m.assignedDietitianId === staffId
+    return String(m.assignedDietitianId || '') === sid
   })
 }
 

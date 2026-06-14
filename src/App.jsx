@@ -40,6 +40,7 @@ import AdminActivityPage from './pages/admin/AdminActivityPage'
 import AdminLibraryPage from './pages/admin/AdminLibraryPage'
 import AdminRequestsPage from './pages/admin/AdminRequestsPage'
 import AdminContentPage from './pages/admin/AdminContentPage'
+import AdminPremiumPage from './pages/admin/AdminPremiumPage'
 
 export default function App() {
   return (
@@ -81,6 +82,7 @@ export default function App() {
             <Route element={<AdminShell />}>
               <Route path="admin" element={<AdminOverviewPage />} />
               <Route path="admin/members" element={<AdminMembersPage />} />
+              <Route path="admin/premium" element={<AdminPremiumPage />} />
               <Route path="admin/requests" element={<AdminRequestsPage />} />
               <Route path="admin/library" element={<AdminLibraryPage />} />
               <Route path="admin/staff" element={<AdminStaffPage />} />

@@ -6,8 +6,8 @@ const anonKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// .env doldurulduğunda Supabase devreye girer; aksi halde uygulama
-// yerel (localStorage) demo modunda çalışmaya devam eder.
+// Supabase bağlantısı — production ortamında zorunlu.
+// Ortam değişkenleri tanımlı değilse uygulama yapılandırma ekranı gösterir.
 export const isSupabaseEnabled = Boolean(url && anonKey)
 
 export const supabase = isSupabaseEnabled

@@ -4,6 +4,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import { getRemainingDays } from '../../services/premiumMembership'
 
 const STATUS_LABELS = { active: 'Aktif', paused: 'Duraklatıldı', cancelled: 'İptal', expiring: 'Sona Eriyor' }
 const STATUS_STYLES = {
@@ -171,6 +172,7 @@ export default function AdminMembersPage() {
                   <InfoRow label="Haftalık koç" value={`${selected.packageConfig?.coachMeetingsPerWeek ?? 0}`} />
                   <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
                   <InfoRow label="Süre" value={selected.packageConfig?.durationWeeks ? `${selected.packageConfig.durationWeeks} hafta` : '—'} />
+                  <InfoRow label="Kalan gün" value={selected.premiumExpiresAt ? `${getRemainingDays(selected.premiumExpiresAt) ?? '—'} gün` : '—'} />
                   <div className="flex items-center gap-2 py-1.5 text-sm"><Dumbbell className="h-4 w-4 text-brand-500" /> {staffName(selected.assignedCoachId)}</div>
                   <div className="flex items-center gap-2 py-1.5 text-sm"><Apple className="h-4 w-4 text-sage-500" /> {staffName(selected.assignedDietitianId)}</div>
                 </div>

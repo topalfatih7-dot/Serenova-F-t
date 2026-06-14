@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Uygulama varsayılan olarak **yerel modda** (tarayıcı localStorage) çalışır; kurulum gerektirmez.
+Uygulama **Supabase** ile çalışır. `.env` dosyasında `VITE_SUPABASE_URL` ve anahtar tanımlı olmalıdır.
 
 ## Supabase'e bağlama
 
@@ -21,7 +21,7 @@ Verileri gerçek bir veritabanından (Supabase) çekmek için adım adım rehber
 2. `supabase/schema.sql` ve ardından `supabase/seed.sql` dosyalarını SQL Editor'da çalıştır.
 3. `admin@serenova.fit` ile kayıt olup admin paneline gir.
 
-`.env` dolu olduğunda uygulama otomatik olarak Supabase modunu kullanır.
+`.env` dolu olduğunda uygulama Supabase üzerinden çalışır. Vercel'de aynı değişkenleri Environment Variables bölümüne ekleyin.
 
 ## Komutlar
 

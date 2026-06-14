@@ -1,11 +1,8 @@
 # Yeni Form — Supabase Kurulum Rehberi
 
-Uygulama **çift modda** çalışır:
+Uygulama **yalnızca Supabase** ile çalışır. `.env` dosyasında (veya Vercel Environment Variables) Supabase anahtarları tanımlı olmalıdır.
 
-- **Yerel mod (varsayılan):** `.env` yoksa veriler tarayıcıda (localStorage) tutulur. Hemen çalışır, kurulum gerektirmez.
-- **Supabase modu:** `.env` doldurulduğunda tüm veriler Supabase'den çekilir ve oraya yazılır.
-
-Aşağıdaki adımlar Supabase moduna geçişi anlatır.
+Aşağıdaki adımlar kurulumu anlatır.
 
 ---
 
