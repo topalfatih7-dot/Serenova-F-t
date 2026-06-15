@@ -1,9 +1,10 @@
-import { Outlet, Navigate, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Dumbbell, Apple, Library } from 'lucide-react'
+import { Outlet, NavLink } from 'react-router-dom'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Library } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
 import { BRAND } from '../../config/brand'
+import { staffRoleMeta } from '../../utils/staffRoles'
 
 const staffNav = [
   { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
@@ -13,15 +14,11 @@ const staffNav = [
 ]
 
 export default function StaffShell() {
-  const { isStaff, staffUser, logout } = useApp()
+  const { staffUser, logout } = useApp()
 
-  if (!isStaff) {
-    return <Navigate to="/login" replace />
-  }
-
-  const isCoach = staffUser.role === 'coach'
-  const RoleIcon = isCoach ? Dumbbell : Apple
-  const roleLabel = isCoach ? 'Koç' : 'Diyetisyen'
+  const meta = staffRoleMeta(staffUser.role)
+  const RoleIcon = meta.icon
+  const roleLabel = meta.label
 
   return (
     <div className="flex min-h-screen bg-cream-50">

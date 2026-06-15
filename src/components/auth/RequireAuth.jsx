@@ -1,0 +1,41 @@
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
+
+/**
+ * Oturum ve rol kontrolü. Giriş yapmamış kullanıcıları login'e yönlendirir.
+ * @param {'member'|'staff'|'admin'|null} role - null = herhangi bir oturum
+ */
+export default function RequireAuth({ role = null }) {
+  const { isAuthenticated, isAdmin, isStaff } = useApp()
+  const location = useLocation()
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname + location.search,
+          message: 'Bu sayfaya erişmek için giriş yapmanız gerekiyor.',
+        }}
+      />
+    )
+  }
+
+  if (role === 'admin' && !isAdmin) {
+    if (isStaff) return <Navigate to="/staff" replace />
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (role === 'staff' && !isStaff) {
+    if (isAdmin) return <Navigate to="/admin" replace />
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (role === 'member' && (isAdmin || isStaff)) {
+    if (isAdmin) return <Navigate to="/admin" replace />
+    return <Navigate to="/staff" replace />
+  }
+
+  return <Outlet />
+}

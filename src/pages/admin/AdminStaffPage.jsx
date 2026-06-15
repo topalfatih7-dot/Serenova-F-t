@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import {
-  Plus, Search, Mail, Phone, Clock, Trash2, Edit, Dumbbell, Apple, Stethoscope, Check, X,
+  Plus, Search, Mail, Phone, Clock, Trash2, Edit, Stethoscope, Check, X,
 } from 'lucide-react'
+import { STAFF_ROLES, staffRoleMeta } from '../../utils/staffRoles'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import PhotoUpload from '../../components/ui/PhotoUpload'
@@ -42,13 +43,10 @@ function StaffFormModal({ open, onClose, onSubmit, initial, isEdit }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Bilgileri Düzenle' : 'Yeni Koç / Diyetisyen Ekle'} size="lg">
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Bilgileri Düzenle' : 'Yeni Uzman Ekle'} size="lg">
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { value: 'coach', label: 'Koç', icon: Dumbbell },
-            { value: 'dietitian', label: 'Diyetisyen', icon: Apple },
-          ].map((r) => (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {STAFF_ROLES.map((r) => (
             <button
               key={r.value}
               type="button"
@@ -92,7 +90,7 @@ function StaffFormModal({ open, onClose, onSubmit, initial, isEdit }) {
               })}
             </ul>
           )}
-          <p className="mt-1.5 text-xs text-cream-800/45">Bu bilgilerle koç/diyetisyen panele giriş yapar.</p>
+          <p className="mt-1.5 text-xs text-cream-800/45">Bu bilgilerle personel panele giriş yapar (koç, diyetisyen, doktor).</p>
         </div>
 
         <div>
@@ -168,7 +166,7 @@ export default function AdminStaffPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-cream-900">Kadromuz · Koç & Diyetisyen</h1>
+          <h1 className="font-display text-2xl font-bold text-cream-900">Kadromuz · Uzman Ekibi</h1>
           <p className="mt-1 text-sm text-cream-800/60">{staff.length} kayıtlı uzman · ana sayfadaki “Kadromuz” bölümünde görünür</p>
         </div>
         <button type="button" onClick={() => setAddOpen(true)} className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
@@ -191,6 +189,7 @@ export default function AdminStaffPage() {
           <option value="all">Tüm roller</option>
           <option value="coach">Koç</option>
           <option value="dietitian">Diyetisyen</option>
+          <option value="doctor">Doktor</option>
         </select>
       </div>
 
@@ -198,14 +197,19 @@ export default function AdminStaffPage() {
         <EmptyState
           icon={Stethoscope}
           title="Henüz uzman eklenmedi"
-          description="Koç veya diyetisyen ekleyerek danışan takibi ve program oluşturmayı başlatın."
+          description="Koç, diyetisyen veya doktor ekleyerek danışan takibi ve program oluşturmayı başlatın."
           action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Ekle</button>}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((s) => {
-            const isCoach = s.role === 'coach'
-            const RoleIcon = isCoach ? Dumbbell : Apple
+            const meta = staffRoleMeta(s.role)
+            const RoleIcon = meta.icon
+            const roleColors = {
+              coach: 'bg-brand-100 text-brand-600',
+              dietitian: 'bg-sage-100 text-sage-600',
+              doctor: 'bg-cream-200 text-cream-900',
+            }
             return (
               <div key={s.id} className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
                 <div className="flex items-start justify-between">
@@ -213,14 +217,14 @@ export default function AdminStaffPage() {
                     {s.photo ? (
                       <img src={s.photo} alt={s.name} className="h-11 w-11 rounded-xl object-cover" />
                     ) : (
-                      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${isCoach ? 'bg-brand-100 text-brand-600' : 'bg-sage-100 text-sage-600'}`}>
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${roleColors[s.role] || roleColors.coach}`}>
                         <RoleIcon className="h-5 w-5" />
                       </span>
                     )}
                     <div>
                       <p className="font-semibold text-cream-900">{s.name}</p>
-                      <span className={`text-xs font-medium ${isCoach ? 'text-brand-600' : 'text-sage-600'}`}>
-                        {isCoach ? 'Koç' : 'Diyetisyen'}{s.specialty ? ` · ${s.specialty}` : ''}
+                      <span className="text-xs font-medium text-cream-800/70">
+                        {meta.label}{s.specialty ? ` · ${s.specialty}` : ''}
                       </span>
                     </div>
                   </div>

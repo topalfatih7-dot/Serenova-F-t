@@ -1,21 +1,42 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Shield, Loader2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { ADMIN_CREDENTIALS } from '../../config/brand'
+import { getRememberMe } from '../../services/authStorage'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
-  const [remember, setRemember] = useState(false)
+  const [remember, setRemember] = useState(() => getRememberMe())
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
-  const { login } = useApp()
+  const { login, isAuthenticated, isAdmin, isStaff } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const redirectTo = location.state?.from || null
+
+  useEffect(() => {
+    if (location.state?.message) {
+      toast(location.state.message, 'info')
+    }
+  }, [location.state?.message, toast])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    if (redirectTo && !redirectTo.startsWith('/login')) {
+      navigate(redirectTo, { replace: true })
+      return
+    }
+    if (isAdmin) navigate('/admin', { replace: true })
+    else if (isStaff) navigate('/staff', { replace: true })
+    else navigate('/dashboard', { replace: true })
+  }, [isAuthenticated, isAdmin, isStaff, redirectTo, navigate])
 
   const validate = () => {
     const e = {}
@@ -35,16 +56,15 @@ export default function LoginPage() {
         toast(result.error || 'Giriş başarısız', 'error')
         return
       }
-      if (result.role === 'admin') {
-        toast('Admin paneline hoş geldiniz', 'success')
-        navigate('/admin')
-      } else if (result.role === 'staff') {
-        toast('Hoş geldiniz!', 'success')
-        navigate('/staff')
-      } else {
-        toast('Hoş geldiniz!', 'success')
-        navigate('/dashboard')
-      }
+      toast('Hoş geldiniz!', 'success')
+      const target = redirectTo && !redirectTo.startsWith('/login')
+        ? redirectTo
+        : result.role === 'admin'
+          ? '/admin'
+          : result.role === 'staff'
+            ? '/staff'
+            : '/dashboard'
+      navigate(target, { replace: true })
     } finally {
       setLoading(false)
     }
@@ -69,6 +89,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none focus:border-brand-300 ${errors.email ? 'border-red-300' : 'border-cream-200'}`}
                   placeholder="kayit@email.com"
+                  autoComplete="email"
                 />
               </div>
               {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
@@ -83,6 +104,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className={`w-full rounded-xl border py-3 pl-10 pr-10 text-sm outline-none focus:border-brand-300 ${errors.password ? 'border-red-300' : 'border-cream-200'}`}
                   placeholder="••••••••"
+                  autoComplete={remember ? 'current-password' : 'password'}
                 />
                 <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40">
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -96,6 +118,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => setRemember((v) => !v)}
               className="group flex select-none items-center gap-2.5 text-sm font-medium text-cream-800/80"
+              aria-pressed={remember}
             >
               <span
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
@@ -112,6 +135,11 @@ export default function LoginPage() {
             </button>
             <Link to="/forgot-password" className="text-sm font-medium text-brand-600 hover:underline">Şifremi unuttum</Link>
           </div>
+          <p className="mt-3 text-xs text-cream-800/45">
+            {remember
+              ? 'Oturumunuz bu cihazda kalıcı olarak saklanır.'
+              : 'Oturum yalnızca bu sekme açıkken geçerlidir; tarayıcıyı kapattığınızda tekrar giriş gerekir.'}
+          </p>
           <button
             type="submit"
             disabled={loading}

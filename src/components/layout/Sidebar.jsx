@@ -22,8 +22,8 @@ export default function Sidebar() {
   const { user, membership, membershipStatus, logout } = useApp()
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white/80 backdrop-blur-sm lg:flex">
-      <div className="border-b border-cream-100 p-5">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-cream-200 bg-white/80 backdrop-blur-sm lg:flex">
+      <div className="shrink-0 border-b border-cream-100 p-5">
         <BrandLogo linkTo="/dashboard" />
         <div className="mt-3">
           <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
@@ -31,7 +31,7 @@ export default function Sidebar() {
         <p className="mt-2 truncate text-sm text-cream-800/60">{user.name}</p>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
@@ -56,7 +56,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="border-t border-cream-100 p-3">
+      <div className="shrink-0 border-t border-cream-100 p-3">
         <button
           type="button"
           onClick={logout}

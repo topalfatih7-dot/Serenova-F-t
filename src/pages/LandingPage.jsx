@@ -146,7 +146,7 @@ export default function LandingPage() {
 
       {/* KADROMUZ */}
       {teamMembers.length > 0 && (
-        <section className="py-16">
+        <section id="kadromuz" className="py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">

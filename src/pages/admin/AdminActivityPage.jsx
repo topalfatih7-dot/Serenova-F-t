@@ -1,6 +1,8 @@
 import { useApp } from '../../context/AppContext'
 import EmptyState from '../../components/ui/EmptyState'
-import { Activity, ArrowUpCircle, UserPlus, Pause, XCircle, Award, CreditCard, MessageSquare, LogIn } from 'lucide-react'
+import { formatRelativeTime } from '../../utils/relativeTime'
+import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
+import { Activity, ArrowUpCircle, UserPlus, Pause, XCircle, Award, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
 
 const TYPE_CONFIG = {
   upgrade: { icon: ArrowUpCircle, color: 'bg-brand-50 text-brand-600', label: 'Yükseltme' },
@@ -10,11 +12,15 @@ const TYPE_CONFIG = {
   payment: { icon: CreditCard, color: 'bg-gold-400/20 text-gold-600', label: 'Ödeme' },
   ticket: { icon: MessageSquare, color: 'bg-purple-50 text-purple-600', label: 'Destek' },
   login: { icon: LogIn, color: 'bg-cream-100 text-cream-800', label: 'Giriş' },
+  logout: { icon: LogOut, color: 'bg-cream-100 text-cream-800', label: 'Çıkış' },
   renew: { icon: Award, color: 'bg-sage-50 text-sage-600', label: 'Yenileme' },
   resume: { icon: Award, color: 'bg-brand-50 text-brand-600', label: 'Devam' },
+  admin_premium: { icon: Shield, color: 'bg-brand-50 text-brand-600', label: 'Premium Yönetimi' },
+  request: { icon: MessageSquare, color: 'bg-amber-50 text-amber-700', label: 'Talep' },
 }
 
 export default function AdminActivityPage() {
+  useRelativeTimeTick()
   const { platform } = useApp()
   const activities = platform.activities
 
@@ -39,7 +45,9 @@ export default function AdminActivityPage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-cream-900">{a.text}</p>
-                  <p className="mt-0.5 text-xs text-cream-800/40">{config.label} · {a.time}</p>
+                  <p className="mt-0.5 text-xs text-cream-800/40">
+                    {config.label} · {formatRelativeTime(a.createdAt)}
+                  </p>
                 </div>
               </div>
             )

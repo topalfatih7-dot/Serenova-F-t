@@ -5,6 +5,7 @@ import PublicLayout from './components/layout/PublicLayout'
 import AppShell from './components/layout/AppShell'
 import AdminShell from './components/layout/AdminShell'
 import StaffShell from './components/layout/StaffShell'
+import RequireAuth from './components/auth/RequireAuth'
 
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
@@ -23,6 +24,8 @@ import ExerciseLibraryPage from './pages/ExerciseLibraryPage'
 import SuccessStoriesPage from './pages/SuccessStoriesPage'
 import BlogPage from './pages/BlogPage'
 import BlogPostPage from './pages/BlogPostPage'
+import StaffProfilePage from './pages/StaffProfilePage'
+import NotFoundPage from './pages/NotFoundPage'
 
 import StaffOverviewPage from './pages/staff/StaffOverviewPage'
 import StaffClientsPage from './pages/staff/StaffClientsPage'
@@ -59,43 +62,50 @@ export default function App() {
               <Route path="stories" element={<SuccessStoriesPage />} />
               <Route path="blog" element={<BlogPage />} />
               <Route path="blog/:id" element={<BlogPostPage />} />
+              <Route path="team/:id" element={<StaffProfilePage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
 
-            <Route element={<AppShell />}>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="schedule/coach" element={<CoachSchedulePage />} />
-              <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="support" element={<SupportPage />} />
-              <Route path="programs" element={<ProgramsPage />} />
-              <Route path="library" element={<ExerciseLibraryPage />} />
-              <Route path="profile" element={<ProfilePage />} />
+            <Route element={<RequireAuth role="member" />}>
+              <Route element={<AppShell />}>
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="schedule/coach" element={<CoachSchedulePage />} />
+                <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="support" element={<SupportPage />} />
+                <Route path="programs" element={<ProgramsPage />} />
+                <Route path="library" element={<ExerciseLibraryPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
             </Route>
 
-            <Route element={<StaffShell />}>
-              <Route path="staff" element={<StaffOverviewPage />} />
-              <Route path="staff/clients" element={<StaffClientsPage />} />
-              <Route path="staff/programs" element={<StaffProgramsPage />} />
-              <Route path="staff/library" element={<ExerciseLibraryPage />} />
+            <Route element={<RequireAuth role="staff" />}>
+              <Route element={<StaffShell />}>
+                <Route path="staff" element={<StaffOverviewPage />} />
+                <Route path="staff/clients" element={<StaffClientsPage />} />
+                <Route path="staff/programs" element={<StaffProgramsPage />} />
+                <Route path="staff/library" element={<ExerciseLibraryPage />} />
+              </Route>
             </Route>
 
-            <Route element={<AdminShell />}>
-              <Route path="admin" element={<AdminOverviewPage />} />
-              <Route path="admin/members" element={<AdminMembersPage />} />
-              <Route path="admin/premium" element={<AdminPremiumPage />} />
-              <Route path="admin/requests" element={<AdminRequestsPage />} />
-              <Route path="admin/library" element={<AdminLibraryPage />} />
-              <Route path="admin/staff" element={<AdminStaffPage />} />
-              <Route path="admin/blog" element={<AdminBlogPage />} />
-              <Route path="admin/content" element={<AdminContentPage />} />
-              <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
-              <Route path="admin/sessions" element={<AdminSessionsPage />} />
-              <Route path="admin/support" element={<AdminSupportPage />} />
-              <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
-              <Route path="admin/activity" element={<AdminActivityPage />} />
+            <Route element={<RequireAuth role="admin" />}>
+              <Route element={<AdminShell />}>
+                <Route path="admin" element={<AdminOverviewPage />} />
+                <Route path="admin/members" element={<AdminMembersPage />} />
+                <Route path="admin/premium" element={<AdminPremiumPage />} />
+                <Route path="admin/requests" element={<AdminRequestsPage />} />
+                <Route path="admin/library" element={<AdminLibraryPage />} />
+                <Route path="admin/staff" element={<AdminStaffPage />} />
+                <Route path="admin/blog" element={<AdminBlogPage />} />
+                <Route path="admin/content" element={<AdminContentPage />} />
+                <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
+                <Route path="admin/sessions" element={<AdminSessionsPage />} />
+                <Route path="admin/support" element={<AdminSupportPage />} />
+                <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="admin/activity" element={<AdminActivityPage />} />
+              </Route>
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>

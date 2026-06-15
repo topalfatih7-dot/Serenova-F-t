@@ -1,7 +1,7 @@
-import { formatDistanceToNow } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { formatRelativeTime } from '../../utils/relativeTime'
+import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 import {
-  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList,
+  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList, UserCheck,
 } from 'lucide-react'
 
 const TYPE_CONFIG = {
@@ -14,11 +14,14 @@ const TYPE_CONFIG = {
   missed: { icon: Activity, color: 'text-cream-800 bg-cream-100' },
   program: { icon: ClipboardList, color: 'text-brand-600 bg-brand-50' },
   support: { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
+  assignment: { icon: UserCheck, color: 'text-sage-600 bg-sage-50' },
 }
 
 export default function NotificationItem({ notification, onRead }) {
+  useRelativeTimeTick()
   const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.reminder
   const Icon = config.icon
+  const when = formatRelativeTime(notification.createdAt)
 
   return (
     <button
@@ -37,9 +40,7 @@ export default function NotificationItem({ notification, onRead }) {
           {!notification.read && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />}
         </div>
         <p className="mt-1 text-sm text-cream-800/60">{notification.message}</p>
-        <p className="mt-2 text-xs text-cream-800/40">
-          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: tr })}
-        </p>
+        <p className="mt-2 text-xs text-cream-800/40">{when}</p>
       </div>
     </button>
   )

@@ -1,11 +1,14 @@
 // Supabase veri/auth katmanı.
 // Tüm veriler Supabase üzerinden yönetilir.
-import { supabase } from './supabaseClient'
+import { supabase, syncAutoRefresh } from './supabaseClient'
+import { setRememberMe, clearAllAuthTokens } from './authStorage'
 import { ADMIN_CREDENTIALS } from '../config/brand'
 import { DEFAULT_PACKAGE } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus } from './premiumMembership'
+import { notifyTelegram } from './telegramNotify'
+import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -66,7 +69,13 @@ function rowToTicket(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id, status: row.status }
 }
 function rowToActivity(row) {
-  return { ...(row.data || {}), id: row.id, memberId: row.member_id }
+  const data = row.data || {}
+  return {
+    ...data,
+    id: row.id,
+    memberId: row.member_id,
+    createdAt: data.createdAt || row.created_at,
+  }
 }
 function rowToPayment(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id }
@@ -80,13 +89,33 @@ function roleForEmail(email, staffList) {
   return 'member'
 }
 
+export async function getSession() {
+  const { data } = await supabase.auth.getSession()
+  return data?.session || null
+}
+
 export async function getUser() {
-  const { data } = await supabase.auth.getUser()
-  return data?.user || null
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data?.user) return null
+  return data.user
+}
+
+/** Oturumu doğrular; geçersiz token varsa temizler. */
+export async function resolveAuthUser() {
+  const session = await getSession()
+  if (!session?.user) return null
+
+  const user = await getUser()
+  if (!user) {
+    await supabase.auth.signOut()
+    clearAllAuthTokens()
+    return null
+  }
+  return user
 }
 
 export function onAuthChange(cb) {
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => cb(session))
+  const { data } = supabase.auth.onAuthStateChange((event, session) => cb(event, session))
   return () => data?.subscription?.unsubscribe?.()
 }
 
@@ -104,7 +133,7 @@ function rowToRequest(row) {
 }
 
 export async function hydrate() {
-  const user = await getUser()
+  const user = await resolveAuthUser()
 
   const [staffRes, postsRes, contentRes, exercisesRes] = await Promise.all([
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
@@ -170,25 +199,89 @@ async function upsertMember(member) {
   if (error) throw error
 }
 
+async function resolveActorName(user, role, staffList) {
+  if (!user) return 'Kullanıcı'
+  if (role === 'admin') return user.user_metadata?.name || 'Admin'
+  if (role === 'staff') {
+    const s = staffList.find((x) => (x.email || '').toLowerCase() === (user.email || '').toLowerCase())
+    return s?.name || user.user_metadata?.name || 'Personel'
+  }
+  const { data } = await supabase.from('members').select('name').eq('id', user.id).maybeSingle()
+  return data?.name || user.user_metadata?.name || 'Üye'
+}
+
 async function addActivity(type, text, memberId = null) {
-  await supabase.from('activities').insert({ member_id: memberId, data: { type, text, time: 'Az önce', createdAt: nowISO() } })
+  await supabase.from('activities').insert({
+    member_id: memberId,
+    data: { type, text, createdAt: nowISO() },
+  })
 }
 
 // --------------------------- auth flows ---------------------------
-export async function login(email, password) {
+export async function login(email, password, remember = false) {
+  setRememberMe(remember)
+  if (!remember) {
+    clearAllAuthTokens()
+  }
+  syncAutoRefresh(remember)
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(), password,
   })
   if (error) return { success: false, error: 'E-posta veya şifre hatalı.' }
 
-  const { data: staffData } = await supabase.from('staff').select('email')
-  const role = roleForEmail(data.user.email, staffData || [])
-  await addActivity('login', `${data.user.email} giriş yaptı`, role === 'member' ? data.user.id : null)
-  return { success: true, role }
+  const { data: staffRows } = await supabase.from('staff').select('*')
+  const staffList = (staffRows || []).map(rowToStaff)
+  const role = roleForEmail(data.user.email, staffList)
+  const displayName = await resolveActorName(data.user, role, staffList)
+  const staffMember = staffList.find((s) => (s.email || '').toLowerCase() === data.user.email.toLowerCase())
+
+  const loginText = role === 'admin'
+    ? `${displayName} (Admin) giriş yaptı`
+    : role === 'staff'
+      ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
+      : `${displayName} giriş yaptı`
+
+  await addActivity('login', loginText, role === 'member' ? data.user.id : null)
+
+  if (role === 'admin') {
+    notifyTelegram('admin_login', { name: displayName, email: data.user.email })
+  } else if (role === 'staff') {
+    notifyTelegram('staff_login', {
+      name: displayName,
+      email: data.user.email,
+      role: staffRoleLabel(staffMember?.role),
+    })
+  } else {
+    notifyTelegram('member_login', { name: displayName, email: data.user.email })
+  }
+
+  return { success: true, role, remember }
 }
 
 export async function logout() {
+  const user = await getUser()
+  if (user) {
+    const { data: staffRows } = await supabase.from('staff').select('*')
+    const staffList = (staffRows || []).map(rowToStaff)
+    const role = roleForEmail(user.email, staffList)
+    const displayName = await resolveActorName(user, role, staffList)
+    const staffMember = staffList.find((s) => (s.email || '').toLowerCase() === user.email.toLowerCase())
+
+    if (role === 'staff') {
+      await addActivity('logout', `${displayName} (${staffRoleLabel(staffMember?.role)}) çıkış yaptı`)
+      notifyTelegram('staff_logout', { name: displayName, role: staffRoleLabel(staffMember?.role) })
+    } else if (role === 'admin') {
+      await addActivity('logout', `${displayName} (Admin) çıkış yaptı`)
+    } else {
+      await addActivity('logout', `${displayName} çıkış yaptı`, user.id)
+      notifyTelegram('member_logout', { name: displayName })
+    }
+  }
+
   await supabase.auth.signOut()
+  clearAllAuthTokens()
+  syncAutoRefresh(false)
 }
 
 function withPremiumDates(member, packageConfig, isNewPremium = false) {
@@ -277,6 +370,11 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 
   await upsertMember(member)
   await addActivity('signup', `${member.name} yeni kayıt (${membership === 'premium' ? 'Premium' : 'Ücretsiz'})`, member.id)
+  notifyTelegram('member_signup', {
+    name: member.name,
+    email: member.email,
+    membership,
+  })
 
   if (opts.payment) {
     await supabase.from('payments').insert({
@@ -422,7 +520,7 @@ export async function addStaff(data) {
     p_email: email,
     p_password: data.password,
     p_name: data.name,
-    p_role: data.role === 'dietitian' ? 'dietitian' : 'coach',
+    p_role: normalizeStaffRole(data.role),
     p_active: true,
     p_data: staffDataPayload(data),
   })
@@ -440,7 +538,7 @@ export async function editStaff(id, patch) {
     p_email: (merged.email || '').toLowerCase(),
     p_password: patch.password || '',
     p_name: merged.name,
-    p_role: merged.role,
+    p_role: normalizeStaffRole(merged.role),
     p_active: merged.active !== false,
     p_data: staffDataPayload(merged),
   })

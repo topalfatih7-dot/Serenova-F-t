@@ -8,6 +8,7 @@ import { Bell } from 'lucide-react'
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
   { id: 'reminder', label: 'Hatırlatıcı' },
+  { id: 'assignment', label: 'Atamalar' },
   { id: 'no-response', label: 'Yanıt bekleniyor' },
   { id: 'health-warning', label: 'Sağlık' },
   { id: 'upsell', label: 'Öneriler' },

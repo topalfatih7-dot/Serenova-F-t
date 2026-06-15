@@ -8,10 +8,13 @@ import {
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
+import { formatRelativeTime } from '../../utils/relativeTime'
+import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 
 const ACTIVITY_COLORS = { upgrade: 'text-brand-600', signup: 'text-sage-600', pause: 'text-amber-600', cancel: 'text-red-500', payment: 'text-gold-500', ticket: 'text-purple-600', login: 'text-cream-800', renew: 'text-sage-600', resume: 'text-brand-500' }
 
 export default function AdminOverviewPage() {
+  useRelativeTimeTick()
   const { adminStats, monthlyGrowth, membershipBreakdown, platform, sessionStats } = useApp()
   const { activities, tickets } = platform
   const hasMembers = adminStats.totalMembers > 0
@@ -109,7 +112,7 @@ export default function AdminOverviewPage() {
               {activities.slice(0, 6).map((a) => (
                 <div key={a.id} className="flex items-center justify-between rounded-xl bg-cream-50 px-4 py-3">
                   <p className={`text-sm font-medium ${ACTIVITY_COLORS[a.type] || 'text-cream-800'}`}>{a.text}</p>
-                  <span className="text-xs text-cream-800/40">{a.time}</span>
+                  <span className="text-xs text-cream-800/40">{formatRelativeTime(a.createdAt)}</span>
                 </div>
               ))}
             </div>

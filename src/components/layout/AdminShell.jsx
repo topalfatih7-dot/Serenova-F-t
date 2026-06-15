@@ -1,4 +1,4 @@
-import { Outlet, Navigate, NavLink } from 'react-router-dom'
+import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard, Calendar, MessageSquare,
   BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Inbox, Sparkles, Crown,
@@ -25,11 +25,7 @@ const adminNav = [
 ]
 
 export default function AdminShell() {
-  const { isAdmin, logout } = useApp()
-
-  if (!isAdmin) {
-    return <Navigate to="/login" replace />
-  }
+  const { logout } = useApp()
 
   return (
     <div className="flex min-h-screen bg-cream-50">

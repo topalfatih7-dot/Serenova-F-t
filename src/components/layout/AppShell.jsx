@@ -23,11 +23,7 @@ const memberNav = [
 ]
 
 export default function AppShell() {
-  const { isAuthenticated, isAdmin, isStaff, membership, notifications, user, logout } = useApp()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
+  const { isAdmin, isStaff, membership, notifications, user, logout } = useApp()
 
   if (isAdmin) {
     return <Navigate to="/admin" replace />
@@ -43,9 +39,9 @@ export default function AppShell() {
     : memberNav
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex flex-1 flex-col pb-20 lg:pb-0">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-20 lg:pb-0">
         <PanelMobileMenu
           navItems={navItems}
           brandLink="/dashboard"
@@ -63,7 +59,7 @@ export default function AppShell() {
         <div className="hidden lg:block">
           <TopBar />
         </div>
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
         <footer className="hidden border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40 lg:block">

@@ -50,9 +50,11 @@ export function AppProvider({ children }) {
         if (active) setLoading(false)
       }
     })()
-    const unsub = sb.onAuthChange(async () => {
-      const d = await sb.hydrate()
-      if (active) setRemoteDb(d)
+    const unsub = sb.onAuthChange(async (event) => {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        const d = await sb.hydrate()
+        if (active) setRemoteDb(d)
+      }
     })
     return () => { active = false; unsub?.() }
   }, [])
@@ -75,8 +77,8 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [currentMember, reloadRemote])
 
-  const login = useCallback(async (email, password) => {
-    const r = await sb.login(email, password)
+  const login = useCallback(async (email, password, remember = false) => {
+    const r = await sb.login(email, password, remember)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
     await reloadRemote()
     return { success: true, role: r.role, isAdmin: r.role === 'admin' }
