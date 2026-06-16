@@ -1,118 +1,135 @@
-# Telegram Bildirim Kurulumu
+# Telegram Bildirim Kurulumu (Vercel)
 
-Bu rehber, Yeni Form platformundaki kayıt, giriş ve çıkış olaylarının Telegram botunuza mesaj göndermesi için gereken adımları anlatır.
+Telegram bildirimleri **Supabase değil, projenizin Vercel API route'u** üzerinden çalışır.
+
+```
+Site (Vercel)  →  /api/telegram-notify  →  Telegram Bot API
+                      ↑
+              TELEGRAM_BOT_TOKEN (sunucuda, gizli)
+```
+
+---
 
 ## Ne zaman bildirim gider?
 
 | Olay | Telegram mesajı |
 |------|-----------------|
-| Yeni üye kaydı (ücretsiz) | Üye adı + e-posta + **Ücretsiz** |
-| Yeni üye kaydı (premium) | Üye adı + e-posta + **Premium** |
-| Üye girişi | Ad soyad |
-| Üye çıkışı | Ad soyad |
-| Koç / diyetisyen / doktor girişi | Ad soyad + rol |
-| Personel çıkışı | Ad soyad + rol |
+| Yeni üye kaydı (ücretsiz) | Ad + e-posta + **Ücretsiz** |
+| Yeni üye kaydı (premium) | Ad + e-posta + **Premium** |
+| Üye girişi / çıkışı | Ad soyad |
+| Koç / diyetisyen / doktor girişi / çıkışı | Ad soyad + rol |
 | Admin girişi | Admin |
 
 ---
 
 ## Adım 1 — Telegram botu oluşturun
 
-1. Telegram'da **@BotFather**'ı açın.
+1. Telegram'da **@BotFather** açın.
 2. `/newbot` yazın.
-3. Bot için bir **isim** ve **kullanıcı adı** (ör. `yeni_form_bot`) belirleyin.
-4. BotFather size **`123456789:AAH...`** formatında bir **token** verecek. Bunu güvenli bir yere kaydedin.
+3. Bot adı ve kullanıcı adı belirleyin (ör. `yeni_form_bot`).
+4. BotFather'ın verdiği **token**'ı kaydedin: `123456789:AAH...`
 
 ---
 
-## Adım 2 — Chat ID'nizi bulun
+## Adım 2 — Chat ID bulun
 
-Bot mesajları bir **sohbet kanalına veya size** gider. Chat ID gerekir.
-
-### Kişisel bildirim (size gelsin)
-
-1. Oluşturduğunuz bota Telegram'dan `/start` yazın (en az bir kez).
-2. Tarayıcıda şu adresi açın (TOKEN yerine bot token'ınızı yazın):
+1. Bota Telegram'dan **`/start`** yazın.
+2. Tarayıcıda açın (TOKEN yerine bot token'ınızı yazın):
 
    `https://api.telegram.org/botTOKEN/getUpdates`
 
-3. JSON içinde `"chat":{"id":123456789}` değerini bulun. Bu sizin **TELEGRAM_CHAT_ID** değerinizdir.
+3. JSON'da `"chat":{"id":123456789}` değerini bulun → **TELEGRAM_CHAT_ID**
 
-### Grup / kanal bildirimi
-
-1. Botu gruba ekleyin veya kanala admin yapın.
-2. Grupta bir mesaj yazın.
-3. Yine `getUpdates` ile `"chat":{"id":-1001234567890}` gibi (negatif olabilir) ID'yi alın.
+**Grup/kanal için:** Botu gruba ekleyin, grupta mesaj yazın, aynı yöntemle id'yi alın (negatif olabilir: `-1001234567890`).
 
 ---
 
-## Adım 3 — Supabase Edge Function secret'larını tanımlayın
+## Adım 3 — Vercel ortam değişkenlerini girin
 
-1. [Supabase Dashboard](https://supabase.com/dashboard) → projeniz → **Project Settings** → **Edge Functions**.
-2. **Secrets** bölümüne ekleyin:
+[Vercel Dashboard](https://vercel.com) → Projeniz → **Settings** → **Environment Variables**
 
-   | Secret adı | Değer |
-   |------------|--------|
-   | `TELEGRAM_BOT_TOKEN` | BotFather'dan aldığınız token |
-   | `TELEGRAM_CHAT_ID` | Adım 2'deki chat id |
+Aşağıdakileri **Production**, **Preview** ve **Development** için ekleyin:
 
-Alternatif (Supabase CLI):
+### Zorunlu (sunucu — `VITE_` ÖNEKİ YOK)
 
-```bash
-supabase secrets set TELEGRAM_BOT_TOKEN=123456789:AAH...
-supabase secrets set TELEGRAM_CHAT_ID=123456789
-```
+| Değişken | Örnek | Açıklama |
+|----------|-------|----------|
+| `TELEGRAM_BOT_TOKEN` | `123456789:AAH...` | BotFather token |
+| `TELEGRAM_CHAT_ID` | `123456789` | Chat id |
+
+> **Önemli:** `TELEGRAM_BOT_TOKEN` **asla** `VITE_TELEGRAM_BOT_TOKEN` olarak eklemeyin. `VITE_` ile başlayan değişkenler tarayıcıya gider ve herkes görebilir.
+
+### Supabase (site zaten kullanıyorsa)
+
+| Değişken | Açıklama |
+|----------|----------|
+| `VITE_SUPABASE_URL` | Supabase proje URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` veya `VITE_SUPABASE_ANON_KEY` | Supabase anon key |
+
+### İsteğe bağlı — spam koruması
+
+| Değişken | Açıklama |
+|----------|----------|
+| `TELEGRAM_NOTIFY_SECRET` | Sunucu tarafı gizli anahtar (rastgele uzun string) |
+| `VITE_TELEGRAM_NOTIFY_SECRET` | **Aynı değer** — istemci API'yi çağırırken gönderir |
+
+İkisini de aynı rastgele değere ayarlarsanız, rastgele kişiler `/api/telegram-notify` endpoint'ini kötüye kullanamaz.
 
 ---
 
-## Adım 4 — Edge Function'ı deploy edin
+## Adım 4 — GitHub'a push edin ve Vercel deploy edin
 
-Proje klasöründe:
+1. Değişiklikleri GitHub'a push edin.
+2. Vercel otomatik deploy eder **veya** Deployments → **Redeploy** yapın.
+3. Env değişkenlerini ekledikten sonra mutlaka **yeniden deploy** edin; eski build env'i görmez.
+
+Proje yapısı:
+
+- `api/telegram-notify.js` → Vercel sunucu fonksiyonu
+- `src/services/telegramNotify.js` → giriş/kayıt olaylarında çağrılır
+
+**Supabase Edge Function deploy etmenize gerek yok.**
+
+---
+
+## Adım 5 — Test edin
+
+Canlı sitenizde (ör. `https://siteniz.vercel.app`):
 
 ```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref YOUR-PROJECT-REF
-supabase functions deploy telegram-notify
-```
-
-Deploy sonrası fonksiyon adı: **`telegram-notify`**
-
-Test (isteğe bağlı):
-
-```bash
-curl -X POST "https://YOUR-PROJECT-ref.supabase.co/functions/v1/telegram-notify" \
-  -H "Authorization: Bearer YOUR-ANON-KEY" \
+curl -X POST "https://SITENIZ.vercel.app/api/telegram-notify" \
   -H "Content-Type: application/json" \
   -d "{\"event\":\"member_signup\",\"name\":\"Test Kullanıcı\",\"email\":\"test@ornek.com\",\"membership\":\"free\"}"
 ```
 
-Telegram'da test mesajını görmelisiniz.
-
----
-
-## Adım 5 — Veritabanı migration (doktor rolü + personel auth)
-
-Supabase **SQL Editor**'da şu dosyayı çalıştırın:
-
-`supabase/migrate_doctor_role.sql`
-
-Bu migration:
-
-- `doctor` rolünü staff tablosuna ekler
-- Admin panelinden eklenen koç/diyetisyen/doktor için **Supabase Auth kullanıcısı** oluşturur
-- Personelin `staff.id` değerini `auth.users.id` ile eşler
-- Otomatik oluşan `members` satırını siler (personel üye listesinde görünmez)
-
----
-
-## Adım 6 — Uygulamayı yeniden build / deploy edin
+`TELEGRAM_NOTIFY_SECRET` kullanıyorsanız:
 
 ```bash
-npm run build
+curl -X POST "https://SITENIZ.vercel.app/api/telegram-notify" \
+  -H "Content-Type: application/json" \
+  -H "X-Notify-Secret: SIZIN-SECRET" \
+  -d "{\"event\":\"member_signup\",\"name\":\"Test\",\"email\":\"test@ornek.com\",\"membership\":\"free\"}"
 ```
 
-Frontend'i (Vercel, Netlify vb.) güncel `dist` ile deploy edin.
+Başarılı yanıt: `{"ok":true}` ve Telegram'da mesaj.
+
+Ardından siteden gerçek giriş/kayıt deneyin.
+
+---
+
+## Yerel geliştirme
+
+`npm run dev` (Vite) **API route'u çalıştırmaz**. Yerelde test için:
+
+```bash
+npm install -g vercel
+vercel login
+vercel link
+vercel env pull .env.local
+vercel dev
+```
+
+`.env.local` dosyasına `TELEGRAM_BOT_TOKEN` ve `TELEGRAM_CHAT_ID` ekleyin (Vercel'den pull edilir).
 
 ---
 
@@ -120,23 +137,25 @@ Frontend'i (Vercel, Netlify vb.) güncel `dist` ile deploy edin.
 
 | Sorun | Çözüm |
 |-------|--------|
-| Telegram mesajı gelmiyor | Secret'ların doğru olduğunu ve `telegram-notify` deploy edildiğini kontrol edin |
-| `403` / bot blocked | Bota `/start` yazın veya botu gruba ekleyin |
-| Personel giriş yapamıyor | Admin panelinden personeli tekrar kaydedin; şifrenin PASSWORD_RULES'a uyduğundan emin olun |
-| Koç müşteri paneline giriyor | `migrate_doctor_role.sql` çalıştırıldı mı? Personel e-postası `staff` tablosunda mı? |
+| Mesaj gelmiyor | Vercel env doğru mu? Deploy **sonrası** mı test ettiniz? |
+| `503 Telegram yapılandırması eksik` | `TELEGRAM_BOT_TOKEN` veya `TELEGRAM_CHAT_ID` Vercel'de yok |
+| `401 Yetkisiz istek` | `VITE_TELEGRAM_NOTIFY_SECRET` ile `TELEGRAM_NOTIFY_SECRET` aynı mı? |
+| `502` Telegram hatası | Chat ID yanlış; bota `/start` yazın |
+| Vercel'de env var ama çalışmıyor | **Redeploy** yapın |
+| Supabase'e secret girdim | Artık gerek yok; yalnızca Vercel env kullanılır |
 
 ---
 
-## Güvenlik notları
+## Güvenlik
 
-- Bot token'ını **asla** frontend `.env` dosyasına veya GitHub'a koymayın.
-- Token yalnızca Supabase Edge Function secret'larında tutulur.
-- İstemci kodu sadece `supabase.functions.invoke('telegram-notify', …)` çağırır; token görmez.
+- Bot token **yalnızca** Vercel Environment Variables (`TELEGRAM_BOT_TOKEN`, `VITE_` **olmadan**).
+- Token'ı GitHub'a commit etmeyin.
+- `.env` dosyasını `.gitignore`'da tutun.
 
 ---
 
 ## Dosya referansları
 
-- Edge Function: `supabase/functions/telegram-notify/index.ts`
-- İstemci çağrısı: `src/services/telegramNotify.js`
-- Auth olayları: `src/services/supabaseDb.js` (`login`, `logout`, `register`, …)
+- API route: `api/telegram-notify.js`
+- İstemci: `src/services/telegramNotify.js`
+- Olaylar: `src/services/supabaseDb.js` (`login`, `logout`, `register`, …)

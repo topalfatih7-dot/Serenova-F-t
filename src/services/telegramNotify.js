@@ -1,15 +1,17 @@
-import { supabase, isSupabaseEnabled } from './supabaseClient'
-
 /**
- * Telegram bildirimi — Supabase Edge Function üzerinden gönderilir.
- * Bot token istemcide tutulmaz; TELEGRAM_SETUP.md adımlarını izleyin.
+ * Telegram bildirimi — Vercel API route (/api/telegram-notify) üzerinden gönderilir.
+ * Bot token sunucuda tutulur; TELEGRAM_SETUP.md adımlarını izleyin.
  */
 export async function notifyTelegram(event, payload = {}) {
-  if (!isSupabaseEnabled || !supabase) return
-
   try {
-    await supabase.functions.invoke('telegram-notify', {
-      body: { event, ...payload, at: new Date().toISOString() },
+    const headers = { 'Content-Type': 'application/json' }
+    const secret = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET
+    if (secret) headers['X-Notify-Secret'] = secret
+
+    await fetch('/api/telegram-notify', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ event, ...payload, at: new Date().toISOString() }),
     })
   } catch {
     // Bildirim hatası uygulama akışını kesmemeli
