@@ -8,11 +8,11 @@ export default function FAQAccordion({ items }) {
   return (
     <div className="space-y-3">
       {items.map((item, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
+        <div key={i} className="glass-card-solid overflow-hidden">
           <button
             type="button"
             onClick={() => setOpen(open === i ? null : i)}
-            className="flex w-full items-center justify-between px-5 py-4 text-left"
+            className={`flex w-full items-center justify-between px-5 py-4 text-left transition ${open === i ? 'bg-brand-50/50' : 'hover:bg-cream-50/80'}`}
           >
             <span className="pr-4 font-medium text-cream-900">{item.q}</span>
             <ChevronDown className={`h-5 w-5 shrink-0 text-brand-500 transition ${open === i ? 'rotate-180' : ''}`} />

@@ -55,7 +55,10 @@ Aşağıdakileri **Production**, **Preview** ve **Development** için ekleyin:
 | Değişken | Örnek | Açıklama |
 |----------|-------|----------|
 | `TELEGRAM_BOT_TOKEN` | `123456789:AAH...` | BotFather token |
-| `TELEGRAM_CHAT_ID` | `123456789` | Chat id |
+| `TELEGRAM_CHAT_ID` | `123456789` | Giriş/kayıt bildirimleri chat id |
+| `TELEGRAM_CONTACT_CHAT_ID` | `-1009876543210` | **Bize Ulaşın** formu — ayrı chat/grup id |
+
+> **İki ayrı chat:** Sistem bildirimleri (`TELEGRAM_CHAT_ID`) ile iletişim formu (`TELEGRAM_CONTACT_CHAT_ID`) farklı Telegram sohbetlerine gider. Aynı bot token kullanılır.
 
 > **Önemli:** `TELEGRAM_BOT_TOKEN` **asla** `VITE_TELEGRAM_BOT_TOKEN` olarak eklemeyin. `VITE_` ile başlayan değişkenler tarayıcıya gider ve herkes görebilir.
 
@@ -154,8 +157,54 @@ vercel dev
 
 ---
 
+## Bize Ulaşın formu (ayrı Telegram chat)
+
+Ana sayfadaki **Bize Ulaşın** formu `/api/contact` üzerinden **ayrı bir chat'e** gider.
+
+### Vercel env
+
+| Değişken | Açıklama |
+|----------|----------|
+| `TELEGRAM_CONTACT_CHAT_ID` | İletişim formu mesajlarının gideceği chat/grup id |
+
+Aynı `TELEGRAM_BOT_TOKEN` kullanılır; yalnızca chat id farklıdır.
+
+### Kurulum
+
+1. Telegram'da **yeni bir grup** oluşturun (ör. "Yeni Form — İletişim").
+2. Mevcut botunuzu gruba ekleyin.
+3. Grupta bir mesaj yazın.
+4. `getUpdates` ile grubun chat id'sini alın (genelde `-100...` ile başlar).
+5. Vercel'e `TELEGRAM_CONTACT_CHAT_ID` olarak ekleyin.
+6. Redeploy yapın.
+
+### Test
+
+```bash
+curl -X POST "https://SITENIZ.vercel.app/api/contact" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"Test Kullanıcı\",\"email\":\"test@test.com\",\"phone\":\"05551234567\",\"subject\":\"general\",\"message\":\"Bu bir test mesajıdır, en az on karakter.\"}"
+```
+
+Telegram iletişim grubunda mesaj görünmeli.
+
+### Form alanları
+
+| Alan | Zorunlu |
+|------|---------|
+| Ad Soyad | Evet |
+| E-posta | Evet |
+| Telefon | Hayır |
+| Konu (seçim) | Evet |
+| Mesaj | Evet (min. 10 karakter) |
+| KVKK onayı | Evet |
+
+---
+
 ## Dosya referansları
 
-- API route: `api/telegram-notify.js`
-- İstemci: `src/services/telegramNotify.js`
-- Olaylar: `src/services/supabaseDb.js` (`login`, `logout`, `register`, …)
+- Giriş/kayıt API: `api/telegram-notify.js`
+- İletişim formu API: `api/contact.js`
+- Form bileşeni: `src/components/landing/ContactSection.jsx`
+- İstemci: `src/services/contactForm.js`
+- Auth olayları: `src/services/supabaseDb.js`

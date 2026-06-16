@@ -22,7 +22,7 @@ export default function Sidebar() {
   const { user, membership, membershipStatus, logout } = useApp()
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-cream-200 bg-white/80 backdrop-blur-sm lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/60 bg-white/85 shadow-sm shadow-brand-900/[0.03] backdrop-blur-md lg:flex">
       <div className="shrink-0 border-b border-cream-100 p-5">
         <BrandLogo linkTo="/dashboard" />
         <div className="mt-3">
@@ -38,7 +38,7 @@ export default function Sidebar() {
             to={item.to}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                isActive ? 'bg-brand-50 text-brand-700' : 'text-cream-800 hover:bg-cream-50'
+                isActive ? 'nav-active-glow font-semibold' : 'text-cream-800 hover:bg-brand-50/60'
               }`
             }
           >

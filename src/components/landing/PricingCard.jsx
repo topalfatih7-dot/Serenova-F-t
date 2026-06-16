@@ -7,15 +7,16 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      className={`relative flex flex-col rounded-3xl border p-6 sm:p-8 ${
+      whileHover={{ y: -6 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      className={`relative flex flex-col rounded-3xl p-6 sm:p-8 ${
         featured
-          ? 'border-brand-300 bg-gradient-to-b from-brand-50 to-white shadow-lg shadow-brand-100/50'
-          : 'border-cream-200 bg-white shadow-sm'
+          ? 'glass-card-solid border-brand-200/80 bg-gradient-to-b from-brand-50/80 via-white to-sage-50/50 shadow-xl shadow-brand-500/10 ring-2 ring-brand-200/50'
+          : 'glass-card-solid'
       }`}
     >
       {featured && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-xs font-semibold text-white">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-4 py-1 text-xs font-semibold text-white shadow-md">
           Önerilen
         </span>
       )}
@@ -52,8 +53,8 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         to={ctaTo}
         className={`mt-8 block rounded-full py-3.5 text-center text-sm font-semibold transition ${
           featured
-            ? 'bg-brand-500 text-white hover:bg-brand-600 shadow-md'
-            : 'border border-cream-200 bg-cream-50 text-cream-900 hover:bg-cream-100'
+            ? 'btn-wellness w-full !shadow-md'
+            : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-brand-200 hover:shadow-md'
         }`}
       >
         {ctaLabel}

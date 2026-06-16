@@ -71,13 +71,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+    <div className="auth-page-bg flex items-center justify-center px-4 py-12">
+      <div aria-hidden className="wellness-orb left-[10%] top-[15%] h-48 w-48 bg-brand-300/30" />
+      <div aria-hidden className="wellness-orb right-[5%] bottom-[10%] h-56 w-56 bg-sage-300/25" />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative w-full max-w-md">
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-cream-900">Tekrar hoş geldiniz</h1>
           <p className="mt-2 text-cream-800/60">Kayıtlı hesabınızla giriş yapın</p>
         </div>
-        <form onSubmit={handleSubmit} className="mt-8 rounded-2xl border border-cream-200 bg-white p-6 shadow-sm sm:p-8">
+        <form onSubmit={handleSubmit} className="glass-card-solid mt-8 p-6 sm:p-8">
           <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium">E-posta</label>
@@ -143,7 +145,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:brightness-105 disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}

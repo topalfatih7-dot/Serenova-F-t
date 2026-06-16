@@ -268,9 +268,11 @@ export default function OnboardingPage() {
   const pricing = data.membership === 'premium' ? calculatePackagePrice(data.packageConfig) : null
 
   return (
-    <div className={`mx-auto px-4 py-10 sm:px-6 ${step === 6 ? 'max-w-6xl' : 'max-w-3xl'}`}>
-      <h1 className="text-center font-display text-2xl font-bold text-cream-900">Hoş Geldiniz</h1>
-      <p className="mt-2 text-center text-sm text-cream-800/60">Profilinizi oluşturun ve üyeliğinizi seçin</p>
+    <div className="auth-page-bg">
+      <div className={`relative mx-auto px-4 py-10 sm:px-6 ${step === 6 ? 'max-w-6xl' : 'max-w-3xl'}`}>
+      <span className="section-badge mx-auto block w-fit">Kayıt</span>
+      <h1 className="mt-4 text-center font-display text-2xl font-bold text-cream-900 sm:text-3xl">Hoş Geldiniz</h1>
+      <p className="mt-2 text-center text-sm text-cream-800/65">Profilinizi oluşturun ve üyeliğinizi seçin — birkaç dakika sürer</p>
       <div className="mt-8">
         <Stepper
           steps={data.membership === 'premium' ? STEPS : STEPS.slice(0, 6)}
@@ -721,6 +723,7 @@ export default function OnboardingPage() {
           onSubmit={handlePremiumPayment}
         />
       </Modal>
+      </div>
     </div>
   )
 }

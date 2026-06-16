@@ -3,29 +3,45 @@
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --color-brand-50: #f5f8fa;
-  --color-brand-100: #e8f0f5;
-  --color-brand-200: #cce0eb;
-  --color-brand-300: #9fc4d9;
-  --color-brand-400: #6ba3c2;
-  --color-brand-500: #4a8aad;
-  --color-brand-600: #3a7091;
-  --color-brand-700: #325c76;
-  --color-brand-800: #2d4d62;
-  --color-brand-900: #294153;
-  --color-sage-50: #f4f8f5;
-  --color-sage-100: #e6efe8;
-  --color-sage-400: #7daa88;
-  --color-sage-500: #5f9270;
-  --color-sage-600: #4a7559;
-  --color-sage-700: #3d5f4a;
+
+  --color-brand-50: #f0f7fb;
+  --color-brand-100: #dceef7;
+  --color-brand-200: #b8dcef;
+  --color-brand-300: #7ec0e2;
+  --color-brand-400: #4aa3d4;
+  --color-brand-500: #2d8fc4;
+  --color-brand-600: #2478a8;
+  --color-brand-700: #1f6289;
+  --color-brand-800: #1d526f;
+  --color-brand-900: #1a455c;
+
+  --color-sage-50: #f2f9f5;
+  --color-sage-100: #e0f0e6;
+  --color-sage-200: #bfe0cc;
+  --color-sage-300: #8fc9a8;
+  --color-sage-400: #5fad7f;
+  --color-sage-500: #449664;
+  --color-sage-600: #357a50;
+  --color-sage-700: #2d6242;
+
+  --color-warm-50: #fff9f5;
+  --color-warm-100: #ffede3;
+  --color-warm-200: #ffd4bc;
+  --color-warm-400: #f4a574;
+  --color-warm-500: #e8894f;
+
   --color-cream-50: #fafbfc;
-  --color-cream-100: #f3f5f7;
-  --color-cream-200: #e5e9ed;
-  --color-cream-800: #3d4550;
-  --color-cream-900: #1e2530;
-  --color-gold-400: #c9a86c;
-  --color-gold-500: #b8924f;
+  --color-cream-100: #f3f6f8;
+  --color-cream-200: #e4eaef;
+  --color-cream-300: #cdd6de;
+  --color-cream-800: #3a4550;
+  --color-cream-900: #1a2332;
+
+  --color-gold-400: #d4a853;
+  --color-gold-500: #c4923a;
+
+  --color-mint-50: #ecfdf5;
+  --color-mint-400: #34d399;
 }
 
 html {
@@ -34,7 +50,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(180deg, var(--color-cream-50) 0%, var(--color-brand-50) 100%);
+  background: var(--color-cream-50);
   color: var(--color-cream-900);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -45,12 +61,164 @@ body {
   letter-spacing: -0.02em;
 }
 
+.wellness-mesh-bg {
+  background-color: var(--color-cream-50);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 0% 0%, color-mix(in srgb, var(--color-brand-200) 45%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 5%, color-mix(in srgb, var(--color-sage-200) 40%, transparent), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, color-mix(in srgb, var(--color-warm-100) 50%, transparent), transparent 55%),
+    linear-gradient(165deg, var(--color-cream-50) 0%, var(--color-brand-50) 45%, var(--color-sage-50) 100%);
+}
+
+.member-panel-bg {
+  background-color: var(--color-cream-50);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 100% 0%, color-mix(in srgb, var(--color-brand-100) 55%, transparent), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, color-mix(in srgb, var(--color-sage-100) 45%, transparent), transparent 45%),
+    linear-gradient(180deg, var(--color-cream-50) 0%, color-mix(in srgb, var(--color-brand-50) 80%, white) 100%);
+}
+
+.auth-page-bg {
+  position: relative;
+  min-height: 80vh;
+  background-color: var(--color-brand-50);
+  background-image:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--color-brand-300) 25%, transparent), transparent 40%),
+    radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--color-sage-300) 22%, transparent), transparent 38%),
+    radial-gradient(circle at 50% 90%, color-mix(in srgb, var(--color-warm-200) 30%, transparent), transparent 42%),
+    linear-gradient(160deg, var(--color-brand-50), var(--color-sage-50));
+}
+
+.section-calm {
+  background: linear-gradient(180deg, color-mix(in srgb, white 70%, var(--color-sage-50)) 0%, var(--color-sage-50) 100%);
+}
+
+.section-warm {
+  background: linear-gradient(135deg, var(--color-warm-50) 0%, var(--color-brand-50) 50%, var(--color-sage-50) 100%);
+}
+
+.section-trust {
+  background: linear-gradient(180deg, white 0%, var(--color-brand-50) 100%);
+}
+
+.glass-card {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, white 70%, var(--color-brand-200));
+  background: color-mix(in srgb, white 82%, transparent);
+  box-shadow: 0 4px 24px -4px color-mix(in srgb, var(--color-brand-900) 6%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.glass-card-solid {
+  border-radius: 1rem;
+  border: 1px solid var(--color-cream-200);
+  background: white;
+  box-shadow: 0 8px 30px -8px color-mix(in srgb, var(--color-brand-500) 12%, transparent);
+  transition: box-shadow 0.25s ease;
+}
+
+.glass-card-solid:hover {
+  box-shadow: 0 12px 40px -10px color-mix(in srgb, var(--color-brand-500) 16%, transparent);
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.375rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--color-brand-100), var(--color-sage-100));
+  color: var(--color-brand-700);
+  border: 1px solid color-mix(in srgb, var(--color-brand-200) 60%, transparent);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  color: var(--color-cream-900);
+  letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-cream-800) 65%, transparent);
+}
+
+.btn-wellness {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-sage-500) 100%);
+  box-shadow: 0 8px 24px -6px color-mix(in srgb, var(--color-brand-500) 45%, transparent);
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-wellness:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 12px 32px -6px color-mix(in srgb, var(--color-brand-500) 55%, transparent);
+}
+
+.btn-wellness-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-cream-900);
+  background: color-mix(in srgb, white 85%, transparent);
+  border: 1px solid var(--color-cream-200);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-wellness-outline:hover {
+  border-color: var(--color-brand-300);
+  box-shadow: 0 4px 16px -4px color-mix(in srgb, var(--color-brand-500) 20%, transparent);
+}
+
+.wellness-orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+}
+
+.welcome-banner {
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-sage-500) 55%, var(--color-brand-600) 100%);
+  color: white;
+  box-shadow: 0 16px 40px -12px color-mix(in srgb, var(--color-brand-600) 50%, transparent);
+}
+
+.nav-active-glow {
+  background: linear-gradient(135deg, var(--color-brand-50), var(--color-sage-50));
+  color: var(--color-brand-700);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand-200) 50%, transparent);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-brand-200);
+  background: linear-gradient(180deg, var(--color-brand-300), var(--color-sage-300));
   border-radius: 3px;
 }

@@ -1,25 +1,32 @@
 import { motion } from 'framer-motion'
 
 export default function StatsCard({ label, value, sub, icon: Icon, accent = 'brand', onClick }) {
+  const iconColors = {
+    brand: 'text-brand-500',
+    sage: 'text-sage-500',
+    gold: 'text-warm-500',
+    cream: 'text-cream-800',
+  }
   const accents = {
-    brand: 'from-brand-50 to-white border-brand-100',
-    sage: 'from-sage-50 to-white border-sage-100',
-    gold: 'from-amber-50 to-white border-amber-100',
-    cream: 'from-cream-100 to-white border-cream-200',
+    brand: 'from-brand-50 via-white to-brand-50/30',
+    sage: 'from-sage-50 via-white to-mint-50/40',
+    gold: 'from-warm-50 via-white to-amber-50/40',
+    cream: 'from-cream-100 via-white to-cream-50',
   }
 
   const Tag = onClick ? motion.button : motion.div
 
   return (
     <Tag
-      whileHover={onClick ? { y: -2 } : undefined}
+      whileHover={{ y: -3, scale: 1.01 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       onClick={onClick}
-      className={`rounded-2xl border bg-gradient-to-br p-5 text-left shadow-sm ${accents[accent]} ${onClick ? 'cursor-pointer' : ''}`}
+      className={`glass-card-solid bg-gradient-to-br p-5 text-left ${accents[accent]} ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-cream-800/60">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/55">{label}</p>
         {Icon && (
-          <div className="rounded-lg bg-white/80 p-2 text-brand-500 shadow-sm">
+          <div className={`rounded-xl bg-white/90 p-2.5 shadow-sm ${iconColors[accent]}`}>
             <Icon className="h-4 w-4" />
           </div>
         )}

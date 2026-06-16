@@ -27,16 +27,20 @@ export default function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="welcome-banner flex flex-wrap items-center justify-between gap-4 !py-5">
         <div>
-          <h1 className="font-display text-2xl font-bold text-cream-900">Bildirimler</h1>
-          {unread > 0 && <p className="text-sm text-brand-600">{unread} okunmamış</p>}
+          <h1 className="font-display text-2xl font-bold">Bildirimler</h1>
+          {unread > 0 ? (
+            <p className="mt-1 text-sm text-white/80">{unread} okunmamış mesajınız var</p>
+          ) : (
+            <p className="mt-1 text-sm text-white/75">Her şey güncel görünüyor</p>
+          )}
         </div>
         {unread > 0 && (
           <button
             type="button"
             onClick={() => { markAllNotificationsRead(); toast('Tümü okundu olarak işaretlendi', 'success') }}
-            className="text-sm font-medium text-brand-600 hover:underline"
+            className="rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/30"
           >
             Tümünü okundu işaretle
           </button>
@@ -49,8 +53,10 @@ export default function NotificationsPage() {
             key={f.id}
             type="button"
             onClick={() => setFilter(f.id)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              filter === f.id ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              filter === f.id
+                ? 'bg-gradient-to-r from-brand-500 to-sage-500 text-white shadow-md shadow-brand-500/20'
+                : 'bg-white/80 text-cream-800 shadow-sm hover:bg-brand-50'
             }`}
           >
             {f.label}

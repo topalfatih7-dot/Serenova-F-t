@@ -12,6 +12,7 @@ const baseLinks = [
   { to: '/membership', label: 'Üyelikler', icon: Sparkles },
   { to: '/stories', label: 'Hikayeler', icon: Trophy },
   { to: '/blog', label: 'Blog', icon: BookOpen },
+  { to: '/#bize-ulasin', label: 'Bize Ulaşın', icon: LifeBuoy },
 ]
 
 export default function PublicLayout() {
@@ -19,16 +20,17 @@ export default function PublicLayout() {
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
   const { pathname } = useLocation()
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
+  const contactLink = baseLinks[baseLinks.length - 1]
   const publicLinks = isAuthenticated && !isAdmin && !isStaff
-    ? [...baseLinks, { to: '/support', label: 'Destek', icon: LifeBuoy }]
+    ? [...baseLinks.slice(0, -1), { to: '/support', label: 'Destek', icon: LifeBuoy }, contactLink]
     : baseLinks
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-cream-200/70 bg-cream-50/80 backdrop-blur-xl">
+    <div className="wellness-mesh-bg min-h-screen">
+      <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <BrandLogo />
-          <nav className="hidden items-center gap-1 rounded-full border border-cream-200/70 bg-white/60 p-1 shadow-sm backdrop-blur md:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
             {publicLinks.map((l) => {
               const active = pathname === l.to
               return (
@@ -42,7 +44,7 @@ export default function PublicLayout() {
                   {active && (
                     <motion.span
                       layoutId="nav-pill"
-                      className="absolute inset-0 rounded-full bg-brand-100/80"
+                      className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-100/90 to-sage-100/90 shadow-sm"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -72,12 +74,12 @@ export default function PublicLayout() {
               )
             ) : (
               <>
-                <Link to="/login" className="flex items-center gap-1.5 rounded-full border border-cream-200 bg-white px-4 py-2.5 text-sm font-semibold text-cream-800 transition hover:border-brand-200 hover:text-brand-600 hover:shadow-sm">
+                <Link to="/login" className="btn-wellness-outline !py-2.5 !px-4 !text-sm">
                   <LogIn className="h-4 w-4" />
                   Giriş Yap
                 </Link>
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Link to="/onboarding" className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-200/60 transition hover:shadow-xl hover:shadow-brand-200">
+                  <Link to="/onboarding" className="btn-wellness !py-2.5 !px-5 !text-sm">
                     <UserPlus className="h-4 w-4" />
                     Kayıt Ol
                   </Link>
@@ -96,7 +98,7 @@ export default function PublicLayout() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="overflow-hidden border-t border-cream-200 bg-cream-50/95 px-4 md:hidden"
+              className="overflow-hidden border-t border-white/50 bg-white/90 px-4 backdrop-blur-xl md:hidden"
             >
               <div className="py-3">
                 {publicLinks.map((l) => (
@@ -142,12 +144,15 @@ export default function PublicLayout() {
         </AnimatePresence>
       </header>
       <Outlet />
-      <footer className="border-t border-cream-200 bg-cream-900 py-12 text-cream-100">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <footer className="relative overflow-hidden border-t border-brand-800/30 bg-gradient-to-br from-cream-900 via-brand-900 to-sage-900 py-14 text-cream-100">
+        <div aria-hidden className="wellness-orb -left-20 top-0 h-64 w-64 bg-brand-500/20" />
+        <div aria-hidden className="wellness-orb -right-16 bottom-0 h-72 w-72 bg-sage-500/15" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <p className="font-display text-xl font-bold text-white">{BRAND.name}</p>
-              <p className="mt-3 text-sm text-cream-100/60">{BRAND.tagline}</p>
+              <p className="mt-3 text-sm leading-relaxed text-white/65">{BRAND.tagline}</p>
+              <p className="mt-4 text-xs text-white/40">Güvenli, destekleyici ve sürdürülebilir dönüşüm.</p>
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Platform</p>
@@ -155,6 +160,7 @@ export default function PublicLayout() {
                 <Link to="/membership" className="block hover:text-white">Üyelikler</Link>
                 <Link to="/blog" className="block hover:text-white">Blog</Link>
                 <Link to="/builder" className="block hover:text-white">Paket Oluştur</Link>
+                <Link to="/#bize-ulasin" className="block hover:text-white">Bize Ulaşın</Link>
                 {isAuthenticated && !isAdmin && !isStaff && (
                   <Link to="/support" className="block hover:text-white">Destek</Link>
                 )}

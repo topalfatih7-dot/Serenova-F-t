@@ -8,7 +8,7 @@ export default function TopBar({ title }) {
   const unread = notifications.filter((n) => !n.read).length
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-cream-200 bg-white/90 px-4 py-3 backdrop-blur-sm lg:px-6">
+    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/50 bg-white/80 px-4 py-3 shadow-sm shadow-brand-900/[0.02] backdrop-blur-md lg:px-6">
       <div className="flex items-center gap-3">
         {title ? (
           <h1 className="font-display text-lg font-semibold text-cream-900">{title}</h1>

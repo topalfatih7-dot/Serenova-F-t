@@ -27,8 +27,8 @@ export default function NotificationItem({ notification, onRead }) {
     <button
       type="button"
       onClick={() => onRead?.(notification.id)}
-      className={`flex w-full gap-4 rounded-2xl border p-4 text-left transition hover:shadow-sm ${
-        notification.read ? 'border-cream-100 bg-white/50 opacity-70' : 'border-brand-100 bg-white shadow-sm'
+      className={`flex w-full gap-4 rounded-2xl p-4 text-left transition glass-card-solid ${
+        notification.read ? 'opacity-70' : 'ring-1 ring-brand-100'
       }`}
     >
       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.color}`}>

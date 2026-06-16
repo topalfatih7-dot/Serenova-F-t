@@ -17,14 +17,15 @@ const comparisonRows = [
 
 export default function MembershipComparisonPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    <div className="section-trust mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="text-center">
-        <h1 className="font-display text-3xl font-bold text-cream-900 sm:text-4xl">Üyelik Karşılaştırması</h1>
-        <p className="mt-3 text-cream-800/60">Size en uygun planı seçin</p>
+        <span className="section-badge">Karşılaştır</span>
+        <h1 className="section-title mt-4 sm:text-4xl">Üyelik Karşılaştırması</h1>
+        <p className="section-subtitle">Size en uygun planı seçin</p>
       </div>
 
-      <div className="mt-12 overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm">
-        <div className="grid grid-cols-3 border-b border-cream-100 bg-cream-50 p-4 sm:p-6">
+      <div className="glass-card-solid mt-12 overflow-hidden">
+        <div className="grid grid-cols-3 border-b border-cream-100 bg-gradient-to-r from-brand-50/80 to-sage-50/80 p-4 sm:p-6">
           <div className="text-sm font-medium text-cream-800/60">Özellik</div>
           <div className="text-center font-semibold text-cream-900">Ücretsiz</div>
           <div className="flex items-center justify-center gap-1 font-semibold text-brand-600">

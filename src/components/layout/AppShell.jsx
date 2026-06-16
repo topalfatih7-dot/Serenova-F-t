@@ -59,7 +59,7 @@ export default function AppShell() {
         <div className="hidden lg:block">
           <TopBar />
         </div>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="member-panel-bg flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
         <footer className="hidden border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40 lg:block">

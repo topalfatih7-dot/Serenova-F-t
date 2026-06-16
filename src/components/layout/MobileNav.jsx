@@ -14,15 +14,15 @@ export default function MobileNav() {
   const unread = notifications.filter((n) => !n.read).length
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-cream-200 bg-white/95 backdrop-blur-sm lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-100/80 bg-white/95 shadow-[0_-8px_30px_-12px_rgba(45,143,196,0.15)] backdrop-blur-md lg:hidden">
       <div className="flex items-center justify-around px-2 py-2">
         {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium ${
-                isActive ? 'text-brand-600' : 'text-cream-800/50'
+              `relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium transition ${
+                isActive ? 'nav-active-glow text-brand-700' : 'text-cream-800/50'
               }`
             }
           >

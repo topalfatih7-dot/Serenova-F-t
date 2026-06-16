@@ -42,6 +42,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div className="welcome-banner">
+        <p className="text-sm font-medium text-white/80">Hoş geldiniz</p>
+        <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{user.name?.split(' ')[0] || 'Üye'}, bugün harika bir gün olabilir</h1>
+        <p className="mt-2 text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
+      </div>
       {membershipStatus === 'paused' && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm text-amber-800">Üyeliğiniz duraklatıldı. Yeniden başlatmak için destek alanından talep oluşturun.</p>
@@ -75,7 +80,6 @@ export default function DashboardPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-cream-900">Panel</h1>
           <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -93,11 +97,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
+        <div className="glass-card-solid p-6">
           <h3 className="font-semibold text-cream-900">Kilo Trendi</h3>
           {progress.weight?.length ? <WeightChart data={progress.weight} /> : <ChartEmpty message="Kilo kayıtlarınız burada görünecek" />}
         </div>
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
+        <div className="glass-card-solid p-6">
           <h3 className="font-semibold text-cream-900">Antrenman Tamamlama</h3>
           {progress.workouts?.length ? <WorkoutChart data={progress.workouts} /> : <ChartEmpty message="Antrenman verileriniz burada görünecek" />}
         </div>
@@ -108,7 +112,7 @@ export default function DashboardPage() {
           <CalendarView events={calendarEvents} />
         </div>
         <div className="space-y-4">
-          <div className="rounded-2xl border border-cream-200 bg-white p-5">
+          <div className="glass-card-solid p-5">
             <h3 className="flex items-center gap-2 font-semibold text-cream-900">
               <Bell className="h-4 w-4 text-brand-500" /> Günlük Görevler
             </h3>
@@ -130,7 +134,7 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-cream-200 bg-white p-5">
+          <div className="glass-card-solid p-5">
             <h3 className="font-semibold text-cream-900">Enerji & Ruh Hali</h3>
             {progress.mood?.length ? <MoodChart data={progress.mood} /> : <ChartEmpty message="Ruh hali verileriniz burada görünecek" />}
           </div>
