@@ -11,12 +11,13 @@ import {
   computeMonthlyGrowth,
   getSessionStats,
 } from '../services/platformStats'
+import { ALL_PLANS } from '../data/membershipPlans'
 
 const AppContext = createContext(null)
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], requests: [], session: null,
+  tickets: [], activities: [], payments: [], exercises: [], plans: ALL_PLANS, requests: [], session: null,
   content: { testimonials: [], faqs: [], successStories: [] },
 }
 
@@ -99,6 +100,17 @@ export function AppProvider({ children }) {
     const r = await sb.registerWithPayment(profile, packageConfig)
     if (r.success) await reloadRemote()
     return r
+  }, [reloadRemote])
+
+  const registerWithPlan = useCallback(async (profile, planId, planPrice) => {
+    const r = await sb.registerWithPlan(profile, planId, planPrice)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
+  const savePlan = useCallback(async (plan) => {
+    await sb.upsertPlan(plan)
+    await reloadRemote()
   }, [reloadRemote])
 
   const processPremiumPayment = useCallback(async (packageConfig, schedule) => {
@@ -326,6 +338,7 @@ export function AppProvider({ children }) {
     myPrograms: currentMember ? (db.programs || []).filter((p) => p.memberId === currentMember.id) : [],
     myTickets: currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : [],
     exercises: db.exercises || [],
+    plans: db.plans || ALL_PLANS,
     membershipRequests: db.requests || [],
     myRequests: currentMember ? (db.requests || []).filter((r) => r.memberId === currentMember.id) : [],
     user: currentMember || {},
@@ -361,6 +374,8 @@ export function AppProvider({ children }) {
     logout,
     register,
     registerWithPayment,
+    registerWithPlan,
+    savePlan,
     processPremiumPayment,
     upgradeToPremium,
     savePackage,

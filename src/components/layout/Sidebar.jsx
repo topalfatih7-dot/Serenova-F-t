@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
   Dumbbell, Apple, Settings, LogOut, ClipboardList, Library,
+  CalendarDays, Flame,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
@@ -9,6 +10,8 @@ import BrandLogo from '../ui/BrandLogo'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
+  { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
+  { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
@@ -48,10 +51,10 @@ export default function Sidebar() {
         ))}
         {membership === 'free' && (
           <NavLink
-            to="/builder"
+            to="/membership"
             className="mt-4 flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-2.5 text-sm font-semibold text-white"
           >
-            <Crown className="h-4 w-4" /> Premium&apos;a Geç
+            <Crown className="h-4 w-4" /> Planları İncele
           </NavLink>
         )}
       </nav>

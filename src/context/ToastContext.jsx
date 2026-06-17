@@ -32,7 +32,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-20 right-4 z-[100] flex flex-col gap-2 sm:bottom-6 sm:right-6">
+      <div className="fixed bottom-6 right-4 z-[500] flex flex-col gap-2 sm:right-6" style={{ pointerEvents: 'auto' }}>
         <AnimatePresence>
           {toasts.map((t) => {
             const Icon = icons[t.type]
@@ -42,11 +42,17 @@ export function ToastProvider({ children }) {
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 40 }}
-                className={`flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg ${styles[t.type]}`}
+                className={`flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-lg ${styles[t.type]}`}
+                style={{ pointerEvents: 'auto' }}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span className="text-sm font-medium">{t.message}</span>
-                <button type="button" onClick={() => dismiss(t.id)} className="ml-2 opacity-60 hover:opacity-100">
+                <span className="flex-1 text-sm font-medium">{t.message}</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); dismiss(t.id) }}
+                  className="ml-1 shrink-0 rounded-md p-1 opacity-60 hover:opacity-100 hover:bg-black/10 transition"
+                  aria-label="Kapat"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>

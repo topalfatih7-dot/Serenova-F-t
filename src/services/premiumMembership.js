@@ -16,8 +16,10 @@ export function getRemainingDays(expiresAt) {
   return Math.ceil((exp - now) / (1000 * 60 * 60 * 24))
 }
 
+import { isPaidMembership } from '../data/membershipPlans'
+
 export function syncMembershipExpiryStatus(member) {
-  if (member.membership !== 'premium') return member
+  if (!isPaidMembership(member.membership)) return member
   if (member.membershipStatus === 'paused' || member.membershipStatus === 'cancelled') return member
 
   const remaining = getRemainingDays(member.premiumExpiresAt)

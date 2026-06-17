@@ -1,10 +1,9 @@
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, ClipboardList, Library,
+  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame,
 } from 'lucide-react'
 import Sidebar from './Sidebar'
-import MobileNav from './MobileNav'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'
 import ConsentBanner from '../ui/ConsentBanner'
@@ -13,6 +12,8 @@ import { BRAND } from '../../config/brand'
 
 const memberNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
+  { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
+  { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
@@ -35,17 +36,20 @@ export default function AppShell() {
 
   const unread = (notifications || []).filter((n) => !n.read).length
   const navItems = membership === 'free'
-    ? [...memberNav, { to: '/builder', icon: Crown, label: "Premium'a Geç" }]
+    ? [...memberNav, { to: '/membership', icon: Crown, label: 'Planları İncele' }]
     : memberNav
 
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-20 lg:pb-0">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PanelMobileMenu
           navItems={navItems}
           brandLink="/dashboard"
-          badge={{ label: membership === 'premium' ? 'Premium Üye' : 'Ücretsiz Üye', className: membership === 'premium' ? 'bg-brand-500 text-white' : 'bg-cream-900 text-white' }}
+          badge={{
+            label: membership === 'free' ? 'Ücretsiz Üye' : membership === 'gumus' ? 'Gümüş Üye' : membership === 'altin' ? 'Altın Üye' : membership === 'platinum' ? 'Platinum Üye' : 'Premium Üye',
+            className: membership === 'free' ? 'bg-cream-900 text-white' : 'bg-brand-500 text-white',
+          }}
           userName={user?.name}
           accent="member"
           logout={logout}
@@ -66,7 +70,6 @@ export default function AppShell() {
           {BRAND.name} · Bu platform tıbbi teşhis veya tedavi sunmaz.
         </footer>
       </div>
-      <MobileNav />
       <ConsentBanner />
     </div>
   )

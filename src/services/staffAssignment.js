@@ -1,4 +1,4 @@
-import { generateSupportSessions } from './supportSessions'
+import { isPaidMembership } from '../data/membershipPlans'
 
 function timeToMinutes(t) {
   const [h, m] = String(t || '0:0').split(':').map(Number)
@@ -26,41 +26,43 @@ export function findAvailableStaff(members, staffList, role, day, time, excludeM
     .sort((a, b) => a.load - b.load)[0].s
 }
 
-export function applyStaffAssignments(member, staffList, members, options = {}) {
-  const { autoAssign = true, manualCoachId, manualDietitianId } = options
+/** Yalnızca koç/diyetisyen atar; randevu oluşturmaz (admin elle girer). */
+export function assignStaffOnly(member, staffList, members, options = {}) {
+  const { autoAssign = false, manualCoachId, manualDietitianId } = options
   const schedule = member.supportSchedule
   const pkg = member.packageConfig || {}
   let coachId = manualCoachId ?? member.assignedCoachId ?? null
   let dietitianId = manualDietitianId ?? member.assignedDietitianId ?? null
 
-  const needCoach = (Number(pkg.coachMeetingsPerWeek) || 0) > 0 && schedule?.coachDay != null
-  const needDiet = (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0 && schedule?.dietitianDay != null
+  const needCoach = (Number(pkg.coachMeetingsPerWeek) || 0) > 0
+  const needDiet = (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
 
-  if (autoAssign) {
-    if (needCoach && !coachId) {
+  if (autoAssign && schedule) {
+    if (needCoach && !coachId && schedule.coachDay != null) {
       coachId = findAvailableStaff(members, staffList, 'coach', schedule.coachDay, schedule.coachTime, member.id)?.id || null
     }
-    if (needDiet && !dietitianId) {
+    if (needDiet && !dietitianId && schedule.dietitianDay != null) {
       dietitianId = findAvailableStaff(members, staffList, 'dietitian', schedule.dietitianDay, schedule.dietitianTime, member.id)?.id || null
     }
   }
 
-  const coach = staffList.find((s) => s.id === coachId) || null
-  const dietitian = staffList.find((s) => s.id === dietitianId) || null
-  const sessions = generateSupportSessions(pkg, schedule, new Date(), {
-    coachName: coach?.name,
-    dietitianName: dietitian?.name,
-  })
-
   return {
     assignedCoachId: coachId,
     assignedDietitianId: dietitianId,
-    coachSessions: sessions.coachSessions,
-    dietitianSessions: sessions.dietitianSessions,
+  }
+}
+
+/** @deprecated Otomatik randevu üretimi kaldırıldı — admin panelinden elle girilir. */
+export function applyStaffAssignments(member, staffList, members, options = {}) {
+  const staffOnly = assignStaffOnly(member, staffList, members, options)
+  return {
+    ...staffOnly,
+    coachSessions: options.coachSessions ?? member.coachSessions ?? [],
+    dietitianSessions: options.dietitianSessions ?? member.dietitianSessions ?? [],
   }
 }
 
 export function countStaffClients(members, staffId, role) {
   const key = role === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
-  return members.filter((m) => m.membership === 'premium' && m[key] === staffId).length
+  return members.filter((m) => isPaidMembership(m.membership) && m[key] === staffId).length
 }

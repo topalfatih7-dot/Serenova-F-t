@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, ArrowRight, Sparkles } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
@@ -7,7 +8,8 @@ import TeamCarousel from '../components/landing/TeamCarousel'
 import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import WhyUsSection from '../components/landing/WhyUsSection'
 import ContactSection from '../components/landing/ContactSection'
-import { FREE_PLAN, PREMIUM_PLAN } from '../data/membershipPlans'
+import { scrollToContactSection } from '../utils/scrollToContact'
+import { ALL_PLANS } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 
 const stats = [
@@ -17,9 +19,19 @@ const stats = [
 ]
 
 export default function LandingPage() {
-  const { staff, testimonials, faqs } = useApp()
+  const { staff, testimonials, faqs, plans } = useApp()
+  const location = useLocation()
+  const displayPlans = plans?.length ? plans : ALL_PLANS
   // Admin panelinden eklenen aktif kadro
   const teamMembers = (staff || []).filter((s) => s.active !== false)
+
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash === '#bize-ulasin') {
+      const t = setTimeout(scrollToContactSection, 150)
+      return () => clearTimeout(t)
+    }
+    return undefined
+  }, [location.pathname, location.hash])
 
   return (
     <div className="overflow-hidden">
@@ -67,9 +79,9 @@ export default function LandingPage() {
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/builder" className="btn-wellness-outline">
+                <Link to="/membership" className="btn-wellness-outline">
                   <Sparkles className="h-4 w-4 text-brand-500" />
-                  Premium Paket Oluştur
+                  Ücretli Planları İncele
                 </Link>
               </motion.div>
             </div>
@@ -97,11 +109,25 @@ export default function LandingPage() {
         <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
           <span className="section-badge">Planlar</span>
           <h2 className="section-title mt-4">Üyelik Seçenekleri</h2>
-          <p className="section-subtitle">Planı seçin, sizi doğrudan kayıt adımına götürelim</p>
+          <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
         </motion.div>
-        <div className="mt-12 grid gap-8 md:grid-cols-2">
-          <PricingCard plan={FREE_PLAN} ctaTo="/onboarding?plan=free" ctaLabel="Ücretsiz Başla" />
-          <PricingCard plan={PREMIUM_PLAN} featured ctaTo="/onboarding?plan=premium" ctaLabel="Premium ile Kayıt Ol" />
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {displayPlans.map((plan, i) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              viewport={{ once: true }}
+            >
+              <PricingCard
+                plan={plan}
+                featured={plan.id === 'altin'}
+                ctaTo={`/onboarding?plan=${plan.id}`}
+                ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+              />
+            </motion.div>
+          ))}
         </div>
       </section>
 

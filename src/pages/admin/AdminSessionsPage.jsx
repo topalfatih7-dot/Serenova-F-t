@@ -5,8 +5,9 @@ import { Calendar, Video, CheckCircle, AlertTriangle } from 'lucide-react'
 export default function AdminSessionsPage() {
   const { platform, sessionStats } = useApp()
 
+  const paidPlans = ['gumus', 'altin', 'platinum', 'premium']
   const sessions = platform.members
-    .filter((m) => m.membership === 'premium' && m.membershipStatus === 'active')
+    .filter((m) => paidPlans.includes(m.membership) && m.membershipStatus === 'active')
     .flatMap((m) => [
       ...(m.coachSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Koç' })),
       ...(m.dietitianSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Diyetisyen' })),
@@ -23,7 +24,7 @@ export default function AdminSessionsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard label="Koç (Haftalık)" value={sessionStats.coachThisWeek} icon={Video} accent="brand" />
         <StatsCard label="Diyetisyen (Aylık)" value={sessionStats.dietitianThisMonth} icon={Calendar} accent="sage" />
-        <StatsCard label="Premium Aktif" value={platform.members.filter((m) => m.membership === 'premium' && m.membershipStatus === 'active').length} icon={CheckCircle} accent="gold" />
+        <StatsCard label="Ücretli Aktif" value={platform.members.filter((m) => paidPlans.includes(m.membership) && m.membershipStatus === 'active').length} icon={CheckCircle} accent="gold" />
         <StatsCard label="Açık Talep" value={sessionStats.noResponseAlerts} icon={AlertTriangle} accent="cream" />
       </div>
 

@@ -3,7 +3,7 @@
 import { supabase, syncAutoRefresh } from './supabaseClient'
 import { setRememberMe, clearAllAuthTokens } from './authStorage'
 import { ADMIN_CREDENTIALS } from '../config/brand'
-import { DEFAULT_PACKAGE } from '../data/membershipPlans'
+import { DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus } from './premiumMembership'
@@ -132,19 +132,59 @@ function rowToRequest(row) {
   return { id: row.id, memberId: row.member_id, memberName: row.member_name, type: row.type, status: row.status, requestedUntil: row.requested_until, note: row.note, createdAt: row.created_at }
 }
 
+function rowToPlan(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    price: row.price,
+    period: row.period,
+    isActive: row.is_active,
+    badge: row.badge || null,
+    features: row.features || [],
+    limits: row.limits || [],
+    color: row.color || 'sage',
+    sortOrder: row.sort_order || 0,
+  }
+}
+
+export async function getPlans() {
+  const { data } = await supabase.from('plans').select('*').order('sort_order', { ascending: true })
+  if (!data || data.length === 0) return ALL_PLANS
+  return data.map(rowToPlan)
+}
+
+export async function upsertPlan(plan) {
+  const { error } = await supabase.from('plans').upsert({
+    id: plan.id,
+    name: plan.name,
+    price: plan.price,
+    period: plan.period,
+    is_active: plan.isActive !== false,
+    badge: plan.badge || null,
+    features: plan.features || [],
+    limits: plan.limits || [],
+    color: plan.color || 'sage',
+    sort_order: plan.sortOrder || 0,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' })
+  if (error) throw error
+}
+
 export async function hydrate() {
   const user = await resolveAuthUser()
 
-  const [staffRes, postsRes, contentRes, exercisesRes] = await Promise.all([
+  const [staffRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
     supabase.from('exercises').select('*').order('name', { ascending: true }),
+    supabase.from('plans').select('*').order('sort_order', { ascending: true }),
   ])
 
   const staff = (staffRes.data || []).map(rowToStaff)
   const posts = (postsRes.data || []).map(rowToPost)
   const exercises = (exercisesRes.data || []).map(rowToExercise)
+  const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
   const content = { testimonials: [], faqs: [], successStories: [] }
   ;(contentRes.data || []).forEach((r) => {
     const item = { id: r.id, ...(r.data || {}) }
@@ -154,7 +194,7 @@ export async function hydrate() {
   })
 
   if (!user) {
-    return { ...EMPTY_DB, staff, posts, content, exercises }
+    return { ...EMPTY_DB, staff, posts, content, exercises, plans }
   }
 
   const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes, requestsRes] = await Promise.all([
@@ -187,6 +227,7 @@ export async function hydrate() {
     activities: (activitiesRes.data || []).map(rowToActivity),
     payments: (paymentsRes.data || []).map(rowToPayment),
     exercises,
+    plans,
     requests: (requestsRes.data || []).map(rowToRequest),
     session,
     content,
@@ -285,8 +326,8 @@ export async function logout() {
 }
 
 function withPremiumDates(member, packageConfig, isNewPremium = false) {
-  if (member.membership !== 'premium') return member
-  const pkg = packageConfig || member.packageConfig || DEFAULT_PACKAGE
+  if (!isPaidMembership(member.membership)) return member
+  const pkg = packageConfig || member.packageConfig || getDefaultPackageForPlan(member.membership)
   const started = isNewPremium ? today() : (member.premiumStartedAt || member.joinedAt || today())
   const expires = member.premiumExpiresAt || computePremiumExpiresAt(started, pkg.durationWeeks)
   return syncMembershipExpiryStatus({
@@ -301,35 +342,19 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   const user = await getUser()
   if (!user) return { success: false, error: 'Oturum oluşturulamadı.' }
 
-  // Kadroyu çek (atama için)
-  const { data: staffRows } = await supabase.from('staff').select('*')
-  const staffList = (staffRows || []).map(rowToStaff)
-
   const schedule = profile.supportSchedule || null
-  let assignedCoachId = null
-  let assignedDietitianId = null
-  let coachSessions = []
-  let dietitianSessions = []
+  const assignedCoachId = null
+  const assignedDietitianId = null
+  const coachSessions = []
+  const dietitianSessions = []
 
-  let memberDraft = {
-    id: user.id,
-    membership,
-    packageConfig: packageConfig || { ...DEFAULT_PACKAGE },
-    supportSchedule: schedule,
-  }
-
-  if (membership === 'premium' && schedule) {
-    const assignments = applyStaffAssignments(memberDraft, staffList, [], { autoAssign: true })
-    assignedCoachId = assignments.assignedCoachId
-    assignedDietitianId = assignments.assignedDietitianId
-    coachSessions = assignments.coachSessions
-    dietitianSessions = assignments.dietitianSessions
-  }
+  // Koç/diyetisyen ve randevular admin panelinden elle atanır
 
   const member = withPremiumDates({
     id: user.id,
     email: user.email,
     name: profile.name,
+    phone: profile.phone || '',
     age: profile.age,
     gender: profile.gender || '',
     weight: profile.weight || '',
@@ -341,9 +366,10 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
+    aiAnalysis: profile.aiAnalysis || null,
     membership,
     membershipStatus: 'active',
-    packageConfig: packageConfig || { ...DEFAULT_PACKAGE },
+    packageConfig: packageConfig || getDefaultPackageForPlan(membership),
     joinedAt: today(),
     lastActiveAt: today(),
     coachSessions,
@@ -366,10 +392,11 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
     streak: 0,
     pauseUntil: null,
-  }, packageConfig, membership === 'premium')
+  }, packageConfig, isPaidMembership(membership))
 
   await upsertMember(member)
-  await addActivity('signup', `${member.name} yeni kayıt (${membership === 'premium' ? 'Premium' : 'Ücretsiz'})`, member.id)
+  const planLabel = membership === 'free' ? 'Ücretsiz' : membership === 'gumus' ? 'Gümüş' : membership === 'altin' ? 'Altın' : membership === 'platinum' ? 'Platinum' : 'Premium'
+  await addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
   notifyTelegram('member_signup', {
     name: member.name,
     email: member.email,
@@ -444,11 +471,20 @@ export async function registerWithPayment(profile, packageConfig) {
   return res.success ? { success: true, member: res.member, pricing } : res
 }
 
+// Sabit fiyatlı yeni plan ile kayıt (Gümüş / Altın / Platinum)
+export async function registerWithPlan(profile, planId, planPrice) {
+  const auth = await ensureAuthForSignup(profile)
+  if (!auth.success) return auth
+  const packageConfig = getDefaultPackageForPlan(planId)
+  const res = await buildAndPersistMember(profile, planId, packageConfig, { payment: planPrice })
+  return res.success ? { success: true, member: res.member, amount: planPrice } : res
+}
+
 // --------------------------- member mutations ---------------------------
 // Çoğu mutasyon: bellekteki member nesnesini düzenle + upsert et.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
-  if (updated.membership === 'premium') {
+  if (isPaidMembership(updated.membership)) {
     updated = syncMembershipExpiryStatus(updated)
   }
   await upsertMember(updated)
@@ -456,16 +492,9 @@ export async function saveMemberPatch(member, patch) {
 }
 
 export async function saveSupportSchedule(member, schedule) {
-  const { data: staffRows } = await supabase.from('staff').select('*')
-  const staffList = (staffRows || []).map(rowToStaff)
-  const { data: memberRows } = await supabase.from('members').select('*')
-  const members = (memberRows || []).map(rowToMember)
-  const draft = { ...member, supportSchedule: schedule }
-  const assignments = applyStaffAssignments(draft, staffList, members, { autoAssign: true })
   const updated = syncMembershipExpiryStatus({
     ...member,
     supportSchedule: schedule,
-    ...assignments,
     lastActiveAt: today(),
   })
   await upsertMember(updated)
@@ -474,11 +503,6 @@ export async function saveSupportSchedule(member, schedule) {
 
 export async function processPremiumPayment(member, packageConfig, schedule) {
   const pricing = calculatePackagePrice(packageConfig)
-  const { data: staffRows } = await supabase.from('staff').select('*')
-  const staffList = (staffRows || []).map(rowToStaff)
-  const { data: memberRows } = await supabase.from('members').select('*')
-  const members = (memberRows || []).map(rowToMember)
-
   const draft = {
     ...member,
     membership: 'premium',
@@ -486,11 +510,9 @@ export async function processPremiumPayment(member, packageConfig, schedule) {
     packageConfig,
     supportSchedule: schedule,
   }
-  const assignments = applyStaffAssignments(draft, staffList, members, { autoAssign: true })
 
   const updated = withPremiumDates({
     ...draft,
-    ...assignments,
     lastActiveAt: today(),
   }, packageConfig, true)
   await upsertMember(updated)
@@ -686,6 +708,28 @@ export async function createProgram(data) {
     },
   }).select().single()
   if (error) return null
+
+  // Danışana bildirim gönder
+  if (data.memberId) {
+    const { data: memberRows } = await supabase.from('members').select('*').eq('id', data.memberId).limit(1)
+    const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
+    if (member) {
+      const typeLabel = data.type === 'nutrition' ? 'Beslenme' : 'Antrenman'
+      const notifications = [
+        {
+          id: `n-${Date.now()}-prog`,
+          type: 'program',
+          title: `Yeni ${typeLabel} Programı`,
+          message: `${data.staffName || 'Uzmanınız'} size "${data.title}" programını hazırladı. Programlarım bölümünden inceleyebilirsiniz.`,
+          read: false,
+          createdAt: nowISO(),
+        },
+        ...(member.notifications || []),
+      ]
+      await upsertMember({ ...member, notifications })
+    }
+  }
+
   return rowToProgram(row)
 }
 
@@ -738,7 +782,7 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   const draft = {
     ...member,
-    membership: 'premium',
+    membership: member.membership,
     membershipStatus: member.membershipStatus || 'active',
     packageConfig: member.packageConfig || DEFAULT_PACKAGE,
     supportSchedule: schedule,
@@ -746,17 +790,24 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
     premiumStartedAt: member.premiumStartedAt || member.joinedAt || today(),
     assignedCoachId: options.assignedCoachId !== undefined ? options.assignedCoachId : member.assignedCoachId,
     assignedDietitianId: options.assignedDietitianId !== undefined ? options.assignedDietitianId : member.assignedDietitianId,
+    coachSessions: options.coachSessions !== undefined ? options.coachSessions : (member.coachSessions || []),
+    dietitianSessions: options.dietitianSessions !== undefined ? options.dietitianSessions : (member.dietitianSessions || []),
   }
 
   const assignments = applyStaffAssignments(draft, staffList, members, {
     autoAssign: Boolean(options.autoAssign),
     manualCoachId: draft.assignedCoachId,
     manualDietitianId: draft.assignedDietitianId,
+    coachSessions: draft.coachSessions,
+    dietitianSessions: draft.dietitianSessions,
   })
 
   let updated = {
     ...draft,
-    ...assignments,
+    assignedCoachId: assignments.assignedCoachId,
+    assignedDietitianId: assignments.assignedDietitianId,
+    coachSessions: assignments.coachSessions,
+    dietitianSessions: assignments.dietitianSessions,
     lastActiveAt: today(),
   }
   updated = syncMembershipExpiryStatus(updated)

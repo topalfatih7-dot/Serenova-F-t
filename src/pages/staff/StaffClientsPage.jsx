@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Search, Users, Activity, Target, Salad, CalendarClock, ClipboardList,
-  Dumbbell, Apple, Mail, ChevronRight, CalendarRange, Plus, Trash2, Video,
+  Dumbbell, Apple, Mail, CalendarRange, Plus, Trash2, Video, UserRound, FileText,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -180,8 +180,7 @@ function NutritionProgramForm({ onCreate }) {
   )
 }
 
-function ClientDetail({ member, role, exercises, onCreate }) {
-  const isCoach = role === 'coach'
+function ClientInfo({ member, role }) {
   const bmi = calculateBMI(member.weight, member.height)
   const cat = bmiCategory(bmi)
   const appts = getStaffAppointments([member], role)
@@ -213,6 +212,7 @@ function ClientDetail({ member, role, exercises, onCreate }) {
           <div className="rounded-xl bg-cream-50 p-3">
             <p className="text-xs text-cream-800/50">İletişim</p>
             <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900 break-all"><Mail className="h-3.5 w-3.5 shrink-0" /> {member.email}</p>
+            {member.phone && <p className="mt-1 text-xs text-cream-800/55">{member.phone}</p>}
           </div>
         </div>
       </div>
@@ -248,10 +248,6 @@ function ClientDetail({ member, role, exercises, onCreate }) {
           </div>
         )}
       </div>
-
-      {isCoach
-        ? <CoachProgramBuilder member={member} exercises={exercises} onCreate={onCreate} />
-        : <NutritionProgramForm onCreate={onCreate} />}
     </div>
   )
 }
@@ -273,7 +269,8 @@ export default function StaffClientsPage() {
   const { staffUser, platform, createProgram, exercises } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState(null)
+  const [infoClient, setInfoClient] = useState(null)
+  const [programClient, setProgramClient] = useState(null)
   const isCoach = staffUser.role === 'coach'
   const RoleIcon = isCoach ? Dumbbell : Apple
 
@@ -283,23 +280,24 @@ export default function StaffClientsPage() {
   )
 
   const handleCreate = (data) => {
+    if (!programClient) return
     createProgram({
       type: isCoach ? 'workout' : 'nutrition',
-      memberId: selected.id,
-      memberName: selected.name,
+      memberId: programClient.id,
+      memberName: programClient.name,
       staffId: staffUser.id,
       staffName: staffUser.name,
       ...data,
     })
-    toast(`${selected.name} için program oluşturuldu ve bildirildi`, 'success')
-    setSelected(null)
+    toast(`${programClient.name} için program oluşturuldu ve bildirildi`, 'success')
+    setProgramClient(null)
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Danışanlarım</h1>
-        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · detay ve program için bir danışan seçin</p>
+        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · bilgileri görüntüleyin veya program oluşturun</p>
       </div>
 
       <div className="relative">
@@ -314,18 +312,16 @@ export default function StaffClientsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Users} title="Danışan bulunamadı" description="Premium üyeler kayıt oldukça burada görünecekler." />
+        <EmptyState icon={Users} title="Danışan bulunamadı" description="Size atanan ücretli üyeler burada görünecek." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((m) => {
             const bmi = calculateBMI(m.weight, m.height)
             const cat = bmiCategory(bmi)
             return (
-              <button
+              <div
                 key={m.id}
-                type="button"
-                onClick={() => setSelected(m)}
-                className="rounded-2xl border border-cream-200 bg-white p-5 text-left shadow-sm transition hover:border-brand-200 hover:shadow-md"
+                className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-600">
@@ -335,7 +331,6 @@ export default function StaffClientsPage() {
                     <p className="truncate font-semibold text-cream-900">{m.name}</p>
                     <p className="truncate text-xs text-cream-800/50">{m.email}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-cream-800/30" />
                 </div>
                 <div className="mt-4 flex items-center justify-between text-sm">
                   <span className="flex items-center gap-1.5 text-cream-800/60">
@@ -345,14 +340,38 @@ export default function StaffClientsPage() {
                     VKİ {bmi ?? '—'}
                   </span>
                 </div>
-              </button>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInfoClient(m)}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-cream-200 bg-cream-50 py-2.5 text-xs font-semibold text-cream-800 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    <UserRound className="h-3.5 w-3.5" /> Bilgiler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProgramClient(m)}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> Program Oluştur
+                  </button>
+                </div>
+              </div>
             )
           })}
         </div>
       )}
 
-      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name} size="lg">
-        {selected && <ClientDetail member={selected} role={staffUser.role} exercises={exercises} onCreate={handleCreate} />}
+      <Modal open={!!infoClient} onClose={() => setInfoClient(null)} title={infoClient?.name} size="lg">
+        {infoClient && <ClientInfo member={infoClient} role={staffUser.role} />}
+      </Modal>
+
+      <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Program`} size="lg">
+        {programClient && (
+          isCoach
+            ? <CoachProgramBuilder member={programClient} exercises={exercises} onCreate={handleCreate} />
+            : <NutritionProgramForm onCreate={handleCreate} />
+        )}
       </Modal>
     </div>
   )

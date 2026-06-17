@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import {
-  Crown, Search, Dumbbell, Apple, Calendar, Clock, Sparkles,
-  UserCheck, RefreshCw, ChevronRight, AlertTriangle,
+  Crown, Search, Dumbbell, Apple, Calendar, Clock,
+  UserCheck, ChevronRight, AlertTriangle,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
-import { WEEKDAYS } from '../../components/package/SupportScheduler'
+import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
 import { enrichMemberPremium, getRemainingDays } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
 
@@ -106,26 +106,25 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
 function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
-  const schedule = member?.supportSchedule || { coachDay: 1, coachTime: '10:00', dietitianDay: 3, dietitianTime: '14:00' }
 
   const [coachId, setCoachId] = useState(member?.assignedCoachId || '')
   const [dietitianId, setDietitianId] = useState(member?.assignedDietitianId || '')
-  const [coachDay, setCoachDay] = useState(schedule.coachDay ?? 1)
-  const [coachTime, setCoachTime] = useState(schedule.coachTime || '10:00')
-  const [dietitianDay, setDietitianDay] = useState(schedule.dietitianDay ?? 3)
-  const [dietitianTime, setDietitianTime] = useState(schedule.dietitianTime || '14:00')
+  const [coachSessions, setCoachSessions] = useState(member?.coachSessions || [])
+  const [dietitianSessions, setDietitianSessions] = useState(member?.dietitianSessions || [])
 
   if (!member) return null
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
   const info = enrichMemberPremium(member)
+  const coachName = coaches.find((s) => s.id === coachId)?.name || ''
+  const dietitianName = dietitians.find((s) => s.id === dietitianId)?.name || ''
 
-  const submit = (autoAssign = false) => {
+  const submit = () => {
     onSave({
       assignedCoachId: coachId || null,
       assignedDietitianId: dietitianId || null,
-      supportSchedule: { coachDay: Number(coachDay), coachTime, dietitianDay: Number(dietitianDay), dietitianTime },
-      autoAssign,
+      coachSessions: coachSessions.map((s) => ({ ...s, coach: coachName || s.coach })),
+      dietitianSessions: dietitianSessions.map((s) => ({ ...s, coach: dietitianName || s.coach })),
     })
   }
 
@@ -198,47 +197,25 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
           </div>
         </section>
 
-        {/* Program günleri */}
-        <section className="rounded-2xl border border-cream-200 p-4">
-          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-            <Sparkles className="h-4 w-4 text-brand-500" /> Görüşme Günleri
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2 rounded-xl bg-cream-50 p-3">
-              <p className="text-xs font-semibold text-cream-800">Koç</p>
-              <select value={coachDay} onChange={(e) => setCoachDay(e.target.value)} className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm">
-                {WEEKDAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
-              <input type="time" value={coachTime} onChange={(e) => setCoachTime(e.target.value)} className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm" />
-            </div>
-            <div className="space-y-2 rounded-xl bg-cream-50 p-3">
-              <p className="text-xs font-semibold text-cream-800">Diyetisyen</p>
-              <select value={dietitianDay} onChange={(e) => setDietitianDay(e.target.value)} className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm">
-                {WEEKDAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
-              <input type="time" value={dietitianTime} onChange={(e) => setDietitianTime(e.target.value)} className="w-full rounded-lg border border-cream-200 px-3 py-2 text-sm" />
-            </div>
-          </div>
-        </section>
+        {/* Manuel randevular */}
+        <ManualSessionEditor
+          member={member}
+          coachName={coachName}
+          dietitianName={dietitianName}
+          coachSessions={coachSessions}
+          dietitianSessions={dietitianSessions}
+          onCoachChange={setCoachSessions}
+          onDietitianChange={setDietitianSessions}
+        />
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => submit(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50"
-          >
-            <RefreshCw className="h-4 w-4" /> Otomatik Ata
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => submit(false)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-cream-900 py-3 text-sm font-semibold text-white hover:bg-cream-800 disabled:opacity-50"
-          >
-            Atamayı Kaydet
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={submit}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-cream-900 py-3 text-sm font-semibold text-white hover:bg-cream-800 disabled:opacity-50"
+        >
+          Atama ve Randevuları Kaydet
+        </button>
       </div>
     </Modal>
   )
@@ -258,7 +235,7 @@ export default function AdminPremiumPage() {
 
   const premiumMembers = useMemo(() => {
     return members
-      .filter((m) => m.membership === 'premium')
+      .filter((m) => ['gumus', 'altin', 'platinum', 'premium'].includes(m.membership))
       .filter((m) => {
         const q = search.toLowerCase()
         const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
@@ -280,14 +257,17 @@ export default function AdminPremiumPage() {
       })
   }, [members, search, filter])
 
-  const stats = useMemo(() => ({
-    total: members.filter((m) => m.membership === 'premium').length,
-    unassigned: members.filter((m) => m.membership === 'premium' && (!m.assignedCoachId || !m.assignedDietitianId)).length,
-    expiring: members.filter((m) => {
-      const r = getRemainingDays(m.premiumExpiresAt)
-      return m.membership === 'premium' && r != null && r > 0 && r <= 7
-    }).length,
-  }), [members])
+  const stats = useMemo(() => {
+    const paidPlans = ['gumus', 'altin', 'platinum', 'premium']
+    return {
+      total: members.filter((m) => paidPlans.includes(m.membership)).length,
+      unassigned: members.filter((m) => paidPlans.includes(m.membership) && (!m.assignedCoachId || !m.assignedDietitianId)).length,
+      expiring: members.filter((m) => {
+        const r = getRemainingDays(m.premiumExpiresAt)
+        return paidPlans.includes(m.membership) && r != null && r > 0 && r <= 7
+      }).length,
+    }
+  }, [members])
 
   const handleSave = async (options) => {
     if (!selected) return

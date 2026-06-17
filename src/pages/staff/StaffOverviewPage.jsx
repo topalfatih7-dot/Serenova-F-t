@@ -6,12 +6,14 @@ import { tr } from 'date-fns/locale'
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/SupportScheduler'
+import VideoJoinLink from '../../components/video/VideoJoinLink'
 import { useApp } from '../../context/AppContext'
+import { isPaidMembership } from '../../data/membershipPlans'
 
 export function getStaffClients(members, role, staffId) {
   const sid = String(staffId || '')
   return members.filter((m) => {
-    if (m.membership !== 'premium') return false
+    if (!isPaidMembership(m.membership)) return false
     if (m.membershipStatus === 'cancelled') return false
     if (role === 'coach') {
       if ((Number(m.packageConfig?.coachMeetingsPerWeek) || 0) <= 0) return false
@@ -77,7 +79,7 @@ export default function StaffOverviewPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatsCard label="Danışan" value={clients.length} sub="Aktif premium üye" icon={Users} accent="brand" />
+        <StatsCard label="Danışan" value={clients.length} sub="Aktif ücretli üye" icon={Users} accent="brand" />
         <StatsCard label="Bu Hafta Randevu" value={thisWeekCount} sub="Planlanan görüşme" icon={CalendarClock} accent="sage" />
         <StatsCard label="Oluşturulan Program" value={myPrograms.length} sub="Toplam" icon={ClipboardList} accent="gold" />
       </div>
@@ -102,10 +104,18 @@ export default function StaffOverviewPage() {
                   <p className="truncate text-sm font-medium text-cream-900">{a.memberName}</p>
                   <p className="text-xs text-cream-800/50">{a.title}</p>
                 </div>
-                <span className="text-right text-sm font-medium text-cream-900">
-                  {format(new Date(a.date), 'd MMM', { locale: tr })}
-                  <span className="block text-xs font-normal text-cream-800/50">{format(new Date(a.date), 'HH:mm')}</span>
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <span className="text-right text-sm font-medium text-cream-900">
+                    {format(new Date(a.date), 'd MMM', { locale: tr })}
+                    <span className="block text-xs font-normal text-cream-800/50">{format(new Date(a.date), 'HH:mm')}</span>
+                  </span>
+                  <VideoJoinLink
+                    session={a}
+                    sessionType={isCoach ? 'coach' : 'dietitian'}
+                    audience="staff"
+                    size="sm"
+                  />
+                </div>
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Shield, Loader2 } from 'lucide-react'
@@ -20,12 +20,22 @@ export default function LoginPage() {
   const location = useLocation()
 
   const redirectTo = location.state?.from || null
+  const msgShownRef = useRef(false)
 
+  // Yönlendirme mesajını yalnızca bir kez göster ve state'i temizle
   useEffect(() => {
-    if (location.state?.message) {
-      toast(location.state.message, 'info')
+    const msg = location.state?.message
+    if (msg && !msgShownRef.current) {
+      msgShownRef.current = true
+      toast(msg, 'info')
+      // Mesajı state'ten temizle — tekrar görünmesin
+      navigate(location.pathname + (location.search || ''), {
+        replace: true,
+        state: { ...location.state, message: undefined },
+      })
     }
-  }, [location.state?.message, toast])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) return

@@ -6,7 +6,7 @@ import { Crown, TrendingUp, RefreshCw, XCircle } from 'lucide-react'
 
 export default function AdminSubscriptionsPage() {
   const { platform, adminStats, monthlyGrowth } = useApp()
-  const premiumMembers = platform.members.filter((m) => m.membership === 'premium')
+  const premiumMembers = platform.members.filter((m) => ['gumus', 'altin', 'platinum', 'premium'].includes(m.membership))
   const conversionRate = adminStats.totalMembers ? Math.round((adminStats.premium / adminStats.totalMembers) * 100) : 0
 
   return (

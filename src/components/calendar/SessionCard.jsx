@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { Calendar, Clock, User, Video, MoreVertical } from 'lucide-react'
 import { useState } from 'react'
+import VideoJoinLink from '../video/VideoJoinLink'
 
 const STATUS_STYLES = {
   scheduled: 'bg-brand-50 text-brand-700',
@@ -17,7 +18,7 @@ const STATUS_LABELS = {
   rescheduled: 'Yeniden planlandı',
 }
 
-export default function SessionCard({ session, onReschedule, onCancel }) {
+export default function SessionCard({ session, sessionType = 'coach', onReschedule, onCancel }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isPast = new Date(session.date) < new Date()
   const canModify = session.status === 'scheduled' && !isPast
@@ -75,6 +76,11 @@ export default function SessionCard({ session, onReschedule, onCancel }) {
           </span>
         )}
       </div>
+      {session.status === 'scheduled' && (
+        <div className="mt-4 border-t border-cream-100 pt-4">
+          <VideoJoinLink session={session} sessionType={sessionType} className="w-full" />
+        </div>
+      )}
     </div>
   )
 }

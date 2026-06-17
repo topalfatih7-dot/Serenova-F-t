@@ -1,4 +1,4 @@
-import { DEFAULT_PACKAGE } from '../data/membershipPlans'
+import { DEFAULT_PACKAGE, isPaidMembership } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { getRemainingDays } from './premiumMembership'
 
@@ -16,25 +16,43 @@ export function getCurrentStaff(db) {
   return db.staff.find((s) => s.id === db.session.staffId) || null
 }
 
+const PLAN_LABELS = {
+  free:     'Ücretsiz',
+  gumus:    'Gümüş',
+  altin:    'Altın',
+  platinum: 'Platinum',
+  premium:  'Premium',
+}
+const PLAN_COLORS = {
+  free:     '#5f9270',
+  gumus:    '#64748b',
+  altin:    '#d97706',
+  platinum: '#4a8aad',
+  premium:  '#4a8aad',
+}
+
 export function computeAdminStats(db) {
   const members = db.members
-  const premium = members.filter((m) => m.membership === 'premium')
+  const paid = members.filter((m) => isPaidMembership(m.membership))
   const free = members.filter((m) => m.membership === 'free')
   const thisMonth = today().slice(0, 7)
 
-  const activePremium = premium.filter((m) => m.membershipStatus === 'active')
-  const mrr = activePremium.reduce((sum, m) => {
-    return sum + calculatePackagePrice(m.packageConfig || DEFAULT_PACKAGE).monthly
+  const activePaid = paid.filter((m) => m.membershipStatus === 'active')
+  const mrr = activePaid.reduce((sum, m) => {
+    // Ücretsiz plan üyeleri için ödeme hesaplanmaz
+    if (!isPaidMembership(m.membership)) return sum
+    // Aylık ödeme tutarı plan fiyatından alınır veya paket hesabından
+    return sum + (m.planPrice || calculatePackagePrice(m.packageConfig || DEFAULT_PACKAGE).monthly)
   }, 0)
 
-  const expiringSoon = premium.filter((m) => {
+  const expiringSoon = paid.filter((m) => {
     const r = getRemainingDays(m.premiumExpiresAt)
     return r !== null && r > 0 && r <= 7 && m.membershipStatus !== 'cancelled'
   }).length
 
   return {
     totalMembers: members.length,
-    premium: premium.length,
+    premium: paid.length,
     free: free.length,
     active: members.filter((m) => m.membershipStatus === 'active').length,
     paused: members.filter((m) => m.membershipStatus === 'paused').length,
@@ -47,7 +65,7 @@ export function computeAdminStats(db) {
     avgStreak: members.length
       ? Math.round(members.reduce((s, m) => s + (m.streak || 0), 0) / members.length)
       : 0,
-    unassignedPremium: premium.filter(
+    unassignedPremium: paid.filter(
       (m) => m.membershipStatus === 'active' && (!m.assignedCoachId || !m.assignedDietitianId)
     ).length,
   }
@@ -55,13 +73,22 @@ export function computeAdminStats(db) {
 
 export function computeMembershipBreakdown(db) {
   const members = db.members
-  return [
-    { name: 'Premium Aktif', value: members.filter((m) => m.membership === 'premium' && m.membershipStatus === 'active').length, color: '#4a8aad' },
-    { name: 'Ücretsiz Aktif', value: members.filter((m) => m.membership === 'free' && m.membershipStatus === 'active').length, color: '#5f9270' },
-    { name: 'Duraklatılmış', value: members.filter((m) => m.membershipStatus === 'paused').length, color: '#b8924f' },
-    { name: 'Sona Eriyor', value: members.filter((m) => m.membershipStatus === 'expiring').length, color: '#e07b39' },
-    { name: 'İptal', value: members.filter((m) => m.membershipStatus === 'cancelled').length, color: '#9ca3af' },
-  ].filter((x) => x.value > 0)
+  const planIds = ['gumus', 'altin', 'platinum', 'premium']
+  const breakdown = []
+
+  planIds.forEach((planId) => {
+    const count = members.filter((m) => m.membership === planId && m.membershipStatus === 'active').length
+    if (count > 0) {
+      breakdown.push({ name: `${PLAN_LABELS[planId] || planId} Aktif`, value: count, color: PLAN_COLORS[planId] || '#4a8aad' })
+    }
+  })
+
+  breakdown.push({ name: 'Ücretsiz Aktif', value: members.filter((m) => m.membership === 'free' && m.membershipStatus === 'active').length, color: '#5f9270' })
+  breakdown.push({ name: 'Duraklatılmış', value: members.filter((m) => m.membershipStatus === 'paused').length, color: '#b8924f' })
+  breakdown.push({ name: 'Sona Eriyor', value: members.filter((m) => m.membershipStatus === 'expiring').length, color: '#e07b39' })
+  breakdown.push({ name: 'İptal', value: members.filter((m) => m.membershipStatus === 'cancelled').length, color: '#9ca3af' })
+
+  return breakdown.filter((x) => x.value > 0)
 }
 
 export function computeMonthlyGrowth(db) {
@@ -74,7 +101,7 @@ export function computeMonthlyGrowth(db) {
     return {
       month,
       uye: db.members.filter((m) => m.joinedAt <= `${monthStr}-31`).length,
-      premium: db.members.filter((m) => m.membership === 'premium' && m.joinedAt <= `${monthStr}-31`).length,
+      premium: db.members.filter((m) => isPaidMembership(m.membership) && m.joinedAt <= `${monthStr}-31`).length,
       gelir,
     }
   })
@@ -84,7 +111,7 @@ export function getSessionStats(db) {
   let coachCount = 0
   let dietitianCount = 0
   db.members.forEach((m) => {
-    if (m.membership === 'premium' && m.membershipStatus === 'active') {
+    if (isPaidMembership(m.membership) && m.membershipStatus === 'active') {
       coachCount += m.packageConfig?.coachMeetingsPerWeek || 2
       dietitianCount += m.packageConfig?.dietitianMeetingsPerMonth || 1
     }

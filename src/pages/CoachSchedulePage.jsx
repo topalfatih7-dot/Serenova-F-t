@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { addDays } from 'date-fns'
 import SessionCard from '../components/calendar/SessionCard'
 import Modal from '../components/ui/Modal'
@@ -11,7 +12,6 @@ export default function CoachSchedulePage() {
   const { coachSessions, rescheduleSession, cancelSession, membership } = useApp()
   const { toast } = useToast()
   const [filter, setFilter] = useState('upcoming')
-  const [addOpen, setAddOpen] = useState(false)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
 
   const filtered = coachSessions.filter((s) => {
@@ -41,7 +41,7 @@ export default function CoachSchedulePage() {
         icon={Calendar}
         title="Koç randevuları Premium özelliğidir"
         description="Birebir koç görüşmeleri için Premium üyeliğe geçin."
-        action={<a href="/builder" className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Premium'a Geç</a>}
+        action={<Link to="/membership" className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Planları İncele</Link>}
       />
     )
   }
@@ -61,31 +61,18 @@ export default function CoachSchedulePage() {
               {f === 'upcoming' ? 'Yaklaşan' : f === 'past' ? 'Geçmiş' : 'Tümü'}
             </button>
           ))}
-          <button type="button" onClick={() => setAddOpen(true)} className="rounded-lg bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white">
-            + Randevu Ekle
-          </button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Calendar} title="Randevu bulunamadı" description="Yeni bir koç randevusu ekleyebilirsiniz." />
+        <EmptyState icon={Calendar} title="Randevu bulunamadı" description="Koç randevularınız admin tarafından planlandığında burada görünecek." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((s) => (
-            <SessionCard key={s.id} session={s} onReschedule={handleReschedule} onCancel={handleCancel} />
+            <SessionCard key={s.id} session={s} sessionType="coach" onReschedule={handleReschedule} onCancel={handleCancel} />
           ))}
         </div>
       )}
-
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Yeni Koç Randevusu (Demo)">
-        <div className="space-y-3">
-          <input placeholder="Başlık" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <input type="datetime-local" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <button type="button" onClick={() => { setAddOpen(false); toast('Randevu eklendi (demo)', 'success') }} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
-            Kaydet
-          </button>
-        </div>
-      </Modal>
 
       <Modal open={!!rescheduleTarget} onClose={() => setRescheduleTarget(null)} title="Randevuyu Yeniden Planla">
         <p className="text-sm text-cream-800/70">Randevu 3 gün sonraya taşınacak (demo).</p>

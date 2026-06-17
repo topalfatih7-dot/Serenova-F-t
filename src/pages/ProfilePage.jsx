@@ -1,69 +1,48 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
+import { tr } from 'date-fns/locale'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
-import SupportScheduler, { DEFAULT_SUPPORT_SCHEDULE, weekdayLabel } from '../components/package/SupportScheduler'
-import WeeklyAvailability from '../components/package/WeeklyAvailability'
-import AvailabilityView from '../components/package/AvailabilityView'
 import FormField from '../components/ui/FormField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { countAvailabilitySlots } from '../services/availability'
-import { User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, CalendarRange, Dumbbell, Apple, ClipboardList, ChevronRight } from 'lucide-react'
+import { User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, CalendarDays, Dumbbell, Apple, ClipboardList, ChevronRight } from 'lucide-react'
+import VideoJoinLink from '../components/video/VideoJoinLink'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
 
 export default function ProfilePage() {
   const {
-    user, membership, membershipStatus, settings, packageConfig, supportSchedule, myPrograms, staff,
-    updateProfile, updateSettings, saveSupportSchedule, logout,
+    user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
+    coachSessions, dietitianSessions,
+    updateProfile, updateSettings, logout,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
   const { toast } = useToast()
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
-  const [availabilityOpen, setAvailabilityOpen] = useState(false)
   const [form, setForm] = useState({
     name: user.name, email: user.email, city: user.city,
     weight: user.weight || '', height: user.height || '', waist: user.waist || '',
     gender: user.gender || '', photo: user.photo || null,
   })
-  const [scheduleForm, setScheduleForm] = useState({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
-  const [availabilityForm, setAvailabilityForm] = useState(user.availability || {})
 
   const hasSupport =
     (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
     (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
 
+  const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || [])]
+    .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date())
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 4)
+
   const handleSave = () => {
     updateProfile(form)
     setEditOpen(false)
     toast('Profil güncellendi', 'success')
-  }
-
-  const openSchedule = () => {
-    setScheduleForm({ ...DEFAULT_SUPPORT_SCHEDULE, ...(supportSchedule || {}) })
-    setScheduleOpen(true)
-  }
-
-  const handleScheduleSave = () => {
-    saveSupportSchedule(scheduleForm)
-    setScheduleOpen(false)
-    toast('Destek tarihleriniz güncellendi', 'success')
-  }
-
-  const openAvailability = () => {
-    setAvailabilityForm(user.availability || {})
-    setAvailabilityOpen(true)
-  }
-
-  const handleAvailabilitySave = () => {
-    updateProfile({ availability: availabilityForm })
-    setAvailabilityOpen(false)
-    toast('Müsaitlik bilgileriniz güncellendi', 'success')
   }
 
   const handleLogout = () => {
@@ -129,7 +108,7 @@ export default function ProfilePage() {
           { key: 'reminderNotifs', label: 'Hatırlatıcılar' },
         ]},
         { icon: Shield, title: 'Gizlilik', items: [['Dil', settings.language === 'tr' ? 'Türkçe' : 'English'], ['Tema', settings.theme === 'light' ? 'Açık' : 'Koyu']] },
-        { icon: CreditCard, title: 'Abonelik', items: [['Plan', membership === 'premium' ? 'Premium' : 'Ücretsiz'], ['Durum', membershipStatus]] },
+        { icon: CreditCard, title: 'Abonelik', items: [['Plan', membership === 'free' ? 'Ücretsiz' : membership === 'gumus' ? 'Gümüş' : membership === 'altin' ? 'Altın' : membership === 'platinum' ? 'Platinum' : 'Premium'], ['Durum', membershipStatus]] },
       ].map((section) => (
         <div key={section.title} className="rounded-2xl border border-cream-200 bg-white p-6">
           <div className="flex items-center gap-2">
@@ -164,16 +143,11 @@ export default function ProfilePage() {
         </div>
       ))}
 
-      {membership === 'premium' && hasSupport && (
+      {membership !== 'free' && hasSupport && (
         <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-brand-500" />
-              <h2 className="font-semibold text-cream-900">Destek Tarihleri</h2>
-            </div>
-            <button type="button" onClick={openSchedule} className="flex items-center gap-1.5 rounded-xl border border-cream-200 px-3 py-1.5 text-xs font-medium hover:bg-cream-50">
-              <Edit className="h-3.5 w-3.5" /> Düzenle
-            </button>
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-brand-500" />
+            <h2 className="font-semibold text-cream-900">Uzmanlarım & Randevular</h2>
           </div>
           <div className="mt-4 space-y-3">
             {(Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
@@ -182,15 +156,12 @@ export default function ProfilePage() {
                   <Dumbbell className="h-4 w-4" />
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-cream-900">Koç Görüşmeleri</p>
+                  <p className="text-sm font-medium text-cream-900">Koç</p>
                   <p className="text-xs text-cream-800/60">
-                    Haftada {packageConfig.coachMeetingsPerWeek} görüşme
-                    {assignedCoach ? ` · ${assignedCoach.name}` : ' · uzman atanıyor'}
+                    {assignedCoach?.name || 'Henüz atanmadı'} · Haftada {packageConfig.coachMeetingsPerWeek} görüşme
                   </p>
                 </div>
-                <span className="text-sm font-medium text-cream-900">
-                  {supportSchedule ? `${weekdayLabel(supportSchedule.coachDay)} · ${supportSchedule.coachTime}` : 'Seçilmedi'}
-                </span>
+                <Link to="/schedule/coach" className="text-xs font-semibold text-brand-600 hover:underline">Randevular</Link>
               </div>
             )}
             {(Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && (
@@ -199,36 +170,40 @@ export default function ProfilePage() {
                   <Apple className="h-4 w-4" />
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-cream-900">Diyetisyen Görüşmeleri</p>
+                  <p className="text-sm font-medium text-cream-900">Diyetisyen</p>
                   <p className="text-xs text-cream-800/60">
-                    Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme
-                    {assignedDietitian ? ` · ${assignedDietitian.name}` : ' · uzman atanıyor'}
+                    {assignedDietitian?.name || 'Henüz atanmadı'} · Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme
                   </p>
                 </div>
-                <span className="text-sm font-medium text-cream-900">
-                  {supportSchedule ? `${weekdayLabel(supportSchedule.dietitianDay)} · ${supportSchedule.dietitianTime}` : 'Seçilmedi'}
-                </span>
+                <Link to="/schedule/dietitian" className="text-xs font-semibold text-sage-600 hover:underline">Randevular</Link>
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {membership === 'premium' && hasSupport && (
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarRange className="h-5 w-5 text-brand-500" />
-              <h2 className="font-semibold text-cream-900">Haftalık Müsaitlik</h2>
+          {upcomingSessions.length > 0 && (
+            <div className="mt-4 border-t border-cream-100 pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/45">Yaklaşan Randevular</p>
+              <div className="space-y-1.5">
+                {upcomingSessions.map((s) => {
+                  const sessionType = coachSessions?.some((cs) => cs.id === s.id) ? 'coach' : 'dietitian'
+                  return (
+                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream-50 px-3 py-2 text-sm">
+                      <span className="text-cream-800/70">{s.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-cream-900">{format(new Date(s.date), 'd MMM, HH:mm', { locale: tr })}</span>
+                        <VideoJoinLink session={s} sessionType={sessionType} size="sm" />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-            <button type="button" onClick={openAvailability} className="flex items-center gap-1.5 rounded-xl border border-cream-200 px-3 py-1.5 text-xs font-medium hover:bg-cream-50">
-              <Edit className="h-3.5 w-3.5" /> Düzenle
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-cream-800/55">Koçunuz ve diyetisyeniniz bu saatleri görerek görüşmelerinizi planlar.</p>
-          <div className="mt-4">
-            <AvailabilityView value={user.availability} emptyText="Henüz müsait saat eklemediniz. Düzenle’ye dokunarak ekleyin." />
-          </div>
+          )}
+          <Link
+            to="/calendar"
+            className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+          >
+            <CalendarDays className="h-4 w-4" /> Müsaitliğimi Takvimden Düzenle
+          </Link>
         </div>
       )}
 
@@ -260,24 +235,6 @@ export default function ProfilePage() {
           <PhotoUpload value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">Kaydet</button>
         </div>
-      </Modal>
-
-      <Modal open={availabilityOpen} onClose={() => setAvailabilityOpen(false)} title="Haftalık Müsaitlik" size="lg">
-        <WeeklyAvailability value={availabilityForm} onChange={setAvailabilityForm} />
-        <button type="button" onClick={handleAvailabilitySave} className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
-          Kaydet ({countAvailabilitySlots(availabilityForm)} saat)
-        </button>
-      </Modal>
-
-      <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Destek Tarihlerini Düzenle" size="md">
-        <SupportScheduler
-          schedule={scheduleForm}
-          packageConfig={packageConfig}
-          onChange={setScheduleForm}
-        />
-        <button type="button" onClick={handleScheduleSave} className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
-          Kaydet
-        </button>
       </Modal>
 
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { addDays } from 'date-fns'
 import SessionCard from '../components/calendar/SessionCard'
 import Modal from '../components/ui/Modal'
@@ -25,7 +26,7 @@ export default function DietitianSchedulePage() {
         icon={Apple}
         title="Diyetisyen randevuları Premium özelliğidir"
         description="Beslenme rehberliği için Premium üyeliğe geçin."
-        action={<a href="/builder" className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Premium'a Geç</a>}
+        action={<Link to="/membership" className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Planları İncele</Link>}
       />
     )
   }
@@ -59,6 +60,7 @@ export default function DietitianSchedulePage() {
             <SessionCard
               key={s.id}
               session={s}
+              sessionType="dietitian"
               onReschedule={setRescheduleTarget}
               onCancel={(session) => { cancelSession(session.id, 'dietitian'); toast('Randevu iptal edildi', 'info') }}
             />

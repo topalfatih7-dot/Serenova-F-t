@@ -115,9 +115,9 @@ export default function AdminMembersPage() {
                     <p className="text-xs text-cream-800/50">{m.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${m.membership === 'premium' ? 'bg-brand-50 text-brand-700' : 'bg-cream-100 text-cream-800'}`}>
-                      {m.membership === 'premium' && <Crown className="h-3 w-3" />}
-                      {m.membership === 'premium' ? 'Premium' : 'Ücretsiz'}
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${m.membership !== 'free' ? 'bg-brand-50 text-brand-700' : 'bg-cream-100 text-cream-800'}`}>
+                      {m.membership !== 'free' && <Crown className="h-3 w-3" />}
+                      {m.membership === 'free' ? 'Ücretsiz' : m.membership === 'gumus' ? 'Gümüş' : m.membership === 'altin' ? 'Altın' : m.membership === 'platinum' ? 'Platinum' : 'Premium'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -157,7 +157,7 @@ export default function AdminMembersPage() {
             </div>
 
             <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
-              <InfoRow label="Üyelik" value={selected.membership === 'premium' ? 'Premium' : 'Ücretsiz'} />
+              <InfoRow label="Üyelik" value={selected.membership === 'free' ? 'Ücretsiz' : selected.membership === 'gumus' ? 'Gümüş' : selected.membership === 'altin' ? 'Altın' : selected.membership === 'platinum' ? 'Platinum' : 'Premium'} />
               <InfoRow label="Yaş" value={selected.age} />
               <InfoRow label="Cinsiyet" value={selected.gender === 'female' ? 'Kadın' : selected.gender === 'male' ? 'Erkek' : selected.gender} />
               <InfoRow label="Şehir / İlçe" value={[selected.city, selected.district].filter(Boolean).join(' / ')} />
@@ -165,9 +165,9 @@ export default function AdminMembersPage() {
               <InfoRow label="Kayıt tarihi" value={selected.joinedAt} />
             </div>
 
-            {selected.membership === 'premium' && (
+            {selected.membership !== 'free' && (
               <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
-                <p className="mb-2 text-sm font-semibold text-cream-900">Premium Paket</p>
+                <p className="mb-2 text-sm font-semibold text-cream-900">Üyelik Paketi</p>
                 <div className="grid gap-x-8 sm:grid-cols-2">
                   <InfoRow label="Haftalık koç" value={`${selected.packageConfig?.coachMeetingsPerWeek ?? 0}`} />
                   <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
