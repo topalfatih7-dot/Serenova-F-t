@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Search, Users, Activity, Target, Salad, CalendarClock, ClipboardList,
   Dumbbell, Apple, Mail, CalendarRange, Plus, Trash2, Video, UserRound, FileText,
+  Check, CalendarCheck,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -21,28 +22,55 @@ function entryToText(e) {
   return `${weekdayName(e.day)} ${e.start}-${e.end} · ${e.exerciseName} · ${amount}`
 }
 
-// Koç program oluşturucu: kütüphaneden hareket seçip gün/saat ekler
-function CoachProgramBuilder({ member, exercises, onCreate }) {
+// Koç program oluşturucu — takvim tabanlı gün seçici + iki sütun düzeni
+function CoachProgramBuilder({ exercises, onCreate }) {
   const { toast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [entries, setEntries] = useState([])
+  const [selectedDay, setSelectedDay] = useState(1)
+  const [exSearch, setExSearch] = useState('')
+  const [selectedExId, setSelectedExId] = useState('')
   const [draft, setDraft] = useState({
-    day: 1, start: '12:00', end: '12:20', exerciseId: '', amountType: 'reps', amount: 12, durationUnit: 'sn', note: '',
+    start: '09:00', end: '09:45', amountType: 'reps', amount: 12, durationUnit: 'sn', note: '',
   })
 
-  const availableDays = AVAILABILITY_WEEKDAYS.filter((d) => (member.availability?.[d.value] || []).length)
+  const filteredExercises = useMemo(
+    () => exercises.filter((ex) =>
+      !exSearch ||
+      ex.name.toLowerCase().includes(exSearch.toLowerCase()) ||
+      (ex.category || '').toLowerCase().includes(exSearch.toLowerCase())
+    ),
+    [exercises, exSearch]
+  )
+
+  const dayEntries = useMemo(
+    () => [...entries.filter((e) => e.day === selectedDay)].sort((a, b) => a.start.localeCompare(b.start)),
+    [entries, selectedDay]
+  )
+
+  const entriesPerDay = useMemo(
+    () => AVAILABILITY_WEEKDAYS.reduce((acc, d) => {
+      acc[d.value] = entries.filter((e) => e.day === d.value).length
+      return acc
+    }, {}),
+    [entries]
+  )
 
   const addEntry = () => {
-    const ex = exercises.find((x) => x.id === draft.exerciseId)
-    if (!ex) { toast('Önce kütüphaneden bir hareket seçin', 'error'); return }
+    const ex = exercises.find((x) => x.id === selectedExId)
+    if (!ex) { toast('Kütüphaneden bir hareket seçin', 'error'); return }
     if (draft.end <= draft.start) { toast('Bitiş saati başlangıçtan sonra olmalı', 'error'); return }
-    setEntries((list) => [...list, {
-      id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      day: Number(draft.day), start: draft.start, end: draft.end,
-      exerciseId: ex.id, exerciseName: ex.name, videoUrl: ex.videoUrl || '', description: ex.description || '',
-      amountType: draft.amountType, amount: Number(draft.amount) || 0, durationUnit: draft.durationUnit, note: draft.note.trim(),
-    }])
+    setEntries((list) => [
+      ...list,
+      {
+        id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        day: selectedDay, start: draft.start, end: draft.end,
+        exerciseId: ex.id, exerciseName: ex.name, videoUrl: ex.videoUrl || '', description: ex.description || '',
+        amountType: draft.amountType, amount: Number(draft.amount) || 0, durationUnit: draft.durationUnit, note: draft.note.trim(),
+      },
+    ])
+    setSelectedExId('')
     setDraft((d) => ({ ...d, note: '' }))
   }
 
@@ -52,102 +80,211 @@ function CoachProgramBuilder({ member, exercises, onCreate }) {
     if (!title.trim()) { toast('Program başlığı gerekli', 'error'); return }
     if (entries.length === 0) { toast('En az bir hareket ekleyin', 'error'); return }
     const ordered = [...entries].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
-    onCreate({
-      title: title.trim(),
-      description: description.trim(),
-      entries: ordered,
-      items: ordered.map(entryToText),
-    })
+    onCreate({ title: title.trim(), description: description.trim(), entries: ordered, items: ordered.map(entryToText) })
     setTitle(''); setDescription(''); setEntries([])
   }
 
+  const selectedDayName = weekdayName(selectedDay)
+
   return (
-    <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4">
-      <p className="flex items-center gap-2 font-semibold text-cream-900">
-        <ClipboardList className="h-4 w-4 text-brand-600" /> Kişiye Özel Çalışma Programı
-      </p>
-
-      {availableDays.length > 0 && (
-        <p className="mt-2 text-xs text-cream-800/55">
-          Danışanın müsait günleri: {availableDays.map((d) => d.short).join(', ')}
-        </p>
-      )}
-
-      <div className="mt-3 space-y-3">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Program başlığı (ör. 4 Haftalık Güç Programı)" className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Genel notlar (opsiyonel)" rows={2} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
+    <div className="space-y-4">
+      {/* Başlık & Notlar */}
+      <div className="space-y-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Program başlığı (ör. 4 Haftalık Güç Programı)"
+          className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-300"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Genel notlar (opsiyonel)"
+          rows={2}
+          className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-300"
+        />
       </div>
 
-      {/* Hareket ekleme satırı */}
-      <div className="mt-4 rounded-xl border border-cream-200 bg-white p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Hareket ekle</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="text-xs text-cream-800/60">
-            Gün
-            <select value={draft.day} onChange={(e) => setDraft({ ...draft, day: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
-              {AVAILABILITY_WEEKDAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-            </select>
-          </label>
-          <label className="text-xs text-cream-800/60">
-            Hareket
-            <select value={draft.exerciseId} onChange={(e) => setDraft({ ...draft, exerciseId: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
-              <option value="">Kütüphaneden seç…</option>
-              {exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-            </select>
-          </label>
-          <label className="text-xs text-cream-800/60">
-            Başlangıç
-            <input type="time" value={draft.start} onChange={(e) => setDraft({ ...draft, start: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
-          </label>
-          <label className="text-xs text-cream-800/60">
-            Bitiş
-            <input type="time" value={draft.end} onChange={(e) => setDraft({ ...draft, end: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
-          </label>
-          <label className="text-xs text-cream-800/60">
-            Ölçü
-            <select value={draft.amountType} onChange={(e) => setDraft({ ...draft, amountType: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
-              <option value="reps">Tekrar sayısı</option>
-              <option value="duration">Süre</option>
-            </select>
-          </label>
-          <label className="text-xs text-cream-800/60">
-            {draft.amountType === 'duration' ? 'Süre' : 'Tekrar'}
-            <div className="mt-1 flex gap-2">
-              <input type="number" min={1} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} className="w-full rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900" />
-              {draft.amountType === 'duration' && (
-                <select value={draft.durationUnit} onChange={(e) => setDraft({ ...draft, durationUnit: e.target.value })} className="rounded-lg border border-cream-200 px-2 py-2 text-sm text-cream-900">
-                  <option value="sn">sn</option>
-                  <option value="dk">dk</option>
-                </select>
-              )}
-            </div>
-          </label>
+      {/* Haftalık takvim — gün seçici */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Gün Seç</p>
+        <div className="grid grid-cols-7 gap-1">
+          {AVAILABILITY_WEEKDAYS.map((d) => {
+            const count = entriesPerDay[d.value] || 0
+            const isSelected = selectedDay === d.value
+            return (
+              <button
+                key={d.value}
+                type="button"
+                onClick={() => setSelectedDay(d.value)}
+                className={`flex flex-col items-center justify-center rounded-xl py-2.5 text-center text-xs font-semibold transition ${
+                  isSelected
+                    ? 'bg-brand-500 text-white shadow-md'
+                    : count > 0
+                    ? 'border border-brand-200 bg-brand-50 text-brand-700'
+                    : 'bg-cream-50 text-cream-800/60 hover:bg-cream-100'
+                }`}
+              >
+                <span>{d.short}</span>
+                {count > 0 && (
+                  <span className={`mt-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                    isSelected ? 'bg-white/30 text-white' : 'bg-brand-500 text-white'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
-        <input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Not (opsiyonel, ör. 3 set, 60sn dinlenme)" className="mt-2 w-full rounded-lg border border-cream-200 px-3 py-2 text-sm" />
-        <button type="button" onClick={addEntry} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-100 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-200">
-          <Plus className="h-4 w-4" /> Programa Ekle
-        </button>
       </div>
 
-      {/* Eklenen hareketler */}
+      {/* İki sütun — PC: yan yana, Mobil: alt alta */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Sol: seçili günün hareketleri */}
+        <div className="flex min-h-[200px] flex-col rounded-xl border border-cream-200 bg-white p-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-cream-800/70">
+            <CalendarCheck className="h-3.5 w-3.5 text-brand-500" />
+            {selectedDayName} — {dayEntries.length} hareket
+          </p>
+          {dayEntries.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <Dumbbell className="h-8 w-8 text-cream-200" />
+              <p className="mt-2 text-xs text-cream-800/40">Sağ panelden hareket ekleyin</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5 overflow-y-auto">
+              {dayEntries.map((e) => (
+                <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-cream-100 bg-cream-50 px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-cream-900">{e.exerciseName}</p>
+                    <p className="text-xs text-cream-800/55">
+                      {e.start}–{e.end} · {e.amountType === 'duration' ? `${e.amount} ${e.durationUnit}` : `${e.amount} tekrar`}
+                    </p>
+                    {e.note && <p className="text-[11px] italic text-cream-800/40">{e.note}</p>}
+                  </div>
+                  {e.videoUrl && <Video className="h-3.5 w-3.5 shrink-0 text-brand-400" />}
+                  <button type="button" onClick={() => removeEntry(e.id)} className="shrink-0 rounded p-1 text-red-400 hover:bg-red-50">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sağ: hareket ekleme */}
+        <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
+            {selectedDayName} için Hareket Ekle
+          </p>
+
+          {/* Kütüphane arama */}
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cream-400" />
+            <input
+              value={exSearch}
+              onChange={(e) => setExSearch(e.target.value)}
+              placeholder="Kütüphanede ara…"
+              className="w-full rounded-lg border border-cream-200 bg-white py-2 pl-8 pr-3 text-sm outline-none focus:border-brand-300"
+            />
+          </div>
+
+          {/* Hareket listesi */}
+          <div className="mb-3 max-h-36 overflow-y-auto rounded-lg border border-cream-200 bg-white">
+            {filteredExercises.length === 0 ? (
+              <p className="p-3 text-center text-xs text-cream-800/40">Sonuç bulunamadı</p>
+            ) : filteredExercises.map((ex) => (
+              <button
+                key={ex.id}
+                type="button"
+                onClick={() => setSelectedExId(ex.id)}
+                className={`flex w-full items-center gap-2 border-b border-cream-50 px-3 py-2 text-left text-sm transition last:border-0 ${
+                  selectedExId === ex.id ? 'bg-brand-50 text-brand-700' : 'text-cream-800 hover:bg-cream-50'
+                }`}
+              >
+                <Dumbbell className="h-3.5 w-3.5 shrink-0 text-brand-400" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{ex.name}</p>
+                  {ex.category && <p className="text-[10px] text-cream-800/50">{ex.category}</p>}
+                </div>
+                {selectedExId === ex.id && <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-brand-500" />}
+              </button>
+            ))}
+          </div>
+
+          {/* Saat & miktar */}
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-xs text-cream-800/60">
+              Başlangıç
+              <input type="time" value={draft.start} onChange={(e) => setDraft({ ...draft, start: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-sm" />
+            </label>
+            <label className="text-xs text-cream-800/60">
+              Bitiş
+              <input type="time" value={draft.end} onChange={(e) => setDraft({ ...draft, end: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-sm" />
+            </label>
+            <label className="text-xs text-cream-800/60">
+              Ölçü tipi
+              <select value={draft.amountType} onChange={(e) => setDraft({ ...draft, amountType: e.target.value })} className="mt-1 w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-sm">
+                <option value="reps">Tekrar</option>
+                <option value="duration">Süre</option>
+              </select>
+            </label>
+            <label className="text-xs text-cream-800/60">
+              {draft.amountType === 'duration' ? 'Süre' : 'Tekrar'}
+              <div className="mt-1 flex gap-1.5">
+                <input type="number" min={1} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} className="w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-sm" />
+                {draft.amountType === 'duration' && (
+                  <select value={draft.durationUnit} onChange={(e) => setDraft({ ...draft, durationUnit: e.target.value })} className="rounded-lg border border-cream-200 bg-white px-1.5 py-1.5 text-sm">
+                    <option value="sn">sn</option>
+                    <option value="dk">dk</option>
+                  </select>
+                )}
+              </div>
+            </label>
+          </div>
+          <input
+            value={draft.note}
+            onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+            placeholder="Not (ör. 3 set, 60 sn dinlenme)"
+            className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-1.5 text-sm"
+          />
+          <button
+            type="button"
+            onClick={addEntry}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+          >
+            <Plus className="h-4 w-4" />
+            {`${selectedDayName}'ya Ekle`}
+          </button>
+        </div>
+      </div>
+
+      {/* Program özeti */}
       {entries.length > 0 && (
-        <div className="mt-3 space-y-1.5">
-          {[...entries].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start)).map((e) => (
-            <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm">
-              <span className="flex items-center gap-2 text-cream-800">
-                {e.videoUrl && <Video className="h-3.5 w-3.5 shrink-0 text-brand-500" />}
-                <span><strong className="text-cream-900">{weekdayName(e.day)} {e.start}-{e.end}</strong> · {e.exerciseName} · {e.amountType === 'duration' ? `${e.amount} ${e.durationUnit}` : `${e.amount} tekrar`}</span>
+        <div className="rounded-xl border border-cream-100 bg-white p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+            Program Özeti — {entries.length} hareket
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {AVAILABILITY_WEEKDAYS.filter((d) => (entriesPerDay[d.value] || 0) > 0).map((d) => (
+              <span
+                key={d.value}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  selectedDay === d.value ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-700'
+                }`}
+              >
+                {d.short}: {entriesPerDay[d.value]}
               </span>
-              <button type="button" onClick={() => removeEntry(e.id)} className="rounded p-1 text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      <button type="button" onClick={submit} className="mt-4 w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+      <button type="button" onClick={submit} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">
         Programı Gönder
       </button>
-      <p className="mt-2 text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir. Danışan hareketlere tıklayınca videolarını izleyebilir.</p>
+      <p className="text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir.</p>
     </div>
   )
 }
@@ -366,7 +503,7 @@ export default function StaffClientsPage() {
         {infoClient && <ClientInfo member={infoClient} role={staffUser.role} />}
       </Modal>
 
-      <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Program`} size="lg">
+      <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Program`} size="xl">
         {programClient && (
           isCoach
             ? <CoachProgramBuilder member={programClient} exercises={exercises} onCreate={handleCreate} />

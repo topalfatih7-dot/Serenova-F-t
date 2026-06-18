@@ -36,9 +36,9 @@ export default function MobileNav() {
           </NavLink>
         ))}
         {membership === 'free' && (
-          <NavLink to="/builder" className="flex flex-col items-center gap-0.5 px-3 py-2 text-[10px] font-medium text-gold-500">
+          <NavLink to="/membership" className="flex flex-col items-center gap-0.5 px-3 py-2 text-[10px] font-medium text-gold-500">
             <Crown className="h-5 w-5" />
-            Premium
+            Planlar
           </NavLink>
         )}
       </div>

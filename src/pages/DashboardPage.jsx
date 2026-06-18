@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, Utensils, Droplets, Target, Play, CalendarDays, ClipboardList,
+  Check, Droplets, Target, Play, CalendarDays, ClipboardList,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -24,11 +24,11 @@ function ChartEmpty({ message = 'Henüz veri yok' }) {
 }
 
 // ─── KİŞİSEL ANALİZ PANELİ ─────────────────────────────────────────
-function AiAnalysisPanel({ analysis }) {
+function HealthAnalysisPanel({ analysis }) {
   const [open, setOpen] = useState(false)
   if (!analysis) return null
 
-  const { bmi, bmiCategory, dailyCalories, coachRecommendations, dietitianRecommendations, fitnessScore, priorityGoal } = analysis
+  const { bmi, bmiCategory, dailyCalories, coachRecommendations, dietitianRecommendations, fitnessScore } = analysis
 
   const bmiColors = {
     Normal: 'text-sage-600 bg-sage-50 border-sage-200',
@@ -127,32 +127,6 @@ function AiAnalysisPanel({ analysis }) {
                 </div>
               )}
 
-              {/* Koç Önerileri — Haftalık Program */}
-              {coachRecommendations?.weeklyPlan && (
-                <div>
-                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <Activity className="h-4 w-4 text-brand-500" /> Önerilen Haftalık Antrenman Planı
-                  </p>
-                  <p className="mb-3 text-xs text-cream-800/60">{coachRecommendations.message}</p>
-                  <div className="space-y-2">
-                    {coachRecommendations.weeklyPlan.map((day, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-xl bg-cream-50 px-4 py-2.5">
-                        <span className="text-sm font-semibold text-cream-900">{day.day}</span>
-                        <span className="text-sm text-cream-800/70">{day.focus}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          day.intensity === 'Yüksek' ? 'bg-red-100 text-red-600' :
-                          day.intensity === 'Orta-Yüksek' ? 'bg-orange-100 text-orange-600' :
-                          day.intensity === 'Orta' ? 'bg-amber-100 text-amber-600' :
-                          'bg-sage-100 text-sage-600'
-                        }`}>
-                          {day.intensity}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Video Önerileri */}
               {coachRecommendations?.exercises?.length > 0 && (
                 <div>
@@ -181,24 +155,6 @@ function AiAnalysisPanel({ analysis }) {
                 </div>
               )}
 
-              {/* Beslenme Planı */}
-              {dietitianRecommendations?.mealPlan && (
-                <div>
-                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <Utensils className="h-4 w-4 text-sage-500" /> Kişiselleştirilmiş Beslenme Planı
-                  </p>
-                  <p className="mb-3 text-xs text-cream-800/60">{dietitianRecommendations.message}</p>
-                  <div className="space-y-2">
-                    {dietitianRecommendations.mealPlan.map((meal, i) => (
-                      <div key={i} className="rounded-xl bg-sage-50 px-4 py-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-sage-600">{meal.meal}</p>
-                        <p className="mt-0.5 text-sm text-cream-800/80">{meal.suggestion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Beslenme İpuçları */}
               {dietitianRecommendations?.tips?.length > 0 && (
                 <div>
@@ -215,17 +171,6 @@ function AiAnalysisPanel({ analysis }) {
                   </ul>
                 </div>
               )}
-
-              {/* Premium CTA */}
-              <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-brand-50 p-4">
-                <p className="text-sm font-semibold text-cream-900">Daha fazlası için yükselin</p>
-                <p className="mt-1 text-xs text-cream-800/60">
-                  Birebir koç ve diyetisyen görüşmeleri için ücretli planlarımızı inceleyin.
-                </p>
-                <Link to="/membership" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-600">
-                  Planları İncele
-                </Link>
-              </div>
             </div>
           </motion.div>
         )}
@@ -236,14 +181,14 @@ function AiAnalysisPanel({ analysis }) {
 
 export default function DashboardPage() {
   const {
-    user, membership, membershipStatus, packageConfig, coachSessions, dietitianSessions,
+    user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress,
   } = useApp()
 
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
 
-  const planLabel = membership === 'free' ? 'Ücretsiz' :
+  const planLabel = membership === 'free' ? 'Basic' :
     membership === 'gumus' ? 'Gümüş' :
     membership === 'altin' ? 'Altın' :
     membership === 'platinum' ? 'Platinum' : 'Premium'
@@ -286,9 +231,9 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Kişisel analiz özeti — sadece ücretsiz kullanıcılara göster */}
-      {membership === 'free' && user.aiAnalysis && (
-        <AiAnalysisPanel analysis={user.aiAnalysis} />
+      {/* Kişisel analiz özeti — Basic paket kullanıcılarına göster */}
+      {user.healthAnalysis && (
+        <HealthAnalysisPanel analysis={user.healthAnalysis} />
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -303,7 +248,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Temel plan' : 'Ücretli plan'} icon={Crown} accent="brand" />
+        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Otomatik programlar' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" />
         <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" />
         <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" />
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />

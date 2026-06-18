@@ -19,7 +19,7 @@ import { useToast } from '../context/ToastContext'
 import { isPaidMembership, ALL_PLANS } from '../data/membershipPlans'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
-import { generateAiAnalysis } from '../services/aiAnalysis'
+import { generateHealthAnalysis } from '../services/aiAnalysis'
 
 const STEPS = ['Kişisel', 'Hedefler', 'Spor', 'Beslenme', 'Sağlık', 'Üyelik', 'Ödeme']
 
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
     nutritionPrefs: [], healthAck: false, disclaimer: false,
     membership: preselectedPlan,
   })
-  const { register, registerWithPlan, exercises, plans } = useApp()
+  const { register, registerWithPlan, createProgram, exercises, plans } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -208,14 +208,48 @@ export default function OnboardingPage() {
     setSubmitting(true)
     try {
       const profile = buildProfile()
-      // YZ analizi oluştur
-      const aiAnalysis = generateAiAnalysis(profile, exercises || [])
-      const result = await register({ ...profile, aiAnalysis }, 'free')
+      const healthAnalysis = generateHealthAnalysis(profile, exercises || [])
+      const result = await register({ ...profile, healthAnalysis }, 'free')
       if (!result.success) {
         toast(result.error, 'error')
         return
       }
-      toast('Kayıt tamamlandı! YZ analiziniz hazır.', 'success')
+      const memberId = result.member?.id
+      const memberName = result.member?.name || profile.name
+      if (memberId && healthAnalysis) {
+        const dayRotation = [1, 3, 5]
+        const exList = healthAnalysis.coachRecommendations?.exercises || []
+        if (exList.length > 0) {
+          const workoutEntries = exList.map((ex, i) => ({
+            id: `auto-${Date.now()}-${i}`,
+            day: dayRotation[i % dayRotation.length],
+            start: '09:00', end: '09:30',
+            exerciseId: ex.id, exerciseName: ex.name,
+            videoUrl: ex.videoUrl || '', description: ex.description || '',
+            amountType: 'reps', amount: 12, durationUnit: 'sn', note: '',
+          }))
+          await createProgram({
+            type: 'workout', memberId, memberName,
+            staffId: 'system', staffName: 'Yeni Form',
+            title: 'Otomatik Antrenman Programı',
+            description: healthAnalysis.coachRecommendations?.message || '',
+            entries: workoutEntries,
+            items: workoutEntries.map((e) => `${e.exerciseName} · ${e.amount} tekrar`),
+          })
+        }
+        const mealPlan = healthAnalysis.dietitianRecommendations?.mealPlan || []
+        if (mealPlan.length > 0) {
+          await createProgram({
+            type: 'nutrition', memberId, memberName,
+            staffId: 'system', staffName: 'Yeni Form',
+            title: 'Otomatik Beslenme Programı',
+            description: healthAnalysis.dietitianRecommendations?.message || '',
+            entries: [],
+            items: mealPlan.map((m) => `${m.meal}: ${m.suggestion}`),
+          })
+        }
+      }
+      toast('Kayıt tamamlandı! Kişisel analiziniz hazır.', 'success')
       navigate('/dashboard')
     } finally {
       setSubmitting(false)
@@ -226,8 +260,8 @@ export default function OnboardingPage() {
     setPaying(true)
     setTimeout(async () => {
       const profile = buildProfile()
-      const aiAnalysis = generateAiAnalysis(profile, exercises || [])
-      const result = await registerWithPlan({ ...profile, aiAnalysis }, data.membership, selectedPlan?.price || 0)
+      const healthAnalysis = generateHealthAnalysis(profile, exercises || [])
+      const result = await registerWithPlan({ ...profile, healthAnalysis }, data.membership, selectedPlan?.price || 0)
       setPaying(false)
       if (!result.success) {
         toast(result.error, 'error')

@@ -366,7 +366,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
-    aiAnalysis: profile.aiAnalysis || null,
+    healthAnalysis: profile.healthAnalysis || null,
     membership,
     membershipStatus: 'active',
     packageConfig: packageConfig || getDefaultPackageForPlan(membership),

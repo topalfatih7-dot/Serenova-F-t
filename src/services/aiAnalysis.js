@@ -1,7 +1,7 @@
-// YZ Analiz Servisi — Kural tabanlı kişiselleştirilmiş analiz
-// Ücretsiz üyelere kayıt sonrası otomatik olarak uygulanır.
+// Kural Tabanlı Analiz Servisi — Kişiselleştirilmiş sağlık analizi
+// Basic paket üyelerine kayıt sonrası otomatik olarak uygulanır.
 
-export function generateAiAnalysis(profile, exercises = []) {
+export function generateHealthAnalysis(profile, exercises = []) {
   const bmi = calculateBmi(profile.weight, profile.height)
   const bmiCategory = getBmiCategory(bmi)
   const goalCategories = mapGoalsToCategories(profile.goals || [])

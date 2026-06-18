@@ -1,12 +1,15 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Camera, Edit3, Plus, Trash2, Search,
-  Flame, Zap, Droplets, BarChart3, ChevronDown,
-  Loader2, CheckCircle, RefreshCw, X, AlertCircle,
+  Flame, BarChart3,
+  CheckCircle, RefreshCw, X, AlertCircle,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import { useApp } from '../context/AppContext'
+import { Link } from 'react-router-dom'
+import { analyzeFoodPhoto, isAiVisionEnabled } from '../services/aiVision'
 
 // ── Besin Veritabanı ────────────────────────────────────────────────
 const FOOD_DB = [
@@ -129,9 +132,14 @@ function estimateMacros(totalCal) {
 export default function CalorieCalculatorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { membership } = useApp()
   const fileRef = useRef(null)
 
-  // Mod: 'manual' | 'photo'
+  // Paket kontrolü: Basic kullanıcılar erişemez
+  const isPaid = membership !== 'free'
+  const isPlatinum = membership === 'platinum'
+
+  // Mod: 'manual' | 'photo' (fotoğraf modu sadece platinum için)
   const [mode, setMode] = useState('manual')
 
   // Manuel mod
@@ -191,15 +199,31 @@ export default function CalorieCalculatorPage() {
 
   const macros = estimateMacros(totalCal)
 
-  // Fotoğraf yükle
-  const handlePhotoChange = (e) => {
+  // Fotoğraf yükle — AI açıksa gerçek analiz, değilse/başarısızsa demo presete düşer
+  const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const url = URL.createObjectURL(file)
     setPhoto(url)
     setPhotoResult(null)
     setAnalyzing(true)
-    // Gerçekçi analiz gecikmesi
+
+    if (isAiVisionEnabled()) {
+      const result = await analyzeFoodPhoto(file)
+      setAnalyzing(false)
+      if (result.ok && result.items?.length > 0) {
+        setPhotoResult({ label: result.label, items: result.items })
+      } else if (result.ok) {
+        toast('Fotoğrafta yemek tespit edilemedi. Lütfen daha net bir görsel deneyin.', 'warning')
+        setPhotoResult({ label: 'Tespit Edilemedi', items: [] })
+      } else {
+        toast('AI analizi yapılamadı, örnek sonuç gösteriliyor.', 'info')
+        setPhotoResult(PHOTO_MEAL_PRESETS[presetIdx])
+      }
+      return
+    }
+
+    // AI kapalı → demo mod (gerçekçi gecikme)
     setTimeout(() => {
       setAnalyzing(false)
       setPhotoResult(PHOTO_MEAL_PRESETS[presetIdx])
@@ -213,6 +237,36 @@ export default function CalorieCalculatorPage() {
     setPhotoResult(null)
     setAnalyzing(false)
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  // Basic paket kullanıcıları için erişim kısıtlaması
+  if (!isPaid) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-2 text-sm font-medium text-cream-800 shadow-sm transition hover:bg-cream-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Geri Dön
+        </button>
+
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
+          <Flame className="mx-auto h-12 w-12 text-amber-500" />
+          <h1 className="mt-4 font-display text-xl font-bold text-cream-900">Kalori Hesaplayıcı</h1>
+          <p className="mt-2 text-sm text-cream-800/70">
+            Bu özellik Gümüş ve üzeri paketlerde kullanılabilir.
+          </p>
+          <Link
+            to="/membership"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+          >
+            Planları İncele
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -230,14 +284,16 @@ export default function CalorieCalculatorPage() {
       {/* BAŞLIK */}
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Kalori Hesapla</h1>
-        <p className="mt-1 text-sm text-cream-800/60">Öğününüzün kalori ve besin değerlerini hesaplayın</p>
+        <p className="mt-1 text-sm text-cream-800/60">
+          {isPlatinum ? 'Manuel giriş veya fotoğrafla hesaplama' : 'Öğününüzün kalori değerlerini hesaplayın'}
+        </p>
       </div>
 
-      {/* MOD SEÇİCİ */}
+      {/* MOD SEÇİCİ - Fotoğraf modu sadece Platinum için */}
       <div className="flex rounded-2xl border border-cream-200 bg-white p-1.5 shadow-sm">
         {[
           { id: 'manual', icon: Edit3, label: 'Manuel Giriş' },
-          { id: 'photo', icon: Camera, label: 'Fotoğrafla Hesapla' },
+          ...(isPlatinum ? [{ id: 'photo', icon: Camera, label: 'Fotoğrafla Hesapla' }] : []),
         ].map(({ id, icon: Icon, label }) => (
           <button
             key={id}

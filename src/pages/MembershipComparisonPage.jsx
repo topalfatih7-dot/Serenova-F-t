@@ -5,16 +5,17 @@ import { useApp } from '../context/AppContext'
 import { ALL_PLANS } from '../data/membershipPlans'
 
 const comparisonRows = [
-  { feature: 'YZ Profil & Vücut Analizi', free: true, gumus: true, altin: true, platinum: true },
+  { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, gumus: true, altin: true, platinum: true },
+  { feature: 'Otomatik Beslenme Programı', free: true, gumus: false, altin: false, platinum: false },
+  { feature: 'Otomatik Antrenman Programı', free: true, gumus: false, altin: false, platinum: false },
+  { feature: 'Koç & Diyetisyen Programları', free: false, gumus: true, altin: true, platinum: true },
   { feature: 'Video Kütüphanesi', free: 'Temel', gumus: 'Tam Erişim', altin: 'Tam Erişim', platinum: 'Tam Erişim' },
   { feature: 'Koç Görüşmesi / Hafta', free: false, gumus: '1', altin: '2', platinum: '3' },
   { feature: 'Diyetisyen / Ay', free: false, gumus: '1', altin: '2', platinum: '4 (Haftada 1)' },
-  { feature: 'Kişisel Program', free: false, gumus: false, altin: true, platinum: true },
-  { feature: 'Grup Seansları', free: false, gumus: false, altin: true, platinum: true },
-  { feature: 'İlerleme Raporları', free: false, gumus: 'Temel', altin: 'Detaylı', platinum: 'Detaylı' },
+  { feature: 'Manuel Kalori Hesaplama', free: false, gumus: true, altin: true, platinum: true },
+  { feature: 'Fotoğraflı Kalori Tespiti', free: false, gumus: false, altin: false, platinum: true },
+  { feature: 'İlerleme Raporları', free: 'Temel', gumus: 'Temel', altin: 'Detaylı', platinum: 'Detaylı' },
   { feature: 'Destek', free: 'Standart', gumus: 'E-posta', altin: 'Öncelikli', platinum: '7/24 VIP' },
-  { feature: 'Mental Wellness Seansları', free: false, gumus: false, altin: false, platinum: true },
-  { feature: 'Özel Aktiviteler', free: false, gumus: false, altin: false, platinum: true },
 ]
 
 function PlanIcon({ id }) {

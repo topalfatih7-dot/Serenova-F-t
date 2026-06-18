@@ -9,22 +9,22 @@ export const MONTHLY_DURATION_WEEKS = 4
 
 export const FREE_PLAN = {
   id: 'free',
-  name: 'Ücretsiz',
+  name: 'Basic',
   price: 0,
   period: 'Süresiz',
   color: 'sage',
   features: [
-    { text: 'Kişisel Sağlık & Profil Analizi', included: true },
-    { text: 'Kişiselleştirilmiş Koç Önerileri', included: true },
-    { text: 'Beslenme Önerileri', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Otomatik Beslenme Programı', included: true },
+    { text: 'Otomatik Antrenman Programı', included: true },
     { text: 'Video Kütüphanesi (Temel)', included: true },
-    { text: 'Topluluk Erişimi', included: true },
+    { text: 'Program Takibi', included: true },
     { text: 'Birebir Koç Görüşmesi', included: false },
     { text: 'Diyetisyen Randevusu', included: false },
-    { text: 'İlerleme Raporları', included: false },
-    { text: 'Öncelikli Destek', included: false },
+    { text: 'Manuel Kalori Hesaplama', included: false },
+    { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Aylık 1 plan güncellemesi', 'Temel bildirimler', 'Standart destek'],
+  limits: ['Otomatik programlar', 'Temel video erişimi', 'Standart destek'],
 }
 
 export const GUMUS_PLAN = {
@@ -34,17 +34,17 @@ export const GUMUS_PLAN = {
   period: 'Aylık',
   color: 'slate',
   features: [
-    { text: 'Kişisel Sağlık & Profil Analizi', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
     { text: 'Haftada 1 Koç Görüşmesi', included: true },
     { text: 'Aylık 1 Diyetisyen Görüşmesi', included: true },
-    { text: 'Temel İlerleme Takibi', included: true },
+    { text: 'Koç & Diyetisyen Programları', included: true },
+    { text: 'Manuel Kalori Hesaplama', included: true },
     { text: 'E-posta Desteği', included: true },
     { text: 'Grup Seansları', included: false },
-    { text: 'Öncelikli Destek', included: false },
-    { text: 'Kişisel Program', included: false },
+    { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Haftada 1 koç görüşmesi', 'Aylık 1 diyetisyen'],
+  limits: ['Haftada 1 koç görüşmesi', 'Aylık 1 diyetisyen', 'Manuel kalori girişi'],
 }
 
 export const ALTIN_PLAN = {
@@ -55,17 +55,17 @@ export const ALTIN_PLAN = {
   color: 'gold',
   badge: 'En Popüler',
   features: [
-    { text: 'Kişisel Sağlık & Profil Analizi', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
     { text: 'Haftada 2 Koç Görüşmesi', included: true },
     { text: 'Aylık 2 Diyetisyen Görüşmesi', included: true },
+    { text: 'Koç & Diyetisyen Programları', included: true },
+    { text: 'Manuel Kalori Hesaplama', included: true },
     { text: 'Detaylı İlerleme Raporları', included: true },
     { text: 'Öncelikli Destek', included: true },
     { text: 'Grup Seansları', included: true },
-    { text: 'Kişisel Program', included: true },
-    { text: '7/24 VIP Destek', included: false },
   ],
-  limits: ['Haftada 2 koç görüşmesi', 'Aylık 2 diyetisyen'],
+  limits: ['Haftada 2 koç görüşmesi', 'Aylık 2 diyetisyen', 'Manuel kalori girişi'],
 }
 
 export const PLATINUM_PLAN = {
@@ -76,17 +76,17 @@ export const PLATINUM_PLAN = {
   color: 'brand',
   badge: 'Premium',
   features: [
-    { text: 'Kişisel Sağlık & Profil Analizi', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
     { text: 'Haftada 3 Koç Görüşmesi', included: true },
     { text: 'Haftada 1 Diyetisyen Görüşmesi', included: true },
+    { text: 'Koç & Diyetisyen Programları', included: true },
+    { text: 'Manuel Kalori Hesaplama', included: true },
+    { text: 'Fotoğraflı Kalori Tespiti', included: true },
     { text: '7/24 VIP Destek', included: true },
-    { text: 'Kişisel Program', included: true },
-    { text: 'Grup Seansları', included: true },
-    { text: 'Mental Wellness Seansları', included: true },
-    { text: 'Özel Aktiviteler & Etkinlikler', included: true },
+    { text: 'Grup Seansları & Aktiviteler', included: true },
   ],
-  limits: ['Haftada 3 koç görüşmesi', 'Haftada 1 diyetisyen', '7/24 VIP destek'],
+  limits: ['Haftada 3 koç görüşmesi', 'Haftada 1 diyetisyen', 'Fotoğraflı kalori', '7/24 VIP destek'],
 }
 
 // Geriye dönük uyumluluk için
