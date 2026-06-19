@@ -7,6 +7,7 @@ import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/SupportScheduler'
 import VideoJoinLink from '../../components/video/VideoJoinLink'
+import StaffVideoPanel from '../../components/video/StaffVideoPanel'
 import { useApp } from '../../context/AppContext'
 import { isPaidMembership } from '../../data/membershipPlans'
 
@@ -83,6 +84,9 @@ export default function StaffOverviewPage() {
         <StatsCard label="Bu Hafta Randevu" value={thisWeekCount} sub="Planlanan görüşme" icon={CalendarClock} accent="sage" />
         <StatsCard label="Oluşturulan Program" value={myPrograms.length} sub="Toplam" icon={ClipboardList} accent="gold" />
       </div>
+
+      {/* Görüntülü görüşme alanı */}
+      <StaffVideoPanel clients={clients} role={staffUser.role} />
 
       <div className="rounded-2xl border border-cream-200 bg-white p-6">
         <div className="flex items-center justify-between">

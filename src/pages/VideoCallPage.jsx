@@ -9,7 +9,7 @@ import {
 import { useApp } from '../context/AppContext'
 import { useDailyCall } from '../hooks/useDailyCall'
 import {
-  buildRoomUrl, isVideoCallConfigured, SESSION_TYPE_META, VIDEO_CALL_CONFIG,
+  buildRoomUrl, buildRoomName, isVideoCallConfigured, SESSION_TYPE_META, VIDEO_CALL_CONFIG, getDailyToken,
 } from '../config/videoCall'
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
 import { formatMinutesTr } from '../utils/formatDuration'
@@ -68,11 +68,22 @@ export default function VideoCallPage({ audience = 'member' }) {
 
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()
+  const [meetingToken, setMeetingToken] = useState('')
+
+  // Production güvenli mod: token'lı private oda (DAILY_API_KEY Vercel'de tanımlıysa)
+  useEffect(() => {
+    if (!configured || context.error || !context.roomAccess?.ok) return
+    const roomName = buildRoomName(context.sessionType, sessionId)
+    getDailyToken(roomName, context.displayName, audience === 'staff')
+      .then((t) => { if (t) setMeetingToken(t) })
+      .catch(() => {})
+  }, [configured]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const call = useDailyCall({
     roomUrl,
     userName: context.displayName,
     enabled: configured && !context.error && context.roomAccess?.ok,
+    token: meetingToken,
   })
 
   const backPath = audience === 'staff'

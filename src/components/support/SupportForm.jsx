@@ -4,8 +4,6 @@ import { Send } from 'lucide-react'
 const CATEGORIES = [
   'Genel soru',
   'Teknik sorun',
-  'Üyelik / iptal',
-  'Tatil dondurma',
   'Sağlık bildirimi',
   'Ödeme',
 ]

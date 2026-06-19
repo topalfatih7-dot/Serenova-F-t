@@ -1,15 +1,19 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Camera, Edit3, Plus, Trash2, Search,
   Flame, BarChart3,
   CheckCircle, RefreshCw, X, AlertCircle,
+  Send, Sparkles, MessageSquare, BookOpen,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
 import { Link } from 'react-router-dom'
 import { analyzeFoodPhoto, isAiVisionEnabled } from '../services/aiVision'
+import { parseFoodText } from '../services/foodParser'
+import { isAiFoodEnabled, estimateUnknownFoods } from '../services/aiFoodEstimate'
+import { getCustomFoods, addCustomFood, incrementFoodUsage } from '../services/supabaseDb'
 
 // ── Besin Veritabanı ────────────────────────────────────────────────
 const FOOD_DB = [
@@ -79,7 +83,6 @@ const FOOD_DB = [
   { id: 'sutlac', name: 'Sütlaç', category: 'Tatlılar', cal100: 139, unit: 'kase', unitG: 150 },
 ]
 
-const CATEGORIES = [...new Set(FOOD_DB.map((f) => f.category))]
 
 function basketItemGrams(b) {
   if (b.portionUnit === 'gram') return Number(b.amount) || 0
@@ -144,8 +147,14 @@ export default function CalorieCalculatorPage() {
 
   // Manuel mod
   const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Tümü')
   const [basket, setBasket] = useState([])
+  const [customFoods, setCustomFoods] = useState([])
+  const [chatMessages, setChatMessages] = useState([
+    { id: 0, role: 'system', type: 'info', content: 'Merhaba! Ne yediğinizi yazın, kaloriyi hesaplayalım.\nÖrnek: “2 yumurta, 1 dilim ekmek, 200g tavuk göğsü”' },
+  ])
+  const [chatInput, setChatInput] = useState('')
+  const [chatProcessing, setChatProcessing] = useState(false)
+  const chatEndRef = useRef(null)
 
   // Fotoğraf mod
   const [photo, setPhoto] = useState(null)
@@ -153,12 +162,23 @@ export default function CalorieCalculatorPage() {
   const [photoResult, setPhotoResult] = useState(null)
   const [presetIdx] = useState(() => Math.floor(Math.random() * PHOTO_MEAL_PRESETS.length))
 
-  // Filtrelenmiş besinler
-  const filteredFoods = FOOD_DB.filter((f) => {
-    const matchCat = selectedCategory === 'Tümü' || f.category === selectedCategory
-    const matchSearch = !search || f.name.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch
-  })
+  // Topluluk besin havuzunu sayfa açılınca yükle
+  useEffect(() => {
+    getCustomFoods().then((foods) => setCustomFoods(foods)).catch(() => {})
+  }, [])
+
+  // Chat mesajları gelince alta kayar
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages])
+
+  // Tüm besinler: sabit DB + topluluk havuzu
+  const allFoods = [...FOOD_DB, ...customFoods]
+
+  // Filtrelenmiş besinler (sadece arama, kategori yok)
+  const filteredFoods = allFoods.filter((f) =>
+    !search || f.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   // Sepete ekle
   const addToBasket = (food) => {
@@ -198,6 +218,84 @@ export default function CalorieCalculatorPage() {
   }, 0)
 
   const macros = estimateMacros(totalCal)
+
+  // Sepete belirli miktar/birimle ekle (chat parser kullanır)
+  const addChatItemToBasket = (food, qty, portionUnit) => {
+    const foodId = food.id || `tmp-${food.name}`
+    setBasket((prev) => {
+      const existing = prev.find((b) => b.foodId === foodId)
+      if (existing) {
+        return prev.map((b) => b.foodId === foodId ? { ...b, amount: (Number(b.amount) || 0) + qty } : b)
+      }
+      return [...prev, { foodId, food, amount: qty, portionUnit: portionUnit || food.unit }]
+    })
+  }
+
+  // Chat gönder: ayrıştır → sepete ekle → bilinmeyenler için AI fallback
+  const handleChatSend = async () => {
+    const text = chatInput.trim()
+    if (!text || chatProcessing) return
+    setChatInput('')
+    setChatMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: 'user', content: text }])
+    setChatProcessing(true)
+
+    try {
+      const { matched, unknown } = parseFoodText(text, allFoods)
+
+      matched.forEach((m) => {
+        addChatItemToBasket(m.food, m.qty, m.unit || m.food.unit)
+        if (m.food.custom && m.food.id) incrementFoodUsage(m.food.id).catch(() => {})
+      })
+
+      let aiAdded = []
+      let aiFailed = []
+
+      if (unknown.length > 0 && isAiFoodEnabled()) {
+        const estRes = await estimateUnknownFoods(unknown)
+        if (estRes.ok && estRes.results?.length > 0) {
+          for (let i = 0; i < estRes.results.length; i++) {
+            const est = estRes.results[i]
+            const unk = unknown[i] || unknown[0]
+            const saveRes = await addCustomFood({ ...est, source: 'ai' })
+            const saved = saveRes.success ? saveRes.food : { ...est, id: `tmp-${Date.now()}-${i}`, custom: true }
+            setCustomFoods((prev) => prev.find((f) => f.id === saved.id) ? prev : [...prev, saved])
+            const qty = unk.qty || 1
+            const cal = Math.round((saved.cal100 * (saved.unitG || 100) * qty) / 100)
+            addChatItemToBasket(saved, qty, unk.unit || saved.unit)
+            aiAdded.push({ name: saved.name, qty, unit: unk.unit || saved.unit, cal, isNew: !saveRes.existed })
+          }
+        } else {
+          aiFailed = unknown
+        }
+      } else if (unknown.length > 0) {
+        aiFailed = unknown
+      }
+
+      const lines = []
+      if (matched.length > 0) {
+        lines.push('✅ Eklendi:')
+        matched.forEach((m) => lines.push(`  • ${m.food.name} ×${m.qty} ${m.unit || m.food.unit} — ${m.cal} kcal`))
+      }
+      if (aiAdded.length > 0) {
+        lines.push('🤖 AI ile tahmin edildi:')
+        aiAdded.forEach((a) => lines.push(`  • ${a.name} ×${a.qty} ${a.unit} — ~${a.cal} kcal${a.isNew ? ' (sisteme kaydedildi)' : ''}`))
+      }
+      if (aiFailed.length > 0) {
+        lines.push('❓ Tanınamadı — listeyi kullanarak ekleyin:')
+        aiFailed.forEach((u) => lines.push(`  • ${u.name}`))
+      }
+      if (matched.length === 0 && aiAdded.length === 0 && aiFailed.length === 0) {
+        lines.push('Hiçbir besin anlaşılamadı. Virgülle ayırarak tekrar deneyin.')
+      }
+
+      const type = matched.length > 0 || aiAdded.length > 0 ? 'success' : 'warning'
+      setChatMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: 'system', type, content: lines.join('\n') }])
+    } catch {
+      setChatMessages((prev) => [...prev, { id: `e-${Date.now()}`, role: 'system', type: 'error', content: 'Bir hata oluştu, lütfen tekrar deneyin.' }])
+    } finally {
+      setChatProcessing(false)
+    }
+  }
 
   // Fotoğraf yükle — AI açıksa gerçek analiz, değilse/başarısızsa demo presete düşer
   const handlePhotoChange = async (e) => {
@@ -318,8 +416,9 @@ export default function CalorieCalculatorPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="grid gap-6 lg:grid-cols-5"
+            className="space-y-6"
           >
+            <div className="grid gap-6 lg:grid-cols-5">
             {/* Besin Seçici */}
             <div className="lg:col-span-3 space-y-4">
               <div className="rounded-2xl border border-cream-200 bg-white shadow-sm">
@@ -333,22 +432,6 @@ export default function CalorieCalculatorPage() {
                       onChange={(e) => setSearch(e.target.value)}
                       className="w-full rounded-xl border border-cream-200 py-2.5 pl-9 pr-4 text-sm focus:border-brand-400 focus:outline-none"
                     />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {['Tümü', ...CATEGORIES].map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setSelectedCategory(c)}
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                          selectedCategory === c
-                            ? 'bg-brand-500 text-white'
-                            : 'bg-cream-100 text-cream-800 hover:bg-cream-200'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -395,7 +478,7 @@ export default function CalorieCalculatorPage() {
                   {basket.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-center">
                       <Flame className="h-8 w-8 text-cream-200" />
-                      <p className="mt-2 text-sm text-cream-800/40">Listeden besin ekleyin</p>
+                      <p className="mt-2 text-sm text-cream-800/40">Listeden veya aşağıdan ekleyin</p>
                     </div>
                   ) : basket.map((b) => {
                     const grams = basketItemGrams(b)
@@ -440,6 +523,77 @@ export default function CalorieCalculatorPage() {
                 </div>
               </div>
             </div>
+            </div>
+
+            {/* ─── Chat Bölmesi ─── */}
+            <div className="rounded-2xl border border-cream-200 bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2.5 border-b border-cream-100 px-5 py-4 bg-gradient-to-r from-brand-50 to-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500 text-white">
+                  <MessageSquare className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="font-semibold text-cream-900 text-sm">Ne Yediniz? Yazarak Ekleyin</p>
+                  <p className="text-xs text-cream-800/50">Virgülle ayırın · bilinmeyenler {isAiFoodEnabled() ? 'AI ile tahmin edilir ve kaydedilir' : 'elle eklenebilir'}</p>
+                </div>
+                {customFoods.length > 0 && (
+                  <span className="ml-auto flex items-center gap-1 rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-medium text-sage-700">
+                    <BookOpen className="h-3 w-3" />
+                    {customFoods.length} kayıtlı besin
+                  </span>
+                )}
+              </div>
+
+              {/* Mesajlar */}
+              <div className="max-h-72 overflow-y-auto space-y-2 p-4">
+                {chatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${ msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-brand-500 text-white rounded-br-sm'
+                        : msg.type === 'success' ? 'bg-sage-50 text-sage-800 border border-sage-200 rounded-bl-sm'
+                        : msg.type === 'error'   ? 'bg-red-50 text-red-700 border border-red-200 rounded-bl-sm'
+                        : msg.type === 'warning' ? 'bg-amber-50 text-amber-800 border border-amber-200 rounded-bl-sm'
+                        : 'bg-cream-100 text-cream-800 rounded-bl-sm'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {chatProcessing && (
+                  <div className="flex justify-start">
+                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-cream-100 px-4 py-2.5 text-sm text-cream-600">
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse text-brand-500" />
+                      Analiz ediliyor…
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="border-t border-cream-100 p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSend()}
+                    disabled={chatProcessing}
+                    placeholder='Örn: 2 yumurta, 1 dilim ekmek, 200g tavuk'
+                    className="flex-1 rounded-xl border border-cream-200 px-4 py-2.5 text-sm focus:border-brand-400 focus:outline-none disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleChatSend}
+                    disabled={!chatInput.trim() || chatProcessing}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </motion.div>
         ) : (
           <motion.div

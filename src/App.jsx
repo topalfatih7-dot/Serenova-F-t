@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { ToastProvider } from './context/ToastContext'
@@ -8,51 +9,62 @@ import StaffShell from './components/layout/StaffShell'
 import RequireAuth from './components/auth/RequireAuth'
 
 import LandingPage from './pages/LandingPage'
-import LoginPage from './pages/auth/LoginPage'
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
-import OnboardingPage from './pages/OnboardingPage'
-import MembershipComparisonPage from './pages/MembershipComparisonPage'
-import DashboardPage from './pages/DashboardPage'
-import CoachSchedulePage from './pages/CoachSchedulePage'
-import DietitianSchedulePage from './pages/DietitianSchedulePage'
-import NotificationsPage from './pages/NotificationsPage'
-import SupportPage from './pages/SupportPage'
-import ProfilePage from './pages/ProfilePage'
-import ProgramsPage from './pages/ProgramsPage'
-import CalendarPage from './pages/CalendarPage'
-import CalorieCalculatorPage from './pages/CalorieCalculatorPage'
-import ExerciseLibraryPage from './pages/ExerciseLibraryPage'
-import SuccessStoriesPage from './pages/SuccessStoriesPage'
-import BlogPage from './pages/BlogPage'
-import BlogPostPage from './pages/BlogPostPage'
-import StaffProfilePage from './pages/StaffProfilePage'
-import NotFoundPage from './pages/NotFoundPage'
 
-import StaffOverviewPage from './pages/staff/StaffOverviewPage'
-import StaffClientsPage from './pages/staff/StaffClientsPage'
-import StaffProgramsPage from './pages/staff/StaffProgramsPage'
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparisonPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const CoachSchedulePage = lazy(() => import('./pages/CoachSchedulePage'))
+const DietitianSchedulePage = lazy(() => import('./pages/DietitianSchedulePage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const SupportPage = lazy(() => import('./pages/SupportPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const ProgramsPage = lazy(() => import('./pages/ProgramsPage'))
+const CalendarPage = lazy(() => import('./pages/CalendarPage'))
+const CalorieCalculatorPage = lazy(() => import('./pages/CalorieCalculatorPage'))
+const ExerciseLibraryPage = lazy(() => import('./pages/ExerciseLibraryPage'))
+const SuccessStoriesPage = lazy(() => import('./pages/SuccessStoriesPage'))
+const BlogPage = lazy(() => import('./pages/BlogPage'))
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage'))
+const StaffProfilePage = lazy(() => import('./pages/StaffProfilePage'))
+const TeamListPage = lazy(() => import('./pages/TeamListPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
-import AdminOverviewPage from './pages/admin/AdminOverviewPage'
-import AdminMembersPage from './pages/admin/AdminMembersPage'
-import AdminStaffPage from './pages/admin/AdminStaffPage'
-import AdminBlogPage from './pages/admin/AdminBlogPage'
-import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage'
-import AdminSessionsPage from './pages/admin/AdminSessionsPage'
-import AdminSupportPage from './pages/admin/AdminSupportPage'
-import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
-import AdminActivityPage from './pages/admin/AdminActivityPage'
-import AdminLibraryPage from './pages/admin/AdminLibraryPage'
-import AdminRequestsPage from './pages/admin/AdminRequestsPage'
-import AdminContentPage from './pages/admin/AdminContentPage'
-import AdminPremiumPage from './pages/admin/AdminPremiumPage'
-import AdminPlansPage from './pages/admin/AdminPlansPage'
-import VideoCallPage from './pages/VideoCallPage'
+const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
+const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
+const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
+
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'))
+const AdminMembersPage = lazy(() => import('./pages/admin/AdminMembersPage'))
+const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage'))
+const AdminBlogPage = lazy(() => import('./pages/admin/AdminBlogPage'))
+const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptionsPage'))
+const AdminSessionsPage = lazy(() => import('./pages/admin/AdminSessionsPage'))
+const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'))
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
+const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
+const AdminRequestsPage = lazy(() => import('./pages/admin/AdminRequestsPage'))
+const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
+const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
+const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
+const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <AppProvider>
       <ToastProvider>
         <BrowserRouter>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route element={<PublicLayout />}>
               <Route index element={<LandingPage />} />
@@ -65,6 +77,9 @@ export default function App() {
               <Route path="stories" element={<SuccessStoriesPage />} />
               <Route path="blog" element={<BlogPage />} />
               <Route path="blog/:id" element={<BlogPostPage />} />
+              <Route path="team/coaches" element={<TeamListPage role="coaches" />} />
+              <Route path="team/dietitians" element={<TeamListPage role="dietitians" />} />
+              <Route path="team/doctors" element={<TeamListPage role="doctors" />} />
               <Route path="team/:id" element={<StaffProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
@@ -115,6 +130,7 @@ export default function App() {
             </Route>
 
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </ToastProvider>
     </AppProvider>

@@ -113,6 +113,14 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [reloadRemote])
 
+  // Mevcut üyenin planını değiştirir (yeni kayıt oluşturmaz)
+  const changePlan = useCallback(async (planId, planPrice = 0) => {
+    if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
+    const r = await sb.changeMemberPlan(currentMember, planId, planPrice)
+    if (r.success) await reloadRemote()
+    return r
+  }, [currentMember, reloadRemote])
+
   const processPremiumPayment = useCallback(async (packageConfig, schedule) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
     const r = await sb.processPremiumPayment(currentMember, packageConfig, schedule)
@@ -355,6 +363,10 @@ export function AppProvider({ children }) {
     pauseUntil: currentMember?.pauseUntil,
     premiumExpiresAt: currentMember?.premiumExpiresAt,
     premiumStartedAt: currentMember?.premiumStartedAt,
+    freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
+    isFreeTrialExpired: currentMember?.membership === 'free' && currentMember?.freeTrialExpiresAt
+      ? new Date() > new Date(currentMember.freeTrialExpiresAt)
+      : false,
     testimonials: db.content?.testimonials || [],
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],
@@ -376,6 +388,7 @@ export function AppProvider({ children }) {
     registerWithPayment,
     registerWithPlan,
     savePlan,
+    changePlan,
     processPremiumPayment,
     upgradeToPremium,
     savePackage,

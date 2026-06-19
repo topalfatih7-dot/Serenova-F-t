@@ -3,7 +3,7 @@
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-18 (Paket yapısı güncellendi, YZ kavramı kaldırıldı)
+> **Son güncelleme:** 2026-06-19 (Bkz. §17: tek-dosya Supabase kurulumu, plan değiştirme, profil yeniden tasarımı, kadro sayfaları, ülke kodu, gradient bölümler, ölü kod temizliği)
 
 ---
 
@@ -15,7 +15,7 @@
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
 
-**Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. `src/services/localDb.js` kullanılmıyor (legacy).
+**Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
 ---
 
@@ -108,14 +108,17 @@ Admin e-postası üç yerde senkron olmalı:
 
 ### SQL dosyaları (`supabase/`)
 
+**Artık TEK dosya var:** `setup.sql` — idempotent, kendi kendine yeten tertemiz kurulum.
+Eski `schema.sql` + `migrate_*.sql` + `seed.sql` + `create_admin.sql` dosyaları silindi
+(hepsi `setup.sql` içinde birleştirildi).
+
 | Dosya | Ne yapar | Ne zaman çalıştırılır |
 |-------|----------|----------------------|
-| `schema.sql` | Ana şema: tablolar, RLS, trigger, RPC | İlk kurulum |
-| `migrate_plans.sql` | `plans` tablosu + varsayılan paketler; `members.phone` | Plan sistemi eklendiğinde |
-| `migrate_doctor_role.sql` | `doctor` rolü; staff.id = auth.users.id | Doktor rolü eklendiğinde |
-| `migrate_assignments.sql` | JSONB → `assigned_coach_id`/`assigned_dietitian_id` taşıma | Atama sütunları eklendiğinde |
-| `seed.sql` | İçerik tablolarını temizler (demo veri eklemez) | Test ortamı reset |
-| `create_admin.sql` | Hazır admin kullanıcı oluşturur | İlk admin kurulumu |
+| `setup.sql` | Eklentiler, tüm tablolar (custom_foods dahil), RLS, trigger, RPC'ler, storage bucket, varsayılan paketler ve onaylı admin kullanıcısı | İlk/temiz kurulum — Supabase SQL Editor'a yapıştırıp bir kez çalıştır |
+
+**Çalıştırma:** Supabase Dashboard → SQL Editor → `supabase/setup.sql` içeriğini yapıştır → Run.
+Tekrar çalıştırmak güvenlidir (her şey `if not exists` / `on conflict` / `create or replace`).
+Admin: `admin@serenova.fit` / `Serenova2026!`.
 
 ### Tablolar
 
@@ -203,7 +206,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 - Admin: `platform`, `adminStats`, `membershipBreakdown`, `monthlyGrowth`, `sessionStats`
 
 **Aksiyonlar (tam liste):**
-`login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `updateProfile`, `updateSettings`, `refresh`
+`login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `changePlan` (mevcut üyenin planını değiştirir — yeni kayıt OLUŞTURMAZ), `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `updateProfile`, `updateSettings`, `refresh`
 
 ### 5.3 Kayıt ve Onboarding
 
@@ -241,8 +244,8 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 | Paket fiyat hesabı | `src/services/packagePricing.js` — `calculatePackagePrice`, `getRecommendedPackage` |
 | Randevu slot üretimi | `src/services/supportSessions.js` — `generateSupportSessions()` |
 | Koç/diyetisyen otomatik atama | `src/services/staffAssignment.js` — `applyStaffAssignments`, `findAvailableStaff` |
-| Paket builder UI | `src/components/package/PackageBuilder.jsx`, `SupportScheduler.jsx`, `WeeklyAvailability.jsx` |
-| Legacy sayfa (rota dışı) | `src/pages/PackageBuilderPage.jsx` — **kullanılmıyor**, `/builder` → `/membership` redirect |
+| Randevu planlama UI | `src/components/package/SupportScheduler.jsx`, `WeeklyAvailability.jsx` |
+| Kaldırıldı | `PackageBuilder.jsx`, `PackageBuilderPage.jsx`, `PackageSummaryCard.jsx`, `NumberSelector.jsx` silindi (`/builder` → `/membership` redirect korunuyor) |
 
 ### 5.6 Video Görüşme (Daily.co) — YENİ SİSTEM
 
@@ -465,12 +468,7 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | Amaç |
 |-------|------|
-| `schema.sql` | Ana veritabanı şeması |
-| `migrate_plans.sql` | Plan tablosu migrasyonu |
-| `migrate_doctor_role.sql` | Doktor rolü migrasyonu |
-| `migrate_assignments.sql` | Atama sütunları migrasyonu |
-| `seed.sql` | Seed/temizleme |
-| `create_admin.sql` | Admin kullanıcı oluşturma |
+| `setup.sql` | **Tek dosya** tertemiz kurulum (şema + RLS + RPC + storage + paketler + admin) |
 
 ### 7.4 Context (`src/context/`)
 
@@ -492,8 +490,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | Ana export/fonksiyonlar | Kullanılıyor mu |
 |-------|-------------------------|-----------------|
 | `supabaseClient.js` | `supabase`, `isSupabaseEnabled`, `syncAutoRefresh` | ✅ |
-| `supabaseDb.js` | `hydrate`, `login`, `logout`, tüm CRUD | ✅ Ana veri katmanı |
-| `localDb.js` | localStorage mock DB | ❌ Kullanılmıyor |
+| `supabaseDb.js` | `hydrate`, `login`, `logout`, `changeMemberPlan`, tüm CRUD | ✅ Ana veri katmanı |
 | `staffAssignment.js` | `applyStaffAssignments`, `findAvailableStaff` | ✅ |
 | `supportSessions.js` | `generateSupportSessions` | ✅ |
 | `packagePricing.js` | `calculatePackagePrice`, `getRecommendedPackage` | ✅ |
@@ -529,9 +526,11 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | Export |
 |-------|--------|
-| `membershipPlans.js` | `ALL_PLANS`, `FREE_PLAN`, `GUMUS_PLAN`, `isPaidMembership` |
+| `membershipPlans.js` | `ALL_PLANS`, `FREE_PLAN`, `GUMUS_PLAN`, `isPaidMembership`, `getDefaultPackageForPlan` |
 | `turkeyCities.js` | `TURKEY_CITIES`, `CITY_NAMES`, `getDistricts` |
 | `blogPosts.js` | `BLOG_CATEGORIES`, `DEFAULT_POSTS` (Supabase boşsa fallback) |
+| `countryCodes.js` | `COUNTRY_CODES`, `DEFAULT_COUNTRY_ISO`, `getCountry`, `isValidNationalNumber`, `formatNationalNumber`, `toE164` |
+| `healthTest.js` | `HEALTH_SECTIONS`, `EMPTY_HEALTH_TEST`, `getApplicableSections`, `isSectionComplete`, `describeHealthTest` |
 
 ### 7.10 Pages (`src/pages/`) — 39 dosya
 
@@ -554,8 +553,8 @@ SuccessStoriesPage.jsx
 BlogPage.jsx
 BlogPostPage.jsx
 StaffProfilePage.jsx
+TeamListPage.jsx                ← /team/coaches|dietitians|doctors (role prop ile)
 NotFoundPage.jsx
-PackageBuilderPage.jsx          ← ROTA DIŞI
 auth/LoginPage.jsx
 auth/ForgotPasswordPage.jsx
 staff/StaffOverviewPage.jsx
@@ -585,9 +584,11 @@ admin/AdminActivityPage.jsx
 
 **Landing:** `PricingCard`, `FAQAccordion`, `TeamCarousel`, `TestimonialCarousel`, `WhyUsSection`, `ContactSection`
 
-**Video:** `VideoCallUI`, `VideoJoinLink`
+**Video:** `VideoCallUI`, `VideoJoinLink`, `StaffVideoPanel` (personel için görüntülü görüşme alanı)
 
-**Package:** `PackageBuilder`, `PackageSummaryCard`, `SupportScheduler`, `WeeklyAvailability`, `AvailabilityView`
+**Onboarding:** `HealthTestStep` (soru-soru, çok adımlı sağlık testi)
+
+**Package:** `SupportScheduler`, `WeeklyAvailability`, `AvailabilityView`
 
 **Admin:** `ManualSessionEditor`
 
@@ -603,7 +604,7 @@ admin/AdminActivityPage.jsx
 
 **Social:** `SuccessStoryCard`
 
-**UI:** `BrandLogo`, `MembershipBadge`, `StatsCard`, `Modal`, `LoadingScreen`, `ConfigErrorScreen`, `EmptyState`, `Skeleton`, `FormField`, `PhotoUpload`, `Stepper`, `NumberSelector`, `RangeSelector`, `ToggleGroup`, `DisclaimerBox`, `ConsentBanner`, `OnboardingTutorial`, `VideoPlayer`
+**UI:** `BrandLogo`, `MembershipBadge`, `StatsCard`, `Modal`, `LoadingScreen`, `ConfigErrorScreen`, `EmptyState`, `Skeleton`, `FormField`, `PhoneField` (ülke kodlu telefon girişi), `PhotoUpload`, `Stepper`, `RangeSelector`, `ToggleGroup`, `DisclaimerBox`, `ConsentBanner`, `OnboardingTutorial`, `VideoPlayer`
 
 ### 7.12 Stil
 
@@ -702,11 +703,11 @@ Kaynak: `.env.example`
 
 1. **Gerçek ödeme yok** — `PaymentForm` + `testPayment.js` simülasyon.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
-3. **localDb.js dead code** — hiçbir dosya import etmiyor.
-4. **PackageBuilderPage rota dışı** — `/builder` → `/membership` redirect.
+3. **localDb.js silindi** — tek veri kaynağı `supabaseDb.js`.
+4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
 5. **Daily REST API kullanılmıyor** — odalar deterministik URL ile açılır; oda önceden Daily dashboard'da oluşturulmalı veya otomatik oluşturma açık olmalı.
 6. **Seanslar JSONB'de** — ayrı `sessions` tablosu yok; `members.data.coachSessions` / `dietitianSessions`.
-7. **Doctor rolü** — frontend destekler (`staffRoles.js`); DB için `migrate_doctor_role.sql` gerekir.
+7. **Doctor rolü** — frontend destekler (`staffRoles.js`); DB tarafı `setup.sql` içinde (`staff_role_check`) hazır.
 8. **Supabase Edge Function yok** — sunucu mantığı Vercel `api/` klasöründe.
 9. **ConfigErrorScreen** — Supabase env eksikse uygulama açılmaz.
 10. **RLS koç erişimi** — `assigned_coach_id` / `assigned_dietitian_id` sütunlarına bağlı; JSONB yedek değer RLS için yeterli değil.
@@ -939,6 +940,63 @@ AI_SETUP.md             → Adım adım kurulum rehberi
 
 ### Dashboard Değişikliği
 - `HealthAnalysisPanel` en altındaki **"Planları İncele" (Premium CTA)** kaldırıldı.
+
+---
+
+## 17. Son Güncelleme Özeti (2026-06-19 — UI/UX + Plan + Temizlik)
+
+### 1. Tek Dosya Supabase Kurulumu
+- `supabase/setup.sql` tek, idempotent dosya. Eski `schema.sql`, `migrate_*.sql` (4 adet), `seed.sql`, `create_admin.sql` **silindi**.
+- Çalıştırma: SQL Editor'a yapıştır → Run. Admin: `admin@serenova.fit` / `Serenova2026!`.
+
+### 2. Mevcut Üyenin Planını Değiştirme (yeni kayıt sorunu çözüldü)
+- **Sorun:** Giriş yapmış (ör. Basic) üye paket seçmeye çalışınca `/onboarding` yeni kayıt başlatıyordu.
+- **Çözüm:**
+  - `supabaseDb.changeMemberPlan(member, planId, planPrice)` — mevcut üyeyi günceller (membership + packageConfig + premium tarihleri), ücretli ise `payments` kaydı ekler. Yeni hesap açmaz.
+  - `AppContext.changePlan(planId, planPrice)` aksiyonu.
+  - `OnboardingPage` artık giriş yapmış üye için (`isExistingMember`) erken `return` ile **`PlanChangeView`** render eder: plan kartları + ücretli planlarda ödeme modalı → `changePlan` → `/profile`.
+
+### 3. Profil Sayfası Yeniden Tasarımı (`ProfilePage.jsx`)
+- Sosyal medya tarzı: gradient kapak + orb'lar, üstte taşan büyük avatar (kamera düğmesi), isim/e-posta/şehir, üyelik rozeti.
+- İstatistik şeridi: Program / Randevu / Seri sayıları.
+- Kart grid: Kişisel Bilgiler (inline düzenle), Bildirim Ayarları, Abonelik (**Planı Değiştir** → `/onboarding`).
+- Tüm eski işlevler korundu (düzenleme modalı, ayarlar, uzman/randevu kartı, çıkış).
+
+### 4. Kadromuz Sayfaları Düzeltildi (`TeamListPage.jsx` + `App.jsx`)
+- **Sorun:** `/team/coaches|dietitians|doctors` rotaları statikti ama sayfa `useParams().role` okuyordu → `role` undefined → ana sayfaya redirect.
+- **Çözüm:** Rotalara `role` prop'u geçildi (`<TeamListPage role="coaches" />`); sayfa `roleProp || params.role` kullanıyor.
+
+### 5. Ülke Kodu Tek Gösterim (`PhoneField.jsx`)
+- **Sorun:** Bayrak + ülke kodu iki kez görünüyordu (standalone bayrak + select metni + `+90` ön eki).
+- **Çözüm:** Kompakt tetikleyici (bayrak + `+kod` + chevron), native `<select>` görünmez şekilde üzerine bindirildi; input artık kodu tekrarlamıyor.
+
+### 6. Landing — Gradient Bölümler + Mobil Rozet
+- "Üyelerimiz Ne Diyor" arkasındaki **fotoğraf kaldırıldı** → renkli gradient + animasyonlu orb'lar.
+- "Sık Sorulan Sorular" arkasına da renkli gradient + orb'lar eklendi.
+- Mobil üyelik kartlarındaki **Popüler/Premium rozetleri** artık görünüyor (yatay kaydırma kabına `pt-6` eklendi; `overflow` kırpması giderildi).
+
+### 7. Hamburger Menü — Animasyonlu Renkli Parıltı
+- `index.css`: `@keyframes hamburgerGlow` (pulsing glow) + `::before` conic-gradient dönen halka.
+- `PublicLayout` mobil menü butonuna `hamburger-glow` (menü kapalıyken) uygulandı. `prefers-reduced-motion` saygılı.
+
+### 8. Destek Kategorileri Sadeleştirildi (`SupportForm.jsx`)
+- "Üyelik / iptal" ve "Tatil dondurma" kaldırıldı. Kalan: Genel soru, Teknik sorun, Sağlık bildirimi, Ödeme.
+
+### 9. Ölü Kod Temizliği + Kod Bölme
+- Silinen dosyalar: `services/localDb.js`, `pages/PackageBuilderPage.jsx`, `components/package/PackageBuilder.jsx`, `components/package/PackageSummaryCard.jsx`, `components/ui/NumberSelector.jsx`.
+- `App.jsx` route bazlı `lazy` + `Suspense`: başlangıç paketi ~1.74MB → ~508KB.
+
+### Değiştirilen/Eklenen Dosyalar (2026-06-19)
+- `supabase/setup.sql` (tek dosya), diğer SQL dosyaları silindi
+- `src/services/supabaseDb.js` (`changeMemberPlan`)
+- `src/context/AppContext.jsx` (`changePlan`)
+- `src/pages/OnboardingPage.jsx` (`PlanChangeView` + erken return)
+- `src/pages/ProfilePage.jsx` (yeniden tasarım)
+- `src/pages/TeamListPage.jsx` + `src/App.jsx` (role prop)
+- `src/components/ui/PhoneField.jsx` (tek gösterim)
+- `src/pages/LandingPage.jsx` (gradient bölümler + mobil rozet)
+- `src/components/layout/PublicLayout.jsx` + `src/index.css` (hamburger parıltı)
+- `src/components/support/SupportForm.jsx` (kategoriler)
 
 ---
 

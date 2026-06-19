@@ -43,6 +43,25 @@ export function staffCallPath(sessionType, sessionId) {
   return `/staff/call/${sessionType}/${sessionId}`
 }
 
+/**
+ * Sunucu tarafından oda oluştur + toplantı tokeni al (production güvenli mod).
+ * DAILY_API_KEY Vercel'de tanımlı değilse 503 döner → uygulama public modda çalışır.
+ * @returns {Promise<string|null>} token string veya null
+ */
+export async function getDailyToken(roomName, userName, isOwner = false) {
+  try {
+    const res = await fetch('/api/daily-room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomName, userName, isOwner }),
+    })
+    const data = await res.json().catch(() => ({}))
+    return data.ok ? (data.token || null) : null
+  } catch {
+    return null
+  }
+}
+
 export const SESSION_TYPE_META = {
   coach: {
     label: 'Koç Görüşmesi',

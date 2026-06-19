@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
+import { describeHealthTest } from '../../data/healthTest'
 
 const STATUS_LABELS = { active: 'Aktif', paused: 'Duraklatıldı', cancelled: 'İptal', expiring: 'Sona Eriyor' }
 const STATUS_STYLES = {
@@ -185,6 +186,24 @@ export default function AdminMembersPage() {
                 <div className="flex flex-wrap gap-2">
                   {selected.goals.map((g) => (
                     <span key={g} className="rounded-full bg-cream-100 px-3 py-1 text-xs text-cream-800">{g}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selected.healthTest && describeHealthTest(selected.healthTest, selected.gender).length > 0 && (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+                <p className="mb-3 text-sm font-semibold text-cream-900">Sa\u011fl\u0131k Testi</p>
+                <div className="space-y-4">
+                  {describeHealthTest(selected.healthTest, selected.gender).map((sec) => (
+                    <div key={sec.id}>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700/80">{sec.title}</p>
+                      <div className="grid gap-x-6 sm:grid-cols-2">
+                        {sec.items.map((it, i) => (
+                          <InfoRow key={i} label={it.label} value={it.value} />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

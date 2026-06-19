@@ -6,22 +6,27 @@ import {
   Scale, HeartPulse, Repeat, Smile,
   Sprout, Flame, Trophy, Activity, Dumbbell, Moon, Heart, TrendingUp,
   Salad, Carrot, Wheat, Drumstick, WheatOff, Apple,
-  User, UserRound, Mail, Lock, CalendarDays, Ruler, Loader2, Phone,
+  User, UserRound, Mail, Lock, CalendarDays, Ruler, Loader2,
+  Eye, EyeOff, AlertCircle,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
 import PaymentForm from '../components/payment/PaymentForm'
 import FormField from '../components/ui/FormField'
+import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import Modal from '../components/ui/Modal'
+import HealthTestStep from '../components/onboarding/HealthTestStep'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { isPaidMembership, ALL_PLANS } from '../data/membershipPlans'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
+import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
+import { EMPTY_HEALTH_TEST, getApplicableSections, isSectionComplete } from '../data/healthTest'
 import { generateHealthAnalysis } from '../services/aiAnalysis'
 
-const STEPS = ['Kişisel', 'Hedefler', 'Spor', 'Beslenme', 'Sağlık', 'Üyelik', 'Ödeme']
+const STEPS = ['Kişisel', 'Hedefler', 'Spor', 'Beslenme', 'Sağlık Testi', 'Sağlık Onaylı', 'Üyelik', 'Ödeme']
 
 const GENDERS = [
   { value: 'female', label: 'Kadın', icon: UserRound },
@@ -116,41 +121,223 @@ function planBtnBg(id, selected) {
   return 'bg-brand-500 text-white'
 }
 
+// Giriş yapmış üye için: yeni kayıt yerine mevcut planı değiştirir.
+function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan }) {
+  const { toast } = useToast()
+  const navigate = useNavigate()
+  const initial = preselectedPlan && preselectedPlan !== currentMembership ? preselectedPlan : currentMembership
+  const [selected, setSelected] = useState(initial)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const selectedPlan = plans.find((p) => p.id === selected) || plans[0]
+  const isPaid = isPaidMembership(selected)
+  const isCurrent = selected === currentMembership
+
+  const applyChange = async (price = 0) => {
+    setSaving(true)
+    const r = await changePlan(selected, price)
+    setSaving(false)
+    if (!r?.success) { toast(r?.error || 'Plan değiştirilemedi', 'error'); return false }
+    return true
+  }
+
+  const handleConfirm = async () => {
+    if (isCurrent) return
+    if (isPaid) { setPaymentOpen(true); return }
+    if (await applyChange(0)) {
+      toast('Planınız güncellendi.', 'success')
+      navigate('/profile')
+    }
+  }
+
+  const handlePaid = () => {
+    setPaying(true)
+    setTimeout(async () => {
+      const ok = await applyChange(selectedPlan?.price || 0)
+      setPaying(false)
+      if (ok) {
+        setPaymentOpen(false)
+        toast(`${selectedPlan?.name} planınız aktif! Ödeme başarılı.`, 'success')
+        navigate('/profile')
+      }
+    }, 1200)
+  }
+
+  return (
+    <div className="auth-page-bg">
+      <div className="relative mx-auto max-w-3xl px-4 py-10 sm:px-6">
+        <span className="section-badge mx-auto block w-fit">Plan Değiştir</span>
+        <h1 className="mt-4 text-center font-display text-2xl font-bold text-cream-900 sm:text-3xl">Üyelik Planını Değiştir</h1>
+        <p className="mt-2 text-center text-sm text-cream-800/65">
+          Mevcut hesabınızın planını güncelleyin — yeni hesap oluşturulmaz.
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-cream-200 bg-white p-6 sm:p-8">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {plans.map((m) => {
+              const selectedCard = selected === m.id
+              const current = m.id === currentMembership
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelected(m.id)}
+                  className={`relative flex flex-col rounded-3xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${planRingColor(m.id, selectedCard)}`}
+                >
+                  {current && (
+                    <span className="absolute -top-2.5 left-4 rounded-full bg-cream-900 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+                      Mevcut Plan
+                    </span>
+                  )}
+                  {m.badge && (
+                    <span className={`absolute -top-2.5 right-4 rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow ${
+                      m.id === 'altin' ? 'bg-amber-500' : 'bg-brand-500'
+                    }`}>
+                      {m.badge}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${planIconBg(m.id, selectedCard)}`}>
+                      {planIcon(m.id)}
+                    </span>
+                    <div>
+                      <p className="font-display text-base font-bold text-cream-900">{m.name}</p>
+                      <p className="text-xs text-cream-800/55">
+                        {m.price === 0 ? 'Ücretsiz' : `${m.price?.toLocaleString('tr-TR')}₺/ay`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-1.5 border-t border-cream-100 pt-4">
+                    {(m.features || []).slice(0, 5).map((f, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                          f.included
+                            ? selectedCard ? planIconBg(m.id, true) : 'bg-sage-100 text-sage-600'
+                            : 'bg-cream-100 text-cream-800/30'
+                        }`}>
+                          {f.included
+                            ? <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                            : <X className="h-2.5 w-2.5" strokeWidth={3} />}
+                        </span>
+                        <span className={`text-xs leading-snug ${f.included ? 'text-cream-800/80' : 'text-cream-800/35 line-through'}`}>
+                          {f.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`mt-4 rounded-xl py-2 text-center text-xs font-semibold transition-colors ${planBtnBg(m.id, selectedCard)}`}>
+                    {selectedCard ? 'Seçildi ✓' : 'Seç'}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="rounded-xl px-4 py-2.5 text-sm font-medium text-cream-800 hover:bg-cream-50"
+            >
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={isCurrent || saving}
+              className={`flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${
+                isCurrent ? 'bg-cream-300' : 'bg-brand-500 hover:bg-brand-600'
+              }`}
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isCurrent
+                ? 'Zaten bu plandasınız'
+                : isPaid
+                  ? `${selectedPlan?.name} · ${selectedPlan?.price?.toLocaleString('tr-TR')}₺ ile Geç`
+                  : 'Ücretsiz Plana Geç'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Modal
+        open={paymentOpen}
+        onClose={() => !paying && setPaymentOpen(false)}
+        title={`${selectedPlan?.name} Ödeme`}
+        size="md"
+      >
+        <PaymentForm
+          amount={selectedPlan?.price}
+          loading={paying}
+          onCancel={() => setPaymentOpen(false)}
+          onSubmit={handlePaid}
+        />
+      </Modal>
+    </div>
+  )
+}
+
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const rawPlan = searchParams.get('plan') || 'free'
   const preselectedPlan = ['free', 'gumus', 'altin', 'platinum', 'premium'].includes(rawPlan) ? rawPlan : 'free'
 
   const [step, setStep] = useState(0)
+  const [healthSection, setHealthSection] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
   const [data, setData] = useState({
-    name: '', email: '', phone: '', password: '', confirmPassword: '',
+    name: '', email: '', phone: '', phoneCountry: DEFAULT_COUNTRY_ISO, password: '', confirmPassword: '',
     age: '', city: '', district: '',
     gender: '', weight: '', height: '', waist: '', photo: null,
     goals: [], fitnessLevel: 'beginner',
     nutritionPrefs: [], healthAck: false, disclaimer: false,
     membership: preselectedPlan,
+    healthTest: { ...EMPTY_HEALTH_TEST },
   })
-  const { register, registerWithPlan, createProgram, exercises, plans } = useApp()
+  const {
+    register, registerWithPlan, createProgram, exercises, plans,
+    changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership,
+  } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const isExistingMember = isAuthenticated && !isAdmin && !isStaff
+
+  if (isExistingMember) {
+    return (
+      <PlanChangeView
+        plans={plans?.length ? plans : ALL_PLANS}
+        currentMembership={currentMembership}
+        preselectedPlan={preselectedPlan}
+        changePlan={changePlan}
+      />
+    )
+  }
 
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
+  const healthSections = getApplicableSections(data.gender)
+  const currentHealthSection = healthSections[healthSection] || healthSections[0]
+  const isLastHealthSection = healthSection >= healthSections.length - 1
   const districts = getDistricts(data.city)
   const displayPlans = plans?.length ? plans : ALL_PLANS
   const selectedPlan = displayPlans.find((p) => p.id === data.membership) || displayPlans[0]
   const isPaid = isPaidMembership(data.membership)
 
-  const visibleSteps = isPaid ? STEPS : STEPS.slice(0, 6)
+  const visibleSteps = isPaid ? STEPS : STEPS.slice(0, 7)
 
   const errors = {
     age:             rangeError('age', data.age),
     weight:          rangeError('weight', data.weight),
     height:          rangeError('height', data.height),
     waist:           rangeError('waist', data.waist),
+    phone:           data.phone && !isValidNationalNumber(data.phoneCountry, data.phone) ? 'Geçerli bir cep telefonu numarası girin' : '',
     password:        data.password && !isPasswordValid(data.password) ? 'Şifre gereksinimleri karşılanmıyor' : '',
     confirmPassword: data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : '',
   }
@@ -161,7 +348,7 @@ export default function OnboardingPage() {
         return (
           data.name.trim() &&
           data.email.includes('@') &&
-          data.phone.replace(/\D/g, '').length >= 10 &&
+          isValidNationalNumber(data.phoneCountry, data.phone) &&
           data.age && !errors.age &&
           data.gender &&
           data.city && data.district &&
@@ -174,9 +361,10 @@ export default function OnboardingPage() {
       case 1: return data.goals.length > 0
       case 2: return data.fitnessLevel
       case 3: return true
-      case 4: return data.healthAck && data.disclaimer
-      case 5: return !!data.membership
-      case 6: return true
+      case 4: return isSectionComplete(currentHealthSection, data.healthTest)
+      case 5: return data.healthAck && data.disclaimer
+      case 6: return !!data.membership
+      case 7: return true
       default: return true
     }
   }
@@ -185,10 +373,13 @@ export default function OnboardingPage() {
     if (target <= maxReached) setStep(target)
   }
 
+  const updateHealthTest = (patch) => update({ healthTest: { ...data.healthTest, ...patch } })
+
   const buildProfile = () => ({
     name: data.name,
     email: data.email,
-    phone: data.phone,
+    phone: toE164(data.phoneCountry, data.phone),
+    phoneCountry: data.phoneCountry,
     password: data.password,
     age: data.age,
     gender: data.gender,
@@ -201,6 +392,7 @@ export default function OnboardingPage() {
     goals: data.goals,
     fitnessLevel: data.fitnessLevel,
     nutritionPrefs: data.nutritionPrefs,
+    healthTest: data.healthTest,
   })
 
   const finishFree = async () => {
@@ -281,20 +473,41 @@ export default function OnboardingPage() {
     }
   }
 
-  const next = () => {
-    if (step === 5 && !isPaid) {
-      finishFree()
-      return
-    }
-    if (step === 6 && isPaid) {
-      finish()
-      return
-    }
+  const goNextStep = () => {
     setStep((s) => {
       const n = s + 1
       setMaxReached((m) => Math.max(m, n))
       return n
     })
+  }
+
+  const next = () => {
+    if (!canNext()) { setShowErrors(true); return }
+    setShowErrors(false)
+    // Sağlık testi: önce iç bölümler (soru-soru), son bölümde adım ilerler
+    if (step === 4 && !isLastHealthSection) {
+      setHealthSection((i) => i + 1)
+      return
+    }
+    if (step === 6 && !isPaid) {
+      finishFree()
+      return
+    }
+    if (step === 7 && isPaid) {
+      finish()
+      return
+    }
+    if (step === 3) setHealthSection(0)
+    goNextStep()
+  }
+
+  const back = () => {
+    setShowErrors(false)
+    if (step === 4 && healthSection > 0) {
+      setHealthSection((i) => i - 1)
+      return
+    }
+    setStep((s) => Math.max(0, s - 1))
   }
 
   return (
@@ -324,31 +537,58 @@ export default function OnboardingPage() {
                     <p className="mt-1 text-sm text-cream-800/60">Size en uygun planı hazırlayabilmemiz için temel bilgiler</p>
                   </div>
 
+                  {showErrors && !canNext() && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                      <div className="text-sm text-red-700">
+                        <p className="font-semibold">Lütfen aşağıdaki alanları doldurun:</p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                          {!data.name.trim() && <li>Ad Soyad</li>}
+                          {!data.email.includes('@') && <li>Geçerli e-posta</li>}
+                          {!isValidNationalNumber(data.phoneCountry, data.phone) && <li>Geçerli telefon numarası</li>}
+                          {!data.age && <li>Yaş</li>}
+                          {!data.gender && <li>Cinsiyet</li>}
+                          {!data.city && <li>Şehir</li>}
+                          {!data.district && <li>İlçe</li>}
+                          {!data.weight && <li>Kilo</li>}
+                          {!data.height && <li>Boy</li>}
+                          {!isPasswordValid(data.password) && <li>Şifre gereksinimleri</li>}
+                          {data.password !== data.confirmPassword && <li>Şifreler eşleşmiyor</li>}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
                     <FormField label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
                   </div>
 
-                  <FormField
-                    label="Telefon Numarası"
-                    icon={Phone}
-                    type="tel"
-                    placeholder="05XX XXX XX XX"
+                  <PhoneField
+                    country={data.phoneCountry}
                     value={data.phone}
-                    onChange={(e) => update({ phone: e.target.value })}
-                    hint="Koçunuz ve diyetisyeniniz bu numara üzerinden sizinle iletişime geçecektir."
+                    onCountryChange={(iso) => update({ phoneCountry: iso, phone: '' })}
+                    onValueChange={(phone) => update({ phone })}
+                    error={errors.phone}
+                    hint={!errors.phone && !data.phone ? 'Koçunuz ve diyetisyeniniz bu numara üzerinden sizinle iletişime geçecektir.' : ''}
                   />
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <FormField
-                        label="Şifre"
-                        icon={Lock}
-                        type="password"
-                        placeholder="Güçlü bir şifre belirleyin"
-                        value={data.password}
-                        onChange={(e) => update({ password: e.target.value })}
-                      />
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">Şifre</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-400" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Güçlü bir şifre belirleyin"
+                          value={data.password}
+                          onChange={(e) => update({ password: e.target.value })}
+                          className="w-full rounded-xl border border-cream-200 py-2.5 pl-9 pr-10 text-sm focus:border-brand-400 focus:outline-none"
+                        />
+                        <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-400 hover:text-cream-700">
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                       {data.password && (
                         <ul className="mt-2 grid gap-1">
                           {PASSWORD_RULES.map((r) => {
@@ -365,15 +605,27 @@ export default function OnboardingPage() {
                         </ul>
                       )}
                     </div>
-                    <FormField
-                      label="Şifre tekrar"
-                      icon={Lock}
-                      type="password"
-                      placeholder="Şifrenizi tekrar girin"
-                      value={data.confirmPassword}
-                      onChange={(e) => update({ confirmPassword: e.target.value })}
-                      error={errors.confirmPassword}
-                    />
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">Şifre Tekrar</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-400" />
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="Şifrenizi tekrar girin"
+                          value={data.confirmPassword}
+                          onChange={(e) => update({ confirmPassword: e.target.value })}
+                          className="w-full rounded-xl border border-cream-200 py-2.5 pl-9 pr-10 text-sm focus:border-brand-400 focus:outline-none"
+                        />
+                        <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-400 hover:text-cream-700">
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {errors.confirmPassword && (
+                        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600">
+                          <AlertCircle className="h-3.5 w-3.5" /> {errors.confirmPassword}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -620,8 +872,20 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ADIM 4: SAĞLIK ONAYI */}
+              {/* ADIM 4: SAĞLIK TESTİ (soru-soru, çok adımlı) */}
               {step === 4 && (
+                <HealthTestStep
+                  sections={healthSections}
+                  sectionIndex={healthSection}
+                  section={currentHealthSection}
+                  healthTest={data.healthTest}
+                  updateHealthTest={updateHealthTest}
+                  showErrors={showErrors}
+                />
+              )}
+
+              {/* ADIM 5: SAĞLIK ONAYI */}
+              {step === 5 && (
                 <div>
                   <h2 className="font-display text-lg font-bold text-cream-900">Sağlık onayı</h2>
                   <p className="mt-1 text-sm text-cream-800/60">Güvenliğiniz için lütfen onaylayın</p>
@@ -656,8 +920,8 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ADIM 5: ÜYELİK SEÇİMİ */}
-              {step === 5 && (
+              {/* ADIM 6: ÜYELİK SEÇİMİ */}
+              {step === 6 && (
                 <div>
                   <div className="text-center">
                     <h2 className="font-display text-xl font-bold text-cream-900">Size uygun üyeliği seçin</h2>
@@ -690,7 +954,7 @@ export default function OnboardingPage() {
                             <div>
                               <p className="font-display text-base font-bold text-cream-900">{m.name}</p>
                               <p className="text-xs text-cream-800/55">
-                                {m.price === 0 ? 'Ücretsiz · Süresiz' : `${m.price?.toLocaleString('tr-TR')}₺/ay`}
+                                {m.price === 0 ? 'Ücretsiz · 48 saat deneme' : `${m.price?.toLocaleString('tr-TR')}₺/ay`}
                               </p>
                             </div>
                           </div>
@@ -724,8 +988,8 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ADIM 6: ÖDEME (sadece ücretli planlar) */}
-              {step === 6 && isPaid && (
+              {/* ADIM 7: ÖDEME (sadece ücretli planlar) */}
+              {step === 7 && isPaid && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="font-display text-lg font-bold text-cream-900">Ödeme Bilgileri</h2>
@@ -770,7 +1034,7 @@ export default function OnboardingPage() {
           <div className="mt-8 flex justify-between">
             <button
               type="button"
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              onClick={back}
               disabled={step === 0}
               className="text-sm font-medium text-cream-800 disabled:opacity-30"
             >
@@ -779,13 +1043,13 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={next}
-              disabled={!canNext() || submitting}
-              className="flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+              disabled={submitting}
+              className={`flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${canNext() ? 'bg-brand-500 hover:bg-brand-600' : 'bg-brand-300'}`}
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {step === 5 && !isPaid
+              {step === 6 && !isPaid
                 ? (submitting ? 'Kaydediliyor…' : 'Kayıt Ol')
-                : step === 6 && isPaid
+                : step === 7 && isPaid
                   ? 'Ödeme Yap'
                   : 'İleri'}
             </button>

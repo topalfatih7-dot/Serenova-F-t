@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, BookOpen, LifeBuoy, Menu, X } from 'lucide-react'
+import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, BookOpen, LifeBuoy, Menu, X, Users, ChevronDown, Dumbbell, Apple, Stethoscope } from 'lucide-react'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
 import { BRAND } from '../../config/brand'
@@ -16,8 +16,24 @@ const baseLinks = [
   { to: 'contact', label: 'Bize Ulaşın', icon: LifeBuoy },
 ]
 
+const teamSubLinks = [
+  { to: '/team/coaches', label: 'Koçlar', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
+  { to: '/team/dietitians', label: 'Diyetisyenler', icon: Apple, color: 'text-sage-600 bg-sage-50' },
+  { to: '/team/doctors', label: 'Doktorlar', icon: Stethoscope, color: 'text-cream-700 bg-cream-100' },
+]
+
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [teamDropOpen, setTeamDropOpen] = useState(false)
+  const dropRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setTeamDropOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -108,6 +124,47 @@ export default function PublicLayout() {
           <BrandLogo />
           <nav className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
             {publicLinks.map((l) => renderNavLink(l))}
+            <div ref={dropRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setTeamDropOpen((v) => !v)}
+                className={`group relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition ${
+                  teamDropOpen ? 'text-brand-700' : 'text-cream-800 hover:text-brand-600'
+                }`}
+              >
+                {teamDropOpen && (
+                  <motion.span layoutId="nav-pill-team" className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-100/90 to-sage-100/90 shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                )}
+                <Users className="relative h-4 w-4 transition-transform group-hover:scale-110" />
+                <span className="relative">Kadromuz</span>
+                <ChevronDown className={`relative h-3.5 w-3.5 transition-transform ${teamDropOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {teamDropOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl shadow-cream-900/10 backdrop-blur-xl"
+                  >
+                    {teamSubLinks.map((sub) => (
+                      <Link
+                        key={sub.to}
+                        to={sub.to}
+                        onClick={() => setTeamDropOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-cream-800 transition hover:bg-cream-50"
+                      >
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
+                          <sub.icon className="h-4 w-4" />
+                        </span>
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
           <div className="hidden items-center gap-2.5 md:flex">
             {isAuthenticated ? (
@@ -142,8 +199,15 @@ export default function PublicLayout() {
               </>
             )}
           </div>
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white text-cream-800 transition hover:text-brand-600 md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menü">
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <button
+            type="button"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white transition md:hidden ${
+              menuOpen ? 'text-brand-600' : 'hamburger-glow text-brand-600'
+            }`}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Menü"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" strokeWidth={2.5} />}
           </button>
         </div>
         <AnimatePresence>
@@ -157,6 +221,22 @@ export default function PublicLayout() {
             >
               <div className="py-3">
                 {publicLinks.map((l) => renderMobileLink(l))}
+                <div className="mt-1">
+                  <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-cream-800/40">Kadromuz</p>
+                  {teamSubLinks.map((sub) => (
+                    <Link
+                      key={sub.to}
+                      to={sub.to}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-cream-800 transition hover:bg-cream-100"
+                    >
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
+                        <sub.icon className="h-4 w-4" />
+                      </span>
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
                 <div className="mt-2 border-t border-cream-200 pt-3">
                   {isAuthenticated ? (
                     isAdmin ? (

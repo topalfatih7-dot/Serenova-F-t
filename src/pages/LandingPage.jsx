@@ -1,10 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Users, ArrowRight, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
 import FAQAccordion from '../components/landing/FAQAccordion'
-import TeamCarousel from '../components/landing/TeamCarousel'
 import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import WhyUsSection from '../components/landing/WhyUsSection'
 import ContactSection from '../components/landing/ContactSection'
@@ -18,12 +17,16 @@ const stats = [
   { value: '7/24', label: 'Destek' },
 ]
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.13, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }),
+}
+
 export default function LandingPage() {
-  const { staff, testimonials, faqs, plans } = useApp()
+  const { testimonials, faqs, plans } = useApp()
   const location = useLocation()
   const displayPlans = plans?.length ? plans : ALL_PLANS
-  // Admin panelinden eklenen aktif kadro
-  const teamMembers = (staff || []).filter((s) => s.active !== false)
+  const [swipeHint, setSwipeHint] = useState(true)
 
   useEffect(() => {
     if (location.pathname === '/' && location.hash === '#bize-ulasin') {
@@ -34,148 +37,338 @@ export default function LandingPage() {
   }, [location.pathname, location.hash])
 
   return (
-    <div className="overflow-hidden">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        {/* Arka plan fotoğrafı - filtreli / sönük */}
-        <div className="absolute inset-0">
-          <img src="/hero-bg.png" alt="" aria-hidden className="h-full w-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-r from-cream-50 via-cream-50/85 to-cream-50/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-cream-50 via-transparent to-cream-50/60" />
-        </div>
+    <div className="overflow-x-hidden">
+
+      {/* ═══════════════════════════════════════════
+          HERO — Video Arka Plan + Asimetrik Kart
+      ═══════════════════════════════════════════ */}
+      <section className="relative flex min-h-[100svh] items-center overflow-hidden">
+        {/* Video arka plan — sessiz, döngüsel, bulanık (spor yapan kadınlar) */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden
+          poster="/hero-bg.png"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ filter: 'blur(3px) brightness(0.55) saturate(1.2)' }}
+        >
+          {/* Telifsiz stok video (Mixkit). Kendi videonuzu /public/hero-video.mp4 olarak
+              ekleyip aşağıdaki src'yi "/hero-video.mp4" ile değiştirebilirsiniz. */}
+          <source
+            src="https://assets.mixkit.co/active_storage/video_items/100526/1725383305/100526-video-720.mp4"
+            type="video/mp4"
+          />
+          {/* Video yoksa/oynatılamazsa görsel fallback */}
+          <img src="/hero-bg.png" alt="" className="h-full w-full object-cover" />
+        </video>
+
+        {/* Gradient overlay — sol koyu, sağ açık */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+
+        {/* Animasyonlu orb'lar */}
         <motion.div
           aria-hidden
-          animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.55, 0.35] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-brand-300/25 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-brand-400/30 blur-3xl"
+        />
+        <motion.div
+          aria-hidden
+          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          className="absolute -right-20 bottom-1/4 h-64 w-64 rounded-full bg-sage-400/25 blur-3xl"
         />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:py-32">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl text-center lg:text-left">
-            <motion.span
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700 shadow-sm backdrop-blur"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Herkes İçin Wellness Platformu
-            </motion.span>
-            <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-cream-900 sm:text-5xl lg:text-6xl">
-              Dönüşümünüz{' '}
-              <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-sage-500 bg-clip-text text-transparent">
-                sizin ritminizde
-              </span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-cream-800/70 lg:mx-0">
-              Ücretsiz başlayın veya Premium ile birebir koç ve diyetisyen desteği alın.
-              Evde, güvenle, kendi hızınızda.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4 lg:justify-start">
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/onboarding?plan=free" className="btn-wellness group">
-                  Ücretsiz Başla
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/membership" className="btn-wellness-outline">
-                  <Sparkles className="h-4 w-4 text-brand-500" />
-                  Ücretli Planları İncele
-                </Link>
-              </motion.div>
-            </div>
+        <div className="relative mx-auto flex w-full max-w-6xl items-center justify-end px-4 py-20 sm:px-6 lg:min-h-[100svh]">
+          {/* Asimetrik kart — sağ taraf (kompakt) */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-sm"
+          >
+            {/* Dekoratif blob'lar */}
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+              aria-hidden
+              className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-400/30 blur-2xl"
+            />
+            <motion.div
+              animate={{ rotate: [360, 0] }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              aria-hidden
+              className="absolute -bottom-6 -left-10 h-24 w-24 rounded-full bg-sage-400/25 blur-xl"
+            />
 
-            <div className="mt-10 flex justify-center gap-8 lg:justify-start">
-              {stats.map((s, i) => (
-                <motion.div
-                  key={s.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="text-center lg:text-left"
-                >
-                  <p className="font-display text-2xl font-bold text-cream-900">{s.value}</p>
-                  <p className="text-xs text-cream-800/60">{s.label}</p>
+            {/* Asimetrik kart gövdesi */}
+            <div className="relative overflow-hidden rounded-3xl rounded-tl-[3rem] border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-7">
+              {/* Renkli çizgi aksanı */}
+              <div className="absolute left-0 top-0 h-1 w-2/3 rounded-tr-full bg-gradient-to-r from-brand-400 via-sage-400 to-transparent" />
+              <div className="absolute bottom-0 right-0 h-1 w-1/2 rounded-tl-full bg-gradient-to-l from-sage-400 via-brand-300 to-transparent" />
+
+              {/* Badge */}
+              <motion.span
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={0}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-brand-300" />
+                Herkes İçin Wellness Platformu
+              </motion.span>
+
+              <motion.h1
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={1}
+                className="mt-4 font-display text-3xl font-bold leading-tight text-white sm:text-4xl"
+              >
+                Dönüşümünüz{' '}
+                <span className="bg-gradient-to-r from-brand-300 via-sage-300 to-brand-200 bg-clip-text text-transparent">
+                  sizin ritminizde
+                </span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={2}
+                className="mt-3 text-sm leading-relaxed text-white/80"
+              >
+                Ücretsiz başlayın veya Premium ile birebir koç ve diyetisyen desteği alın.
+                Evde, güvenle, kendi hızınızda.
+              </motion.p>
+
+              <motion.div
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={3}
+                className="mt-6 flex flex-wrap gap-2.5"
+              >
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Link
+                    to="/onboarding?plan=free"
+                    className="flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110"
+                  >
+                    Ücretsiz Başla
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
                 </motion.div>
-              ))}
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Link
+                    to="/membership"
+                    className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                  >
+                    <Sparkles className="h-4 w-4 text-brand-300" />
+                    Ücretli Planları İncele
+                  </Link>
+                </motion.div>
+              </motion.div>
+
+              {/* İstatistikler */}
+              <motion.div
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={4}
+                className="mt-6 flex gap-5 border-t border-white/15 pt-5"
+              >
+                {stats.map((s) => (
+                  <div key={s.label} className="text-center">
+                    <p className="font-display text-xl font-bold text-white">{s.value}</p>
+                    <p className="text-[11px] text-white/60">{s.label}</p>
+                  </div>
+                ))}
+              </motion.div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ÜYELİK SEÇENEKLERİ */}
-      <section className="section-trust mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-          <span className="section-badge">Planlar</span>
-          <h2 className="section-title mt-4">Üyelik Seçenekleri</h2>
-          <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
-        </motion.div>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {displayPlans.map((plan, i) => (
-            <motion.div
-              key={plan.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              viewport={{ once: true }}
-            >
-              <PricingCard
-                plan={plan}
-                featured={plan.id === 'altin'}
-                ctaTo={`/onboarding?plan=${plan.id}`}
-                ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
-              />
-            </motion.div>
-          ))}
+      {/* ═══════════════════════════════════════════
+          ÜYELİK SEÇENEKLERİ — Mobil Swipe Hint
+      ═══════════════════════════════════════════ */}
+      <section className="section-trust py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+            <span className="section-badge">Planlar</span>
+            <h2 className="section-title mt-4">Üyelik Seçenekleri</h2>
+            <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
+          </motion.div>
+
+          {/* Mobil swipe ipucu */}
+          <AnimatePresence>
+            {swipeHint && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mt-6 flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 sm:hidden"
+              >
+                <div className="flex items-center gap-2.5">
+                  <motion.div
+                    animate={{ x: [-4, 4, -4] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="flex items-center gap-0.5 text-brand-600"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-brand-700">
+                    Tüm planları karşılaştırmak için sola kaydırın
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSwipeHint(false)}
+                  className="ml-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 transition hover:bg-brand-200"
+                  aria-label="Kapat"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Masaüstü: grid; Mobil: yatay kaydırma */}
+          <div className="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+            {displayPlans.map((plan, i) => (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                viewport={{ once: true }}
+              >
+                <PricingCard
+                  plan={plan}
+                  featured={plan.id === 'altin'}
+                  ctaTo={`/onboarding?plan=${plan.id}`}
+                  ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Mobil: yatay kaydırma — pt-6: kartların üstündeki "rozet" (Popüler/Premium) kırpılmasın */}
+          <div className="mt-4 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-6 sm:hidden [scroll-padding:1rem]">
+            {displayPlans.map((plan, i) => (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08 }}
+                viewport={{ once: true }}
+                className="w-[78vw] max-w-xs shrink-0 snap-start"
+              >
+                <PricingCard
+                  plan={plan}
+                  featured={plan.id === 'altin'}
+                  ctaTo={`/onboarding?plan=${plan.id}`}
+                  ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+                />
+              </motion.div>
+            ))}
+            {/* Son elemandan sonra hafif boşluk */}
+            <div className="w-4 shrink-0" />
+          </div>
         </div>
       </section>
 
-      {/* NEDEN YENİ FORM */}
+      {/* NEDEN BİZ */}
       <WhyUsSection />
 
-      {/* KADROMUZ */}
-      {teamMembers.length > 0 && (
-        <section id="kadromuz" className="section-warm py-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-              <span className="section-badge">
-                <Users className="h-3.5 w-3.5" />
-                Uzman Ekip
-              </span>
-              <h2 className="section-title mt-4">Kadromuz</h2>
-              <p className="section-subtitle">Deneyimli koç ve diyetisyenlerimizle tanışın</p>
+      {/* ═══════════════════════════════════════════
+          YORUMLAR — Hero arka planlı bölüm
+      ═══════════════════════════════════════════ */}
+      {testimonials.length > 0 && (
+        <section className="relative overflow-hidden py-20">
+          {/* Arka plan: renkli gradient + animasyonlu orb'lar (fotoğraf yerine) */}
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-brand-700 via-brand-800 to-sage-800" />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.25, 1], opacity: [0.35, 0.6, 0.35] }}
+            transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute -left-24 top-10 h-80 w-80 rounded-full bg-brand-400/40 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.2, 1], opacity: [0.25, 0.5, 0.25] }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+            className="absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-sage-400/40 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+            className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/25 blur-3xl"
+          />
+          {/* İnce nokta deseni */}
+          <div aria-hidden className="absolute inset-0 opacity-40" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }} />
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <h2 className="text-center font-display text-3xl font-bold text-white">
+                Üyelerimiz Ne Diyor?
+              </h2>
+              <p className="mt-3 text-center text-white/60">Gerçek deneyimler, gerçek dönüşümler</p>
             </motion.div>
           </div>
-          <div className="mt-10">
-            <TeamCarousel members={teamMembers} />
+          <div className="relative mt-12">
+            <TestimonialCarousel testimonials={testimonials} dark />
           </div>
         </section>
       )}
 
-      {/* YORUMLAR - MANUEL GEÇİŞLİ */}
-      {testimonials.length > 0 && (
-        <section className="section-trust overflow-hidden py-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
-              Üyelerimiz Ne Diyor?
-            </motion.h2>
-            <p className="mt-3 text-center text-cream-800/60">Gerçek deneyimler, gerçek dönüşümler</p>
-          </div>
-          <div className="mt-12">
-            <TestimonialCarousel testimonials={testimonials} />
-          </div>
-        </section>
-      )}
-
-      {/* SSS */}
+      {/* ═══════════════════════════════════════════
+          SSS — Dalgalı modern arka plan
+      ═══════════════════════════════════════════ */}
       {faqs.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-          <motion.h2 initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center font-display text-3xl font-bold text-cream-900">
-            Sık Sorulan Sorular
-          </motion.h2>
-          <div className="mt-10">
-            <FAQAccordion items={faqs} />
+        <section className="relative overflow-hidden py-20">
+          {/* Renkli gradient arka plan + animasyonlu orb'lar */}
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-brand-50 via-cream-50 to-sage-50" />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.65, 0.4] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.55, 0.3] }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+            className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-sage-200/50 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.45, 0.2] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
+            className="absolute left-1/3 top-1/2 h-56 w-56 rounded-full bg-gold-400/20 blur-3xl"
+          />
+          <div aria-hidden className="absolute inset-0 opacity-60" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(45,143,196,0.10) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }} />
+
+          <div className="relative mx-auto max-w-3xl px-4 sm:px-6">
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+              <span className="section-badge">SSS</span>
+              <h2 className="section-title mt-4">Sık Sorulan Sorular</h2>
+            </motion.div>
+            <div className="mt-10">
+              <FAQAccordion items={faqs} />
+            </div>
           </div>
         </section>
       )}

@@ -67,17 +67,29 @@ export default function ContactSection() {
     }`
 
   return (
-    <section id="bize-ulasin" className="scroll-mt-24 border-t border-cream-200/80 bg-gradient-to-b from-white via-brand-50/40 to-sage-50/50 py-16 sm:py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+    <section id="bize-ulasin" className="relative scroll-mt-24 overflow-hidden py-16 sm:py-20">
+      {/* Arka plan: hero görseli, filtreli (Üyelerimiz Ne Diyor bölümüyle aynı görsel dil) */}
+      <div className="absolute inset-0">
+        <img
+          src="/hero-bg.png"
+          alt=""
+          aria-hidden
+          className="h-full w-full object-cover object-center"
+          style={{ filter: 'brightness(0.3) saturate(0.85) blur(1px)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/75 via-cream-900/65 to-sage-900/55" />
+      </div>
+
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center"
         >
-          <span className="section-badge">İletişim</span>
-          <h2 className="section-title mt-4">Bize Ulaşın</h2>
-          <p className="section-subtitle mx-auto max-w-xl">
+          <span className="inline-block rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur">İletişim</span>
+          <h2 className="mt-4 font-display text-3xl font-bold text-white sm:text-4xl">Bize Ulaşın</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-white/70 sm:text-base">
             Sorularınız, önerileriniz veya destek talepleriniz için formu doldurun — size en kısa sürede dönüş yapalım.
           </p>
         </motion.div>

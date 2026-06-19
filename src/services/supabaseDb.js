@@ -16,7 +16,7 @@ const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
 
 // --------------------------- map: row <-> object ---------------------------
-const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'role', 'password']
+const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'role', 'password']
 
 function memberData(member) {
   const data = {}
@@ -31,6 +31,7 @@ function memberToRow(member) {
     id: member.id,
     email: member.email,
     name: member.name || '',
+    phone: member.phone || '',
     role: 'member',
     membership: member.membership || 'free',
     membership_status: member.membershipStatus || 'active',
@@ -48,6 +49,7 @@ function rowToMember(row) {
     id: row.id,
     email: row.email,
     name: row.name,
+    phone: row.phone || data.phone || '',
     membership: row.membership,
     membershipStatus: row.membership_status,
     // RLS koç/diyetisyen erişimi sütunlara bağlı; JSONB yedek değerini de oku
@@ -366,9 +368,13 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
+    healthTest: profile.healthTest || null,
     healthAnalysis: profile.healthAnalysis || null,
     membership,
     membershipStatus: 'active',
+    freeTrialExpiresAt: membership === 'free'
+      ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+      : null,
     packageConfig: packageConfig || getDefaultPackageForPlan(membership),
     joinedAt: today(),
     lastActiveAt: today(),
@@ -522,6 +528,50 @@ export async function processPremiumPayment(member, packageConfig, schedule) {
   })
   await addActivity('upgrade', `${member.name} Premium üyeliğe geçti (${pricing.total.toLocaleString('tr-TR')}₺)`, member.id)
   return { success: true, pricing }
+}
+
+// Mevcut üyenin planını değiştirir (yeni kayıt OLUŞTURMAZ).
+// Ücretli plan → premium tarihleri sıfırlanır + ödeme kaydı eklenir.
+// Ücretsiz plan → premium bilgileri temizlenir.
+export async function changeMemberPlan(member, planId, planPrice = 0) {
+  if (!member) return { success: false, error: 'Üye bulunamadı.' }
+  const paid = isPaidMembership(planId)
+  const packageConfig = getDefaultPackageForPlan(planId)
+
+  let draft = {
+    ...member,
+    membership: planId,
+    membershipStatus: 'active',
+    packageConfig,
+    pauseUntil: null,
+    lastActiveAt: today(),
+  }
+
+  if (paid) {
+    // Yeni plan için süreyi bugünden başlat
+    draft.premiumStartedAt = null
+    draft.premiumExpiresAt = null
+    draft.freeTrialExpiresAt = null
+    draft = withPremiumDates(draft, packageConfig, true)
+  } else {
+    draft.premiumStartedAt = null
+    draft.premiumExpiresAt = null
+    draft.freeTrialExpiresAt = null
+  }
+
+  await upsertMember(draft)
+
+  if (paid && planPrice > 0) {
+    await supabase.from('payments').insert({
+      member_id: member.id,
+      data: { memberName: member.name, amount: planPrice, packageConfig, status: 'completed', createdAt: nowISO() },
+    })
+    await addActivity('upgrade', `${member.name} planını ${planId} olarak değiştirdi (${planPrice.toLocaleString('tr-TR')}₺)`, member.id)
+  } else {
+    await addActivity('plan_change', `${member.name} planını ${planId} olarak değiştirdi`, member.id)
+  }
+
+  return { success: true, member: draft }
 }
 
 // --------------------------- staff (admin) ---------------------------
@@ -848,3 +898,85 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 }
 
 export async function deleteRowGeneric() { /* reserved */ }
+
+// --------------------------- custom_foods (topluluk besin havuzu) ---------------------------
+// Türkçe metni arama/tekilleştirme için normalize eder.
+function normalizeFoodName(name) {
+  return String(name || '')
+    .toLocaleLowerCase('tr')
+    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function rowToFood(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    nameNormalized: row.name_normalized,
+    category: row.category || 'Diğer',
+    cal100: row.cal100,
+    unit: row.unit || 'porsiyon',
+    unitG: row.unit_g || 100,
+    source: row.source || 'ai',
+    usageCount: row.usage_count || 0,
+    custom: true,
+  }
+}
+
+// Tüm topluluk besinlerini getirir (popülerlik sırası).
+export async function getCustomFoods() {
+  const { data, error } = await supabase
+    .from('custom_foods')
+    .select('*')
+    .order('usage_count', { ascending: false })
+  if (error) { console.warn('getCustomFoods:', error.message); return [] }
+  return (data || []).map(rowToFood)
+}
+
+// Yeni besin ekler. Aynı isim varsa onu döndürür (tekilleştirme).
+export async function addCustomFood(food) {
+  const nameNormalized = normalizeFoodName(food.name)
+  if (!nameNormalized) return { success: false, error: 'Geçersiz besin adı' }
+
+  // Önce var mı diye bak (yarış koşulunda da unique index korur)
+  const { data: existing } = await supabase
+    .from('custom_foods')
+    .select('*')
+    .eq('name_normalized', nameNormalized)
+    .maybeSingle()
+  if (existing) return { success: true, food: rowToFood(existing), existed: true }
+
+  const user = await getUser()
+  const payload = {
+    name: String(food.name).trim().slice(0, 60),
+    name_normalized: nameNormalized,
+    category: food.category || 'Diğer',
+    cal100: Math.max(0, Math.round(Number(food.cal100) || 0)),
+    unit: food.unit || 'porsiyon',
+    unit_g: Math.max(1, Math.round(Number(food.unitG) || 100)),
+    source: food.source || 'ai',
+    created_by: user?.id || null,
+  }
+  const { data, error } = await supabase
+    .from('custom_foods')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) {
+    // Unique ihlali → eşzamanlı eklenmiş olabilir, tekrar oku
+    const { data: again } = await supabase
+      .from('custom_foods').select('*').eq('name_normalized', nameNormalized).maybeSingle()
+    if (again) return { success: true, food: rowToFood(again), existed: true }
+    return { success: false, error: error.message }
+  }
+  return { success: true, food: rowToFood(data), existed: false }
+}
+
+// Bir besinin kullanım sayacını artırır (popülerlik).
+export async function incrementFoodUsage(id) {
+  if (!id) return
+  await supabase.rpc('increment_food_usage', { p_id: id }).catch(() => {})
+}

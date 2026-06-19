@@ -29,10 +29,13 @@ function bindCallEvents(call, { refreshParticipants, onLeftMeeting }) {
   call.on('left-meeting', () => onLeftMeeting(null, false))
 }
 
-export function useDailyCall({ roomUrl, userName, enabled }) {
+export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
   const callRef = useRef(null)
   const userNameRef = useRef(userName)
-  userNameRef.current = userName
+  const tokenRef = useRef(token)
+
+  useEffect(() => { userNameRef.current = userName }, [userName])
+  useEffect(() => { tokenRef.current = token }, [token])
 
   const [phase, setPhase] = useState(IDLE)
   const [error, setError] = useState(null)
@@ -109,6 +112,7 @@ export function useDailyCall({ roomUrl, userName, enabled }) {
 
   useEffect(() => {
     if (!enabled) return undefined
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDevices()
     startPreview()
     return undefined
@@ -120,7 +124,9 @@ export function useDailyCall({ roomUrl, userName, enabled }) {
     setError(null)
     try {
       const call = await ensureCallObject()
-      await call.join({ url: roomUrl, userName: userNameRef.current || 'Katılımcı' })
+      const joinOpts = { url: roomUrl, userName: userNameRef.current || 'Katılımcı' }
+      if (tokenRef.current) joinOpts.token = tokenRef.current
+      await call.join(joinOpts)
       setPhase(JOINED)
       refreshParticipants()
     } catch (err) {

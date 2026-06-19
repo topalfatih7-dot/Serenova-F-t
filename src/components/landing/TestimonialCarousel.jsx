@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react'
 
-export default function TestimonialCarousel({ testimonials }) {
+export default function TestimonialCarousel({ testimonials, dark = false }) {
   const list = testimonials || []
   const [[index, dir], setState] = useState([0, 0])
   const count = list.length
@@ -33,7 +33,7 @@ export default function TestimonialCarousel({ testimonials }) {
               if (info.offset.x < -60) paginate(1)
               else if (info.offset.x > 60) paginate(-1)
             }}
-            className="rounded-3xl border border-cream-200 bg-white p-8 shadow-sm"
+            className={`rounded-3xl border p-8 shadow-sm ${ dark ? 'border-white/15 bg-white/10 backdrop-blur-md' : 'border-cream-200 bg-white'}`}
             style={{ cursor: 'grab' }}
           >
             <Quote className="h-9 w-9 text-brand-200" />
@@ -42,14 +42,14 @@ export default function TestimonialCarousel({ testimonials }) {
                 <Star key={j} className="h-4 w-4 fill-gold-400 text-gold-400" />
               ))}
             </div>
-            <p className="mt-4 text-lg leading-relaxed text-cream-800/85">&ldquo;{t.quote}&rdquo;</p>
+            <p className={`mt-4 text-lg leading-relaxed ${ dark ? 'text-white/85' : 'text-cream-800/85'}`}>&ldquo;{t.quote}&rdquo;</p>
             <div className="mt-6 flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-sage-400 text-base font-bold text-white">
                 {t.name.charAt(0)}
               </span>
               <div>
-                <p className="font-semibold text-cream-900">{t.name}</p>
-                <p className="text-xs text-cream-800/50">{t.role}</p>
+                <p className={`font-semibold ${ dark ? 'text-white' : 'text-cream-900'}`}>{t.name}</p>
+                <p className={`text-xs ${ dark ? 'text-white/50' : 'text-cream-800/50'}`}>{t.role}</p>
               </div>
             </div>
           </motion.div>
@@ -61,7 +61,7 @@ export default function TestimonialCarousel({ testimonials }) {
           type="button"
           onClick={() => paginate(-1)}
           aria-label="Önceki yorum"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white text-cream-800 shadow-sm transition hover:border-brand-300 hover:text-brand-600"
+          className={`flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition ${ dark ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-cream-200 bg-white text-cream-800 hover:border-brand-300 hover:text-brand-600'}`}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -73,7 +73,7 @@ export default function TestimonialCarousel({ testimonials }) {
               onClick={() => setState([i, i > index ? 1 : -1])}
               aria-label={`${i + 1}. yorum`}
               className={`h-2 rounded-full transition-all ${
-                i === index ? 'w-6 bg-brand-500' : 'w-2 bg-cream-300 hover:bg-cream-400'
+                i === index ? 'w-6 bg-brand-400' : dark ? 'w-2 bg-white/30 hover:bg-white/50' : 'w-2 bg-cream-300 hover:bg-cream-400'
               }`}
             />
           ))}
@@ -82,7 +82,7 @@ export default function TestimonialCarousel({ testimonials }) {
           type="button"
           onClick={() => paginate(1)}
           aria-label="Sonraki yorum"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white text-cream-800 shadow-sm transition hover:border-brand-300 hover:text-brand-600"
+          className={`flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition ${ dark ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-cream-200 bg-white text-cream-800 hover:border-brand-300 hover:text-brand-600'}`}
         >
           <ChevronRight className="h-5 w-5" />
         </button>

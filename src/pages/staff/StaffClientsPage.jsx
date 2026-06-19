@@ -14,6 +14,7 @@ import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import { AVAILABILITY_WEEKDAYS } from '../../services/availability'
 import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
+import VideoJoinLink from '../../components/video/VideoJoinLink'
 
 const weekdayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
 
@@ -317,7 +318,7 @@ function NutritionProgramForm({ onCreate }) {
   )
 }
 
-function ClientInfo({ member, role }) {
+function ClientInfo({ member, role, isCoach }) {
   const bmi = calculateBMI(member.weight, member.height)
   const cat = bmiCategory(bmi)
   const appts = getStaffAppointments([member], role)
@@ -377,9 +378,15 @@ function ClientInfo({ member, role }) {
         ) : (
           <div className="space-y-1.5">
             {appts.slice(0, 4).map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-3 py-2 text-sm">
-                <span className="text-cream-800/70">{a.title}</span>
-                <span className="font-medium text-cream-900">{format(new Date(a.date), 'd MMM, HH:mm', { locale: tr })}</span>
+              <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-cream-50 px-3 py-2 text-sm">
+                <span className="min-w-0 flex-1 truncate text-cream-800/70">{a.title}</span>
+                <span className="shrink-0 font-medium text-cream-900">{format(new Date(a.date), 'd MMM, HH:mm', { locale: tr })}</span>
+                <VideoJoinLink
+                  session={a}
+                  sessionType={isCoach ? 'coach' : 'dietitian'}
+                  audience="staff"
+                  size="sm"
+                />
               </div>
             ))}
           </div>
@@ -500,7 +507,7 @@ export default function StaffClientsPage() {
       )}
 
       <Modal open={!!infoClient} onClose={() => setInfoClient(null)} title={infoClient?.name} size="lg">
-        {infoClient && <ClientInfo member={infoClient} role={staffUser.role} />}
+        {infoClient && <ClientInfo member={infoClient} role={staffUser.role} isCoach={isCoach} />}
       </Modal>
 
       <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Program`} size="xl">
