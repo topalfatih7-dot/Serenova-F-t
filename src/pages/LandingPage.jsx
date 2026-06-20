@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
 import FAQAccordion from '../components/landing/FAQAccordion'
+import FAQQuestionMarksBackground from '../components/landing/FAQQuestionMarksBackground'
 import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import WhyUsSection from '../components/landing/WhyUsSection'
 import ContactSection from '../components/landing/ContactSection'
@@ -11,6 +12,7 @@ import SectionBackdrop from '../components/landing/SectionBackdrop'
 import TrustStrip from '../components/landing/TrustStrip'
 import LiveActiveCounter from '../components/landing/LiveActiveCounter'
 import RotatingHeroText from '../components/landing/RotatingHeroText'
+import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import HowItWorksSection from '../components/landing/HowItWorksSection'
 import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import { scrollToContactSection } from '../utils/scrollToContact'
@@ -210,7 +212,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════
           ÜYELİK SEÇENEKLERİ — Mobil Swipe Hint
       ═══════════════════════════════════════════ */}
-      <section className="section-trust py-16">
+      <PlansAnimatedBackground>
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
             <span className="section-badge">Planlar</span>
@@ -295,7 +297,7 @@ export default function LandingPage() {
             <div className="w-4 shrink-0" />
           </div>
         </div>
-      </section>
+      </PlansAnimatedBackground>
 
       {/* NEDEN BİZ */}
       <WhyUsSection />
@@ -310,11 +312,12 @@ export default function LandingPage() {
 
       {/* SSS */}
       {faqs.length > 0 && (
-        <SectionBackdrop variant="faq" className="py-16 sm:py-24">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <section className="relative overflow-hidden py-16 sm:py-24">
+          <FAQQuestionMarksBackground />
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <FAQAccordion items={faqs} />
           </div>
-        </SectionBackdrop>
+        </section>
       )}
 
       {/* BİZE ULAŞIN */}

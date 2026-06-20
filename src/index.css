@@ -278,6 +278,77 @@ body {
   .promo-shimmer { animation: none; }
 }
 
+/* ── Üyelik planları aurora arka planı ── */
+@keyframes plansAuroraSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes plansAuroraWave {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes plansAuroraShimmer {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+
+.plans-aurora-section {
+  background: linear-gradient(135deg, #eef6fb 0%, #f5faf7 40%, #eef8f2 100%);
+}
+
+.plans-aurora-spin {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(45, 143, 196, 0.35),
+    rgba(68, 150, 100, 0.3),
+    rgba(212, 175, 55, 0.2),
+    rgba(45, 143, 196, 0.35)
+  );
+  animation: plansAuroraSpin 20s linear infinite;
+}
+
+.plans-aurora-wave {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(45, 143, 196, 0.08) 25%,
+    rgba(68, 150, 100, 0.1) 50%,
+    rgba(45, 143, 196, 0.08) 75%,
+    transparent 100%
+  );
+  background-size: 300% 300%;
+  animation: plansAuroraWave 8s ease-in-out infinite;
+}
+
+.plans-aurora-shimmer {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.plans-aurora-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  animation: plansAuroraShimmer 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plans-aurora-spin,
+  .plans-aurora-wave,
+  .plans-aurora-shimmer::after {
+    animation: none;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

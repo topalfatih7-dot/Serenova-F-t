@@ -28,76 +28,121 @@ const STEPS = [
 
 export default function HowItWorksSection() {
   return (
-    <section className="relative overflow-hidden py-16 sm:py-20">
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-white via-brand-50/40 to-sage-50/30" />
-      <motion.div
-        aria-hidden
-        animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.25, 0.15] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl"
-      />
-
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+    <section className="relative overflow-hidden bg-gradient-to-b from-cream-50 to-white py-14 sm:py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* Mobil: fotoğraf üstte tam genişlik */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center"
+          className="relative mb-10 overflow-hidden rounded-3xl shadow-xl shadow-brand-900/10 lg:hidden"
         >
-          <span className="section-badge">Süreç</span>
-          <h2 className="section-title mt-4">Nasıl Çalışır?</h2>
-          <p className="section-subtitle mx-auto max-w-xl">
-            Üç basit adımda dönüşüm yolculuğunuza başlayın — evden, güvenle, kendi ritminizde.
-          </p>
+          <div className="aspect-[16/10] w-full">
+            <img
+              src="/how-it-works-bg.jpg"
+              alt="Evde wellness egzersizi yapan kadın"
+              className="h-full w-full object-cover object-[65%_center]"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4">
+            <span className="section-badge !bg-white/90 !text-brand-700">Süreç</span>
+          </div>
         </motion.div>
 
-        <div className="relative mt-12 grid gap-6 md:grid-cols-3 md:gap-8">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-[16.666%] right-[16.666%] top-[3.25rem] hidden h-0.5 bg-gradient-to-r from-brand-200 via-sage-300 to-brand-200 md:block"
-          />
+        <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+          {/* Masaüstü: sol panel — fotoğraf net görünür */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative hidden lg:col-span-5 lg:block"
+          >
+            <div className="sticky top-24 overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-black/5">
+              <div className="aspect-[4/5] w-full">
+                <img
+                  src="/how-it-works-bg.jpg"
+                  alt="Evde wellness egzersizi yapan kadın"
+                  className="h-full w-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-900/20 via-transparent to-transparent" />
+            </div>
+            <div
+              aria-hidden
+              className="absolute -bottom-4 -left-4 -z-10 h-full w-full rounded-3xl bg-gradient-to-br from-brand-100 to-sage-100"
+            />
+          </motion.div>
 
-          {STEPS.map((s, i) => {
-            const Icon = s.icon
-            return (
-              <motion.div
-                key={s.step}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ delay: i * 0.12, duration: 0.5 }}
-                className="relative"
-              >
-                <div className="flex h-full flex-col rounded-3xl border border-white/80 bg-white/90 p-6 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-lg sm:p-7">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${s.accent} text-white shadow-md`}>
+          {/* Sağ: başlık + adımlar */}
+          <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center lg:text-left"
+            >
+              <span className="section-badge hidden lg:inline-flex">Süreç</span>
+              <h2 className="section-title mt-4">Nasıl Çalışır?</h2>
+              <p className="section-subtitle mx-auto max-w-xl lg:mx-0">
+                Üç basit adımda dönüşüm yolculuğunuza başlayın — evden, güvenle, kendi ritminizde.
+              </p>
+            </motion.div>
+
+            <div className="relative mt-10 space-y-5">
+              <div
+                aria-hidden
+                className="absolute bottom-8 left-6 top-8 hidden w-0.5 bg-gradient-to-b from-brand-200 via-sage-300 to-brand-200 lg:block"
+              />
+
+              {STEPS.map((s, i) => {
+                const Icon = s.icon
+                return (
+                  <motion.div
+                    key={s.step}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{ delay: i * 0.1, duration: 0.45 }}
+                    className="relative flex gap-4 sm:gap-5"
+                  >
+                    <span className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${s.accent} text-white shadow-lg sm:h-14 sm:w-14`}>
                       <Icon className="h-6 w-6" strokeWidth={2.2} />
                     </span>
-                    <span className="font-display text-3xl font-bold text-cream-200">{s.step}</span>
-                  </div>
-                  <h3 className="mt-5 font-display text-lg font-bold leading-snug text-cream-900">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-cream-800/65">
-                    {s.desc}
-                  </p>
-                </div>
-              </motion.div>
-            )
-          })}
-        </div>
+                    <div className="flex-1 rounded-2xl border border-cream-200/80 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:p-6">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-display text-base font-bold leading-snug text-cream-900 sm:text-lg">
+                          {s.title}
+                        </h3>
+                        <span className="font-display text-2xl font-bold text-cream-100">{s.step}</span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+                        {s.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-10 text-center"
-        >
-          <Link to="/onboarding?plan=free" className="btn-wellness group inline-flex">
-            Ücretsiz Başla
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-10 text-center lg:text-left"
+            >
+              <Link to="/onboarding?plan=free" className="btn-wellness group inline-flex">
+                Ücretsiz Başla
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </section>
   )
