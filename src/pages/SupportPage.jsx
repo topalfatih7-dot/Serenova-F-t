@@ -39,7 +39,7 @@ export default function SupportPage() {
     <div className="mx-auto max-w-3xl space-y-10">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Destek Merkezi</h1>
-        <p className="mt-2 text-cream-800/60">Talepleriniz admin paneline anında yansır</p>
+        <p className="mt-2 text-cream-800/60">Talepleriniz anlık olarak destek ekibine iletilir</p>
       </div>
 
       {tickets.length > 0 && (
@@ -122,6 +122,7 @@ export default function SupportPage() {
               perspective="member"
               onReply={handleReply}
               disabled={activeTicket.status === 'closed'}
+              live
             />
             {activeTicket.status === 'closed' && (
               <p className="text-center text-xs text-cream-800/50">Bu talep çözüldü olarak kapatıldı.</p>

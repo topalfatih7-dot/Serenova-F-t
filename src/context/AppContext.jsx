@@ -1,7 +1,7 @@
-import { createContext, useContext, useCallback, useState, useMemo, useEffect } from 'react'
+import { createContext, useContext, useCallback, useState, useMemo, useEffect, useRef } from 'react'
 import LoadingScreen from '../components/ui/LoadingScreen'
 import ConfigErrorScreen from '../components/ui/ConfigErrorScreen'
-import { isSupabaseEnabled } from '../services/supabaseClient'
+import { isSupabaseEnabled, supabase } from '../services/supabaseClient'
 import * as sb from '../services/supabaseDb'
 import {
   getCurrentMember,
@@ -12,6 +12,8 @@ import {
   getSessionStats,
 } from '../services/platformStats'
 import { ALL_PLANS } from '../data/membershipPlans'
+import { startPresenceTracker } from '../services/presenceService'
+import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 
 const AppContext = createContext(null)
 
@@ -71,6 +73,61 @@ export function AppProvider({ children }) {
   const membershipBreakdown = useMemo(() => computeMembershipBreakdown(db), [db])
   const monthlyGrowth = useMemo(() => computeMonthlyGrowth(db), [db])
   const sessionStats = useMemo(() => getSessionStats(db), [db])
+  const remoteDbRef = useRef(remoteDb)
+  remoteDbRef.current = remoteDb
+
+  useEffect(() => {
+    if (!isSupabaseEnabled || !isAuthenticated) return undefined
+
+    return startPresenceTracker({
+      resolvePresenceInfo: async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return null
+        const dbNow = remoteDbRef.current
+        const s = dbNow?.session
+        let name = user.user_metadata?.name || user.email
+        if (s?.type === 'member') {
+          const m = dbNow?.members?.find((x) => x.id === user.id)
+          if (m?.name) name = m.name
+        } else if (s?.type === 'staff') {
+          const st = dbNow?.staff?.find((x) => x.id === s.staffId)
+          if (st?.name) name = st.name
+        }
+        return { userId: user.id, email: user.email, name, role: s?.type || 'member' }
+      },
+      getPagePath: () => window.location.pathname,
+    })
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isSupabaseEnabled || !remoteDb?.session) return undefined
+
+    return subscribeRealtimeSync({
+      session: remoteDb.session,
+      memberId: currentMember?.id,
+      onTicketsChange: ({ type, id, ticket }) => {
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          if (type === 'delete') {
+            return { ...prev, tickets: prev.tickets.filter((t) => t.id !== id) }
+          }
+          const idx = prev.tickets.findIndex((t) => t.id === ticket.id)
+          const tickets = idx >= 0
+            ? prev.tickets.map((t, i) => (i === idx ? ticket : t))
+            : [ticket, ...prev.tickets]
+          return { ...prev, tickets }
+        })
+      },
+      onMemberChange: (member) => {
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          return { ...prev, members: prev.members.map((m) => (m.id === member.id ? member : m)) }
+        })
+      },
+    })
+  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id])
+
+  const { activeUsers } = useActiveUsers(isAdmin)
 
   const patchCurrentRemote = useCallback(async (patch) => {
     if (!currentMember) return
@@ -220,9 +277,11 @@ export function AppProvider({ children }) {
 
   const createTicket = useCallback(async (ticketData) => {
     const t = await sb.createTicket(currentMember, ticketData)
-    await reloadRemote()
+    if (t) {
+      setRemoteDb((prev) => (prev ? { ...prev, tickets: [t, ...prev.tickets] } : prev))
+    }
     return t
-  }, [currentMember, reloadRemote])
+  }, [currentMember])
 
   const uploadExerciseVideo = useCallback((file) => sb.uploadExerciseVideo(file), [])
 
@@ -281,14 +340,28 @@ export function AppProvider({ children }) {
 
   const setTicketStatus = useCallback(async (ticketId, status) => {
     await sb.setTicketStatus(ticketId, status)
-    await reloadRemote()
-  }, [reloadRemote])
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        tickets: prev.tickets.map((t) => (t.id === ticketId ? { ...t, status } : t)),
+      }
+    })
+  }, [])
 
   const sendTicketReply = useCallback(async (ticketId, from, text) => {
     const t = await sb.sendTicketReply(ticketId, from, text)
-    await reloadRemote()
+    if (t) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          tickets: prev.tickets.map((x) => (x.id === ticketId ? t : x)),
+        }
+      })
+    }
     return t
-  }, [reloadRemote])
+  }, [])
 
   const markNotificationRead = useCallback(async (id) => {
     if (!currentMember) return
@@ -382,6 +455,7 @@ export function AppProvider({ children }) {
     membershipBreakdown,
     monthlyGrowth,
     sessionStats,
+    activeUsers,
     login,
     logout,
     register,

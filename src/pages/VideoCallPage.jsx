@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   ArrowLeft, Clock, Calendar, AlertTriangle, Loader2,
-  Settings, Wifi, Dumbbell, Apple, UserRound,
+  Settings, Wifi, Dumbbell, Apple, UserRound, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useDailyCall } from '../hooks/useDailyCall'
@@ -69,15 +69,20 @@ export default function VideoCallPage({ audience = 'member' }) {
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()
   const [meetingToken, setMeetingToken] = useState('')
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
-  // Production güvenli mod: token'lı private oda (DAILY_API_KEY Vercel'de tanımlıysa)
   useEffect(() => {
-    if (!configured || context.error || !context.roomAccess?.ok) return
+    if (!configured || context.error || !context.roomAccess?.ok) {
+      setMeetingToken('')
+      return
+    }
+    let cancelled = false
     const roomName = buildRoomName(context.sessionType, sessionId)
     getDailyToken(roomName, context.displayName, audience === 'staff')
-      .then((t) => { if (t) setMeetingToken(t) })
+      .then((t) => { if (!cancelled && t) setMeetingToken(t) })
       .catch(() => {})
-  }, [configured]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { cancelled = true }
+  }, [configured, context.error, context.roomAccess?.ok, context.sessionType, sessionId, context.displayName, audience])
 
   const call = useDailyCall({
     roomUrl,
@@ -133,100 +138,105 @@ export default function VideoCallPage({ audience = 'member' }) {
       : { dot: 'bg-white/40', text: 'Hazır' }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950 text-white">
-      <header className={`flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r ${meta.gradient} px-4 py-3 sm:px-6`}>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={handleExit} className="rounded-lg p-1.5 hover:bg-white/10" title="Geri dön">
+    <div className="flex h-dvh flex-col overflow-hidden bg-gray-950 text-white">
+      <header className={`shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r ${meta.gradient} px-3 py-2.5 sm:px-6 sm:py-3`}>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button type="button" onClick={handleExit} className="shrink-0 rounded-lg p-1.5 hover:bg-white/10" title="Geri dön">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <RoleIcon className="h-5 w-5" />
-          <div>
-            <p className="text-sm font-bold">{meta.label}</p>
-            <p className="text-xs text-white/60">{format(sessionDate, 'd MMMM yyyy · HH:mm', { locale: tr })}</p>
+          <RoleIcon className="h-5 w-5 shrink-0" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold">{meta.label}</p>
+            <p className="truncate text-[11px] text-white/60 sm:text-xs">{format(sessionDate, 'd MMM yyyy · HH:mm', { locale: tr })}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs">
+        <div className="flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] sm:px-3 sm:text-xs">
           <span className={`h-2 w-2 rounded-full ${statusBadge.dot}`} />
           {call.isLoading ? 'Bağlanıyor…' : joinCheck.statusLabel || statusBadge.text}
         </div>
       </header>
 
-      <div className="relative flex flex-1 flex-col items-center justify-center gap-4 p-4 sm:p-6">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {call.isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-950/80">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-950/80">
             <Loader2 className="h-10 w-10 animate-spin text-white" />
           </div>
         )}
 
-        <div className="grid w-full max-w-5xl gap-4 lg:grid-cols-[1fr_300px]">
-          <div className="relative">
+        <div className="relative flex min-h-0 flex-1 flex-col p-3 sm:p-4 lg:grid lg:grid-cols-[1fr_280px] lg:gap-4 lg:p-6">
+          <div className="relative flex min-h-0 flex-1 flex-col">
             {remote ? (
               <ParticipantTile participant={remote} label={context.remoteLabel} large meta={meta} />
             ) : (
               <WaitingTile
+                large
                 label={call.isJoined ? `${context.remoteLabel} bekleniyor…` : context.remoteLabel}
                 message={call.isJoined ? 'Karşı taraf odaya katıldığında burada görünecek.' : joinCheck.reason || 'Görüşmeye katılmadan önce cihazlarınızı test edebilirsiniz.'}
                 meta={meta}
               />
             )}
+
+            <div className="pointer-events-none absolute bottom-3 right-3 z-10 lg:hidden">
+              <div className="pointer-events-auto">
+                {local ? (
+                  <ParticipantTile participant={local} label="Siz" pip meta={meta} />
+                ) : (
+                  <WaitingTile label="Siz" pip meta={meta} />
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="hidden space-y-3 lg:block">
             {local ? (
               <ParticipantTile participant={local} label={`${context.displayName} (Siz)`} meta={meta} />
             ) : (
               <WaitingTile label="Kamera önizlemesi" message="Kamera izni verin veya cihaz seçin." meta={meta} />
             )}
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-              <p className="font-semibold text-white/90">Görüşme Bilgisi</p>
-              <ul className="mt-2 space-y-2 text-xs text-white/55">
-                <li className="flex items-start gap-2">
-                  <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {format(sessionDate, 'd MMMM yyyy, EEEE', { locale: tr })}
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {format(sessionDate, 'HH:mm')} · {formatMinutesTr(session.duration || 30)}
-                </li>
-                <li className="flex items-start gap-2">
-                  <UserRound className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {audience === 'staff' ? `Danışan: ${context.remoteLabel}` : `${meta.roleLabel}: ${context.remoteLabel}`}
-                </li>
-                <li className="flex items-start gap-2">
-                  <Wifi className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Oda: {roomUrl?.split('/').pop()}
-                </li>
-              </ul>
-              {!joinCheck.ok && joinCheck.reason && (
-                <p className="mt-3 rounded-lg bg-amber-500/15 px-3 py-2 text-xs text-amber-200">{joinCheck.reason}</p>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-semibold text-white/70">Cihaz Ayarları</p>
-              <div className="mt-3">
-                <DeviceSelectors
-                  devices={call.devices}
-                  selectedDevices={call.selectedDevices}
-                  onCameraChange={call.setCamera}
-                  onMicChange={call.setMic}
-                  disabled={call.isLoading}
-                />
-              </div>
-              <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-                Oda {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesBefore)} önce açılır, randevu bitiminden {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesAfter)} sonra kapanır.
-              </p>
-            </div>
+            <SessionDetailsPanel
+              sessionDate={sessionDate}
+              session={session}
+              audience={audience}
+              context={context}
+              meta={meta}
+              roomUrl={roomUrl}
+              joinCheck={joinCheck}
+              call={call}
+            />
           </div>
         </div>
 
+        <div className="shrink-0 border-t border-white/10 bg-gray-900/95 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-white/70"
+          >
+            Görüşme & cihaz ayarları
+            {detailsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </button>
+          {detailsOpen && (
+            <div className="max-h-[40dvh] space-y-3 overflow-y-auto border-t border-white/5 px-3 pb-3 pt-2">
+              <SessionDetailsPanel
+                sessionDate={sessionDate}
+                session={session}
+                audience={audience}
+                context={context}
+                meta={meta}
+                roomUrl={roomUrl}
+                joinCheck={joinCheck}
+                call={call}
+              />
+            </div>
+          )}
+        </div>
+
         {call.error && (
-          <p className="w-full max-w-5xl rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">{call.error}</p>
+          <p className="mx-3 mb-2 shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-200 sm:mx-6 sm:text-sm">{call.error}</p>
         )}
       </div>
 
-      <footer className="border-t border-white/10 bg-gray-900/90 px-4 py-5 backdrop-blur">
+      <footer className="shrink-0 border-t border-white/10 bg-gray-900/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <CallControls
           mediaState={call.mediaState}
           isJoined={call.isJoined}
@@ -241,5 +251,52 @@ export default function VideoCallPage({ audience = 'member' }) {
         />
       </footer>
     </div>
+  )
+}
+
+function SessionDetailsPanel({ sessionDate, session, audience, context, meta, roomUrl, joinCheck, call }) {
+  return (
+    <>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm sm:p-4">
+        <p className="font-semibold text-white/90">Görüşme Bilgisi</p>
+        <ul className="mt-2 space-y-2 text-xs text-white/55">
+          <li className="flex items-start gap-2">
+            <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {format(sessionDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+          </li>
+          <li className="flex items-start gap-2">
+            <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {format(sessionDate, 'HH:mm')} · {formatMinutesTr(session.duration || 30)}
+          </li>
+          <li className="flex items-start gap-2">
+            <UserRound className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {audience === 'staff' ? `Danışan: ${context.remoteLabel}` : `${meta.roleLabel}: ${context.remoteLabel}`}
+          </li>
+          <li className="flex items-start gap-2">
+            <Wifi className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Oda: {roomUrl?.split('/').pop()}
+          </li>
+        </ul>
+        {!joinCheck.ok && joinCheck.reason && (
+          <p className="mt-3 rounded-lg bg-amber-500/15 px-3 py-2 text-xs text-amber-200">{joinCheck.reason}</p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+        <p className="text-xs font-semibold text-white/70">Cihaz Ayarları</p>
+        <div className="mt-3">
+          <DeviceSelectors
+            devices={call.devices}
+            selectedDevices={call.selectedDevices}
+            onCameraChange={call.setCamera}
+            onMicChange={call.setMic}
+            disabled={call.isLoading}
+          />
+        </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-white/35">
+          Oda {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesBefore)} önce açılır, randevu bitiminden {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesAfter)} sonra kapanır.
+        </p>
+      </div>
+    </>
   )
 }

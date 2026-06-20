@@ -98,25 +98,30 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     setError(null)
     try {
       const call = await ensureCallObject()
-      if (mediaState.camOn) await call.startCamera({ deviceId: selectedDevices.cameraId || undefined })
-      if (mediaState.micOn) await call.startLocalAudio()
+      // Call-object modunda önizleme: startCamera() durumu başlatır (startLocalAudio diye bir API yok)
+      await call.startCamera({
+        startVideoOff: !mediaState.camOn,
+        startAudioOff: !mediaState.micOn,
+      })
       await call.setLocalVideo(mediaState.camOn)
       await call.setLocalAudio(mediaState.micOn)
       setPhase(PREVIEW)
       refreshParticipants()
     } catch (err) {
-      setError(err?.message || 'Kamera önizlemesi başlatılamadı.')
+      setError(err?.errorMsg || err?.message || 'Kamera önizlemesi başlatılamadı.')
       setPhase(ERROR)
     }
-  }, [enabled, ensureCallObject, mediaState.camOn, mediaState.micOn, selectedDevices.cameraId, refreshParticipants])
+  }, [enabled, ensureCallObject, mediaState.camOn, mediaState.micOn, refreshParticipants])
 
   useEffect(() => {
     if (!enabled) return undefined
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadDevices()
-    startPreview()
-    return undefined
-  }, [enabled, loadDevices]) // eslint-disable-line react-hooks/exhaustive-deps
+    let cancelled = false
+    ;(async () => {
+      await loadDevices()
+      if (!cancelled) await startPreview()
+    })()
+    return () => { cancelled = true }
+  }, [enabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const join = useCallback(async () => {
     if (!roomUrl || !enabled) return
@@ -124,17 +129,31 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     setError(null)
     try {
       const call = await ensureCallObject()
-      const joinOpts = { url: roomUrl, userName: userNameRef.current || 'Katılımcı' }
+      // Önizleme başlamadıysa join öncesi medyayı hazırla
+      if (phase !== PREVIEW && phase !== JOINED) {
+        await call.startCamera({
+          startVideoOff: !mediaState.camOn,
+          startAudioOff: !mediaState.micOn,
+        })
+      }
+      const joinOpts = {
+        url: roomUrl,
+        userName: userNameRef.current || 'Katılımcı',
+        startVideoOff: !mediaState.camOn,
+        startAudioOff: !mediaState.micOn,
+      }
       if (tokenRef.current) joinOpts.token = tokenRef.current
       await call.join(joinOpts)
+      await call.setLocalVideo(mediaState.camOn)
+      await call.setLocalAudio(mediaState.micOn)
       setPhase(JOINED)
       refreshParticipants()
     } catch (err) {
-      setError(err?.message || 'Görüşmeye bağlanılamadı.')
+      setError(err?.errorMsg || err?.message || 'Görüşmeye bağlanılamadı.')
       setPhase(PREVIEW)
       refreshParticipants()
     }
-  }, [roomUrl, enabled, ensureCallObject, refreshParticipants])
+  }, [roomUrl, enabled, ensureCallObject, refreshParticipants, phase, mediaState.camOn, mediaState.micOn])
 
   const leaveMeeting = useCallback(async () => {
     const call = callRef.current
@@ -147,15 +166,19 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
       if (mediaState.screenSharing) await call.stopScreenShare()
       await call.leave()
       setMediaState((s) => ({ ...s, screenSharing: false }))
-      if (mediaState.camOn) await call.startCamera({ deviceId: selectedDevices.cameraId || undefined })
-      if (mediaState.micOn) await call.startLocalAudio()
+      await call.startCamera({
+        startVideoOff: !mediaState.camOn,
+        startAudioOff: !mediaState.micOn,
+      })
+      await call.setLocalVideo(mediaState.camOn)
+      await call.setLocalAudio(mediaState.micOn)
       setPhase(PREVIEW)
       refreshParticipants()
     } catch (err) {
       setError(err?.message || 'Görüşmeden ayrılırken hata oluştu.')
       setPhase(PREVIEW)
     }
-  }, [mediaState.screenSharing, mediaState.camOn, mediaState.micOn, selectedDevices.cameraId, refreshParticipants])
+  }, [mediaState.screenSharing, mediaState.camOn, mediaState.micOn, refreshParticipants])
 
   const destroy = useCallback(async () => {
     const call = callRef.current
@@ -175,25 +198,19 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     if (!call) return
     const next = !mediaState.camOn
     try {
-      if (next) {
-        if (phase !== JOINED) await call.startCamera({ deviceId: selectedDevices.cameraId || undefined })
-        await call.setLocalVideo(true)
-      } else {
-        await call.setLocalVideo(false)
-      }
+      await call.setLocalVideo(next)
       setMediaState((s) => ({ ...s, camOn: next }))
       refreshParticipants()
     } catch (err) {
       setError(err?.message || 'Kamera değiştirilemedi.')
     }
-  }, [mediaState.camOn, phase, selectedDevices.cameraId, refreshParticipants])
+  }, [mediaState.camOn, refreshParticipants])
 
   const toggleMic = useCallback(async () => {
     const call = callRef.current
     if (!call) return
     const next = !mediaState.micOn
     try {
-      if (next && phase !== JOINED) await call.startLocalAudio()
       await call.setLocalAudio(next)
       setMediaState((s) => ({ ...s, micOn: next }))
       refreshParticipants()
@@ -225,9 +242,7 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     if (!call) return
     try {
       await call.setInputDevicesAsync({ videoDeviceId: deviceId })
-      if (phase !== JOINED && mediaState.camOn) {
-        await call.startCamera({ deviceId })
-      }
+      if (mediaState.camOn) await call.setLocalVideo(true)
       refreshParticipants()
     } catch {
       /* ignore */

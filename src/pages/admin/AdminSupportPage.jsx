@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import {
   MessageSquare, Search, Clock, Loader, CheckCircle2, AlertCircle, ChevronRight,
 } from 'lucide-react'
@@ -46,6 +46,14 @@ export default function AdminSupportPage() {
   }), [tickets, tab, search])
 
   const activeTicket = tickets.find((t) => t.id === activeId) || null
+  const prevTicketCount = useRef(tickets.length)
+
+  useEffect(() => {
+    if (tickets.length > prevTicketCount.current) {
+      toast('Yeni destek talebi geldi', 'info')
+    }
+    prevTicketCount.current = tickets.length
+  }, [tickets.length, toast])
 
   const handleStatus = (id, status) => {
     setTicketStatus(id, status)
@@ -170,7 +178,7 @@ export default function AdminSupportPage() {
               </div>
             )}
 
-            <TicketThread ticket={activeTicket} perspective="admin" onReply={handleReply} />
+            <TicketThread ticket={activeTicket} perspective="admin" onReply={handleReply} live />
 
             <div className="flex flex-wrap gap-2 border-t border-cream-100 pt-4">
               {activeTicket.status !== 'in-progress' && activeTicket.status !== 'closed' && (

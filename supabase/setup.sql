@@ -422,6 +422,7 @@ begin
 end $$;
 
 grant execute on function public.admin_upsert_staff(uuid, text, text, text, text, boolean, jsonb) to authenticated;
+revoke all on function public.admin_upsert_staff(uuid, text, text, text, text, boolean, jsonb) from public, anon;
 
 create or replace function public.admin_delete_staff(p_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
@@ -443,6 +444,14 @@ begin
 end $$;
 
 grant execute on function public.admin_delete_staff(uuid) to authenticated;
+revoke all on function public.admin_delete_staff(uuid) from public, anon;
+
+-- increment_food_usage: yalnızca giriş yapmış kullanıcılar
+revoke all on function public.increment_food_usage(uuid) from public, anon;
+grant execute on function public.increment_food_usage(uuid) to authenticated;
+
+-- handle_new_user tetikleyici fonksiyonu — RPC ile çağrılmasın
+revoke all on function public.handle_new_user() from public, anon;
 
 -- ---------------------------------------------------------------------
 -- 7) DEPOLAMA — egzersiz videoları için herkese açık bucket

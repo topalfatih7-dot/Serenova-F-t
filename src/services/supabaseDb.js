@@ -70,6 +70,7 @@ function rowToPost(row) {
 function rowToTicket(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id, status: row.status }
 }
+export { rowToMember, rowToTicket }
 function rowToActivity(row) {
   const data = row.data || {}
   return {
@@ -812,6 +813,30 @@ export async function sendTicketReply(id, from, text) {
   const messages = [...(ticket.messages || []), { id: `m-${Date.now()}`, from, text, createdAt: nowISO() }]
   const status = from === 'admin' && ticket.status === 'open' ? 'in-progress' : ticket.status
   await supabase.from('tickets').update({ status, data: { ...current.data, messages } }).eq('id', id)
+
+  if (from === 'admin' && current.member_id) {
+    const { data: memberRow } = await supabase.from('members').select('*').eq('id', current.member_id).maybeSingle()
+    if (memberRow) {
+      const data = memberRow.data || {}
+      const notifications = [
+        {
+          id: `n-${Date.now()}`,
+          type: 'support-reply',
+          title: 'Destek yanıtı',
+          text: `"${ticket.subject}" talebinize yanıt geldi.`,
+          read: false,
+          createdAt: nowISO(),
+          ticketId: id,
+        },
+        ...(data.notifications || []),
+      ]
+      await supabase.from('members').update({
+        data: { ...data, notifications },
+        updated_at: nowISO(),
+      }).eq('id', current.member_id)
+    }
+  }
+
   return { ...ticket, messages, status }
 }
 

@@ -3,7 +3,7 @@
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-19 (Bkz. §17: tek-dosya Supabase kurulumu, plan değiştirme, profil yeniden tasarımı, kadro sayfaları, ülke kodu, gradient bölümler, ölü kod temizliği)
+> **Son güncelleme:** 2026-06-20 (Bkz. §18: navbar Keşfet/Kadro, kalori chat+Telegram, video responsive, YAPILACAKLAR.md)
 
 ---
 
@@ -85,6 +85,12 @@ Tarayıcı
   ├─► POST /api/telegram-notify (giriş/kayıt bildirimi)
   │
   ├─► POST /api/contact (Bize Ulaşın formu)
+  │
+  ├─► POST /api/calorie-chat-notify (Kalori chat → Telegram iletişim chat'i)
+  │
+  ├─► POST /api/ai-food-text (Kalori chat → Gemini metin analizi)
+  │
+  ├─► POST /api/ai-food-vision (Fotoğraf kalori — Platinum)
   │
   └─► Daily.co WebRTC (VideoCallPage → useDailyCall)
 ```
@@ -997,6 +1003,53 @@ AI_SETUP.md             → Adım adım kurulum rehberi
 - `src/pages/LandingPage.jsx` (gradient bölümler + mobil rozet)
 - `src/components/layout/PublicLayout.jsx` + `src/index.css` (hamburger parıltı)
 - `src/components/support/SupportForm.jsx` (kategoriler)
+
+---
+
+## 18. Son Değişiklikler (2026-06-20)
+
+### 1. Navbar — Keşfet dropdown + Kadro landing'den kaldırıldı
+- **Landing'den `TeamSection` kaldırıldı** — kadro yalnızca navbar **Kadromuz** dropdown'undan (`/team/coaches|dietitians|doctors`).
+- **Hikayeler + Blog** → **Keşfet** açılır menüsü altında toplandı (`NavDropdown.jsx`).
+- Mobil menüde aynı gruplama.
+
+### 2. Kalori hesaplayıcı — chat-first, Telegram + AI
+- **Eski sistem kaldırıldı:** sabit `FOOD_DB` listesi, manuel arama/sepet, `parseFoodText`, `custom_foods` otomatik kayıt (`addCustomFood`, `incrementFoodUsage`).
+- **Yeni akış:** kullanıcı yazar → paralel:
+  1. `POST /api/calorie-chat-notify` → `TELEGRAM_CONTACT_CHAT_ID` (Bize Ulaşın chat'i)
+  2. `POST /api/ai-food-text` → Gemini kalori analizi (fotoğraf modu ile aynı JSON)
+- **Fotoğraf modu** (Platinum): `/api/ai-food-vision` — değişmedi.
+- **Yeni dosyalar:** `api/ai-food-text.js`, `api/calorie-chat-notify.js`, `src/services/calorieChat.js`
+- **Token tasarrufu:** bilinmeyen besin tahmini + DB'ye otomatik kayıt yok.
+
+### 3. Video görüşme — responsive + token düzeltmesi
+- **Mobil:** tam ekran uzak video + sağ altta PiP yerel kamera (`pip` prop).
+- **Mobil çekmece:** görüşme bilgisi + cihaz seçimi (`detailsOpen`).
+- **`h-dvh`** + `safe-area-inset-bottom` footer.
+- **Bug fix:** Daily meeting token effect artık `sessionId`, `displayName` değişince yeniden alınıyor (eskiden yalnızca `configured`).
+
+### 4. Dokümantasyon
+- **`YAPILACAKLAR.md`** — tüm setup adımları, Vercel env checklist, Supabase test sonuçları.
+- Setup detayları hâlâ: `SUPABASE_SETUP.md`, `TELEGRAM_SETUP.md`, `AI_SETUP.md`, `VIDEO_SETUP.md`.
+
+### 5. Supabase
+- Migration `20260620_revoke_anon_rpc` **uygulandı** (admin RPC anon erişimi kapatıldı).
+- Kalori chat için **yeni tablo gerekmez**; `custom_foods` artık kullanılmıyor.
+
+### 6. Vercel
+- CLI ile proje bağlandı; Gemini, Daily (`yeniform.daily.co`), Telegram, Supabase env'leri eklendi.
+- **Yerel dev:** `npm run dev` → Vite + `/api/*` middleware (`vite.config.js`); `.env.local` okunur, redeploy gerekmez.
+
+### Değiştirilen/Eklenen Dosyalar (2026-06-20)
+- `src/components/layout/NavDropdown.jsx` (yeni)
+- `src/components/layout/PublicLayout.jsx`
+- `src/pages/LandingPage.jsx`
+- `src/pages/CalorieCalculatorPage.jsx` (yeniden yazıldı)
+- `src/pages/VideoCallPage.jsx`, `src/components/video/VideoCallUI.jsx`, `src/hooks/useDailyCall.js`
+- `api/ai-food-text.js`, `api/calorie-chat-notify.js`, `api/_ai-prompts.js`
+- `src/services/calorieChat.js` (yeni)
+- `YAPILACAKLAR.md` (yeni)
+- `.env.local` (Telegram format düzeltmesi)
 
 ---
 

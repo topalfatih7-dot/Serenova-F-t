@@ -1,31 +1,18 @@
 /**
- * Vercel Serverless Function — Fotoğraflı Kalori Tespiti (Platinum).
- *
- * Frontend, küçültülmüş yemek fotoğrafını base64 olarak gönderir;
- * bu fonksiyon Gemini 2.0 Flash (vision) ile analiz edip yapılandırılmış
- * JSON döndürür. API anahtarı yalnızca sunucuda tutulur.
- *
- * İstek gövdesi: { image: "data:image/jpeg;base64,..." veya saf base64", mimeType?: "image/jpeg" }
- * Yanıt: { ok: true, label, items: [{name, amount, unit, cal}], confidence }
+ * Metin tabanlı kalori analizi — chat mesajları için.
+ * Fotoğraf analizi ile aynı JSON şemasını döndürür.
  */
 
 import {
-  FOOD_VISION_SYSTEM,
-  FOOD_VISION_INSTRUCTION,
-  FOOD_VISION_CONFIG,
+  FOOD_TEXT_SYSTEM,
+  FOOD_TEXT_INSTRUCTION,
+  FOOD_TEXT_CONFIG,
 } from './_ai-prompts.js'
 
 async function loadGemini() {
   const href = new URL('./_gemini.js', import.meta.url).href
   const url = process.env.NODE_ENV === 'production' ? href : `${href}?t=${Date.now()}`
   return import(url)
-}
-
-function stripDataUrl(image) {
-  // "data:image/jpeg;base64,XXXX" → { mimeType, data }
-  const match = /^data:(image\/[a-zA-Z+]+);base64,(.*)$/s.exec(image || '')
-  if (match) return { mimeType: match[1], data: match[2] }
-  return { mimeType: null, data: image }
 }
 
 export default async function handler(req, res) {
@@ -46,23 +33,18 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const { image, mimeType: bodyMime } = body || {}
-    if (!image) {
-      return res.status(400).json({ ok: false, error: 'Fotoğraf (image) gerekli' })
+    const text = String(body?.text || '').trim()
+    if (!text || text.length < 2) {
+      return res.status(400).json({ ok: false, error: 'Metin gerekli' })
+    }
+    if (text.length > 2000) {
+      return res.status(400).json({ ok: false, error: 'Metin çok uzun (max 2000 karakter)' })
     }
 
-    const { mimeType: parsedMime, data } = stripDataUrl(image)
-    const mimeType = bodyMime || parsedMime || 'image/jpeg'
-
-    const parts = [
-      { text: FOOD_VISION_INSTRUCTION },
-      { inline_data: { mime_type: mimeType, data } },
-    ]
-
-    const raw = await callGemini(parts, FOOD_VISION_SYSTEM, FOOD_VISION_CONFIG)
+    const instruction = FOOD_TEXT_INSTRUCTION.replace('{{TEXT}}', text)
+    const raw = await callGemini([{ text: instruction }], FOOD_TEXT_SYSTEM, FOOD_TEXT_CONFIG)
     const result = parseJsonResponse(raw)
 
-    // Sonucu doğrula/normalize et
     const items = Array.isArray(result.items) ? result.items.map((it) => ({
       name: String(it.name || 'Bilinmeyen').slice(0, 60),
       amount: Number(it.amount) || 1,
@@ -72,7 +54,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      label: String(result.label || 'Tespit Edilen Öğün').slice(0, 60),
+      label: String(result.label || 'Yazılan Öğün').slice(0, 60),
       items,
       confidence: result.confidence || 'medium',
     })

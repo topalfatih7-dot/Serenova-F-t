@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Send, ShieldCheck, UserRound, Info } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Send, ShieldCheck, UserRound, Info, Radio } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -8,9 +8,14 @@ function normalize(ticket) {
   return [{ id: 'm0', from: 'member', text: ticket.message, createdAt: ticket.createdAt }]
 }
 
-export default function TicketThread({ ticket, perspective = 'admin', onReply, disabled }) {
+export default function TicketThread({ ticket, perspective = 'admin', onReply, disabled, live = false }) {
   const [text, setText] = useState('')
   const messages = normalize(ticket)
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages.length, ticket?.id])
 
   const send = () => {
     const value = text.trim()
@@ -21,7 +26,13 @@ export default function TicketThread({ ticket, perspective = 'admin', onReply, d
 
   return (
     <div className="flex flex-col">
-      <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+      {live && (
+        <div className="mb-3 flex items-center gap-2 text-xs font-medium text-sage-700">
+          <Radio className="h-3.5 w-3.5 animate-pulse" />
+          Canlı sohbet — mesajlar anında iletilir
+        </div>
+      )}
+      <div ref={scrollRef} className="max-h-72 space-y-3 overflow-y-auto pr-1">
         {messages.map((m) => {
           if (m.from === 'system') {
             return (

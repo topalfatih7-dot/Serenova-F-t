@@ -23,7 +23,7 @@ import { isPaidMembership, ALL_PLANS } from '../data/membershipPlans'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
-import { EMPTY_HEALTH_TEST, getApplicableSections, isSectionComplete } from '../data/healthTest'
+import { EMPTY_HEALTH_TEST, getApplicableQuestions, isQuestionAnswered } from '../data/healthTest'
 import { generateHealthAnalysis } from '../services/aiAnalysis'
 
 const STEPS = ['Kişisel', 'Hedefler', 'Spor', 'Beslenme', 'Sağlık Testi', 'Sağlık Onaylı', 'Üyelik', 'Ödeme']
@@ -285,7 +285,7 @@ export default function OnboardingPage() {
   const preselectedPlan = ['free', 'gumus', 'altin', 'platinum', 'premium'].includes(rawPlan) ? rawPlan : 'free'
 
   const [step, setStep] = useState(0)
-  const [healthSection, setHealthSection] = useState(0)
+  const [healthQuestionIndex, setHealthQuestionIndex] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
@@ -322,9 +322,9 @@ export default function OnboardingPage() {
   }
 
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
-  const healthSections = getApplicableSections(data.gender)
-  const currentHealthSection = healthSections[healthSection] || healthSections[0]
-  const isLastHealthSection = healthSection >= healthSections.length - 1
+  const healthQuestions = getApplicableQuestions(data.gender)
+  const currentHealthQuestion = healthQuestions[healthQuestionIndex] || healthQuestions[0]
+  const isLastHealthQuestion = healthQuestionIndex >= healthQuestions.length - 1
   const districts = getDistricts(data.city)
   const displayPlans = plans?.length ? plans : ALL_PLANS
   const selectedPlan = displayPlans.find((p) => p.id === data.membership) || displayPlans[0]
@@ -361,7 +361,7 @@ export default function OnboardingPage() {
       case 1: return data.goals.length > 0
       case 2: return data.fitnessLevel
       case 3: return true
-      case 4: return isSectionComplete(currentHealthSection, data.healthTest)
+      case 4: return isQuestionAnswered(currentHealthQuestion, data.healthTest)
       case 5: return data.healthAck && data.disclaimer
       case 6: return !!data.membership
       case 7: return true
@@ -485,8 +485,8 @@ export default function OnboardingPage() {
     if (!canNext()) { setShowErrors(true); return }
     setShowErrors(false)
     // Sağlık testi: önce iç bölümler (soru-soru), son bölümde adım ilerler
-    if (step === 4 && !isLastHealthSection) {
-      setHealthSection((i) => i + 1)
+    if (step === 4 && !isLastHealthQuestion) {
+      setHealthQuestionIndex((i) => i + 1)
       return
     }
     if (step === 6 && !isPaid) {
@@ -497,14 +497,14 @@ export default function OnboardingPage() {
       finish()
       return
     }
-    if (step === 3) setHealthSection(0)
+    if (step === 3) setHealthQuestionIndex(0)
     goNextStep()
   }
 
   const back = () => {
     setShowErrors(false)
-    if (step === 4 && healthSection > 0) {
-      setHealthSection((i) => i - 1)
+    if (step === 4 && healthQuestionIndex > 0) {
+      setHealthQuestionIndex((i) => i - 1)
       return
     }
     setStep((s) => Math.max(0, s - 1))
@@ -512,7 +512,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="auth-page-bg">
-      <div className={`relative mx-auto px-4 py-10 sm:px-6 max-w-3xl`}>
+      <div className={`relative mx-auto px-4 py-10 sm:px-6 ${step === 4 ? 'max-w-4xl' : 'max-w-3xl'}`}>
         <span className="section-badge mx-auto block w-fit">Kayıt</span>
         <h1 className="mt-4 text-center font-display text-2xl font-bold text-cream-900 sm:text-3xl">Hoş Geldiniz</h1>
         <p className="mt-2 text-center text-sm text-cream-800/65">Profilinizi oluşturun ve üyeliğinizi seçin — birkaç dakika sürer</p>
@@ -875,12 +875,17 @@ export default function OnboardingPage() {
               {/* ADIM 4: SAĞLIK TESTİ (soru-soru, çok adımlı) */}
               {step === 4 && (
                 <HealthTestStep
-                  sections={healthSections}
-                  sectionIndex={healthSection}
-                  section={currentHealthSection}
+                  question={currentHealthQuestion}
+                  questionIndex={healthQuestionIndex}
+                  totalQuestions={healthQuestions.length}
                   healthTest={data.healthTest}
                   updateHealthTest={updateHealthTest}
                   showErrors={showErrors}
+                  onSelectAndAdvance={() => {
+                    if (!isLastHealthQuestion) {
+                      setHealthQuestionIndex((i) => i + 1)
+                    }
+                  }}
                 />
               )}
 

@@ -7,6 +7,12 @@ import FAQAccordion from '../components/landing/FAQAccordion'
 import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import WhyUsSection from '../components/landing/WhyUsSection'
 import ContactSection from '../components/landing/ContactSection'
+import SectionBackdrop from '../components/landing/SectionBackdrop'
+import TrustStrip from '../components/landing/TrustStrip'
+import LiveActiveCounter from '../components/landing/LiveActiveCounter'
+import RotatingHeroText from '../components/landing/RotatingHeroText'
+import HowItWorksSection from '../components/landing/HowItWorksSection'
+import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
@@ -23,7 +29,7 @@ const fadeUp = {
 }
 
 export default function LandingPage() {
-  const { testimonials, faqs, plans } = useApp()
+  const { testimonials, faqs, plans, successStories } = useApp()
   const location = useLocation()
   const displayPlans = plans?.length ? plans : ALL_PLANS
   const [swipeHint, setSwipeHint] = useState(true)
@@ -131,9 +137,7 @@ export default function LandingPage() {
                 className="mt-4 font-display text-3xl font-bold leading-tight text-white sm:text-4xl"
               >
                 Dönüşümünüz{' '}
-                <span className="bg-gradient-to-r from-brand-300 via-sage-300 to-brand-200 bg-clip-text text-transparent">
-                  sizin ritminizde
-                </span>
+                <RotatingHeroText />
               </motion.h1>
 
               <motion.p
@@ -193,6 +197,15 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* CANLI AKTİF ÜYE SAYACI */}
+      <LiveActiveCounter />
+
+      {/* GÜVEN ŞERİDİ */}
+      <TrustStrip staffCount={0} />
+
+      {/* NASIL ÇALIŞIR */}
+      <HowItWorksSection />
 
       {/* ═══════════════════════════════════════════
           ÜYELİK SEÇENEKLERİ — Mobil Swipe Hint
@@ -287,90 +300,21 @@ export default function LandingPage() {
       {/* NEDEN BİZ */}
       <WhyUsSection />
 
-      {/* ═══════════════════════════════════════════
-          YORUMLAR — Hero arka planlı bölüm
-      ═══════════════════════════════════════════ */}
+      {/* BAŞARI HİKAYELERİ ÖNİZLEME */}
+      <SuccessStoriesPreview stories={successStories} />
+
+      {/* ÜYELER NE DİYOR */}
       {testimonials.length > 0 && (
-        <section className="relative overflow-hidden py-20">
-          {/* Arka plan: renkli gradient + animasyonlu orb'lar (fotoğraf yerine) */}
-          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-brand-700 via-brand-800 to-sage-800" />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.25, 1], opacity: [0.35, 0.6, 0.35] }}
-            transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -left-24 top-10 h-80 w-80 rounded-full bg-brand-400/40 blur-3xl"
-          />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.2, 1], opacity: [0.25, 0.5, 0.25] }}
-            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-            className="absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-sage-400/40 blur-3xl"
-          />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-            className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/25 blur-3xl"
-          />
-          {/* İnce nokta deseni */}
-          <div aria-hidden className="absolute inset-0 opacity-40" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }} />
-          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <h2 className="text-center font-display text-3xl font-bold text-white">
-                Üyelerimiz Ne Diyor?
-              </h2>
-              <p className="mt-3 text-center text-white/60">Gerçek deneyimler, gerçek dönüşümler</p>
-            </motion.div>
-          </div>
-          <div className="relative mt-12">
-            <TestimonialCarousel testimonials={testimonials} dark />
-          </div>
-        </section>
+        <TestimonialCarousel testimonials={testimonials} />
       )}
 
-      {/* ═══════════════════════════════════════════
-          SSS — Dalgalı modern arka plan
-      ═══════════════════════════════════════════ */}
+      {/* SSS */}
       {faqs.length > 0 && (
-        <section className="relative overflow-hidden py-20">
-          {/* Renkli gradient arka plan + animasyonlu orb'lar */}
-          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-brand-50 via-cream-50 to-sage-50" />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.65, 0.4] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl"
-          />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.55, 0.3] }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-            className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-sage-200/50 blur-3xl"
-          />
-          <motion.div
-            aria-hidden
-            animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.45, 0.2] }}
-            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
-            className="absolute left-1/3 top-1/2 h-56 w-56 rounded-full bg-gold-400/20 blur-3xl"
-          />
-          <div aria-hidden className="absolute inset-0 opacity-60" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(45,143,196,0.10) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }} />
-
-          <div className="relative mx-auto max-w-3xl px-4 sm:px-6">
-            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-              <span className="section-badge">SSS</span>
-              <h2 className="section-title mt-4">Sık Sorulan Sorular</h2>
-            </motion.div>
-            <div className="mt-10">
-              <FAQAccordion items={faqs} />
-            </div>
+        <SectionBackdrop variant="faq" className="py-16 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <FAQAccordion items={faqs} />
           </div>
-        </section>
+        </SectionBackdrop>
       )}
 
       {/* BİZE ULAŞIN */}

@@ -35,7 +35,7 @@ Vercel → **Settings → Environment Variables** paneline gir:
 
 | Değişken | Değer | Açıklama |
 |----------|-------|----------|
-| `VITE_DAILY_DOMAIN` | `klinikadi.daily.co` | Daily subdomain'in |
+| `VITE_DAILY_DOMAIN` | `yeniform.daily.co` | Daily subdomain'in |
 | `VITE_DAILY_ROOM_PREFIX` | `donusum` | Oda adı öneki (isteğe bağlı) |
 
 Ardından **Redeploy** yap → Video görüşmeler artık çalışır.

@@ -36,6 +36,32 @@ export const FOOD_VISION_CONFIG = {
   responseMimeType: 'application/json',
 }
 
+// ─── Metin → Yemek/Kalori Tespiti (Chat) ────────────────────────────
+export const FOOD_TEXT_SYSTEM = `Sen bir beslenme uzmanısın. Kullanıcı ne yediğini Türkçe yazacak.
+Yazılan TÜM yiyecek ve içecekleri ayıkla; her biri için Türkçe isim, tahmini porsiyon, birim ve kalori (kcal) ver.
+Türk mutfağı porsiyonlarını (dilim, porsiyon, kase, adet, bardak, g) kullan. Kalori tahminlerini gerçekçi tut.
+Hiç yiyecek anlaşılmazsa items dizisini boş döndür.`
+
+export const FOOD_TEXT_INSTRUCTION = `Kullanıcının yazdığı öğün:
+"""
+{{TEXT}}
+"""
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "label": "kısa öğün açıklaması",
+  "items": [
+    { "name": "yiyecek adı (Türkçe)", "amount": sayı, "unit": "birim", "cal": kalori_sayısı }
+  ],
+  "confidence": "low | medium | high"
+}`
+
+export const FOOD_TEXT_CONFIG = {
+  temperature: 0.2,
+  maxOutputTokens: 600,
+  responseMimeType: 'application/json',
+}
+
 // ─── Beslenme Analizi (Metin) ───────────────────────────────────────
 // Kural tabanlı plan zaten üretiliyor; AI burada KİŞİSEL, kısa bir
 // motivasyon + iyileştirme notu ekler. Düşük token = düşük maliyet.

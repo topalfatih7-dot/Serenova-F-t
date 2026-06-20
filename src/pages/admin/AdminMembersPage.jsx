@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Search, Crown, Pause, Play, XCircle, RefreshCw, Dumbbell, Apple, Target } from 'lucide-react'
+import { Search, Crown, Pause, Play, XCircle, RefreshCw, Dumbbell, Apple, Target, Circle } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
+import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
@@ -25,7 +26,7 @@ function InfoRow({ label, value }) {
 }
 
 export default function AdminMembersPage() {
-  const { platform, adminPatchMember } = useApp()
+  const { platform, adminPatchMember, activeUsers } = useApp()
   const { toast } = useToast()
   const members = platform.members
   const staff = platform.staff || []
@@ -37,6 +38,8 @@ export default function AdminMembersPage() {
 
   const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
+  const onlineIds = useMemo(() => new Set(activeUsers.map((u) => u.user_id)), [activeUsers])
+  const isOnline = (memberId) => onlineIds.has(memberId)
 
   const filtered = useMemo(() => members.filter((m) => {
     const matchSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
@@ -62,6 +65,8 @@ export default function AdminMembersPage() {
         <h1 className="font-display text-2xl font-bold text-cream-900">Üye Yönetimi</h1>
         <p className="mt-1 text-sm text-cream-800/60">{members.length} kayıtlı üye · {filtered.length} gösteriliyor</p>
       </div>
+
+      <AdminActiveUsersPanel />
 
       <div className="flex flex-wrap gap-3">
         <div className="relative min-w-[200px] flex-1">
@@ -92,10 +97,11 @@ export default function AdminMembersPage() {
         <EmptyState title="Üye bulunamadı" description="Kayıt oluşturduğunuzda burada görünecek." />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white">
-          <table className="w-full min-w-[800px] text-left text-sm">
+          <table className="w-full min-w-[880px] text-left text-sm">
             <thead>
               <tr className="border-b border-cream-100 bg-cream-50">
                 <th className="px-4 py-3 font-semibold">Üye</th>
+                <th className="px-4 py-3 font-semibold">Aktif</th>
                 <th className="px-4 py-3 font-semibold">Üyelik</th>
                 <th className="px-4 py-3 font-semibold">Durum</th>
                 <th className="px-4 py-3 font-semibold">Şehir</th>
@@ -114,6 +120,16 @@ export default function AdminMembersPage() {
                   <td className="px-4 py-3">
                     <p className="font-medium">{m.name}</p>
                     <p className="text-xs text-cream-800/50">{m.email}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {isOnline(m.id) ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-50 px-2.5 py-0.5 text-xs font-medium text-sage-700">
+                        <Circle className="h-2 w-2 fill-sage-500 text-sage-500" />
+                        Çevrimiçi
+                      </span>
+                    ) : (
+                      <span className="text-xs text-cream-800/40">Çevrimdışı</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${m.membership !== 'free' ? 'bg-brand-50 text-brand-700' : 'bg-cream-100 text-cream-800'}`}>

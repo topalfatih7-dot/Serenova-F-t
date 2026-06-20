@@ -1,9 +1,11 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, BookOpen, LifeBuoy, Menu, X, Users, ChevronDown, Dumbbell, Apple, Stethoscope } from 'lucide-react'
+import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Compass } from 'lucide-react'
+import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
+import NavDropdown from './NavDropdown'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 import { scrollToContactSection } from '../../utils/scrollToContact'
@@ -11,9 +13,12 @@ import { scrollToContactSection } from '../../utils/scrollToContact'
 const baseLinks = [
   { to: '/', label: 'Ana Sayfa', icon: Home },
   { to: '/membership', label: 'Üyelikler', icon: Sparkles },
-  { to: '/stories', label: 'Hikayeler', icon: Trophy },
-  { to: '/blog', label: 'Blog', icon: BookOpen },
   { to: 'contact', label: 'Bize Ulaşın', icon: LifeBuoy },
+]
+
+const discoverSubLinks = [
+  { to: '/stories', label: 'Başarı Hikayeleri', icon: Trophy, color: 'text-warm-500 bg-warm-50' },
+  { to: '/blog', label: 'Blog', icon: BookOpen, color: 'text-brand-600 bg-brand-50' },
 ]
 
 const teamSubLinks = [
@@ -24,12 +29,12 @@ const teamSubLinks = [
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [teamDropOpen, setTeamDropOpen] = useState(false)
-  const dropRef = useRef(null)
+  const [openDropdown, setOpenDropdown] = useState(null)
+  const navRef = useRef(null)
 
   useEffect(() => {
     const handler = (e) => {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setTeamDropOpen(false)
+      if (navRef.current && !navRef.current.contains(e.target)) setOpenDropdown(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -119,52 +124,34 @@ export default function PublicLayout() {
 
   return (
     <div className="wellness-mesh-bg min-h-screen">
+      <PromoBanner />
       <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <BrandLogo />
-          <nav className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
+          <nav ref={navRef} className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
             {publicLinks.map((l) => renderNavLink(l))}
-            <div ref={dropRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setTeamDropOpen((v) => !v)}
-                className={`group relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition ${
-                  teamDropOpen ? 'text-brand-700' : 'text-cream-800 hover:text-brand-600'
-                }`}
-              >
-                {teamDropOpen && (
-                  <motion.span layoutId="nav-pill-team" className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-100/90 to-sage-100/90 shadow-sm" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
-                )}
-                <Users className="relative h-4 w-4 transition-transform group-hover:scale-110" />
-                <span className="relative">Kadromuz</span>
-                <ChevronDown className={`relative h-3.5 w-3.5 transition-transform ${teamDropOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <AnimatePresence>
-                {teamDropOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl shadow-cream-900/10 backdrop-blur-xl"
-                  >
-                    {teamSubLinks.map((sub) => (
-                      <Link
-                        key={sub.to}
-                        to={sub.to}
-                        onClick={() => setTeamDropOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-cream-800 transition hover:bg-cream-50"
-                      >
-                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
-                          <sub.icon className="h-4 w-4" />
-                        </span>
-                        {sub.label}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <NavDropdown
+              label="Keşfet"
+              icon={Compass}
+              items={discoverSubLinks}
+              isOpen={openDropdown === 'discover'}
+              onToggle={() => setOpenDropdown((v) => (v === 'discover' ? null : 'discover'))}
+              onClose={() => setOpenDropdown(null)}
+              layoutId="nav-pill-discover"
+              pathname={pathname}
+              activePaths={['/stories', '/blog']}
+            />
+            <NavDropdown
+              label="Kadromuz"
+              icon={Users}
+              items={teamSubLinks}
+              isOpen={openDropdown === 'team'}
+              onToggle={() => setOpenDropdown((v) => (v === 'team' ? null : 'team'))}
+              onClose={() => setOpenDropdown(null)}
+              layoutId="nav-pill-team"
+              pathname={pathname}
+              activePaths={['/team']}
+            />
           </nav>
           <div className="hidden items-center gap-2.5 md:flex">
             {isAuthenticated ? (
@@ -221,6 +208,22 @@ export default function PublicLayout() {
             >
               <div className="py-3">
                 {publicLinks.map((l) => renderMobileLink(l))}
+                <div className="mt-1">
+                  <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-cream-800/40">Keşfet</p>
+                  {discoverSubLinks.map((sub) => (
+                    <Link
+                      key={sub.to}
+                      to={sub.to}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === sub.to || pathname.startsWith(`${sub.to}/`) ? 'bg-brand-100/70 text-brand-700' : 'text-cream-800 hover:bg-cream-100'}`}
+                    >
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
+                        <sub.icon className="h-4 w-4" />
+                      </span>
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
                 <div className="mt-1">
                   <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-cream-800/40">Kadromuz</p>
                   {teamSubLinks.map((sub) => (

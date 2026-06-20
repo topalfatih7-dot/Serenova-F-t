@@ -10,20 +10,25 @@ import PhotoUpload from '../components/ui/PhotoUpload'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
-  User, Bell, Shield, CreditCard, LogOut, Edit, CalendarClock, CalendarDays,
+  User, Bell, LogOut, Edit, CalendarClock, CalendarDays,
   Dumbbell, Apple, ClipboardList, ChevronRight, MapPin, Mail, Phone, Camera,
-  Sparkles, Flame, CalendarCheck,
+  Flame, CalendarCheck, Scale, Ruler, Heart, Shield, Activity,
 } from 'lucide-react'
 import VideoJoinLink from '../components/video/VideoJoinLink'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
 const MEMBERSHIP_LABELS = { free: 'Ücretsiz', gumus: 'Gümüş', altin: 'Altın', platinum: 'Platinum', premium: 'Premium' }
+const STATUS_LABELS = { active: 'Aktif', paused: 'Dondurulmuş', cancelled: 'İptal' }
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }),
+}
 
 export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
-    coachSessions, dietitianSessions,
-    updateProfile, updateSettings, logout,
+    coachSessions, dietitianSessions, updateProfile, updateSettings, logout,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
@@ -43,7 +48,7 @@ export default function ProfilePage() {
   const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || [])]
     .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 4)
+    .slice(0, 3)
 
   const upcomingCount = [...(coachSessions || []), ...(dietitianSessions || [])]
     .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date()).length
@@ -60,231 +65,254 @@ export default function ProfilePage() {
     toast('Çıkış yapıldı', 'info')
   }
 
-  const stats = [
-    { icon: ClipboardList, label: 'Program', value: myPrograms.length, color: 'text-brand-600 bg-brand-50' },
-    { icon: CalendarCheck, label: 'Randevu', value: upcomingCount, color: 'text-sage-600 bg-sage-50' },
-    { icon: Flame, label: 'Seri', value: user.streak || 0, color: 'text-amber-600 bg-amber-50' },
+  const quickLinks = [
+    { to: '/programs', icon: ClipboardList, label: 'Programlarım', sub: `${myPrograms.length} program`, color: 'from-brand-500 to-brand-600' },
+    { to: '/calendar', icon: CalendarDays, label: 'Takvim', sub: 'Müsaitlik', color: 'from-sage-500 to-emerald-600' },
+    { to: '/calorie', icon: Flame, label: 'Kalori', sub: 'AI analiz', color: 'from-amber-500 to-orange-600' },
+    { to: '/support', icon: Shield, label: 'Destek', sub: 'Üyelik işlemleri', color: 'from-violet-500 to-purple-600' },
+  ]
+
+  const bodyMetrics = [
+    { icon: Scale, label: 'Kilo', value: user.weight ? `${user.weight} kg` : '—' },
+    { icon: Ruler, label: 'Boy', value: user.height ? `${user.height} cm` : '—' },
+    { icon: Activity, label: 'Bel', value: user.waist ? `${user.waist} cm` : '—' },
+    { icon: Heart, label: 'Yaş', value: user.age || '—' },
   ]
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-5 pb-8 sm:space-y-6">
 
-      {/* ════ SOSYAL MEDYA TARZI PROFİL BAŞLIĞI ════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm"
-      >
-        {/* Kapak — renkli gradient + orb'lar */}
-        <div className="relative h-32 bg-gradient-to-br from-brand-500 via-brand-600 to-sage-600 sm:h-40">
-          <div aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-          <div aria-hidden className="absolute right-6 top-4 h-24 w-24 rounded-full bg-gold-400/25 blur-2xl" />
-          <div aria-hidden className="absolute inset-0 opacity-30" style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px)',
-            backgroundSize: '22px 22px',
-          }} />
+      {/* Hero */}
+      <motion.div variants={fadeUp} initial="hidden" animate="show" className="relative overflow-hidden rounded-3xl border border-cream-200/80 bg-white shadow-sm">
+        <div className="relative h-36 bg-gradient-to-br from-brand-600 via-brand-500 to-sage-500 sm:h-44">
+          <div aria-hidden className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl" />
+          <div aria-hidden className="absolute bottom-0 right-0 h-32 w-32 rounded-full bg-gold-300/30 blur-2xl" />
           <button
             type="button"
             onClick={() => setEditOpen(true)}
-            className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3.5 py-2 text-sm font-semibold text-cream-900 shadow-sm backdrop-blur transition hover:bg-white"
+            className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-2 text-xs font-semibold text-cream-900 shadow-sm backdrop-blur transition hover:bg-white sm:text-sm"
           >
-            <Edit className="h-4 w-4" /> Düzenle
+            <Edit className="h-3.5 w-3.5" /> Profili Düzenle
           </button>
         </div>
 
-        {/* Avatar + isim */}
-        <div className="px-5 pb-5 sm:px-7 sm:pb-7">
-          <div className="-mt-12 flex flex-col items-center text-center sm:-mt-14 sm:flex-row sm:items-end sm:text-left">
-            <div className="relative">
+        <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
+            <div className="relative shrink-0">
               {user.photo ? (
-                <img src={user.photo} alt={user.name} className="h-24 w-24 rounded-full object-cover ring-4 ring-white shadow-md sm:h-28 sm:w-28" />
+                <img src={user.photo} alt={user.name} className="h-28 w-28 rounded-2xl object-cover ring-4 ring-white shadow-lg sm:h-32 sm:w-32" />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-sage-400 text-4xl font-bold text-white ring-4 ring-white shadow-md sm:h-28 sm:w-28">
+                <div className="flex h-28 w-28 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-sage-500 text-4xl font-bold text-white ring-4 ring-white shadow-lg sm:h-32 sm:w-32">
                   {user.name?.charAt(0)}
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
-                className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white shadow ring-2 ring-white transition hover:bg-brand-600"
-                aria-label="Fotoğrafı değiştir"
+                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-white shadow ring-2 ring-white transition hover:bg-brand-600"
+                aria-label="Fotoğraf değiştir"
               >
                 <Camera className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-3 flex-1 sm:mb-2 sm:ml-5 sm:mt-0">
-              <h1 className="font-display text-xl font-bold text-cream-900 sm:text-2xl">{user.name}</h1>
-              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-cream-800/60 sm:justify-start">
-                <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {user.email}</span>
+
+            <div className="min-w-0 flex-1 text-center sm:pb-1 sm:text-left">
+              <h1 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">{user.name}</h1>
+              <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-cream-800/60 sm:justify-start">
+                <span className="flex items-center gap-1 truncate"><Mail className="h-3.5 w-3.5 shrink-0" /> {user.email}</span>
                 {user.city && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {user.city}</span>}
               </div>
-              <div className="mt-2 flex justify-center sm:justify-start">
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
+                <span className="rounded-full bg-cream-100 px-3 py-1 text-xs font-medium text-cream-800/70">
+                  {MEMBERSHIP_LABELS[membership] || 'Ücretsiz'} · {STATUS_LABELS[membershipStatus] || membershipStatus}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* İstatistik şeridi */}
-          <div className="mt-5 grid grid-cols-3 gap-3 border-t border-cream-100 pt-5">
-            {stats.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-cream-50 py-3">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.color}`}>
-                  <s.icon className="h-4 w-4" />
-                </span>
-                <span className="font-display text-lg font-bold text-cream-900">{s.value}</span>
-                <span className="text-[11px] text-cream-800/55">{s.label}</span>
-              </div>
+          {/* Stats */}
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            {[
+              { icon: ClipboardList, label: 'Program', value: myPrograms.length },
+              { icon: CalendarCheck, label: 'Randevu', value: upcomingCount },
+              { icon: Flame, label: 'Seri', value: user.streak || 0 },
+              { icon: Dumbbell, label: 'Koç', value: assignedCoach ? '✓' : '—' },
+            ].map((s, i) => (
+              <motion.div
+                key={s.label}
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                custom={i + 1}
+                className="rounded-2xl border border-cream-100 bg-gradient-to-br from-cream-50 to-white p-3 text-center sm:p-4"
+              >
+                <s.icon className="mx-auto h-4 w-4 text-brand-500 sm:h-5 sm:w-5" />
+                <p className="mt-1 font-display text-xl font-bold text-cream-900 sm:text-2xl">{s.value}</p>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45 sm:text-xs">{s.label}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </motion.div>
 
-      {/* Programlarım kısayolu */}
-      <Link
-        to="/programs"
-        className="flex items-center gap-4 rounded-2xl border border-cream-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-sm"
-      >
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
-          <ClipboardList className="h-5 w-5" />
-        </span>
-        <div className="flex-1">
-          <p className="font-semibold text-cream-900">Programlarım</p>
-          <p className="text-sm text-cream-800/60">
-            {myPrograms.length > 0 ? `${myPrograms.length} antrenman/beslenme programı` : 'Koç ve diyetisyen programlarınız'}
-          </p>
-        </div>
-        <ChevronRight className="h-5 w-5 text-cream-800/30" />
-      </Link>
-
-      {/* Detay kartları */}
-      <div className="grid gap-6 sm:grid-cols-2">
-        {/* Kişisel Bilgiler */}
-        <div className="rounded-2xl border border-cream-200 bg-white p-6 sm:col-span-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-brand-500" />
-              <h2 className="font-semibold text-cream-900">Kişisel Bilgiler</h2>
-            </div>
-            <button type="button" onClick={() => setEditOpen(true)} className="text-xs font-semibold text-brand-600 hover:underline">
-              Düzenle
-            </button>
-          </div>
-          <div className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {[
-              ['Telefon', user.phone || '—'],
-              ['Yaş', user.age || '—'],
-              ['Cinsiyet', GENDER_LABELS[user.gender] || '—'],
-              ['Şehir', user.city || '—'],
-              ['Kilo', user.weight ? `${user.weight} kg` : '—'],
-              ['Boy', user.height ? `${user.height} cm` : '—'],
-              ['Bel çevresi', user.waist ? `${user.waist} cm` : '—'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between border-b border-cream-50 pb-2 text-sm">
-                <span className="text-cream-800/60">{k}</span>
-                <span className="font-medium text-cream-900">{v}</span>
+      {/* Quick links */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        {quickLinks.map((item, i) => (
+          <motion.div key={item.to} variants={fadeUp} initial="hidden" animate="show" custom={i}>
+            <Link
+              to={item.to}
+              className="group flex flex-col gap-2 rounded-2xl border border-cream-200 bg-white p-4 transition hover:border-brand-200 hover:shadow-md"
+            >
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white shadow-sm transition group-hover:scale-105`}>
+                <item.icon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-cream-900">{item.label}</p>
+                <p className="text-xs text-cream-800/50">{item.sub}</p>
               </div>
-            ))}
-          </div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
+        {/* Sol: sağlık + kişisel */}
+        <div className="space-y-5 lg:col-span-3">
+          {/* Vücut metrikleri */}
+          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={2} className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-semibold text-cream-900">
+                <Activity className="h-5 w-5 text-brand-500" /> Sağlık Özeti
+              </h2>
+              <button type="button" onClick={() => setEditOpen(true)} className="text-xs font-semibold text-brand-600 hover:underline">Güncelle</button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {bodyMetrics.map((m) => (
+                <div key={m.label} className="rounded-xl bg-cream-50 p-3 text-center">
+                  <m.icon className="mx-auto h-4 w-4 text-brand-500" />
+                  <p className="mt-2 font-display text-lg font-bold text-cream-900">{m.value}</p>
+                  <p className="text-[11px] text-cream-800/50">{m.label}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Kişisel bilgiler */}
+          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={3} className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
+            <h2 className="flex items-center gap-2 font-semibold text-cream-900">
+              <User className="h-5 w-5 text-brand-500" /> Kişisel Bilgiler
+            </h2>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                ['Telefon', user.phone || '—'],
+                ['Cinsiyet', GENDER_LABELS[user.gender] || '—'],
+                ['Şehir', user.city || '—'],
+                ['E-posta', user.email],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-xl bg-cream-50/80 px-4 py-3">
+                  <dt className="text-[11px] font-medium uppercase tracking-wide text-cream-800/45">{k}</dt>
+                  <dd className="mt-0.5 truncate text-sm font-medium text-cream-900">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </motion.div>
         </div>
 
-        {/* Bildirim Ayarları */}
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-brand-500" />
-            <h2 className="font-semibold text-cream-900">Bildirim Ayarları</h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {[
-              { key: 'emailNotifs', label: 'E-posta bildirimleri' },
-              { key: 'pushNotifs', label: 'Push bildirimleri' },
-              { key: 'reminderNotifs', label: 'Hatırlatıcılar' },
-            ].map((t) => (
-              <label key={t.key} className="flex cursor-pointer items-center justify-between">
-                <span className="text-sm text-cream-800/80">{t.label}</span>
-                <input
-                  type="checkbox"
-                  checked={!!settings[t.key]}
-                  onChange={(e) => updateSettings({ [t.key]: e.target.checked })}
-                  className="h-4 w-4 accent-brand-500"
-                />
-              </label>
-            ))}
-          </div>
-        </div>
+        {/* Sağ: bildirim + abonelik */}
+        <div className="space-y-5 lg:col-span-2">
+          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={3} className="rounded-2xl border border-cream-200 bg-gradient-to-br from-brand-50/80 to-white p-5 sm:p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-cream-800/50">Üyelik</h2>
+            <p className="mt-2 font-display text-2xl font-bold text-cream-900">{MEMBERSHIP_LABELS[membership] || 'Ücretsiz'}</p>
+            <p className="mt-1 text-sm text-cream-800/60">
+              Durum: <span className="font-medium capitalize text-cream-900">{STATUS_LABELS[membershipStatus] || membershipStatus}</span>
+            </p>
+            {packageConfig && membership !== 'free' && (
+              <ul className="mt-4 space-y-2 text-xs text-cream-800/65">
+                {(Number(packageConfig.coachMeetingsPerWeek) || 0) > 0 && (
+                  <li className="flex items-center gap-2"><Dumbbell className="h-3.5 w-3.5 text-brand-500" /> Haftada {packageConfig.coachMeetingsPerWeek} koç görüşmesi</li>
+                )}
+                {(Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0 && (
+                  <li className="flex items-center gap-2"><Apple className="h-3.5 w-3.5 text-sage-500" /> Ayda {packageConfig.dietitianMeetingsPerMonth} diyetisyen görüşmesi</li>
+                )}
+              </ul>
+            )}
+            <p className="mt-4 text-xs text-cream-800/45">
+              Plan değişikliği için <Link to="/support" className="font-semibold text-brand-600 hover:underline">Destek</Link> üzerinden talep oluşturabilirsiniz.
+            </p>
+          </motion.div>
 
-        {/* Abonelik */}
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-brand-500" />
-            <h2 className="font-semibold text-cream-900">Abonelik</h2>
-          </div>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-cream-800/60">Plan</span>
-              <span className="font-medium text-cream-900">{MEMBERSHIP_LABELS[membership] || 'Ücretsiz'}</span>
+          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={4} className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
+            <h2 className="flex items-center gap-2 font-semibold text-cream-900">
+              <Bell className="h-5 w-5 text-brand-500" /> Bildirimler
+            </h2>
+            <div className="mt-4 space-y-3">
+              {[
+                { key: 'emailNotifs', label: 'E-posta' },
+                { key: 'pushNotifs', label: 'Push' },
+                { key: 'reminderNotifs', label: 'Hatırlatıcı' },
+              ].map((t) => (
+                <label key={t.key} className="flex cursor-pointer items-center justify-between rounded-xl bg-cream-50 px-4 py-3">
+                  <span className="text-sm text-cream-800">{t.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={!!settings[t.key]}
+                    onChange={(e) => updateSettings({ [t.key]: e.target.checked })}
+                    className="h-5 w-5 accent-brand-500"
+                  />
+                </label>
+              ))}
             </div>
-            <div className="flex justify-between">
-              <span className="text-cream-800/60">Durum</span>
-              <span className="font-medium capitalize text-cream-900">{membershipStatus}</span>
-            </div>
-          </div>
-          <Link
-            to={`/onboarding?plan=${membership === 'free' ? 'gumus' : membership}`}
-            className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-105"
-          >
-            <Sparkles className="h-4 w-4" /> Planı Değiştir
-          </Link>
+          </motion.div>
         </div>
       </div>
 
-      {/* Uzmanlar & Randevular */}
+      {/* Uzmanlar */}
       {membership !== 'free' && hasSupport && (
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <div className="flex items-center gap-2">
-            <CalendarClock className="h-5 w-5 text-brand-500" />
-            <h2 className="font-semibold text-cream-900">Uzmanlarım & Randevular</h2>
+        <motion.div variants={fadeUp} initial="hidden" animate="show" custom={5} className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-semibold text-cream-900">
+              <CalendarClock className="h-5 w-5 text-brand-500" /> Uzmanlarım
+            </h2>
+            <Link to="/calendar" className="text-xs font-semibold text-brand-600 hover:underline">Takvime git</Link>
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {(Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
-              <div className="flex items-center gap-3 rounded-xl bg-cream-50 p-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
-                  <Dumbbell className="h-4 w-4" />
+              <div className="flex items-center gap-3 rounded-xl border border-cream-100 bg-cream-50/50 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+                  <Dumbbell className="h-5 w-5" />
                 </span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-cream-900">Koç</p>
-                  <p className="text-xs text-cream-800/60">
-                    {assignedCoach?.name || 'Henüz atanmadı'} · Haftada {packageConfig.coachMeetingsPerWeek} görüşme
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-cream-900">{assignedCoach?.name || 'Atanmadı'}</p>
+                  <p className="text-xs text-cream-800/55">Koç · Haftada {packageConfig.coachMeetingsPerWeek} görüşme</p>
                 </div>
-                <Link to="/schedule/coach" className="text-xs font-semibold text-brand-600 hover:underline">Randevular</Link>
+                <Link to="/schedule/coach" className="shrink-0 text-brand-600"><ChevronRight className="h-5 w-5" /></Link>
               </div>
             )}
             {(Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && (
-              <div className="flex items-center gap-3 rounded-xl bg-cream-50 p-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
-                  <Apple className="h-4 w-4" />
+              <div className="flex items-center gap-3 rounded-xl border border-cream-100 bg-cream-50/50 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
+                  <Apple className="h-5 w-5" />
                 </span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-cream-900">Diyetisyen</p>
-                  <p className="text-xs text-cream-800/60">
-                    {assignedDietitian?.name || 'Henüz atanmadı'} · Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-cream-900">{assignedDietitian?.name || 'Atanmadı'}</p>
+                  <p className="text-xs text-cream-800/55">Diyetisyen · Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme</p>
                 </div>
-                <Link to="/schedule/dietitian" className="text-xs font-semibold text-sage-600 hover:underline">Randevular</Link>
+                <Link to="/schedule/dietitian" className="shrink-0 text-sage-600"><ChevronRight className="h-5 w-5" /></Link>
               </div>
             )}
           </div>
           {upcomingSessions.length > 0 && (
             <div className="mt-4 border-t border-cream-100 pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/45">Yaklaşan Randevular</p>
-              <div className="space-y-1.5">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/45">Yaklaşan</p>
+              <div className="space-y-2">
                 {upcomingSessions.map((s) => {
                   const sessionType = coachSessions?.some((cs) => cs.id === s.id) ? 'coach' : 'dietitian'
                   return (
-                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream-50 px-3 py-2 text-sm">
-                      <span className="text-cream-800/70">{s.title}</span>
+                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 px-3 py-2.5 text-sm">
+                      <span className="font-medium text-cream-900">{s.title}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-cream-900">{format(new Date(s.date), 'd MMM, HH:mm', { locale: tr })}</span>
+                        <span className="text-xs text-cream-800/60">{format(new Date(s.date), 'd MMM, HH:mm', { locale: tr })}</span>
                         <VideoJoinLink session={s} sessionType={sessionType} size="sm" />
                       </div>
                     </div>
@@ -293,23 +321,16 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
-          <Link
-            to="/calendar"
-            className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100"
-          >
-            <CalendarDays className="h-4 w-4" /> Müsaitliğimi Takvimden Düzenle
-          </Link>
-        </div>
+        </motion.div>
       )}
 
-      <div className="flex gap-3">
-        <Link to="/support" className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cream-200 bg-white py-3 text-sm font-medium hover:bg-cream-50">
-          Üyelik İşlemleri (Destek)
-        </Link>
-        <button type="button" onClick={handleLogout} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cream-200 bg-white py-3 text-sm font-medium hover:bg-cream-50">
-          <LogOut className="h-4 w-4" /> Çıkış Yap
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+      >
+        <LogOut className="h-4 w-4" /> Çıkış Yap
+      </button>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profili Düzenle">
         <div className="space-y-4">

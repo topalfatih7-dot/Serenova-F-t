@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import { BRAND } from '../../config/brand'
 
-export default function BrandLogo({ size = 'md', linkTo = '/' }) {
+export default function BrandLogo({ size = 'md', linkTo = '/', variant = 'default' }) {
   const sizes = {
     sm: { box: 'h-8 w-8 text-xs', text: 'text-base' },
     md: { box: 'h-9 w-9 text-sm', text: 'text-lg' },
     lg: { box: 'h-11 w-11 text-base', text: 'text-xl' },
   }
   const s = sizes[size]
+  const light = variant === 'light'
 
   return (
     <Link to={linkTo} className="flex items-center gap-2.5">
@@ -15,8 +16,8 @@ export default function BrandLogo({ size = 'md', linkTo = '/' }) {
         {BRAND.initials}
       </span>
       <div className="leading-tight">
-        <span className={`font-display font-bold text-cream-900 ${s.text}`}>{BRAND.shortName}</span>
-        <span className="hidden text-[10px] font-medium text-cream-800/50 sm:block">Online Koçluk</span>
+        <span className={`font-display font-bold ${light ? 'text-white' : 'text-cream-900'} ${s.text}`}>{BRAND.shortName}</span>
+        <span className={`hidden text-[10px] font-medium sm:block ${light ? 'text-white/60' : 'text-cream-800/50'}`}>Online Koçluk</span>
       </div>
     </Link>
   )

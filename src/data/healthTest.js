@@ -300,6 +300,33 @@ export function getApplicableSections(gender) {
   return HEALTH_SECTIONS.filter((s) => !s.genderOnly || s.genderOnly === gender)
 }
 
+// Tüm soruları düz liste olarak döndürür (kayıt akışında soru-soru gösterim için).
+export function getApplicableQuestions(gender) {
+  return getApplicableSections(gender).flatMap((section) =>
+    section.questions.map((q) => ({
+      ...q,
+      sectionId: section.id,
+      sectionTitle: section.title,
+      sectionIcon: section.icon,
+    })),
+  )
+}
+
+export function isQuestionAnswered(q, healthTest) {
+  if (!q) return false
+  const val = healthTest?.[q.key]
+  if (q.type === 'multi') {
+    if (!q.required) return true
+    return Array.isArray(val) && val.length > 0
+  }
+  if (q.type === 'text') {
+    if (!q.required) return true
+    return typeof val === 'string' && val.trim().length > 0
+  }
+  if (!q.required) return true
+  return val !== '' && val != null
+}
+
 // Bir bölümün zorunlu soruları cevaplanmış mı?
 export function isSectionComplete(section, healthTest) {
   return section.questions.every((q) => {

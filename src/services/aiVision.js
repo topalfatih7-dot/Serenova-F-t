@@ -1,11 +1,8 @@
 /**
  * Fotoğraflı Kalori Tespiti — frontend servisi.
- * Yemek fotoğrafını küçültüp /api/ai-food-vision endpoint'ine gönderir.
- * API anahtarı sunucuda tutulur (bkz. api/ai-food-vision.js).
- *
- * Maliyet optimizasyonu: görüntü gönderilmeden önce maks. 1024px'e küçültülür
- * ve JPEG %80 kalite ile sıkıştırılır → daha az giriş token → daha düşük maliyet.
  */
+
+import { formatAiError } from '../utils/aiErrors.js'
 
 const MAX_DIMENSION = 1024
 const JPEG_QUALITY = 0.8
@@ -68,10 +65,14 @@ export async function analyzeFoodPhoto(file) {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || 'Analiz başarısız' }
+      return {
+        ok: false,
+        code: data.code,
+        error: formatAiError(data.error, data.code),
+      }
     }
     return { ok: true, label: data.label, items: data.items, confidence: data.confidence }
   } catch (e) {
-    return { ok: false, error: String(e.message || e) }
+    return { ok: false, code: 'network_error', error: formatAiError(e.message, 'network_error') }
   }
 }
