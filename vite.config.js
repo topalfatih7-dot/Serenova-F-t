@@ -43,9 +43,13 @@ function localApiPlugin() {
 
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split('?')[0] || ''
-        if (!url.startsWith('/api/')) return next()
+        if (url === '/sitemap.xml') {
+          req.url = '/api/sitemap'
+        }
+        const apiPath = req.url?.split('?')[0] || ''
+        if (!apiPath.startsWith('/api/')) return next()
 
-        const rel = url.replace(/^\/api\//, '')
+        const rel = apiPath.replace(/^\/api\//, '')
         const handlerPath = resolve(apiDir, `${rel}.js`)
         if (!handlerPath.startsWith(apiDir)) {
           res.statusCode = 403
@@ -78,6 +82,9 @@ function localApiPlugin() {
             end(msg = '') {
               res.writeHead(this.statusCode, this.headers)
               res.end(msg)
+            },
+            send(msg) {
+              this.end(msg)
             },
           }
 

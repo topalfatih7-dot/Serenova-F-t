@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Mail, Phone, Clock, CalendarDays } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { staffRoleMeta } from '../utils/staffRoles'
+import SeoHead from '../components/seo/SeoHead'
+import { buildPersonSchema, buildBreadcrumbSchema, truncateDescription } from '../config/seo'
 import { weekdayLabel } from '../components/package/SupportScheduler'
 
 export default function StaffProfilePage() {
@@ -18,6 +20,21 @@ export default function StaffProfilePage() {
   const RoleIcon = meta.icon
 
   return (
+    <>
+      <SeoHead
+        title={`${member.name} — ${meta.label}`}
+        description={truncateDescription(member.bio || member.description || `${member.name}, Yeni Form ${meta.label.toLowerCase()} kadrosu.`)}
+        canonicalPath={`/team/${member.id}`}
+        ogImage={member.photo || undefined}
+        jsonLd={[
+          buildPersonSchema(member),
+          buildBreadcrumbSchema([
+            { name: 'Ana Sayfa', path: '/' },
+            { name: meta.label, path: `/team/${member.role === 'coach' ? 'coaches' : member.role === 'dietitian' ? 'dietitians' : 'doctors'}` },
+            { name: member.name, path: `/team/${member.id}` },
+          ]),
+        ]}
+      />
     <article className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <Link to={{ pathname: '/', hash: 'kadromuz' }} className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/60 hover:text-brand-600">
         <ArrowLeft className="h-4 w-4" />
@@ -101,5 +118,6 @@ export default function StaffProfilePage() {
         </div>
       </motion.div>
     </article>
+    </>
   )
 }

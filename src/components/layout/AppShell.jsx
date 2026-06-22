@@ -7,6 +7,7 @@ import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'
 import ConsentBanner from '../ui/ConsentBanner'
+import NoIndexHead from '../seo/NoIndexHead'
 import { useApp } from '../../context/AppContext'
 import { BRAND } from '../../config/brand'
 
@@ -41,6 +42,7 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <NoIndexHead />
       <Sidebar />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PanelMobileMenu

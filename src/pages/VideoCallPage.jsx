@@ -14,6 +14,7 @@ import {
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
 import { formatMinutesTr } from '../utils/formatDuration'
 import ParticipantTile, { CallControls, DeviceSelectors, WaitingTile } from '../components/video/VideoCallUI'
+import NoIndexHead from '../components/seo/NoIndexHead'
 
 function ConfigMissingPanel() {
   return (
@@ -102,15 +103,20 @@ export default function VideoCallPage({ audience = 'member' }) {
 
   if (!configured) {
     return (
+      <>
+        <NoIndexHead />
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-100 to-brand-50 p-4">
         <ConfigMissingPanel />
       </div>
+      </>
     )
   }
 
   if (context.error || !context.roomAccess?.ok) {
     const message = context.error || context.roomAccess?.reason
     return (
+      <>
+        <NoIndexHead />
       <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
         <div className="max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
           <AlertTriangle className="mx-auto h-10 w-10 text-amber-500" />
@@ -121,6 +127,7 @@ export default function VideoCallPage({ audience = 'member' }) {
           </Link>
         </div>
       </div>
+      </>
     )
   }
 
@@ -138,6 +145,8 @@ export default function VideoCallPage({ audience = 'member' }) {
       : { dot: 'bg-white/40', text: 'Hazır' }
 
   return (
+    <>
+      <NoIndexHead />
     <div className="flex h-dvh flex-col overflow-hidden bg-gray-950 text-white">
       <header className={`shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r ${meta.gradient} px-3 py-2.5 sm:px-6 sm:py-3`}>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -251,6 +260,7 @@ export default function VideoCallPage({ audience = 'member' }) {
         />
       </footer>
     </div>
+    </>
   )
 }
 

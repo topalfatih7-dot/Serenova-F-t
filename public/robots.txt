@@ -1,0 +1,26 @@
+# Yeni Form — robots.txt
+# Production: VITE_SITE_URL env ile sitemap URL'i otomatik güncellenir (api/sitemap.js)
+
+User-agent: *
+Allow: /
+Allow: /membership
+Allow: /onboarding
+Allow: /stories
+Allow: /blog
+Allow: /team/
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /staff
+Disallow: /call
+Disallow: /calendar
+Disallow: /calorie
+Disallow: /schedule
+Disallow: /notifications
+Disallow: /support
+Disallow: /programs
+Disallow: /library
+Disallow: /profile
+Disallow: /api/
+
+Sitemap: https://www.yeniform.com/sitemap.xml

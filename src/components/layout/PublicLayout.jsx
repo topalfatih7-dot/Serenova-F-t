@@ -7,6 +7,7 @@ import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
 import ScrollToTop from './ScrollToTop'
 import NavDropdown from './NavDropdown'
+import PublicRouteSeo from '../seo/PublicRouteSeo'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 import { scrollToContactSection } from '../../utils/scrollToContact'
@@ -126,11 +127,18 @@ export default function PublicLayout() {
   return (
     <div className="wellness-mesh-bg min-h-screen">
       <ScrollToTop />
+      <PublicRouteSeo />
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-brand-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Ana içeriğe atla
+      </a>
       <PromoBanner />
       <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <BrandLogo />
-          <nav ref={navRef} className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
+          <nav ref={navRef} aria-label="Ana menü" className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
             {publicLinks.map((l) => renderNavLink(l))}
             <NavDropdown
               label="Keşfet"
@@ -278,7 +286,9 @@ export default function PublicLayout() {
           )}
         </AnimatePresence>
       </header>
-      <Outlet />
+      <main id="main-content">
+        <Outlet />
+      </main>
       <footer className="relative overflow-hidden border-t border-brand-800/30 bg-gradient-to-br from-cream-900 via-brand-900 to-sage-900 py-14 text-cream-100">
         <div aria-hidden className="wellness-orb -left-20 top-0 h-64 w-64 bg-brand-500/20" />
         <div aria-hidden className="wellness-orb -right-16 bottom-0 h-72 w-72 bg-sage-500/15" />

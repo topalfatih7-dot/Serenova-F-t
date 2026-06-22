@@ -159,4 +159,39 @@ npx vercel env pull .env.vercel.local
 
 ---
 
-*Son güncelleme: 2026-06-20 — Gemini + Daily + yerel API dev*
+---
+
+## SEO & Search Console (yeniform.com) — 2026-06-22
+
+Detaylı adımlar: **`SEO_SETUP.md`**
+
+### Tamamlanan (kod tarafı)
+- [x] `VITE_SITE_URL` + `APP_URL` → `.env.local` = `https://yeniform.com`
+- [x] `public/og-image.png` (1200×630 sosyal paylaşım görseli)
+- [x] `public/robots.txt`, `/sitemap.xml` API, sayfa meta + JSON-LD
+- [x] `index.html` canonical + OG mutlak URL'ler
+
+### Sizin yapmanız gerekenler
+
+| # | Görev | Nerede |
+|---|--------|--------|
+| 1 | ~~**Vercel env ekle**~~ ✅ `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com` (Production, Preview, Development) | Vercel — 2026-06-22 |
+| 2 | **Redeploy** — env sonrası production deploy | Vercel |
+| 3 | **Google Search Console** — `https://yeniform.com` property ekle | [search.google.com/search-console](https://search.google.com/search-console) |
+| 4 | **Doğrulama meta etiketi** — Search Console kodunu `index.html` içine yapıştır, deploy et | `index.html` (yorum satırı hazır) |
+| 5 | **Sitemap gönder** — `sitemap.xml` | Search Console → Site haritaları |
+| 6 | **Ana sayfa dizine ekleme isteği** | Search Console → URL denetimi |
+| 7 | **OG test** — Facebook/LinkedIn debugger ile `https://yeniform.com` | `SEO_SETUP.md` §3 |
+| 8 | **(Opsiyonel) GA4** — Analytics measurement ID | `SEO_SETUP.md` §5 |
+| 9 | **(Opsiyonel) Logo güncelleme** — `public/brand-logo.png` kaydet → `npm run og:image` | Yerel |
+
+### Vercel env tablosuna eklenecek satırlar
+
+| Değişken | Değer | Ortamlar |
+|----------|-------|----------|
+| `VITE_SITE_URL` | `https://yeniform.com` | Production, Preview, Development |
+| `APP_URL` | `https://yeniform.com` | Production, Preview |
+
+---
+
+*Son güncelleme: 2026-06-22 — SEO + yeniform.com + OG PNG*

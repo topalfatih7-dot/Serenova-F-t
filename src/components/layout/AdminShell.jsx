@@ -6,6 +6,7 @@ import {
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
+import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 
 const adminNav = [
@@ -30,6 +31,7 @@ export default function AdminShell() {
 
   return (
     <div className="flex min-h-screen bg-cream-50">
+      <NoIndexHead />
       <aside className="hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white lg:flex">
         <div className="border-b border-cream-100 p-5">
           <BrandLogo linkTo="/admin" />

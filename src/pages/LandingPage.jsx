@@ -18,6 +18,12 @@ import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { usePlatformDisplayStats } from '../hooks/usePlatformDisplayStats'
+import JsonLd from '../components/seo/JsonLd'
+import {
+  buildOrganizationSchema,
+  buildWebSiteSchema,
+  buildFaqSchema,
+} from '../config/seo'
 
 const staticStats = [
   { value: '%94', label: 'Memnuniyet' },
@@ -52,6 +58,13 @@ export default function LandingPage() {
 
   return (
     <div className="overflow-x-hidden">
+      <JsonLd
+        data={[
+          buildOrganizationSchema(),
+          buildWebSiteSchema(),
+          buildFaqSchema(faqs),
+        ]}
+      />
 
       {/* ═══════════════════════════════════════════
           HERO — Video Arka Plan + Asimetrik Kart
@@ -76,7 +89,7 @@ export default function LandingPage() {
             type="video/mp4"
           />
           {/* Video yoksa/oynatılamazsa görsel fallback */}
-          <img src="/hero-bg.png" alt="" className="h-full w-full object-cover" />
+          <img src="/hero-bg.png" alt="Yeni Form wellness platformu — fitness ve sağlıklı yaşam" className="h-full w-full object-cover" />
         </video>
 
         {/* Gradient overlay — sol koyu, sağ açık */}

@@ -5,6 +5,8 @@ import { ArrowLeft, Clock, User, ArrowRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { useApp } from '../context/AppContext'
+import SeoHead from '../components/seo/SeoHead'
+import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription } from '../config/seo'
 
 const ACCENTS = {
   brand: 'from-brand-400 to-brand-600',
@@ -30,6 +32,21 @@ export default function BlogPostPage() {
   const paragraphs = post.content.split('\n\n')
 
   return (
+    <>
+      <SeoHead
+        title={post.title}
+        description={post.excerpt || truncateDescription(post.content)}
+        canonicalPath={`/blog/${post.id}`}
+        ogType="article"
+        jsonLd={[
+          buildArticleSchema(post),
+          buildBreadcrumbSchema([
+            { name: 'Ana Sayfa', path: '/' },
+            { name: 'Blog', path: '/blog' },
+            { name: post.title, path: `/blog/${post.id}` },
+          ]),
+        ]}
+      />
     <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <Link to="/blog" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline">
         <ArrowLeft className="h-4 w-4" /> Tüm yazılar
@@ -72,5 +89,6 @@ export default function BlogPostPage() {
         Bu içerik genel bilgilendirme amaçlıdır; tıbbi teşhis veya tedavi yerine geçmez. Sağlık sorunlarınız için doktorunuza danışın.
       </div>
     </article>
+    </>
   )
 }

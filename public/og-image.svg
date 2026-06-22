@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Yeni Form  Online Koçluk ve Wellness">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b4332"/>
+      <stop offset="50%" stop-color="#2d6a4f"/>
+      <stop offset="100%" stop-color="#40916c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="980" cy="120" r="180" fill="#52b788" opacity="0.25"/>
+  <circle cx="200" cy="520" r="220" fill="#95d5b2" opacity="0.15"/>
+  <text x="80" y="280" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Yeni Form</text>
+  <text x="80" y="360" font-family="system-ui, sans-serif" font-size="36" font-weight="500" fill="#d8f3dc">Online Koçluk &amp; Wellness</text>
+  <text x="80" y="430" font-family="system-ui, sans-serif" font-size="24" fill="#b7e4c7">Ki_isel sal1k analizi · Koç &amp; diyetisyen · Beslenme programlar1</text>
+</svg>

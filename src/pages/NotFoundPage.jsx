@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Home, ArrowLeft, Search, LifeBuoy } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import SeoHead from '../components/seo/SeoHead'
 
 export default function NotFoundPage() {
   const { isAuthenticated, isAdmin, isStaff } = useApp()
@@ -9,6 +10,12 @@ export default function NotFoundPage() {
   const panelLink = isAdmin ? '/admin' : isStaff ? '/staff' : isAuthenticated ? '/dashboard' : null
 
   return (
+    <>
+      <SeoHead
+        title="Sayfa Bulunamadı (404)"
+        description="Aradığınız sayfa mevcut değil. Yeni Form ana sayfasına dönerek devam edebilirsiniz."
+        noindex
+      />
     <div className="relative flex min-h-[70vh] items-center justify-center overflow-hidden px-4 py-16 sm:px-6">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-20 top-10 h-64 w-64 rounded-full bg-brand-200/30 blur-3xl" />
@@ -87,5 +94,6 @@ export default function NotFoundPage() {
         </div>
       </motion.div>
     </div>
+    </>
   )
 }

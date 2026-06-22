@@ -3,7 +3,7 @@
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-22 (Bkz. §21: kayıt formu yeniden tasarım, hikaye gönderme, blog hero, telefon/e-posta doğrulama, **Stripe ödeme altyapısı**)
+> **Son güncelleme:** 2026-06-22 (Bkz. §23: **SEO altyapısı** — meta, JSON-LD, sitemap, robots.txt)
 
 ---
 
@@ -470,6 +470,7 @@ Kaynak: `src/App.jsx` satır 56–117
 |-------|------|------|
 | `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri |
 | `contact.js` | POST | Bize Ulaşın formu → Telegram |
+| `sitemap.js` | GET | Dinamik XML sitemap (`/sitemap.xml` rewrite) |
 
 ### 7.3 Supabase SQL (`supabase/`)
 
@@ -489,6 +490,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | Export |
 |-------|--------|
 | `brand.js` | `BRAND`, `ADMIN_CREDENTIALS` |
+| `seo.js` | `SEO`, `PAGE_SEO`, `getSiteUrl`, JSON-LD builder'ları |
 | `videoCall.js` | `VIDEO_CALL_CONFIG`, `buildRoomUrl`, `memberCallPath`, `staffCallPath`, `SESSION_TYPE_META` |
 | `testPayment.js` | `TEST_CARD`, `validateTestPayment` |
 
@@ -615,6 +617,8 @@ admin/AdminActivityPage.jsx
 
 **UI:** `BrandLogo`, `MembershipBadge`, `StatsCard`, `Modal`, `LoadingScreen`, `ConfigErrorScreen`, `EmptyState`, `Skeleton`, `FormField`, `PhoneField` (ülke kodlu telefon girişi), `PhotoUpload`, `Stepper`, `RangeSelector`, `ToggleGroup`, `DisclaimerBox`, `ConsentBanner`, `OnboardingTutorial`, `VideoPlayer`
 
+**SEO:** `SeoHead`, `PublicRouteSeo`, `JsonLd`, `NoIndexHead`
+
 ### 7.12 Stil
 
 | Dosya | Amaç |
@@ -640,6 +644,8 @@ Kaynak: `.env.example`
 | `VITE_DAILY_API_KEY` | İstemci (opsiyonel) | İleride REST API |
 | `VITE_VIDEO_JOIN_MINUTES_BEFORE` | İstemci | Randevu penceresi başlangıcı (dk) |
 | `VITE_VIDEO_JOIN_MINUTES_AFTER` | İstemci | Randevu penceresi bitişi (dk) |
+| `VITE_SITE_URL` | İstemci + sunucu | Canonical URL, sitemap, Open Graph (sonunda `/` yok) |
+| `APP_URL` | Sunucu | Sitemap/Stripe yedek site kökü |
 
 ---
 
@@ -711,6 +717,12 @@ Kaynak: `.env.example`
 | MobileNav bağlantı düzeltmesi | `src/components/layout/MobileNav.jsx` — `/builder` → `/membership` |
 | Giriş sonrası yönlendirme | `src/pages/auth/LoginPage.jsx` |
 | Rol kontrolü | `src/components/auth/RequireAuth.jsx` |
+| SEO meta / canonical | `src/components/seo/SeoHead.jsx` + `src/config/seo.js` |
+| Sayfa bazlı SEO | `src/config/seo.js` → `PAGE_SEO` |
+| Dinamik SEO (blog/kadro) | `BlogPostPage.jsx`, `StaffProfilePage.jsx` |
+| Sitemap | `api/sitemap.js` → `/sitemap.xml` |
+| robots.txt | `public/robots.txt` |
+| Open Graph görseli | `public/og-image.svg` (production'da PNG önerilir) |
 
 ---
 
@@ -1228,6 +1240,74 @@ Plan seç → (kayıt akışında önce ücretsiz hesap oluştur, oturum aç)
 
 ### Üyelik süresi doğrulaması
 - 4 haftalık planlar **28 gün** sonrasına biter (`computePremiumExpiresAt`); webhook da aynı hesabı kullanır (`computeExpiry`). DB'de doğrulandı (ör. 21 Haz → 19 Tem).
+
+---
+
+## 23. SEO Altyapısı (2026-06-22)
+
+### Genel
+React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni ile güncellenir. Google JS render destekler; ilk HTML'de de temel meta `index.html` içinde mevcuttur.
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `src/config/seo.js` | Site URL, varsayılan meta, `PAGE_SEO` rotaları, JSON-LD builder'ları |
+| `src/components/seo/SeoHead.jsx` | title, description, keywords, canonical, OG, Twitter Card, robots |
+| `src/components/seo/PublicRouteSeo.jsx` | PublicLayout'ta statik rotalar için otomatik meta |
+| `src/components/seo/JsonLd.jsx` | Yapılandırılmış veri script enjeksiyonu |
+| `src/components/seo/NoIndexHead.jsx` | Üye/staff/admin/video panelleri → `noindex, nofollow` |
+| `public/robots.txt` | Crawler kuralları + sitemap referansı |
+| `public/og-image.png` | Varsayılan sosyal paylaşım görseli (1200×630 PNG, yeniform.com) |
+| `public/og-image.svg` | Eski SVG yedek (artık PNG kullanılıyor) |
+| `SEO_SETUP.md` | Search Console + sitemap + OG kurulum rehberi |
+| `public/site.webmanifest` | PWA-lite manifest |
+| `api/sitemap.js` | Dinamik XML sitemap (blog + kadro profilleri Supabase'den) |
+
+### Sayfa SEO eşlemesi
+
+| Rota | Meta kaynağı | JSON-LD |
+|------|--------------|---------|
+| `/` | `PAGE_SEO['/']` + `PublicRouteSeo` | Organization, WebSite, FAQPage (`LandingPage`) |
+| `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/*` | `PAGE_SEO` | — |
+| `/blog/:id` | `BlogPostPage` → `SeoHead` | Article + BreadcrumbList |
+| `/team/:id` | `StaffProfilePage` → `SeoHead` | Person + BreadcrumbList |
+| `/login`, `/forgot-password` | `PAGE_SEO` | `noindex` |
+| `*` (404) | `NotFoundPage` | `noindex` |
+| `/dashboard`, `/admin/*`, `/staff/*`, `/call/*` | `NoIndexHead` | `noindex` |
+
+### Sitemap & robots
+- **URL:** `https://ALANADINIZ.com/sitemap.xml` (`vercel.json` rewrite → `api/sitemap.js`)
+- Statik rotalar + Supabase `posts` (published) + `staff` (active) otomatik eklenir.
+- `robots.txt` panel rotalarını `Disallow` eder.
+
+### Gerekli env
+```
+VITE_SITE_URL=https://yeniform.com   # canonical + OG (sonunda / yok)
+APP_URL=https://yeniform.com         # sitemap sunucu yedeği
+```
+
+**Canlı site:** https://yeniform.com
+
+### Production checklist (manuel)
+1. Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin (gerçek domain).
+2. Google Search Console'a site ekleyin → sitemap gönderin: `/sitemap.xml`
+3. `public/og-image.svg` yerine 1200×630 **PNG/JPG** (`og-image.png`) yükleyin; `src/config/seo.js` → `ogImage` güncelleyin (Facebook/LinkedIn SVG desteklemez).
+4. Google Analytics / Search Console doğrulama meta etiketi gerekiyorsa `index.html`'e ekleyin.
+5. Sosyal medya hesapları varsa `buildOrganizationSchema()` → `sameAs` dizisine URL ekleyin.
+
+### Erişilebilirlik (SEO ile ilişkili)
+- `PublicLayout`: skip link (`#main-content`), `<main>`, nav `aria-label`
+- Hero fallback görseline anlamlı `alt` metni
+
+### Değiştirilen/Eklenen Dosyalar (§23)
+- `src/config/seo.js`, `src/components/seo/*` (4 dosya)
+- `index.html`, `vercel.json`, `vite.config.js` (sitemap dev rewrite)
+- `public/robots.txt`, `public/og-image.svg`, `public/site.webmanifest`
+- `api/sitemap.js`
+- `src/components/layout/PublicLayout.jsx`, `AppShell.jsx`, `AdminShell.jsx`, `StaffShell.jsx`
+- `src/pages/LandingPage.jsx`, `BlogPostPage.jsx`, `StaffProfilePage.jsx`, `NotFoundPage.jsx`, `VideoCallPage.jsx`
+- `.env.example`
 
 ---
 
