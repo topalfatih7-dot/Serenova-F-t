@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { motion } from 'framer-motion'
@@ -14,6 +14,8 @@ import {
   Dumbbell, Apple, ClipboardList, ChevronRight, MapPin, Mail, Phone, Camera,
   Flame, CalendarCheck, Scale, Ruler, Heart, Shield, Activity,
 } from 'lucide-react'
+import PersonalInfoSection from '../components/profile/PersonalInfoSection'
+import { syncMemberHealthAssets } from '../services/memberHealthSync'
 import VideoJoinLink from '../components/video/VideoJoinLink'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek', other: 'Belirtilmedi' }
@@ -29,16 +31,38 @@ export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
     coachSessions, dietitianSessions, updateProfile, updateSettings, logout,
+    createProgram, exercises, refresh,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
   const { toast } = useToast()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Stripe plan değişikliği dönüşü
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      toast('Ödeme alındı! Planınız birkaç saniye içinde güncellenecek.', 'success')
+      refresh?.()
+      const t = setTimeout(() => refresh?.(), 4000)
+      const next = new URLSearchParams(searchParams)
+      next.delete('payment'); next.delete('session_id')
+      setSearchParams(next, { replace: true })
+      return () => clearTimeout(t)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const [healthEditOpen, setHealthEditOpen] = useState(false)
+  const [healthForm, setHealthForm] = useState({
+    age: user.age || '',
+    weight: user.weight || '',
+    height: user.height || '',
+    waist: user.waist || '',
+  })
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState({
     name: user.name, email: user.email, phone: user.phone || '', city: user.city,
-    weight: user.weight || '', height: user.height || '', waist: user.waist || '',
-    gender: user.gender || '', photo: user.photo || null,
+    photo: user.photo || null,
   })
 
   const hasSupport =
@@ -57,6 +81,33 @@ export default function ProfilePage() {
     updateProfile(form)
     setEditOpen(false)
     toast('Profil güncellendi', 'success')
+  }
+
+  const handleHealthSave = async () => {
+    await updateProfile(healthForm)
+    setHealthEditOpen(false)
+    const merged = { ...user, ...healthForm }
+    const result = await syncMemberHealthAssets({
+      user: merged,
+      exercises,
+      updateProfile,
+      createProgram,
+      myPrograms,
+    })
+    toast(
+      result.synced ? 'Sağlık özeti güncellendi ve programlarınız yenilendi.' : 'Sağlık özeti güncellendi.',
+      'success',
+    )
+  }
+
+  const openHealthEdit = () => {
+    setHealthForm({
+      age: user.age || '',
+      weight: user.weight || '',
+      height: user.height || '',
+      waist: user.waist || '',
+    })
+    setHealthEditOpen(true)
   }
 
   const handleLogout = () => {
@@ -185,7 +236,13 @@ export default function ProfilePage() {
               <h2 className="flex items-center gap-2 font-semibold text-cream-900">
                 <Activity className="h-5 w-5 text-brand-500" /> Sağlık Özeti
               </h2>
-              <button type="button" onClick={() => setEditOpen(true)} className="text-xs font-semibold text-brand-600 hover:underline">Güncelle</button>
+              <button
+                type="button"
+                onClick={openHealthEdit}
+                className="rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/25 transition hover:brightness-105 sm:text-sm"
+              >
+                Ölçüleri Güncelle
+              </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {bodyMetrics.map((m) => (
@@ -198,25 +255,8 @@ export default function ProfilePage() {
             </div>
           </motion.div>
 
-          {/* Kişisel bilgiler */}
-          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={3} className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 font-semibold text-cream-900">
-              <User className="h-5 w-5 text-brand-500" /> Kişisel Bilgiler
-            </h2>
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-              {[
-                ['Telefon', user.phone || '—'],
-                ['Cinsiyet', GENDER_LABELS[user.gender] || '—'],
-                ['Şehir', user.city || '—'],
-                ['E-posta', user.email],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded-xl bg-cream-50/80 px-4 py-3">
-                  <dt className="text-[11px] font-medium uppercase tracking-wide text-cream-800/45">{k}</dt>
-                  <dd className="mt-0.5 truncate text-sm font-medium text-cream-900">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </motion.div>
+          {/* Kişisel bilgiler — tam profil */}
+          <PersonalInfoSection user={user} />
         </div>
 
         {/* Sağ: bildirim + abonelik */}
@@ -332,25 +372,27 @@ export default function ProfilePage() {
         <LogOut className="h-4 w-4" /> Çıkış Yap
       </button>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profili Düzenle">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profil Fotoğrafı & İletişim">
         <div className="space-y-4">
           <PhotoUpload value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
           <FormField label="Ad Soyad" icon={User} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ad Soyad" />
           <FormField label="E-posta" icon={Mail} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="E-posta" />
           <FormField label="Telefon" icon={Phone} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="05XX XXX XX XX" />
           <FormField label="Şehir" icon={MapPin} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
-          <div className="grid grid-cols-3 gap-3">
-            <FormField label="Kilo (kg)" type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="Kilo" />
-            <FormField label="Boy (cm)" type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder="Boy" />
-            <FormField label="Bel (cm)" type="number" value={form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value })} placeholder="Bel" />
-          </div>
-          <FormField label="Cinsiyet" as="select" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={form.gender ? '' : 'text-cream-800/40'}>
-            <option value="">Belirtmek istemiyorum</option>
-            <option value="female" className="text-cream-900">Kadın</option>
-            <option value="male" className="text-cream-900">Erkek</option>
-            <option value="other" className="text-cream-900">Belirtmek istemiyorum</option>
-          </FormField>
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
+        </div>
+      </Modal>
+
+      <Modal open={healthEditOpen} onClose={() => setHealthEditOpen(false)} title="Sağlık Özeti Güncelle">
+        <div className="space-y-4">
+          <p className="text-sm text-cream-800/65">Yalnızca vücut ölçülerinizi güncelleyin. Diğer bilgiler Kişisel Bilgiler bölümünden düzenlenir.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Yaş" icon={Heart} type="number" value={healthForm.age} onChange={(e) => setHealthForm({ ...healthForm, age: e.target.value })} placeholder="Yaş" />
+            <FormField label="Kilo (kg)" icon={Scale} type="number" value={healthForm.weight} onChange={(e) => setHealthForm({ ...healthForm, weight: e.target.value })} placeholder="Kilo" />
+            <FormField label="Boy (cm)" icon={Ruler} type="number" value={healthForm.height} onChange={(e) => setHealthForm({ ...healthForm, height: e.target.value })} placeholder="Boy" />
+            <FormField label="Bel (cm)" icon={Activity} type="number" value={healthForm.waist} onChange={(e) => setHealthForm({ ...healthForm, waist: e.target.value })} placeholder="Bel" />
+          </div>
+          <button type="button" onClick={handleHealthSave} className="w-full rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 py-3 text-sm font-bold text-white shadow-md hover:brightness-105">Kaydet</button>
         </div>
       </Modal>
     </div>

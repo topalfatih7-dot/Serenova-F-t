@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, Droplets, Target, Play, CalendarDays, ClipboardList,
+  Check, Droplets, Target, Play, CalendarDays, ClipboardList, Star,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import OnboardingTutorial from '../components/ui/OnboardingTutorial'
+import HealthTestWidget from '../components/dashboard/HealthTestWidget'
+import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
+import { isHealthTestComplete } from '../data/healthTest'
 import { WeightChart, WorkoutChart } from '../components/dashboard/ProgressChart'
 import { useApp } from '../context/AppContext'
+import { useToast } from '../context/ToastContext'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -180,10 +184,35 @@ function HealthAnalysisPanel({ analysis }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt,
+    myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
   } = useApp()
+  const [healthPromptOpen, setHealthPromptOpen] = useState(false)
+  const [storyOpen, setStoryOpen] = useState(false)
+
+  // Stripe ödeme dönüşü: üyeliği tazele (webhook birkaç saniye sürebilir).
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      toast('Ödeme alındı! Üyeliğiniz birkaç saniye içinde aktifleşecek.', 'success')
+      refresh?.()
+      const t = setTimeout(() => refresh?.(), 4000)
+      const next = new URLSearchParams(searchParams)
+      next.delete('payment'); next.delete('session_id')
+      setSearchParams(next, { replace: true })
+      return () => clearTimeout(t)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleTutorialComplete = () => {
+    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender)) {
+      setHealthPromptOpen(true)
+    }
+  }
 
   if (isFreeTrialExpired) {
     return (
@@ -225,7 +254,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* İlk giriş eğitim popup'ı */}
-      <OnboardingTutorial userId={user?.id} />
+      <OnboardingTutorial userId={user?.id} onComplete={handleTutorialComplete} />
+      <HealthTestWidget
+        user={user}
+        promptOpen={healthPromptOpen}
+        onPromptHandled={() => setHealthPromptOpen(false)}
+      />
 
       <div className="welcome-banner">
         <p className="text-sm font-medium text-white/80">Hoş geldiniz</p>
@@ -292,8 +326,8 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Otomatik programlar' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" />
-        <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" />
-        <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" />
+        <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={() => navigate('/schedule/coach')} />
+        <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={() => navigate('/schedule/dietitian')} />
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />
       </div>
 
@@ -348,7 +382,22 @@ export default function DashboardPage() {
             <p className="text-xs text-cream-800/55">Egzersiz & beslenme videoları</p>
           </div>
         </Link>
+        <button
+          type="button"
+          onClick={() => setStoryOpen(true)}
+          className="group flex items-center gap-4 rounded-2xl border border-gold-400/40 bg-gradient-to-br from-gold-50 to-white p-5 text-left shadow-sm transition hover:shadow-md hover:border-gold-400/70"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow transition group-hover:scale-110">
+            <Star className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-semibold text-cream-900">Başarı Hikayeni Paylaş</p>
+            <p className="text-xs text-cream-800/55">Yolculuğunla başkalarına ilham ver</p>
+          </div>
+        </button>
       </div>
+
+      <SuccessStorySubmitModal open={storyOpen} onClose={() => setStoryOpen(false)} />
     </div>
   )
 }

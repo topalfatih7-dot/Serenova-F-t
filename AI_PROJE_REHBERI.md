@@ -3,7 +3,7 @@
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-20 (Bkz. §18: navbar Keşfet/Kadro, kalori chat+Telegram, video responsive, YAPILACAKLAR.md)
+> **Son güncelleme:** 2026-06-22 (Bkz. §21: kayıt formu yeniden tasarım, hikaye gönderme, blog hero, telefon/e-posta doğrulama, **Stripe ödeme altyapısı**)
 
 ---
 
@@ -221,7 +221,8 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 | 7 adımlı kayıt | `src/pages/OnboardingPage.jsx` | Profil → hedefler → paket → randevu → ödeme |
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` | BMI, kalori, beslenme ve antrenman önerileri — kural tabanlı hesaplama |
 | Sağlık hesapları | `src/services/health.js` | `calculateBMI`, `bmiCategory`, etiket sabitleri |
-| Test ödeme | `src/config/testPayment.js` + `src/components/payment/PaymentForm.jsx` | Sahte kart doğrulama — **gerçek ödeme gateway yok** |
+| Test ödeme (fallback) | `src/config/testPayment.js` + `src/components/payment/PaymentForm.jsx` | Sahte kart (4242…) doğrulama — Stripe kapalıyken kullanılır |
+| **Stripe ödeme (gerçek)** | `api/stripe-checkout.js`, `api/stripe-webhook.js`, `src/services/stripePayment.js` | `VITE_STRIPE_ENABLED=true` → Stripe Checkout. Bkz. §22 + `STRIPE_SETUP.md` |
 | Kayıt akışları | `supabaseDb.js` L460–535 | `register`, `registerWithPayment`, `registerWithPlan`, `processPremiumPayment` |
 | Türkiye illeri | `src/data/turkeyCities.js` | 81 il/ilçe listesi |
 
@@ -518,6 +519,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `useDailyCall.js` | `useDailyCall`, `attachTrack` |
 | `useRelativeTimeTick.js` | default (30 sn re-render) |
 | `useLocalStorage.js` | `useLocalStorage` |
+| `usePlatformDisplayStats.js` | `usePlatformDisplayStats` — landing/canlı sayaç gösterim eşikleri |
 
 ### 7.8 Utils (`src/utils/`)
 
@@ -527,6 +529,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `relativeTime.js` | `formatRelativeTime`, `RELATIVE_TIME_TICK_MS` |
 | `staffRoles.js` | `STAFF_ROLES`, `normalizeStaffRole`, `staffRoleLabel` |
 | `scrollToContact.js` | `CONTACT_SECTION_ID`, `scrollToContactSection` |
+| `displayPlatformStats.js` | `getDisplayMemberCount`, `getDisplayOnlineCount`, `pickSessionOnlineBoost` — min. 1250 üye / 16–25 çevrimiçi eşikleri |
 
 ### 7.9 Data (`src/data/`)
 
@@ -584,7 +587,7 @@ admin/AdminActivityPage.jsx
 
 ### 7.11 Components (`src/components/`) — 49 dosya
 
-**Layout:** `PublicLayout`, `AppShell`, `AdminShell`, `StaffShell`, `Sidebar`, `TopBar`, `MobileNav`, `PanelMobileMenu`
+**Layout:** `PublicLayout`, `AppShell`, `AdminShell`, `StaffShell`, `Sidebar`, `TopBar`, `MobileNav`, `PanelMobileMenu`, `ScrollToTop`
 
 **Auth:** `RequireAuth`
 
@@ -699,6 +702,12 @@ Kaynak: `.env.example`
 | Seans üretim mantığı | `src/services/supportSessions.js` |
 | Koç atama mantığı | `src/services/staffAssignment.js` |
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` — `generateHealthAnalysis()` |
+| Landing üye/çevrimiçi gösterim eşikleri | `src/utils/displayPlatformStats.js`, `src/hooks/usePlatformDisplayStats.js`, `LiveActiveCounter.jsx`, `LandingPage.jsx` |
+| Kayıt akışı (2 adım) | `src/pages/OnboardingPage.jsx` |
+| Sağlık testi (panel sonrası) | `HealthTestWidget.jsx`, `HealthTestPrompt.jsx`, `HealthTestFlow.jsx` |
+| Kişisel bilgiler (profil) | `src/components/profile/PersonalInfoSection.jsx` |
+| Otomatik program/analiz senkronu | `src/services/memberHealthSync.js` |
+| Sayfa geçişinde scroll üste | `src/components/layout/ScrollToTop.jsx` → `PublicLayout.jsx` |
 | MobileNav bağlantı düzeltmesi | `src/components/layout/MobileNav.jsx` — `/builder` → `/membership` |
 | Giriş sonrası yönlendirme | `src/pages/auth/LoginPage.jsx` |
 | Rol kontrolü | `src/components/auth/RequireAuth.jsx` |
@@ -707,7 +716,7 @@ Kaynak: `.env.example`
 
 ## 11. Bilinen Sınırlamalar ve Tuzaklar
 
-1. **Gerçek ödeme yok** — `PaymentForm` + `testPayment.js` simülasyon.
+1. **Ödeme: Stripe altyapısı eklendi (opsiyonel)** — `VITE_STRIPE_ENABLED=true` ise gerçek Stripe Checkout akışı çalışır (`api/stripe-checkout.js` + `api/stripe-webhook.js`). Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır. Kurulum: `STRIPE_SETUP.md`.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
 3. **localDb.js silindi** — tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
@@ -1050,6 +1059,175 @@ AI_SETUP.md             → Adım adım kurulum rehberi
 - `src/services/calorieChat.js` (yeni)
 - `YAPILACAKLAR.md` (yeni)
 - `.env.local` (Telegram format düzeltmesi)
+
+---
+
+## 19. Son Değişiklikler (2026-06-22)
+
+### 1. Landing istatistik eşikleri (üye + çevrimiçi)
+- **Hero kartı** (`LandingPage.jsx`): Sabit `2.500+` kaldırıldı; canlı üye sayısı `usePlatformDisplayStats` ile gelir.
+- **Canlı sayaç şeridi** (`LiveActiveCounter.jsx`): Aynı mantık.
+- **Kurallar** (`displayPlatformStats.js`):
+  - Gerçek üye sayısı **1250'nin altındaysa** → `1250+` gösterilir.
+  - **1250 ve üzeri** → gerçek sayı (artı işareti yok).
+  - Çevrimiçi kullanıcı **25'ten azsa** → oturum boyunca **16–25 arası sabit rastgele** sayı.
+  - **25 ve üzeri** → gerçek çevrimiçi sayı.
+
+### 2. Nasıl Çalışır — mobil adım düzeni
+- **Yalnızca mobil:** Adım ikonları kart metninin **üst border ortasına** yerleştirildi.
+- Adımlar arasında **animasyonlu yeşil-mavi dikey bağlantı çizgisi** (`how-it-works-connector` — `index.css`).
+- Masaüstü düzeni değişmedi (sol ikon + dikey çizgi).
+
+### 3. Başarı Hikayeleri hero
+- `/stories` sayfası başlığı `PlansAnimatedBackground` ile sarıldı (üyelik seçenekleri bölümüyle aynı aurora gradient + orb animasyonu).
+- `section-badge`, `section-title`, `section-subtitle` sınıfları kullanıldı.
+
+### 4. Navbar sayfa geçişi scroll düzeltmesi
+- `ScrollToTop.jsx`: Rota değişince (hash yoksa) `window.scrollTo(0, 0)`.
+- `PublicLayout.jsx` içinde mount edildi — sayfa altındayken başka sayfaya tıklanınca yeni sayfa üstten açılır.
+
+### 5. Navbar logo kaldırıldı
+- ~~`BrandLogo` navbar'dan çıkarıldı~~ **Geri alındı (2026-06-22):** `BrandLogo` navbar'da tekrar kullanılıyor.
+
+### Değiştirilen/Eklenen Dosyalar (2026-06-22)
+- `src/utils/displayPlatformStats.js` (yeni)
+- `src/hooks/usePlatformDisplayStats.js` (yeni)
+- `src/components/layout/ScrollToTop.jsx` (yeni)
+- `src/pages/LandingPage.jsx`
+- `src/components/landing/LiveActiveCounter.jsx`
+- `src/components/landing/HowItWorksSection.jsx`
+- `src/pages/SuccessStoriesPage.jsx`
+- `src/components/layout/PublicLayout.jsx`
+- `src/index.css` (`how-it-works-connector`)
+
+---
+
+## 20. Son Değişiklikler (2026-06-22 — Kayıt Akışı)
+
+### 1. Kayıt formu sadeleştirildi (`OnboardingPage.jsx`)
+- **Adım 1 — Hesap:** Yalnızca ad soyad, e-posta, telefon, şifre (+ tekrar). Mobile-first, tek ekrana sığacak kompakt düzen (`min-h-[100dvh]`, `max-w-lg`).
+- **Adım 2 — Üyelik:** Plan seçimi (+ ücretli planlarda ödeme modalı).
+- Kaldırıldı (kayıttan): yaş, cinsiyet, şehir, ölçüler, fotoğraf, hedefler, spor/beslenme tercihleri, sağlık testi, sağlık onayı.
+- Kayıt sonrası otomatik program/analiz **hemen oluşturulmaz** — profil + sağlık testi tamamlanınca `memberHealthSync.js` devreye girer.
+
+### 2. Sağlık testi — panel sonrası akış
+- Rehber turu (`OnboardingTutorial`) kapanınca `onComplete` → `HealthTestPrompt` açılır.
+- **Testi Şimdi Çöz** → `HealthTestFlow` (soru-soru + onay adımı) → `healthTest`, `healthAck`, `disclaimer` DB'ye kaydedilir.
+- **Sonra Hatırlat** → popup kapanır, animasyonlu **Sağlık Testini Tamamla** FAB butonu (`HealthTestWidget.jsx`).
+- Test tamamlanınca FAB gösterilmez.
+- Bileşenler: `HealthTestPrompt.jsx`, `HealthTestFlow.jsx`, `HealthTestWidget.jsx`.
+
+### 3. Kişisel bilgiler — profil sayfası
+- `PersonalInfoSection.jsx`: yaş, cinsiyet, şehir/ilçe, ölçüler, fotoğraf, hedefler, spor seviyesi, beslenme tercihleri.
+- Düzenle modalından güncellenir; üyelik seçimi **yok** (kayıtta yapılır).
+- Kayıt sonrası `syncMemberHealthAssets()` — sağlık testi + profil yeterliyse Basic için otomatik analiz + program oluşturur.
+
+### 4. Yeni servis
+- `src/services/memberHealthSync.js` — `profileReadyForAnalysis`, `createAutoProgramsForMember`, `syncMemberHealthAssets`.
+
+### Değiştirilen/Eklenen Dosyalar (§20)
+- `src/pages/OnboardingPage.jsx` (yeniden yazıldı — 2 adım)
+- `src/components/onboarding/HealthTestPrompt.jsx` (yeni)
+- `src/components/onboarding/HealthTestFlow.jsx` (yeni)
+- `src/components/dashboard/HealthTestWidget.jsx` (yeni)
+- `src/components/profile/PersonalInfoSection.jsx` (yeni)
+- `src/services/memberHealthSync.js` (yeni)
+- `src/components/ui/OnboardingTutorial.jsx` (`onComplete` callback)
+- `src/pages/DashboardPage.jsx`
+- `src/pages/ProfilePage.jsx`
+- `src/components/layout/PublicLayout.jsx` (logo geri alındı)
+
+---
+
+## 21. Son Değişiklikler (2026-06-22 — Kayıt Formu, Hikaye, Blog, Doğrulamalar)
+
+### 1. Kayıt formu yeniden tasarlandı (`OnboardingPage.jsx`)
+- Giriş sayfasıyla (`auth/LoginPage.jsx`) aynı **split-screen** düzen: solda video arka planlı marka paneli + avantaj listesi (masaüstü), sağda kart içinde adımlı form.
+- Mobilde sol panel gizlenir, form tam genişlik; üstte `BrandLogo`.
+- Adım 1 (Hesap) + Adım 2 (Üyelik planı) korundu; alt aksiyonlar gradient buton + "Geri".
+- `PlanChangeView` (mevcut üyenin plan değişimi) aynı dosyada korunur.
+
+### 2. E-posta regex + telefon çift kayıt engeli
+- `OnboardingPage`: `EMAIL_RE` ile gerçek e-posta doğrulaması, hata alan altında gösterilir.
+- **Telefon tekilliği:** `supabaseDb.ensureAuthForSignup()` kayıt öncesi `phone_in_use` RPC'sini çağırır; numara kayıtlıysa hata döner.
+- **RPC:** `public.phone_in_use(p_phone text)` — `SECURITY DEFINER`, sabit `search_path`, sadece rakama indirgenmiş karşılaştırma; `anon`+`authenticated` çağırabilir. `supabase/setup.sql` içinde tanımlı.
+
+### 3. Başarı hikayesi — üye panelinden gönderme
+- Yeni paylaşılan bileşen: `src/components/social/SuccessStorySubmitModal.jsx`.
+- **Dashboard**'a "Başarı Hikayeni Paylaş" hızlı erişim kartı eklendi → modal açar → `submitSuccessStory`.
+- `SuccessStoriesPage` aynı modalı kullanır; giriş yoksa `/login`'e yönlendirir.
+
+### 4. Blog sayfası hero
+- `BlogPage.jsx` üstüne `PlansAnimatedBackground` hero (başarı hikayeleri sayfasıyla aynı aurora gradient), `section-badge/title/subtitle`.
+
+### 5. Örnek içerik (Supabase `site_content`)
+- 4 örnek **yorum** (testimonial) + 5 örnek **SSS** (faq) eklendi (toplam 6'şar).
+
+### Değiştirilen/Eklenen Dosyalar (§21)
+- `src/pages/OnboardingPage.jsx`, `src/pages/SuccessStoriesPage.jsx`, `src/pages/BlogPage.jsx`, `src/pages/DashboardPage.jsx`
+- `src/components/social/SuccessStorySubmitModal.jsx` (yeni)
+- `src/services/supabaseDb.js` (`ensureAuthForSignup` telefon kontrolü)
+- `supabase/setup.sql` (`phone_in_use` RPC)
+
+---
+
+## 22. Ödeme Sistemi — Stripe Altyapısı (2026-06-22)
+
+### Genel
+İki mod vardır ve `VITE_STRIPE_ENABLED` bayrağı ile seçilir:
+- **Stripe açık (`true`):** Gerçek **Stripe Checkout** (yönlendirmeli, hosted) akışı.
+- **Stripe kapalı:** Eski **test kartı** simülasyonu (`PaymentForm` + `4242…`).
+
+Tüm gizli anahtarlar **yalnızca sunucuda** (Vercel) tutulur — Telegram/AI ile aynı desen.
+
+### Akış (kayıt + plan değişimi)
+```
+Plan seç → (kayıt akışında önce ücretsiz hesap oluştur, oturum aç)
+   → POST /api/stripe-checkout (Supabase token doğrulanır, fiyat SUNUCUDA belirlenir)
+   → Stripe Checkout sayfası → kart ile ödeme
+   → Stripe → POST /api/stripe-webhook (checkout.session.completed)
+        → service-role ile: members.membership + premium tarihleri AKTİF,
+          payments + activities kaydı (idempotent: stripeSessionId tekrarına kapalı)
+   → success: /dashboard?payment=success (kayıt) | /profile?payment=success (değişim)
+   → cancel:  /onboarding?payment=cancelled
+```
+
+### Dosyalar
+| Dosya | Görev |
+|-------|-------|
+| `api/_stripe.js` | Stripe istemcisi, `CURRENCY=try`, `PLAN_FALLBACK` yedek fiyatlar, `toMinorUnits` |
+| `api/_supabaseAdmin.js` | Service-role Supabase istemcisi (RLS atlar) |
+| `api/stripe-checkout.js` | POST: token doğrula → fiyatı `plans` tablosundan/yedekten al → Checkout oturumu (metadata: memberId, planId, planPrice, durationWeeks, flow) |
+| `api/stripe-webhook.js` | Ham gövde + imza doğrulama (`bodyParser:false`), üyelik aktifleştirme, idempotent |
+| `src/config/stripe.js` | `isStripeEnabled()`, `STRIPE_PUBLISHABLE_KEY` |
+| `src/services/stripePayment.js` | `startStripeCheckout(planId, flow)` — token alır, endpoint'i çağırır, URL'e yönlendirir |
+
+### Wiring
+- `OnboardingPage`: `finish()` ücretli planda Stripe açıksa `startStripeRegister()` (önce `register(...,'free')`, sonra checkout). `PlanChangeView.handleConfirm()` ücretli planda `startStripeCheckout(..., 'change')`.
+- Dönüş işleme: `DashboardPage` + `ProfilePage` → `?payment=success` toast + `refresh()` (webhook gecikmesi için 4 sn sonra tekrar). `OnboardingPage`/`PlanChangeView` → `?payment=cancelled` toast.
+
+### Güvenlik tasarımı
+- Fiyat **istemciden alınmaz** (sunucu `plans`/yedek).
+- Üye kimliği **access token doğrulanarak** belirlenir (spoof engeli).
+- Webhook **imzayla** doğrulanır ve **idempotent**'tir.
+- `SUPABASE_SERVICE_ROLE_KEY` yalnızca webhook'ta; RLS'yi yalnızca sunucuda atlar.
+
+### Gerekli env (özet — detay `STRIPE_SETUP.md`)
+| Değişken | Kapsam |
+|----------|--------|
+| `STRIPE_SECRET_KEY` | Sunucu (gizli) |
+| `STRIPE_WEBHOOK_SECRET` | Sunucu (gizli) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sunucu (gizli) |
+| `SUPABASE_URL` | Sunucu (VITE_SUPABASE_URL yedek) |
+| `APP_URL` | Sunucu (opsiyonel) |
+| `VITE_STRIPE_ENABLED` | İstemci (on/off) |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | İstemci (opsiyonel) |
+
+### Bağımlılık
+- `stripe` (npm) sunucu tarafı eklendi. İstemci redirect akışı ek paket gerektirmez.
+
+### Üyelik süresi doğrulaması
+- 4 haftalık planlar **28 gün** sonrasına biter (`computePremiumExpiresAt`); webhook da aynı hesabı kullanır (`computeExpiry`). DB'de doğrulandı (ör. 21 Haz → 19 Tem).
 
 ---
 

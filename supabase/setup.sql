@@ -29,12 +29,14 @@ create extension if not exists pgcrypto;
 -- 1) YARDIMCI FONKSİYONLAR
 -- ---------------------------------------------------------------------
 create or replace function public.is_admin()
-returns boolean language sql stable as $$
+returns boolean language sql stable
+set search_path = public, pg_temp as $$
   select coalesce((auth.jwt() ->> 'email') = 'admin@serenova.fit', false);
 $$;
 
 create or replace function public.current_email()
-returns text language sql stable as $$
+returns text language sql stable
+set search_path = public, pg_temp as $$
   select auth.jwt() ->> 'email';
 $$;
 
@@ -132,9 +134,14 @@ create table if not exists public.exercises (
   name text not null,
   description text default '',
   category text default 'Genel',
+  sport_type text default 'Fitness',
+  body_part text default 'Tüm Vücut',
   video_url text default '',
   created_at timestamptz not null default now()
 );
+
+alter table public.exercises add column if not exists sport_type text default 'Fitness';
+alter table public.exercises add column if not exists body_part text default 'Tüm Vücut';
 
 -- Üyelik talepleri (dondur / iptal / yeniden başlat / yenile)
 create table if not exists public.membership_requests (
@@ -185,7 +192,8 @@ create index if not exists custom_foods_usage_idx on public.custom_foods (usage_
 -- 3) is_staff() — staff tablosu hazır olduktan sonra
 -- ---------------------------------------------------------------------
 create or replace function public.is_staff()
-returns boolean language sql stable as $$
+returns boolean language sql stable
+set search_path = public, pg_temp as $$
   select exists (select 1 from public.staff s where s.email = public.current_email());
 $$;
 
@@ -329,6 +337,20 @@ returns void language sql security definer set search_path = public as $$
   update public.custom_foods set usage_count = usage_count + 1 where id = p_id;
 $$;
 
+-- Telefon numarası başka bir üyede kayıtlı mı? (kayıt sırasında çift numara engeli)
+-- Numaralar sadece rakamlara indirgenip karşılaştırılır.
+create or replace function public.phone_in_use(p_phone text)
+returns boolean language sql security definer stable
+set search_path = public, pg_temp as $$
+  select exists (
+    select 1 from public.members m
+    where regexp_replace(coalesce(m.phone, ''), '\D', '', 'g') = regexp_replace(coalesce(p_phone, ''), '\D', '', 'g')
+      and length(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g')) >= 7
+  );
+$$;
+revoke all on function public.phone_in_use(text) from public;
+grant execute on function public.phone_in_use(text) to anon, authenticated;
+
 create or replace function public.admin_upsert_staff(
   p_id uuid, p_email text, p_password text, p_name text,
   p_role text, p_active boolean, p_data jsonb
@@ -451,7 +473,7 @@ revoke all on function public.increment_food_usage(uuid) from public, anon;
 grant execute on function public.increment_food_usage(uuid) to authenticated;
 
 -- handle_new_user tetikleyici fonksiyonu — RPC ile çağrılmasın
-revoke all on function public.handle_new_user() from public, anon;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------
 -- 7) DEPOLAMA — egzersiz videoları için herkese açık bucket

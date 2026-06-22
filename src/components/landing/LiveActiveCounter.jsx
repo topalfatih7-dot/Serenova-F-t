@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, Users } from 'lucide-react'
 import { subscribeOnlineStats } from '../../services/presenceService'
+import {
+  getDisplayMemberCount,
+  getDisplayOnlineCount,
+  pickSessionOnlineBoost,
+} from '../../utils/displayPlatformStats'
 
 function AnimatedNumber({ value }) {
   const [display, setDisplay] = useState(value)
@@ -29,7 +34,7 @@ function AnimatedNumber({ value }) {
 
 export default function LiveActiveCounter({ className = '' }) {
   const [stats, setStats] = useState({ onlineNow: 0, totalMembers: 0 })
-  const prevOnline = useRef(0)
+  const [sessionBoost] = useState(pickSessionOnlineBoost)
 
   useEffect(() => subscribeOnlineStats((s) => {
     setStats({
@@ -38,12 +43,8 @@ export default function LiveActiveCounter({ className = '' }) {
     })
   }), [])
 
-  useEffect(() => {
-    prevOnline.current = stats.onlineNow
-  }, [stats.onlineNow])
-
-  const totalDisplay = stats.totalMembers > 0 ? stats.totalMembers : 2500
-  const online = stats.onlineNow
+  const members = getDisplayMemberCount(stats.totalMembers)
+  const onlineDisplay = getDisplayOnlineCount(stats.onlineNow, sessionBoost)
 
   return (
     <section className={`relative overflow-hidden border-y border-brand-100/80 bg-gradient-to-r from-brand-50/90 via-white to-sage-50/90 ${className}`}>
@@ -67,7 +68,7 @@ export default function LiveActiveCounter({ className = '' }) {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-600/70 sm:text-xs">Şu an çevrimiçi</p>
             <p className="font-display text-2xl font-bold tabular-nums text-cream-900 sm:text-3xl">
-              <AnimatedNumber value={online} />
+              <AnimatedNumber value={onlineDisplay} />
               <span className="ml-1 text-base font-semibold text-cream-800/50 sm:text-lg">kişi</span>
             </p>
           </div>
@@ -88,8 +89,10 @@ export default function LiveActiveCounter({ className = '' }) {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-sage-600/70 sm:text-xs">Toplam üye</p>
             <p className="font-display text-2xl font-bold tabular-nums text-cream-900 sm:text-3xl">
-              <AnimatedNumber value={totalDisplay} />
-              <span className="ml-0.5 text-base font-semibold text-cream-800/50 sm:text-lg">+</span>
+              <AnimatedNumber value={members.value} />
+              {members.showPlus && (
+                <span className="ml-0.5 text-base font-semibold text-cream-800/50 sm:text-lg">+</span>
+              )}
             </p>
           </div>
         </motion.div>

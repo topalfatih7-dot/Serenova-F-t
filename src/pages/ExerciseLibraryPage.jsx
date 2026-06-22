@@ -8,44 +8,33 @@ import { useApp } from '../context/AppContext'
 export default function ExerciseLibraryPage() {
   const { exercises } = useApp()
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('all')
   const [active, setActive] = useState(null)
 
-  const categories = useMemo(() => ['all', ...Array.from(new Set((exercises || []).map((e) => e.category || 'Genel')))], [exercises])
-
-  const filtered = useMemo(() => (exercises || []).filter((e) => {
-    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase())
-    const matchCat = category === 'all' || (e.category || 'Genel') === category
-    return matchSearch && matchCat
-  }), [exercises, search, category])
+  const filtered = useMemo(() => (exercises || []).filter((e) =>
+    e.name.toLowerCase().includes(search.toLowerCase()) ||
+    (e.category || '').toLowerCase().includes(search.toLowerCase()),
+  ), [exercises, search])
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Hareket Kütüphanesi</h1>
-        <p className="mt-1 text-sm text-cream-800/60">Egzersizleri inceleyin, açıklamalarını okuyun ve videolarını izleyin.</p>
+        <p className="mt-1 text-sm text-cream-800/60">Doğru formla çalışmak için hareket videolarını izleyin.</p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
-          <input
-            type="text"
-            placeholder="Hareket ara..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
-          />
-        </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm">
-          {categories.map((c) => (
-            <option key={c} value={c}>{c === 'all' ? 'Tüm kategoriler' : c}</option>
-          ))}
-        </select>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
+        <input
+          type="text"
+          placeholder="Hareket ara..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
+        />
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Kütüphane henüz boş veya arama sonucu yok." />
+        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama terimini değiştirin." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((ex) => (
@@ -56,7 +45,7 @@ export default function ExerciseLibraryPage() {
               className="group flex flex-col rounded-2xl border border-cream-200 bg-white p-5 text-left shadow-sm transition hover:border-brand-300 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
-                <span className="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-cream-800/70">{ex.category || 'Genel'}</span>
+                <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">{ex.category}</span>
                 <PlayCircle className="h-5 w-5 text-brand-400 group-hover:text-brand-600" />
               </div>
               <p className="mt-3 font-semibold text-cream-900">{ex.name}</p>
@@ -70,10 +59,8 @@ export default function ExerciseLibraryPage() {
         {active && (
           <div className="space-y-4">
             <VideoPlayer url={active.videoUrl} />
-            <div>
-              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">{active.category || 'Genel'}</span>
-              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-cream-800/80">{active.description || 'Açıklama eklenmemiş.'}</p>
-            </div>
+            <span className="inline-block rounded-full bg-sage-50 px-2.5 py-0.5 text-xs font-medium text-sage-700">{active.category}</span>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-cream-800/80">{active.description || 'Açıklama eklenmemiş.'}</p>
           </div>
         )}
       </Modal>

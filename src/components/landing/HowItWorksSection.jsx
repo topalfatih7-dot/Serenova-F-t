@@ -26,6 +26,15 @@ const STEPS = [
   },
 ]
 
+function StepIcon({ step, className = '' }) {
+  const Icon = step.icon
+  return (
+    <span className={`flex items-center justify-center rounded-2xl bg-gradient-to-br ${step.accent} text-white shadow-lg ${className}`}>
+      <Icon className="h-6 w-6" strokeWidth={2.2} />
+    </span>
+  )
+}
+
 export default function HowItWorksSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-cream-50 to-white py-14 sm:py-20">
@@ -94,40 +103,50 @@ export default function HowItWorksSection() {
               </p>
             </motion.div>
 
-            <div className="relative mt-10 space-y-5">
+            <div className="relative mt-10 lg:space-y-5">
               <div
                 aria-hidden
                 className="absolute bottom-8 left-6 top-8 hidden w-0.5 bg-gradient-to-b from-brand-200 via-sage-300 to-brand-200 lg:block"
               />
 
-              {STEPS.map((s, i) => {
-                const Icon = s.icon
-                return (
+              {STEPS.map((s, i) => (
+                <div key={s.step} className="flex flex-col items-center lg:block">
+                  {i > 0 && (
+                    <div
+                      aria-hidden
+                      className="how-it-works-connector mb-0 h-8 w-1 rounded-full lg:hidden"
+                    />
+                  )}
+
                   <motion.div
-                    key={s.step}
                     initial={{ opacity: 0, x: 20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, margin: '-40px' }}
                     transition={{ delay: i * 0.1, duration: 0.45 }}
-                    className="relative flex gap-4 sm:gap-5"
+                    className="relative flex w-full gap-4 sm:gap-5"
                   >
-                    <span className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${s.accent} text-white shadow-lg sm:h-14 sm:w-14`}>
-                      <Icon className="h-6 w-6" strokeWidth={2.2} />
-                    </span>
-                    <div className="flex-1 rounded-2xl border border-cream-200/80 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:p-6">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-display text-base font-bold leading-snug text-cream-900 sm:text-lg">
-                          {s.title}
-                        </h3>
-                        <span className="font-display text-2xl font-bold text-cream-100">{s.step}</span>
+                    <StepIcon step={s} className="relative z-10 hidden h-14 w-14 shrink-0 lg:flex" />
+
+                    <div className="relative w-full flex-1">
+                      <StepIcon
+                        step={s}
+                        className="absolute left-1/2 top-0 z-10 h-12 w-12 -translate-x-1/2 -translate-y-1/2 lg:hidden"
+                      />
+                      <div className="rounded-2xl border border-cream-200/80 bg-white p-5 pt-9 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:p-6 sm:pt-10 lg:pt-6">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-display text-base font-bold leading-snug text-cream-900 sm:text-lg">
+                            {s.title}
+                          </h3>
+                          <span className="font-display text-2xl font-bold text-cream-100">{s.step}</span>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+                          {s.desc}
+                        </p>
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
-                        {s.desc}
-                      </p>
                     </div>
                   </motion.div>
-                )
-              })}
+                </div>
+              ))}
             </div>
 
             <motion.div

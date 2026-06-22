@@ -15,21 +15,24 @@ export default function PhoneField({
   onValueChange,
   error,
   hint,
+  emphasis = false,
 }) {
   const selected = getCountry(country)
 
   return (
     <div>
       {label && (
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">
+        <span className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide ${emphasis ? 'text-cream-800' : 'text-cream-800/55'}`}>
           {label}
         </span>
       )}
       <div
         className={`flex items-stretch overflow-hidden rounded-2xl border bg-cream-50/60 transition focus-within:bg-white focus-within:ring-4 ${
           error
-            ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
-            : 'border-cream-200 focus-within:border-brand-400 focus-within:ring-brand-100'
+            ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-100'
+            : emphasis
+              ? 'border-cream-400 bg-white focus-within:border-brand-500 focus-within:ring-brand-100'
+              : 'border-cream-200 focus-within:border-brand-400 focus-within:ring-brand-100'
         }`}
       >
         {/* Ülke seçici — kompakt tetikleyici (bayrak + kod). Native select görünmez şekilde üstte. */}

@@ -332,6 +332,12 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [reloadRemote])
 
+  const saveExerciseTaxonomy = useCallback(async (taxonomy) => {
+    const r = await sb.upsertExerciseTaxonomy(taxonomy)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const submitSuccessStory = useCallback(async (data) => {
     const r = await sb.submitSuccessStory(currentMember, data)
     if (r.success) await reloadRemote()
@@ -443,6 +449,7 @@ export function AppProvider({ children }) {
     testimonials: db.content?.testimonials || [],
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],
+    exerciseTaxonomy: db.content?.exerciseTaxonomy || null,
     platform: {
       members: db.members,
       staff: db.staff || [],
@@ -492,6 +499,7 @@ export function AppProvider({ children }) {
     addContent,
     editContent,
     removeContent,
+    saveExerciseTaxonomy,
     submitSuccessStory,
     markNotificationRead,
     markAllNotificationsRead,

@@ -125,11 +125,20 @@ export function onAuthChange(cb) {
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
   tickets: [], activities: [], payments: [], exercises: [], requests: [], session: null,
-  content: { testimonials: [], faqs: [], successStories: [] },
+  content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
 }
 
 function rowToExercise(row) {
-  return { id: row.id, name: row.name, description: row.description, category: row.category, videoUrl: row.video_url, createdAt: row.created_at }
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    category: row.body_part || row.category || 'Tüm Vücut',
+    sportType: row.sport_type || 'Fitness',
+    bodyPart: row.body_part || row.category || 'Tüm Vücut',
+    videoUrl: row.video_url,
+    createdAt: row.created_at,
+  }
 }
 function rowToRequest(row) {
   return { id: row.id, memberId: row.member_id, memberName: row.member_name, type: row.type, status: row.status, requestedUntil: row.requested_until, note: row.note, createdAt: row.created_at }
@@ -188,12 +197,13 @@ export async function hydrate() {
   const posts = (postsRes.data || []).map(rowToPost)
   const exercises = (exercisesRes.data || []).map(rowToExercise)
   const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
-  const content = { testimonials: [], faqs: [], successStories: [] }
+  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
   ;(contentRes.data || []).forEach((r) => {
     const item = { id: r.id, ...(r.data || {}) }
     if (r.kind === 'testimonial') content.testimonials.push(item)
     else if (r.kind === 'faq') content.faqs.push(item)
     else if (r.kind === 'success_story') content.successStories.push(item)
+    else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
   })
 
   if (!user) {
@@ -427,6 +437,14 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 async function ensureAuthForSignup(profile) {
   const email = (profile.email || '').trim().toLowerCase()
   const password = profile.password
+
+  // Telefon numarası zaten kullanımda mı? (aynı numarayla ikinci kayıt engellenir)
+  if (profile.phone) {
+    const { data: phoneTaken, error: phoneErr } = await supabase.rpc('phone_in_use', { p_phone: profile.phone })
+    if (!phoneErr && phoneTaken) {
+      return { success: false, error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.' }
+    }
+  }
 
   // Mevcut (ör. admin veya önceki üye) oturumunu temizle ki signUp temiz çalışsın.
   try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
@@ -697,9 +715,29 @@ export async function uploadExerciseVideo(file) {
   return { success: true, url: data.publicUrl }
 }
 
+export async function upsertExerciseTaxonomy(taxonomy) {
+  const payload = {
+    sportTypes: taxonomy.sportTypes || [],
+    bodyParts: taxonomy.bodyParts || [],
+  }
+  if (taxonomy.id) {
+    const { error } = await supabase.from('site_content').update({ data: payload }).eq('id', taxonomy.id)
+    if (error) return { success: false, error: error.message }
+    return { success: true, id: taxonomy.id }
+  }
+  const { data, error } = await supabase.from('site_content').insert({ kind: 'exercise_taxonomy', sort: 0, data: payload }).select('id').single()
+  if (error) return { success: false, error: error.message }
+  return { success: true, id: data.id }
+}
+
 export async function addExercise(data) {
   const { error } = await supabase.from('exercises').insert({
-    name: data.name, description: data.description || '', category: data.category || 'Genel', video_url: data.videoUrl || '',
+    name: data.name,
+    description: data.description || '',
+    category: data.bodyPart || data.category || 'Tüm Vücut',
+    sport_type: data.sportType || 'Fitness',
+    body_part: data.bodyPart || data.category || 'Tüm Vücut',
+    video_url: data.videoUrl || '',
   })
   if (error) return { success: false, error: error.message }
   return { success: true }
@@ -707,7 +745,12 @@ export async function addExercise(data) {
 
 export async function editExercise(id, patch) {
   const { error } = await supabase.from('exercises').update({
-    name: patch.name, description: patch.description || '', category: patch.category || 'Genel', video_url: patch.videoUrl || '',
+    name: patch.name,
+    description: patch.description || '',
+    category: patch.bodyPart || patch.category || 'Tüm Vücut',
+    sport_type: patch.sportType || 'Fitness',
+    body_part: patch.bodyPart || patch.category || 'Tüm Vücut',
+    video_url: patch.videoUrl || '',
   }).eq('id', id)
   if (error) return { success: false, error: error.message }
   return { success: true }

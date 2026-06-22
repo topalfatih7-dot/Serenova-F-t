@@ -5,6 +5,7 @@ import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, Bo
 import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
+import ScrollToTop from './ScrollToTop'
 import NavDropdown from './NavDropdown'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
@@ -124,6 +125,7 @@ export default function PublicLayout() {
 
   return (
     <div className="wellness-mesh-bg min-h-screen">
+      <ScrollToTop />
       <PromoBanner />
       <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 import {
   X, ChevronRight, CalendarDays, ClipboardList,
   Dumbbell, Apple, Library, Flame, CheckCircle, Sparkles,
@@ -100,10 +99,9 @@ const STEPS = [
 
 const STORAGE_KEY = (userId) => `tutorial_shown_${userId}`
 
-export default function OnboardingTutorial({ userId }) {
+export default function OnboardingTutorial({ userId, onComplete }) {
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(false)
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!userId) return
@@ -116,6 +114,7 @@ export default function OnboardingTutorial({ userId }) {
   const close = () => {
     if (userId) localStorage.setItem(STORAGE_KEY(userId), '1')
     setVisible(false)
+    onComplete?.()
   }
 
   const next = () => {

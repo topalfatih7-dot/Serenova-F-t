@@ -6,8 +6,12 @@ import VideoPlayer from '../../components/ui/VideoPlayer'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 
-const EMPTY = { name: '', category: 'Genel', description: '', videoUrl: '' }
-const CATEGORIES = ['Genel', 'Bacak', 'Göğüs', 'Sırt', 'Kol', 'Omuz', 'Karın', 'Kalça', 'Kardiyo', 'Tüm Vücut', 'Esneme']
+const CATEGORIES = [
+  'Tüm Vücut', 'Üst Vücut', 'Alt Vücut', 'Göğüs', 'Sırt',
+  'Omuz', 'Kol', 'Karın', 'Kalça', 'Bacak', 'Kardiyo', 'Esneme',
+]
+
+const EMPTY = { name: '', category: 'Tüm Vücut', description: '', videoUrl: '' }
 
 function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
   const { uploadExerciseVideo } = useApp()
@@ -40,39 +44,21 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Hareketi Düzenle' : 'Yeni Hareket Ekle'} size="lg">
       <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Hareket adı (ör. Squat)" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm">
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
+        <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Hareket adı (ör. Squat)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+        <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm">
+          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
         <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Hareketin nasıl yapılacağına dair açıklama..." rows={4} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-
         <div className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-2 text-sm font-semibold text-cream-900">Video</p>
-          <input value={form.videoUrl} onChange={(e) => update({ videoUrl: e.target.value })} placeholder="Video URL (YouTube veya .mp4 linki)" className="w-full rounded-xl border border-cream-200 px-4 py-2.5 text-sm" />
-
-          <p className="my-2 text-center text-xs text-cream-800/50">— veya dosya yükle —</p>
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-white py-3 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
-          >
+          <input value={form.videoUrl} onChange={(e) => update({ videoUrl: e.target.value })} placeholder="Video URL" className="w-full rounded-xl border border-cream-200 px-4 py-2.5 text-sm" />
+          <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-white py-3 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50">
             {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
           </button>
           <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-
-          {form.videoUrl && (
-            <div className="mt-3">
-              <VideoPlayer url={form.videoUrl} />
-            </div>
-          )}
+          {form.videoUrl && <div className="mt-3"><VideoPlayer url={form.videoUrl} /></div>}
         </div>
-
         {error && <p className="text-xs text-red-500">{error}</p>}
-
         <button type="button" onClick={submit} disabled={uploading} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
           {isEdit ? 'Değişiklikleri Kaydet' : 'Hareketi Ekle'}
         </button>
@@ -90,7 +76,8 @@ export default function AdminLibraryPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   const filtered = useMemo(() => (exercises || []).filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase()) || (e.category || '').toLowerCase().includes(search.toLowerCase())
+    e.name.toLowerCase().includes(search.toLowerCase()) ||
+    (e.category || '').toLowerCase().includes(search.toLowerCase()),
   ), [exercises, search])
 
   const handleAdd = async (form) => {
@@ -136,7 +123,7 @@ export default function AdminLibraryPage() {
           {filtered.map((ex) => (
             <div key={ex.id} className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between">
-                <span className="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-cream-800/70">{ex.category || 'Genel'}</span>
+                <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-medium text-sage-700">{ex.category}</span>
                 <div className="flex gap-1">
                   <button type="button" onClick={() => setEditTarget(ex)} className="rounded-lg p-1.5 text-cream-800/50 hover:bg-cream-100" aria-label="Düzenle"><Edit className="h-4 w-4" /></button>
                   <button type="button" onClick={() => setDeleteTarget(ex)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Sil"><Trash2 className="h-4 w-4" /></button>
@@ -144,7 +131,6 @@ export default function AdminLibraryPage() {
               </div>
               <p className="mt-3 font-semibold text-cream-900">{ex.name}</p>
               <p className="mt-1 line-clamp-2 text-sm text-cream-800/60">{ex.description || 'Açıklama eklenmemiş.'}</p>
-              <p className="mt-3 text-xs font-medium text-cream-800/45">{ex.videoUrl ? '🎬 Video ekli' : 'Video yok'}</p>
             </div>
           ))}
         </div>

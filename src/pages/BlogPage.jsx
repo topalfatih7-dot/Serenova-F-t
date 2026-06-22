@@ -5,6 +5,7 @@ import { Clock, ArrowRight, BookOpen, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
+import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import { useApp } from '../context/AppContext'
 import { BLOG_CATEGORIES } from '../data/blogPosts'
 
@@ -28,18 +29,26 @@ export default function BlogPage() {
   const rest = filtered.slice(1)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-          <BookOpen className="h-3.5 w-3.5" /> Yeni Form Blog
-        </span>
-        <h1 className="mt-4 font-display text-3xl font-bold text-cream-900 sm:text-4xl">Sağlık, beslenme ve motivasyon</h1>
-        <p className="mx-auto mt-3 max-w-xl text-cream-800/60">
-          Dönüşüm yolculuğunuzda size eşlik edecek uzman içerikler. Herkesin erişimine açık.
-        </p>
-      </motion.div>
+    <div>
+      <PlansAnimatedBackground className="!py-14 sm:!py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto max-w-4xl px-4 text-center sm:px-6"
+        >
+          <span className="section-badge">
+            <BookOpen className="h-3.5 w-3.5" /> Yeni Form Blog
+          </span>
+          <h1 className="section-title mt-4">Sağlık, beslenme ve motivasyon</h1>
+          <p className="section-subtitle mx-auto max-w-2xl">
+            Dönüşüm yolculuğunuzda size eşlik edecek uzman içerikler. Herkesin erişimine açık.
+          </p>
+        </motion.div>
+      </PlansAnimatedBackground>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-2">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div className="flex flex-wrap justify-center gap-2">
         <button
           type="button"
           onClick={() => setCategory('all')}
@@ -108,6 +117,7 @@ export default function BlogPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

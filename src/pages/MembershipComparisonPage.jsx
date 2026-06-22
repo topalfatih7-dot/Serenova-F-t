@@ -40,15 +40,19 @@ function CellValue({ value }) {
 }
 
 export default function MembershipComparisonPage() {
-  const { plans } = useApp()
-  const displayPlans = plans?.length ? plans : ALL_PLANS
+  const { plans, isAuthenticated, isAdmin, isStaff, membership } = useApp()
+  const allPlans = plans?.length ? plans : ALL_PLANS
+  const isMember = isAuthenticated && !isAdmin && !isStaff
+  const displayPlans = isMember ? allPlans.filter((p) => p.id !== membership) : allPlans
 
   return (
     <div className="section-trust mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="text-center">
         <span className="section-badge">Karşılaştır</span>
         <h1 className="section-title mt-4 sm:text-4xl">Üyelik Karşılaştırması</h1>
-        <p className="section-subtitle">Tüm planları yan yana inceleyin</p>
+        <p className="section-subtitle">
+          {isMember ? 'Mevcut planınız hariç diğer seçenekleri inceleyin' : 'Tüm planları yan yana inceleyin'}
+        </p>
       </div>
 
       <div className="mt-12 overflow-x-auto rounded-2xl border border-cream-100 bg-white shadow-sm">

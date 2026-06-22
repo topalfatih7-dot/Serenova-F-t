@@ -8,7 +8,6 @@ import FAQQuestionMarksBackground from '../components/landing/FAQQuestionMarksBa
 import TestimonialCarousel from '../components/landing/TestimonialCarousel'
 import WhyUsSection from '../components/landing/WhyUsSection'
 import ContactSection from '../components/landing/ContactSection'
-import SectionBackdrop from '../components/landing/SectionBackdrop'
 import TrustStrip from '../components/landing/TrustStrip'
 import LiveActiveCounter from '../components/landing/LiveActiveCounter'
 import RotatingHeroText from '../components/landing/RotatingHeroText'
@@ -18,9 +17,9 @@ import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
+import { usePlatformDisplayStats } from '../hooks/usePlatformDisplayStats'
 
-const stats = [
-  { value: '2.500+', label: 'Aktif üye' },
+const staticStats = [
   { value: '%94', label: 'Memnuniyet' },
   { value: '7/24', label: 'Destek' },
 ]
@@ -32,9 +31,16 @@ const fadeUp = {
 
 export default function LandingPage() {
   const { testimonials, faqs, plans, successStories } = useApp()
+  const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
   const displayPlans = plans?.length ? plans : ALL_PLANS
   const [swipeHint, setSwipeHint] = useState(true)
+
+  const memberStatValue = `${displayMembers.toLocaleString('tr-TR')}${showMemberPlus ? '+' : ''}`
+  const heroStats = [
+    { value: memberStatValue, label: 'Aktif üye' },
+    ...staticStats,
+  ]
 
   useEffect(() => {
     if (location.pathname === '/' && location.hash === '#bize-ulasin') {
@@ -188,7 +194,7 @@ export default function LandingPage() {
                 custom={4}
                 className="mt-6 flex gap-5 border-t border-white/15 pt-5"
               >
-                {stats.map((s) => (
+                {heroStats.map((s) => (
                   <div key={s.label} className="text-center">
                     <p className="font-display text-xl font-bold text-white">{s.value}</p>
                     <p className="text-[11px] text-white/60">{s.label}</p>
