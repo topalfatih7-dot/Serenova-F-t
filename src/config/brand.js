@@ -1,3 +1,19 @@
+function socialUrlsFromEnv() {
+  return [
+    import.meta.env.VITE_SOCIAL_INSTAGRAM,
+    import.meta.env.VITE_SOCIAL_FACEBOOK,
+    import.meta.env.VITE_SOCIAL_LINKEDIN,
+    import.meta.env.VITE_SOCIAL_X,
+    import.meta.env.VITE_SOCIAL_YOUTUBE,
+  ].filter((url) => typeof url === 'string' && url.startsWith('http'))
+}
+
+const manualSocialUrls = [
+  // 'https://www.instagram.com/yeniform',
+  // 'https://www.facebook.com/yeniform',
+  // 'https://www.linkedin.com/company/yeniform',
+]
+
 export const BRAND = {
   name: 'Yeni Form',
   shortName: 'Yeni Form',
@@ -14,12 +30,10 @@ export const BRAND = {
     /** Orijinal kaynak — değiştirin, sonra npm run og:image */
     logoSource: '/brand-logo-alt.png',
   },
-  /** Organization JSON-LD sameAs — sosyal medya URL'lerini buraya ekleyin */
-  socialUrls: [
-    // 'https://www.instagram.com/yeniform',
-    // 'https://www.facebook.com/yeniform',
-    // 'https://www.linkedin.com/company/yeniform',
-  ],
+  /** Organization JSON-LD sameAs — Vercel env veya manualSocialUrls */
+  socialUrls: socialUrlsFromEnv().length ? socialUrlsFromEnv() : manualSocialUrls,
+  /** Google Analytics 4 — env ile override: VITE_GA4_MEASUREMENT_ID */
+  ga4MeasurementId: 'G-40ENH7MC5W',
 }
 
 export const ADMIN_CREDENTIALS = {

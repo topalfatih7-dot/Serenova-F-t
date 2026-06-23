@@ -33,8 +33,8 @@
 | 1 | **Deploy** — logo + og-image değişikliklerini Vercel'e gönder | 5 dk |
 | 2 | **OG debugger** — Facebook + LinkedIn → Scrape Again | 5 dk |
 | 3 | **Search Console** — sitemap “Başarılı” mı kontrol | 24–48 saat |
-| 4 | **GA4 ID** verin (§9 Adım A) | 10 dk |
-| 5 | **Sosyal medya URL'leri** verin (§9 Adım B) | 5 dk |
+| 4 | **GA4 ID** → Vercel `VITE_GA4_MEASUREMENT_ID` (§9 Adım A) | 10 dk |
+| 5 | **Sosyal medya URL'leri** → Vercel env veya `brand.js` (§9 Adım B) | 5 dk |
 | 6 | Kadro fotoğrafları | Admin `/admin/staff` |
 
 Detaylı teknik referans: `AI_PROJE_REHBERI.md` §23, §24, §29.
@@ -71,6 +71,8 @@ Bu komut tüm türev dosyaları yeniden üretir.
 |----------|-------|----------|
 | `VITE_SITE_URL` | `https://www.yeniform.com` | Production, Preview, Development |
 | `APP_URL` | `https://www.yeniform.com` | Production, Preview, Development |
+| `VITE_GA4_MEASUREMENT_ID` | `G-XXXXXXXXXX` | Production, Preview (GA4 kurulunca) |
+| `VITE_SOCIAL_INSTAGRAM` vb. | Tam profil URL'leri | Production (opsiyonel) |
 
 Env değişince bir kez redeploy.
 
@@ -121,11 +123,11 @@ Canlı: https://www.yeniform.com/robots.txt
 - [x] Favicon + apple-touch-icon
 - [x] Vercel SEO env
 - [x] Search Console doğrulama
-- [ ] **Deploy** (logo güncellemesi)
+- [ ] **Deploy** (GA4 aktif olması için)
 - [ ] Facebook/LinkedIn OG testi
 - [ ] Sitemap **Başarılı**
-- [ ] GA4 kurulumu
-- [ ] `socialUrls` dolduruldu
+- [x] GA4 — `G-40ENH7MC5W` (`brand.js`)
+- [ ] Sosyal medya — Vercel env veya `brand.js`
 
 ---
 
@@ -202,13 +204,13 @@ Sonucu bana yazın: “OG test tamam” veya sorun varsa ekran görüntüsü.
 
 ---
 
-## 9. Bilgi verince agent ne yapar?
+## 9. Bilgi verince ne yapılır?
 
-| Verdiğiniz bilgi | Agent işlemi |
-|------------------|--------------|
-| `GA4: G-…` | `index.html` `<head>` içine gtag script ekler → deploy |
-| Sosyal medya URL'leri | `src/config/brand.js` → `socialUrls` doldurur |
-| “Deploy et” | Vercel production deploy |
+| Verdiğiniz bilgi | Sizin yapmanız gereken | Kod tarafı |
+|------------------|------------------------|------------|
+| `GA4: G-…` | Vercel → **Environment Variables** → `VITE_GA4_MEASUREMENT_ID` = `G-…` (Production + Preview) → **Redeploy** | ✅ `GoogleAnalytics.jsx` — SPA sayfa izleme hazır |
+| Sosyal medya URL'leri | Vercel → `VITE_SOCIAL_INSTAGRAM`, `VITE_SOCIAL_FACEBOOK`, … veya bana yazın → `brand.js` | ✅ `brand.js` env + manuel destek |
+| “Deploy et” | Vercel Dashboard → Deployments → son deploy | — |
 
 ---
 
