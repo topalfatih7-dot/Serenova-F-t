@@ -12,6 +12,7 @@ import FormField from '../components/ui/FormField'
 import PhoneField from '../components/ui/PhoneField'
 import Modal from '../components/ui/Modal'
 import BrandLogo from '../components/ui/BrandLogo'
+import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
@@ -267,6 +268,8 @@ export default function OnboardingPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
+  const [welcomeOpen, setWelcomeOpen] = useState(false)
+  const [welcomePaid, setWelcomePaid] = useState(false)
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -289,7 +292,7 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isExistingMember) {
+  if (isExistingMember && !welcomeOpen) {
     return (
       <PlanChangeView
         plans={plans?.length ? plans : ALL_PLANS}
@@ -346,8 +349,8 @@ export default function OnboardingPage() {
         toast(result.error, 'error')
         return
       }
-      toast('Kayıt tamamlandı! Hoş geldiniz.', 'success')
-      navigate('/dashboard')
+      setWelcomePaid(false)
+      setWelcomeOpen(true)
     } finally {
       setSubmitting(false)
     }
@@ -363,8 +366,8 @@ export default function OnboardingPage() {
         return
       }
       setPaymentOpen(false)
-      toast(`${selectedPlan?.name} üyeliğiniz aktif! Ödeme başarılı.`, 'success')
-      navigate('/dashboard')
+      setWelcomePaid(true)
+      setWelcomeOpen(true)
     }, 1200)
   }
 
@@ -728,6 +731,13 @@ export default function OnboardingPage() {
       <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
         <PaymentForm amount={selectedPlan?.price} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaidPayment} />
       </Modal>
+
+      <WelcomeSuccessModal
+        open={welcomeOpen}
+        planName={selectedPlan?.name}
+        isPaid={welcomePaid}
+        onContinue={() => navigate('/dashboard')}
+      />
     </div>
   )
 }

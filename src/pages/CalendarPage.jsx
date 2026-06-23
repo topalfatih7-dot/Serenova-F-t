@@ -4,71 +4,42 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   isSameMonth, isSameDay, addMonths, subMonths,
-  startOfWeek, endOfWeek, getDay, isToday,
+  startOfWeek, endOfWeek, isToday,
 } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   ChevronLeft, ChevronRight, X, Dumbbell, Apple,
   PlayCircle, Clock, CheckCircle, Circle, Calendar,
-  ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save,
+  ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save, Lock,
 } from 'lucide-react'
 import VideoPlayer from '../components/ui/VideoPlayer'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
 import { useApp } from '../context/AppContext'
-import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { useToast } from '../context/ToastContext'
+import {
+  getProgramEntriesForDate,
+  completionKey,
+  mealLabel,
+} from '../utils/programSchedule'
 
 // ── Yardımcılar ────────────────────────────────────────────────────
 const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
-const dayLabel = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
 const amountText = (e) => {
   if (!e) return ''
   if (e.amountType === 'duration') return `${e.amount} ${e.durationUnit || 'sn'}`
   return `${e.amount} tekrar`
 }
 
-// Tarihin programlardaki gün değerine dönüşümü
-// date-fns getDay(): 0=Sun,1=Mon…6=Sat  →  AVAILABILITY_WEEKDAYS ile eşleşiyor
-function getDayValue(date) {
-  return getDay(date) // 0=Paz, 1=Pzt...
+function isAccessibleDay(day) {
+  return isToday(day)
 }
-
-// Belirli bir tarih için tüm program girdilerini getir
-function getProgramEntriesForDate(programs, date) {
-  const dayValue = getDayValue(date)
-  const result = []
-  programs.forEach((prog) => {
-    if (!prog.entries?.length) return
-    prog.entries.forEach((entry) => {
-      if (Number(entry.day) === dayValue) {
-        result.push({ ...entry, programId: prog.id, programTitle: prog.title, programType: prog.type })
-      }
-    })
-  })
-  return result.sort((a, b) => (a.start || '').localeCompare(b.start || ''))
-}
-
-// Tüm program girdileri hangi gün değerlerine (0-6) sahip?
-function getProgramDayValues(programs) {
-  const days = new Set()
-  programs.forEach((prog) => {
-    if (!prog.entries?.length) return
-    prog.entries.forEach((e) => days.add(Number(e.day)))
-  })
-  return days
-}
-
-// Completion key formatı: "2026-06-17_entry-id"
-const completionKey = (dateStr, entryId) => `${dateStr}_${entryId}`
-
-// ── Ana Bileşen ─────────────────────────────────────────────────────
 export default function CalendarPage() {
-  const { myPrograms, user, updateProfile } = useApp()
+  const { myPrograms, user, updateProfile, toggleActivityCompletion } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [current, setCurrent] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [activeVideo, setActiveVideo] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(isToday(new Date()) ? new Date() : null)
+  const [expandedEntryId, setExpandedEntryId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [availOpen, setAvailOpen] = useState(false)
   const [availForm, setAvailForm] = useState(user?.availability || {})
@@ -83,8 +54,17 @@ export default function CalendarPage() {
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: calStart, end: calEnd })
 
-  // Program olan gün değerleri (0-6)
-  const programDayValues = useMemo(() => getProgramDayValues(myPrograms), [myPrograms])
+  // Program olan günler (takvimde nokta göstergesi)
+  const daysWithPrograms = useMemo(() => {
+    const set = new Set()
+    days.forEach((day) => {
+      if (!isSameMonth(day, current)) return
+      if (getProgramEntriesForDate(myPrograms, day).length > 0) {
+        set.add(format(day, 'yyyy-MM-dd'))
+      }
+    })
+    return set
+  }, [days, current, myPrograms])
 
   // Seçili günün program girdileri
   const selectedEntries = useMemo(() => {
@@ -105,20 +85,24 @@ export default function CalendarPage() {
 
   // Aktivite tamamla/geri al
   const toggleActivity = useCallback(async (entryId) => {
-    if (!selectedDateStr || saving) return
+    if (!selectedDateStr || saving || !isToday(selectedDate)) return
     setSaving(true)
     try {
-      const current = user?.completedActivities || {}
-      const dayKeys = current[selectedDateStr] || []
-      const key = completionKey(selectedDateStr, entryId)
-      const newKeys = dayKeys.includes(key)
-        ? dayKeys.filter((k) => k !== key)
-        : [...dayKeys, key]
-      await updateProfile({ completedActivities: { ...current, [selectedDateStr]: newKeys } })
+      await toggleActivityCompletion(selectedDateStr, entryId)
     } finally {
       setSaving(false)
     }
-  }, [selectedDateStr, user, updateProfile, saving])
+  }, [selectedDateStr, saving, selectedDate, toggleActivityCompletion])
+
+  const openDay = useCallback((day) => {
+    if (!isSameMonth(day, current)) return
+    if (!isAccessibleDay(day)) {
+      toast('Programlara yalnızca ilgili gün içinde erişebilirsiniz.', 'info')
+      return
+    }
+    setSelectedDate(day)
+    setExpandedEntryId(null)
+  }, [current, toast])
 
   const isDone = (entryId) => {
     if (!selectedDateStr) return false
@@ -138,13 +122,12 @@ export default function CalendarPage() {
 
   // Gün hücresindeki nokta renkleri
   const getDotsForDay = (day) => {
-    const dayValue = getDayValue(day)
-    if (!programDayValues.has(dayValue)) return []
+    const dateStr = format(day, 'yyyy-MM-dd')
+    if (!daysWithPrograms.has(dateStr)) return []
+    const entries = getProgramEntriesForDate(myPrograms, day)
     const dots = []
-    const hasWorkout = myPrograms.some((p) => p.type === 'workout' && p.entries?.some((e) => Number(e.day) === dayValue))
-    const hasNutrition = myPrograms.some((p) => p.type === 'nutrition' && p.entries?.some((e) => Number(e.day) === dayValue))
-    if (hasWorkout) dots.push('workout')
-    if (hasNutrition) dots.push('nutrition')
+    if (entries.some((e) => e.programType === 'workout')) dots.push('workout')
+    if (entries.some((e) => e.programType === 'nutrition')) dots.push('nutrition')
     return dots
   }
 
@@ -305,18 +288,20 @@ export default function CalendarPage() {
               const dots = inMonth ? getDotsForDay(day) : []
               const dateStr = format(day, 'yyyy-MM-dd')
               const dayEntries = getProgramEntriesForDate(myPrograms, day)
+              const accessible = isAccessibleDay(day)
               const dayDone = dayEntries.length > 0
-                ? (completedActivities[dateStr] || []).filter((k) => k.startsWith(dateStr + '_')).length
+                ? (completedActivities[dateStr] || []).filter((k) => k.startsWith(`${dateStr}_`)).length
                 : 0
               const allDone = dayEntries.length > 0 && dayDone === dayEntries.length
+              const locked = inMonth && dayEntries.length > 0 && !accessible
 
               return (
                 <motion.button
                   key={day.toISOString()}
                   type="button"
-                  whileHover={inMonth && dots.length > 0 ? { scale: 1.05 } : {}}
-                  whileTap={inMonth && dots.length > 0 ? { scale: 0.97 } : {}}
-                  onClick={() => inMonth && setSelectedDate(day)}
+                  whileHover={inMonth && accessible && dots.length > 0 ? { scale: 1.05 } : {}}
+                  whileTap={inMonth && accessible ? { scale: 0.97 } : {}}
+                  onClick={() => openDay(day)}
                   className={`relative flex min-h-[60px] sm:min-h-[72px] flex-col items-center rounded-xl p-1.5 transition-all ${
                     !inMonth
                       ? 'opacity-25 cursor-default'
@@ -324,9 +309,11 @@ export default function CalendarPage() {
                         ? 'bg-brand-500 shadow-lg shadow-brand-500/30'
                         : today
                           ? 'bg-brand-50 ring-2 ring-brand-300'
-                          : dots.length > 0
-                            ? 'hover:bg-cream-100 cursor-pointer'
-                            : 'cursor-pointer hover:bg-cream-50'
+                          : locked
+                            ? 'cursor-not-allowed bg-cream-50/80 opacity-70'
+                            : dots.length > 0
+                              ? 'hover:bg-cream-100 cursor-pointer'
+                              : 'cursor-pointer hover:bg-cream-50'
                   }`}
                 >
                   <span className={`text-xs font-bold ${
@@ -336,11 +323,13 @@ export default function CalendarPage() {
                   </span>
 
                   {/* Tamamlanma göstergesi */}
-                  {allDone && !selected && (
+                  {locked && (
+                    <Lock className="mt-0.5 h-3 w-3 text-cream-400" />
+                  )}
+                  {allDone && !selected && !locked && (
                     <CheckCircle className="mt-0.5 h-3 w-3 text-sage-500" />
                   )}
 
-                  {/* Program noktaları */}
                   {dots.length > 0 && !allDone && (
                     <div className="mt-1 flex gap-1">
                       {dots.map((dot) => (
@@ -380,7 +369,7 @@ export default function CalendarPage() {
             <span className="h-2 w-2 rounded-full bg-sage-400" /> Beslenme
           </span>
           <span className="flex items-center gap-1.5 text-xs text-cream-800/60">
-            <CheckCircle className="h-3 w-3 text-sage-500" /> Tamamlandı
+            <Lock className="h-3 w-3 text-cream-400" /> Sadece bugün açılır
           </span>
         </div>
       </div>
@@ -409,17 +398,12 @@ export default function CalendarPage() {
             completion={dayCompletionCount}
             isDone={isDone}
             onToggle={toggleActivity}
-            onVideoOpen={setActiveVideo}
-            onClose={() => setSelectedDate(null)}
+            expandedEntryId={expandedEntryId}
+            onExpandEntry={setExpandedEntryId}
+            onClose={() => { setSelectedDate(null); setExpandedEntryId(null) }}
             saving={saving}
+            canComplete={isToday(selectedDate)}
           />
-        )}
-      </AnimatePresence>
-
-      {/* VİDEO MODAL */}
-      <AnimatePresence>
-        {activeVideo && (
-          <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />
         )}
       </AnimatePresence>
     </div>
@@ -427,12 +411,11 @@ export default function CalendarPage() {
 }
 
 // ── Gün Detay Paneli ────────────────────────────────────────────────
-function DayDetailPanel({ date, entries, completion, isDone, onToggle, onVideoOpen, onClose, saving }) {
+function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
   const workoutEntries = entries.filter((e) => e.programType === 'workout')
   const nutritionEntries = entries.filter((e) => e.programType === 'nutrition')
 
   const today = isToday(date)
-  const isPast = date < new Date() && !today
   const progressPct = completion.total > 0 ? Math.round((completion.done / completion.total) * 100) : 0
 
   return (
@@ -522,12 +505,13 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, onVideoOp
                   entries={workoutEntries}
                   isDone={isDone}
                   onToggle={onToggle}
-                  onVideoOpen={onVideoOpen}
+                  expandedEntryId={expandedEntryId}
+                  onExpandEntry={onExpandEntry}
                   saving={saving}
+                  canComplete={canComplete}
                 />
               )}
 
-              {/* Beslenme bölümü */}
               {nutritionEntries.length > 0 && (
                 <ProgramSection
                   icon={Apple}
@@ -536,8 +520,10 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, onVideoOp
                   entries={nutritionEntries}
                   isDone={isDone}
                   onToggle={onToggle}
-                  onVideoOpen={onVideoOpen}
+                  expandedEntryId={expandedEntryId}
+                  onExpandEntry={onExpandEntry}
                   saving={saving}
+                  canComplete={canComplete}
                 />
               )}
             </div>
@@ -549,7 +535,7 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, onVideoOp
 }
 
 // ── Program Bölümü ──────────────────────────────────────────────────
-function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, onVideoOpen, saving }) {
+function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, expandedEntryId, onExpandEntry, saving, canComplete }) {
   const headerColors = {
     brand: 'bg-brand-50 text-brand-700 border-brand-100',
     sage:  'bg-sage-50 text-sage-700 border-sage-100',
@@ -575,8 +561,10 @@ function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, o
             entry={entry}
             done={isDone(entry.id)}
             onToggle={() => onToggle(entry.id)}
-            onVideoOpen={onVideoOpen}
+            expanded={expandedEntryId === entry.id}
+            onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
             saving={saving}
+            canComplete={canComplete}
             iconColor={iconColors[color]}
           />
         ))}
@@ -586,38 +574,46 @@ function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, o
 }
 
 // ── Aktivite Satırı ─────────────────────────────────────────────────
-function ActivityRow({ entry, done, onToggle, onVideoOpen, saving, iconColor }) {
+function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canComplete, iconColor }) {
+  const displayName = entry.exerciseName || entry.name || 'Aktivite'
+  const isNutrition = entry.programType === 'nutrition' || entry.mealType
+
   return (
     <motion.div
       layout
       className={`px-6 py-4 transition-colors ${done ? 'bg-sage-50/60' : 'bg-white hover:bg-cream-50/50'}`}
     >
       <div className="flex items-start gap-3">
-        {/* Tamamlandı butonu */}
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={saving}
-          className={`mt-0.5 shrink-0 rounded-full transition ${saving ? 'opacity-50' : ''}`}
-          title={done ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
-        >
-          <AnimatePresence mode="wait">
-            {done ? (
-              <motion.div key="done" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
-                <CheckCircle className="h-6 w-6 text-sage-500" />
-              </motion.div>
-            ) : (
-              <motion.div key="undone" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
-                <Circle className="h-6 w-6 text-cream-300" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </button>
+        {canComplete ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={saving}
+            className={`mt-0.5 shrink-0 rounded-full transition ${saving ? 'opacity-50' : ''}`}
+            title={done ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+          >
+            <AnimatePresence mode="wait">
+              {done ? (
+                <motion.div key="done" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
+                  <CheckCircle className="h-6 w-6 text-sage-500" />
+                </motion.div>
+              ) : (
+                <motion.div key="undone" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
+                  <Circle className="h-6 w-6 text-cream-300" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        ) : (
+          <Lock className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
+        )}
 
-        {/* Aktivite içeriği */}
         <div className="min-w-0 flex-1">
+          {isNutrition && entry.mealType && (
+            <p className="text-[10px] font-bold uppercase tracking-wide text-sage-600">{mealLabel(entry.mealType)}</p>
+          )}
           <p className={`font-semibold leading-snug ${done ? 'text-cream-800/40 line-through' : 'text-cream-900'}`}>
-            {entry.exerciseName || entry.name || 'Aktivite'}
+            {displayName}
           </p>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -640,22 +636,37 @@ function ActivityRow({ entry, done, onToggle, onVideoOpen, saving, iconColor }) 
           {entry.description && (
             <p className="mt-1.5 text-xs leading-relaxed text-cream-800/60">{entry.description}</p>
           )}
+
+          <AnimatePresence>
+            {expanded && entry.videoUrl && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="mt-3 overflow-hidden rounded-xl border border-cream-200 bg-cream-50 p-2"
+              >
+                <VideoPlayer url={entry.videoUrl} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Video butonu */}
         {entry.videoUrl && (
           <button
             type="button"
-            onClick={() => onVideoOpen(entry)}
-            className="shrink-0 flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition"
+            onClick={onExpand}
+            className={`shrink-0 flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition ${
+              expanded
+                ? 'border-brand-400 bg-brand-100 text-brand-800'
+                : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100'
+            }`}
           >
             <PlayCircle className="h-3.5 w-3.5" />
-            Video
+            {expanded ? 'Gizle' : 'İzle'}
           </button>
         )}
       </div>
 
-      {/* Tamamlandı mesajı */}
       {done && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -667,44 +678,5 @@ function ActivityRow({ entry, done, onToggle, onVideoOpen, saving, iconColor }) 
         </motion.div>
       )}
     </motion.div>
-  )
-}
-
-// ── Video Modal ─────────────────────────────────────────────────────
-function VideoModal({ video, onClose }) {
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed inset-x-4 top-1/2 z-[70] mx-auto max-w-2xl -translate-y-1/2 overflow-hidden rounded-3xl bg-gray-950 shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <div>
-            <p className="font-semibold text-white">{video.exerciseName || 'Video'}</p>
-            {(video.start || video.end) && (
-              <p className="mt-0.5 text-xs text-white/50">{video.start}{video.end ? `–${video.end}` : ''} · {amountText(video)}</p>
-            )}
-          </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 hover:bg-white/10 text-white transition">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-4">
-          <VideoPlayer url={video.videoUrl} />
-          {video.description && (
-            <p className="mt-4 text-sm leading-relaxed text-white/70">{video.description}</p>
-          )}
-        </div>
-      </motion.div>
-    </>
   )
 }

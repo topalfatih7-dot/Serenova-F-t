@@ -4,8 +4,9 @@ import {
   Dumbbell, Apple, Mail, CalendarRange, Plus, Trash2, Video, UserRound, FileText,
   Check, CalendarCheck,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import NutritionProgramBuilder from '../../components/staff/NutritionProgramBuilder'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AvailabilityView from '../../components/package/AvailabilityView'
@@ -20,7 +21,10 @@ const weekdayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(
 
 function entryToText(e) {
   const amount = e.amountType === 'duration' ? `${e.amount} ${e.durationUnit || 'sn'}` : `${e.amount} tekrar`
-  return `${weekdayName(e.day)} ${e.start}-${e.end} · ${e.exerciseName} · ${amount}`
+  const sched = e.date
+    ? format(new Date(`${e.date}T12:00:00`), 'd MMM yyyy', { locale: tr })
+    : weekdayName(e.day)
+  return `${sched} ${e.start}-${e.end} · ${e.exerciseName} · ${amount}`
 }
 
 // Koç program oluşturucu — takvim tabanlı gün seçici + iki sütun düzeni
@@ -29,7 +33,9 @@ function CoachProgramBuilder({ exercises, onCreate }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [entries, setEntries] = useState([])
+  const [scheduleMode, setScheduleMode] = useState('weekly')
   const [selectedDay, setSelectedDay] = useState(1)
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [exSearch, setExSearch] = useState('')
   const [selectedExId, setSelectedExId] = useState('')
   const [draft, setDraft] = useState({
@@ -45,10 +51,12 @@ function CoachProgramBuilder({ exercises, onCreate }) {
     [exercises, exSearch]
   )
 
-  const dayEntries = useMemo(
-    () => [...entries.filter((e) => e.day === selectedDay)].sort((a, b) => a.start.localeCompare(b.start)),
-    [entries, selectedDay]
-  )
+  const dayEntries = useMemo(() => {
+    const list = scheduleMode === 'date'
+      ? entries.filter((e) => e.date === selectedDate)
+      : entries.filter((e) => e.day === selectedDay)
+    return [...list].sort((a, b) => a.start.localeCompare(b.start))
+  }, [entries, selectedDay, selectedDate, scheduleMode])
 
   const entriesPerDay = useMemo(
     () => AVAILABILITY_WEEKDAYS.reduce((acc, d) => {
@@ -66,7 +74,8 @@ function CoachProgramBuilder({ exercises, onCreate }) {
       ...list,
       {
         id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        day: selectedDay, start: draft.start, end: draft.end,
+        ...(scheduleMode === 'date' ? { date: selectedDate } : { day: selectedDay }),
+        start: draft.start, end: draft.end,
         exerciseId: ex.id, exerciseName: ex.name, videoUrl: ex.videoUrl || '', description: ex.description || '',
         amountType: draft.amountType, amount: Number(draft.amount) || 0, durationUnit: draft.durationUnit, note: draft.note.trim(),
       },
@@ -85,7 +94,9 @@ function CoachProgramBuilder({ exercises, onCreate }) {
     setTitle(''); setDescription(''); setEntries([])
   }
 
-  const selectedDayName = weekdayName(selectedDay)
+  const selectedDayName = scheduleMode === 'date'
+    ? format(new Date(`${selectedDate}T12:00:00`), 'd MMMM', { locale: tr })
+    : weekdayName(selectedDay)
 
   return (
     <div className="space-y-4">
@@ -106,39 +117,70 @@ function CoachProgramBuilder({ exercises, onCreate }) {
         />
       </div>
 
-      {/* Haftalık takvim — gün seçici */}
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Gün Seç</p>
-        <div className="grid grid-cols-7 gap-1">
-          {AVAILABILITY_WEEKDAYS.map((d) => {
-            const count = entriesPerDay[d.value] || 0
-            const isSelected = selectedDay === d.value
-            return (
-              <button
-                key={d.value}
-                type="button"
-                onClick={() => setSelectedDay(d.value)}
-                className={`flex flex-col items-center justify-center rounded-xl py-2.5 text-center text-xs font-semibold transition ${
-                  isSelected
-                    ? 'bg-brand-500 text-white shadow-md'
-                    : count > 0
-                    ? 'border border-brand-200 bg-brand-50 text-brand-700'
-                    : 'bg-cream-50 text-cream-800/60 hover:bg-cream-100'
-                }`}
-              >
-                <span>{d.short}</span>
-                {count > 0 && (
-                  <span className={`mt-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
-                    isSelected ? 'bg-white/30 text-white' : 'bg-brand-500 text-white'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+      {/* Planlama modu */}
+      <div className="flex gap-2 rounded-xl bg-cream-50 p-1">
+        <button
+          type="button"
+          onClick={() => setScheduleMode('weekly')}
+          className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${scheduleMode === 'weekly' ? 'bg-brand-500 text-white shadow' : 'text-cream-800/70'}`}
+        >
+          Her hafta tekrarla
+        </button>
+        <button
+          type="button"
+          onClick={() => setScheduleMode('date')}
+          className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${scheduleMode === 'date' ? 'bg-brand-500 text-white shadow' : 'text-cream-800/70'}`}
+        >
+          Belirli tarih
+        </button>
       </div>
+
+      {scheduleMode === 'weekly' ? (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Gün Seç</p>
+          <div className="grid grid-cols-7 gap-1">
+            {AVAILABILITY_WEEKDAYS.map((d) => {
+              const count = entriesPerDay[d.value] || 0
+              const isSelected = selectedDay === d.value
+              return (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => setSelectedDay(d.value)}
+                  className={`flex flex-col items-center justify-center rounded-xl py-2.5 text-center text-xs font-semibold transition ${
+                    isSelected
+                      ? 'bg-brand-500 text-white shadow-md'
+                      : count > 0
+                      ? 'border border-brand-200 bg-brand-50 text-brand-700'
+                      : 'bg-cream-50 text-cream-800/60 hover:bg-cream-100'
+                  }`}
+                >
+                  <span>{d.short}</span>
+                  {count > 0 && (
+                    <span className={`mt-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                      isSelected ? 'bg-white/30 text-white' : 'bg-brand-500 text-white'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-700">Tarih Seç</p>
+          <input
+            type="date"
+            value={selectedDate}
+            min={format(new Date(), 'yyyy-MM-dd')}
+            max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+          />
+        </div>
+      )}
 
       {/* İki sütun — PC: yan yana, Mobil: alt alta */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -290,33 +332,7 @@ function CoachProgramBuilder({ exercises, onCreate }) {
   )
 }
 
-// Diyetisyen beslenme programı (serbest metin)
-function NutritionProgramForm({ onCreate }) {
-  const { toast } = useToast()
-  const [form, setForm] = useState({ title: '', description: '', items: '' })
-
-  const submit = () => {
-    if (!form.title.trim()) { toast('Program başlığı gerekli', 'error'); return }
-    const items = form.items.split('\n').map((s) => s.trim()).filter(Boolean)
-    onCreate({ title: form.title.trim(), description: form.description.trim(), items })
-    setForm({ title: '', description: '', items: '' })
-  }
-
-  return (
-    <div className="rounded-2xl border border-sage-200 bg-sage-50/40 p-4">
-      <p className="flex items-center gap-2 font-semibold text-cream-900">
-        <ClipboardList className="h-4 w-4 text-sage-600" /> Beslenme Programı Oluştur
-      </p>
-      <div className="mt-3 space-y-3">
-        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Program başlığı (ör. Dengeli Beslenme Planı)" className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
-        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Açıklama / genel notlar" rows={2} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
-        <textarea value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} placeholder={'Her satıra bir öğün/madde:\nKahvaltı: Yulaf + meyve\nÖğle: Izgara tavuk + salata\nAkşam: Sebze + protein'} rows={5} className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm" />
-        <button type="button" onClick={submit} className="w-full rounded-xl bg-sage-500 py-2.5 text-sm font-semibold text-white hover:bg-sage-600">Programı Gönder</button>
-        <p className="text-center text-xs text-cream-800/50">Program danışana bildirim olarak iletilir.</p>
-      </div>
-    </div>
-  )
-}
+// Diyetisyen beslenme programı → NutritionProgramBuilder bileşenine taşındı
 
 function ClientInfo({ member, role, isCoach }) {
   const bmi = calculateBMI(member.weight, member.height)
@@ -514,7 +530,7 @@ export default function StaffClientsPage() {
         {programClient && (
           isCoach
             ? <CoachProgramBuilder member={programClient} exercises={exercises} onCreate={handleCreate} />
-            : <NutritionProgramForm onCreate={handleCreate} />
+            : <NutritionProgramBuilder onCreate={handleCreate} />
         )}
       </Modal>
     </div>

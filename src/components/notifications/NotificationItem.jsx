@@ -15,6 +15,7 @@ const TYPE_CONFIG = {
   program: { icon: ClipboardList, color: 'text-brand-600 bg-brand-50' },
   support: { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
   assignment: { icon: UserCheck, color: 'text-sage-600 bg-sage-50' },
+  'support-reply': { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
 }
 
 export default function NotificationItem({ notification, onRead }) {
@@ -39,7 +40,7 @@ export default function NotificationItem({ notification, onRead }) {
           <p className="font-medium text-cream-900">{notification.title}</p>
           {!notification.read && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />}
         </div>
-        <p className="mt-1 text-sm text-cream-800/60">{notification.message}</p>
+        <p className="mt-1 text-sm text-cream-800/60">{notification.message || notification.text}</p>
         <p className="mt-2 text-xs text-cream-800/40">{when}</p>
       </div>
     </button>

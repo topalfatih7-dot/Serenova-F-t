@@ -7,6 +7,7 @@ import AppShell from './components/layout/AppShell'
 import AdminShell from './components/layout/AdminShell'
 import StaffShell from './components/layout/StaffShell'
 import RequireAuth from './components/auth/RequireAuth'
+import NotificationToastBridge from './components/notifications/NotificationToastBridge'
 
 import LandingPage from './pages/LandingPage'
 
@@ -63,6 +64,7 @@ export default function App() {
   return (
     <AppProvider>
       <ToastProvider>
+        <NotificationToastBridge />
         <BrowserRouter>
           <Suspense fallback={<RouteFallback />}>
           <Routes>

@@ -14,6 +14,8 @@ import {
 import { ALL_PLANS } from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
+import { completionKey } from '../utils/programSchedule'
+import { buildProgressPatch } from '../utils/memberProgress'
 
 const AppContext = createContext(null)
 
@@ -401,6 +403,18 @@ export function AppProvider({ children }) {
     await patchCurrentRemote({ tasks })
   }, [currentMember, patchCurrentRemote])
 
+  const toggleActivityCompletion = useCallback(async (dateStr, entryId) => {
+    if (!currentMember || !dateStr) return
+    const current = currentMember.completedActivities || {}
+    const dayKeys = current[dateStr] || []
+    const key = completionKey(dateStr, entryId)
+    const newKeys = dayKeys.includes(key) ? dayKeys.filter((k) => k !== key) : [...dayKeys, key]
+    const completedActivities = { ...current, [dateStr]: newKeys }
+    const myProgs = (remoteDb?.programs || []).filter((p) => p.memberId === currentMember.id)
+    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress)
+    await patchCurrentRemote({ completedActivities, ...progressPatch })
+  }, [currentMember, remoteDb?.programs, patchCurrentRemote])
+
   const updateProfile = useCallback(async (profile) => {
     if (!currentMember) return
     await patchCurrentRemote(profile)
@@ -506,6 +520,7 @@ export function AppProvider({ children }) {
     rescheduleSession,
     cancelSession,
     toggleTask,
+    toggleActivityCompletion,
     updateProfile,
     updateSettings,
     refresh: reloadRemote,

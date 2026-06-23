@@ -1471,4 +1471,59 @@ Giriş (`LoginPage`) ve kayıt (`OnboardingPage`) formları aynı görsel aileye
 
 ---
 
+## 27. Bildirimler, Kayıt Popup, Program & Takvim Sistemi (2026-06-23)
+
+### Anlık bildirimler (toast + okunmamış sayı)
+
+- `NotificationToastBridge` (`src/components/notifications/NotificationToastBridge.jsx`) — Supabase
+  Realtime ile `members` UPDATE geldiğinde yeni bildirimleri toast olarak gösterir (sayfa yenileme gerekmez).
+- Okunmamış sayı: `TopBar` / `AppShell` / `MobileNav` — `notifications.filter(n => !n.read).length`.
+- Bildirim kaynakları: program oluşturma, koç/diyetisyen ataması, destek yanıtı, kayıt hoş geldin.
+- `support-reply` bug fix: `text` → `message` (`supabaseDb.js`).
+
+### Kayıt hoş geldin popup
+
+- `WelcomeSuccessModal` — kayıt/ödeme sonrası animasyonlu teşekkür popup, ardından `/dashboard`.
+
+### Program oluşturma (staff)
+
+| Rol | Bileşen | Özellik |
+|-----|---------|---------|
+| Koç | `CoachProgramBuilder` (StaffClientsPage) | **Her hafta tekrarla** (Pzt–Paz) veya **belirli tarih** modu |
+| Diyetisyen | `NutritionProgramBuilder` | Tarih bazlı öğünler: kahvaltı, öğle, akşam, ara öğün, not |
+
+Ortak şema (`programs.data.entries[]`):
+- `date: 'yyyy-MM-dd'` — net tarih
+- `day: 0–6` — haftalık tekrar (geriye uyumlu)
+- Beslenme: `mealType`, `name`, `note`
+
+Yardımcı: `src/utils/programSchedule.js` — `entryMatchesDate`, `getProgramEntriesForDate`.
+
+### Takvim (üye)
+
+- `CalendarPage` — tarih + haftalık girdi desteği.
+- **Sadece bugün** program detayı açılır; diğer günler kilitli (`Lock` ikonu).
+- Hareket videosu **aynı sayfada** genişletilir (`İzle` / `Gizle`), ayrı modal yok.
+- Tamamlama → `toggleActivityCompletion` → `streak` + `progress.workouts` güncellenir.
+
+### Streak & grafikler
+
+- `src/utils/memberProgress.js` — `computeStreak`, `buildWorkoutProgress`, `buildProgressPatch`.
+- `AppContext.toggleActivityCompletion` — tamamlama + streak/grafik tek çağrıda.
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `src/utils/programSchedule.js` | Tarih/haftalık program eşleme |
+| `src/utils/memberProgress.js` | Streak + workout grafik verisi |
+| `src/components/notifications/NotificationToastBridge.jsx` | Realtime toast |
+| `src/components/auth/WelcomeSuccessModal.jsx` | Kayıt sonrası popup |
+| `src/components/staff/NutritionProgramBuilder.jsx` | Diyetisyen tarihli öğün formu |
+| `src/pages/CalendarPage.jsx` | Kilitli günler + inline video |
+| `src/pages/staff/StaffClientsPage.jsx` | Koç tarih modu |
+| `src/context/AppContext.jsx` | `toggleActivityCompletion` |
+
+---
+
 *Bu rehber, projedeki tüm sistemlerin tek referans noktasıdır. Kod değişikliği yapmadan önce ilgili bölümü okuyun; arama yapmadan dosya yolunu ve sorumluluğu buradan bulabilirsiniz.*

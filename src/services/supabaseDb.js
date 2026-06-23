@@ -907,7 +907,7 @@ export async function sendTicketReply(id, from, text) {
           id: `n-${Date.now()}`,
           type: 'support-reply',
           title: 'Destek yanıtı',
-          text: `"${ticket.subject}" talebinize yanıt geldi.`,
+          message: `"${ticket.subject}" talebinize yanıt geldi.`,
           read: false,
           createdAt: nowISO(),
           ticketId: id,
