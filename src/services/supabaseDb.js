@@ -9,6 +9,8 @@ import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
+import { normalizeStaffProfile } from '../data/staffProfile'
+import { estimateReadMinutes } from '../utils/blogContent'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -59,7 +61,14 @@ function rowToMember(row) {
 }
 
 function rowToStaff(row) {
-  return { ...(row.data || {}), id: row.id, email: row.email, name: row.name, role: row.role, active: row.active }
+  return normalizeStaffProfile({
+    ...(row.data || {}),
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    active: row.active,
+  })
 }
 function rowToProgram(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id, staffId: row.staff_id }
@@ -595,10 +604,23 @@ export async function changeMemberPlan(member, planId, planPrice = 0) {
 
 // --------------------------- staff (admin) ---------------------------
 function staffDataPayload(data) {
+  const n = normalizeStaffProfile(data)
   return {
-    phone: data.phone || '', specialty: data.specialty || '', bio: data.bio || '',
-    photo: data.photo || null,
-    workDays: data.workDays || [], workStart: data.workStart || '09:00', workEnd: data.workEnd || '17:00',
+    phone: n.phone || '',
+    title: n.title || '',
+    specialty: n.specialty || '',
+    specialties: n.specialties || [],
+    headline: n.headline || '',
+    bio: n.bio || '',
+    photo: n.photo || null,
+    education: n.education || [],
+    experienceYears: Number(n.experienceYears) || 0,
+    experiences: n.experiences || [],
+    certificates: n.certificates || [],
+    languages: n.languages || ['Türkçe'],
+    workDays: n.workDays || [],
+    workStart: n.workStart || '09:00',
+    workEnd: n.workEnd || '17:00',
   }
 }
 
@@ -643,12 +665,20 @@ export async function removeStaff(id) {
 
 // --------------------------- posts (admin) ---------------------------
 export async function addPost(data) {
+  const content = data.content || ''
+  const readMinutes = data.readMinutes || estimateReadMinutes(content)
   const { data: row, error } = await supabase.from('posts').insert({
     published: data.published !== false,
     data: {
-      title: data.title, category: data.category || 'Yaşam', excerpt: data.excerpt || '',
-      author: data.author || 'Yeni Form Ekibi', readMinutes: data.readMinutes || 3,
-      accent: data.accent || 'brand', content: data.content || '', createdAt: today(),
+      title: data.title,
+      category: data.category || 'Yaşam',
+      excerpt: data.excerpt || '',
+      author: data.author || 'Yeni Form Ekibi',
+      readMinutes,
+      accent: data.accent || 'brand',
+      content,
+      createdAt: data.createdAt || today(),
+      updatedAt: today(),
     },
   }).select().single()
   if (error) return null
@@ -660,9 +690,20 @@ export async function editPost(id, patch) {
   const current = rows?.[0]
   if (!current) return
   const merged = { ...rowToPost(current), ...patch }
+  const content = merged.content || ''
   await supabase.from('posts').update({
     published: merged.published !== false,
-    data: { title: merged.title, category: merged.category, excerpt: merged.excerpt, author: merged.author, readMinutes: merged.readMinutes, accent: merged.accent, content: merged.content, createdAt: merged.createdAt },
+    data: {
+      title: merged.title,
+      category: merged.category,
+      excerpt: merged.excerpt,
+      author: merged.author,
+      readMinutes: merged.readMinutes || estimateReadMinutes(content),
+      accent: merged.accent,
+      content,
+      createdAt: merged.createdAt,
+      updatedAt: today(),
+    },
   }).eq('id', id)
 }
 

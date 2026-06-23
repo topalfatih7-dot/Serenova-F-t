@@ -45,6 +45,13 @@ export const SEO = {
   siteUrl: 'https://www.yeniform.com',
 }
 
+/** Kadro rolü → liste sayfası rotası */
+export function teamListPathForRole(role) {
+  if (role === 'coach') return '/team/coaches'
+  if (role === 'dietitian') return '/team/dietitians'
+  return '/team/doctors'
+}
+
 /** Statik public rotalar — sitemap ve varsayılan meta eşlemesi */
 export const STATIC_PUBLIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
@@ -143,7 +150,25 @@ export function buildOrganizationSchema() {
     logo: absoluteUrl('/favicon.svg'),
     description: SEO.defaultDescription,
     email: SEO.contactEmail,
-    sameAs: [],
+    sameAs: (BRAND.socialUrls || []).filter(Boolean),
+  }
+}
+
+export function buildItemListSchema({ name, path, items = [] }) {
+  const list = items.filter((item) => item?.name && item?.path)
+  if (!list.length) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    url: absoluteUrl(path),
+    numberOfItems: list.length,
+    itemListElement: list.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      url: absoluteUrl(item.path),
+    })),
   }
 }
 
@@ -198,13 +223,28 @@ export function buildArticleSchema(post) {
 
 export function buildPersonSchema(member) {
   if (!member) return null
+  const profile = typeof member.specialties !== 'undefined' ? member : { ...member }
+  const credentials = (profile.certificates || [])
+    .filter((c) => c?.name)
+    .map((c) => ({
+      '@type': 'EducationalOccupationalCredential',
+      name: c.name,
+      credentialCategory: c.issuer || 'Sertifika',
+    }))
+  const alumni = (profile.education || [])
+    .filter((e) => e?.school)
+    .map((e) => ({ '@type': 'EducationalOrganization', name: e.school }))
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    name: member.name,
-    jobTitle: member.specialty || member.role,
-    description: member.bio || member.description,
-    image: member.photo || undefined,
+    name: profile.name,
+    jobTitle: profile.title || profile.specialty || profile.role,
+    description: profile.headline || profile.bio || profile.description,
+    image: profile.photo || undefined,
+    knowsAbout: profile.specialties?.length ? profile.specialties : undefined,
+    hasCredential: credentials.length ? credentials : undefined,
+    alumniOf: alumni.length ? alumni : undefined,
     worksFor: { '@type': 'Organization', name: BRAND.name },
   }
 }

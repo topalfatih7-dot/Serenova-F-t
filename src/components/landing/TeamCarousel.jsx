@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
+import { normalizeStaffProfile } from '../../data/staffProfile'
 
 function wrapOffset(raw, count) {
   let offset = raw
@@ -31,6 +32,7 @@ export default function TeamCarousel({ members }) {
           if (Math.abs(offset) > 1) return null
 
           const isCenter = offset === 0
+          const profile = normalizeStaffProfile(m)
           const meta = staffRoleMeta(m.role)
           const RoleIcon = meta.icon
 
@@ -53,11 +55,11 @@ export default function TeamCarousel({ members }) {
               }`}
             >
               <div className="relative h-64 overflow-hidden bg-cream-100 sm:h-72">
-                {m.photo ? (
-                  <img src={m.photo} alt={m.name} className="h-full w-full object-cover" draggable={false} loading="lazy" />
+                {profile.photo ? (
+                  <img src={profile.photo} alt={profile.name} className="h-full w-full object-cover" draggable={false} loading="lazy" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-100 to-sage-100">
-                    <span className="font-display text-5xl font-bold text-brand-500/70">{m.name?.charAt(0)}</span>
+                    <span className="font-display text-5xl font-bold text-brand-500/70">{profile.name?.charAt(0)}</span>
                   </div>
                 )}
                 <span className={`absolute left-3 top-3 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm backdrop-blur ${
@@ -68,10 +70,11 @@ export default function TeamCarousel({ members }) {
                 </span>
               </div>
               <div className="p-5">
-                <h3 className="font-display text-lg font-bold text-cream-900">{m.name}</h3>
-                {m.specialty && <p className="mt-0.5 text-xs font-semibold text-brand-600">{m.specialty}</p>}
-                {(m.bio || m.description) && (
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-cream-800/65">{m.bio || m.description}</p>
+                <h3 className="font-display text-lg font-bold text-cream-900">{profile.name}</h3>
+                {profile.title && <p className="mt-0.5 text-xs text-cream-800/60">{profile.title}</p>}
+                {profile.specialty && <p className="mt-0.5 text-xs font-semibold text-brand-600">{profile.specialty}</p>}
+                {(profile.headline || profile.bio) && (
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-cream-800/65">{profile.headline || profile.bio}</p>
                 )}
                 {isCenter && (
                   <p className="mt-3 text-xs font-semibold text-brand-600">Detayları gör →</p>

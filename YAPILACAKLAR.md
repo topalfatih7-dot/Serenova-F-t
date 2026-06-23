@@ -161,37 +161,52 @@ npx vercel env pull .env.vercel.local
 
 ---
 
-## SEO & Search Console (yeniform.com) — 2026-06-22
+## SEO & Search Console (www.yeniform.com) — 2026-06-23
 
-Detaylı adımlar: **`SEO_SETUP.md`**
+Detaylı adımlar: **`SEO_SETUP.md`** · Teknik referans: **`AI_PROJE_REHBERI.md` §23–§24**
 
-### Tamamlanan (kod tarafı)
-- [x] `VITE_SITE_URL` + `APP_URL` → `.env.local` = `https://yeniform.com`
-- [x] `public/og-image.png` (1200×630 sosyal paylaşım görseli)
-- [x] `public/robots.txt`, `/sitemap.xml` API, sayfa meta + JSON-LD
-- [x] `index.html` canonical + OG mutlak URL'ler
+### Tamamlanan
 
-### Sizin yapmanız gerekenler
+**Kod / altyapı**
+- [x] `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com` (Vercel + `.env.local`)
+- [x] `robots.txt`, `/sitemap.xml` API, sayfa meta + JSON-LD
+- [x] `index.html` canonical + OG (`www`)
+- [x] `public/favicon.svg` repoda
+- [x] Blog + kadro listelerinde ItemList JSON-LD
+- [x] Kadro profil “geri dön” linki düzeltildi (`/#kadromuz` → `/team/...`)
 
-| # | Görev | Nerede |
-|---|--------|--------|
-| 1 | ~~**Vercel env ekle**~~ ✅ `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com` (Production, Preview, Development) | Vercel — 2026-06-22 |
-| 2 | **Redeploy** — env sonrası production deploy | Vercel |
-| 3 | **Google Search Console** — `https://yeniform.com` property ekle | [search.google.com/search-console](https://search.google.com/search-console) |
-| 4 | **Doğrulama meta etiketi** — Search Console kodunu `index.html` içine yapıştır, deploy et | `index.html` (yorum satırı hazır) |
-| 5 | **Sitemap gönder** — `sitemap.xml` | Search Console → Site haritaları |
-| 6 | **Ana sayfa dizine ekleme isteği** | Search Console → URL denetimi |
-| 7 | **OG test** — Facebook/LinkedIn debugger ile `https://yeniform.com` | `SEO_SETUP.md` §3 |
-| 8 | **(Opsiyonel) GA4** — Analytics measurement ID | `SEO_SETUP.md` §5 |
-| 9 | **(Opsiyonel) Logo güncelleme** — `public/brand-logo.png` kaydet → `npm run og:image` | Yerel |
+**Manuel (siz)**
+- [x] Google Search Console property doğrulandı (Turhost DNS)
+- [x] Sitemap gönderildi (`sitemap.xml`)
+- [x] Ana sayfa dizine ekleme isteği gönderildi
 
-### Vercel env tablosuna eklenecek satırlar
+### Acil — şimdi / bu hafta
 
-| Değişken | Değer | Ortamlar |
-|----------|-------|----------|
-| `VITE_SITE_URL` | `https://yeniform.com` | Production, Preview, Development |
-| `APP_URL` | `https://yeniform.com` | Production, Preview |
+| # | Görev | Kim | Nerede |
+|---|--------|-----|--------|
+| 1 | **OG debugger testi** — Facebook + LinkedIn, `https://www.yeniform.com` | Siz | `SEO_SETUP.md` §3 |
+| 2 | **Sitemap durumu** — 24–48 saat sonra “Başarılı” mı kontrol | Siz | Search Console → Site haritaları |
+| 3 | ~~Blog içeriği (5 yazı)~~ | Migration seed — `20260623_staff_profiles_blog_seed.sql` çalıştırın |
+| 4 | Kadro fotoğrafları | Admin → `/admin/staff` → profil fotoğrafı yükleyin |
+| 5 | **Supabase seed** — SQL Editor'da `supabase/migrations/20260623_staff_profiles_blog_seed.sql` çalıştır | Geliştirici |
+| 6 | **Deploy** — kod değişikliklerini Vercel'e gönder | Geliştirici |
+
+### Opsiyonel / iyileştirme (sonra)
+
+| Görev | Nerede |
+|-------|--------|
+| GA4 measurement ID (`G-…`) | `index.html` — ID verin, agent ekler |
+| Sosyal medya URL'leri | `src/config/brand.js` → `socialUrls` |
+| Haftalık Search Console raporu | Dizin oluşturma → Sayfalar |
+| Backlink / sosyal paylaşım | Dış kanal |
+| SSR / prerender | İleri seviye — şu an React SPA yeterli başlangıç |
+
+### Search Console takip (haftada 1)
+
+- Site haritaları → durum + keşfedilen URL sayısı
+- Sayfalar → dizine eklenen / hariç tutulan
+- `site:yeniform.com` Google araması (haftalar içinde sonuç gelmeye başlar)
 
 ---
 
-*Son güncelleme: 2026-06-22 — SEO + yeniform.com + OG PNG*
+*Son güncelleme: 2026-06-23 — SEO operasyon + kod iyileştirmeleri*

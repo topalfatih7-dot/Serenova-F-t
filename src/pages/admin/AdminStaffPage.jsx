@@ -1,136 +1,12 @@
 import { useState } from 'react'
-import {
-  Plus, Search, Mail, Phone, Clock, Trash2, Edit, Stethoscope, Check, X,
-} from 'lucide-react'
-import { STAFF_ROLES, staffRoleMeta } from '../../utils/staffRoles'
+import { Plus, Search, Mail, Phone, Trash2, Edit, Stethoscope, Award, Briefcase } from 'lucide-react'
+import { staffRoleMeta } from '../../utils/staffRoles'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
-import PhotoUpload from '../../components/ui/PhotoUpload'
-import { WEEKDAYS, weekdayLabel } from '../../components/package/SupportScheduler'
+import StaffFormModal from '../../components/admin/StaffFormModal'
+import { normalizeStaffProfile } from '../../data/staffProfile'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
-import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
-
-const EMPTY_FORM = {
-  role: 'coach', name: '', email: '', phone: '', password: '',
-  specialty: '', bio: '', photo: null, workDays: [1, 3, 5], workStart: '09:00', workEnd: '17:00',
-}
-
-function StaffFormModal({ open, onClose, onSubmit, initial, isEdit }) {
-  const [form, setForm] = useState(initial || EMPTY_FORM)
-  const [error, setError] = useState('')
-
-  const update = (patch) => setForm((f) => ({ ...f, ...patch }))
-
-  const toggleDay = (d) => {
-    const workDays = form.workDays.includes(d)
-      ? form.workDays.filter((x) => x !== d)
-      : [...form.workDays, d].sort((a, b) => a - b)
-    update({ workDays })
-  }
-
-  const submit = () => {
-    if (!form.name || !form.email.includes('@')) { setError('Ad ve geçerli e-posta gerekli.'); return }
-    // Yeni kayıtta şifre zorunlu; düzenlemede doldurulduysa kontrol edilir.
-    const passwordRequired = !isEdit || (form.password && form.password.length > 0)
-    if (passwordRequired && !isPasswordValid(form.password)) {
-      setError('Şifre gereksinimleri karşılanmıyor (8+ karakter, büyük/küçük harf, rakam ve özel karakter).')
-      return
-    }
-    if (form.workDays.length === 0) { setError('En az bir çalışma günü seçin.'); return }
-    setError('')
-    onSubmit(form)
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Bilgileri Düzenle' : 'Yeni Uzman Ekle'} size="lg">
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {STAFF_ROLES.map((r) => (
-            <button
-              key={r.value}
-              type="button"
-              onClick={() => update({ role: r.value })}
-              className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition ${
-                form.role === r.value ? 'border-brand-400 bg-brand-50 text-brand-700 ring-2 ring-brand-200' : 'border-cream-200 text-cream-800'
-              }`}
-            >
-              <r.icon className="h-4 w-4" /> {r.label}
-            </button>
-          ))}
-        </div>
-
-        <PhotoUpload
-          value={form.photo}
-          onChange={(photo) => update({ photo })}
-          label="Profil Fotoğrafı"
-          hint="Kadromuz bölümünde gösterilecek. Net, gülümseyen bir portre önerilir."
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <input value={form.specialty} onChange={(e) => update({ specialty: e.target.value })} placeholder="Uzmanlık (ör. Güç antrenmanı)" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <input value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta" type="email" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          <input value={form.phone} onChange={(e) => update({ phone: e.target.value })} placeholder="Telefon" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-        </div>
-
-        <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} placeholder="Kısa açıklama (kadromuz kartında görünür)" rows={3} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-
-        <div>
-          <input value={form.password} onChange={(e) => update({ password: e.target.value })} placeholder={isEdit ? 'Şifre (değiştirmek için doldurun)' : 'Şifre'} type="password" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-          {form.password && (
-            <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-              {PASSWORD_RULES.map((r) => {
-                const ok = r.test(form.password)
-                return (
-                  <li key={r.label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-sage-600' : 'text-cream-800/50'}`}>
-                    {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />} {r.label}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          <p className="mt-1.5 text-xs text-cream-800/45">Bu bilgilerle personel panele giriş yapar (koç, diyetisyen, doktor).</p>
-        </div>
-
-        <div>
-          <p className="mb-2 text-sm font-medium text-cream-800/80">Haftalık çalışma günleri</p>
-          <div className="flex flex-wrap gap-2">
-            {WEEKDAYS.map((d) => (
-              <button
-                key={d.value}
-                type="button"
-                onClick={() => toggleDay(d.value)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  form.workDays.includes(d.value) ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'
-                }`}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-cream-800/70">Başlangıç saati</span>
-            <input type="time" value={form.workStart} onChange={(e) => update({ workStart: e.target.value })} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm" />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-cream-800/70">Bitiş saati</span>
-            <input type="time" value={form.workEnd} onChange={(e) => update({ workEnd: e.target.value })} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm" />
-          </label>
-        </div>
-
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        <button type="button" onClick={submit} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">
-          {isEdit ? 'Değişiklikleri Kaydet' : 'Kaydet'}
-        </button>
-      </div>
-    </Modal>
-  )
-}
 
 export default function AdminStaffPage() {
   const { staff, addStaff, editStaff, removeStaff } = useApp()
@@ -142,7 +18,13 @@ export default function AdminStaffPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   const filtered = staff.filter((s) => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase())
+    const p = normalizeStaffProfile(s)
+    const q = search.toLowerCase()
+    const matchSearch =
+      p.name.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      p.specialty.toLowerCase().includes(q) ||
+      p.specialties.some((t) => t.toLowerCase().includes(q))
     const matchRole = filterRole === 'all' || s.role === filterRole
     return matchSearch && matchRole
   })
@@ -151,7 +33,7 @@ export default function AdminStaffPage() {
     const result = await addStaff(form)
     if (result && !result.success) { toast(result.error, 'error'); return }
     setAddOpen(false)
-    toast('Kayıt oluşturuldu', 'success')
+    toast('Uzman profili oluşturuldu', 'success')
   }
 
   const handleEdit = async (form) => {
@@ -159,7 +41,7 @@ export default function AdminStaffPage() {
     if (!patch.password) delete patch.password
     await editStaff(editTarget.id, patch)
     setEditTarget(null)
-    toast('Bilgiler güncellendi', 'success')
+    toast('Profil güncellendi', 'success')
   }
 
   return (
@@ -167,10 +49,12 @@ export default function AdminStaffPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">Kadromuz · Uzman Ekibi</h1>
-          <p className="mt-1 text-sm text-cream-800/60">{staff.length} kayıtlı uzman · ana sayfadaki “Kadromuz” bölümünde görünür</p>
+          <p className="mt-1 text-sm text-cream-800/60">
+            {staff.length} kayıtlı uzman · eğitim, sertifika ve deneyim bilgileri sitede yayınlanır
+          </p>
         </div>
         <button type="button" onClick={() => setAddOpen(true)} className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
-          <Plus className="h-4 w-4" /> Yeni Ekle
+          <Plus className="h-4 w-4" /> Yeni Uzman
         </button>
       </div>
 
@@ -179,7 +63,7 @@ export default function AdminStaffPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
           <input
             type="text"
-            placeholder="İsim veya e-posta ara..."
+            placeholder="İsim, e-posta veya uzmanlık ara..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
@@ -197,12 +81,13 @@ export default function AdminStaffPage() {
         <EmptyState
           icon={Stethoscope}
           title="Henüz uzman eklenmedi"
-          description="Koç, diyetisyen veya doktor ekleyerek danışan takibi ve program oluşturmayı başlatın."
-          action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Ekle</button>}
+          description="Koç, diyetisyen veya doktor ekleyerek detaylı kadro profillerini yayınlayın."
+          action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Uzman</button>}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((s) => {
+            const p = normalizeStaffProfile(s)
             const meta = staffRoleMeta(s.role)
             const RoleIcon = meta.icon
             const roleColors = {
@@ -211,20 +96,20 @@ export default function AdminStaffPage() {
               doctor: 'bg-cream-200 text-cream-900',
             }
             return (
-              <div key={s.id} className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
-                <div className="flex items-start justify-between">
+              <div key={s.id} className="flex flex-col rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    {s.photo ? (
-                      <img src={s.photo} alt={s.name} className="h-11 w-11 rounded-xl object-cover" />
+                    {p.photo ? (
+                      <img src={p.photo} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
                     ) : (
-                      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${roleColors[s.role] || roleColors.coach}`}>
+                      <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${roleColors[s.role] || roleColors.coach}`}>
                         <RoleIcon className="h-5 w-5" />
                       </span>
                     )}
                     <div>
-                      <p className="font-semibold text-cream-900">{s.name}</p>
+                      <p className="font-semibold text-cream-900">{p.name}</p>
                       <span className="text-xs font-medium text-cream-800/70">
-                        {meta.label}{s.specialty ? ` · ${s.specialty}` : ''}
+                        {meta.label}{p.title ? ` · ${p.title}` : ''}
                       </span>
                     </div>
                   </div>
@@ -237,17 +122,27 @@ export default function AdminStaffPage() {
                     </button>
                   </div>
                 </div>
-                {s.bio && <p className="mt-3 text-sm leading-relaxed text-cream-800/65">{s.bio}</p>}
-                <div className="mt-4 space-y-2 text-sm text-cream-800/70">
-                  <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-cream-800/40" /> {s.email}</p>
-                  <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-cream-800/40" /> {s.phone || '—'}</p>
-                  <p className="flex items-start gap-2">
-                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-cream-800/40" />
-                    <span>
-                      {s.workDays?.length ? s.workDays.map(weekdayLabel).join(', ') : '—'}
-                      <span className="block text-xs text-cream-800/50">{s.workStart} – {s.workEnd}</span>
+
+                {p.specialty && <p className="mt-2 text-sm font-medium text-brand-600">{p.specialty}</p>}
+                {p.headline && <p className="mt-2 line-clamp-2 text-sm text-cream-800/65">{p.headline}</p>}
+
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-cream-800/55">
+                  {p.experienceYears > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cream-100 px-2 py-0.5">
+                      <Briefcase className="h-3 w-3" /> {p.experienceYears} yıl
                     </span>
-                  </p>
+                  )}
+                  {p.education.length > 0 && <span className="rounded-full bg-cream-100 px-2 py-0.5">{p.education.length} eğitim</span>}
+                  {p.certificates.length > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cream-100 px-2 py-0.5">
+                      <Award className="h-3 w-3" /> {p.certificates.length} sertifika
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-auto space-y-1.5 pt-4 text-sm text-cream-800/70">
+                  <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-cream-800/40" /> {p.email}</p>
+                  <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-cream-800/40" /> {p.phone || '—'}</p>
                 </div>
               </div>
             )
@@ -255,9 +150,7 @@ export default function AdminStaffPage() {
         </div>
       )}
 
-      {addOpen && (
-        <StaffFormModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />
-      )}
+      {addOpen && <StaffFormModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />}
       {editTarget && (
         <StaffFormModal
           key={editTarget.id}

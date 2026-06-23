@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { BLOG_CATEGORIES } from '../../data/blogPosts'
+import { estimateReadMinutes } from '../../utils/blogContent'
 
 const ACCENTS = [
   { value: 'brand', label: 'Pembe', dot: 'bg-brand-500' },
@@ -64,6 +65,9 @@ function PostFormModal({ open, onClose, onSubmit, initial, isEdit }) {
 
         <textarea value={form.excerpt} onChange={(e) => update({ excerpt: e.target.value })} placeholder="Kısa özet (boş bırakılırsa içerikten alınır)" rows={2} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
         <textarea value={form.content} onChange={(e) => update({ content: e.target.value })} placeholder="Yazı içeriği. Paragrafları boş satırla ayırın." rows={9} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+        {form.content.trim() && (
+          <p className="text-xs text-cream-800/50">Tahmini okuma süresi: ~{estimateReadMinutes(form.content)} dk</p>
+        )}
 
         <label className="flex cursor-pointer items-center justify-between rounded-xl border border-cream-200 px-4 py-3">
           <span className="text-sm font-medium text-cream-900">Yayında</span>

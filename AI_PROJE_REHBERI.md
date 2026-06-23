@@ -3,7 +3,7 @@
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-22 (Bkz. §23: **SEO altyapısı** — meta, JSON-LD, sitemap, robots.txt)
+> **Son güncelleme:** 2026-06-23 (Bkz. §25: **Kadro & blog profil genişletmesi**)
 
 ---
 
@@ -694,6 +694,7 @@ Kaynak: `.env.example`
 | Menü linki (admin) | `src/components/layout/AdminShell.jsx` |
 | Menü linki (staff) | `src/components/layout/StaffShell.jsx` |
 | Marka adı/logo | `src/config/brand.js`, `src/components/ui/BrandLogo.jsx` |
+| Sosyal medya (SEO sameAs) | `src/config/brand.js` → `socialUrls` |
 | Admin e-postası | `src/config/brand.js` + `supabase/schema.sql` is_admin() |
 | Üyelik planları (fallback) | `src/data/membershipPlans.js` — `FREE_PLAN` (Basic), `GUMUS_PLAN`, `ALTIN_PLAN`, `PLATINUM_PLAN` |
 | Üyelik planları (canlı) | Admin panel `/admin/plans` veya `plans` tablosu |
@@ -1269,7 +1270,7 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 | Rota | Meta kaynağı | JSON-LD |
 |------|--------------|---------|
 | `/` | `PAGE_SEO['/']` + `PublicRouteSeo` | Organization, WebSite, FAQPage (`LandingPage`) |
-| `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/*` | `PAGE_SEO` | — |
+| `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/*` | `PAGE_SEO` | ItemList (`BlogPage`, `TeamListPage`) |
 | `/blog/:id` | `BlogPostPage` → `SeoHead` | Article + BreadcrumbList |
 | `/team/:id` | `StaffProfilePage` → `SeoHead` | Person + BreadcrumbList |
 | `/login`, `/forgot-password` | `PAGE_SEO` | `noindex` |
@@ -1283,18 +1284,20 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 
 ### Gerekli env
 ```
-VITE_SITE_URL=https://yeniform.com   # canonical + OG (sonunda / yok)
-APP_URL=https://yeniform.com         # sitemap sunucu yedeği
+VITE_SITE_URL=https://www.yeniform.com   # canonical + OG (sonunda / yok)
+APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 ```
 
-**Canlı site:** https://yeniform.com
+**Canlı site:** https://www.yeniform.com (`yeniform.com` → `www` yönlendirmesi)
 
 ### Production checklist (manuel)
-1. Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin (gerçek domain).
-2. Google Search Console'a site ekleyin → sitemap gönderin: `/sitemap.xml`
-3. `public/og-image.svg` yerine 1200×630 **PNG/JPG** (`og-image.png`) yükleyin; `src/config/seo.js` → `ogImage` güncelleyin (Facebook/LinkedIn SVG desteklemez).
-4. Google Analytics / Search Console doğrulama meta etiketi gerekiyorsa `index.html`'e ekleyin.
-5. Sosyal medya hesapları varsa `buildOrganizationSchema()` → `sameAs` dizisine URL ekleyin.
+1. ~~Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin~~ ✅ `www.yeniform.com`
+2. ~~Google Search Console property + sitemap~~ ✅ 2026-06-23
+3. ~~Ana sayfa dizine ekleme isteği~~ ✅ 2026-06-23
+4. OG debugger testi (Facebook + LinkedIn) — bekliyor
+5. GA4 measurement ID → `index.html` (opsiyonel)
+6. `src/config/brand.js` → `socialUrls` dizisine sosyal medya URL'leri (opsiyonel)
+7. Blog + kadro içerik zenginleştirme (sıralama için kritik)
 
 ### Erişilebilirlik (SEO ile ilişkili)
 - `PublicLayout`: skip link (`#main-content`), `<main>`, nav `aria-label`
@@ -1308,6 +1311,163 @@ APP_URL=https://yeniform.com         # sitemap sunucu yedeği
 - `src/components/layout/PublicLayout.jsx`, `AppShell.jsx`, `AdminShell.jsx`, `StaffShell.jsx`
 - `src/pages/LandingPage.jsx`, `BlogPostPage.jsx`, `StaffProfilePage.jsx`, `NotFoundPage.jsx`, `VideoCallPage.jsx`
 - `.env.example`
+
+---
+
+## 24. SEO Operasyon Durumu (2026-06-23)
+
+### Tamamlanan (teknik + manuel)
+
+| Alan | Durum | Not |
+|------|--------|-----|
+| Meta / canonical / OG | ✅ Kod + canlı | `www.yeniform.com` |
+| `robots.txt` + `sitemap.xml` | ✅ Canlı | 8 statik + blog + kadro URL |
+| Search Console doğrulama | ✅ | Turhost DNS TXT |
+| Sitemap gönderimi | ✅ | İlk durum “Getirilemedi” olabilir — 24–48 saat normal |
+| Ana sayfa dizin isteği | ✅ | URL denetimi |
+| Panel `noindex` | ✅ | dashboard, admin, staff, call |
+| JSON-LD | ✅ | Organization, WebSite, FAQ, Article, Person, Breadcrumb, ItemList |
+| `public/favicon.svg` | ✅ | Repoda |
+
+### Acil — yapılacaklar (öncelik sırası)
+
+| # | Görev | Kim | Dosya / yer |
+|---|--------|-----|-------------|
+| 1 | OG debugger testi | Siz (manuel) | Facebook + LinkedIn → `https://www.yeniform.com` |
+| 2 | Sitemap “Başarılı” bekle / kontrol | Siz | Search Console → Site haritaları |
+| 3 | Blog içeriği (min. 5–10 kaliteli yazı) | Admin | `/admin/blog` |
+| 4 | Kadro profilleri (bio + fotoğraf) | Admin | `/admin/staff` |
+| 5 | `public/brand-logo.png` + `npm run og:image` | Geliştirici | `scripts/generate-og-image.mjs` |
+
+### Opsiyonel / iyileştirme
+
+| Görev | Nerede |
+|-------|--------|
+| GA4 (`G-XXXXXXXXXX`) | `index.html` + deploy |
+| Sosyal medya `sameAs` | `src/config/brand.js` → `socialUrls` |
+| Başarı hikayesi içerik artırma | `/admin/content` |
+| Backlink / sosyal medya paylaşımı | Dış kanal |
+| SSR / prerender (ileri seviye) | Vite SSR veya prerender plugin — şu an SPA |
+
+### Supabase içerik snapshot (2026-06-23)
+
+| Kaynak | Sayı | SEO notu |
+|--------|------|----------|
+| Yayınlanmış blog | 1 | İçerik çok kısa — öncelikli genişletme |
+| Aktif kadro | 2 | Bio kısa; 1 profilde fotoğraf eksik |
+| FAQ | 6 | Landing JSON-LD'de kullanılıyor |
+| Onaylı başarı hikayesi | 5 | `/stories` sayfasında |
+
+### Kod değişiklikleri (2026-06-23)
+
+- `src/config/brand.js` — `socialUrls` dizisi (sameAs kaynağı)
+- `src/pages/StaffProfilePage.jsx` — kırık `/#kadromuz` linki → `/team/coaches|dietitians|doctors`
+- `src/pages/BlogPage.jsx`, `TeamListPage.jsx` — ItemList JSON-LD
+- `public/favicon.svg` — yeni
+- `.env.example`, `api/sitemap.js` — `www` canonical uyumu
+- `SEO_SETUP.md`, `YAPILACAKLAR.md` — güncel durum
+
+---
+
+## 25. Kadro & Blog Profil Genişletmesi (2026-06-23)
+
+### staff.data JSONB şeması (yeni alanlar)
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `title` | string | Unvan (ör. Uzman Diyetisyen) |
+| `specialty` | string | Ana uzmanlık (kart başlığı) |
+| `specialties` | string[] | Uzmanlık etiketleri |
+| `headline` | string | Kısa slogan (liste kartları) |
+| `bio` | string | Uzun biyografi (profil sayfası) |
+| `education` | `{degree,school,year}[]` | Eğitim |
+| `experienceYears` | number | Toplam deneyim yılı |
+| `experiences` | `{title,organization,period,description}[]` | İş deneyimi |
+| `certificates` | `{name,issuer,year}[]` | Sertifika / diploma |
+| `languages` | string[] | Konuşulan diller |
+| `photo`, `phone`, `workDays`, `workStart`, `workEnd` | (mevcut) | Görsel, iletişim, randevu |
+
+Eski `description` alanı okunurken `bio`'ya normalize edilir (`normalizeStaffProfile`).
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `src/data/staffProfile.js` | Form şeması + normalize |
+| `src/components/admin/StaffFormModal.jsx` | Sekmeli admin formu |
+| `src/components/staff/StaffProfileDisplay.jsx` | Modern profil sayfası |
+| `src/components/staff/StaffMemberCard.jsx` | Responsive kadro kartı |
+| `src/pages/admin/AdminStaffPage.jsx` | Kadro yönetimi |
+| `src/pages/TeamListPage.jsx`, `StaffProfilePage.jsx` | Public görünüm |
+| `src/utils/blogContent.js` | `estimateReadMinutes()` |
+| `supabase/migrations/20260623_staff_profiles_blog_seed.sql` | Örnek kadro + 5 blog seed |
+
+### Blog
+
+- `posts.data` JSONB yapısı aynı; `addPost` / `editPost` okuma süresini içerikten hesaplar.
+- `src/data/blogPosts.js` — 5 örnek yazı (fallback + seed kaynağı).
+
+### Veritabanı seed (manuel)
+
+Supabase SQL Editor'da çalıştırın: `supabase/migrations/20260623_staff_profiles_blog_seed.sql`  
+(Mevcut blog yazılarını siler ve 5 yeni yazı ekler; kadro profillerini zenginleştirir.)
+
+---
+
+## 26. Yorumlar Slider'ı + Kayıt UX Yenilemesi (2026-06-23)
+
+### Yorumlar (TestimonialCarousel) — yatay slider + genişletilebilir
+
+`src/components/landing/TestimonialCarousel.jsx` tamamen yeniden yazıldı. Önceki
+hâli masaüstünde 3'lü/2'li grid, sadece mobilde tek kart taşıyıcıydı. Yeni hâl
+"Gerçek Başarı Hikayeleri" (`SuccessStoriesPreview`) ile aynı deneyimi sunar:
+
+- **Tek yatay kaydırılabilir slider** (tüm cihazlarda) — `snap-x snap-mandatory`,
+  gizli scrollbar (`[scrollbar-width:none]` + `[&::-webkit-scrollbar]:hidden`).
+- **Sol/sağ ok butonları** (`sm` ve üstünde) — `scrollRef` + `canLeft/canRight`
+  durumuna göre etkinleşir; mobilde "yana kaydırın →" ipucu metni.
+- **Uzun yorumlar kısaltılır:** `PREVIEW_LIMIT = 180` karakter üstü yorumlarda
+  `line-clamp-4` uygulanır ve **aşağı ok (ChevronDown)** ile "Devamını oku /
+  Daha az göster" toggle'ı açılır (kart bazlı `expanded` state).
+- Kart genişliği `w-[min(85vw,340px)] sm:w-[360px]`; yıldız + rozet korunur.
+
+### Kayıt paket seçimi (OnboardingPage step 1) — modern + ikna odaklı
+
+`src/pages/OnboardingPage.jsx` step 1 kartları 2'li küçük grid'den **tek sütun
+zengin kartlara** (mobile-first) çevrildi:
+
+- `RECOMMENDED_PLAN = 'altin'` → animasyonlu **"En Çok Tercih"** rozeti (pulse),
+  amber glow ring, üzerinden geçen **parıltı (shimmer) animasyonu**, "Bu Planı Seç ★".
+- **Fiyat parçalama** (`dailyPrice`): ücretli planlarda "Günde yalnızca ~₺X"
+  rozeti ile yüksek aylık fiyatın algısı yumuşatılır (psikolojik teşvik).
+- Kartlar `framer-motion` ile stagger giriş + `whileHover y:-3` + `whileTap`.
+- Önerilen kart 4 özellik, diğerleri 3 özellik gösterir; "+N özellik daha" satırı.
+- Seçili/önerilen durumlarda ikon arka planı renklenir, ring + check rozeti.
+
+### Giriş & Kayıt formları tutarlılığı
+
+Giriş (`LoginPage`) ve kayıt (`OnboardingPage`) formları aynı görsel aileye getirildi:
+
+| Öğe | Ortak değer |
+|-----|-------------|
+| Sağ panel container | `px-4 py-10 sm:px-8` |
+| Mobil logo boşluğu | `mb-8 lg:hidden` |
+| Form kartı | `rounded-3xl border-white/80 bg-white/90 p-6 sm:p-8 shadow-xl backdrop-blur-sm` |
+| Alan stili | `FormField` (emphasis) — etiket `text-xs uppercase tracking-wide`, input `py-3.5 pl-11 border-cream-400 bg-white` |
+| Şifre alanı | `FormField` ile aynı emphasis stili + göz aç/kapa |
+| Birincil buton | `py-3.5` brand→sage gradyan |
+
+- `LoginPage` artık `FormField`'i import edip e-posta için kullanır; şifre alanı
+  da aynı emphasis stiline getirildi (önceki `border-cream-200 bg-cream-50` farkı kaldırıldı).
+- Onboarding şifre/tekrar inputları emphasis stiline (`border-cream-400 bg-white py-3.5`) hizalandı.
+
+### Dosyalar
+
+| Dosya | Değişiklik |
+|-------|-----------|
+| `src/components/landing/TestimonialCarousel.jsx` | Yatay slider + genişletilebilir yorum |
+| `src/pages/OnboardingPage.jsx` | Yeni paket kartları + form hizalaması |
+| `src/pages/auth/LoginPage.jsx` | `FormField` kullanımı + stil hizalaması |
 
 ---
 

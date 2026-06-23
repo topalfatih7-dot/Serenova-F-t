@@ -23,6 +23,13 @@ import { startStripeCheckout } from '../services/stripePayment'
 
 const STEPS = ['Hesap', 'Üyelik']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const RECOMMENDED_PLAN = 'altin'
+
+// Yüksek fiyatı küçük günlük tutara bölerek algıyı yumuşatır (fiyat parçalama).
+function dailyPrice(price) {
+  if (!price || price <= 0) return 0
+  return Math.max(1, Math.round(price / 30))
+}
 
 const BENEFITS = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman & beslenme programları' },
@@ -473,14 +480,14 @@ export default function OnboardingPage() {
       </div>
 
       {/* Sağ panel — kayıt formu */}
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-4 py-8 sm:px-8">
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-4 py-10 sm:px-8">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-md"
         >
-          <div className="mb-6 lg:hidden">
+          <div className="mb-8 lg:hidden">
             <BrandLogo />
           </div>
 
@@ -523,15 +530,15 @@ export default function OnboardingPage() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-cream-900">Şifre</label>
+                          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/35" />
+                            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
                             <input
                               type={showPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               value={data.password}
                               onChange={(e) => update({ password: e.target.value })}
-                              className="w-full rounded-2xl border border-cream-200 bg-cream-50/50 py-3 pl-10 pr-9 text-sm text-cream-900 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+                              className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-10 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                             />
                             <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
                               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -539,15 +546,15 @@ export default function OnboardingPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-cream-900">Tekrar</label>
+                          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Tekrar</span>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/35" />
+                            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
                             <input
                               type={showConfirmPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               value={data.confirmPassword}
                               onChange={(e) => update({ confirmPassword: e.target.value })}
-                              className="w-full rounded-2xl border border-cream-200 bg-cream-50/50 py-3 pl-10 pr-9 text-sm text-cream-900 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+                              className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-10 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                             />
                             <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
                               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -574,53 +581,107 @@ export default function OnboardingPage() {
                   )}
 
                   {step === 1 && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {displayPlans.map((m) => {
+                    <div className="space-y-3">
+                      {displayPlans.map((m, idx) => {
                         const selected = data.membership === m.id
+                        const recommended = m.id === RECOMMENDED_PLAN
+                        const daily = dailyPrice(m.price)
+                        const includedFeatures = (m.features || []).filter((f) => f.included)
                         return (
                           <motion.button
                             key={m.id}
                             type="button"
-                            whileTap={{ scale: 0.97 }}
+                            initial={{ opacity: 0, y: 14 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            whileHover={{ y: -3 }}
+                            whileTap={{ scale: 0.985 }}
                             onClick={() => update({ membership: m.id })}
-                            className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all ${planRingColor(m.id, selected)} ${selected ? 'shadow-md' : 'hover:shadow-md'}`}
+                            className={`group relative block w-full overflow-hidden rounded-2xl border text-left transition-all ${planRingColor(m.id, selected)} ${
+                              selected
+                                ? 'shadow-lg shadow-brand-500/15'
+                                : recommended
+                                  ? 'shadow-md shadow-amber-300/30 hover:shadow-lg'
+                                  : 'shadow-sm hover:shadow-md'
+                            } ${recommended && !selected ? 'border-amber-300' : ''}`}
                           >
+                            {/* Önerilen plan için animasyonlu parıltı şeridi */}
+                            {recommended && (
+                              <motion.span
+                                aria-hidden
+                                initial={{ x: '-120%' }}
+                                animate={{ x: '220%' }}
+                                transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }}
+                                className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent"
+                              />
+                            )}
+
                             <div className={`h-1.5 w-full bg-gradient-to-r ${planAccent(m.id)}`} />
-                            {selected && (
-                              <span className="absolute right-2 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-white shadow">
-                                <Check className="h-3 w-3" strokeWidth={3} />
-                              </span>
-                            )}
-                            {m.badge && !selected && (
-                              <span className="absolute right-2 top-2.5 rounded-full bg-cream-900/85 px-1.5 py-0.5 text-[8px] font-bold uppercase text-white">
-                                {m.badge}
-                              </span>
-                            )}
-                            <div className="flex flex-col p-3">
-                              <div className="flex items-center gap-2">
-                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${planIconBg(m.id, selected)}`}>
+
+                            {/* Üst rozet satırı */}
+                            <div className="absolute right-3 top-3.5 flex items-center gap-1.5">
+                              {recommended && (
+                                <motion.span
+                                  animate={{ scale: [1, 1.06, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md shadow-amber-500/40"
+                                >
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  En Çok Tercih
+                                </motion.span>
+                              )}
+                              {!recommended && m.badge && (
+                                <span className="rounded-full bg-cream-900/85 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                                  {m.badge}
+                                </span>
+                              )}
+                              {selected && (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-white shadow">
+                                  <Check className="h-3 w-3" strokeWidth={3} />
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col p-4">
+                              <div className="flex items-center gap-3">
+                                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${planIconBg(m.id, selected || recommended)}`}>
                                   {planIcon(m.id)}
                                 </span>
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-bold text-cream-900">{m.name}</p>
+                                  <p className="font-display text-base font-bold text-cream-900">{m.name}</p>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="font-display text-xl font-extrabold text-cream-900">
+                                      {m.price === 0 ? 'Ücretsiz' : `${m.price?.toLocaleString('tr-TR')}₺`}
+                                    </span>
+                                    {m.price > 0 && <span className="text-[11px] font-medium text-cream-800/55">/ay</span>}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="mt-2 flex items-baseline gap-0.5">
-                                <span className="font-display text-lg font-extrabold text-cream-900">
-                                  {m.price === 0 ? 'Ücretsiz' : `${m.price?.toLocaleString('tr-TR')}₺`}
-                                </span>
-                                {m.price > 0 && <span className="text-[10px] font-medium text-cream-800/55">/ay</span>}
-                              </div>
-                              <ul className="mt-2 space-y-1 border-t border-cream-100 pt-2">
-                                {(m.features || []).filter((f) => f.included).slice(0, 3).map((f, i) => (
-                                  <li key={i} className="flex items-start gap-1 text-[9px] leading-tight text-cream-800/80">
-                                    <Check className="mt-0.5 h-2.5 w-2.5 shrink-0 text-sage-600" strokeWidth={3} />
-                                    <span className="line-clamp-1">{f.text}</span>
+
+                              {/* Fiyat parçalama — günlük algı */}
+                              {m.price > 0 && (
+                                <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
+                                  <Sparkles className="h-3 w-3" />
+                                  Günde yalnızca ~{daily.toLocaleString('tr-TR')}₺
+                                </p>
+                              )}
+
+                              <ul className="mt-3 grid gap-1.5 border-t border-cream-100 pt-3">
+                                {includedFeatures.slice(0, recommended ? 4 : 3).map((f, i) => (
+                                  <li key={i} className="flex items-start gap-1.5 text-[11px] leading-tight text-cream-800/85">
+                                    <Check className="mt-0.5 h-3 w-3 shrink-0 text-sage-600" strokeWidth={3} />
+                                    <span>{f.text}</span>
                                   </li>
                                 ))}
+                                {includedFeatures.length > (recommended ? 4 : 3) && (
+                                  <li className="text-[10px] font-medium text-brand-600/80">
+                                    +{includedFeatures.length - (recommended ? 4 : 3)} özellik daha
+                                  </li>
+                                )}
                               </ul>
-                              <div className={`mt-2.5 rounded-lg py-1.5 text-center text-[10px] font-bold transition ${planBtnBg(m.id, selected)}`}>
-                                {selected ? 'Seçildi ✓' : 'Seç'}
+
+                              <div className={`mt-3.5 rounded-xl py-2 text-center text-xs font-bold transition ${planBtnBg(m.id, selected)}`}>
+                                {selected ? 'Seçildi ✓' : recommended ? 'Bu Planı Seç ★' : 'Seç'}
                               </div>
                             </div>
                           </motion.button>

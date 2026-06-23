@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext'
 import { ADMIN_CREDENTIALS, BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
+import FormField from '../../components/ui/FormField'
 
 const FEATURES = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman programları' },
@@ -167,36 +168,36 @@ export default function LoginPage() {
             <BrandLogo />
           </div>
 
-          <div className="rounded-3xl border border-white/80 bg-white/90 p-7 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm sm:p-9">
+          <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm sm:p-8">
             <h2 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">Tekrar hoş geldiniz</h2>
             <p className="mt-2 text-sm text-cream-800/60">Hesabınıza giriş yapın</p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-cream-900">E-posta</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/35" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={`w-full rounded-2xl border bg-cream-50/50 py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 ${errors.email ? 'border-red-300' : 'border-cream-200'}`}
-                    placeholder="ornek@email.com"
-                    autoComplete="email"
-                  />
-                </div>
-                {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>}
-              </div>
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <FormField
+                emphasis
+                label="E-posta"
+                icon={Mail}
+                type="email"
+                placeholder="ornek@email.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={errors.email}
+              />
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-cream-900">Şifre</label>
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/35" />
+                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full rounded-2xl border bg-cream-50/50 py-3.5 pl-11 pr-12 text-sm outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 ${errors.password ? 'border-red-300' : 'border-cream-200'}`}
+                    className={`w-full rounded-2xl border py-3.5 pl-11 pr-12 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 ${
+                      errors.password
+                        ? 'border-red-400 bg-red-50/50 focus:border-red-500 focus:ring-4 focus:ring-red-100'
+                        : 'border-cream-400 bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100'
+                    }`}
                     placeholder="••••••••"
                     autoComplete={remember ? 'current-password' : 'password'}
                   />
@@ -208,7 +209,7 @@ export default function LoginPage() {
                     {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
+                {errors.password && <p className="mt-1.5 block text-xs font-medium text-red-500">{errors.password}</p>}
               </div>
 
               <div className="flex items-center justify-between">
@@ -233,7 +234,7 @@ export default function LoginPage() {
                 disabled={loading}
                 whileHover={{ scale: loading ? 1 : 1.01 }}
                 whileTap={{ scale: loading ? 1 : 0.99 }}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-4 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}

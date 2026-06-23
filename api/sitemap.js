@@ -20,7 +20,7 @@ function siteBase() {
   return (
     process.env.VITE_SITE_URL ||
     process.env.APP_URL ||
-    'https://yeniform.com'
+    'https://www.yeniform.com'
   ).replace(/\/$/, '')
 }
 

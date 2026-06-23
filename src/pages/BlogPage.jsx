@@ -6,7 +6,9 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
+import JsonLd from '../components/seo/JsonLd'
 import { useApp } from '../context/AppContext'
+import { buildItemListSchema } from '../config/seo'
 import { BLOG_CATEGORIES } from '../data/blogPosts'
 
 const ACCENTS = {
@@ -28,8 +30,19 @@ export default function BlogPage() {
   const featured = filtered[0]
   const rest = filtered.slice(1)
 
+  const blogListSchema = useMemo(
+    () =>
+      buildItemListSchema({
+        name: 'Yeni Form Blog',
+        path: '/blog',
+        items: published.map((p) => ({ name: p.title, path: `/blog/${p.id}` })),
+      }),
+    [published]
+  )
+
   return (
     <div>
+      <JsonLd data={blogListSchema} />
       <PlansAnimatedBackground className="!py-14 sm:!py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

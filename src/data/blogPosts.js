@@ -113,4 +113,36 @@ Kısa bir akşam rutini — ılık duş, hafif esneme veya birkaç dakika nefes 
 
 Sürekli uyku sorunları yaşıyorsanız bu, altta yatan bir sağlık durumunun işareti olabilir; bir sağlık profesyoneline danışmanız önerilir.`,
   },
+  {
+    id: 'post-online-coaching',
+    title: 'Online Koçluk ve Diyetisyen Desteği Neden İşe Yarar?',
+    category: 'Yaşam',
+    excerpt: 'Yüz yüze seanslara alternatif olarak online destek; esnek randevu, kişisel program takibi ve sürdürülebilir alışkanlıklar için güçlü bir model sunar.',
+    author: 'Yeni Form Ekibi',
+    readMinutes: 5,
+    accent: 'sage',
+    published: true,
+    createdAt: '2026-06-10',
+    content: `Online wellness desteği son yıllarda hızla yaygınlaştı — ve bunun iyi bir nedeni var: doğru kurgulandığında, yüz yüze danışmanlıkla aynı disiplini daha erişilebilir bir forma taşır.
+
+Esneklik ve süreklilik
+Yoğun iş temposu, şehir trafiği veya farklı ilçede yaşamak yüz yüze görüşmeleri zorlaştırabilir. Online koçluk ve diyetisyen seansları; evden, ofisten veya seyahat halindeyken bile programınıza devam etmenizi sağlar. Yeni Form'da video görüşme randevuları, planlanmış seans penceresi içinde güvenli şekilde gerçekleşir.
+
+Kişisel program takibi
+Sadece konuşmak yetmez; uygulama önemlidir. Üye panelinizde antrenman ve beslenme programlarınızı görebilir, ilerlemenizi takip edebilir ve koçunuzla/diyetisyeninizle aynı veri üzerinden konuşabilirsiniz. Bu, "ne yapmalıyım?" sorusunu her gün yanıtlar.
+
+Hesap verebilirlik
+Düzenli görüşmeler ve panel üzerinden görev takibi, motivasyonu yüksek tutar. Özellikle hedef kilo, performans veya yaşam tarzı değişikliği gibi orta-uzun vadeli hedeflerde, haftalık check-in'ler kritik fark yaratır.
+
+Kimler için uygun?
+• Yoğun çalışan profesyoneller
+• Şehir dışında veya seyahat edenler
+• Spor salonuna gidemeyen ama evde antrenman yapabilenler
+• Beslenme düzenini sistematik kurmak isteyenler
+
+Yeni Form farkı
+Basic paketle ücretsiz başlayabilir; Gümüş ve üzeri paketlerde koç/diyetisyen görüşmeleri, Platinum'da gelişmiş kalori desteği sunulur. Tüm süreç tek platformda: kayıt, sağlık analizi, programlar ve randevular.
+
+Unutmayın: Platform tıbbi tedavi sunmaz. Kronik hastalık, hamilelik veya özel sağlık durumlarınız varsa doktorunuza danışın; online destek bu süreçte tamamlayıcı bir rehberlik sağlar.`,
+  },
 ]
