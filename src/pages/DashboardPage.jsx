@@ -12,7 +12,7 @@ import OnboardingTutorial from '../components/ui/OnboardingTutorial'
 import HealthTestWidget from '../components/dashboard/HealthTestWidget'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import { isHealthTestComplete } from '../data/healthTest'
-import { WeightChart, WorkoutChart } from '../components/dashboard/ProgressChart'
+import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/ProgressChart'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { format } from 'date-fns'
@@ -331,7 +331,7 @@ export default function DashboardPage() {
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <div className="glass-card-solid p-6">
           <h3 className="font-semibold text-cream-900">Kilo Trendi</h3>
           {progress.weight?.length ? <WeightChart data={progress.weight} /> : <ChartEmpty message="Kilo kayıtlarınız burada görünecek" />}
@@ -339,6 +339,13 @@ export default function DashboardPage() {
         <div className="glass-card-solid p-6">
           <h3 className="font-semibold text-cream-900">Antrenman Tamamlama</h3>
           {progress.workouts?.length ? <WorkoutChart data={progress.workouts} /> : <ChartEmpty message="Antrenman verileriniz burada görünecek" />}
+        </div>
+        <div className="glass-card-solid p-6 lg:col-span-2 xl:col-span-1">
+          <h3 className="flex items-center gap-2 font-semibold text-cream-900">
+            <Apple className="h-4 w-4 text-sage-600" /> Öğün Takibi
+          </h3>
+          <p className="mt-0.5 text-xs text-cream-800/50">Diyet listelerindeki öğün onayları (takvimden ayrı)</p>
+          {progress.meals?.length ? <MealChart data={progress.meals} /> : <ChartEmpty message="Diyetisyen listeniz eklendikçe öğün verileri burada görünür" />}
         </div>
       </div>
 

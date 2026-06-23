@@ -1,50 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, CheckCircle, Crown, PartyPopper } from 'lucide-react'
 import { BRAND } from '../../config/brand'
 
-const REDIRECT_SECONDS = 5
-
 export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue }) {
-  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS)
-  const redirectedRef = useRef(false)
-
-  const goToPanel = useCallback(() => {
-    if (redirectedRef.current) return
-    redirectedRef.current = true
-    onContinue?.()
-  }, [onContinue])
-
-  useEffect(() => {
-    if (!open) {
-      redirectedRef.current = false
-      setSecondsLeft(REDIRECT_SECONDS)
-      return undefined
-    }
-
-    setSecondsLeft(REDIRECT_SECONDS)
-    const interval = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(interval)
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-
-    const timeout = setTimeout(() => {
-      goToPanel()
-    }, REDIRECT_SECONDS * 1000)
-
-    return () => {
-      clearInterval(interval)
-      clearTimeout(timeout)
-    }
-  }, [open, goToPanel])
-
-  const progress = ((REDIRECT_SECONDS - secondsLeft) / REDIRECT_SECONDS) * 100
-
   return (
     <AnimatePresence>
       {open && (
@@ -135,31 +93,15 @@ export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="h-1.5 overflow-hidden rounded-full bg-cream-100">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-sage-500"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-                <p className="text-center text-xs text-cream-800/55">
-                  {secondsLeft > 0
-                    ? `${secondsLeft} saniye içinde panele yönlendiriliyorsunuz…`
-                    : 'Yönlendiriliyorsunuz…'}
-                </p>
-              </div>
-
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={goToPanel}
+                onClick={() => onContinue?.()}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25"
               >
                 {isPaid && <Crown className="h-4 w-4 text-gold-200" />}
-                Hemen Panele Git
+                Panele Git
               </motion.button>
             </div>
           </motion.div>

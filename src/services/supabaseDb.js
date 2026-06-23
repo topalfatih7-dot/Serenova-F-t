@@ -133,7 +133,7 @@ export function onAuthChange(cb) {
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], requests: [], session: null,
+  tickets: [], activities: [], payments: [], exercises: [], requests: [], staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
   content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
 }
 
@@ -151,6 +151,50 @@ function rowToExercise(row) {
 }
 function rowToRequest(row) {
   return { id: row.id, memberId: row.member_id, memberName: row.member_name, type: row.type, status: row.status, requestedUntil: row.requested_until, note: row.note, createdAt: row.created_at }
+}
+
+function rowToStaffApplication(row) {
+  return {
+    id: row.id,
+    role: row.role,
+    status: row.status,
+    email: row.email,
+    name: row.name,
+    phone: row.phone || '',
+    data: row.data || {},
+    adminNote: row.admin_note || '',
+    createdAt: row.created_at,
+    reviewedAt: row.reviewed_at,
+  }
+}
+
+function rowToCorporateApplication(row) {
+  return {
+    id: row.id,
+    status: row.status,
+    companyName: row.company_name,
+    contactName: row.contact_name,
+    email: row.email,
+    phone: row.phone || '',
+    data: row.data || {},
+    adminNote: row.admin_note || '',
+    createdAt: row.created_at,
+    reviewedAt: row.reviewed_at,
+  }
+}
+
+function rowToContactInquiry(row) {
+  return {
+    id: row.id,
+    status: row.status,
+    name: row.name,
+    email: row.email,
+    phone: row.phone || '',
+    subject: row.subject,
+    message: row.message,
+    source: row.source,
+    createdAt: row.created_at,
+  }
 }
 
 function rowToPlan(row) {
@@ -230,6 +274,19 @@ export async function hydrate() {
 
   const members = (membersRes.data || []).map(rowToMember)
   const role = roleForEmail(user.email, staff)
+  let staffAppsRes = { data: [] }
+  let corporateAppsRes = { data: [] }
+  let contactInqRes = { data: [] }
+  if (role === 'admin') {
+    const [sa, ca, ci] = await Promise.all([
+      supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
+      supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
+      supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
+    ])
+    staffAppsRes = sa
+    corporateAppsRes = ca
+    contactInqRes = ci
+  }
   let session
   if (role === 'admin') session = { type: 'admin', memberId: null }
   else if (role === 'staff') {
@@ -251,6 +308,9 @@ export async function hydrate() {
     exercises,
     plans,
     requests: (requestsRes.data || []).map(rowToRequest),
+    staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
+    corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
+    contactInquiries: (contactInqRes.data || []).map(rowToContactInquiry),
     session,
     content,
   }
@@ -828,11 +888,154 @@ export async function resolveMembershipRequest(request, approve) {
   return { success: true }
 }
 
+// --------------------------- staff applications ---------------------------
+export async function submitStaffApplication(form) {
+  const payload = {
+    city: form.city || '',
+    title: form.title || '',
+    specialties: form.specialties || [],
+    experienceYears: Number(form.experienceYears) || 0,
+    education: form.education || [],
+    certificates: form.certificates || [],
+    experiences: form.experiences || [],
+    bio: form.bio || '',
+    linkedin: form.linkedin || '',
+    languages: form.languages || ['Türkçe'],
+    workDays: form.workDays || [],
+    workStart: form.workStart || '09:00',
+    workEnd: form.workEnd || '17:00',
+    onlineCoachingExperience: !!form.onlineCoachingExperience,
+    primaryCertification: form.primaryCertification || '',
+    licenseNumber: form.licenseNumber || '',
+    graduationDepartment: form.graduationDepartment || '',
+  }
+
+  const { data, error } = await supabase.rpc('submit_staff_application', {
+    p_role: form.role,
+    p_email: form.email?.trim().toLowerCase(),
+    p_name: form.name?.trim(),
+    p_phone: form.phone?.trim() || '',
+    p_data: payload,
+  })
+
+  if (error) return { success: false, error: error.message }
+  await addActivity('staff_apply', `${form.name} (${staffRoleLabel(form.role)}) kadro başvurusu gönderdi`)
+  return { success: true, id: data }
+}
+
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#'
+  let pwd = ''
+  for (let i = 0; i < 14; i += 1) pwd += chars[Math.floor(Math.random() * chars.length)]
+  return pwd
+}
+
+export async function resolveStaffApplication(application, approve, adminNote = '') {
+  if (!approve) {
+    const { error } = await supabase.from('staff_applications').update({
+      status: 'rejected',
+      admin_note: adminNote || '',
+      reviewed_at: nowISO(),
+    }).eq('id', application.id)
+    if (error) return { success: false, error: error.message }
+    await addActivity('staff_apply', `${application.name} kadro başvurusu reddedildi`)
+    return { success: true }
+  }
+
+  const tempPassword = generateTempPassword()
+  const staffPayload = {
+    role: application.role,
+    name: application.name,
+    email: application.email,
+    phone: application.phone,
+    password: tempPassword,
+    title: application.data?.title || '',
+    specialty: (application.data?.specialties || [])[0] || '',
+    specialties: application.data?.specialties || [],
+    headline: application.data?.title || '',
+    bio: application.data?.bio || '',
+    education: application.data?.education || [],
+    experienceYears: application.data?.experienceYears || 0,
+    experiences: application.data?.experiences || [],
+    certificates: application.data?.certificates || [],
+    languages: application.data?.languages || ['Türkçe'],
+    workDays: application.data?.workDays || [],
+    workStart: application.data?.workStart || '09:00',
+    workEnd: application.data?.workEnd || '17:00',
+  }
+
+  const created = await addStaff(staffPayload)
+  if (!created.success) return created
+
+  const { error } = await supabase.from('staff_applications').update({
+    status: 'approved',
+    admin_note: adminNote || '',
+    reviewed_at: nowISO(),
+    data: { ...application.data, staffId: created.id, tempPasswordIssued: true },
+  }).eq('id', application.id)
+  if (error) return { success: false, error: error.message }
+
+  await addActivity('staff_apply', `${application.name} kadro başvurusu onaylandı — personel hesabı açıldı`)
+  return { success: true, staffId: created.id, tempPassword }
+}
+
+export async function submitCorporateApplication(form) {
+  const payload = {
+    city: form.city || '',
+    industry: form.industry || '',
+    employeeRange: form.employeeRange || '',
+    services: form.services || [],
+    message: form.message || '',
+    preferredStart: form.preferredStart || '',
+  }
+  const { data, error } = await supabase.rpc('submit_corporate_application', {
+    p_company_name: form.companyName?.trim(),
+    p_contact_name: form.contactName?.trim(),
+    p_email: form.email?.trim().toLowerCase(),
+    p_phone: form.phone?.trim() || '',
+    p_data: payload,
+  })
+  if (error) return { success: false, error: error.message }
+  await addActivity('corporate_apply', `${form.companyName} kurumsal başvuru gönderdi`)
+  return { success: true, id: data }
+}
+
+export async function submitContactInquiry(form) {
+  const { data, error } = await supabase.rpc('submit_contact_inquiry', {
+    p_name: form.name?.trim(),
+    p_email: form.email?.trim().toLowerCase(),
+    p_phone: form.phone?.trim() || '',
+    p_subject: form.subject || 'general',
+    p_message: form.message?.trim(),
+    p_source: form.source || 'landing',
+  })
+  if (error) return { success: false, error: error.message }
+  return { success: true, id: data }
+}
+
+export async function resolveCorporateApplication(application, status, adminNote = '') {
+  const { error } = await supabase.from('corporate_applications').update({
+    status,
+    admin_note: adminNote || '',
+    reviewed_at: nowISO(),
+  }).eq('id', application.id)
+  if (error) return { success: false, error: error.message }
+  await addActivity('corporate_apply', `${application.companyName} kurumsal başvuru: ${status}`)
+  return { success: true }
+}
+
+export async function updateContactInquiryStatus(inquiry, status) {
+  const { error } = await supabase.from('contact_inquiries').update({ status }).eq('id', inquiry.id)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 // --------------------------- programs (staff/admin) ---------------------------
 export async function createProgram(data) {
+  const staffId = data.staffId && data.staffId !== 'system' ? data.staffId : null
   const { data: row, error } = await supabase.from('programs').insert({
     member_id: data.memberId,
-    staff_id: data.staffId || null,
+    staff_id: staffId,
     data: {
       type: data.type === 'nutrition' ? 'nutrition' : 'workout',
       memberName: data.memberName || '', staffName: data.staffName || '',
@@ -1007,85 +1210,3 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 }
 
 export async function deleteRowGeneric() { /* reserved */ }
-
-// --------------------------- custom_foods (topluluk besin havuzu) ---------------------------
-// Türkçe metni arama/tekilleştirme için normalize eder.
-function normalizeFoodName(name) {
-  return String(name || '')
-    .toLocaleLowerCase('tr')
-    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function rowToFood(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    nameNormalized: row.name_normalized,
-    category: row.category || 'Diğer',
-    cal100: row.cal100,
-    unit: row.unit || 'porsiyon',
-    unitG: row.unit_g || 100,
-    source: row.source || 'ai',
-    usageCount: row.usage_count || 0,
-    custom: true,
-  }
-}
-
-// Tüm topluluk besinlerini getirir (popülerlik sırası).
-export async function getCustomFoods() {
-  const { data, error } = await supabase
-    .from('custom_foods')
-    .select('*')
-    .order('usage_count', { ascending: false })
-  if (error) { console.warn('getCustomFoods:', error.message); return [] }
-  return (data || []).map(rowToFood)
-}
-
-// Yeni besin ekler. Aynı isim varsa onu döndürür (tekilleştirme).
-export async function addCustomFood(food) {
-  const nameNormalized = normalizeFoodName(food.name)
-  if (!nameNormalized) return { success: false, error: 'Geçersiz besin adı' }
-
-  // Önce var mı diye bak (yarış koşulunda da unique index korur)
-  const { data: existing } = await supabase
-    .from('custom_foods')
-    .select('*')
-    .eq('name_normalized', nameNormalized)
-    .maybeSingle()
-  if (existing) return { success: true, food: rowToFood(existing), existed: true }
-
-  const user = await getUser()
-  const payload = {
-    name: String(food.name).trim().slice(0, 60),
-    name_normalized: nameNormalized,
-    category: food.category || 'Diğer',
-    cal100: Math.max(0, Math.round(Number(food.cal100) || 0)),
-    unit: food.unit || 'porsiyon',
-    unit_g: Math.max(1, Math.round(Number(food.unitG) || 100)),
-    source: food.source || 'ai',
-    created_by: user?.id || null,
-  }
-  const { data, error } = await supabase
-    .from('custom_foods')
-    .insert(payload)
-    .select()
-    .single()
-  if (error) {
-    // Unique ihlali → eşzamanlı eklenmiş olabilir, tekrar oku
-    const { data: again } = await supabase
-      .from('custom_foods').select('*').eq('name_normalized', nameNormalized).maybeSingle()
-    if (again) return { success: true, food: rowToFood(again), existed: true }
-    return { success: false, error: error.message }
-  }
-  return { success: true, food: rowToFood(data), existed: false }
-}
-
-// Bir besinin kullanım sayacını artırır (popülerlik).
-export async function incrementFoodUsage(id) {
-  if (!id) return
-  await supabase.rpc('increment_food_usage', { p_id: id }).catch(() => {})
-}

@@ -1,9 +1,10 @@
 # Yeni Form (donusum-programi) — Yapay Zeka Proje Rehberi
 
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
-> **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Yazilim\donusum-programi\`  
+> **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Serenova-F-t\`  
+> **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-23 (Bkz. §25: **Kadro & blog profil genişletmesi**)
+> **Son güncelleme:** 2026-06-24 (Bkz. §32: **Kurumsal başvuru, navbar & stabilizasyon**; §30–31 önceki değişiklikler)
 
 ---
 
@@ -14,6 +15,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
+6. Son değişiklikler için **§30–32 Değişiklik Günlüğü** bölümlerine bak.
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -79,12 +81,13 @@ Tarayıcı
   ├─► supabaseDb.hydrate()
   │     ├─ Herkese açık: staff, posts, site_content, exercises, plans
   │     └─ Giriş varsa: members, programs, tickets, activities, payments, membership_requests
+  │     └─ Admin ise ek: staff_applications, corporate_applications, contact_inquiries
   │
   ├─► AppContext → useApp() → tüm sayfalar
   │
   ├─► POST /api/telegram-notify (giriş/kayıt bildirimi)
   │
-  ├─► POST /api/contact (Bize Ulaşın formu)
+  ├─► POST /api/contact (Bize Ulaşın → Telegram ikincil; birincil kayıt `contact_inquiries` RPC)
   │
   ├─► POST /api/calorie-chat-notify (Kalori chat → Telegram iletişim chat'i)
   │
@@ -120,7 +123,11 @@ Eski `schema.sql` + `migrate_*.sql` + `seed.sql` + `create_admin.sql` dosyaları
 
 | Dosya | Ne yapar | Ne zaman çalıştırılır |
 |-------|----------|----------------------|
-| `setup.sql` | Eklentiler, tüm tablolar (custom_foods dahil), RLS, trigger, RPC'ler, storage bucket, varsayılan paketler ve onaylı admin kullanıcısı | İlk/temiz kurulum — Supabase SQL Editor'a yapıştırıp bir kez çalıştır |
+| `setup.sql` | Eklentiler, tüm tablolar, RLS, trigger, RPC'ler, storage bucket, varsayılan paketler ve onaylı admin kullanıcısı | İlk/temiz kurulum — Supabase SQL Editor |
+| `migrations/*.sql` | Artımlı değişiklikler (staff_applications, corporate_applications, contact_inquiries, vb.) | `supabase migration` veya SQL Editor |
+
+> **`custom_foods` kaldırıldı** (2026-06-24) — kalori chat artık bu tabloya yazmıyor. Migration: `20260624_corporate_contact_cleanup.sql`.
+
 
 **Çalıştırma:** Supabase Dashboard → SQL Editor → `supabase/setup.sql` içeriğini yapıştır → Run.
 Tekrar çalıştırmak güvenlidir (her şey `if not exists` / `on conflict` / `create or replace`).
@@ -140,7 +147,13 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 | `site_content` | testimonial, faq, success_story | Herkese okuma; admin yazar |
 | `exercises` | Hareket kütüphanesi | Herkese okuma; admin yazar |
 | `membership_requests` | dondur/iptal/yenile talepleri | Üye oluşturur; admin onaylar |
-| `plans` | Üyelik paketleri (migrate) | Herkese okuma; admin yazar |
+| `plans` | Üyelik paketleri | Herkese okuma; admin yazar |
+| `staff_applications` | Koç/diyetisyen kadro başvuruları | RPC ile herkes insert; admin okur/onaylar |
+| `corporate_applications` | Kurumsal wellness başvuruları | RPC ile herkes insert; admin okur/günceller |
+| `contact_inquiries` | Landing “Bize Ulaşın” mesajları | RPC ile herkes insert; admin okur/günceller |
+| `user_presence` | Video görüşme çevrimiçi durumu | `presenceService.js` (supabaseDb dışı) |
+
+**Kaldırılan tablolar:** `custom_foods` (kullanılmıyordu, 2026-06-24 migration ile drop).
 
 ### Storage
 
@@ -155,6 +168,9 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 | `admin_delete_staff(p_id)` | Staff + auth silme |
 | `is_admin()`, `is_staff()`, `current_email()` | RLS yardımcıları |
 | `handle_new_user()` trigger | Kayıtta `members` satırı açar |
+| `submit_staff_application(...)` | Kadro başvurusu (anon + authenticated) |
+| `submit_corporate_application(...)` | Kurumsal başvuru (anon + authenticated) |
+| `submit_contact_inquiry(...)` | İletişim formu kaydı (anon + authenticated) |
 
 ### `members` tablosu sütunları vs JSONB
 
@@ -163,7 +179,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 - `assigned_coach_id`, `assigned_dietitian_id`
 
 **JSONB `data` içinde (uygulama tarafı):**
-Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `supportSchedule`, `coachSessions`, `dietitianSessions`, `healthAnalysis`, `notifications`, `tasks`, `progress`, `settings`, `premiumStartedAt`, `premiumExpiresAt`, `pauseUntil`, fotoğraf URL'leri vb.
+Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `supportSchedule`, `coachSessions`, `dietitianSessions`, `healthAnalysis`, `notifications`, `tasks`, `progress` (weight, workouts, **meals**, mood), **`completedActivities`** (öğün + aktivite tamamlama), `settings`, `premiumStartedAt`, `premiumExpiresAt`, `pauseUntil`, fotoğraf URL'leri vb.
 
 **Mapping:** `supabaseDb.js` satır 19–57
 - `memberToRow()` — sütun + JSONB ayırır
@@ -210,9 +226,10 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 - Seanslar: `coachSessions`, `dietitianSessions`
 - İçerik: `testimonials`, `faqs`, `successStories`, `posts`, `exercises`, `plans`
 - Admin: `platform`, `adminStats`, `membershipBreakdown`, `monthlyGrowth`, `sessionStats`
+- Başvurular (admin hydrate): `staffApplications`, `corporateApplications`, `contactInquiries`
 
 **Aksiyonlar (tam liste):**
-`login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `changePlan` (mevcut üyenin planını değiştirir — yeni kayıt OLUŞTURMAZ), `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `updateProfile`, `updateSettings`, `refresh`
+`login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `changePlan` (mevcut üyenin planını değiştirir — yeni kayıt OLUŞTURMAZ), `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `resolveStaffApplication`, `resolveCorporateApplication`, `updateContactInquiryStatus`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `toggleMealCompletion`, `updateProfile`, `updateSettings`, `refresh`
 
 ### 5.3 Kayıt ve Onboarding
 
@@ -297,8 +314,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya | Ana işlev |
 |-------|------|-------|-----------|
-| Dashboard | `/dashboard` | `DashboardPage.jsx` | Kişisel sağlık analizi, grafikler, görevler, yaklaşan seanslar |
-| Takvim | `/calendar` | `CalendarPage.jsx` | Birleşik takvim (`CalendarView`, `SessionCard`) |
+| Dashboard | `/dashboard` | `DashboardPage.jsx` | Sağlık analizi, kilo/antrenman/**öğün** grafikleri, görevler, yaklaşan seanslar |
+| Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi | Koç Programı**; öğün bazlı onay (`toggleMealCompletion`) |
 | Koç randevuları | `/schedule/coach` | `CoachSchedulePage.jsx` | Liste, erteleme, iptal |
 | Diyetisyen randevuları | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Liste, erteleme, iptal |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Atanan programlar |
@@ -307,6 +324,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
 | Profil | `/profile` | `ProfilePage.jsx` | Profil, üyelik, atanan koç/diyetisyen |
+| Ödeme (mock) | `/profile/payments` | `PaymentManagementPage.jsx` | Kayıtlı kartlar, ödeme geçmişi (demo) |
 | Video görüşme | `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co |
 
 **Layout:** `AppShell` → `Sidebar` + `TopBar` + `MobileNav`
@@ -316,9 +334,11 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Sayfa | Rota | Dosya |
 |-------|------|-------|
 | Genel bakış | `/staff` | `staff/StaffOverviewPage.jsx` — danışan sayısı, haftalık randevular |
-| Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program oluşturma, randevu yönetimi |
-| Programlar | `/staff/programs` | `staff/StaffProgramsPage.jsx` |
-| Kütüphane | `/staff/library` | `ExerciseLibraryPage.jsx` (paylaşımlı) |
+| Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program/liste oluşturma, randevu yönetimi |
+| Programlar (koç) | `/staff/programs` | `staff/StaffProgramsPage.jsx` — diyetisyen `/staff/lists`'e yönlendirilir |
+| Listeler (diyetisyen) | `/staff/lists` | `staff/StaffListsPage.jsx` — beslenme listeleri özeti |
+| Kütüphane | `/staff/library` | `StaffLibraryGate.jsx` — diyetisyen → `/staff/lists`; koç → `ExerciseLibraryPage` |
+| Ödeme (mock) | `/staff/payments` | `payments/PaymentManagementPage.jsx` |
 | Video görüşme | `/staff/call/:type/:id` | `VideoCallPage.jsx` |
 
 **Layout:** `StaffShell` — `src/components/layout/StaffShell.jsx`
@@ -334,11 +354,13 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Planlar | `/admin/plans` | `AdminPlansPage.jsx` | plans |
 | Premium | `/admin/premium` | `AdminPremiumPage.jsx` | members |
 | Talepler | `/admin/requests` | `AdminRequestsPage.jsx` | membership_requests |
+| Başvurular | `/admin/applications` | `AdminApplicationsPage.jsx` | staff_applications, corporate_applications, contact_inquiries |
 | Kütüphane | `/admin/library` | `AdminLibraryPage.jsx` | exercises, storage |
 | Kadro | `/admin/staff` | `AdminStaffPage.jsx` | staff, RPC |
 | Blog | `/admin/blog` | `AdminBlogPage.jsx` | posts |
-| İçerik | `/admin/content` | `AdminContentPage.jsx` | site_content |
+| İçerik | `/admin/content` | `AdminContentPage.jsx` | site_content (başarı hikâyeleri: Tümü/Yayında/İncelemede) |
 | Abonelikler | `/admin/subscriptions` | `AdminSubscriptionsPage.jsx` | payments |
+| Ödeme (mock UI) | `/admin/payments` | `PaymentManagementPage.jsx` | mockPayments.js |
 | Seanslar | `/admin/sessions` | `AdminSessionsPage.jsx` | members.data |
 | Destek | `/admin/support` | `AdminSupportPage.jsx` | tickets |
 | Analitik | `/admin/analytics` | `AdminAnalyticsPage.jsx` | members, payments |
@@ -359,6 +381,10 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Blog listesi | `/blog` | `BlogPage.jsx` |
 | Blog yazısı | `/blog/:id` | `BlogPostPage.jsx` |
 | Kadro profili | `/team/:id` | `StaffProfilePage.jsx` |
+| Kadro listeleri | `/team/coaches`, `/team/dietitians`, `/team/doctors` | `TeamListPage.jsx` (role prop) |
+| Kadro başvurusu | `/team/apply` | `StaffApplicationPage.jsx` |
+| Kurumsal tanıtım | `/corporate` | `CorporatePage.jsx` |
+| Kurumsal başvuru | `/corporate/apply` | `CorporateApplicationPage.jsx` |
 | 404 | `*` | `NotFoundPage.jsx` |
 
 **Layout:** `PublicLayout.jsx` — header/footer, `scrollToContactSection` (`src/utils/scrollToContact.js`)
@@ -399,9 +425,32 @@ Kaynak: `src/App.jsx` satır 56–117
 /stories             → SuccessStoriesPage
 /blog                → BlogPage
 /blog/:id            → BlogPostPage
+/team/coaches        → TeamListPage (koçlar)
+/team/dietitians     → TeamListPage (diyetisyenler)
+/team/doctors        → TeamListPage (doktorlar)
+/team/apply          → StaffApplicationPage (kadro başvurusu)
+/corporate           → CorporatePage (kurumsal tanıtım)
+/corporate/apply     → CorporateApplicationPage (kurumsal başvuru)
 /team/:id            → StaffProfilePage
 *                    → NotFoundPage
 ```
+
+**Navbar (PublicLayout) — sadeleştirilmiş (2026-06-24):**
+
+| Üst seviye | Tip | Not |
+|------------|-----|-----|
+| Ana Sayfa | doğrudan | `/` |
+| Üyelikler | doğrudan | `/membership` |
+| Kurumsal | doğrudan | `/corporate` — başvuru sayfada CTA |
+| **Keşfet** | dropdown | Başarı Hikayeleri (`/stories`), Blog (`/blog`) |
+| Kadromuz | dropdown | Koçlar, Diyetisyenler, Doktorlar + **Kadromuza Katıl** footer |
+| Destek | doğrudan | yalnız giriş yapmış üyeler |
+
+**Navbar'dan kaldırıldı (footer / landing'de):** Bize Ulaşın, Kurumsal dropdown
+
+**Korunan:** `PromoBanner` (tüm public sayfalarda, kapatılınca `localStorage` ile gizlenir)
+
+**Eski rotalar korunuyor:** `/corporate/apply`, `/stories`, `/#bize-ulasin`
 
 ### Üye (RequireAuth member)
 ```
@@ -416,6 +465,7 @@ Kaynak: `src/App.jsx` satır 56–117
 /programs            → ProgramsPage
 /library             → ExerciseLibraryPage
 /profile             → ProfilePage
+/profile/payments    → PaymentManagementPage (member, mock)
 ```
 
 ### Personel (RequireAuth staff)
@@ -423,8 +473,10 @@ Kaynak: `src/App.jsx` satır 56–117
 /staff/call/:sessionType/:sessionId  → VideoCallPage (staff)
 /staff               → StaffOverviewPage
 /staff/clients       → StaffClientsPage
-/staff/programs      → StaffProgramsPage
-/staff/library       → ExerciseLibraryPage
+/staff/programs      → StaffProgramsPage (koç; diyetisyen → /staff/lists)
+/staff/lists         → StaffListsPage (diyetisyen beslenme listeleri)
+/staff/library       → StaffLibraryGate (diyetisyen → /staff/lists)
+/staff/payments      → PaymentManagementPage (staff, mock)
 ```
 
 ### Admin (RequireAuth admin)
@@ -433,12 +485,14 @@ Kaynak: `src/App.jsx` satır 56–117
 /admin/members       → AdminMembersPage
 /admin/plans         → AdminPlansPage
 /admin/premium       → AdminPremiumPage
-/admin/requests      → AdminRequestsPage
+/admin/requests      → AdminRequestsPage (üyelik talepleri)
+/admin/applications  → AdminApplicationsPage (kadro + kurumsal + iletişim)
 /admin/library       → AdminLibraryPage
 /admin/staff         → AdminStaffPage
 /admin/blog          → AdminBlogPage
-/admin/content       → AdminContentPage
+/admin/content       → AdminContentPage (başarı hikâyeleri filtreleri)
 /admin/subscriptions → AdminSubscriptionsPage
+/admin/payments      → PaymentManagementPage (admin, mock)
 /admin/sessions      → AdminSessionsPage
 /admin/support       → AdminSupportPage
 /admin/analytics     → AdminAnalyticsPage
@@ -469,7 +523,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | HTTP | Amaç |
 |-------|------|------|
 | `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri |
-| `contact.js` | POST | Bize Ulaşın formu → Telegram |
+| `contact.js` | POST | Bize Ulaşın → Telegram (ikincil; birincil kayıt Supabase `contact_inquiries`) |
 | `sitemap.js` | GET | Dinamik XML sitemap (`/sitemap.xml` rewrite) |
 
 ### 7.3 Supabase SQL (`supabase/`)
@@ -477,6 +531,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | Amaç |
 |-------|------|
 | `setup.sql` | **Tek dosya** tertemiz kurulum (şema + RLS + RPC + storage + paketler + admin) |
+| `migrations/20260623_staff_applications.sql` | Kadro başvuruları tablosu + RPC |
+| `migrations/20260624_corporate_contact_cleanup.sql` | Kurumsal + iletişim tabloları; `custom_foods` drop |
 
 ### 7.4 Context (`src/context/`)
 
@@ -489,7 +545,7 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | Export |
 |-------|--------|
-| `brand.js` | `BRAND`, `ADMIN_CREDENTIALS` |
+| `brand.js` | `BRAND`, `ADMIN_CREDENTIALS`, `BRAND.assets` (logo, mark, ogImage) |
 | `seo.js` | `SEO`, `PAGE_SEO`, `getSiteUrl`, JSON-LD builder'ları |
 | `videoCall.js` | `VIDEO_CALL_CONFIG`, `buildRoomUrl`, `memberCallPath`, `staffCallPath`, `SESSION_TYPE_META` |
 | `testPayment.js` | `TEST_CARD`, `validateTestPayment` |
@@ -499,7 +555,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | Ana export/fonksiyonlar | Kullanılıyor mu |
 |-------|-------------------------|-----------------|
 | `supabaseClient.js` | `supabase`, `isSupabaseEnabled`, `syncAutoRefresh` | ✅ |
-| `supabaseDb.js` | `hydrate`, `login`, `logout`, `changeMemberPlan`, tüm CRUD | ✅ Ana veri katmanı |
+| `supabaseDb.js` | `hydrate`, `login`, `logout`, tüm CRUD, başvuru RPC'leri | ✅ Ana veri katmanı |
+| `contactForm.js` | `submitContactForm` → `submitContactInquiry` + Telegram | ✅ |
+| `memberHealthSync.js` | Otomatik program + sağlık analizi senkronu | ✅ (`staffId: null` sistem programları) |
 | `staffAssignment.js` | `applyStaffAssignments`, `findAvailableStaff` | ✅ |
 | `supportSessions.js` | `generateSupportSessions` | ✅ |
 | `packagePricing.js` | `calculatePackagePrice`, `getRecommendedPackage` | ✅ |
@@ -511,7 +569,6 @@ Kaynak: `src/App.jsx` satır 56–117
 | `password.js` | `PASSWORD_RULES`, `isPasswordValid` | ✅ |
 | `authStorage.js` | `getRememberMe`, `setRememberMe`, `authStorage` | ✅ |
 | `telegramNotify.js` | `notifyTelegram` | ✅ |
-| `contactForm.js` | `submitContactForm` | ✅ |
 | `videoCallSession.js` | `resolveCallContext`, `canJoinSession` | ✅ |
 
 ### 7.7 Hooks (`src/hooks/`)
@@ -532,6 +589,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | `staffRoles.js` | `STAFF_ROLES`, `normalizeStaffRole`, `staffRoleLabel` |
 | `scrollToContact.js` | `CONTACT_SECTION_ID`, `scrollToContactSection` |
 | `displayPlatformStats.js` | `getDisplayMemberCount`, `getDisplayOnlineCount`, `pickSessionOnlineBoost` — min. 1250 üye / 16–25 çevrimiçi eşikleri |
+| `memberProgress.js` | `buildMealProgress`, streak, workout + öğün ilerleme |
+| `programSchedule.js` | `mealCompletionKey`, `groupEntriesByMeal`, `isMealCompleted`, `splitEntriesByType` |
 
 ### 7.9 Data (`src/data/`)
 
@@ -542,8 +601,11 @@ Kaynak: `src/App.jsx` satır 56–117
 | `blogPosts.js` | `BLOG_CATEGORIES`, `DEFAULT_POSTS` (Supabase boşsa fallback) |
 | `countryCodes.js` | `COUNTRY_CODES`, `DEFAULT_COUNTRY_ISO`, `getCountry`, `isValidNationalNumber`, `formatNationalNumber`, `toE164` |
 | `healthTest.js` | `HEALTH_SECTIONS`, `EMPTY_HEALTH_TEST`, `getApplicableSections`, `isSectionComplete`, `describeHealthTest` |
+| `staffApplication.js` | Kadro başvuru form şeması, validasyon, `STAFF_APPLICATION_STEPS` |
+| `corporateApplication.js` | Kurumsal başvuru form şeması, validasyon |
+| `mockPayments.js` | Ödeme yönetimi demo verisi (üye/staff/admin) |
 
-### 7.10 Pages (`src/pages/`) — 39 dosya
+### 7.10 Pages (`src/pages/`) — 45+ dosya
 
 ```
 VideoCallPage.jsx
@@ -565,17 +627,23 @@ BlogPage.jsx
 BlogPostPage.jsx
 StaffProfilePage.jsx
 TeamListPage.jsx                ← /team/coaches|dietitians|doctors (role prop ile)
+StaffApplicationPage.jsx        ← /team/apply (kadro başvurusu)
+CorporatePage.jsx               ← /corporate
+CorporateApplicationPage.jsx    ← /corporate/apply
 NotFoundPage.jsx
 auth/LoginPage.jsx
 auth/ForgotPasswordPage.jsx
 staff/StaffOverviewPage.jsx
 staff/StaffClientsPage.jsx
 staff/StaffProgramsPage.jsx
+staff/StaffListsPage.jsx        ← diyetisyen beslenme listeleri
+payments/PaymentManagementPage.jsx  ← üye/staff/admin ödeme UI (mock)
 admin/AdminOverviewPage.jsx
 admin/AdminMembersPage.jsx
 admin/AdminPlansPage.jsx
 admin/AdminPremiumPage.jsx
 admin/AdminRequestsPage.jsx
+admin/AdminApplicationsPage.jsx ← kadro + kurumsal + iletişim
 admin/AdminLibraryPage.jsx
 admin/AdminStaffPage.jsx
 admin/AdminBlogPage.jsx
@@ -587,9 +655,11 @@ admin/AdminAnalyticsPage.jsx
 admin/AdminActivityPage.jsx
 ```
 
-### 7.11 Components (`src/components/`) — 49 dosya
+### 7.11 Components (`src/components/`) — 50+ dosya
 
-**Layout:** `PublicLayout`, `AppShell`, `AdminShell`, `StaffShell`, `Sidebar`, `TopBar`, `MobileNav`, `PanelMobileMenu`, `ScrollToTop`
+**Layout:** `PublicLayout`, `NavDropdown` (footer CTA desteği), `AppShell`, `AdminShell`, `StaffShell`, `Sidebar`, `TopBar`, `MobileNav`, `PanelMobileMenu`, `ScrollToTop`
+
+**Staff:** `StaffLibraryGate`, `NutritionProgramBuilder`, `StaffMemberCard`, `StaffProfileDisplay`
 
 **Auth:** `RequireAuth`
 
@@ -605,7 +675,7 @@ admin/AdminActivityPage.jsx
 
 **Calendar:** `SessionCard`, `CalendarView`
 
-**Dashboard:** `ProgressChart` (WeightChart, WorkoutChart, MoodChart)
+**Dashboard:** `ProgressChart` (WeightChart, WorkoutChart, MealChart, MoodChart)
 
 **Notifications:** `NotificationItem`
 
@@ -678,7 +748,13 @@ Kaynak: `.env.example`
 | `addExercise/editExercise/removeExercise` | 649–667 | Egzersiz CRUD |
 | `createMembershipRequest(...)` | 670 | Üyelik talebi |
 | `resolveMembershipRequest(...)` | 679 | Talep onay/red |
-| `createProgram(data)` | 697 | Program oluştur |
+| `submitStaffApplication(form)` | — | Kadro başvurusu RPC |
+| `resolveStaffApplication(app, approve)` | — | Onay → `admin_upsert_staff` + geçici şifre |
+| `submitCorporateApplication(form)` | — | Kurumsal başvuru RPC |
+| `resolveCorporateApplication(app, status)` | — | Kurumsal durum güncelle |
+| `submitContactInquiry(form)` | — | İletişim formu RPC |
+| `updateContactInquiryStatus(inq, status)` | — | İletişim okundu/çözüldü |
+| `createProgram(data)` | 697 | Program oluştur (`staffId: null` sistem programları) |
 | `createTicket(...)` | 737 | Destek talebi |
 | `setTicketStatus/sendTicketReply` | 753–769 | Ticket işlemleri |
 | `adminUpdatePremiumMembership(...)` | 769 | Admin premium yönetimi |
@@ -690,8 +766,18 @@ Kaynak: `.env.example`
 | İstediğin değişiklik | Dosya |
 |----------------------|-------|
 | Yeni sayfa/route ekle | `src/App.jsx` + yeni page dosyası |
-| Menü linki (üye) | `src/components/layout/Sidebar.jsx`, `MobileNav.jsx` |
+| Menü linki (üye) | `src/components/layout/Sidebar.jsx`, `AppShell.jsx` |
+| Menü linki (public navbar) | `src/components/layout/PublicLayout.jsx`, `NavDropdown.jsx` |
+| Kadromuza Katıl (navbar alt) | `PublicLayout.jsx` → `teamDropdownFooter` → `NavDropdown` `footer` prop |
+| Kurumsal menü | `PublicLayout.jsx` → `corporateSubLinks` |
 | Menü linki (admin) | `src/components/layout/AdminShell.jsx` |
+| Başvurular admin | `src/pages/admin/AdminApplicationsPage.jsx` (Kadro / Kurumsal / İletişim) |
+| Kadro başvuru formu | `src/pages/StaffApplicationPage.jsx`, `src/data/staffApplication.js` |
+| Kurumsal başvuru formu | `src/pages/CorporateApplicationPage.jsx`, `src/data/corporateApplication.js` |
+| Bize Ulaşın DB kaydı | `src/services/contactForm.js` → `submitContactInquiry` |
+| Öğün tamamlama + grafik | `src/utils/memberProgress.js`, `DashboardPage.jsx`, `CalendarPage.jsx` |
+| Diyetisyen listeler | `StaffListsPage.jsx`, `StaffShell.jsx` (kütüphane yok) |
+| Ödeme UI (mock) | `src/pages/payments/PaymentManagementPage.jsx`, `src/data/mockPayments.js` |
 | Menü linki (staff) | `src/components/layout/StaffShell.jsx` |
 | Marka adı/logo | `src/config/brand.js`, `src/components/ui/BrandLogo.jsx` |
 | Sosyal medya (SEO sameAs) | `src/config/brand.js` → `socialUrls` |
@@ -723,7 +809,10 @@ Kaynak: `.env.example`
 | Dinamik SEO (blog/kadro) | `BlogPostPage.jsx`, `StaffProfilePage.jsx` |
 | Sitemap | `api/sitemap.js` → `/sitemap.xml` |
 | robots.txt | `public/robots.txt` |
-| Open Graph görseli | `public/og-image.svg` (production'da PNG önerilir) |
+| Open Graph görseli | `public/og-image.png` — `npm run og:image` |
+| Site logosu | `public/brand-logo.png` — `BrandLogo.jsx` |
+| Favicon / ikon | `public/brand-mark.png`, `favicon-32.png` |
+| Logo kaynağı | `public/brand-logo-alt.png` → `npm run og:image` |
 
 ---
 
@@ -731,14 +820,16 @@ Kaynak: `.env.example`
 
 1. **Ödeme: Stripe altyapısı eklendi (opsiyonel)** — `VITE_STRIPE_ENABLED=true` ise gerçek Stripe Checkout akışı çalışır (`api/stripe-checkout.js` + `api/stripe-webhook.js`). Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır. Kurulum: `STRIPE_SETUP.md`.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
-3. **localDb.js silindi** — tek veri kaynağı `supabaseDb.js`.
+3. **localDb.js silindi** (2026-06-24) — diskten kaldırıldı; tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
-5. **Daily REST API kullanılmıyor** — odalar deterministik URL ile açılır; oda önceden Daily dashboard'da oluşturulmalı veya otomatik oluşturma açık olmalı.
-6. **Seanslar JSONB'de** — ayrı `sessions` tablosu yok; `members.data.coachSessions` / `dietitianSessions`.
-7. **Doctor rolü** — frontend destekler (`staffRoles.js`); DB tarafı `setup.sql` içinde (`staff_role_check`) hazır.
-8. **Supabase Edge Function yok** — sunucu mantığı Vercel `api/` klasöründe.
-9. **ConfigErrorScreen** — Supabase env eksikse uygulama açılmaz.
-10. **RLS koç erişimi** — `assigned_coach_id` / `assigned_dietitian_id` sütunlarına bağlı; JSONB yedek değer RLS için yeterli değil.
+5. **Ödeme Yönetimi sayfası mock** — `PaymentManagementPage` demo veri kullanır; gerçek `payments` tablosu Stripe webhook ile dolar (§22).
+6. **Şifre sıfırlama** — `ForgotPasswordPage` henüz tam Supabase Auth reset akışına bağlı değil (iyileştirme bekliyor).
+7. **Üyelik talepleri UI** — `membership_requests` API hazır; üye tarafında talep oluşturma UI henüz eksik (Support/Profil’e eklenecek).
+8. **Daily REST API kullanılmıyor** — odalar deterministik URL ile açılır.
+9. **Seanslar JSONB'de** — ayrı `sessions` tablosu yok.
+10. **Doctor rolü** — frontend + DB destekler.
+11. **RLS koç erişimi** — `assigned_coach_id` / `assigned_dietitian_id` sütunlarına bağlı.
+12. **Sistem programları** — `staffId` mutlaka `null` olmalı (`'system'` UUID FK hatası verir); `createProgram` filtreler.
 
 ### Paket Sistemi Yapısı (2026-06-18 Güncellemesi)
 
@@ -1259,8 +1350,11 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 | `src/components/seo/JsonLd.jsx` | Yapılandırılmış veri script enjeksiyonu |
 | `src/components/seo/NoIndexHead.jsx` | Üye/staff/admin/video panelleri → `noindex, nofollow` |
 | `public/robots.txt` | Crawler kuralları + sitemap referansı |
-| `public/og-image.png` | Varsayılan sosyal paylaşım görseli (1200×630 PNG, yeniform.com) |
-| `public/og-image.svg` | Eski SVG yedek (artık PNG kullanılıyor) |
+| `public/og-image.png` | Sosyal paylaşım görseli (1200×630) — `og:image` meta |
+| `public/brand-logo.png` | Yatay logo — navbar, giriş (`BrandLogo.jsx`) |
+| `public/brand-mark.png` | İkon karesi — favicon, manifest, JSON-LD |
+| `public/brand-logo-alt.png` | Logo kaynağı — değiştir → `npm run og:image` |
+| `scripts/generate-og-image.mjs` | Tüm marka PNG'lerini üretir |
 | `SEO_SETUP.md` | Search Console + sitemap + OG kurulum rehberi |
 | `public/site.webmanifest` | PWA-lite manifest |
 | `api/sitemap.js` | Dinamik XML sitemap (blog + kadro profilleri Supabase'den) |
@@ -1291,13 +1385,15 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 **Canlı site:** https://www.yeniform.com (`yeniform.com` → `www` yönlendirmesi)
 
 ### Production checklist (manuel)
-1. ~~Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin~~ ✅ `www.yeniform.com`
+1. ~~Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin~~ ✅ `www.yeniform.com` (3 ortam)
 2. ~~Google Search Console property + sitemap~~ ✅ 2026-06-23
 3. ~~Ana sayfa dizine ekleme isteği~~ ✅ 2026-06-23
-4. OG debugger testi (Facebook + LinkedIn) — bekliyor
-5. GA4 measurement ID → `index.html` (opsiyonel)
-6. `src/config/brand.js` → `socialUrls` dizisine sosyal medya URL'leri (opsiyonel)
-7. Blog + kadro içerik zenginleştirme (sıralama için kritik)
+4. ~~Blog seed (5 yazı)~~ ✅ sitemap'te doğrulandı
+5. OG debugger testi (Facebook + LinkedIn) — **bekliyor**
+6. Search Console sitemap “Başarılı” — **24–48 saat bekle**
+7. GA4 measurement ID → `index.html` (opsiyonel — ID gerekli)
+8. `src/config/brand.js` → `socialUrls` (opsiyonel — URL'ler gerekli)
+9. Kadro fotoğrafları + blog içerik kalitesi (devam eden)
 
 ### Erişilebilirlik (SEO ile ilişkili)
 - `PublicLayout`: skip link (`#main-content`), `<main>`, nav `aria-label`
@@ -1314,20 +1410,28 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 
 ---
 
-## 24. SEO Operasyon Durumu (2026-06-23)
+## 24. SEO Operasyon Durumu (2026-06-23 — canlı denetim)
 
-### Tamamlanan (teknik + manuel)
+### Tamamlanan (teknik + manuel + doğrulandı)
 
 | Alan | Durum | Not |
 |------|--------|-----|
 | Meta / canonical / OG | ✅ Kod + canlı | `www.yeniform.com` |
-| `robots.txt` + `sitemap.xml` | ✅ Canlı | 8 statik + blog + kadro URL |
+| `robots.txt` + `sitemap.xml` | ✅ Canlı | **15 URL** (8 statik + 5 blog + 2 kadro) |
+| Vercel `VITE_SITE_URL` + `APP_URL` | ✅ | Production, Preview, Development |
+| Yerel `.env.local` SEO env | ✅ | Aynı canonical URL |
 | Search Console doğrulama | ✅ | Turhost DNS TXT |
-| Sitemap gönderimi | ✅ | İlk durum “Getirilemedi” olabilir — 24–48 saat normal |
+| Sitemap gönderimi | ✅ | Durum “Başarılı” için 24–48 saat bekle |
 | Ana sayfa dizin isteği | ✅ | URL denetimi |
 | Panel `noindex` | ✅ | dashboard, admin, staff, call |
 | JSON-LD | ✅ | Organization, WebSite, FAQ, Article, Person, Breadcrumb, ItemList |
-| `public/favicon.svg` | ✅ | Repoda |
+| `public/favicon.svg` | ⚠️ Eski YF ikonu — artık `favicon-32.png` kullanılıyor |
+| `public/og-image.png` | ✅ | Sosyal paylaşım (1200×630, sade logo) |
+| `public/brand-logo.png` | ✅ | Navbar + JSON-LD Organization logo |
+| `public/brand-mark.png` | ✅ | Favicon + manifest |
+| BrandLogo bileşeni | ✅ | `brand-logo.png` kullanıyor |
+| Blog seed (5 yazı) | ✅ | Supabase + sitemap |
+| `yeniform.com` → `www` | ✅ | 308 redirect |
 
 ### Acil — yapılacaklar (öncelik sırası)
 
@@ -1335,37 +1439,37 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 |---|--------|-----|-------------|
 | 1 | OG debugger testi | Siz (manuel) | Facebook + LinkedIn → `https://www.yeniform.com` |
 | 2 | Sitemap “Başarılı” bekle / kontrol | Siz | Search Console → Site haritaları |
-| 3 | Blog içeriği (min. 5–10 kaliteli yazı) | Admin | `/admin/blog` |
-| 4 | Kadro profilleri (bio + fotoğraf) | Admin | `/admin/staff` |
-| 5 | `public/brand-logo.png` + `npm run og:image` | Geliştirici | `scripts/generate-og-image.mjs` |
+| 3 | Kadro fotoğrafları (eksik profiller) | Admin | `/admin/staff` |
+| 4 | Haftalık Search Console kontrolü | Siz | Sayfalar, site haritaları |
+| 5 | GA4 Measurement ID verin | Siz → agent | `index.html` |
+| 6 | Sosyal medya URL'leri verin | Siz → agent | `src/config/brand.js` → `socialUrls` |
 
 ### Opsiyonel / iyileştirme
 
 | Görev | Nerede |
 |-------|--------|
-| GA4 (`G-XXXXXXXXXX`) | `index.html` + deploy |
-| Sosyal medya `sameAs` | `src/config/brand.js` → `socialUrls` |
-| Başarı hikayesi içerik artırma | `/admin/content` |
+| `public/brand-logo.png` + `npm run og:image` | Script `favicon.svg` yedek kullanır |
+| Blog içerik kalitesi (800+ kelime) | `/admin/blog` |
+| Başarı hikayesi artırma | `/admin/content` |
 | Backlink / sosyal medya paylaşımı | Dış kanal |
 | SSR / prerender (ileri seviye) | Vite SSR veya prerender plugin — şu an SPA |
 
-### Supabase içerik snapshot (2026-06-23)
+### Supabase içerik snapshot (2026-06-23 — sitemap doğrulaması)
 
 | Kaynak | Sayı | SEO notu |
 |--------|------|----------|
-| Yayınlanmış blog | 1 | İçerik çok kısa — öncelikli genişletme |
-| Aktif kadro | 2 | Bio kısa; 1 profilde fotoğraf eksik |
+| Yayınlanmış blog | 5 | Seed uygulandı — içerik uzunluğu/anahtar kelime optimizasyonu devam |
+| Aktif kadro | 2 | Sitemap'te profil URL'leri mevcut |
 | FAQ | 6 | Landing JSON-LD'de kullanılıyor |
 | Onaylı başarı hikayesi | 5 | `/stories` sayfasında |
 
-### Kod değişiklikleri (2026-06-23)
+### Kod değişiklikleri (2026-06-23 SEO denetimi)
 
-- `src/config/brand.js` — `socialUrls` dizisi (sameAs kaynağı)
-- `src/pages/StaffProfilePage.jsx` — kırık `/#kadromuz` linki → `/team/coaches|dietitians|doctors`
-- `src/pages/BlogPage.jsx`, `TeamListPage.jsx` — ItemList JSON-LD
-- `public/favicon.svg` — yeni
-- `.env.example`, `api/sitemap.js` — `www` canonical uyumu
-- `SEO_SETUP.md`, `YAPILACAKLAR.md` — güncel durum
+- `public/og-image.png` — canlı siteden repoya eklendi (deploy kaybı riski giderildi)
+- `scripts/generate-og-image.mjs` — `brand-logo.png` yoksa `favicon.svg` yedek
+- `SEO_SETUP.md`, `YAPILACAKLAR.md` — canlı denetim sonuçları
+
+Detaylı kurulum: `SEO_SETUP.md`
 
 ---
 
@@ -1527,3 +1631,343 @@ Yardımcı: `src/utils/programSchedule.js` — `entryMatchesDate`, `getProgramEn
 ---
 
 *Bu rehber, projedeki tüm sistemlerin tek referans noktasıdır. Kod değişikliği yapmadan önce ilgili bölümü okuyun; arama yapmadan dosya yolunu ve sorumluluğu buradan bulabilirsiniz.*
+
+---
+
+## 28. SEO Canlı Denetim (2026-06-23)
+
+Agent tarafından Vercel CLI + canlı URL testleri ile doğrulandı.
+
+### Vercel ortam değişkenleri (`npx vercel env ls`)
+
+| Değişken | Ortamlar | SEO |
+|----------|----------|-----|
+| `VITE_SITE_URL` | Production, Preview, Development | ✅ |
+| `APP_URL` | Production, Preview, Development | ✅ |
+| `VITE_SUPABASE_URL` | Preview, Production | Sitemap dinamik URL için |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Preview, Production | Sitemap anon okuma |
+
+### Canlı URL testleri
+
+| URL | HTTP | Sonuç |
+|-----|------|-------|
+| `https://www.yeniform.com/sitemap.xml` | 200 | 15 URL, canonical `www` |
+| `https://www.yeniform.com/robots.txt` | 200 | Sitemap satırı doğru |
+| `https://www.yeniform.com/og-image.png` | 200 | PNG ~200 KB |
+| `https://yeniform.com/` | 308 | → `www` |
+
+### Yerel env (`.env.local`)
+
+```
+VITE_SITE_URL=https://www.yeniform.com
+APP_URL=https://www.yeniform.com
+```
+
+Diğer değişkenler (Supabase, Telegram, Gemini, Daily) SEO dışı — mevcut ve çalışıyor.
+
+### Bu oturumda yapılan kod düzeltmeleri
+
+- `public/og-image.png` repoya eklendi (önceden yalnızca canlıda vardı)
+- `scripts/generate-og-image.mjs` — `favicon.svg` yedek logo kaynağı
+- `SEO_SETUP.md`, `YAPILACAKLAR.md`, §24 güncellendi
+
+### Kullanıcıdan beklenen
+
+1. OG Facebook/LinkedIn debugger (manuel)
+2. GA4 ID (`G-…`)
+3. Sosyal medya URL'leri
+4. (Opsiyonel) `public/brand-logo-alt.png` güncelle → `npm run og:image`
+
+---
+
+## 29. Marka Görselleri & Logo Entegrasyonu (2026-06-23)
+
+### Dosya rolleri (hangisi nerede kullanılır)
+
+| Dosya | Boyut / tür | Kullanım yeri | SEO? |
+|-------|-------------|---------------|:----:|
+| `public/brand-logo-alt.png` | Kaynak PNG | Siz düzenlersiniz; script girdisi | ❌ |
+| `public/brand-logo.png` | Yatay logo | `BrandLogo.jsx`, navbar, giriş, kayıt, paneller | JSON-LD logo |
+| `public/brand-mark.png` | İkon karesi | `site.webmanifest` | ❌ |
+| `public/favicon-32.png` | 32×32 | `index.html` sekme ikonu | ❌ |
+| `public/apple-touch-icon.png` | 180×180 | iOS ana ekran | ❌ |
+| `public/og-image.png` | 1200×630 | `index.html` + `SeoHead` → `og:image`, Twitter Card | **✅** |
+
+> **SEO için tek zorunlu görsel:** `og-image.png`. Diğerleri marka tutarlılığı içindir.
+
+### Üretim komutu
+
+```powershell
+npm run og:image
+```
+
+Kaynak: `public/brand-logo-alt.png` → çıktılar: `brand-logo.png`, `brand-mark.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png`
+
+### Kod bağlantıları
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/config/brand.js` | `BRAND.assets` — logo, mark, ogImage yolları |
+| `src/components/ui/BrandLogo.jsx` | `<img src={BRAND.assets.logo}>` — eski YF gradient kutusu kaldırıldı |
+| `src/config/seo.js` | `ogImage` + Organization JSON-LD `logo` → `brand-logo.png` |
+| `index.html` | `favicon-32.png`, `apple-touch-icon.png` |
+| `public/site.webmanifest` | `brand-mark.png` ikonu |
+| `scripts/generate-og-image.mjs` | Kaynak PNG'den tüm türevleri üretir |
+| `scripts/brandAssets.mjs` | OG arka plan SVG (alt yazısız) |
+
+### OG görsel tasarımı
+
+- Gradient wellness arka plan + ortada beyaz kart
+- Kart içinde yalnızca yatay logo (alt slogan yok)
+- Paylaşım başlığı/açıklaması HTML meta etiketlerinden gelir
+
+### Kullanıcıdan beklenen (detay: `SEO_SETUP.md` §9)
+
+1. GA4 Measurement ID (`G-…`)
+2. Sosyal medya URL'leri → `brand.js` → `socialUrls`
+3. OG debugger testi (Facebook + LinkedIn)
+4. Search Console sitemap “Başarılı” kontrolü
+5. **Deploy** — logo + og-image değişiklikleri canlıya
+
+---
+
+## 30. Diyetisyen Listeleri, Takvim Öğün Onayı & Ödeme UI (2026-06-23)
+
+### Diyetisyen paneli — “Programlar” → “Listeler”
+
+| Değişiklik | Detay |
+|------------|-------|
+| Video kütüphanesi | Diyetisyenler `/staff/library` → otomatik `/staff/lists` (`StaffLibraryGate.jsx`) |
+| Navigasyon | `StaffShell.jsx`: diyetisyen → Danışanlarım, **Listeler**, Ödeme; koç → Programlar, Kütüphane, Ödeme |
+| Veri modeli | Değişmedi: `programs` tablosu, `type: 'nutrition'` — yalnızca UI “liste” dili |
+| Oluşturma | `StaffClientsPage` + `NutritionProgramBuilder` — “Liste Oluştur”, “Beslenme Listesini Gönder” |
+| Liste özeti | `StaffListsPage.jsx` — gönderilen beslenme listeleri |
+
+### Üye takvimi — yan yana görünüm + öğün onayı
+
+**Dosya:** `src/pages/CalendarPage.jsx`, `src/utils/programSchedule.js`, `src/context/AppContext.jsx`
+
+- Gün paneli `max-w-5xl`, iki sütun: **Diyet Listesi** (sol) | **Koç Programı** (sağ)
+- Beslenme: tek tek madde değil, **öğün bazlı** onay (`breakfast`, `lunch`, …)
+- Tamamlanma anahtarı: `mealCompletionKey(dateStr, mealType)` → `completedActivities[dateStr]` dizisinde
+- `toggleMealCompletion(dateStr, mealType, entryIds)` — öğün işaretlenince o öğündeki tüm entry ID’leri de işaretlenir
+- Antrenman: hareket bazlı onay (önceki davranış)
+- Gün ilerleme sayacı: `workout sayısı + öğün sayısı` (beslenme maddesi sayısı değil)
+
+Yardımcılar (`programSchedule.js`):
+- `groupEntriesByMeal`, `isMealCompleted`, `splitEntriesByType`, `mealCompletionKey`
+
+### Admin — başarı hikâyeleri filtreleri
+
+**Dosya:** `src/pages/admin/AdminContentPage.jsx`
+
+- Başarı Hikâyeleri sekmesinde: **Tümü | Yayında | İncelemede**
+- Sekmeye geçildiğinde bekleyen varsa varsayılan filtre “İncelemede”
+- Her filtrede sayaç rozeti
+
+### Ödeme yönetimi (mock frontend)
+
+**Dosyalar:**
+- `src/data/mockPayments.js` — kayıtlı kartlar, ödeme geçmişi, personel kazançları, admin özeti
+- `src/pages/payments/PaymentManagementPage.jsx` — `audience`: `member` | `staff` | `admin`
+
+| Panel | Rota | Bölümler |
+|-------|------|----------|
+| Üye | `/profile/payments` | Kayıtlı kartlarım, ödeme geçmişim |
+| Koç / Diyetisyen | `/staff/payments` | Kazanç özeti, bekleyen ödemeler, işlem geçmişi |
+| Admin | `/admin/payments` | Platform ödeme özeti, personel ödemeleri |
+
+> Stripe entegrasyonu henüz yok; sayfa üstünde demo uyarısı. Gerçek ödeme §22 altyapısıyla sonra bağlanacak.
+
+### Navigasyon güncellemeleri
+
+- `Sidebar.jsx` + `AppShell.jsx`: Ödeme Yönetimi
+- `StaffShell.jsx`: role göre menü
+- `AdminShell.jsx`: Ödeme Yönetimi
+
+### Sonraki adımlar (backend)
+
+1. ~~`completedActivities` öğün anahtarlarının Supabase `members.data` ile senkronu~~ → §31
+2. Stripe Checkout → gerçek kart kaydı ve ödeme geçmişi
+3. Personel hakediş hesaplama API’si (seans / paket bazlı)
+
+---
+
+## 31. Öğün Senkronu, Öğün Grafiği & Kadro Başvuruları (2026-06-23)
+
+### Öğün tamamlama — Supabase senkronu
+
+- `completedActivities` ve `progress.meals` → `members.data` JSONB (`memberToRow` / `saveMemberPatch`)
+- `toggleMealCompletion` → `patchCurrentRemote` → `upsertMember` (anında Supabase'e yazılır)
+- `buildProgressPatch` artık `progress.meals` üretir (`buildMealProgress` — haftalık öğün tamamlama)
+- `dayFullyComplete` öğün bazlı beslenmeyi dikkate alır (streak doğru hesaplanır)
+
+### Üye paneli — ayrı öğün grafiği
+
+**Dosya:** `DashboardPage.jsx`, `ProgressChart.jsx` (`MealChart`)
+
+- Antrenman grafiğinden **ayrı** üçüncü kart: **Öğün Takibi**
+- Haftalık planlanan vs tamamlanan öğün sayısı (bar chart)
+
+### Kadro başvuru sistemi
+
+**Migration:** `supabase/migrations/20260623_staff_applications.sql` (canlıya uygulandı)
+
+| Tablo / RPC | Açıklama |
+|-------------|----------|
+| `staff_applications` | Koç/diyetisyen başvuruları (`status`: pending/approved/rejected) |
+| `submit_staff_application()` | Herkese açık RPC (anon + authenticated) |
+
+**Başvuru formu alanları:**
+
+| Alan | Koç | Diyetisyen |
+|------|:---:|:----------:|
+| Ad, e-posta, telefon, şehir | ✓ | ✓ |
+| Ünvan, uzmanlık alanları, deneyim yılı | ✓ | ✓ |
+| Eğitim (min. 1), sertifikalar (min. 1) | ✓ | ✓ |
+| Tanıtım metni (bio), LinkedIn | ✓ | ✓ |
+| Müsaitlik (günler + saat) | ✓ | ✓ |
+| Birincil sertifika türü (NASM, ACE…) | ✓ | — |
+| Online koçluk deneyimi | ✓ | — |
+| Mezuniyet bölümü | — | ✓ |
+| Diploma / TDD oda kayıt no | — | ✓ |
+
+**Rotalar:**
+- `/team/apply?role=coach|dietitian` → `StaffApplicationPage.jsx`
+- **Navbar → Kadromuz** menüsünün en altı: **Kadromuza Katıl** (`NavDropdown` `footer`, `btn-wellness` stili) — *liste sayfası altında değil*
+- `/admin/applications` → `AdminApplicationsPage.jsx` → Kadro sekmesi (onay → `admin_upsert_staff`, geçici şifre modal)
+
+**Dosyalar:** `src/data/staffApplication.js`, `submitStaffApplication`, `resolveStaffApplication` (`supabaseDb.js`)
+
+---
+
+## 32. Kurumsal Başvuru, Navbar & Proje Stabilizasyonu (2026-06-24)
+
+### Navbar — Kadromuza Katıl konumu (düzeltme)
+
+| Önceki | Güncel |
+|--------|--------|
+| `TeamListPage` altında büyük CTA kutusu | **Kaldırıldı** |
+| — | `PublicLayout` → **Kadromuz** dropdown → en altta **Kadromuza Katıl** |
+| — | Mobil menüde Kadromuz listesinin altında aynı buton |
+
+**Dosyalar:** `PublicLayout.jsx`, `NavDropdown.jsx` (`footer` prop)
+
+### Navbar — Kurumsal bölümü (yeni)
+
+| Menü öğesi | Rota | Sayfa |
+|------------|------|-------|
+| Kurumsal Wellness | `/corporate` | `CorporatePage.jsx` |
+| Kurumsal Başvuru | `/corporate/apply` | `CorporateApplicationPage.jsx` |
+
+**Başvuru alanları:** şirket adı, yetkili, e-posta, telefon, şehir, sektör, çalışan sayısı aralığı, ilgilenilen hizmetler (çoklu), ihtiyaç metni, tercih edilen başlangıç tarihi.
+
+**Dosyalar:** `src/data/corporateApplication.js`, `submitCorporateApplication`, `resolveCorporateApplication`
+
+### Admin — Başvurular (birleşik panel)
+
+**Rota:** `/admin/applications` → `AdminApplicationsPage.jsx`
+
+| Sekme | Kaynak tablo | Admin aksiyonları |
+|-------|--------------|-------------------|
+| **Kadro** | `staff_applications` | Onayla (personel hesabı + geçici şifre), Reddet |
+| **Kurumsal** | `corporate_applications` | İletişimde, Onayla, Reddet |
+| **İletişim** | `contact_inquiries` | Okundu, Çözüldü |
+
+`AppContext`: `staffApplications`, `corporateApplications`, `contactInquiries`, `resolveStaffApplication`, `resolveCorporateApplication`, `updateContactInquiryStatus`
+
+### İletişim formu — Supabase senkronu
+
+**Akış:** `ContactSection.jsx` → `contactForm.js` → **`submitContactInquiry` (Supabase, zorunlu)** → `/api/contact` (Telegram, ikincil)
+
+**Tablo:** `contact_inquiries` (`status`: new | read | resolved)
+
+### Veri katmanı denetimi & stabilizasyon
+
+| Değişiklik | Detay |
+|------------|-------|
+| `localDb.js` | Diskten **silindi** — hiçbir import yoktu |
+| `custom_foods` | Tablo + `supabaseDb` helper'ları **kaldırıldı** |
+| Otomatik programlar | `memberHealthSync.js` → `staffId: null` (FK uyumu) |
+| `createProgram` | `staffId === 'system'` → `null` normalize |
+| `completedActivities` | `members.data` JSONB; öğün anahtarları `yyyy-MM-dd_meal_{type}` |
+| `progress.meals` | Dashboard öğün grafiği; `buildMealProgress` ile haftalık |
+
+### Supabase migration özeti (2026-06-23 — 2026-06-24)
+
+| Migration | İçerik |
+|-----------|--------|
+| `20260623_staff_applications.sql` | `staff_applications` + `submit_staff_application` |
+| `20260624_corporate_contact_cleanup.sql` | `corporate_applications`, `contact_inquiries`, RPC'ler, `custom_foods` DROP |
+
+### Hâlâ mock / eksik (bilinçli)
+
+| Özellik | Durum |
+|---------|-------|
+| Ödeme Yönetimi UI | Mock (`mockPayments.js`); Stripe sonraki aşama |
+| Şifre sıfırlama | `ForgotPasswordPage` — Supabase reset bağlanacak |
+| Üyelik talepleri (üye UI) | API var, arayüz henüz yok |
+
+### İlgili dosya envanteri (yeni)
+
+| Dosya | Amaç |
+|-------|------|
+| `src/pages/CorporatePage.jsx` | Kurumsal tanıtım |
+| `src/pages/CorporateApplicationPage.jsx` | Kurumsal başvuru formu |
+| `src/pages/StaffApplicationPage.jsx` | Kadro başvuru formu (4 adım) |
+| `src/pages/admin/AdminApplicationsPage.jsx` | 3 sekmeli başvuru yönetimi |
+| `src/data/corporateApplication.js` | Kurumsal form şeması + validasyon |
+| `src/data/staffApplication.js` | Kadro form şeması + validasyon |
+| `src/data/mockPayments.js` | Ödeme demo verisi |
+| `src/pages/payments/PaymentManagementPage.jsx` | Üye/staff/admin ödeme UI |
+| `src/components/staff/StaffLibraryGate.jsx` | Diyetisyen → `/staff/lists` redirect |
+| `src/pages/staff/StaffListsPage.jsx` | Diyetisyen beslenme listeleri |
+| `src/utils/memberProgress.js` | Streak, workout + **meal** progress |
+| `src/components/dashboard/ProgressChart.jsx` | `WeightChart`, `WorkoutChart`, `MealChart` |
+
+### Sonraki adımlar
+
+1. Stripe → `PaymentManagementPage` gerçek `payments` tablosu
+2. `ForgotPasswordPage` → `supabase.auth.resetPasswordForEmail`
+3. Üye panelinde `membership_requests` oluşturma UI (dondur/iptal)
+4. `setup.sql` içine yeni tabloları birleştir (tek kurulum dosyası senkronu) — **tamamlandı (2026-06-24)**
+
+---
+
+## 33. Navbar Sadeleştirme & setup.sql Senkronu (2026-06-24)
+
+### setup.sql
+
+Migration içeriği `setup.sql`'e birleştirildi:
+
+| Değişiklik | Detay |
+|------------|-------|
+| **Eklendi** | `staff_applications`, `corporate_applications`, `contact_inquiries` tabloları + RLS |
+| **Eklendi** | `submit_staff_application`, `submit_corporate_application`, `submit_contact_inquiry` RPC |
+| **Kaldırıldı** | `custom_foods` tablosu, RLS politikaları, `increment_food_usage` RPC |
+
+Yeni kurulum: yalnızca `supabase/setup.sql` çalıştırılır; migration dosyaları artımlı güncelleme içindir.
+
+### Navbar — önce / sonra
+
+| Önce (6 üst öğe + 3 dropdown) | Sonra (4 üst öğe + 1 dropdown) |
+|-------------------------------|--------------------------------|
+| Ana Sayfa | *(logo)* |
+| Üyelikler | Üyelikler |
+| Bize Ulaşın | *(footer + landing)* |
+| Keşfet ▼ (Blog, Hikayeler) | Blog *(doğrudan)* |
+| Kadromuz ▼ | Kadromuz ▼ |
+| Kurumsal ▼ (2 link) | Kurumsal *(doğrudan → `/corporate`)* |
+
+### İsteğe bağlı daha fazla sadeleştirme (henüz uygulanmadı)
+
+| Öğe | Öneri | Risk |
+|-----|-------|------|
+| **Doktorlar** ayrı liste | Koç/Diyetisyen ile tek `/team` hub + sekmeler | Kadro sayfaları refactor |
+| **PromoBanner** | Kampanya bitince kaldır veya yalnız ana sayfada göster | Dönüşüm düşebilir |
+| **Destek** (üye nav) | Zaten panel sidebar'da var; public nav'den kaldırılabilir | Üye landing'deyken destek erişimi zorlaşır |
+| **Kurumsal** | B2B düşük trafikse footer'a taşınabilir | Kurumsal görünürlük azalır |
+| **Kadromuz dropdown** | Tek `/team` sayfası + filtre; nav'den dropdown kaldır | 3 ayrı SEO sayfası birleşir |
+
+**Dosya:** `src/components/layout/PublicLayout.jsx`
+

@@ -14,6 +14,9 @@ const STATIC_ROUTES = [
   { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7' },
   { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7' },
   { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/corporate', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
+  { loc: '/team/apply', changefreq: 'monthly', priority: '0.6' },
 ]
 
 function siteBase() {

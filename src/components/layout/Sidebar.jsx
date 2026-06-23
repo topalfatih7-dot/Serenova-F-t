@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
   Dumbbell, Apple, Settings, LogOut, ClipboardList, Library,
-  CalendarDays, Flame,
+  CalendarDays, Flame, Wallet,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/library', icon: Library, label: 'Kütüphane' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler' },
   { to: '/support', icon: HelpCircle, label: 'Destek' },
+  { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/profile', icon: Settings, label: 'Profil' },
 ]
 

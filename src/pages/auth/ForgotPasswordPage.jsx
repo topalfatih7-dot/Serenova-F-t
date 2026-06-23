@@ -1,22 +1,39 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, ArrowLeft } from 'lucide-react'
+import { Mail, ArrowLeft, Loader2 } from 'lucide-react'
+import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
+import { getSiteUrl } from '../../config/seo'
 import { useToast } from '../../context/ToastContext'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email.includes('@')) {
       toast('Geçerli bir e-posta girin', 'error')
       return
     }
-    setSent(true)
-    toast('Sıfırlama bağlantısı gönderildi (demo)', 'success')
+    if (!isSupabaseEnabled || !supabase) {
+      toast('Supabase yapılandırması eksik', 'error')
+      return
+    }
+    setLoading(true)
+    try {
+      const redirectTo = `${getSiteUrl()}/reset-password`
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo })
+      if (error) throw error
+      setSent(true)
+      toast('Sıfırlama bağlantısı e-postanıza gönderildi', 'success')
+    } catch (err) {
+      toast(err.message || 'Bağlantı gönderilemedi', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -31,7 +48,9 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div className="mt-8 rounded-2xl border border-sage-200 bg-sage-50 p-6 text-center">
             <p className="font-medium text-sage-700">Bağlantı gönderildi!</p>
-            <p className="mt-2 text-sm text-cream-800/60">Demo modunda gerçek e-posta gönderilmez.</p>
+            <p className="mt-2 text-sm text-cream-800/60">
+              Gelen kutunuzu ve spam klasörünü kontrol edin. Bağlantı bir süre sonra geçersiz olur.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 rounded-2xl border border-cream-200 bg-white p-6">
@@ -43,9 +62,15 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-cream-200 py-3 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
                 placeholder="E-posta adresiniz"
+                autoComplete="email"
               />
             </div>
-            <button type="submit" className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Sıfırlama Bağlantısı Gönder
             </button>
           </form>

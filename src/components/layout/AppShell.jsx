@@ -1,7 +1,7 @@
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame,
+  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet,
 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -21,6 +21,7 @@ const memberNav = [
   { to: '/library', icon: Library, label: 'Kütüphane' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler' },
   { to: '/support', icon: HelpCircle, label: 'Destek' },
+  { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/profile', icon: Settings, label: 'Profil' },
 ]
 

@@ -69,7 +69,7 @@ export default function DietitianSchedulePage() {
       )}
 
       <Modal open={!!rescheduleTarget} onClose={() => setRescheduleTarget(null)} title="Randevuyu Yeniden Planla">
-        <p className="text-sm text-cream-800/70">Randevu 5 gün sonraya taşınacak (demo).</p>
+        <p className="text-sm text-cream-800/70">Randevu 5 gün sonraya taşınacak.</p>
         <button
           type="button"
           onClick={() => {

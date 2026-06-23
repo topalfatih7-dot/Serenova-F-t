@@ -441,7 +441,7 @@ export default function OnboardingPage() {
         />
 
         <div className="relative z-10 p-10 xl:p-14">
-          <BrandLogo variant="light" size="lg" />
+          <BrandLogo size="lg" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
-import { ADMIN_CREDENTIALS, BRAND } from '../../config/brand'
+import { BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
@@ -114,7 +114,7 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10 p-10 xl:p-14">
-          <BrandLogo variant="light" size="lg" />
+          <BrandLogo size="lg" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -249,17 +249,6 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-
-          <details className="mt-6 rounded-2xl border border-cream-200 bg-white/60">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-cream-800/70">
-              <Shield className="h-4 w-4 text-brand-500" />
-              Admin giriş bilgileri
-            </summary>
-            <div className="border-t border-cream-100 px-4 py-3 text-xs text-cream-800/60">
-              <p>E-posta: <code className="rounded bg-cream-100 px-1.5 py-0.5">{ADMIN_CREDENTIALS.email}</code></p>
-              <p className="mt-1">Şifre: <code className="rounded bg-cream-100 px-1.5 py-0.5">{ADMIN_CREDENTIALS.password}</code></p>
-            </div>
-          </details>
         </motion.div>
       </div>
     </div>

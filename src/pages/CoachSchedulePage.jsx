@@ -75,7 +75,7 @@ export default function CoachSchedulePage() {
       )}
 
       <Modal open={!!rescheduleTarget} onClose={() => setRescheduleTarget(null)} title="Randevuyu Yeniden Planla">
-        <p className="text-sm text-cream-800/70">Randevu 3 gün sonraya taşınacak (demo).</p>
+        <p className="text-sm text-cream-800/70">Randevu 3 gün sonraya taşınacak.</p>
         <button type="button" onClick={confirmReschedule} className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white">Onayla</button>
       </Modal>
     </div>

@@ -19,7 +19,7 @@ export default function SuccessStoriesPage() {
   const handleShareClick = () => {
     if (!isAuthenticated) {
       toast('Hikaye göndermek için giriş yapın', 'warning')
-      navigate('/login', { state: { from: '/success-stories', message: 'Hikaye göndermek için giriş yapın' } })
+      navigate('/login', { state: { from: '/stories', message: 'Hikaye göndermek için giriş yapın' } })
       return
     }
     setSubmitOpen(true)

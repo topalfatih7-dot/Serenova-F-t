@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Edit, Trash2, Star, HelpCircle, Sparkles, CheckCircle, Clock } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
@@ -9,6 +9,12 @@ const TABS = [
   { id: 'testimonials', label: 'Yorumlar', kind: 'testimonial', icon: Star },
   { id: 'faqs', label: 'SSS', kind: 'faq', icon: HelpCircle },
   { id: 'successStories', label: 'Başarı Hikâyeleri', kind: 'success_story', icon: Sparkles },
+]
+
+const SUCCESS_STORY_FILTERS = [
+  { id: 'all', label: 'Tümü' },
+  { id: 'approved', label: 'Yayında' },
+  { id: 'pending', label: 'İncelemede' },
 ]
 
 const EMPTY = {
@@ -89,13 +95,26 @@ export default function AdminContentPage() {
   const { testimonials, faqs, successStories, addContent, editContent, removeContent } = useApp()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('testimonials')
+  const [storyFilter, setStoryFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   const tab = TABS.find((t) => t.id === activeTab)
   const lists = { testimonials, faqs, successStories }
-  const items = lists[activeTab] || []
+  const rawItems = lists[activeTab] || []
+
+  const storyCounts = useMemo(() => ({
+    all: successStories.length,
+    approved: successStories.filter((s) => s.approved).length,
+    pending: successStories.filter((s) => !s.approved).length,
+  }), [successStories])
+
+  const items = useMemo(() => {
+    if (activeTab !== 'successStories' || storyFilter === 'all') return rawItems
+    if (storyFilter === 'approved') return rawItems.filter((s) => s.approved)
+    return rawItems.filter((s) => !s.approved)
+  }, [activeTab, rawItems, storyFilter])
 
   const handleAdd = async (form) => {
     setAddOpen(false)
@@ -139,7 +158,11 @@ export default function AdminContentPage() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setActiveTab(t.id)}
+            onClick={() => {
+              setActiveTab(t.id)
+              if (t.id === 'successStories' && storyCounts.pending > 0) setStoryFilter('pending')
+              else if (t.id !== 'successStories') setStoryFilter('all')
+            }}
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
               activeTab === t.id ? 'bg-cream-900 text-white' : 'bg-cream-100 text-cream-800 hover:bg-cream-200'
             }`}
@@ -150,11 +173,35 @@ export default function AdminContentPage() {
         ))}
       </div>
 
+      {activeTab === 'successStories' && (
+        <div className="flex flex-wrap gap-2">
+          {SUCCESS_STORY_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setStoryFilter(f.id)}
+              className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+                storyFilter === f.id ? 'bg-brand-500 text-white' : 'bg-white text-cream-800 ring-1 ring-cream-200 hover:bg-cream-50'
+              }`}
+            >
+              {f.label}
+              <span className={`rounded-full px-1.5 text-xs ${storyFilter === f.id ? 'bg-white/20' : 'bg-cream-100'}`}>
+                {storyCounts[f.id]}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {items.length === 0 ? (
         <EmptyState
           icon={tab.icon}
-          title="Henüz içerik yok"
-          description="İlk kaydı eklemek için “Yeni Ekle” butonunu kullanın."
+          title={activeTab === 'successStories' && storyFilter !== 'all' ? 'Bu filtrede kayıt yok' : 'Henüz içerik yok'}
+          description={
+            activeTab === 'successStories' && storyFilter === 'pending'
+              ? 'Onay bekleyen başarı hikâyesi bulunmuyor.'
+              : 'İlk kaydı eklemek için “Yeni Ekle” butonunu kullanın.'
+          }
           action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Ekle</button>}
         />
       ) : (

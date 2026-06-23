@@ -8,8 +8,9 @@ Allow: /onboarding
 Allow: /stories
 Allow: /blog
 Allow: /team/
+Allow: /corporate
 
-Disallow: /dashboard
+Disallow: /reset-password
 Disallow: /admin
 Disallow: /staff
 Disallow: /call

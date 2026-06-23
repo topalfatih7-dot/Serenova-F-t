@@ -13,6 +13,7 @@ import LandingPage from './pages/LandingPage'
 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparisonPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -29,12 +30,18 @@ const SuccessStoriesPage = lazy(() => import('./pages/SuccessStoriesPage'))
 const BlogPage = lazy(() => import('./pages/BlogPage'))
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'))
 const StaffProfilePage = lazy(() => import('./pages/StaffProfilePage'))
+const CorporatePage = lazy(() => import('./pages/CorporatePage'))
+const CorporateApplicationPage = lazy(() => import('./pages/CorporateApplicationPage'))
+const StaffApplicationPage = lazy(() => import('./pages/StaffApplicationPage'))
 const TeamListPage = lazy(() => import('./pages/TeamListPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
+const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
+const StaffLibraryGate = lazy(() => import('./components/staff/StaffLibraryGate'))
+const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagementPage'))
 
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'))
 const AdminMembersPage = lazy(() => import('./pages/admin/AdminMembersPage'))
@@ -47,6 +54,7 @@ const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage')
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
 const AdminRequestsPage = lazy(() => import('./pages/admin/AdminRequestsPage'))
+const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
@@ -73,6 +81,7 @@ export default function App() {
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<Navigate to="/onboarding" replace />} />
               <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
               <Route path="onboarding" element={<OnboardingPage />} />
               <Route path="membership" element={<MembershipComparisonPage />} />
               <Route path="builder" element={<Navigate to="/membership" replace />} />
@@ -82,6 +91,9 @@ export default function App() {
               <Route path="team/coaches" element={<TeamListPage role="coaches" />} />
               <Route path="team/dietitians" element={<TeamListPage role="dietitians" />} />
               <Route path="team/doctors" element={<TeamListPage role="doctors" />} />
+              <Route path="team/apply" element={<StaffApplicationPage />} />
+              <Route path="corporate" element={<CorporatePage />} />
+              <Route path="corporate/apply" element={<CorporateApplicationPage />} />
               <Route path="team/:id" element={<StaffProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
@@ -99,6 +111,7 @@ export default function App() {
                 <Route path="programs" element={<ProgramsPage />} />
                 <Route path="library" element={<ExerciseLibraryPage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="profile/payments" element={<PaymentManagementPage audience="member" />} />
               </Route>
             </Route>
 
@@ -108,7 +121,9 @@ export default function App() {
                 <Route path="staff" element={<StaffOverviewPage />} />
                 <Route path="staff/clients" element={<StaffClientsPage />} />
                 <Route path="staff/programs" element={<StaffProgramsPage />} />
-                <Route path="staff/library" element={<ExerciseLibraryPage />} />
+                <Route path="staff/lists" element={<StaffListsPage />} />
+                <Route path="staff/library" element={<StaffLibraryGate />} />
+                <Route path="staff/payments" element={<PaymentManagementPage audience="staff" />} />
               </Route>
             </Route>
 
@@ -119,11 +134,13 @@ export default function App() {
                 <Route path="admin/plans" element={<AdminPlansPage />} />
                 <Route path="admin/premium" element={<AdminPremiumPage />} />
                 <Route path="admin/requests" element={<AdminRequestsPage />} />
+                <Route path="admin/applications" element={<AdminApplicationsPage />} />
                 <Route path="admin/library" element={<AdminLibraryPage />} />
                 <Route path="admin/staff" element={<AdminStaffPage />} />
                 <Route path="admin/blog" element={<AdminBlogPage />} />
                 <Route path="admin/content" element={<AdminContentPage />} />
                 <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
+                <Route path="admin/payments" element={<PaymentManagementPage audience="admin" />} />
                 <Route path="admin/sessions" element={<AdminSessionsPage />} />
                 <Route path="admin/support" element={<AdminSupportPage />} />
                 <Route path="admin/analytics" element={<AdminAnalyticsPage />} />

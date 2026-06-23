@@ -34,11 +34,13 @@ npm run dev
 
 ### 2. Vercel ortam değişkenleri
 
-Proje: `topalfatih7-3924s-projects/donusum-programi`
+Proje: `topalfatih7-3924s-projects/serenova-f-t` (Vercel CLI ile bağlı)
 
 **2026-06-20 güncel:** Supabase, Telegram, Gemini, Daily (`yeniform.daily.co`) Vercel'e eklendi.
 
 Production deploy için bir kez redeploy yeterli; sonrasında env değişikliklerinde redeploy gerekir, **yerel `.env.local` için gerekmez**.
+
+| Değişken | Ortam | Not |
 |----------|-------|-----|
 | `VITE_SUPABASE_URL` | Production, Preview, Development | `.env.local` ile aynı |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Production, Preview, Development | Supabase API keys |
@@ -50,6 +52,8 @@ Production deploy için bir kez redeploy yeterli; sonrasında env değişiklikle
 | `VITE_DAILY_DOMAIN` | Production, Preview, Development | `yeniform.daily.co` |
 | `VITE_DAILY_ROOM_PREFIX` | Production, Preview, Development | örn. `donusum` |
 | `DAILY_API_KEY` | Production, Preview | Token'lı güvenli odalar (opsiyonel) |
+| `VITE_SITE_URL` | Production, Preview, Development | `https://www.yeniform.com` (SEO) |
+| `APP_URL` | Production, Preview, Development | `https://www.yeniform.com` (sitemap) |
 
 CLI örneği (PowerShell):
 
@@ -163,50 +167,60 @@ npx vercel env pull .env.vercel.local
 
 ## SEO & Search Console (www.yeniform.com) — 2026-06-23
 
-Detaylı adımlar: **`SEO_SETUP.md`** · Teknik referans: **`AI_PROJE_REHBERI.md` §23–§24**
+Detaylı adımlar: **`SEO_SETUP.md`** · Teknik referans: **`AI_PROJE_REHBERI.md` §23–§24, §29**
 
 ### Tamamlanan
 
-**Kod / altyapı**
-- [x] `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com` (Vercel + `.env.local`)
-- [x] `robots.txt`, `/sitemap.xml` API, sayfa meta + JSON-LD
-- [x] `index.html` canonical + OG (`www`)
-- [x] `public/favicon.svg` repoda
-- [x] Blog + kadro listelerinde ItemList JSON-LD
-- [x] Kadro profil “geri dön” linki düzeltildi (`/#kadromuz` → `/team/...`)
+**Marka & görseller**
+- [x] `public/brand-logo-alt.png` — kaynak logo
+- [x] `npm run og:image` → `brand-logo.png`, `brand-mark.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png`
+- [x] `BrandLogo.jsx` — gerçek logo PNG (navbar, giriş, kayıt, admin/staff/üye paneli)
+- [x] JSON-LD Organization `logo` → `brand-logo.png`
+- [x] `index.html` favicon + apple-touch-icon güncellendi
+- [x] `site.webmanifest` → `brand-mark.png`
 
-**Manuel (siz)**
-- [x] Google Search Console property doğrulandı (Turhost DNS)
-- [x] Sitemap gönderildi (`sitemap.xml`)
-- [x] Ana sayfa dizine ekleme isteği gönderildi
+**SEO altyapı**
+- [x] `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com`
+- [x] `robots.txt`, `/sitemap.xml` (15 URL), meta + JSON-LD
+- [x] Search Console DNS doğrulama, sitemap, dizin isteği
 
-### Acil — şimdi / bu hafta
+### Acil — sizin yapmanız gereken
 
-| # | Görev | Kim | Nerede |
-|---|--------|-----|--------|
-| 1 | **OG debugger testi** — Facebook + LinkedIn, `https://www.yeniform.com` | Siz | `SEO_SETUP.md` §3 |
-| 2 | **Sitemap durumu** — 24–48 saat sonra “Başarılı” mı kontrol | Siz | Search Console → Site haritaları |
-| 3 | ~~Blog içeriği (5 yazı)~~ | Migration seed — `20260623_staff_profiles_blog_seed.sql` çalıştırın |
-| 4 | Kadro fotoğrafları | Admin → `/admin/staff` → profil fotoğrafı yükleyin |
-| 5 | **Supabase seed** — SQL Editor'da `supabase/migrations/20260623_staff_profiles_blog_seed.sql` çalıştır | Geliştirici |
-| 6 | **Deploy** — kod değişikliklerini Vercel'e gönder | Geliştirici |
+| # | Görev | Nasıl | Detay |
+|---|--------|-------|-------|
+| 1 | **Deploy** | Vercel production | Logo + og-image canlıya çıksın |
+| 2 | **OG debugger testi** | Facebook + LinkedIn | `SEO_SETUP.md` §8 Adım C |
+| 3 | **Sitemap durumu** | Search Console | 24–48 saat sonra “Başarılı” mı? |
+| 4 | **GA4 ID toplayın** | Google Analytics | `SEO_SETUP.md` §8 Adım A → bana `G-…` yazın |
+| 5 | **Sosyal medya URL'leri** | Instagram, Facebook vb. | `SEO_SETUP.md` §8 Adım B → bana linkleri yazın |
+| 6 | Kadro fotoğrafları | `/admin/staff` | Eksik profil görselleri |
 
-### Opsiyonel / iyileştirme (sonra)
+### Bana vereceğiniz bilgiler (şablon)
+
+Sohbete kopyalayıp doldurun:
+
+```
+GA4: G-XXXXXXXXXX
+Instagram: https://www.instagram.com/...
+Facebook: https://www.facebook.com/...
+LinkedIn: https://www.linkedin.com/company/...
+(Twitter/YouTube varsa ekleyin)
+```
+
+### Opsiyonel / sonra
 
 | Görev | Nerede |
 |-------|--------|
-| GA4 measurement ID (`G-…`) | `index.html` — ID verin, agent ekler |
-| Sosyal medya URL'leri | `src/config/brand.js` → `socialUrls` |
-| Haftalık Search Console raporu | Dizin oluşturma → Sayfalar |
+| Haftalık Search Console | `SEO_SETUP.md` §8 Adım D |
+| Blog içerik kalitesi | `/admin/blog` |
 | Backlink / sosyal paylaşım | Dış kanal |
-| SSR / prerender | İleri seviye — şu an React SPA yeterli başlangıç |
 
-### Search Console takip (haftada 1)
+### Logo değiştirmek isterseniz
 
-- Site haritaları → durum + keşfedilen URL sayısı
-- Sayfalar → dizine eklenen / hariç tutulan
-- `site:yeniform.com` Google araması (haftalar içinde sonuç gelmeye başlar)
+1. `public/brand-logo-alt.png` dosyasını güncelleyin
+2. `npm run og:image`
+3. Deploy
 
 ---
 
-*Son güncelleme: 2026-06-23 — SEO operasyon + kod iyileştirmeleri*
+*Son güncelleme: 2026-06-23 — Marka logo entegrasyonu + SEO görsel standardizasyonu*

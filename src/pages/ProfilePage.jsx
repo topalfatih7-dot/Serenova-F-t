@@ -31,7 +31,7 @@ export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
     coachSessions, dietitianSessions, updateProfile, updateSettings, logout,
-    createProgram, exercises, refresh,
+    createProgram, exercises, refresh, createMembershipRequest,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
@@ -60,6 +60,7 @@ export default function ProfilePage() {
     waist: user.waist || '',
   })
   const [editOpen, setEditOpen] = useState(false)
+  const [requestLoading, setRequestLoading] = useState(null)
   const [form, setForm] = useState({
     name: user.name, email: user.email, phone: user.phone || '', city: user.city,
     photo: user.photo || null,
@@ -76,6 +77,20 @@ export default function ProfilePage() {
 
   const upcomingCount = [...(coachSessions || []), ...(dietitianSessions || [])]
     .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date()).length
+
+  const handleMembershipRequest = async (type) => {
+    setRequestLoading(type)
+    try {
+      const result = await createMembershipRequest(type)
+      if (result?.success === false) {
+        toast(result.error || 'Talep gönderilemedi', 'error')
+        return
+      }
+      toast('Talebiniz admin onayına gönderildi', 'success')
+    } finally {
+      setRequestLoading(null)
+    }
+  }
 
   const handleSave = () => {
     updateProfile(form)
@@ -278,7 +293,54 @@ export default function ProfilePage() {
               </ul>
             )}
             <p className="mt-4 text-xs text-cream-800/45">
-              Plan değişikliği için <Link to="/support" className="font-semibold text-brand-600 hover:underline">Destek</Link> üzerinden talep oluşturabilirsiniz.
+              Üyelik dondurma, iptal veya devam talepleri admin onayından sonra işlenir.
+            </p>
+            {membership !== 'free' && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {membershipStatus === 'active' && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={!!requestLoading}
+                      onClick={() => handleMembershipRequest('freeze')}
+                      className="rounded-xl border border-cream-200 bg-white px-3 py-2 text-xs font-semibold text-cream-800 transition hover:border-brand-300 hover:text-brand-700 disabled:opacity-50"
+                    >
+                      {requestLoading === 'freeze' ? 'Gönderiliyor…' : 'Üyeliği Dondur'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!requestLoading}
+                      onClick={() => handleMembershipRequest('cancel')}
+                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {requestLoading === 'cancel' ? 'Gönderiliyor…' : 'Üyeliği İptal Et'}
+                    </button>
+                  </>
+                )}
+                {membershipStatus === 'paused' && (
+                  <button
+                    type="button"
+                    disabled={!!requestLoading}
+                    onClick={() => handleMembershipRequest('resume')}
+                    className="rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                  >
+                    {requestLoading === 'resume' ? 'Gönderiliyor…' : 'Üyeliği Devam Ettir'}
+                  </button>
+                )}
+                {membershipStatus === 'cancelled' && (
+                  <button
+                    type="button"
+                    disabled={!!requestLoading}
+                    onClick={() => handleMembershipRequest('renew')}
+                    className="rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                  >
+                    {requestLoading === 'renew' ? 'Gönderiliyor…' : 'Yeniden Aktifleştir'}
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="mt-3 text-xs text-cream-800/45">
+              Plan değişikliği için <Link to="/support" className="font-semibold text-brand-600 hover:underline">Destek</Link> üzerinden de talep oluşturabilirsiniz.
             </p>
           </motion.div>
 

@@ -1,12 +1,27 @@
 import { format, subDays, startOfDay, getISOWeek, getISOWeekYear } from 'date-fns'
-import { getProgramEntriesForDate, completionKey } from './programSchedule'
+import {
+  getProgramEntriesForDate,
+  completionKey,
+  groupEntriesByMeal,
+  isMealCompleted,
+  splitEntriesByType,
+} from './programSchedule'
 
 function dayFullyComplete(date, programs, completedActivities) {
   const dateStr = format(date, 'yyyy-MM-dd')
   const entries = getProgramEntriesForDate(programs, date)
   if (entries.length === 0) return false
+
+  const { workout, nutrition } = splitEntriesByType(entries)
   const keys = completedActivities[dateStr] || []
-  return entries.every((e) => keys.includes(completionKey(dateStr, e.id)))
+  const mealGroups = groupEntriesByMeal(nutrition)
+
+  const workoutOk = workout.length === 0 || workout.every((e) => keys.includes(completionKey(dateStr, e.id)))
+  const mealsOk = mealGroups.length === 0 || mealGroups.every((g) =>
+    isMealCompleted(completedActivities, dateStr, g.mealType, g.entries)
+  )
+
+  return workoutOk && mealsOk
 }
 
 /** Kesintisiz tamamlanan gün serisi */
@@ -20,7 +35,6 @@ export function computeStreak(programs, completedActivities, today = new Date())
   }
 
   while (true) {
-    const dateStr = format(cursor, 'yyyy-MM-dd')
     const entries = getProgramEntriesForDate(programs, cursor)
     if (entries.length === 0) {
       cursor = subDays(cursor, 1)
@@ -66,8 +80,41 @@ export function buildWorkoutProgress(programs, completedActivities, existing = [
     const completed = workoutEntries.filter((e) => keys.includes(completionKey(dateStr, e.id))).length
 
     const prev = map.get(wk) || { week: wk, completed: 0, planned: 0 }
-    prev.planned = Math.max(prev.planned, workoutEntries.length)
-    prev.completed = Math.max(prev.completed, completed)
+    prev.planned += workoutEntries.length
+    prev.completed += completed
+    map.set(wk, prev)
+  })
+
+  return Array.from(map.values()).sort((a, b) => a.week.localeCompare(b.week)).slice(-12)
+}
+
+/** Haftalık öğün tamamlama grafiği (beslenme listeleri) */
+export function buildMealProgress(programs, completedActivities, existing = []) {
+  const map = new Map((existing || []).map((r) => [r.week, { ...r }]))
+
+  const allDates = new Set(Object.keys(completedActivities || {}))
+  programs.forEach((p) => {
+    if (p.type !== 'nutrition') return
+    ;(p.entries || []).forEach((e) => {
+      if (e.date) allDates.add(e.date)
+    })
+  })
+
+  allDates.forEach((dateStr) => {
+    const date = new Date(`${dateStr}T12:00:00`)
+    const wk = weekKey(date)
+    const entries = getProgramEntriesForDate(programs, date)
+    const nutrition = entries.filter((e) => e.programType === 'nutrition')
+    const mealGroups = groupEntriesByMeal(nutrition)
+    if (mealGroups.length === 0) return
+
+    const completed = mealGroups.filter((g) =>
+      isMealCompleted(completedActivities, dateStr, g.mealType, g.entries)
+    ).length
+
+    const prev = map.get(wk) || { week: wk, completed: 0, planned: 0 }
+    prev.planned += mealGroups.length
+    prev.completed += completed
     map.set(wk, prev)
   })
 
@@ -81,6 +128,7 @@ export function buildProgressPatch(programs, completedActivities, currentProgres
       weight: currentProgress.weight || [],
       mood: currentProgress.mood || [],
       workouts: buildWorkoutProgress(programs, completedActivities, currentProgress.workouts),
+      meals: buildMealProgress(programs, completedActivities, currentProgress.meals),
     },
   }
 }

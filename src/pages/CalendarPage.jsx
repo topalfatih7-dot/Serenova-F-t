@@ -20,6 +20,9 @@ import {
   getProgramEntriesForDate,
   completionKey,
   mealLabel,
+  groupEntriesByMeal,
+  isMealCompleted,
+  splitEntriesByType,
 } from '../utils/programSchedule'
 
 // ── Yardımcılar ────────────────────────────────────────────────────
@@ -34,7 +37,7 @@ function isAccessibleDay(day) {
   return isToday(day)
 }
 export default function CalendarPage() {
-  const { myPrograms, user, updateProfile, toggleActivityCompletion } = useApp()
+  const { myPrograms, user, updateProfile, toggleActivityCompletion, toggleMealCompletion } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [current, setCurrent] = useState(new Date())
@@ -77,10 +80,14 @@ export default function CalendarPage() {
   // Gün için tamamlanma hesabı
   const dayCompletionCount = useMemo(() => {
     if (!selectedDateStr) return { done: 0, total: 0 }
+    const { workout, nutrition } = splitEntriesByType(selectedEntries)
     const keys = completedActivities[selectedDateStr] || []
-    const total = selectedEntries.length
-    const done = selectedEntries.filter((e) => keys.includes(completionKey(selectedDateStr, e.id))).length
-    return { done, total }
+    const workoutDone = workout.filter((e) => keys.includes(completionKey(selectedDateStr, e.id))).length
+    const mealGroups = groupEntriesByMeal(nutrition)
+    const mealDone = mealGroups.filter((g) =>
+      isMealCompleted(completedActivities, selectedDateStr, g.mealType, g.entries)
+    ).length
+    return { done: workoutDone + mealDone, total: workout.length + mealGroups.length }
   }, [selectedEntries, selectedDateStr, completedActivities])
 
   // Aktivite tamamla/geri al
@@ -103,6 +110,21 @@ export default function CalendarPage() {
     setSelectedDate(day)
     setExpandedEntryId(null)
   }, [current, toast])
+
+  const toggleMeal = useCallback(async (mealType, entryIds) => {
+    if (!selectedDateStr || saving || !isToday(selectedDate)) return
+    setSaving(true)
+    try {
+      await toggleMealCompletion(selectedDateStr, mealType, entryIds)
+    } finally {
+      setSaving(false)
+    }
+  }, [selectedDateStr, saving, selectedDate, toggleMealCompletion])
+
+  const isMealDone = (mealType, mealEntries) => {
+    if (!selectedDateStr) return false
+    return isMealCompleted(completedActivities, selectedDateStr, mealType, mealEntries)
+  }
 
   const isDone = (entryId) => {
     if (!selectedDateStr) return false
@@ -397,7 +419,9 @@ export default function CalendarPage() {
             entries={selectedEntries}
             completion={dayCompletionCount}
             isDone={isDone}
+            isMealDone={isMealDone}
             onToggle={toggleActivity}
+            onToggleMeal={toggleMeal}
             expandedEntryId={expandedEntryId}
             onExpandEntry={setExpandedEntryId}
             onClose={() => { setSelectedDate(null); setExpandedEntryId(null) }}
@@ -411,16 +435,15 @@ export default function CalendarPage() {
 }
 
 // ── Gün Detay Paneli ────────────────────────────────────────────────
-function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
-  const workoutEntries = entries.filter((e) => e.programType === 'workout')
-  const nutritionEntries = entries.filter((e) => e.programType === 'nutrition')
+function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
+  const { workout: workoutEntries, nutrition: nutritionEntries } = splitEntriesByType(entries)
+  const mealGroups = groupEntriesByMeal(nutritionEntries)
 
   const today = isToday(date)
   const progressPct = completion.total > 0 ? Math.round((completion.done / completion.total) * 100) : 0
 
   return (
     <>
-      {/* Overlay */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -429,20 +452,18 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedE
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
       />
 
-      {/* Panel */}
       <motion.div
         initial={{ opacity: 0, y: 32, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 32, scale: 0.97 }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-        className="fixed inset-x-4 bottom-0 top-[10vh] z-50 mx-auto max-w-xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
+        className="fixed inset-x-2 bottom-0 top-[8vh] z-50 mx-auto max-w-5xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:inset-x-4 sm:bottom-auto sm:top-1/2 sm:max-h-[85vh] sm:-translate-y-1/2 sm:rounded-3xl"
       >
-        {/* Header */}
-        <div className={`relative px-6 py-5 ${today ? 'bg-gradient-to-r from-brand-500 to-brand-600' : 'bg-gradient-to-r from-cream-50 to-white'}`}>
+        <div className={`relative px-6 py-5 ${today ? 'bg-gradient-to-r from-brand-500 to-sage-600' : 'bg-gradient-to-r from-cream-50 to-white'}`}>
           <button
             type="button"
             onClick={onClose}
-            className={`absolute right-4 top-4 rounded-xl p-2 transition ${today ? 'hover:bg-white/20 text-white' : 'hover:bg-cream-100 text-cream-800'}`}
+            className={`absolute right-4 top-4 rounded-xl p-2 transition ${today ? 'text-white hover:bg-white/20' : 'text-cream-800 hover:bg-cream-100'}`}
           >
             <X className="h-5 w-5" />
           </button>
@@ -463,18 +484,15 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedE
             </div>
           </div>
 
-          {/* İlerleme barı */}
           {completion.total > 0 && (
             <div className="mt-4">
               <div className="flex items-center justify-between text-xs">
                 <span className={today ? 'text-white/80' : 'text-cream-800/60'}>
-                  {completion.done}/{completion.total} tamamlandı
+                  {completion.done}/{completion.total} görev tamamlandı
                 </span>
-                <span className={`font-bold ${today ? 'text-white' : 'text-brand-600'}`}>
-                  {progressPct}%
-                </span>
+                <span className={`font-bold ${today ? 'text-white' : 'text-brand-600'}`}>{progressPct}%</span>
               </div>
-              <div className={`mt-1.5 h-2 rounded-full overflow-hidden ${today ? 'bg-white/20' : 'bg-cream-200'}`}>
+              <div className={`mt-1.5 h-2 overflow-hidden rounded-full ${today ? 'bg-white/20' : 'bg-cream-200'}`}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
@@ -486,46 +504,65 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedE
           )}
         </div>
 
-        {/* İçerik */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 180px)' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 180px)' }}>
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Calendar className="h-10 w-10 text-cream-300" />
               <p className="mt-3 font-semibold text-cream-800/60">Bu gün için program yok</p>
-              <p className="mt-1 text-sm text-cream-800/40">Koçunuz veya diyetisyeniniz program ekledikçe burada görünecek.</p>
+              <p className="mt-1 text-sm text-cream-800/40">Koç programı ve diyet listesi eklendikçe burada görünür.</p>
             </div>
           ) : (
-            <div className="space-y-0 divide-y divide-cream-100">
-              {/* Antrenman bölümü */}
-              {workoutEntries.length > 0 && (
-                <ProgramSection
-                  icon={Dumbbell}
-                  title="Antrenman Programı"
-                  color="brand"
-                  entries={workoutEntries}
-                  isDone={isDone}
-                  onToggle={onToggle}
-                  expandedEntryId={expandedEntryId}
-                  onExpandEntry={onExpandEntry}
-                  saving={saving}
-                  canComplete={canComplete}
-                />
-              )}
+            <div className="grid gap-0 lg:grid-cols-2 lg:divide-x lg:divide-cream-100">
+              <div className="min-h-[200px]">
+                <div className="flex items-center gap-2.5 border-b border-brand-100 bg-brand-50 px-5 py-3 text-brand-700">
+                  <Apple className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Diyet Listesi</span>
+                  <span className="ml-auto text-xs font-medium">{mealGroups.length} öğün</span>
+                </div>
+                {mealGroups.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-cream-800/45">Bu gün için diyet listesi yok</p>
+                ) : (
+                  <div className="divide-y divide-cream-50">
+                    {mealGroups.map((group) => (
+                      <MealGroupRow
+                        key={group.mealType}
+                        group={group}
+                        done={isMealDone(group.mealType, group.entries)}
+                        onToggle={() => onToggleMeal(group.mealType, group.entries.map((e) => e.id))}
+                        saving={saving}
+                        canComplete={canComplete}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {nutritionEntries.length > 0 && (
-                <ProgramSection
-                  icon={Apple}
-                  title="Beslenme Programı"
-                  color="sage"
-                  entries={nutritionEntries}
-                  isDone={isDone}
-                  onToggle={onToggle}
-                  expandedEntryId={expandedEntryId}
-                  onExpandEntry={onExpandEntry}
-                  saving={saving}
-                  canComplete={canComplete}
-                />
-              )}
+              <div className="min-h-[200px]">
+                <div className="flex items-center gap-2.5 border-b border-brand-100 bg-brand-50/80 px-5 py-3 text-brand-800">
+                  <Dumbbell className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Koç Programı</span>
+                  <span className="ml-auto text-xs font-medium">{workoutEntries.length} hareket</span>
+                </div>
+                {workoutEntries.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-cream-800/45">Bu gün için antrenman yok</p>
+                ) : (
+                  <div className="divide-y divide-cream-50">
+                    {workoutEntries.map((entry) => (
+                      <ActivityRow
+                        key={entry.id}
+                        entry={entry}
+                        done={isDone(entry.id)}
+                        onToggle={() => onToggle(entry.id)}
+                        expanded={expandedEntryId === entry.id}
+                        onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
+                        saving={saving}
+                        canComplete={canComplete}
+                        iconColor="bg-brand-100 text-brand-600"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -534,7 +571,41 @@ function DayDetailPanel({ date, entries, completion, isDone, onToggle, expandedE
   )
 }
 
-// ── Program Bölümü ──────────────────────────────────────────────────
+function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
+  return (
+    <div className={`px-5 py-4 ${done ? 'bg-sage-50/60' : 'bg-white'}`}>
+      <div className="flex items-start gap-3">
+        {canComplete ? (
+          <button type="button" onClick={onToggle} disabled={saving} className="mt-0.5 shrink-0">
+            {done ? <CheckCircle className="h-6 w-6 text-sage-500" /> : <Circle className="h-6 w-6 text-cream-300" />}
+          </button>
+        ) : (
+          <Lock className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-bold uppercase tracking-wide ${done ? 'text-sage-700 line-through' : 'text-sage-700'}`}>
+            {group.label}
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {group.entries.map((entry) => (
+              <li key={entry.id} className={`text-sm ${done ? 'text-cream-800/45' : 'text-cream-800'}`}>
+                <span className="font-medium">{entry.name || entry.exerciseName}</span>
+                {entry.note ? <span className="text-cream-800/50"> — {entry.note}</span> : null}
+              </li>
+            ))}
+          </ul>
+          {done && (
+            <p className="mt-2 flex items-center gap-1 text-xs font-medium text-sage-600">
+              <Zap className="h-3 w-3" /> Öğün tamamlandı
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Program Bölümü (legacy — artık kullanılmıyor, ActivityRow korunur) ──
 function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, expandedEntryId, onExpandEntry, saving, canComplete }) {
   const headerColors = {
     brand: 'bg-brand-50 text-brand-700 border-brand-100',

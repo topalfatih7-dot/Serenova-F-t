@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Library } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -7,12 +8,25 @@ import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 import { staffRoleMeta } from '../../utils/staffRoles'
 
-const staffNav = [
-  { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
-  { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
-  { to: '/staff/programs', icon: ClipboardList, label: 'Programlar' },
-  { to: '/staff/library', icon: Library, label: 'Kütüphane' },
-]
+function staffNavForRole(role) {
+  const base = [
+    { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
+    { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
+  ]
+  if (role === 'dietitian') {
+    return [
+      ...base,
+      { to: '/staff/lists', icon: List, label: 'Listeler' },
+      { to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
+    ]
+  }
+  return [
+    ...base,
+    { to: '/staff/programs', icon: ClipboardList, label: 'Programlar' },
+    { to: '/staff/library', icon: Library, label: 'Kütüphane' },
+    { to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
+  ]
+}
 
 export default function StaffShell() {
   const { staffUser, logout } = useApp()
@@ -20,6 +34,7 @@ export default function StaffShell() {
   const meta = staffRoleMeta(staffUser.role)
   const RoleIcon = meta.icon
   const roleLabel = meta.label
+  const staffNav = useMemo(() => staffNavForRole(staffUser.role), [staffUser.role])
 
   return (
     <div className="flex min-h-screen bg-cream-50">

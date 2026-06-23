@@ -14,7 +14,7 @@ import {
 import { ALL_PLANS } from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
-import { completionKey } from '../utils/programSchedule'
+import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
 
 const AppContext = createContext(null)
@@ -317,6 +317,24 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
+  const resolveStaffApplication = useCallback(async (application, approve, adminNote = '') => {
+    const r = await sb.resolveStaffApplication(application, approve, adminNote)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
+  const resolveCorporateApplication = useCallback(async (application, status, adminNote = '') => {
+    const r = await sb.resolveCorporateApplication(application, status, adminNote)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
+  const updateContactInquiryStatus = useCallback(async (inquiry, status) => {
+    const r = await sb.updateContactInquiryStatus(inquiry, status)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const addContent = useCallback(async (kind, data) => {
     const r = await sb.addContent(kind, data)
     if (r.success) await reloadRemote()
@@ -415,6 +433,26 @@ export function AppProvider({ children }) {
     await patchCurrentRemote({ completedActivities, ...progressPatch })
   }, [currentMember, remoteDb?.programs, patchCurrentRemote])
 
+  /** Beslenme listesi — öğün bazlı tamamlama (tüm öğün kalemleri birlikte) */
+  const toggleMealCompletion = useCallback(async (dateStr, mealType, entryIds = []) => {
+    if (!currentMember || !dateStr || !mealType) return
+    const current = currentMember.completedActivities || {}
+    const dayKeys = current[dateStr] || []
+    const mealKey = mealCompletionKey(dateStr, mealType)
+    const entryKeys = entryIds.map((id) => completionKey(dateStr, id))
+    const isDone = dayKeys.includes(mealKey)
+    let newKeys
+    if (isDone) {
+      newKeys = dayKeys.filter((k) => k !== mealKey && !entryKeys.includes(k))
+    } else {
+      newKeys = [...new Set([...dayKeys, mealKey, ...entryKeys])]
+    }
+    const completedActivities = { ...current, [dateStr]: newKeys }
+    const myProgs = (remoteDb?.programs || []).filter((p) => p.memberId === currentMember.id)
+    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress)
+    await patchCurrentRemote({ completedActivities, ...progressPatch })
+  }, [currentMember, remoteDb?.programs, patchCurrentRemote])
+
   const updateProfile = useCallback(async (profile) => {
     if (!currentMember) return
     await patchCurrentRemote(profile)
@@ -441,6 +479,9 @@ export function AppProvider({ children }) {
     exercises: db.exercises || [],
     plans: db.plans || ALL_PLANS,
     membershipRequests: db.requests || [],
+    staffApplications: db.staffApplications || [],
+    corporateApplications: db.corporateApplications || [],
+    contactInquiries: db.contactInquiries || [],
     myRequests: currentMember ? (db.requests || []).filter((r) => r.memberId === currentMember.id) : [],
     user: currentMember || {},
     membership: currentMember?.membership || 'free',
@@ -451,7 +492,7 @@ export function AppProvider({ children }) {
     dietitianSessions: currentMember?.dietitianSessions || [],
     notifications: currentMember?.notifications || [],
     tasks: currentMember?.tasks || [],
-    progress: currentMember?.progress || { weight: [], workouts: [], mood: [] },
+    progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},
     pauseUntil: currentMember?.pauseUntil,
     premiumExpiresAt: currentMember?.premiumExpiresAt,
@@ -510,6 +551,9 @@ export function AppProvider({ children }) {
     removeExercise,
     createMembershipRequest,
     resolveMembershipRequest,
+    resolveStaffApplication,
+    resolveCorporateApplication,
+    updateContactInquiryStatus,
     addContent,
     editContent,
     removeContent,
@@ -521,6 +565,7 @@ export function AppProvider({ children }) {
     cancelSession,
     toggleTask,
     toggleActivityCompletion,
+    toggleMealCompletion,
     updateProfile,
     updateSettings,
     refresh: reloadRemote,

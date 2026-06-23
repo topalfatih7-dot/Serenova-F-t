@@ -54,7 +54,7 @@ export default function NutritionProgramBuilder({ onCreate }) {
   const removeEntry = (id) => setEntries((list) => list.filter((e) => e.id !== id))
 
   const submit = () => {
-    if (!title.trim()) { toast('Program başlığı gerekli', 'error'); return }
+    if (!title.trim()) { toast('Liste başlığı gerekli', 'error'); return }
     if (entries.length === 0) { toast('En az bir öğün ekleyin', 'error'); return }
     const ordered = [...entries].sort((a, b) => a.date.localeCompare(b.date))
     onCreate({
@@ -76,7 +76,7 @@ export default function NutritionProgramBuilder({ onCreate }) {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Beslenme programı başlığı"
+          placeholder="Beslenme listesi başlığı"
           className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-sage-300"
         />
         <textarea
@@ -187,7 +187,7 @@ export default function NutritionProgramBuilder({ onCreate }) {
 
       <button type="button" onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-xl bg-sage-500 py-3 text-sm font-semibold text-white hover:bg-sage-600">
         <Apple className="h-4 w-4" />
-        Beslenme Programını Gönder
+        Beslenme Listesini Gönder
       </button>
     </div>
   )

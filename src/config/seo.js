@@ -1,6 +1,4 @@
 import { BRAND } from './brand'
-
-/** Production canonical kökü — Vercel env: VITE_SITE_URL=https://alanadiniz.com */
 export function getSiteUrl() {
   const fromEnv = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
   if (fromEnv) return fromEnv
@@ -36,7 +34,7 @@ export const SEO = {
     'video koçluk',
     'sağlıklı yaşam',
   ].join(', '),
-  ogImage: '/og-image.png',
+  ogImage: BRAND.assets.ogImage,
   ogImageWidth: 1200,
   ogImageHeight: 630,
   twitterCard: 'summary_large_image',
@@ -62,6 +60,9 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/team/coaches', changefreq: 'monthly', priority: '0.7' },
   { path: '/team/dietitians', changefreq: 'monthly', priority: '0.7' },
   { path: '/team/doctors', changefreq: 'monthly', priority: '0.7' },
+  { path: '/corporate', changefreq: 'monthly', priority: '0.7' },
+  { path: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
+  { path: '/team/apply', changefreq: 'monthly', priority: '0.6' },
 ]
 
 export const PAGE_SEO = {
@@ -125,6 +126,27 @@ export const PAGE_SEO = {
       'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktor kadromuz.',
     keywords: 'wellness doktor, sağlık danışmanlığı, online sağlık',
   },
+  '/corporate': {
+    title: 'Kurumsal Wellness Programları',
+    description:
+      'Şirketiniz için ölçeklenebilir koçluk, beslenme ve çalışan wellness çözümleri. Yeni Form kurumsal paketleri.',
+    keywords: 'kurumsal wellness, çalışan sağlığı, şirket fitness programı, kurumsal koçluk',
+  },
+  '/corporate/apply': {
+    title: 'Kurumsal Başvuru Formu',
+    description: 'Kurumsal wellness programı için başvuru formu. Ekibimiz size özel teklif hazırlar.',
+    noindex: false,
+  },
+  '/team/apply': {
+    title: 'Kadromuza Katıl — Koç & Diyetisyen Başvurusu',
+    description: 'Yeni Form kadrosuna koç veya diyetisyen olarak başvurun. Online wellness platformunda uzman ekibimize katılın.',
+    keywords: 'koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer',
+  },
+  '/reset-password': {
+    title: 'Yeni Şifre Belirle',
+    description: 'Yeni Form hesabınız için yeni şifre oluşturun.',
+    noindex: true,
+  },
 }
 
 export function formatTitle(pageTitle) {
@@ -147,7 +169,7 @@ export function buildOrganizationSchema() {
     '@type': 'Organization',
     name: BRAND.name,
     url,
-    logo: absoluteUrl('/favicon.svg'),
+    logo: absoluteUrl(BRAND.assets.logo),
     description: SEO.defaultDescription,
     email: SEO.contactEmail,
     sameAs: (BRAND.socialUrls || []).filter(Boolean),
@@ -215,7 +237,7 @@ export function buildArticleSchema(post) {
     publisher: {
       '@type': 'Organization',
       name: BRAND.name,
-      logo: { '@type': 'ImageObject', url: absoluteUrl('/favicon.svg') },
+      logo: { '@type': 'ImageObject', url: absoluteUrl(BRAND.assets.logo) },
     },
     mainEntityOfPage: absoluteUrl(`/blog/${post.id}`),
   }

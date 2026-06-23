@@ -26,7 +26,6 @@ export default function HealthTestStep({
   healthTest,
   updateHealthTest,
   showErrors,
-  onSelectAndAdvance,
 }) {
   if (!question) return null
 
@@ -53,9 +52,6 @@ export default function HealthTestStep({
 
   const pickSingle = (value) => {
     updateHealthTest({ [q.key]: value })
-    if (q.type !== 'multi' && q.type !== 'text' && onSelectAndAdvance) {
-      setTimeout(() => onSelectAndAdvance(), 280)
-    }
   }
 
   const optionCount = q.options?.length || 0

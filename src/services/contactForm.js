@@ -1,7 +1,21 @@
+import { submitContactInquiry } from './supabaseDb'
+
 /**
- * Bize Ulaşın formu — ayrı Telegram chat'e (/api/contact) gönderilir.
+ * Bize Ulaşın formu — Supabase'e kaydedilir + Telegram bildirimi (/api/contact).
  */
 export async function submitContactForm(payload) {
+  const db = await submitContactInquiry({
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    subject: payload.subject,
+    message: payload.message,
+    source: payload.source || 'landing',
+  })
+  if (!db.success) {
+    return { ok: false, error: db.error || 'Mesaj kaydedilemedi' }
+  }
+
   try {
     const headers = { 'Content-Type': 'application/json' }
     const secret = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET
@@ -12,13 +26,13 @@ export async function submitContactForm(payload) {
       headers,
       body: JSON.stringify(payload),
     })
-
-    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      return { ok: false, error: data.error || 'Mesaj gönderilemedi' }
+      const data = await res.json().catch(() => ({}))
+      console.warn('Telegram notify failed:', data.error)
     }
-    return { ok: true }
   } catch {
-    return { ok: false, error: 'Bağlantı hatası. Lütfen tekrar deneyin.' }
+    // DB kaydı başarılı; Telegram ikincil kanal
   }
+
+  return { ok: true }
 }

@@ -513,7 +513,7 @@ export default function StaffClientsPage() {
                     onClick={() => setProgramClient(m)}
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                   >
-                    <FileText className="h-3.5 w-3.5" /> Program Oluştur
+                    <FileText className="h-3.5 w-3.5" /> {isCoach ? 'Program Oluştur' : 'Liste Oluştur'}
                   </button>
                 </div>
               </div>
@@ -526,7 +526,7 @@ export default function StaffClientsPage() {
         {infoClient && <ClientInfo member={infoClient} role={staffUser.role} isCoach={isCoach} />}
       </Modal>
 
-      <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Program`} size="xl">
+      <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — ${isCoach ? 'Program' : 'Beslenme Listesi'}`} size="xl">
         {programClient && (
           isCoach
             ? <CoachProgramBuilder member={programClient} exercises={exercises} onCreate={handleCreate} />

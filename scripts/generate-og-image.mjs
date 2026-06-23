@@ -1,66 +1,90 @@
 /**
- * 1200×630 Open Graph görseli — public/brand-logo.png + gradient arka plan.
- * Önce logoyu public/brand-logo.png olarak kaydedin, sonra:
- *   node scripts/generate-og-image.mjs
+ * Marka görselleri — kaynak: public/brand-logo-alt.png
+ *   npm run og:image
  */
 import sharp from 'sharp'
+import { existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
+import { buildOgBackgroundSvg, removeNearWhiteBackground } from './brandAssets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
-const logoPath = resolve(root, 'public/brand-logo.png')
-const outPath = resolve(root, 'public/og-image.png')
+const publicDir = resolve(root, 'public')
 
-if (!existsSync(logoPath)) {
-  console.error('public/brand-logo.png bulunamadı. Logoyu bu yola koyun.')
+const LOGO_SOURCES = [
+  resolve(publicDir, 'brand-logo-alt.png'),
+  resolve(publicDir, 'brand-logo.png'),
+]
+
+const logoSource = LOGO_SOURCES.find((p) => existsSync(p))
+if (!logoSource) {
+  console.error('Logo bulunamadı. public/brand-logo-alt.png dosyasını ekleyin.')
   process.exit(1)
 }
 
 const W = 1200
 const H = 630
 
-const bgSvg = `
-<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e8f4fc"/>
-      <stop offset="35%" stop-color="#f0faf4"/>
-      <stop offset="100%" stop-color="#d4f0e0"/>
-    </linearGradient>
-    <radialGradient id="orb1" cx="15%" cy="20%" r="45%">
-      <stop offset="0%" stop-color="#5eb8f7" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#5eb8f7" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="orb2" cx="85%" cy="75%" r="50%">
-      <stop offset="0%" stop-color="#5cb85c" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#5cb85c" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="${W}" height="${H}" fill="url(#g)"/>
-  <rect width="${W}" height="${H}" fill="url(#orb1)"/>
-  <rect width="${W}" height="${H}" fill="url(#orb2)"/>
-  <text x="600" y="520" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="28" fill="#1a4a7c" font-weight="600">Online Koçluk · Diyetisyen · Wellness</text>
-  <text x="600" y="558" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="20" fill="#5cb85c">yeniform.com</text>
-</svg>`
+const trimmedLogo = await sharp(logoSource)
+  .trim({ threshold: 12 })
+  .ensureAlpha()
+  .png()
+  .toBuffer()
 
-const logoMeta = await sharp(logoPath).metadata()
-const logoMaxW = 720
-const logoScale = logoMaxW / (logoMeta.width || logoMaxW)
-const logoW = Math.round((logoMeta.width || logoMaxW) * logoScale)
-const logoH = Math.round((logoMeta.height || 200) * logoScale)
+const transparentLogo = await removeNearWhiteBackground(trimmedLogo)
+
+const logoMeta = await sharp(transparentLogo).metadata()
+const logoAspect = logoMeta.width / logoMeta.height
+
+const markSize = logoMeta.height
+const markBuf = await sharp(transparentLogo)
+  .extract({ left: 0, top: 0, width: Math.min(markSize, logoMeta.width), height: markSize })
+  .png()
+  .toBuffer()
+
+await sharp(markBuf)
+  .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png({ compressionLevel: 9 })
+  .toFile(resolve(publicDir, 'brand-mark.png'))
+
+await sharp(markBuf)
+  .resize(32, 32, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+  .png()
+  .toFile(resolve(publicDir, 'favicon-32.png'))
+
+await sharp(markBuf)
+  .resize(180, 180, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+  .png()
+  .toFile(resolve(publicDir, 'apple-touch-icon.png'))
+
+const logoMaxW = 780
+const logoW = Math.min(logoMaxW, logoMeta.width)
+const logoH = Math.round(logoW / logoAspect)
 const logoX = Math.round((W - logoW) / 2)
-const logoY = Math.round((H - logoH) / 2 - 40)
+const logoY = Math.round((H - logoH) / 2)
 
-const logoBuf = await sharp(logoPath)
+const logoForOg = await sharp(trimmedLogo)
   .resize(logoW, logoH, { fit: 'inside' })
   .png()
   .toBuffer()
 
-await sharp(Buffer.from(bgSvg))
-  .composite([{ input: logoBuf, left: logoX, top: logoY }])
-  .png({ compressionLevel: 9 })
-  .toFile(outPath)
+const bgSvg = buildOgBackgroundSvg({ x: logoX, y: logoY, width: logoW, height: logoH })
+const bgBuf = await sharp(Buffer.from(bgSvg)).png().toBuffer()
 
-console.log('OG görsel oluşturuldu:', outPath)
+await sharp(bgBuf)
+  .composite([{ input: logoForOg, left: logoX, top: logoY }])
+  .png({ compressionLevel: 9 })
+  .toFile(resolve(publicDir, 'og-image.png'))
+
+await sharp(transparentLogo)
+  .png({ compressionLevel: 9 })
+  .toFile(resolve(publicDir, 'brand-logo.png'))
+
+console.log('Kaynak:', logoSource.replace(root + '\\', '').replace(root + '/', ''))
+console.log('Oluşturuldu (brand-logo.png şeffaf arka planlı):')
+console.log('  public/brand-logo.png')
+console.log('  public/brand-mark.png')
+console.log('  public/favicon-32.png')
+console.log('  public/apple-touch-icon.png')
+console.log('  public/og-image.png')

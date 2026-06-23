@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, Trophy, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Compass } from 'lucide-react'
+import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Building2, Compass, Trophy } from 'lucide-react'
 import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
@@ -12,10 +12,10 @@ import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 import { scrollToContactSection } from '../../utils/scrollToContact'
 
-const baseLinks = [
+const guestLinks = [
   { to: '/', label: 'Ana Sayfa', icon: Home },
   { to: '/membership', label: 'Üyelikler', icon: Sparkles },
-  { to: 'contact', label: 'Bize Ulaşın', icon: LifeBuoy },
+  { to: '/corporate', label: 'Kurumsal', icon: Building2 },
 ]
 
 const discoverSubLinks = [
@@ -23,11 +23,22 @@ const discoverSubLinks = [
   { to: '/blog', label: 'Blog', icon: BookOpen, color: 'text-brand-600 bg-brand-50' },
 ]
 
+const memberExtraLinks = [
+  { to: '/support', label: 'Destek', icon: LifeBuoy },
+]
+
 const teamSubLinks = [
   { to: '/team/coaches', label: 'Koçlar', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
   { to: '/team/dietitians', label: 'Diyetisyenler', icon: Apple, color: 'text-sage-600 bg-sage-50' },
   { to: '/team/doctors', label: 'Doktorlar', icon: Stethoscope, color: 'text-cream-700 bg-cream-100' },
 ]
+
+const teamDropdownFooter = {
+  to: '/team/apply',
+  label: 'Kadromuza Katıl',
+  icon: UserPlus,
+  highlight: true,
+}
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -45,10 +56,10 @@ export default function PublicLayout() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
-  const contactLink = baseLinks[baseLinks.length - 1]
+
   const publicLinks = isAuthenticated && !isAdmin && !isStaff
-    ? [...baseLinks.slice(0, -1), { to: '/support', label: 'Destek', icon: LifeBuoy }, contactLink]
-    : baseLinks
+    ? [...guestLinks.slice(0, 2), ...memberExtraLinks, ...guestLinks.slice(2)]
+    : guestLinks
 
   const goToContact = useCallback((closeMenu = false) => {
     if (closeMenu) setMenuOpen(false)
@@ -61,20 +72,7 @@ export default function PublicLayout() {
   }, [pathname, navigate])
 
   const renderNavLink = (l, onClickExtra) => {
-    if (l.to === 'contact') {
-      return (
-        <button
-          key="contact"
-          type="button"
-          onClick={() => { goToContact(); onClickExtra?.() }}
-          className="group relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-cream-800 transition hover:text-brand-600"
-        >
-          <l.icon className="relative h-4 w-4 transition-transform group-hover:scale-110" />
-          <span className="relative">{l.label}</span>
-        </button>
-      )
-    }
-    const active = pathname === l.to
+    const active = pathname === l.to || (l.to !== '/' && pathname.startsWith(`${l.to}/`))
     return (
       <Link
         key={l.to}
@@ -97,32 +95,17 @@ export default function PublicLayout() {
     )
   }
 
-  const renderMobileLink = (l) => {
-    if (l.to === 'contact') {
-      return (
-        <button
-          key="contact"
-          type="button"
-          onClick={() => goToContact(true)}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-cream-800 transition hover:bg-cream-100"
-        >
-          <l.icon className="h-5 w-5" />
-          {l.label}
-        </button>
-      )
-    }
-    return (
-      <Link
-        key={l.to}
-        to={l.to}
-        onClick={() => setMenuOpen(false)}
-        className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === l.to ? 'bg-brand-100/70 text-brand-700' : 'text-cream-800 hover:bg-cream-100'}`}
-      >
-        <l.icon className="h-5 w-5" />
-        {l.label}
-      </Link>
-    )
-  }
+  const renderMobileLink = (l) => (
+    <Link
+      key={l.to}
+      to={l.to}
+      onClick={() => setMenuOpen(false)}
+      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === l.to || pathname.startsWith(`${l.to}/`) ? 'bg-brand-100/70 text-brand-700' : 'text-cream-800 hover:bg-cream-100'}`}
+    >
+      <l.icon className="h-5 w-5" />
+      {l.label}
+    </Link>
+  )
 
   return (
     <div className="wellness-mesh-bg min-h-screen">
@@ -155,6 +138,7 @@ export default function PublicLayout() {
               label="Kadromuz"
               icon={Users}
               items={teamSubLinks}
+              footer={teamDropdownFooter}
               isOpen={openDropdown === 'team'}
               onToggle={() => setOpenDropdown((v) => (v === 'team' ? null : 'team'))}
               onClose={() => setOpenDropdown(null)}
@@ -249,6 +233,14 @@ export default function PublicLayout() {
                       {sub.label}
                     </Link>
                   ))}
+                  <Link
+                    to="/team/apply"
+                    onClick={() => setMenuOpen(false)}
+                    className="mx-1 mt-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-3 py-3 text-sm font-semibold text-white shadow-md"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Kadromuza Katıl
+                  </Link>
                 </div>
                 <div className="mt-2 border-t border-cream-200 pt-3">
                   {isAuthenticated ? (
@@ -304,6 +296,9 @@ export default function PublicLayout() {
               <div className="mt-3 space-y-2 text-sm text-cream-100/60">
                 <Link to="/membership" className="block hover:text-white">Üyelikler</Link>
                 <Link to="/blog" className="block hover:text-white">Blog</Link>
+                <Link to="/stories" className="block hover:text-white">Başarı Hikayeleri</Link>
+                <Link to="/corporate" className="block hover:text-white">Kurumsal</Link>
+                <Link to="/team/apply" className="block hover:text-white">Kadromuza Katıl</Link>
                 <button type="button" onClick={() => goToContact()} className="block text-left hover:text-white">
                   Bize Ulaşın
                 </button>

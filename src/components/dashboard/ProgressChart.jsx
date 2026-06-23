@@ -26,11 +26,29 @@ export function WorkoutChart({ data }) {
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
           <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
           <Tooltip />
           <Legend />
           <Bar dataKey="completed" name="Tamamlanan" fill="#5f9270" radius={[4, 4, 0, 0]} />
           <Bar dataKey="planned" name="Planlanan" fill="#e6efe8" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export function MealChart({ data }) {
+  return (
+    <div className="h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
+          <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="completed" name="Tamamlanan öğün" fill="#7c9a6e" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="planned" name="Planlanan öğün" fill="#eef4ea" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

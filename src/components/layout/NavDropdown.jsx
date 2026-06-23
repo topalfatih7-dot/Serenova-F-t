@@ -6,6 +6,7 @@ export default function NavDropdown({
   label,
   icon: Icon,
   items,
+  footer,
   isOpen,
   onToggle,
   onClose,
@@ -59,6 +60,26 @@ export default function NavDropdown({
                 {sub.label}
               </Link>
             ))}
+            {footer && (
+              <div className="mt-1 border-t border-cream-100 pt-1">
+                <Link
+                  to={footer.to}
+                  onClick={onClose}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                    footer.highlight
+                      ? 'bg-gradient-to-r from-brand-500 to-sage-500 text-white hover:brightness-105'
+                      : 'text-brand-700 hover:bg-brand-50'
+                  }`}
+                >
+                  {footer.icon && (
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${footer.highlight ? 'bg-white/20' : 'bg-brand-50 text-brand-600'}`}>
+                      <footer.icon className="h-4 w-4" />
+                    </span>
+                  )}
+                  {footer.label}
+                </Link>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

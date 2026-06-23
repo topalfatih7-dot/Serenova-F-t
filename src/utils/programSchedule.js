@@ -57,6 +57,42 @@ export function completionKey(dateStr, entryId) {
   return `${dateStr}_${entryId}`
 }
 
+/** Öğün bazlı tamamlama anahtarı (beslenme listeleri) */
+export function mealCompletionKey(dateStr, mealType) {
+  return `${dateStr}_meal_${mealType}`
+}
+
+/** Beslenme girdilerini öğün gruplarına ayırır */
+export function groupEntriesByMeal(entries) {
+  const map = new Map()
+  ;(entries || []).forEach((entry) => {
+    const mt = entry.mealType || 'note'
+    if (!map.has(mt)) map.set(mt, [])
+    map.get(mt).push(entry)
+  })
+  const groups = []
+  MEAL_TYPES.forEach((m) => {
+    if (map.has(m.id)) {
+      groups.push({ mealType: m.id, label: m.label, entries: map.get(m.id) })
+    }
+  })
+  return groups
+}
+
+export function isMealCompleted(completedActivities, dateStr, mealType, mealEntries) {
+  const keys = completedActivities?.[dateStr] || []
+  if (keys.includes(mealCompletionKey(dateStr, mealType))) return true
+  if (!mealEntries?.length) return false
+  return mealEntries.every((e) => keys.includes(completionKey(dateStr, e.id)))
+}
+
+export function splitEntriesByType(entries) {
+  return {
+    workout: (entries || []).filter((e) => e.programType === 'workout'),
+    nutrition: (entries || []).filter((e) => e.programType === 'nutrition'),
+  }
+}
+
 export function formatEntrySchedule(entry) {
   if (entry.date) {
     try {

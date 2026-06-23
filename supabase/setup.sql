@@ -7,10 +7,12 @@
 --  İçerir:
 --    1) Eklentiler + yardımcı fonksiyonlar (is_admin, is_staff, current_email)
 --    2) Tüm tablolar (members, staff, programs, posts, tickets, activities,
---       payments, site_content, exercises, membership_requests, plans, custom_foods)
+--       payments, site_content, exercises, membership_requests, plans,
+--       staff_applications, corporate_applications, contact_inquiries)
 --    3) Yeni kullanıcı tetikleyicisi (auth.users -> members)
 --    4) RLS politikaları
---    5) Admin RPC'leri (admin_upsert_staff, admin_delete_staff, increment_food_usage)
+--    5) Admin + başvuru RPC'leri (admin_upsert_staff, admin_delete_staff,
+--       submit_staff_application, submit_corporate_application, submit_contact_inquiry)
 --    6) Depolama (exercise-videos bucket) politikaları
 --    7) Varsayılan paketler (plans)
 --    8) Onaylı admin kullanıcısı
@@ -171,22 +173,50 @@ create table if not exists public.plans (
   updated_at timestamptz not null default now()
 );
 
--- Topluluk besin havuzu (kalori hesaplayıcı)
-create table if not exists public.custom_foods (
+-- Kadro başvuruları (koç / diyetisyen)
+create table if not exists public.staff_applications (
   id uuid primary key default gen_random_uuid(),
+  role text not null check (role in ('coach', 'dietitian')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  email text not null,
   name text not null,
-  name_normalized text not null,
-  category text not null default 'Diğer',
-  cal100 integer not null,
-  unit text not null default 'porsiyon',
-  unit_g integer not null default 100,
-  source text not null default 'ai',
-  created_by uuid references auth.users(id) on delete set null,
-  usage_count integer not null default 1,
+  phone text default '',
+  data jsonb not null default '{}'::jsonb,
+  admin_note text default '',
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+create index if not exists staff_applications_status_idx on public.staff_applications (status, created_at desc);
+create index if not exists staff_applications_email_idx on public.staff_applications (lower(email));
+
+-- Kurumsal wellness başvuruları
+create table if not exists public.corporate_applications (
+  id uuid primary key default gen_random_uuid(),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'contacted')),
+  company_name text not null,
+  contact_name text not null,
+  email text not null,
+  phone text default '',
+  data jsonb not null default '{}'::jsonb,
+  admin_note text default '',
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+create index if not exists corporate_applications_status_idx on public.corporate_applications (status, created_at desc);
+
+-- Landing / iletişim formları
+create table if not exists public.contact_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  status text not null default 'new' check (status in ('new', 'read', 'resolved')),
+  name text not null,
+  email text not null,
+  phone text default '',
+  subject text default 'general',
+  message text not null,
+  source text default 'landing',
   created_at timestamptz not null default now()
 );
-create unique index if not exists custom_foods_name_norm_idx on public.custom_foods (name_normalized);
-create index if not exists custom_foods_usage_idx on public.custom_foods (usage_count desc);
+create index if not exists contact_inquiries_status_idx on public.contact_inquiries (status, created_at desc);
 
 -- ---------------------------------------------------------------------
 -- 3) is_staff() — staff tablosu hazır olduktan sonra
@@ -233,7 +263,9 @@ alter table public.site_content        enable row level security;
 alter table public.exercises           enable row level security;
 alter table public.membership_requests enable row level security;
 alter table public.plans               enable row level security;
-alter table public.custom_foods        enable row level security;
+alter table public.staff_applications  enable row level security;
+alter table public.corporate_applications enable row level security;
+alter table public.contact_inquiries   enable row level security;
 
 -- members
 drop policy if exists members_select on public.members;
@@ -321,21 +353,135 @@ create policy plans_select on public.plans for select using (true);
 drop policy if exists plans_admin_write on public.plans;
 create policy plans_admin_write on public.plans for all using (public.is_admin()) with check (public.is_admin());
 
--- custom_foods (giriş yapan herkes okur/ekler)
-drop policy if exists custom_foods_read on public.custom_foods;
-create policy custom_foods_read on public.custom_foods for select to authenticated using (true);
-drop policy if exists custom_foods_insert on public.custom_foods;
-create policy custom_foods_insert on public.custom_foods for insert to authenticated with check (true);
-drop policy if exists custom_foods_update on public.custom_foods;
-create policy custom_foods_update on public.custom_foods for update to authenticated using (true) with check (true);
+-- staff_applications
+drop policy if exists staff_applications_insert on public.staff_applications;
+create policy staff_applications_insert on public.staff_applications
+  for insert with check (true);
+drop policy if exists staff_applications_admin_select on public.staff_applications;
+create policy staff_applications_admin_select on public.staff_applications
+  for select using (public.is_admin());
+drop policy if exists staff_applications_admin_update on public.staff_applications;
+create policy staff_applications_admin_update on public.staff_applications
+  for update using (public.is_admin()) with check (public.is_admin());
+
+-- corporate_applications
+drop policy if exists corporate_applications_admin_select on public.corporate_applications;
+create policy corporate_applications_admin_select on public.corporate_applications
+  for select using (public.is_admin());
+drop policy if exists corporate_applications_admin_update on public.corporate_applications;
+create policy corporate_applications_admin_update on public.corporate_applications
+  for update using (public.is_admin()) with check (public.is_admin());
+
+-- contact_inquiries
+drop policy if exists contact_inquiries_admin_select on public.contact_inquiries;
+create policy contact_inquiries_admin_select on public.contact_inquiries
+  for select using (public.is_admin());
+drop policy if exists contact_inquiries_admin_update on public.contact_inquiries;
+create policy contact_inquiries_admin_update on public.contact_inquiries
+  for update using (public.is_admin()) with check (public.is_admin());
 
 -- ---------------------------------------------------------------------
 -- 6) RPC'ler
 -- ---------------------------------------------------------------------
-create or replace function public.increment_food_usage(p_id uuid)
-returns void language sql security definer set search_path = public as $$
-  update public.custom_foods set usage_count = usage_count + 1 where id = p_id;
+create or replace function public.submit_staff_application(
+  p_role text,
+  p_email text,
+  p_name text,
+  p_phone text default '',
+  p_data jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_role text;
+begin
+  v_role := lower(trim(coalesce(p_role, '')));
+  if v_role not in ('coach', 'dietitian') then
+    raise exception 'Geçersiz rol';
+  end if;
+  if coalesce(trim(p_email), '') = '' or coalesce(trim(p_name), '') = '' then
+    raise exception 'Ad ve e-posta gerekli';
+  end if;
+  if exists (
+    select 1 from public.staff_applications
+    where lower(email) = lower(trim(p_email)) and status = 'pending'
+  ) then
+    raise exception 'Bu e-posta ile bekleyen bir başvuru zaten var';
+  end if;
+  if exists (
+    select 1 from public.staff where lower(email) = lower(trim(p_email))
+  ) then
+    raise exception 'Bu e-posta kadromuzda kayıtlı';
+  end if;
+
+  insert into public.staff_applications (role, email, name, phone, data)
+  values (v_role, lower(trim(p_email)), trim(p_name), coalesce(p_phone, ''), coalesce(p_data, '{}'::jsonb))
+  returning id into v_id;
+
+  return v_id;
+end;
 $$;
+revoke all on function public.submit_staff_application(text, text, text, text, jsonb) from public;
+grant execute on function public.submit_staff_application(text, text, text, text, jsonb) to anon, authenticated;
+
+create or replace function public.submit_corporate_application(
+  p_company_name text,
+  p_contact_name text,
+  p_email text,
+  p_phone text default '',
+  p_data jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+begin
+  if coalesce(trim(p_company_name), '') = '' or coalesce(trim(p_contact_name), '') = '' or coalesce(trim(p_email), '') = '' then
+    raise exception 'Şirket adı, yetkili adı ve e-posta gerekli';
+  end if;
+  insert into public.corporate_applications (company_name, contact_name, email, phone, data)
+  values (trim(p_company_name), trim(p_contact_name), lower(trim(p_email)), coalesce(p_phone, ''), coalesce(p_data, '{}'::jsonb))
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+revoke all on function public.submit_corporate_application(text, text, text, text, jsonb) from public;
+grant execute on function public.submit_corporate_application(text, text, text, text, jsonb) to anon, authenticated;
+
+create or replace function public.submit_contact_inquiry(
+  p_name text,
+  p_email text,
+  p_phone text default '',
+  p_subject text default 'general',
+  p_message text default '',
+  p_source text default 'landing'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+begin
+  if coalesce(trim(p_name), '') = '' or coalesce(trim(p_email), '') = '' or length(trim(coalesce(p_message, ''))) < 10 then
+    raise exception 'Ad, e-posta ve mesaj gerekli';
+  end if;
+  insert into public.contact_inquiries (name, email, phone, subject, message, source)
+  values (trim(p_name), lower(trim(p_email)), coalesce(p_phone, ''), coalesce(p_subject, 'general'), trim(p_message), coalesce(p_source, 'landing'))
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+revoke all on function public.submit_contact_inquiry(text, text, text, text, text, text) from public;
+grant execute on function public.submit_contact_inquiry(text, text, text, text, text, text) to anon, authenticated;
 
 -- Telefon numarası başka bir üyede kayıtlı mı? (kayıt sırasında çift numara engeli)
 -- Numaralar sadece rakamlara indirgenip karşılaştırılır.
@@ -549,6 +695,74 @@ begin
   values (v_uid, v_email, v_name, 'admin')
   on conflict (id) do update set role = 'admin', name = excluded.name;
 end $$;
+
+-- ---------------------------------------------------------------------
+-- 8) Anlık kullanıcı varlığı (presence) + çevrimiçi istatistik
+-- ---------------------------------------------------------------------
+create table if not exists public.user_presence (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  name text,
+  role text not null default 'member',
+  session_started_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  page_path text
+);
+create index if not exists user_presence_last_seen_idx on public.user_presence(last_seen_at desc);
+
+alter table public.user_presence enable row level security;
+
+drop policy if exists user_presence_self on public.user_presence;
+create policy user_presence_self on public.user_presence
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists user_presence_admin_select on public.user_presence;
+create policy user_presence_admin_select on public.user_presence
+  for select using (public.is_admin());
+
+create or replace function public.get_online_stats()
+returns json
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select json_build_object(
+    'online_now', (
+      select count(*)::int from public.user_presence
+      where last_seen_at > now() - interval '90 seconds'
+    ),
+    'total_members', (select count(*)::int from public.members)
+  );
+$$;
+revoke all on function public.get_online_stats() from public;
+grant execute on function public.get_online_stats() to anon, authenticated;
+
+create or replace function public.get_active_users()
+returns json
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Forbidden';
+  end if;
+  return (
+    select coalesce(json_agg(row_to_json(t)), '[]'::json)
+    from (
+      select user_id, email, name, role, session_started_at, last_seen_at, page_path,
+        extract(epoch from (now() - session_started_at))::int as duration_seconds
+      from public.user_presence
+      where last_seen_at > now() - interval '90 seconds'
+      order by session_started_at desc
+    ) t
+  );
+end;
+$$;
+revoke all on function public.get_active_users() from public;
+grant execute on function public.get_active_users() to authenticated;
 
 -- =====================================================================
 --  BİTTİ. Temiz kurulum hazır.

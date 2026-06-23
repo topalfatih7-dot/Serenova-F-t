@@ -103,10 +103,6 @@ export default function HealthTestFlow({
                   healthTest={healthTest}
                   updateHealthTest={updateHealthTest}
                   showErrors={showErrors}
-                  onSelectAndAdvance={() => {
-                    if (!lastQuestion) setQuestionIndex((i) => i + 1)
-                    else setPhase('ack')
-                  }}
                 />
               </motion.div>
             ) : (
