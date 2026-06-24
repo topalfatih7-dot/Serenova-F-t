@@ -190,6 +190,7 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
+    settings, updateSettings,
   } = useApp()
   const [healthPromptOpen, setHealthPromptOpen] = useState(false)
   const [storyOpen, setStoryOpen] = useState(false)
@@ -209,6 +210,10 @@ export default function DashboardPage() {
   }, [])
 
   const handleTutorialComplete = () => {
+    // Turu kalıcı olarak "görüldü" işaretle (veritabanı) — başka cihaz/tarayıcıda tekrar açılmaz
+    if (user?.id && !settings?.tutorialSeen) {
+      updateSettings?.({ tutorialSeen: true })
+    }
     if (user?.id && !isHealthTestComplete(user.healthTest, user.gender)) {
       setHealthPromptOpen(true)
     }
@@ -254,7 +259,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* İlk giriş eğitim popup'ı */}
-      <OnboardingTutorial userId={user?.id} onComplete={handleTutorialComplete} />
+      <OnboardingTutorial userId={user?.id} seen={!!settings?.tutorialSeen} onComplete={handleTutorialComplete} />
       <HealthTestWidget
         user={user}
         promptOpen={healthPromptOpen}

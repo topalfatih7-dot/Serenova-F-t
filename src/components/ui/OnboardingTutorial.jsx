@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, ChevronRight, CalendarDays, ClipboardList,
+  X, ChevronRight, ArrowLeft, CalendarDays, ClipboardList,
   Dumbbell, Apple, Library, Flame, CheckCircle, Sparkles,
 } from 'lucide-react'
 
@@ -99,21 +99,24 @@ const STEPS = [
 
 const STORAGE_KEY = (userId) => `tutorial_shown_${userId}`
 
-export default function OnboardingTutorial({ userId, onComplete }) {
+export default function OnboardingTutorial({ userId, seen = false, onComplete }) {
   const [step, setStep] = useState(0)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     if (!userId) return
+    // Veritabanında daha önce görüldü olarak işaretlendiyse hiç açma
+    if (seen) return
     const key = STORAGE_KEY(userId)
     if (!localStorage.getItem(key)) {
       setVisible(true)
     }
-  }, [userId])
+  }, [userId, seen])
 
   const close = () => {
     if (userId) localStorage.setItem(STORAGE_KEY(userId), '1')
     setVisible(false)
+    // Tek seferlik gösterim: kalıcı olarak (veritabanı) işaretlemek için üst bileşene haber ver
     onComplete?.()
   }
 
@@ -123,6 +126,10 @@ export default function OnboardingTutorial({ userId, onComplete }) {
     } else {
       close()
     }
+  }
+
+  const back = () => {
+    setStep((s) => Math.max(0, s - 1))
   }
 
   const current = STEPS[step]
@@ -220,14 +227,25 @@ export default function OnboardingTutorial({ userId, onComplete }) {
               </AnimatePresence>
 
               {/* Alt butonlar */}
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={close}
-                  className="text-sm font-medium text-cream-800/40 hover:text-cream-800 transition"
-                >
-                  Turu Atla
-                </button>
+              <div className="mt-6 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1">
+                  {step > 0 && (
+                    <button
+                      type="button"
+                      onClick={back}
+                      className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-cream-800/60 transition hover:bg-cream-100 hover:text-cream-800"
+                    >
+                      <ArrowLeft className="h-4 w-4" /> Geri
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="px-2 text-sm font-medium text-cream-800/40 transition hover:text-cream-800"
+                  >
+                    Turu Atla
+                  </button>
+                </div>
 
                 <motion.button
                   type="button"
