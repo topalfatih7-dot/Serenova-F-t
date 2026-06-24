@@ -24,7 +24,8 @@ const EMPTY = {
 }
 
 function dataFromItem(item) {
-  const { id, ...rest } = item
+  const rest = { ...item }
+  delete rest.id
   return rest
 }
 

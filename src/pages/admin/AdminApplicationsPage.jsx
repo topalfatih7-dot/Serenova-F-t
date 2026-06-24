@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Check, X, UserPlus, Dumbbell, Apple, ChevronDown, ChevronUp, Copy, KeyRound,
+  Check, X, UserPlus, Dumbbell, Apple, ChevronDown, ChevronUp, Copy,
   Building2, Mail, MessageSquare,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'

@@ -4,7 +4,7 @@
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Serenova-F-t\`  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-24 (§34: e-posta **bağlantı** doğrulama, telefon **kapalı**, Vercel deploy)
+> **Son güncelleme:** 2026-06-24 (§35: stabilizasyon — callback bug, çökme hataları, 27 orphan dosya + git temizliği)
 
 ---
 
@@ -1430,7 +1430,7 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 ### Değiştirilen/Eklenen Dosyalar (§23)
 - `src/config/seo.js`, `src/components/seo/*` (4 dosya)
 - `index.html`, `vercel.json`, `vite.config.js` (sitemap dev rewrite)
-- `public/robots.txt`, `public/og-image.svg`, `public/site.webmanifest`
+- `public/robots.txt`, `public/site.webmanifest` (not: `og-image.svg` §35.4'te silindi — OG artık programatik üretiliyor)
 - `api/sitemap.js`
 - `src/components/layout/PublicLayout.jsx`, `AppShell.jsx`, `AdminShell.jsx`, `StaffShell.jsx`
 - `src/pages/LandingPage.jsx`, `BlogPostPage.jsx`, `StaffProfilePage.jsx`, `NotFoundPage.jsx`, `VideoCallPage.jsx`
@@ -2167,4 +2167,89 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 - `src/services/supabaseDb.js`, `src/context/AppContext.jsx`, `src/pages/ProfilePage.jsx`
 - `src/App.jsx`, `.env.local`, `.env.example`
 - Vercel env: `VITE_PHONE_VERIFY_ENABLED=false` (Production / Preview / Development) + production deploy
+
+---
+
+## 35. Stabilizasyon & Temizlik (2026-06-24)
+
+> Bütün proje denetimi: e-posta doğrulama UI bug'ı, çalışma-zamanı hataları, kullanılmayan dosya/foto temizliği ve git deposu sağlığı.
+
+### 35.1 E-posta doğrulama callback "doğrulanıyor" takılması — **düzeltildi**
+
+**Sorun:** `AuthCallbackPage.jsx`'te `finish()` fonksiyonunun `try/catch`'i yoktu ve `setPhase('success')` çağrısı `reloadRemote()`'tan **sonra** geliyordu. `reloadRemote()` yavaşlar/hata verirse ekran sonsuza dek "E-postanız doğrulanıyor…" ekranında kalıyordu.
+
+**Çözüm (`src/pages/auth/AuthCallbackPage.jsx`):**
+- `markSuccess(session)` yardımcısı eklendi → doğrulama başarılı olur olmaz UI **hemen** "success" durumuna geçer, `reloadRemote()` arka planda (UI'ı bloklamadan) çalışır.
+- `evt` jetonu artık en öncelikli ve en güvenilir yol; başarılıysa `establishSession().catch(() => null)` ile oturum best-effort kurulur.
+- `finish().catch(...)` ile sarıldı → beklenmeyen hatada ekran **asla** "doğrulanıyor"da kalmaz, "error" durumuna düşer.
+
+### 35.2 Çalışma-zamanı / Hooks hataları — **düzeltildi**
+
+| Dosya | Sorun | Çözüm |
+|-------|-------|-------|
+| `src/pages/admin/AdminSessionsPage.jsx` | `paidPlans is not defined` (sayfayı çökerten `no-undef`) | `isPaidMembership(m.membership)` kullanıldı |
+| `src/pages/TeamListPage.jsx` | `useMemo` koşullu erken `return`'ten sonra çağrılıyordu (Rules of Hooks ihlali → render çökmesi riski) | Tüm `useMemo` hook'ları koşulsuz hale getirildi, erken `return` aşağıya alındı |
+
+### 35.3 Kullanılmayan kod temizliği (orphan dosyalar)
+
+**Silinen orphan `.jsx`/`.js` (hiçbir yerden import edilmiyordu):**
+- Sayfa/paket: `pages/PackageBuilderPage.jsx`, `components/package/PackageBuilder.jsx`, `components/package/PackageSummaryCard.jsx`, `components/ui/NumberSelector.jsx` (`/builder` zaten `/membership`'e yönleniyor)
+- Landing: `components/landing/TeamSection.jsx`, `components/landing/TeamCarousel.jsx`
+- UI/Layout: `components/calendar/CalendarView.jsx`, `components/layout/MobileNav.jsx`, `components/ui/ToggleGroup.jsx`, `components/ui/RangeSelector.jsx`, `components/ui/Skeleton.jsx`
+- Hook: `hooks/useLocalStorage.js`
+- Servis (aktif `calorieChat.js` + `aiVision.js` ile değişen eski sürümler): `services/foodParser.js`, `services/aiFoodEstimate.js`, `services/aiNutrition.js`, `services/supportSessions.js`
+- Data: `data/exerciseTaxonomy.js`
+
+**Silinen orphan API endpoint'leri** (frontend artık çağırmıyor; Vercel fonksiyon sayısı 12 → 10, Hobby limiti altında pay açıldı):
+- `api/ai-food-estimate.js`, `api/ai-nutrition.js`
+
+**Korunanlar (yanlış pozitif değil — hâlâ kullanımda):**
+- `services/packagePricing.js` → `supabaseDb.js` + `platformStats.js`
+- `components/package/SupportScheduler.jsx` → `weekdayLabel`/`WEEKDAYS`/`DEFAULT_SUPPORT_SCHEDULE` staff sayfalarında
+- `api/_ai-prompts.js`, `api/_gemini.js` → `ai-food-vision.js` + `ai-food-text.js`
+
+### 35.4 Kullanılmayan görsel/asset temizliği
+
+| Silinen | Neden |
+|---------|-------|
+| `public/Ekran görüntüsü 2026-06-23 192931.png` | Geçici ekran görüntüsü, referans yok |
+| `public/logo-icon.png` (185 KB) | Referans yok |
+| `public/favicon-192.png` (45 KB) | Referans yok (manifest `brand-mark` + `apple-touch`, `index.html` `favicon-32` kullanıyor) |
+| `public/og-image.svg` | OG görseli artık programatik (`scripts/brandAssets.mjs` → `og-image.png`) üretiliyor |
+| `public/icons.svg` | Referans yok |
+| `src/assets/react.svg`, `src/assets/vite.svg` | Vite şablon kalıntısı |
+| `src/assets/hero.png` | `public/hero-bg.png` kullanılıyor |
+
+**Korunan kritik görseller:** `brand-logo.png`, `brand-mark.png`, `og-image.png`, `favicon-32.png`, `apple-touch-icon.png`, `brand-logo-alt.png` (og kaynağı), tüm `*-bg.{png,jpg}` (landing arka planları). `favicon.svg` tarayıcı yedeği olarak bırakıldı.
+
+### 35.5 Git deposu sağlığı — **kritik**
+
+`node_modules/` (17.975 dosya) ve `dist/` (8 dosya) `.gitignore`'da olmasına rağmen git'e commit edilmişti (depo izlenen dosyalarının ~%98'i).
+
+- `git rm -r --cached node_modules dist` → yerel dosyalar **silinmedi**, yalnızca git takibinden çıkarıldı.
+- İzlenen dosya sayısı **18.260 → 277**.
+
+### 35.6 Lint temizliği
+
+- Tüm `no-unused-vars`, `no-undef`, `react-hooks/rules-of-hooks` hataları **sıfırlandı** (kullanılmayan import'lar, ölü değişkenler, `handleQuickAction`, legacy `ProgramSection` vb. temizlendi).
+- Kalanlar yalnızca stilistik en-iyi-uygulama uyarıları (`set-state-in-effect`, `react-refresh/only-export-components`) — çalışmayı etkilemez, davranış değiştirmemek için dokunulmadı.
+
+### 35.7 Veritabanı / Supabase denetimi
+
+- **15 tablo** aktif ve kod ile eşleşiyor: `members`, `staff`, `programs`, `posts`, `tickets`, `activities`, `payments`, `site_content`, `exercises`, `membership_requests`, `plans`, `user_presence`, `staff_applications`, `corporate_applications`, `contact_inquiries`.
+- `plans` tablosu doğrulandı: aktif paketler `free, eko, diyet, spor, kurucu, vip`; eskiler `gumus, altin, platinum` `is_active=false`.
+- `localStorage` kullanımlarının tümü yerinde (FAB konumu, tutorial/banner dismiss, remember-me) — DB'ye taşınması gereken veri yok.
+- Güvenlik advisor uyarıları (`get_advisors`): çoğu kasıtlı public `SECURITY DEFINER` RPC (`submit_*`, `phone_in_use`). **Aksiyon önerisi:** Supabase Dashboard → Auth → "Leaked password protection"ı açın (kod gerektirmez).
+
+### 35.8 Bilinçli placeholder (kopuk bağlantı değil)
+
+`src/pages/payments/PaymentManagementPage.jsx` (member/staff/admin `*/payments` rotaları) `data/mockPayments.js` ile çalışır. Sayfanın üstünde net **"mock (demo) veri — gerçek Stripe entegrasyonu sonraki aşamada"** banner'ı vardır; alt başlıklarda "(demo veri)" yazar. Gerçek `payments` tablosu admin istatistiklerinde kullanılır. Kayıtlı kartlar (Stripe) ve personel hakedişi için gerçek veri kaynağı henüz yok → planlı gelecek işi.
+
+### 35.9 Değiştirilen/Silinen dosyalar (§35)
+
+**Düzeltildi:** `src/pages/auth/AuthCallbackPage.jsx`, `src/pages/admin/AdminSessionsPage.jsx`, `src/pages/TeamListPage.jsx`, `src/pages/CalendarPage.jsx`, `src/pages/SupportPage.jsx`, `src/pages/admin/AdminContentPage.jsx`, `src/services/aiAnalysis.js`, `src/components/dashboard/DraggableHealthFab.jsx`, `api/_gemini.js` + 5 sayfada kullanılmayan import temizliği.
+
+**Silindi (18 kod + 7 asset + 2 API = 27 dosya):** §35.3 ve §35.4 listeleri.
+
+**Git:** `node_modules/`, `dist/` takibi kaldırıldı.
 

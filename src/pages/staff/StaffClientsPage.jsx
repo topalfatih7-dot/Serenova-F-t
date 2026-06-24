@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Search, Users, Activity, Target, Salad, CalendarClock, ClipboardList,
+  Search, Users, Activity, Target, Salad, CalendarClock,
   Dumbbell, Apple, Mail, CalendarRange, Plus, Trash2, Video, UserRound, FileText,
   Check, CalendarCheck,
 } from 'lucide-react'

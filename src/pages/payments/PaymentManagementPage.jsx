@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   CreditCard, History, Wallet, TrendingUp, Users, Plus, Trash2,
-  CheckCircle, Clock, ArrowDownLeft, Building2,
+  Clock, ArrowDownLeft, Building2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'

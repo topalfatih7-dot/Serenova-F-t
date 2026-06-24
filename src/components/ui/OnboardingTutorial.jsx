@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, ChevronRight, ArrowLeft, CalendarDays, ClipboardList,
-  Dumbbell, Apple, Library, Flame, CheckCircle, Sparkles,
+  Dumbbell, Library, Flame, CheckCircle, Sparkles,
 } from 'lucide-react'
 
 const STEPS = [

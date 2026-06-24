@@ -33,8 +33,6 @@ export default function SupportPage() {
     toast('Mesajınız gönderildi', 'success')
   }
 
-  const handleQuickAction = (id) => setModal(id)
-
   return (
     <div className="mx-auto max-w-3xl space-y-10">
       <div>

@@ -24,7 +24,7 @@ export default function AdminSessionsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard label="Koç (Haftalık)" value={sessionStats.coachThisWeek} icon={Video} accent="brand" />
         <StatsCard label="Diyetisyen (Aylık)" value={sessionStats.dietitianThisMonth} icon={Calendar} accent="sage" />
-        <StatsCard label="Ücretli Aktif" value={platform.members.filter((m) => paidPlans.includes(m.membership) && m.membershipStatus === 'active').length} icon={CheckCircle} accent="gold" />
+        <StatsCard label="Ücretli Aktif" value={platform.members.filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active').length} icon={CheckCircle} accent="gold" />
         <StatsCard label="Açık Talep" value={sessionStats.noResponseAlerts} icon={AlertTriangle} accent="cream" />
       </div>
 

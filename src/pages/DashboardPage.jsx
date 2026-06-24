@@ -8,10 +8,7 @@ import {
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
-import OnboardingTutorial from '../components/ui/OnboardingTutorial'
-import HealthTestWidget from '../components/dashboard/HealthTestWidget'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
-import { isHealthTestComplete } from '../data/healthTest'
 import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/ProgressChart'
 import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
@@ -191,9 +188,7 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
-    settings, updateSettings,
   } = useApp()
-  const [healthPromptOpen, setHealthPromptOpen] = useState(false)
   const [storyOpen, setStoryOpen] = useState(false)
 
   // Stripe ödeme dönüşü: üyeliği tazele (webhook birkaç saniye sürebilir).
@@ -209,16 +204,6 @@ export default function DashboardPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const handleTutorialComplete = () => {
-    // Turu kalıcı olarak "görüldü" işaretle (veritabanı) — başka cihaz/tarayıcıda tekrar açılmaz
-    if (user?.id && !settings?.tutorialSeen) {
-      updateSettings?.({ tutorialSeen: true })
-    }
-    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender)) {
-      setHealthPromptOpen(true)
-    }
-  }
 
   if (isFreeTrialExpired) {
     return (
@@ -256,14 +241,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* İlk giriş eğitim popup'ı */}
-      <OnboardingTutorial userId={user?.id} seen={!!settings?.tutorialSeen} onComplete={handleTutorialComplete} />
-      <HealthTestWidget
-        user={user}
-        promptOpen={healthPromptOpen}
-        onPromptHandled={() => setHealthPromptOpen(false)}
-      />
-
       <div className="welcome-banner">
         <p className="text-sm font-medium text-white/80">Hoş geldiniz</p>
         <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{user.name?.split(' ')[0] || 'Üye'}, bugün harika bir gün olabilir</h1>

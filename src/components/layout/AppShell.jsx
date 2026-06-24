@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
@@ -9,8 +10,11 @@ import PanelMobileMenu from './PanelMobileMenu'
 import ConsentBanner from '../ui/ConsentBanner'
 import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
+import OnboardingTutorial from '../ui/OnboardingTutorial'
+import HealthTestWidget from '../dashboard/HealthTestWidget'
 import { useApp } from '../../context/AppContext'
 import { getPlanLabel } from '../../data/membershipPlans'
+import { isHealthTestComplete } from '../../data/healthTest'
 import { BRAND } from '../../config/brand'
 
 const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
@@ -30,7 +34,19 @@ const memberNav = [
 ]
 
 export default function AppShell() {
-  const { isAdmin, isStaff, membership, notifications, user, logout } = useApp()
+  const { isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings } = useApp()
+  // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
+  // yüzen ikon (FAB) tüm üye sayfalarında kalıcı olsun diye orkestrasyon AppShell'de.
+  const [healthPromptOpen, setHealthPromptOpen] = useState(false)
+
+  const handleTutorialComplete = () => {
+    if (user?.id && !settings?.tutorialSeen) {
+      updateSettings?.({ tutorialSeen: true })
+    }
+    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender)) {
+      setHealthPromptOpen(true)
+    }
+  }
 
   if (isAdmin) {
     return <Navigate to="/admin" replace />
@@ -84,6 +100,18 @@ export default function AppShell() {
           {BRAND.name} · Bu platform tıbbi teşhis veya tedavi sunmaz.
         </footer>
       </div>
+
+      <OnboardingTutorial
+        userId={user?.id}
+        seen={!!settings?.tutorialSeen}
+        onComplete={handleTutorialComplete}
+      />
+      <HealthTestWidget
+        user={user}
+        promptOpen={healthPromptOpen}
+        onPromptHandled={() => setHealthPromptOpen(false)}
+      />
+
       <ConsentBanner />
     </div>
   )

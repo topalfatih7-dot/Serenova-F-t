@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Crown, Star, Award, Sparkles, ArrowRight, Leaf, Dumbbell } from 'lucide-react'
+import { Check, X, Crown, Award, Sparkles, ArrowRight, Leaf, Dumbbell } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { ALL_PLANS, formatMonthlyPrice, sortPlansForDisplay } from '../data/membershipPlans'
 

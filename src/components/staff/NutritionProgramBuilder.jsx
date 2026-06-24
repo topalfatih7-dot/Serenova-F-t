@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { Plus, Trash2, Apple, CalendarDays, Check } from 'lucide-react'
+import { Plus, Trash2, Apple, CalendarDays } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { MEAL_TYPES, mealLabel } from '../../utils/programSchedule'
 

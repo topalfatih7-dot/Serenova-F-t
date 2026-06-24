@@ -189,8 +189,8 @@ function generateDietitianPlan(profile) {
   const goals = profile.goals || []
   const calories = estimateDailyCalories(profile)
 
-  const mealPlan = buildMealPlan(prefs, goals)
-  const tips = buildNutritionTips(prefs, goals, profile)
+  const mealPlan = buildMealPlan(prefs)
+  const tips = buildNutritionTips(prefs, goals)
 
   return {
     calories,
@@ -198,15 +198,14 @@ function generateDietitianPlan(profile) {
     tips,
     macros: estimateMacros(goals, calories?.recommended),
     hydration: estimateHydration(profile.weight),
-    message: buildNutritionMessage(prefs, goals),
+    message: buildNutritionMessage(prefs),
   }
 }
 
-function buildMealPlan(prefs, goals) {
+function buildMealPlan(prefs) {
   const isVegan = prefs.includes('vegan')
   const isVegetarian = prefs.includes('vegetarian')
   const isHighProtein = prefs.includes('high-protein')
-  const isLowCarb = prefs.includes('low-carb')
   const isKeto = prefs.includes('keto')
   const isMediterranean = prefs.includes('mediterranean')
 
@@ -259,7 +258,7 @@ function buildMealPlan(prefs, goals) {
   ]
 }
 
-function buildNutritionTips(prefs, goals, profile) {
+function buildNutritionTips(prefs, goals) {
   const tips = []
 
   if (goals.includes('fatburn') || goals.includes('weight')) {
@@ -318,7 +317,7 @@ function estimateHydration(weight) {
   return { amount: Math.round((w * 0.033) * 10) / 10, unit: 'litre' }
 }
 
-function buildNutritionMessage(prefs, goals) {
+function buildNutritionMessage(prefs) {
   const prefMap = {
     vegan: 'vegan tercihlerinize',
     vegetarian: 'vejetaryen tercihlerinize',

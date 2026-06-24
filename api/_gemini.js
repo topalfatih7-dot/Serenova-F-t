@@ -78,7 +78,7 @@ export async function callGemini(parts, systemInstruction, generationConfig = {}
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-  } catch (e) {
+  } catch {
     throw new GeminiApiError(503, 'network_error', 'Google AI servisine bağlanılamadı.')
   }
 

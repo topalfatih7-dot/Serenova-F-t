@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, ArrowRight, UserPlus, Dumbbell, Apple, CheckCircle,
-  Plus, Trash2, Briefcase, GraduationCap, Award, Clock,
+  Plus, Briefcase, GraduationCap, Award, Clock,
 } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'

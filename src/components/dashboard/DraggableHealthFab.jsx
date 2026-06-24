@@ -32,8 +32,7 @@ function snapPosition(clientX, clientY, size) {
   return { edge: 'bottom', x: Math.min(Math.max(cx - size / 2, margin), vw - size - margin), y: vh - size - margin }
 }
 
-function posToStyle(pos, collapsed) {
-  const size = collapsed ? 52 : undefined
+function posToStyle(pos) {
   if (pos.x != null && pos.y != null) {
     return { position: 'fixed', left: pos.x, top: pos.y, zIndex: 40 }
   }
@@ -110,7 +109,7 @@ export default function DraggableHealthFab({ userId, onOpen }) {
     if (!collapsed) onOpen()
   }
 
-  const style = posToStyle(pos, collapsed)
+  const style = posToStyle(pos)
 
   return (
     <motion.div

@@ -66,6 +66,15 @@ export default function AuthCallbackPage() {
       return null
     }
 
+    // Doğrulama başarıya ulaştığında UI'ı hemen günceller; oturum yenileme arka planda
+    // yapılır ki reloadRemote yavaşlasa/hata verse bile ekran "doğrulanıyor"da takılmaz.
+    function markSuccess(session) {
+      if (!active) return
+      setHasSession(Boolean(session?.user))
+      setPhase('success')
+      Promise.resolve(reloadRemote()).catch(() => { /* arka plan; UI'ı bloklama */ })
+    }
+
     async function finish() {
       const hash = window.location.hash || ''
       const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
@@ -90,53 +99,37 @@ export default function AuthCallbackPage() {
 
       const verify = searchParams.get('verify')
 
-      if (verify === 'email' && evt) {
+      // evt jetonu varsa (e-posta bağlantısı) öncelikli ve en güvenilir yol.
+      if (evt) {
         const evtResult = await confirmEmailVerificationByEvt(evt)
         if (evtResult?.success) {
-          const session = await establishSession()
-          await reloadRemote()
-          if (active) {
-            setHasSession(Boolean(session?.user))
-            setPhase('success')
-          }
+          const session = await establishSession().catch(() => null)
+          markSuccess(session)
+          return
+        }
+        // evt başarısız oldu (süresi dolmuş/kullanılmış). Hata kodu varsa hata göster.
+        if (authError || errorCode) {
+          if (active) setPhase('error')
           return
         }
       }
 
       if (authError || errorCode === 'otp_expired') {
-        if (evt) {
-          const evtResult = await confirmEmailVerificationByEvt(evt)
-          if (evtResult?.success) {
-            const session = await establishSession()
-            await reloadRemote()
-            if (active) {
-              setHasSession(Boolean(session?.user))
-              setPhase('success')
-            }
-            return
-          }
-        }
         if (active) setPhase('error')
         return
       }
 
-      const session = await establishSession()
+      const session = await establishSession().catch(() => null)
 
       if (verify === 'email') {
         if (session?.user) {
-          if (evt) {
-            const evtResult = await confirmEmailVerificationByEvt(evt)
-            if (!evtResult?.success) {
-              await markEmailVerified({ id: session.user.id, email: session.user.email })
-            }
-          } else {
-            await markEmailVerified({ id: session.user.id, email: session.user.email })
+          const marked = await markEmailVerified({ id: session.user.id, email: session.user.email })
+          if (marked?.success === false && active) {
+            // Profil kaydı güncellenemese bile oturum açık; yine de başarı göster.
+            markSuccess(session)
+            return
           }
-          await reloadRemote()
-          if (active) {
-            setHasSession(true)
-            setPhase('success')
-          }
+          markSuccess(session)
           return
         }
         if (active) {
@@ -147,7 +140,7 @@ export default function AuthCallbackPage() {
       }
 
       if (session?.user) {
-        await reloadRemote()
+        Promise.resolve(reloadRemote()).catch(() => {})
         if (active) navigate('/dashboard', { replace: true })
         return
       }
@@ -155,7 +148,11 @@ export default function AuthCallbackPage() {
       if (active) setPhase('error')
     }
 
-    finish()
+    finish().catch(() => {
+      // Beklenmeyen hata: ekranı asla "doğrulanıyor"da bırakma.
+      if (active) setPhase('error')
+    })
+
     return () => { active = false }
   }, [navigate, searchParams, reloadRemote])
 

@@ -46,20 +46,27 @@ export default function TeamListPage({ role: roleProp }) {
   const { staff } = useApp()
   const config = roleConfig[role]
 
-  if (!config) return <Navigate to="/" replace />
-
-  const members = (staff || []).filter((s) => s.active !== false && s.role === config.key)
-  const RoleIcon = config.icon
+  // Hook'lar koşulsuz çağrılmalı (Rules of Hooks); erken return aşağıda.
+  const members = useMemo(
+    () => (staff || []).filter((s) => s.active !== false && s.role === config?.key),
+    [staff, config?.key]
+  )
 
   const teamListSchema = useMemo(
     () =>
-      buildItemListSchema({
-        name: config.label,
-        path: `/team/${role}`,
-        items: members.map((m) => ({ name: m.name, path: `/team/${m.id}` })),
-      }),
-    [members, config.label, role]
+      config
+        ? buildItemListSchema({
+            name: config.label,
+            path: `/team/${role}`,
+            items: members.map((m) => ({ name: m.name, path: `/team/${m.id}` })),
+          })
+        : null,
+    [members, config, role]
   )
+
+  if (!config) return <Navigate to="/" replace />
+
+  const RoleIcon = config.icon
 
   return (
     <div className="min-h-screen bg-cream-50/30">

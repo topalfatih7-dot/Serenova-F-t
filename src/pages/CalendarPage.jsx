@@ -558,7 +558,6 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
                         onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
                         saving={saving}
                         canComplete={canComplete}
-                        iconColor="bg-brand-100 text-brand-600"
                       />
                     ))}
                   </div>
@@ -607,47 +606,8 @@ function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
   )
 }
 
-// ── Program Bölümü (legacy — artık kullanılmıyor, ActivityRow korunur) ──
-function ProgramSection({ icon: Icon, title, color, entries, isDone, onToggle, expandedEntryId, onExpandEntry, saving, canComplete }) {
-  const headerColors = {
-    brand: 'bg-brand-50 text-brand-700 border-brand-100',
-    sage:  'bg-sage-50 text-sage-700 border-sage-100',
-  }
-  const iconColors = {
-    brand: 'bg-brand-100 text-brand-600',
-    sage:  'bg-sage-100 text-sage-600',
-  }
-
-  return (
-    <div>
-      <div className={`flex items-center gap-2.5 border-b px-6 py-3 ${headerColors[color]}`}>
-        <Icon className="h-4 w-4" />
-        <span className="text-sm font-semibold">{title}</span>
-        <span className="ml-auto rounded-full bg-white/60 px-2 py-0.5 text-xs font-medium">
-          {entries.length} aktivite
-        </span>
-      </div>
-      <div className="divide-y divide-cream-50">
-        {entries.map((entry) => (
-          <ActivityRow
-            key={entry.id}
-            entry={entry}
-            done={isDone(entry.id)}
-            onToggle={() => onToggle(entry.id)}
-            expanded={expandedEntryId === entry.id}
-            onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
-            saving={saving}
-            canComplete={canComplete}
-            iconColor={iconColors[color]}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ── Aktivite Satırı ─────────────────────────────────────────────────
-function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canComplete, iconColor }) {
+function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canComplete }) {
   const displayName = entry.exerciseName || entry.name || 'Aktivite'
   const isNutrition = entry.programType === 'nutrition' || entry.mealType
 

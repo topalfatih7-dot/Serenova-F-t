@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { Building2, CheckCircle, Send, ArrowLeft } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'

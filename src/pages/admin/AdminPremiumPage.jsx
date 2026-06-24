@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
-import { isPaidMembership, PAID_MEMBERSHIPS, getPlanLabel } from '../../data/membershipPlans'
+import { isPaidMembership, PAID_MEMBERSHIPS } from '../../data/membershipPlans'
 import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
 
