@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertCircle, Loader2, LayoutDashboard, LogIn, Sparkles } from 'lucide-react'
 import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
-import { markEmailVerified } from '../../services/authVerification'
-import { getUser } from '../../services/supabaseDb'
+import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services/authVerification'
 import { BRAND } from '../../config/brand'
+import { useApp } from '../../context/AppContext'
 
 function FloatingOrb({ className, delay = 0 }) {
   return (
@@ -18,10 +18,20 @@ function FloatingOrb({ className, delay = 0 }) {
   )
 }
 
+function stripAuthCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search)
+  if (!params.has('code')) return
+  params.delete('code')
+  const qs = params.toString()
+  const clean = `${window.location.pathname}${qs ? `?${qs}` : ''}`
+  window.history.replaceState({}, '', clean)
+}
+
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [phase, setPhase] = useState('loading') // loading | success | prefetch | error
+  const { reloadRemote } = useApp()
+  const [phase, setPhase] = useState('loading')
   const [hasSession, setHasSession] = useState(false)
 
   useEffect(() => {
@@ -32,11 +42,25 @@ export default function AuthCallbackPage() {
 
     let active = true
 
-    async function waitForSession(maxMs = 6000) {
+    async function establishSession() {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data?.session) {
+          stripAuthCodeFromUrl()
+          return data.session
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) return session
+
       const started = Date.now()
-      while (Date.now() - started < maxMs) {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) return session
+      while (Date.now() - started < 6000) {
+        const { data: { session: s } } = await supabase.auth.getSession()
+        if (s?.user) return s
         await new Promise((r) => setTimeout(r, 350))
       }
       return null
@@ -44,25 +68,71 @@ export default function AuthCallbackPage() {
 
     async function finish() {
       const hash = window.location.hash || ''
+      const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+      const authError = searchParams.get('error') || hashParams.get('error')
+      const errorCode = searchParams.get('error_code') || hashParams.get('error_code')
+      const evt = searchParams.get('evt') || hashParams.get('evt')
+
       const isRecovery =
         hash.includes('type=recovery') ||
         searchParams.get('type') === 'recovery' ||
         searchParams.get('next') === 'reset-password'
 
       if (isRecovery) {
-        if (active) navigate('/reset-password', { replace: true })
+        const session = await establishSession()
+        if (session && active) {
+          navigate('/reset-password', { replace: true })
+        } else if (active) {
+          setPhase('error')
+        }
         return
       }
 
       const verify = searchParams.get('verify')
-      const session = await waitForSession()
+
+      if (verify === 'email' && evt) {
+        const evtResult = await confirmEmailVerificationByEvt(evt)
+        if (evtResult?.success) {
+          const session = await establishSession()
+          await reloadRemote()
+          if (active) {
+            setHasSession(Boolean(session?.user))
+            setPhase('success')
+          }
+          return
+        }
+      }
+
+      if (authError || errorCode === 'otp_expired') {
+        if (evt) {
+          const evtResult = await confirmEmailVerificationByEvt(evt)
+          if (evtResult?.success) {
+            const session = await establishSession()
+            await reloadRemote()
+            if (active) {
+              setHasSession(Boolean(session?.user))
+              setPhase('success')
+            }
+            return
+          }
+        }
+        if (active) setPhase('error')
+        return
+      }
+
+      const session = await establishSession()
 
       if (verify === 'email') {
         if (session?.user) {
-          const authUser = await getUser()
-          if (authUser) {
-            await markEmailVerified({ id: authUser.id, email: authUser.email })
+          if (evt) {
+            const evtResult = await confirmEmailVerificationByEvt(evt)
+            if (!evtResult?.success) {
+              await markEmailVerified({ id: session.user.id, email: session.user.email })
+            }
+          } else {
+            await markEmailVerified({ id: session.user.id, email: session.user.email })
           }
+          await reloadRemote()
           if (active) {
             setHasSession(true)
             setPhase('success')
@@ -77,6 +147,7 @@ export default function AuthCallbackPage() {
       }
 
       if (session?.user) {
+        await reloadRemote()
         if (active) navigate('/dashboard', { replace: true })
         return
       }
@@ -86,9 +157,16 @@ export default function AuthCallbackPage() {
 
     finish()
     return () => { active = false }
-  }, [navigate, searchParams])
+  }, [navigate, searchParams, reloadRemote])
 
-  const goPanel = () => navigate(hasSession ? '/dashboard' : '/login', { replace: true })
+  const goPanel = async () => {
+    if (hasSession) {
+      await reloadRemote()
+      navigate('/dashboard', { replace: true })
+      return
+    }
+    navigate('/login', { replace: true })
+  }
 
   const copy = {
     loading: {
@@ -97,12 +175,12 @@ export default function AuthCallbackPage() {
     },
     success: {
       title: 'E-posta adresiniz onaylandı!',
-      description: 'Doğrulama başarıyla tamamlandı. Bu sayfayı kapatabilir veya panele geçebilirsiniz.',
+      description: 'Doğrulama başarıyla tamamlandı. Panele geçerek hesabınızı kullanmaya devam edebilirsiniz.',
     },
     prefetch: {
       title: 'Doğrulama bağlantısı işlendi',
       description:
-        'E-posta sağlayıcınız bağlantıyı önceden açmış olabilir. Giriş yapıp profilinizde "Durumu Yenile" ile onayı tamamlayabilirsiniz.',
+        'Oturum bu cihazda açılamadı. Giriş yapıp profilinizden tekrar “Doğrulama Bağlantısı Gönder” ile deneyin.',
     },
     error: {
       title: 'Bağlantı doğrulanamadı',
@@ -197,23 +275,31 @@ export default function AuthCallbackPage() {
                   </button>
                 )}
                 {phase === 'success' && (
-                  <p className="text-xs text-cream-800/45">Bu sekmeyi güvenle kapatabilirsiniz.</p>
+                  <p className="text-xs text-cream-800/45">Oturumunuz açık; panele yönlendirileceksiniz.</p>
                 )}
                 {phase === 'prefetch' && (
                   <Link
-                    to="/profile"
+                    to="/login"
                     className="text-center text-xs font-semibold text-brand-600 hover:underline"
                   >
-                    Profilde durumu yenile
+                    Giriş sayfasına git
                   </Link>
                 )}
                 {phase === 'error' && (
-                  <Link
-                    to="/login"
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"
-                  >
-                    <LogIn className="h-4 w-4" /> Giriş Yap
-                  </Link>
+                  <>
+                    <Link
+                      to="/profile"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-105"
+                    >
+                      Profilden Yeni Bağlantı İste
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"
+                    >
+                      <LogIn className="h-4 w-4" /> Giriş Yap
+                    </Link>
+                  </>
                 )}
               </motion.div>
             )}

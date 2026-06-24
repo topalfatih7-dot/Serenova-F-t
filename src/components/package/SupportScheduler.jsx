@@ -39,7 +39,8 @@ function normalizeSlots(slots, count, fallback) {
 }
 
 export default function SupportScheduler({ schedule, packageConfig, onChange }) {
-  const perWeek = Number(packageConfig?.coachMeetingsPerWeek) || 0
+  const perMonthCoach = Number(packageConfig?.coachMeetingsPerMonth) || (Number(packageConfig?.coachMeetingsPerWeek) || 0) * 4
+  const perWeek = perMonthCoach
   const perMonth = Number(packageConfig?.dietitianMeetingsPerMonth) || 0
 
   const coachSlots = normalizeSlots(schedule?.coachSlots, perWeek, DEFAULT_COACH_SLOT)

@@ -1,13 +1,13 @@
 import StatsCard from '../../components/ui/StatsCard'
 import { useApp } from '../../context/AppContext'
+import { isPaidMembership } from '../../data/membershipPlans'
 import { Calendar, Video, CheckCircle, AlertTriangle } from 'lucide-react'
 
 export default function AdminSessionsPage() {
   const { platform, sessionStats } = useApp()
 
-  const paidPlans = ['gumus', 'altin', 'platinum', 'premium']
   const sessions = platform.members
-    .filter((m) => paidPlans.includes(m.membership) && m.membershipStatus === 'active')
+    .filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active')
     .flatMap((m) => [
       ...(m.coachSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Koç' })),
       ...(m.dietitianSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Diyetisyen' })),

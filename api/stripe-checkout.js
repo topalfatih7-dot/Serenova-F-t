@@ -1,13 +1,8 @@
 /**
  * POST /api/stripe-checkout
- * Seçilen plan için bir Stripe Checkout oturumu oluşturur ve ödeme sayfası URL'sini döndürür.
- *
- * Body:  { planId: 'gumus'|'altin'|'platinum'|'premium', flow?: 'register'|'change' }
- * Header: Authorization: Bearer <supabase access token>   (kullanıcıyı doğrulamak için)
- *
- * Üyelik, ödeme onaylanınca `api/stripe-webhook.js` tarafından aktifleştirilir.
+ * Body: { planId, durationMonths?: 1|3|6, flow?: 'register'|'change' }
  */
-import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, isPaidPlanId, toMinorUnits } from './_stripe.js'
+import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, isPaidPlanId, toMinorUnits, getTierPrice } from './_stripe.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 
 function getOrigin(req) {
@@ -37,12 +32,14 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
     const planId = String(body.planId || '')
     const flow = body.flow === 'change' ? 'change' : 'register'
+    const durationMonths = [1, 3, 6].includes(Number(body.durationMonths))
+      ? Number(body.durationMonths)
+      : 1
 
     if (!isPaidPlanId(planId)) {
       return res.status(400).json({ ok: false, error: 'Geçersiz plan.' })
     }
 
-    // Kullanıcıyı access token ile doğrula (memberId istemciden GÜVENİLMEZ)
     const authHeader = req.headers.authorization || req.headers.Authorization || ''
     const token = authHeader.replace(/^Bearer\s+/i, '').trim()
     if (!token) return res.status(401).json({ ok: false, error: 'Oturum bulunamadı.' })
@@ -54,22 +51,26 @@ export default async function handler(req, res) {
     }
     const user = userData.user
 
-    // Fiyatı SUNUCUDA belirle (istemci tutarına güvenme): önce plans tablosu, sonra yedek.
     let planName = PLAN_FALLBACK[planId]?.name || planId
-    let planPrice = PLAN_FALLBACK[planId]?.price || 0
-    let durationWeeks = PLAN_FALLBACK[planId]?.durationWeeks || 4
+    let planPrice = getTierPrice(planId, durationMonths)
 
     const { data: planRow } = await admin.from('plans').select('*').eq('id', planId).maybeSingle()
     if (planRow) {
-      const pdata = planRow.data || planRow
-      if (typeof pdata.price === 'number' && pdata.price > 0) planPrice = pdata.price
-      if (pdata.name) planName = pdata.name
+      if (planRow.name) planName = planRow.name
+      const tiers = planRow.pricing_tiers || planRow.data?.pricingTiers
+      if (Array.isArray(tiers)) {
+        const tier = tiers.find((t) => Number(t.months) === durationMonths)
+        if (tier?.price) planPrice = tier.price
+      } else if (durationMonths === 1 && typeof planRow.price === 'number' && planRow.price > 0) {
+        planPrice = planRow.price
+      }
     }
 
     if (!planPrice || planPrice <= 0) {
       return res.status(400).json({ ok: false, error: 'Plan fiyatı bulunamadı.' })
     }
 
+    const durationLabel = durationMonths === 1 ? '1 ay' : `${durationMonths} ay`
     const origin = getOrigin(req)
     const successPath = flow === 'change' ? '/profile' : '/dashboard'
     const cancelPath = flow === 'change' ? '/onboarding' : '/onboarding'
@@ -87,8 +88,8 @@ export default async function handler(req, res) {
             currency: CURRENCY,
             unit_amount: toMinorUnits(planPrice),
             product_data: {
-              name: planName,
-              description: `${planName} — ${durationWeeks} haftalık üyelik`,
+              name: `${planName} (${durationLabel})`,
+              description: `${planName} — ${durationLabel} üyelik`,
             },
           },
         },
@@ -97,7 +98,7 @@ export default async function handler(req, res) {
         memberId: user.id,
         planId,
         planPrice: String(planPrice),
-        durationWeeks: String(durationWeeks),
+        durationMonths: String(durationMonths),
         flow,
       },
       success_url: `${origin}${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,

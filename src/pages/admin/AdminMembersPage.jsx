@@ -6,6 +6,7 @@ import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
+import { getPlanLabel } from '../../data/membershipPlans'
 import { describeHealthTest } from '../../data/healthTest'
 
 const STATUS_LABELS = { active: 'Aktif', paused: 'Duraklatıldı', cancelled: 'İptal', expiring: 'Sona Eriyor' }
@@ -134,7 +135,7 @@ export default function AdminMembersPage() {
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${m.membership !== 'free' ? 'bg-brand-50 text-brand-700' : 'bg-cream-100 text-cream-800'}`}>
                       {m.membership !== 'free' && <Crown className="h-3 w-3" />}
-                      {m.membership === 'free' ? 'Ücretsiz' : m.membership === 'gumus' ? 'Gümüş' : m.membership === 'altin' ? 'Altın' : m.membership === 'platinum' ? 'Platinum' : 'Premium'}
+                      {getPlanLabel(m.membership)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -174,7 +175,7 @@ export default function AdminMembersPage() {
             </div>
 
             <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
-              <InfoRow label="Üyelik" value={selected.membership === 'free' ? 'Ücretsiz' : selected.membership === 'gumus' ? 'Gümüş' : selected.membership === 'altin' ? 'Altın' : selected.membership === 'platinum' ? 'Platinum' : 'Premium'} />
+              <InfoRow label="Üyelik" value={getPlanLabel(selected.membership)} />
               <InfoRow label="Yaş" value={selected.age} />
               <InfoRow label="Cinsiyet" value={selected.gender === 'female' ? 'Kadın' : selected.gender === 'male' ? 'Erkek' : selected.gender} />
               <InfoRow label="Şehir / İlçe" value={[selected.city, selected.district].filter(Boolean).join(' / ')} />
@@ -186,9 +187,9 @@ export default function AdminMembersPage() {
               <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
                 <p className="mb-2 text-sm font-semibold text-cream-900">Üyelik Paketi</p>
                 <div className="grid gap-x-8 sm:grid-cols-2">
-                  <InfoRow label="Haftalık koç" value={`${selected.packageConfig?.coachMeetingsPerWeek ?? 0}`} />
+                  <InfoRow label="Aylık koç" value={`${selected.packageConfig?.coachMeetingsPerMonth ?? (selected.packageConfig?.coachMeetingsPerWeek ? selected.packageConfig.coachMeetingsPerWeek * 4 : 0)}`} />
                   <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
-                  <InfoRow label="Süre" value={selected.packageConfig?.durationWeeks ? `${selected.packageConfig.durationWeeks} hafta` : '—'} />
+                  <InfoRow label="Süre" value={selected.packageConfig?.durationMonths ? `${selected.packageConfig.durationMonths} ay` : selected.packageConfig?.durationWeeks ? `${selected.packageConfig.durationWeeks} hafta` : '—'} />
                   <InfoRow label="Kalan gün" value={selected.premiumExpiresAt ? `${getRemainingDays(selected.premiumExpiresAt) ?? '—'} gün` : '—'} />
                   <div className="flex items-center gap-2 py-1.5 text-sm"><Dumbbell className="h-4 w-4 text-brand-500" /> {staffName(selected.assignedCoachId)}</div>
                   <div className="flex items-center gap-2 py-1.5 text-sm"><Apple className="h-4 w-4 text-sage-500" /> {staffName(selected.assignedDietitianId)}</div>

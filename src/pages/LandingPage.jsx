@@ -15,7 +15,7 @@ import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackgrou
 import HowItWorksSection from '../components/landing/HowItWorksSection'
 import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import { scrollToContactSection } from '../utils/scrollToContact'
-import { ALL_PLANS } from '../data/membershipPlans'
+import { ALL_PLANS, sortPlansForDisplay } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { usePlatformDisplayStats } from '../hooks/usePlatformDisplayStats'
 import JsonLd from '../components/seo/JsonLd'
@@ -39,7 +39,7 @@ export default function LandingPage() {
   const { testimonials, faqs, plans, successStories } = useApp()
   const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
-  const displayPlans = plans?.length ? plans : ALL_PLANS
+  const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const [swipeHint, setSwipeHint] = useState(true)
 
   const memberStatValue = `${displayMembers.toLocaleString('tr-TR')}${showMemberPlus ? '+' : ''}`
@@ -274,7 +274,7 @@ export default function LandingPage() {
           </AnimatePresence>
 
           {/* Masaüstü: grid; Mobil: yatay kaydırma */}
-          <div className="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {displayPlans.map((plan, i) => (
               <motion.div
                 key={plan.id}
@@ -285,7 +285,7 @@ export default function LandingPage() {
               >
                 <PricingCard
                   plan={plan}
-                  featured={plan.id === 'altin'}
+                  featured={plan.id === 'kurucu'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />
@@ -306,7 +306,7 @@ export default function LandingPage() {
               >
                 <PricingCard
                   plan={plan}
-                  featured={plan.id === 'altin'}
+                  featured={plan.id === 'kurucu'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />

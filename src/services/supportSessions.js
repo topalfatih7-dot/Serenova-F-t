@@ -10,12 +10,12 @@ function nextWeekday(from, weekday) {
   return d
 }
 
-function buildFallbackCoachSlots(schedule, perWeek) {
+function buildFallbackCoachSlots(schedule, perMonth) {
   const baseDay = Number(schedule.coachDay)
   const time = schedule.coachTime || '10:00'
-  const spacing = Math.max(1, Math.floor(7 / Math.max(perWeek, 1)))
+  const spacing = Math.max(1, Math.floor(4 / Math.max(perMonth, 1)))
   const slots = []
-  for (let c = 0; c < perWeek; c++) {
+  for (let c = 0; c < perMonth; c++) {
     slots.push({ day: (baseDay + c * spacing) % 7, time })
   }
   return slots
@@ -28,20 +28,25 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
 
   const coachName = names.coachName || 'Koçunuz'
   const dietitianName = names.dietitianName || 'Diyetisyeniniz'
-  const weeks = Number(packageConfig.durationWeeks) || 12
-  const perWeek = Number(packageConfig.coachMeetingsPerWeek) || 0
-  const perMonth = Number(packageConfig.dietitianMeetingsPerMonth) || 0
+  const months = Number(packageConfig.durationMonths)
+    || Math.max(1, Math.ceil((Number(packageConfig.durationWeeks) || 12) / 4))
+
+  // Ayda X görüşme (yeni sistem); haftalık eski alan geriye dönük uyumluluk
+  const perMonthCoach = Number(packageConfig.coachMeetingsPerMonth)
+    || (Number(packageConfig.coachMeetingsPerWeek) || 0) * 4
+  const perMonthDiet = Number(packageConfig.dietitianMeetingsPerMonth) || 0
 
   const coachSlots = Array.isArray(schedule.coachSlots) && schedule.coachSlots.length
     ? schedule.coachSlots
-    : (schedule.coachDay != null ? buildFallbackCoachSlots(schedule, perWeek) : [])
+    : (schedule.coachDay != null ? buildFallbackCoachSlots(schedule, perMonthCoach) : [])
 
-  if (perWeek > 0 && coachSlots.length) {
-    for (let w = 0; w < weeks; w++) {
-      coachSlots.forEach((slot) => {
+  if (perMonthCoach > 0 && coachSlots.length) {
+    for (let m = 0; m < months; m++) {
+      coachSlots.forEach((slot, k) => {
         const [ch, cm] = String(slot.time || '10:00').split(':').map(Number)
         const d = nextWeekday(startDate, slot.day)
-        d.setDate(d.getDate() + w * 7)
+        const weekOffset = Math.min(3, Math.floor((k * 4) / Math.max(perMonthCoach, 1)))
+        d.setDate(d.getDate() + (m * 4 + weekOffset) * 7)
         d.setHours(ch || 10, cm || 0, 0, 0)
         coachSessions.push({
           id: uid('cs'),
@@ -60,13 +65,12 @@ export function generateSupportSessions(packageConfig = {}, schedule, startDate 
     ? schedule.dietitianSlots
     : (schedule.dietitianDay != null ? [{ day: schedule.dietitianDay, time: schedule.dietitianTime }] : [])
 
-  if (perMonth > 0 && dietSlots.length) {
-    const months = Math.ceil(weeks / 4)
+  if (perMonthDiet > 0 && dietSlots.length) {
     for (let m = 0; m < months; m++) {
       dietSlots.forEach((slot, k) => {
         const [dh, dm] = String(slot.time || '14:00').split(':').map(Number)
         const d = nextWeekday(startDate, slot.day)
-        const weekOffset = Math.min(3, Math.floor((k * 4) / Math.max(perMonth, 1)))
+        const weekOffset = Math.min(3, Math.floor((k * 4) / Math.max(perMonthDiet, 1)))
         d.setDate(d.getDate() + (m * 4 + weekOffset) * 7)
         d.setHours(dh || 14, dm || 0, 0, 0)
         dietitianSessions.push({

@@ -16,7 +16,7 @@ import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, RECOMMENDED_PLAN, getTierPrice, DURATION_OPTIONS, PLAN_IDS, formatMonthlyPrice, getPlanBadge, sortPlansForDisplay } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled } from '../config/stripe'
@@ -24,7 +24,7 @@ import { startStripeCheckout } from '../services/stripePayment'
 
 const STEPS = ['Hesap', 'Üyelik']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const RECOMMENDED_PLAN = 'altin'
+const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 // Yüksek fiyatı küçük günlük tutara bölerek algıyı yumuşatır (fiyat parçalama).
 function dailyPrice(price) {
@@ -40,6 +40,11 @@ const BENEFITS = [
 
 function planIcon(id) {
   if (id === 'free') return <Leaf className="h-5 w-5" />
+  if (id === 'eko') return <Leaf className="h-5 w-5" />
+  if (id === 'diyet') return <Sparkles className="h-5 w-5" />
+  if (id === 'spor') return <Dumbbell className="h-5 w-5" />
+  if (id === 'kurucu') return <Crown className="h-5 w-5" />
+  if (id === 'vip') return <Award className="h-5 w-5" />
   if (id === 'gumus') return <Star className="h-5 w-5" />
   if (id === 'altin') return <Crown className="h-5 w-5" />
   if (id === 'platinum') return <Award className="h-5 w-5" />
@@ -48,37 +53,104 @@ function planIcon(id) {
 
 function planRingColor(id, selected) {
   if (!selected) return 'border-cream-200 hover:border-cream-300'
-  if (id === 'free') return 'border-sage-400 ring-2 ring-sage-200'
+  if (id === 'free' || id === 'eko') return 'border-sage-400 ring-2 ring-sage-200'
+  if (id === 'diyet') return 'border-emerald-400 ring-2 ring-emerald-200'
+  if (id === 'spor') return 'border-blue-400 ring-2 ring-blue-200'
+  if (id === 'kurucu' || id === 'altin') return 'border-amber-400 ring-2 ring-amber-200'
+  if (id === 'vip' || id === 'platinum') return 'border-brand-400 ring-2 ring-brand-200'
   if (id === 'gumus') return 'border-slate-400 ring-2 ring-slate-200'
-  if (id === 'altin') return 'border-amber-400 ring-2 ring-amber-200'
-  if (id === 'platinum') return 'border-brand-400 ring-2 ring-brand-200'
   return 'border-brand-400 ring-2 ring-brand-200'
 }
 
 function planIconBg(id, selected) {
   if (!selected) return 'bg-cream-100 text-cream-800/60'
-  if (id === 'free') return 'bg-sage-500 text-white'
+  if (id === 'free' || id === 'eko') return 'bg-sage-500 text-white'
+  if (id === 'diyet') return 'bg-emerald-500 text-white'
+  if (id === 'spor') return 'bg-blue-500 text-white'
+  if (id === 'kurucu' || id === 'altin') return 'bg-amber-500 text-white'
+  if (id === 'vip' || id === 'platinum') return 'bg-brand-500 text-white'
   if (id === 'gumus') return 'bg-slate-500 text-white'
-  if (id === 'altin') return 'bg-amber-500 text-white'
-  if (id === 'platinum') return 'bg-brand-500 text-white'
   return 'bg-brand-500 text-white'
 }
 
 function planBtnBg(id, selected) {
   if (!selected) return 'bg-cream-100 text-cream-800/70'
-  if (id === 'free') return 'bg-sage-500 text-white'
+  if (id === 'free' || id === 'eko') return 'bg-sage-500 text-white'
+  if (id === 'diyet') return 'bg-emerald-500 text-white'
+  if (id === 'spor') return 'bg-blue-500 text-white'
+  if (id === 'kurucu' || id === 'altin') return 'bg-amber-500 text-white'
+  if (id === 'vip' || id === 'platinum') return 'bg-brand-500 text-white'
   if (id === 'gumus') return 'bg-slate-500 text-white'
-  if (id === 'altin') return 'bg-amber-500 text-white'
-  if (id === 'platinum') return 'bg-brand-500 text-white'
   return 'bg-brand-500 text-white'
 }
 
 function planAccent(id) {
-  if (id === 'free') return 'from-sage-400 to-sage-600'
+  if (id === 'free' || id === 'eko') return 'from-sage-400 to-sage-600'
+  if (id === 'diyet') return 'from-emerald-400 to-emerald-600'
+  if (id === 'spor') return 'from-blue-400 to-blue-600'
+  if (id === 'kurucu' || id === 'altin') return 'from-amber-400 to-amber-600'
+  if (id === 'vip' || id === 'platinum') return 'from-brand-400 to-brand-600'
   if (id === 'gumus') return 'from-slate-400 to-slate-600'
-  if (id === 'altin') return 'from-amber-400 to-amber-600'
-  if (id === 'platinum') return 'from-brand-400 to-brand-600'
   return 'from-brand-400 to-brand-600'
+}
+
+function PlanCardHeader({ plan, selected, recommended }) {
+  const badge = getPlanBadge(plan)
+  return (
+    <div className="flex flex-col items-center text-center">
+      {badge && (
+        <span className={`mb-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow ${
+          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-cream-900/85'
+        }`}>
+          {plan.id === 'kurucu' && <Sparkles className="h-2.5 w-2.5" />}
+          {badge}
+        </span>
+      )}
+      {!badge && recommended && (
+        <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow">
+          <Sparkles className="h-2.5 w-2.5" />
+          En Çok Tercih
+        </span>
+      )}
+      <span className={`flex h-12 w-12 items-center justify-center rounded-2xl transition ${planIconBg(plan.id, selected || recommended)}`}>
+        {planIcon(plan.id)}
+      </span>
+      <p className="mt-3 font-display text-base font-bold text-cream-900">{plan.name}</p>
+      <p className="mt-1 font-display text-sm font-extrabold text-cream-900">
+        {formatMonthlyPrice(plan.price)}
+      </p>
+    </div>
+  )
+}
+
+function DurationSelector({ planId, value, onChange }) {
+  if (!isPaidMembership(planId)) return null
+  return (
+    <div className="mt-4 rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/55">Paket süresi</p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {DURATION_OPTIONS.map(({ months, label }) => {
+          const price = getTierPrice(planId, months)
+          const selected = value === months
+          return (
+            <button
+              key={months}
+              type="button"
+              onClick={() => onChange(months)}
+              className={`rounded-xl border px-2 py-2.5 text-center transition ${
+                selected ? 'border-brand-400 bg-white shadow-sm ring-2 ring-brand-100' : 'border-cream-200 bg-white hover:border-cream-300'
+              }`}
+            >
+              <p className="text-[10px] font-semibold text-cream-800/60">{label}</p>
+              <p className="mt-0.5 text-sm font-bold text-cream-900">
+                {months === 1 ? formatMonthlyPrice(price) : `${price.toLocaleString('tr-TR')}₺`}
+              </p>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan }) {
@@ -87,11 +159,13 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
   const [searchParams] = useSearchParams()
   const initial = preselectedPlan && preselectedPlan !== currentMembership ? preselectedPlan : currentMembership
   const [selected, setSelected] = useState(initial)
+  const [durationMonths, setDurationMonths] = useState(1)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const selectedPlan = plans.find((p) => p.id === selected) || plans[0]
+  const selectedPrice = isPaidMembership(selected) ? getTierPrice(selected, durationMonths) : 0
   const isPaid = isPaidMembership(selected)
   const isCurrent = selected === currentMembership
 
@@ -104,7 +178,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
 
   const applyChange = async (price = 0) => {
     setSaving(true)
-    const r = await changePlan(selected, price)
+    const r = await changePlan(selected, price, durationMonths)
     setSaving(false)
     if (!r?.success) { toast(r?.error || 'Plan değiştirilemedi', 'error'); return false }
     return true
@@ -115,7 +189,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
     if (isPaid) {
       if (isStripeEnabled()) {
         setSaving(true)
-        const r = await startStripeCheckout(selected, 'change')
+        const r = await startStripeCheckout(selected, 'change', durationMonths)
         if (!r.success) { setSaving(false); toast(r.error || 'Ödeme başlatılamadı', 'error') }
         return
       }
@@ -131,7 +205,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
   const handlePaid = () => {
     setPaying(true)
     setTimeout(async () => {
-      const ok = await applyChange(selectedPlan?.price || 0)
+      const ok = await applyChange(selectedPrice)
       setPaying(false)
       if (ok) {
         setPaymentOpen(false)
@@ -165,39 +239,17 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
                 >
                   <div className={`h-2 w-full bg-gradient-to-r ${planAccent(m.id)}`} />
                   <div className="flex flex-col p-5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {current && (
-                        <span className="rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
-                          Mevcut Plan
-                        </span>
-                      )}
-                      {m.badge && (
-                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow ${
-                          m.id === 'altin' ? 'bg-amber-500' : 'bg-brand-500'
-                        }`}>
-                          {m.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-3">
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${planIconBg(m.id, selectedCard)}`}>
-                        {planIcon(m.id)}
+                    {current && (
+                      <span className="mb-2 self-center rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+                        Mevcut Plan
                       </span>
-                      <div className="min-w-0">
-                        <p className="font-display text-base font-bold text-cream-900">{m.name}</p>
-                        <p className="flex items-baseline gap-0.5">
-                          <span className="font-display text-lg font-extrabold text-cream-900">
-                            {m.price === 0 ? 'Ücretsiz' : `${m.price?.toLocaleString('tr-TR')}₺`}
-                          </span>
-                          {m.price > 0 && <span className="text-[11px] font-medium text-cream-800/55">/ay</span>}
-                        </p>
-                      </div>
-                      {selectedCard && (
-                        <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white shadow">
-                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    <PlanCardHeader plan={m} selected={selectedCard} recommended={m.id === RECOMMENDED_PLAN} />
+                    {selectedCard && (
+                      <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white shadow">
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                      </span>
+                    )}
                     <div className="mt-4 space-y-1.5 border-t border-cream-100 pt-4">
                       {(m.features || []).slice(0, 5).map((f, i) => (
                         <div key={i} className="flex items-center gap-2">
@@ -225,6 +277,8 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
             })}
           </div>
 
+          <DurationSelector planId={selected} value={durationMonths} onChange={setDurationMonths} />
+
           <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button type="button" onClick={() => navigate('/profile')} className="rounded-xl px-4 py-2.5 text-sm font-medium text-cream-800 hover:bg-cream-50">
               Vazgeç
@@ -241,7 +295,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
               {isCurrent
                 ? 'Zaten bu plandasınız'
                 : isPaid
-                  ? `${selectedPlan?.name} · ${selectedPlan?.price?.toLocaleString('tr-TR')}₺ ile Geç`
+                  ? `${selectedPlan?.name} · ${selectedPrice.toLocaleString('tr-TR')}₺ ile Geç`
                   : 'Ücretsiz Plana Geç'}
             </button>
           </div>
@@ -249,7 +303,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
       </div>
 
       <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
-        <PaymentForm amount={selectedPlan?.price} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaid} />
+        <PaymentForm amount={selectedPrice} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaid} />
       </Modal>
     </div>
   )
@@ -258,10 +312,11 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const rawPlan = searchParams.get('plan') || 'free'
-  const preselectedPlan = ['free', 'gumus', 'altin', 'platinum', 'premium'].includes(rawPlan) ? rawPlan : 'free'
+  const preselectedPlan = VALID_PLANS.includes(rawPlan) ? rawPlan : 'free'
 
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
+  const [durationMonths, setDurationMonths] = useState(1)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -295,7 +350,7 @@ export default function OnboardingPage() {
   if (isExistingMember && !welcomeOpen) {
     return (
       <PlanChangeView
-        plans={plans?.length ? plans : ALL_PLANS}
+        plans={sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)}
         currentMembership={currentMembership}
         preselectedPlan={preselectedPlan}
         changePlan={changePlan}
@@ -304,8 +359,9 @@ export default function OnboardingPage() {
   }
 
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
-  const displayPlans = plans?.length ? plans : ALL_PLANS
+  const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const selectedPlan = displayPlans.find((p) => p.id === data.membership) || displayPlans[0]
+  const selectedPrice = isPaidMembership(data.membership) ? getTierPrice(data.membership, durationMonths) : 0
   const isPaid = isPaidMembership(data.membership)
 
   const errors = {
@@ -359,7 +415,7 @@ export default function OnboardingPage() {
   const handlePaidPayment = () => {
     setPaying(true)
     setTimeout(async () => {
-      const result = await registerWithPlan(buildProfile(), data.membership, selectedPlan?.price || 0)
+      const result = await registerWithPlan(buildProfile(), data.membership, selectedPrice, durationMonths)
       setPaying(false)
       if (!result.success) {
         toast(result.error, 'error')
@@ -382,7 +438,7 @@ export default function OnboardingPage() {
       setSubmitting(false)
       return
     }
-    const r = await startStripeCheckout(data.membership, 'register')
+    const r = await startStripeCheckout(data.membership, 'register', durationMonths)
     if (!r.success) {
       setSubmitting(false)
       toast(`${r.error} Ücretsiz üye olarak kaydınız tamamlandı; planı profilinizden yükseltebilirsiniz.`, 'warning')
@@ -621,23 +677,8 @@ export default function OnboardingPage() {
 
                             <div className={`h-1.5 w-full bg-gradient-to-r ${planAccent(m.id)}`} />
 
-                            {/* Üst rozet satırı */}
+                            {/* Üst rozet — seçim işareti */}
                             <div className="absolute right-3 top-3.5 flex items-center gap-1.5">
-                              {recommended && (
-                                <motion.span
-                                  animate={{ scale: [1, 1.06, 1] }}
-                                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md shadow-amber-500/40"
-                                >
-                                  <Sparkles className="h-2.5 w-2.5" />
-                                  En Çok Tercih
-                                </motion.span>
-                              )}
-                              {!recommended && m.badge && (
-                                <span className="rounded-full bg-cream-900/85 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                                  {m.badge}
-                                </span>
-                              )}
                               {selected && (
                                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-white shadow">
                                   <Check className="h-3 w-3" strokeWidth={3} />
@@ -646,20 +687,7 @@ export default function OnboardingPage() {
                             </div>
 
                             <div className="flex flex-col p-4">
-                              <div className="flex items-center gap-3">
-                                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${planIconBg(m.id, selected || recommended)}`}>
-                                  {planIcon(m.id)}
-                                </span>
-                                <div className="min-w-0">
-                                  <p className="font-display text-base font-bold text-cream-900">{m.name}</p>
-                                  <div className="flex items-baseline gap-1">
-                                    <span className="font-display text-xl font-extrabold text-cream-900">
-                                      {m.price === 0 ? 'Ücretsiz' : `${m.price?.toLocaleString('tr-TR')}₺`}
-                                    </span>
-                                    {m.price > 0 && <span className="text-[11px] font-medium text-cream-800/55">/ay</span>}
-                                  </div>
-                                </div>
-                              </div>
+                              <PlanCardHeader plan={m} selected={selected} recommended={recommended} />
 
                               {/* Fiyat parçalama — günlük algı */}
                               {m.price > 0 && (
@@ -690,6 +718,11 @@ export default function OnboardingPage() {
                           </motion.button>
                         )
                       })}
+                      <DurationSelector
+                        planId={data.membership}
+                        value={durationMonths}
+                        onChange={setDurationMonths}
+                      />
                     </div>
                   )}
                 </motion.div>
@@ -729,7 +762,7 @@ export default function OnboardingPage() {
       </div>
 
       <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
-        <PaymentForm amount={selectedPlan?.price} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaidPayment} />
+        <PaymentForm amount={selectedPrice} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaidPayment} />
       </Modal>
 
       <WelcomeSuccessModal

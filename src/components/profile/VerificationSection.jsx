@@ -175,8 +175,9 @@ export default function VerificationSection({
                 <div className="space-y-2.5">
                   <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs leading-relaxed text-cream-800/80">
                     📧 <strong>{status.email}</strong> adresine bir doğrulama bağlantısı gönderdik.
-                    Gelen kutunuzu (ve spam klasörünü) kontrol edip bağlantıya tıklayın, ardından bu
-                    sayfaya dönüp <strong>“Durumu Yenile”</strong>ye basın.
+                    Gelen kutunuzu (ve spam klasörünü) kontrol edip bağlantıya tıklayın.
+                    Onay sayfasında <strong>“Panele Git”</strong>e basın; ardından burada
+                    <strong> “Durumu Yenile”</strong> ile kontrol edebilirsiniz.
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
                     <button

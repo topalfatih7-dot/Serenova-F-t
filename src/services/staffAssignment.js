@@ -34,7 +34,7 @@ export function assignStaffOnly(member, staffList, members, options = {}) {
   let coachId = manualCoachId ?? member.assignedCoachId ?? null
   let dietitianId = manualDietitianId ?? member.assignedDietitianId ?? null
 
-  const needCoach = (Number(pkg.coachMeetingsPerWeek) || 0) > 0
+  const needCoach = (Number(pkg.coachMeetingsPerMonth) || Number(pkg.coachMeetingsPerWeek) || 0) > 0
   const needDiet = (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
 
   if (autoAssign && schedule) {

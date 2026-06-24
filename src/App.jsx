@@ -10,6 +10,7 @@ import RequireAuth from './components/auth/RequireAuth'
 import NotificationToastBridge from './components/notifications/NotificationToastBridge'
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
+import AuthRedirectHandler from './components/auth/AuthRedirectHandler'
 import LandingPage from './pages/LandingPage'
 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
@@ -77,6 +78,7 @@ export default function App() {
         <ToastProvider>
           <NotificationToastBridge />
           <GoogleAnalytics />
+          <AuthRedirectHandler />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Navbar/footer olmadan tam ekran auth akışları */}

@@ -251,19 +251,33 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 
 | Ne | Nerede |
 |----|--------|
-| Fallback plan tanımları | `src/data/membershipPlans.js` — `FREE`, `GUMUS`, `ALTIN`, `PLATINUM`, `ALL_PLANS` |
-| DB planları | `plans` tablosu → `supabaseDb.getPlans()` / `upsertPlan()` |
+| Fallback plan tanımları | `src/data/membershipPlans.js` — `FREE`, `EKO`, `DIYET`, `SPOR`, `KURUCU`, `VIP`, `ALL_PLANS` |
+| Fiyat kademeleri (1/3/6 ay) | `membershipPlans.js` → `PLAN_PRICING`, `getTierPrice()`, `DURATION_OPTIONS` |
+| DB planları | `plans` tablosu (`pricing_tiers` jsonb) → `supabaseDb.getPlans()` / `upsertPlan()` |
 | Plan karşılaştırma sayfası | `src/pages/MembershipComparisonPage.jsx` |
 | Admin plan düzenleme | `src/pages/admin/AdminPlansPage.jsx` |
-| Premium üyelik mantığı | `src/services/premiumMembership.js` — süre hesabı, uzatma |
+| Premium üyelik mantığı | `src/services/premiumMembership.js` — **ay bazlı** süre hesabı, süre dolunca `free` plana düşürme |
 | Üyelik talepleri | `src/pages/admin/AdminRequestsPage.jsx` — freeze/cancel/resume/renew |
+| Stripe ödeme + süre | `api/stripe-checkout.js` (`durationMonths`), `api/stripe-webhook.js` |
 
-**Plan ID'leri ve yapıları:**
-- `free` (Basic): Otomatik sağlık analizi + Otomatik beslenme/antrenman programları + Temel video erişimi
-- `gumus` (Gümüş): Basic özellikler + Manuel kalori hesaplama + Haftada 1 koç + Aylık 1 diyetisyen
-- `altin` (Altın): Gümüş özellikler + Haftada 2 koç + Aylık 2 diyetisyen + Öncelikli destek
-- `platinum` (Platinum): Altın özellikler + **Fotoğraflı kalori tespiti** + Haftada 3 koç + Haftada 1 diyetisyen + 7/24 VIP
-- `premium` (Eski): Geriye dönük uyumluluk için `altin` ile eşdeğer
+**Plan ID'leri ve yapıları (2026-06-24 güncellemesi):**
+
+| ID | Ad | Aylık fiyat | 3 Aylık | 6 Aylık | Görüşmeler |
+|----|-----|-------------|---------|---------|------------|
+| `free` | Basic | Ücretsiz | — | — | Yok |
+| `eko` | Eko Paket | 1.299₺ | 2.999₺ | 3.999₺ | Yok (program güncellemeleri) |
+| `diyet` | Diyet Paketi | 2.499₺ | 6.499₺ | 9.999₺ | Ayda 2 diyetisyen |
+| `spor` | Spor Paketi | 2.499₺ | 6.499₺ | 9.999₺ | Ayda 2 koç |
+| `kurucu` | 100 Kurucu Üye | 3.499₺ | 6.999₺ | 10.999₺ | Ayda 2 koç + 2 diyetisyen |
+| `vip` | Vip Paket | 4.999₺ | 12.999₺ | 19.999₺ | Ayda 2 koç + 2 diyetisyen |
+
+**Süre mantığı:**
+- Kayıt/ödeme sırasında müşteri 1, 3 veya 6 ay seçer (`durationMonths`).
+- `packageConfig.durationMonths` + `premiumExpiresAt` = başlangıç + N takvim ayı.
+- Süre dolunca `syncMembershipExpiryStatus()` üyeyi otomatik `free` plana düşürür (girişte kontrol edilir).
+- Eski planlar (`gumus`, `altin`, `platinum`, `premium`) geriye dönük uyumluluk için `PAID_MEMBERSHIPS` içinde kalır; DB'de pasif.
+
+**Migrasyon:** `supabase/migrations/20260624_new_package_plans.sql`
 
 ### 5.5 Paket Oluşturma ve Randevu Üretimi
 
@@ -324,7 +338,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Diyetisyen randevuları | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Liste, erteleme, iptal |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Atanan programlar |
 | Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Arama, filtre, video |
-| Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Basic erişemez, Gümüş/Altın manuel giriş, Platinum fotoğraflı analiz |
+| Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Basic erişemez, ücretli paketler manuel giriş, diyet/spor/kurucu/vip fotoğraflı analiz |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
 | Profil | `/profile` | `ProfilePage.jsx` | Profil, üyelik, atanan koç/diyetisyen |
@@ -843,19 +857,21 @@ Kaynak: `.env.example`
 11. **RLS koç erişimi** — `assigned_coach_id` / `assigned_dietitian_id` sütunlarına bağlı.
 12. **Sistem programları** — `staffId` mutlaka `null` olmalı (`'system'` UUID FK hatası verir); `createProgram` filtreler.
 
-### Paket Sistemi Yapısı (2026-06-18 Güncellemesi)
+### Paket Sistemi Yapısı (2026-06-24 Güncellemesi)
 
-| Paket | Otomatik Program | Manuel Kalori | Fotoğraflı Kalori | Koç/Diyetisyen |
-|-------|------------------|---------------|-------------------|----------------|
-| **Basic** (free) | ✅ Otomatik beslenme + antrenman | ❌ Yok | ❌ Yok | ❌ Yok |
-| **Gümüş** | ❌ Koç/Diyetisyen programları | ✅ Manuel giriş | ❌ Yok | ✅ Haftada 1 koç + Aylık 1 diyetisyen |
-| **Altın** | ❌ Koç/Diyetisyen programları | ✅ Manuel giriş | ❌ Yok | ✅ Haftada 2 koç + Aylık 2 diyetisyen |
-| **Platinum** | ❌ Koç/Diyetisyen programları | ✅ Manuel giriş | ✅ Fotoğraflı analiz | ✅ Haftada 3 koç + Haftada 1 diyetisyen |
+| Paket | Manuel Kalori | Fotoğraflı Kalori | Görüşmeler |
+|-------|---------------|-------------------|------------|
+| **Basic** (free) | ❌ | ❌ | Yok |
+| **Eko** | ✅ | ❌ | Yok (ayda 2 diyet + 1 spor program güncellemesi) |
+| **Diyet** | ✅ | ✅ | Ayda 2 diyetisyen |
+| **Spor** | ✅ | ✅ | Ayda 2 koç |
+| **Kurucu** | ✅ | ✅ | Ayda 2 koç + 2 diyetisyen |
+| **Vip** | ✅ | ✅ | Ayda 2 koç + 2 diyetisyen |
 
 **Notlar:**
-- Basic pakette programlar otomatik oluşturulur (hareket kütüphanesinden), koç/diyetisyen görüşmesi yoktur.
-- Kalori hesaplayıcıya sadece Gümüş ve üzeri paketler erişebilir.
-- Fotoğraflı kalori tespiti sadece Platinum pakette kullanılabilir.
+- Tüm ücretli paketlerde 1, 3 veya 6 aylık süre seçimi vardır.
+- Süre dolunca üyelik otomatik `free` plana düşer (`premiumMembership.js`).
+- Kalori hesaplayıcıya ücretli paketler erişir; fotoğraflı analiz diyet/spor/kurucu/vip paketlerinde.
 
 ---
 
@@ -1552,7 +1568,7 @@ hâli masaüstünde 3'lü/2'li grid, sadece mobilde tek kart taşıyıcıydı. Y
 `src/pages/OnboardingPage.jsx` step 1 kartları 2'li küçük grid'den **tek sütun
 zengin kartlara** (mobile-first) çevrildi:
 
-- `RECOMMENDED_PLAN = 'altin'` → animasyonlu **"En Çok Tercih"** rozeti (pulse),
+- `RECOMMENDED_PLAN = 'kurucu'` → animasyonlu **"En Çok Tercih"** rozeti (pulse),
   amber glow ring, üzerinden geçen **parıltı (shimmer) animasyonu**, "Bu Planı Seç ★".
 - **Fiyat parçalama** (`dailyPrice`): ücretli planlarda "Günde yalnızca ~₺X"
   rozeti ile yüksek aylık fiyatın algısı yumuşatılır (psikolojik teşvik).
@@ -2021,16 +2037,26 @@ signUp → oturum yoksa → POST /api/auth-unlock-signup (service role)
 → updateUser({ password })
 ```
 
-**Profil — e-posta doğrulama (güncel):**
+**Profil — e-posta doğrulama (güncel 2026-06-24, sunucu API):**
 ```
-Profil → Doğrulama Bağlantısı Gönder → signInWithOtp(email, emailRedirectTo=/auth/callback?verify=email)
-→ kullanıcı e-postadaki bağlantıya tıklar → /auth/callback
-   → oturum varsa: "E-posta onaylandı, sayfayı kapatabilirsiniz"
-   → oturum yoksa (Hotmail/Outlook link ön-taraması): "Profilde Durumu Yenile"
-→ Profil → Durumu Yenile → refreshEmailVerification → emailVerifiedAt kaydedilir
+Profil → Doğrulama Bağlantısı Gönder → POST /api/auth { action: email-send }
+→ Sunucu APP_URL ile redirect üretir (localhost değil): /auth/callback?verify=email&evt=…
+→ members.data.pendingEmailVerification jetonu kaydedilir
+→ Supabase magic link e-postası gönderilir
+→ AuthRedirectHandler: /?code=… veya #error=… → /auth/callback?verify=email&…
+→ AuthCallbackPage:
+   • evt varsa → POST /api/auth { action: email-confirm, evt }
+   • otp_expired + evt → yine evt ile doğrulama (e-posta önizleme tüketse bile)
+   • code varsa → exchangeCodeForSession + evt/markEmailVerified
+→ "Panele Git" → reloadRemote() → /dashboard
 ```
 
-**Hotmail/Outlook uyarısı:** Bazı sağlayıcılar güvenlik taraması için bağlantıyı kullanıcıdan önce açar; token tüketilir, kullanıcı tıklayınca "geçersiz" görünür. Sunucuda onay gerçekleşmiş olabilir — **Durumu Yenile** yeterlidir.
+**Gerekli env (Vercel):** `APP_URL=https://www.yeniform.com` (veya `VITE_SITE_URL`)
+
+**Supabase Auth → Redirect URLs:** `https://www.yeniform.com/auth/callback`, `https://www.yeniform.com/**`, yerel geliştirme için `http://localhost:3000/auth/callback`
+
+**Önemli:** `api/auth-unlock-signup.js` kayıtta `email_confirm: true` yapar (giriş için).
+Profil doğrulaması ayrı takip edilir: `members.data.emailVerifiedAt`.
 
 **Profil — telefon doğrulama (şimdilik kapalı):**
 ```
@@ -2045,10 +2071,12 @@ Twilio hazır olunca:
 
 | Dosya | Görev |
 |-------|-------|
-| `api/auth-unlock-signup.js` | Kayıt sonrası `email_confirm: true` (service role) |
-| `src/services/authVerification.js` | E-posta bağlantı gönder, `refreshEmailVerification`, telefon (kapalı) |
+| `api/auth.js` | Birleşik auth: unlock-signup, email-send, email-confirm |
+| `api/_appUrl.js` | Sunucu tarafı kanonik site URL (`APP_URL`) |
+| `src/services/authVerification.js` | API üzerinden bağlantı gönder, `confirmEmailVerificationByEvt` |
 | `src/components/profile/VerificationSection.jsx` | E-posta UI; telefon `VITE_PHONE_VERIFY_ENABLED` ile gizli |
-| `src/pages/auth/AuthCallbackPage.jsx` | Sonuç ekranı (`verify=email`), recovery redirect |
+| `src/components/auth/AuthRedirectHandler.jsx` | `/?code=` / `#error=` → `/auth/callback` yönlendirme |
+| `src/pages/auth/AuthCallbackPage.jsx` | evt + PKCE doğrulama, hata/otp_expired UI |
 | `src/pages/auth/ResetPasswordPage.jsx` | PKCE oturum bekleme + yeni şifre |
 | `src/pages/auth/ForgotPasswordPage.jsx` | `redirectTo` → `/auth/callback?next=reset-password` |
 | `src/services/supabaseDb.js` | `ensureAuthForSignup`, `patchMemberVerification`, `emailVerifiedAt` |
@@ -2058,6 +2086,7 @@ Twilio hazır olunca:
 
 **members.data JSONB (yeni alanlar):**
 - `emailVerifiedAt` — ISO string veya `null`
+- `pendingEmailVerification` — `{ token, expiresAt, email }` (doğrulama bağlantısı beklerken)
 - `phoneVerifiedAt` — ISO string veya `null`
 - `pendingPhoneVerify` — telefon e-posta yedeği beklerken geçici (telefon açılınca)
 

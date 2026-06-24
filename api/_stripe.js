@@ -1,7 +1,5 @@
 /**
  * Stripe sunucu yardımcısı (yalnızca Vercel sunucu tarafı).
- * STRIPE_SECRET_KEY env değişkeni GİZLİDİR — asla tarayıcıya gönderilmez,
- * VITE_ ön eki YOKTUR.
  */
 import Stripe from 'stripe'
 
@@ -21,20 +19,36 @@ export function getStripe() {
   return _stripe
 }
 
-// Para birimi (Stripe TRY destekler; en küçük birim = kuruş)
 export const CURRENCY = 'try'
 
-// membershipPlans.js ile aynı varsayılan fiyatlar (TL).
-// Canlı fiyat öncelikle Supabase `plans` tablosundan okunur; bu yalnızca yedektir.
+// membershipPlans.js ile aynı varsayılan fiyatlar (TL, aylık).
 export const PLAN_FALLBACK = {
-  gumus: { name: 'Gümüş Üyelik', price: 999, durationWeeks: 4 },
-  altin: { name: 'Altın Üyelik', price: 1999, durationWeeks: 4 },
-  platinum: { name: 'Platinum Üyelik', price: 3499, durationWeeks: 4 },
-  premium: { name: 'Premium Üyelik', price: 1999, durationWeeks: 4 },
+  eko: { name: 'Eko Paket', price: 1299, durationMonths: 1 },
+  diyet: { name: 'Diyet Paketi', price: 2499, durationMonths: 1 },
+  spor: { name: 'Spor Paketi', price: 2499, durationMonths: 1 },
+  kurucu: { name: '100 Kurucu Üye', price: 3499, durationMonths: 1 },
+  vip: { name: 'Vip Paket', price: 4999, durationMonths: 1 },
+  // geriye dönük
+  gumus: { name: 'Gümüş Üyelik', price: 999, durationMonths: 1 },
+  altin: { name: 'Altın Üyelik', price: 1999, durationMonths: 1 },
+  platinum: { name: 'Platinum Üyelik', price: 3499, durationMonths: 1 },
+  premium: { name: 'Premium Üyelik', price: 1999, durationMonths: 1 },
+}
+
+export const TIER_PRICES = {
+  eko: { 1: 1299, 3: 2999, 6: 3999 },
+  diyet: { 1: 2499, 3: 6499, 6: 9999 },
+  spor: { 1: 2499, 3: 6499, 6: 9999 },
+  kurucu: { 1: 3499, 3: 6999, 6: 10999 },
+  vip: { 1: 4999, 3: 12999, 6: 19999 },
+}
+
+export function getTierPrice(planId, months = 1) {
+  const m = Number(months) || 1
+  return TIER_PRICES[planId]?.[m] || PLAN_FALLBACK[planId]?.price || 0
 }
 
 export const PAID_PLAN_IDS = Object.keys(PLAN_FALLBACK)
 export const isPaidPlanId = (id) => PAID_PLAN_IDS.includes(id)
 
-// TL → kuruş (Stripe en küçük birim)
 export const toMinorUnits = (amountTry) => Math.round(Number(amountTry || 0) * 100)

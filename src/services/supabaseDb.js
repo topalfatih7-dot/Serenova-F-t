@@ -3,10 +3,12 @@
 import { supabase, syncAutoRefresh } from './supabaseClient'
 import { setRememberMe, clearAllAuthTokens } from './authStorage'
 import { ADMIN_CREDENTIALS } from '../config/brand'
-import { DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS } from '../data/membershipPlans'
+import {
+  DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
+} from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
-import { computePremiumExpiresAt, syncMembershipExpiryStatus } from './premiumMembership'
+import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile } from '../data/staffProfile'
@@ -208,13 +210,14 @@ function rowToPlan(row) {
     badge: row.badge || null,
     features: row.features || [],
     limits: row.limits || [],
+    pricingTiers: row.pricing_tiers || [],
     color: row.color || 'sage',
     sortOrder: row.sort_order || 0,
   }
 }
 
 export async function getPlans() {
-  const { data } = await supabase.from('plans').select('*').order('sort_order', { ascending: true })
+  const { data } = await supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true })
   if (!data || data.length === 0) return ALL_PLANS
   return data.map(rowToPlan)
 }
@@ -229,6 +232,7 @@ export async function upsertPlan(plan) {
     badge: plan.badge || null,
     features: plan.features || [],
     limits: plan.limits || [],
+    pricing_tiers: plan.pricingTiers || [],
     color: plan.color || 'sage',
     sort_order: plan.sortOrder || 0,
     updated_at: new Date().toISOString(),
@@ -244,7 +248,7 @@ export async function hydrate() {
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
     supabase.from('exercises').select('*').order('name', { ascending: true }),
-    supabase.from('plans').select('*').order('sort_order', { ascending: true }),
+    supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
   ])
 
   const staff = (staffRes.data || []).map(rowToStaff)
@@ -273,7 +277,7 @@ export async function hydrate() {
     supabase.from('membership_requests').select('*').order('created_at', { ascending: false }),
   ])
 
-  const members = (membersRes.data || []).map(rowToMember)
+  let members = (membersRes.data || []).map(rowToMember)
   const role = roleForEmail(user.email, staff)
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
@@ -295,6 +299,18 @@ export async function hydrate() {
     session = { type: 'staff', staffId: me?.id || null }
   } else {
     session = { type: 'member', memberId: user.id }
+    // Süresi dolmuş üyeliği otomatik free plana düşür
+    const meIdx = members.findIndex((m) => m.id === user.id)
+    if (meIdx >= 0) {
+      const synced = syncMembershipExpiryStatus(members[meIdx])
+      if (synced.membership !== members[meIdx].membership) {
+        await upsertMember(synced)
+        members = members.map((m, i) => (i === meIdx ? synced : m))
+      } else if (synced.membershipStatus !== members[meIdx].membershipStatus) {
+        await upsertMember(synced)
+        members = members.map((m, i) => (i === meIdx ? synced : m))
+      }
+    }
   }
 
   return {
@@ -412,12 +428,15 @@ function withPremiumDates(member, packageConfig, isNewPremium = false) {
   if (!isPaidMembership(member.membership)) return member
   const pkg = packageConfig || member.packageConfig || getDefaultPackageForPlan(member.membership)
   const started = isNewPremium ? today() : (member.premiumStartedAt || member.joinedAt || today())
-  const expires = member.premiumExpiresAt || computePremiumExpiresAt(started, pkg.durationWeeks)
+  const months = getDurationMonths(pkg)
+  const expires = isNewPremium || !member.premiumExpiresAt
+    ? computePremiumExpiresAt(started, months)
+    : member.premiumExpiresAt
   return syncMembershipExpiryStatus({
     ...member,
     premiumStartedAt: started,
     premiumExpiresAt: expires,
-    packageConfig: { ...DEFAULT_PACKAGE, ...pkg },
+    packageConfig: { ...DEFAULT_PACKAGE, ...pkg, durationMonths: months, durationWeeks: months * 4 },
   })
 }
 
@@ -484,7 +503,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   }, packageConfig, isPaidMembership(membership))
 
   await upsertMember(member)
-  const planLabel = membership === 'free' ? 'Ücretsiz' : membership === 'gumus' ? 'Gümüş' : membership === 'altin' ? 'Altın' : membership === 'platinum' ? 'Platinum' : 'Premium'
+  const planLabel = membership === 'free' ? 'Ücretsiz' : getPlanLabel(membership)
   await addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
   notifyTelegram('member_signup', {
     name: member.name,
@@ -505,10 +524,10 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 
 async function unlockSignupSession(email, password) {
   try {
-    const res = await fetch('/api/auth-unlock-signup', {
+    const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ action: 'unlock-signup', email, password }),
     })
     const data = await res.json().catch(() => ({}))
     if (res.ok && data.ok) return { success: true }
@@ -601,11 +620,12 @@ export async function registerWithPayment(profile, packageConfig) {
   return res.success ? { success: true, member: res.member, pricing } : res
 }
 
-// Sabit fiyatlı yeni plan ile kayıt (Gümüş / Altın / Platinum)
-export async function registerWithPlan(profile, planId, planPrice) {
+// Sabit fiyatlı plan ile kayıt (süre ay cinsinden)
+export async function registerWithPlan(profile, planId, planPrice, durationMonths = 1) {
   const auth = await ensureAuthForSignup(profile)
   if (!auth.success) return auth
-  const packageConfig = getDefaultPackageForPlan(planId)
+  const months = Number(durationMonths) || 1
+  const packageConfig = getDefaultPackageForPlan(planId, months)
   const res = await buildAndPersistMember(profile, planId, packageConfig, { payment: planPrice })
   return res.success ? { success: true, member: res.member, amount: planPrice } : res
 }
@@ -666,10 +686,11 @@ export async function processPremiumPayment(member, packageConfig, schedule) {
 // Mevcut üyenin planını değiştirir (yeni kayıt OLUŞTURMAZ).
 // Ücretli plan → premium tarihleri sıfırlanır + ödeme kaydı eklenir.
 // Ücretsiz plan → premium bilgileri temizlenir.
-export async function changeMemberPlan(member, planId, planPrice = 0) {
+export async function changeMemberPlan(member, planId, planPrice = 0, durationMonths = 1) {
   if (!member) return { success: false, error: 'Üye bulunamadı.' }
   const paid = isPaidMembership(planId)
-  const packageConfig = getDefaultPackageForPlan(planId)
+  const months = Number(durationMonths) || 1
+  const packageConfig = getDefaultPackageForPlan(planId, months)
 
   let draft = {
     ...member,

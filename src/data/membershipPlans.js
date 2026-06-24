@@ -1,11 +1,94 @@
 // Paket tanımları — bunlar Supabase'den yüklenen verinin fallback'idir.
 // Admin panelinden güncellenen veriler DB'den gelir.
 
-export const PAID_MEMBERSHIPS = ['gumus', 'altin', 'platinum', 'premium']
+export const DURATION_OPTIONS = [
+  { months: 1, label: 'Aylık' },
+  { months: 3, label: '3 Aylık' },
+  { months: 6, label: '6 Aylık' },
+]
+
+export const PAID_MEMBERSHIPS = [
+  'eko', 'diyet', 'spor', 'kurucu', 'vip',
+  // geriye dönük uyumluluk
+  'gumus', 'altin', 'platinum', 'premium',
+]
+
+export const PLAN_IDS = ['free', 'eko', 'diyet', 'spor', 'kurucu', 'vip']
+
+export const PLAN_LABELS = {
+  free: 'Basic',
+  eko: 'Eko Paket',
+  diyet: 'Diyet Paketi',
+  spor: 'Spor Paketi',
+  kurucu: '100 Kurucu Üye',
+  vip: 'Vip Paket',
+  gumus: 'Gümüş',
+  altin: 'Altın',
+  platinum: 'Platinum',
+  premium: 'Premium',
+}
+
+export const RECOMMENDED_PLAN = 'kurucu'
+
+export const KURUCU_SPECIAL_LABEL = 'İlk 100 üyemize özel'
+
+/** Fiyat gösterimi: "Aylık 3.499₺" */
+export function formatMonthlyPrice(price) {
+  if (!price || price <= 0) return 'Ücretsiz'
+  return `Aylık ${Number(price).toLocaleString('tr-TR')}₺`
+}
+
+export function getPlanBadge(plan) {
+  if (plan?.id === 'kurucu') return KURUCU_SPECIAL_LABEL
+  return plan?.badge || null
+}
+
+/** Landing / onboarding için önerilen sıra (kurucu öne çıkar) */
+export const PLAN_DISPLAY_ORDER = ['free', 'kurucu', 'eko', 'diyet', 'spor', 'vip']
+
+export function sortPlansForDisplay(plans = []) {
+  return [...plans].sort((a, b) => {
+    const ia = PLAN_DISPLAY_ORDER.indexOf(a.id)
+    const ib = PLAN_DISPLAY_ORDER.indexOf(b.id)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+}
+
 export const isPaidMembership = (membership) => PAID_MEMBERSHIPS.includes(membership)
 
-// Aylık ödeme yapan planlar için varsayılan süre (4 hafta = 1 ay)
-export const MONTHLY_DURATION_WEEKS = 4
+export function getPlanLabel(id) {
+  return PLAN_LABELS[id] || id
+}
+
+/** Plan + süre için fiyat (TL) */
+export const PLAN_PRICING = {
+  eko: { 1: 1299, 3: 2999, 6: 3999 },
+  diyet: { 1: 2499, 3: 6499, 6: 9999 },
+  spor: { 1: 2499, 3: 6499, 6: 9999 },
+  kurucu: { 1: 3499, 3: 6999, 6: 10999, compareAt: { 1: 4999, 3: 12999, 6: 19999 } },
+  vip: { 1: 4999, 3: 12999, 6: 19999 },
+}
+
+export function getTierPrice(planId, months = 1) {
+  const m = Number(months) || 1
+  const tiers = PLAN_PRICING[planId]
+  if (!tiers) return 0
+  return tiers[m] || tiers[1] || 0
+}
+
+export function getCompareAtPrice(planId, months = 1) {
+  const m = Number(months) || 1
+  return PLAN_PRICING[planId]?.compareAt?.[m] || null
+}
+
+export function buildPricingTiers(planId) {
+  return DURATION_OPTIONS.map(({ months, label }) => ({
+    months,
+    label,
+    price: getTierPrice(planId, months),
+    compareAt: getCompareAtPrice(planId, months),
+  }))
+}
 
 export const FREE_PLAN = {
   id: 'free',
@@ -13,6 +96,7 @@ export const FREE_PLAN = {
   price: 0,
   period: 'Süresiz',
   color: 'sage',
+  pricingTiers: [],
   features: [
     { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Otomatik Beslenme Programı', included: true },
@@ -27,72 +111,127 @@ export const FREE_PLAN = {
   limits: ['Otomatik programlar', 'Temel video erişimi', 'Standart destek'],
 }
 
-export const GUMUS_PLAN = {
-  id: 'gumus',
-  name: 'Gümüş',
-  price: 999,
+export const EKO_PLAN = {
+  id: 'eko',
+  name: 'Eko Paket',
+  price: 1299,
   period: 'Aylık',
-  color: 'slate',
+  color: 'sage',
+  pricingTiers: buildPricingTiers('eko'),
   features: [
-    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-    { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
-    { text: 'Haftada 1 Koç Görüşmesi', included: true },
-    { text: 'Aylık 1 Diyetisyen Görüşmesi', included: true },
-    { text: 'Koç & Diyetisyen Programları', included: true },
     { text: 'Manuel Kalori Hesaplama', included: true },
-    { text: 'E-posta Desteği', included: true },
-    { text: 'Grup Seansları', included: false },
+    { text: 'Diyet Programı Ayda 2 Kere', included: true },
+    { text: 'Spor Programı Ayda 1 Kere', included: true },
+    { text: 'Video Kütüphanesi (Sınırlı)', included: true },
+    { text: 'İlerleme Raporları', included: true },
+    { text: 'Takip Programı', included: true },
+    { text: 'Birebir Koç Görüşmesi', included: false },
+    { text: 'Diyetisyen Randevusu', included: false },
     { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Haftada 1 koç görüşmesi', 'Aylık 1 diyetisyen', 'Manuel kalori girişi'],
+  limits: ['Sınırlı video erişimi', 'Program güncellemeleri', 'Standart destek'],
 }
 
-export const ALTIN_PLAN = {
-  id: 'altin',
-  name: 'Altın',
-  price: 1999,
+export const DIYET_PLAN = {
+  id: 'diyet',
+  name: 'Diyet Paketi',
+  price: 2499,
   period: 'Aylık',
-  color: 'gold',
-  badge: 'En Popüler',
+  color: 'emerald',
+  pricingTiers: buildPricingTiers('diyet'),
   features: [
+    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
     { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-    { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
-    { text: 'Haftada 2 Koç Görüşmesi', included: true },
-    { text: 'Aylık 2 Diyetisyen Görüşmesi', included: true },
-    { text: 'Koç & Diyetisyen Programları', included: true },
-    { text: 'Manuel Kalori Hesaplama', included: true },
-    { text: 'Detaylı İlerleme Raporları', included: true },
-    { text: 'Öncelikli Destek', included: true },
-    { text: 'Grup Seansları', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
+    { text: 'Diyet Üyeye Özel Diyet Programı', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Takip Programı', included: true },
+    { text: 'Sınırsız Destek', included: true },
+    { text: 'Birebir Koç Görüşmesi', included: false },
   ],
-  limits: ['Haftada 2 koç görüşmesi', 'Aylık 2 diyetisyen', 'Manuel kalori girişi'],
+  limits: ['Ayda 2 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
 }
 
-export const PLATINUM_PLAN = {
-  id: 'platinum',
-  name: 'Platinum',
+export const SPOR_PLAN = {
+  id: 'spor',
+  name: 'Spor Paketi',
+  price: 2499,
+  period: 'Aylık',
+  color: 'blue',
+  pricingTiers: buildPricingTiers('spor'),
+  features: [
+    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 2 Koç ile Online Görüşme', included: true },
+    { text: 'Spor Üyeye Özel Spor Programı', included: true },
+    { text: 'Sınırsız Video Kütüphanesi Erişimi', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Takip Programı', included: true },
+    { text: 'Sınırsız Destek', included: true },
+  ],
+  limits: ['Ayda 2 koç görüşmesi', 'Kişisel spor programı', 'Sınırsız video'],
+}
+
+export const KURUCU_PLAN = {
+  id: 'kurucu',
+  name: '100 Kurucu Üye',
   price: 3499,
   period: 'Aylık',
-  color: 'brand',
-  badge: 'Premium',
+  color: 'gold',
+  badge: 'İlk 100 üyemize özel',
+  pricingTiers: buildPricingTiers('kurucu'),
   features: [
+    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
     { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-    { text: 'Video Kütüphanesi (Tam Erişim)', included: true },
-    { text: 'Haftada 3 Koç Görüşmesi', included: true },
-    { text: 'Haftada 1 Diyetisyen Görüşmesi', included: true },
-    { text: 'Koç & Diyetisyen Programları', included: true },
-    { text: 'Manuel Kalori Hesaplama', included: true },
-    { text: 'Fotoğraflı Kalori Tespiti', included: true },
-    { text: '7/24 VIP Destek', included: true },
-    { text: 'Grup Seansları & Aktiviteler', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
+    { text: 'Kurucu Üyeye Özel Diyet Programı', included: true },
+    { text: 'Ayda 2 Koç ile Online Görüşme', included: true },
+    { text: 'Kurucu Üyeye Özel Spor Programı', included: true },
+    { text: 'Sınırsız Video Kütüphanesi Erişimi', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Ücretsiz Takip Programı', included: true },
+    { text: 'Ömür Boyu %20 İndirim Garantisi', included: true },
+    { text: 'Ömür Boyu Öncelikli Destek', included: true },
+    { text: 'Kurucu Üye Rozeti', included: true },
   ],
-  limits: ['Haftada 3 koç görüşmesi', 'Haftada 1 diyetisyen', 'Fotoğraflı kalori', '7/24 VIP destek'],
+  limits: ['Ayda 2 koç + 2 diyetisyen', 'Ömür boyu avantajlar', 'Kurucu rozeti'],
 }
 
-// Geriye dönük uyumluluk için
-export const PREMIUM_PLAN = ALTIN_PLAN
+export const VIP_PLAN = {
+  id: 'vip',
+  name: 'Vip Paket',
+  price: 4999,
+  period: 'Aylık',
+  color: 'brand',
+  badge: 'VIP',
+  pricingTiers: buildPricingTiers('vip'),
+  features: [
+    { text: 'Kan Tahlili Testi Analizi', included: true },
+    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
+    { text: 'Vip Üyeye Özel Diyet Programı', included: true },
+    { text: 'Ayda 2 Koç ile Online Görüşme', included: true },
+    { text: 'Vip Üyeye Özel Spor Programı', included: true },
+    { text: 'Sınırsız Video Kütüphanesi Erişimi', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Ücretsiz Takip Programı', included: true },
+    { text: 'Sınırsız Destek', included: true },
+    { text: 'Vip Üye Rozeti', included: true },
+  ],
+  limits: ['Ayda 2 koç + 2 diyetisyen', 'Sınırsız destek', 'VIP rozeti'],
+}
 
-export const ALL_PLANS = [FREE_PLAN, GUMUS_PLAN, ALTIN_PLAN, PLATINUM_PLAN]
+// Geriye dönük uyumluluk
+export const GUMUS_PLAN = EKO_PLAN
+export const ALTIN_PLAN = KURUCU_PLAN
+export const PLATINUM_PLAN = VIP_PLAN
+export const PREMIUM_PLAN = KURUCU_PLAN
+
+export const ALL_PLANS = [FREE_PLAN, EKO_PLAN, DIYET_PLAN, SPOR_PLAN, KURUCU_PLAN, VIP_PLAN]
 
 export const ADD_ONS = [
   { id: 'group', name: 'Grup Koçluğu', price: 450, desc: 'Haftalık canlı grup seansları' },
@@ -103,23 +242,56 @@ export const ADD_ONS = [
 ]
 
 export const DEFAULT_PACKAGE = {
-  coachMeetingsPerWeek: 2,
-  dietitianMeetingsPerMonth: 1,
+  coachMeetingsPerMonth: 0,
+  dietitianMeetingsPerMonth: 0,
+  coachMeetingsPerWeek: 0,
+  durationMonths: 1,
   durationWeeks: 4,
   addOns: [],
 }
 
-// Plan ID'sine göre varsayılan paket konfigürasyonu
-export function getDefaultPackageForPlan(planId) {
-  switch (planId) {
-    case 'gumus':  return { coachMeetingsPerWeek: 1, dietitianMeetingsPerMonth: 1, durationWeeks: 4, addOns: [] }
-    case 'altin':  return { coachMeetingsPerWeek: 2, dietitianMeetingsPerMonth: 2, durationWeeks: 4, addOns: [] }
-    case 'platinum': return { coachMeetingsPerWeek: 3, dietitianMeetingsPerMonth: 4, durationWeeks: 4, addOns: [] }
-    default:       return { ...DEFAULT_PACKAGE }
+const PACKAGE_BY_PLAN = {
+  eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
+  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
+  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
+  kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  // legacy
+  gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
+  altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
+  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+}
+
+/** Plan ID + süre (ay) için varsayılan paket konfigürasyonu */
+export function getDefaultPackageForPlan(planId, durationMonths = 1) {
+  const months = Number(durationMonths) || 1
+  const base = PACKAGE_BY_PLAN[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 }
+  return {
+    ...DEFAULT_PACKAGE,
+    ...base,
+    durationMonths: months,
+    durationWeeks: months * 4,
+    addOns: [],
   }
 }
 
-export const COACH_MAX_PER_WEEK = 5
+/** Fotoğraflı kalori erişimi olan planlar */
+export function hasPhotoCalorieAccess(membership) {
+  return ['diyet', 'spor', 'kurucu', 'vip', 'platinum'].includes(membership)
+}
+
+/** Manuel kalori erişimi olan planlar */
+export function hasManualCalorieAccess(membership) {
+  return membership !== 'free'
+}
+
+/** Tam video kütüphanesi erişimi */
+export function hasFullVideoAccess(membership) {
+  return ['spor', 'kurucu', 'vip', 'altin', 'platinum', 'premium'].includes(membership)
+}
+
+export const COACH_MAX_PER_MONTH = 6
 export const DIETITIAN_MAX_PER_MONTH = 6
-export const DURATION_MIN_WEEKS = 1
-export const DURATION_MAX_WEEKS = 36
+export const DURATION_MIN_MONTHS = 1
+export const DURATION_MAX_MONTHS = 12

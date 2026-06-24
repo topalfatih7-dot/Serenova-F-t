@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
+import { hasPhotoCalorieAccess, hasManualCalorieAccess } from '../data/membershipPlans'
 import { analyzeFoodPhoto, isAiVisionEnabled } from '../services/aiVision'
 import {
   analyzeFoodText,
@@ -35,8 +36,8 @@ export default function CalorieCalculatorPage() {
   const fileRef = useRef(null)
   const chatEndRef = useRef(null)
 
-  const isPaid = membership !== 'free'
-  const isPlatinum = membership === 'platinum'
+  const isPaid = hasManualCalorieAccess(membership)
+  const isPlatinum = hasPhotoCalorieAccess(membership)
   const aiEnabled = isCalorieAiEnabled()
 
   const [mode, setMode] = useState('chat')

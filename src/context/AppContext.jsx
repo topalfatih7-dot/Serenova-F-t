@@ -162,8 +162,8 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
-  const registerWithPlan = useCallback(async (profile, planId, planPrice) => {
-    const r = await sb.registerWithPlan(profile, planId, planPrice)
+  const registerWithPlan = useCallback(async (profile, planId, planPrice, durationMonths = 1) => {
+    const r = await sb.registerWithPlan(profile, planId, planPrice, durationMonths)
     if (r.success) await reloadRemote()
     return r
   }, [reloadRemote])
@@ -174,9 +174,9 @@ export function AppProvider({ children }) {
   }, [reloadRemote])
 
   // Mevcut üyenin planını değiştirir (yeni kayıt oluşturmaz)
-  const changePlan = useCallback(async (planId, planPrice = 0) => {
+  const changePlan = useCallback(async (planId, planPrice = 0, durationMonths = 1) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
-    const r = await sb.changeMemberPlan(currentMember, planId, planPrice)
+    const r = await sb.changeMemberPlan(currentMember, planId, planPrice, durationMonths)
     if (r.success) await reloadRemote()
     return r
   }, [currentMember, reloadRemote])

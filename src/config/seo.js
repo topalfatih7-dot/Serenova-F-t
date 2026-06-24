@@ -2,6 +2,7 @@ import { BRAND } from './brand'
 export function getSiteUrl() {
   const fromEnv = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
   if (fromEnv) return fromEnv
+  if (import.meta.env.PROD) return SEO.siteUrl || ''
   if (typeof window !== 'undefined') return window.location.origin
   return SEO.siteUrl || ''
 }

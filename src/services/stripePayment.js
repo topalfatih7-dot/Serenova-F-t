@@ -1,11 +1,9 @@
 /**
  * Stripe Checkout başlatma servisi.
- * Supabase oturum token'ı ile /api/stripe-checkout çağrılır, dönen URL'e yönlendirilir.
- * Üyelik, ödeme onaylanınca sunucudaki webhook tarafından aktifleştirilir.
  */
 import { supabase } from './supabaseClient'
 
-export async function startStripeCheckout(planId, flow = 'register') {
+export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1) {
   let token = null
   try {
     const { data } = await supabase.auth.getSession()
@@ -20,7 +18,7 @@ export async function startStripeCheckout(planId, flow = 'register') {
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ planId, flow }),
+      body: JSON.stringify({ planId, flow, durationMonths }),
     })
     json = await res.json().catch(() => ({}))
     if (!res.ok || !json?.url) {

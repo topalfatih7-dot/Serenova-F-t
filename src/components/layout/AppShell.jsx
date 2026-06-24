@@ -10,6 +10,7 @@ import ConsentBanner from '../ui/ConsentBanner'
 import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { useApp } from '../../context/AppContext'
+import { getPlanLabel } from '../../data/membershipPlans'
 import { BRAND } from '../../config/brand'
 
 const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
@@ -53,7 +54,7 @@ export default function AppShell() {
           navItems={navItems}
           brandLink="/dashboard"
           badge={{
-            label: membership === 'free' ? 'Ücretsiz Üye' : membership === 'gumus' ? 'Gümüş Üye' : membership === 'altin' ? 'Altın Üye' : membership === 'platinum' ? 'Platinum Üye' : 'Premium Üye',
+            label: membership === 'free' ? 'Ücretsiz Üye' : `${getPlanLabel(membership)} Üye`,
             className: membership === 'free' ? 'bg-cream-900 text-white' : 'bg-brand-500 text-white',
           }}
           userName={user?.name}

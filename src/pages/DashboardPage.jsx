@@ -13,6 +13,7 @@ import HealthTestWidget from '../components/dashboard/HealthTestWidget'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import { isHealthTestComplete } from '../data/healthTest'
 import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/ProgressChart'
+import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { format } from 'date-fns'
@@ -251,10 +252,7 @@ export default function DashboardPage() {
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
 
-  const planLabel = membership === 'free' ? 'Basic' :
-    membership === 'gumus' ? 'Gümüş' :
-    membership === 'altin' ? 'Altın' :
-    membership === 'platinum' ? 'Platinum' : 'Premium'
+  const planLabel = getPlanLabel(membership)
 
   return (
     <div className="space-y-6">

@@ -1,9 +1,18 @@
 const today = () => new Date().toISOString().split('T')[0]
 
-export function computePremiumExpiresAt(startDate, durationWeeks) {
+/** Takvim ayı bazında bitiş tarihi hesaplar */
+export function computePremiumExpiresAt(startDate, durationMonths) {
   const start = startDate || today()
   const d = new Date(start)
-  d.setDate(d.getDate() + (Number(durationWeeks) || 12) * 7)
+  d.setMonth(d.getMonth() + (Number(durationMonths) || 1))
+  return d.toISOString().split('T')[0]
+}
+
+/** Geriye dönük: hafta bazlı hesaplama (eski kayıtlar) */
+export function computePremiumExpiresAtWeeks(startDate, durationWeeks) {
+  const start = startDate || today()
+  const d = new Date(start)
+  d.setDate(d.getDate() + (Number(durationWeeks) || 4) * 7)
   return d.toISOString().split('T')[0]
 }
 
@@ -18,15 +27,27 @@ export function getRemainingDays(expiresAt) {
 
 import { isPaidMembership } from '../data/membershipPlans'
 
+/**
+ * Süresi dolan üyeleri free plana düşürür; premium erişimi kaldırılır.
+ * Duraklatılmış veya manuel iptal edilmiş üyelerde plan değişmez.
+ */
 export function syncMembershipExpiryStatus(member) {
   if (!isPaidMembership(member.membership)) return member
-  if (member.membershipStatus === 'paused' || member.membershipStatus === 'cancelled') return member
+  if (member.membershipStatus === 'paused') return member
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
   if (remaining === null) return member
 
   if (remaining <= 0) {
-    return { ...member, membershipStatus: 'cancelled' }
+    return {
+      ...member,
+      membership: 'free',
+      membershipStatus: 'cancelled',
+      previousMembership: member.membership,
+      packageConfig: null,
+      premiumExpiresAt: member.premiumExpiresAt,
+      premiumStartedAt: member.premiumStartedAt,
+    }
   }
   if (remaining <= 7) {
     return { ...member, membershipStatus: 'expiring' }
@@ -58,4 +79,11 @@ export function enrichMemberPremium(member) {
     premiumExpired: remaining !== null && remaining <= 0,
     premiumExpiringSoon: remaining !== null && remaining > 0 && remaining <= 7,
   }
+}
+
+/** packageConfig'den süreyi ay olarak okur */
+export function getDurationMonths(packageConfig = {}) {
+  if (packageConfig.durationMonths) return Number(packageConfig.durationMonths)
+  if (packageConfig.durationWeeks) return Math.max(1, Math.round(Number(packageConfig.durationWeeks) / 4))
+  return 1
 }

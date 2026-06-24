@@ -15,17 +15,15 @@ export function parsePhoneE164(phone, countryIso = DEFAULT_COUNTRY_ISO) {
 
 export async function getVerificationStatus(member) {
   const authUser = await getUser()
-  const emailVerified = Boolean(
-    member?.emailVerifiedAt || authUser?.user_metadata?.email_verified_at,
-  )
   const phoneVerified = Boolean(member?.phoneVerifiedAt)
   const authPhone = authUser?.phone || ''
-  const authEmailConfirmed = Boolean(authUser?.email_confirmed_at)
 
   return {
     email: member?.email || authUser?.email || '',
     phone: member?.phone || '',
-    emailVerified: emailVerified || authEmailConfirmed,
+    // Profil doğrulaması yalnızca members.emailVerifiedAt ile takip edilir.
+    // auth.email_confirmed_at kayıt sırasında sunucu tarafından açıldığı için güvenilmez.
+    emailVerified: Boolean(member?.emailVerifiedAt),
     phoneVerified,
     authPhone,
     canVerifyEmail: Boolean(member?.email || authUser?.email),
@@ -59,31 +57,67 @@ export async function markPhoneVerified(member, phone) {
   return { success: true }
 }
 
-// Supabase e-posta şablonu varsayılan olarak {{ .ConfirmationURL }} (LINK) gönderir.
-// {{ .Token }} eklenmediği sürece 6 haneli kod gelmez. Bu yüzden birincil akış
-// LINK'tir: kullanıcı e-postadaki bağlantıya tıklar → /auth/callback?verify=email
-// doğrular. Şablona Token eklenirse kullanıcı kodu da elle girebilir (ikincil).
+// E-posta bağlantıları sunucudan gönderilir (APP_URL / VITE_SITE_URL) — tarayıcı origin'i kullanılmaz.
 export async function sendEmailVerification() {
   const authUser = await getUser()
-  const email = authUser?.email
-  if (!email) return { success: false, error: 'E-posta adresi bulunamadı.' }
+  if (!authUser?.email) return { success: false, error: 'E-posta adresi bulunamadı.' }
 
-  const redirectTo = `${getSiteUrl()}/auth/callback?verify=email`
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: false,
-      emailRedirectTo: redirectTo,
-    },
-  })
+  let token = null
+  try {
+    const { data } = await supabase.auth.getSession()
+    token = data?.session?.access_token || null
+  } catch {
+    /* oturum okunamadı */
+  }
+  if (!token) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
 
-  if (error) {
-    return { success: false, error: error.message || 'Doğrulama e-postası gönderilemedi.' }
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'email-send' }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || !json?.ok) {
+      return { success: false, error: json?.error || 'Doğrulama e-postası gönderilemedi.' }
+    }
+    return {
+      success: true,
+      message: json.message || 'E-postanıza doğrulama bağlantısı gönderildi. Bağlantıya bir kez tıklayın.',
+    }
+  } catch (e) {
+    return { success: false, error: String(e?.message || e) }
+  }
+}
+
+/** E-posta bağlantısındaki evt jetonu ile profil doğrulamasını tamamlar. */
+export async function confirmEmailVerificationByEvt(evt) {
+  if (!evt?.trim()) return { success: false, error: 'Doğrulama jetonu eksik.' }
+
+  let bearer = null
+  try {
+    const { data } = await supabase.auth.getSession()
+    bearer = data?.session?.access_token || null
+  } catch {
+    /* oturum yoksa evt ile devam */
   }
 
-  return {
-    success: true,
-    message: 'E-postanıza doğrulama bağlantısı gönderildi. Bağlantıya tıklayın.',
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+      },
+      body: JSON.stringify({ action: 'email-confirm', evt: evt.trim() }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || !json?.ok) {
+      return { success: false, error: json?.error || 'Doğrulama tamamlanamadı.' }
+    }
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e?.message || e) }
   }
 }
 
@@ -108,15 +142,29 @@ export async function confirmEmailVerification(code, member) {
   return markEmailVerified(member)
 }
 
-// E-postadaki bağlantıya tıkladıktan sonra üye geri dönünce çağrılır:
-// auth oturumundaki email_confirmed_at gerçekleştiyse profili doğrulanmış işaretle.
+// E-postadaki bağlantıya tıklandıktan sonra profil sayfasında "Durumu Yenile" ile çağrılır.
+// Yalnızca gerçekten işaretlenmiş emailVerifiedAt kabul edilir (auth.email_confirmed_at değil).
 export async function refreshEmailVerification(member) {
-  const authUser = await getUser()
-  if (!authUser) return { success: false, error: 'Oturum bulunamadı.' }
-  if (authUser.email_confirmed_at || member?.emailVerifiedAt) {
-    return markEmailVerified(member || { id: authUser.id, email: authUser.email })
+  if (!member?.id) return { success: false, error: 'Oturum bulunamadı.' }
+
+  const { data, error } = await supabase
+    .from('members')
+    .select('data')
+    .eq('id', member.id)
+    .maybeSingle()
+
+  if (error || !data) {
+    return { success: false, error: 'Profil yüklenemedi.' }
   }
-  return { success: false, error: 'Henüz doğrulanmadı. Bağlantıya tıkladıktan sonra tekrar deneyin.' }
+
+  if (data.data?.emailVerifiedAt) {
+    return { success: true }
+  }
+
+  return {
+    success: false,
+    error: 'Henüz doğrulanmadı. E-postadaki bağlantıya tıklayıp onay sayfasını tamamlayın.',
+  }
 }
 
 export async function sendPhoneVerification(phone, countryIso = DEFAULT_COUNTRY_ISO, member = null) {

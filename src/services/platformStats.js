@@ -1,4 +1,4 @@
-import { DEFAULT_PACKAGE, isPaidMembership } from '../data/membershipPlans'
+import { DEFAULT_PACKAGE, PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { getRemainingDays } from './premiumMembership'
 
@@ -16,19 +16,17 @@ export function getCurrentStaff(db) {
   return db.staff.find((s) => s.id === db.session.staffId) || null
 }
 
-const PLAN_LABELS = {
-  free:     'Ücretsiz',
-  gumus:    'Gümüş',
-  altin:    'Altın',
-  platinum: 'Platinum',
-  premium:  'Premium',
-}
 const PLAN_COLORS = {
-  free:     '#5f9270',
-  gumus:    '#64748b',
-  altin:    '#d97706',
+  free: '#5f9270',
+  eko: '#5f9270',
+  diyet: '#059669',
+  spor: '#2563eb',
+  kurucu: '#d97706',
+  vip: '#4a8aad',
+  gumus: '#64748b',
+  altin: '#d97706',
   platinum: '#4a8aad',
-  premium:  '#4a8aad',
+  premium: '#4a8aad',
 }
 
 export function computeAdminStats(db) {
@@ -73,13 +71,13 @@ export function computeAdminStats(db) {
 
 export function computeMembershipBreakdown(db) {
   const members = db.members
-  const planIds = ['gumus', 'altin', 'platinum', 'premium']
+  const planIds = ['eko', 'diyet', 'spor', 'kurucu', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'diyet', 'spor', 'kurucu', 'vip'].includes(id))]
   const breakdown = []
 
   planIds.forEach((planId) => {
     const count = members.filter((m) => m.membership === planId && m.membershipStatus === 'active').length
     if (count > 0) {
-      breakdown.push({ name: `${PLAN_LABELS[planId] || planId} Aktif`, value: count, color: PLAN_COLORS[planId] || '#4a8aad' })
+      breakdown.push({ name: `${getPlanLabel(planId)} Aktif`, value: count, color: PLAN_COLORS[planId] || '#4a8aad' })
     }
   })
 
@@ -112,7 +110,7 @@ export function getSessionStats(db) {
   let dietitianCount = 0
   db.members.forEach((m) => {
     if (isPaidMembership(m.membership) && m.membershipStatus === 'active') {
-      coachCount += m.packageConfig?.coachMeetingsPerWeek || 2
+      coachCount += m.packageConfig?.coachMeetingsPerMonth || (m.packageConfig?.coachMeetingsPerWeek || 0) * 4 || 0
       dietitianCount += m.packageConfig?.dietitianMeetingsPerMonth || 1
     }
   })

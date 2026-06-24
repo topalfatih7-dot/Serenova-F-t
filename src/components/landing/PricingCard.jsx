@@ -1,44 +1,47 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Crown, Sparkles, Star, Award } from 'lucide-react'
+import { Check, X, Crown, Sparkles, Award, Leaf, Dumbbell } from 'lucide-react'
+import { formatMonthlyPrice, getPlanBadge } from '../../data/membershipPlans'
 
-function planIcon(id) {
-  if (id === 'free')     return <Sparkles className="h-5 w-5 text-sage-500" />
-  if (id === 'gumus')    return <Star className="h-5 w-5 text-slate-400" />
-  if (id === 'altin')    return <Crown className="h-5 w-5 text-amber-500" />
-  if (id === 'platinum') return <Award className="h-5 w-5 text-brand-500" />
-  return <Crown className="h-5 w-5 text-gold-500" />
+function planIcon(id, large = false) {
+  const cls = large ? 'h-7 w-7' : 'h-5 w-5'
+  if (id === 'free') return <Sparkles className={`${cls} text-sage-500`} />
+  if (id === 'eko') return <Leaf className={`${cls} text-sage-600`} />
+  if (id === 'diyet') return <Sparkles className={`${cls} text-emerald-600`} />
+  if (id === 'spor') return <Dumbbell className={`${cls} text-blue-600`} />
+  if (id === 'kurucu') return <Crown className={`${cls} text-amber-600`} />
+  if (id === 'vip') return <Award className={`${cls} text-brand-600`} />
+  return <Crown className={`${cls} text-gold-500`} />
+}
+
+function iconWrapClass(id, featured) {
+  if (id === 'kurucu' || featured) return 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-700 ring-amber-200/80'
+  if (id === 'vip') return 'bg-gradient-to-br from-brand-100 to-brand-50 text-brand-700 ring-brand-200/80'
+  if (id === 'diyet') return 'bg-emerald-50 text-emerald-700 ring-emerald-200/80'
+  if (id === 'spor') return 'bg-blue-50 text-blue-700 ring-blue-200/80'
+  if (id === 'eko') return 'bg-sage-50 text-sage-700 ring-sage-200/80'
+  return 'bg-cream-50 text-sage-700 ring-cream-200/80'
 }
 
 function cardStyle(id, featured) {
-  if (featured || id === 'altin') {
+  if (featured || id === 'kurucu') {
     return 'glass-card-solid border-amber-200/60 bg-gradient-to-b from-amber-50/60 via-white to-sage-50/30 shadow-xl shadow-amber-500/10 ring-2 ring-amber-200/40'
   }
-  if (id === 'platinum') {
+  if (id === 'vip') {
     return 'glass-card-solid border-brand-200/60 bg-gradient-to-b from-brand-50/60 via-white to-white shadow-xl shadow-brand-500/10 ring-2 ring-brand-200/40'
-  }
-  if (id === 'gumus') {
-    return 'glass-card-solid border-slate-200/60 bg-gradient-to-b from-slate-50/40 via-white to-white'
   }
   return 'glass-card-solid'
 }
 
 function badgeStyle(id) {
-  if (id === 'altin')    return 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-  if (id === 'platinum') return 'bg-gradient-to-r from-brand-500 to-brand-700 text-white'
-  if (id === 'gumus')    return 'bg-slate-500 text-white'
+  if (id === 'kurucu') return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+  if (id === 'vip') return 'bg-gradient-to-r from-brand-500 to-brand-700 text-white'
   return 'bg-gradient-to-r from-brand-500 to-sage-500 text-white'
-}
-
-function priceColor(id) {
-  if (id === 'altin')    return 'text-amber-700'
-  if (id === 'platinum') return 'text-brand-700'
-  if (id === 'gumus')    return 'text-slate-700'
-  return 'text-sage-700'
 }
 
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
   const isFree = plan.price === 0
+  const badge = getPlanBadge(plan)
 
   return (
     <motion.div
@@ -46,27 +49,30 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       className={`relative flex flex-col rounded-3xl p-6 sm:p-8 ${cardStyle(plan.id, featured)}`}
     >
-      {plan.badge && (
-        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold shadow-md ${badgeStyle(plan.id)}`}>
-          {plan.badge}
+      {badge && (
+        <span className={`absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-semibold shadow-md ${badgeStyle(plan.id)}`}>
+          {badge}
         </span>
       )}
 
-      <div className="flex items-center gap-2">
-        {planIcon(plan.id)}
-        <h3 className="font-display text-xl font-bold text-cream-900">{plan.name}</h3>
+      {/* İkon üstte, isim altta */}
+      <div className="flex flex-col items-center pt-2 text-center">
+        <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ${iconWrapClass(plan.id, featured)}`}>
+          {planIcon(plan.id, true)}
+        </span>
+        <h3 className="mt-4 font-display text-xl font-bold text-cream-900">{plan.name}</h3>
+        {plan.id === 'kurucu' && (
+          <p className="mt-1 text-xs font-medium text-amber-700/90">Sınırlı kontenjan</p>
+        )}
       </div>
 
-      <div className="mt-4">
-        {isFree ? (
-          <p className={`font-display text-4xl font-bold ${priceColor(plan.id)}`}>Ücretsiz</p>
-        ) : (
-          <p className="font-display text-4xl font-bold text-cream-900">
-            {plan.price?.toLocaleString('tr-TR')}₺
-            <span className="text-base font-normal text-cream-800/50">/ay</span>
-          </p>
-        )}
-        <p className="mt-1 text-sm text-cream-800/60">{plan.period}</p>
+      <div className="mt-5 text-center">
+        <p className={`font-display text-2xl font-bold ${isFree ? 'text-sage-700' : 'text-cream-900'}`}>
+          {formatMonthlyPrice(plan.price)}
+        </p>
+        <p className="mt-1 text-sm text-cream-800/60">
+          {isFree ? plan.period : '3 ve 6 aylık seçenekler de mevcut'}
+        </p>
       </div>
 
       <ul className="mt-6 flex-1 space-y-3">
@@ -85,13 +91,11 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       <Link
         to={ctaTo}
         className={`mt-8 block rounded-full py-3.5 text-center text-sm font-semibold transition ${
-          featured || plan.id === 'altin'
+          featured || plan.id === 'kurucu'
             ? 'btn-wellness w-full !shadow-md'
-            : plan.id === 'platinum'
+            : plan.id === 'vip'
               ? 'w-full bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md hover:from-brand-700 hover:to-brand-600'
-              : plan.id === 'gumus'
-                ? 'w-full border-2 border-slate-400 bg-white text-slate-700 hover:bg-slate-50'
-                : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-brand-200 hover:shadow-md'
+              : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-brand-200 hover:shadow-md'
         }`}
       >
         {ctaLabel}

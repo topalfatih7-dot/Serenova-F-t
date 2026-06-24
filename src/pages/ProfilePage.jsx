@@ -20,7 +20,7 @@ import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 import VideoJoinLink from '../components/video/VideoJoinLink'
 
-const MEMBERSHIP_LABELS = { free: 'Ücretsiz', gumus: 'Gümüş', altin: 'Altın', platinum: 'Platinum', premium: 'Premium' }
+import { getPlanLabel } from '../data/membershipPlans'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -68,7 +68,7 @@ export default function ProfilePage() {
   })
 
   const hasSupport =
-    (Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
+    (Number(packageConfig?.coachMeetingsPerMonth) || Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
     (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
 
   const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || [])]
@@ -190,7 +190,7 @@ export default function ProfilePage() {
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
                 <span className="rounded-full bg-gradient-to-r from-brand-100 to-sage-100 px-3 py-1 text-xs font-semibold text-brand-800">
-                  {MEMBERSHIP_LABELS[membership] || 'Ücretsiz'} Üye
+                  {getPlanLabel(membership)} Üye
                 </span>
               </div>
             </div>
@@ -302,12 +302,12 @@ export default function ProfilePage() {
             accent="violet"
             delay={0.15}
           >
-            <p className="font-display text-3xl font-bold text-cream-900">{MEMBERSHIP_LABELS[membership] || 'Ücretsiz'}</p>
+            <p className="font-display text-3xl font-bold text-cream-900">{getPlanLabel(membership)}</p>
             {packageConfig && membership !== 'free' && (
               <ul className="mt-4 space-y-2.5">
-                {(Number(packageConfig.coachMeetingsPerWeek) || 0) > 0 && (
+                {(Number(packageConfig.coachMeetingsPerMonth) || Number(packageConfig.coachMeetingsPerWeek) || 0) > 0 && (
                   <li className="flex items-center gap-2 rounded-xl bg-violet-50/80 px-3 py-2 text-sm text-cream-800">
-                    <Dumbbell className="h-4 w-4 text-brand-500" /> Haftada {packageConfig.coachMeetingsPerWeek} koç görüşmesi
+                    <Dumbbell className="h-4 w-4 text-brand-500" /> Ayda {packageConfig.coachMeetingsPerMonth || (packageConfig.coachMeetingsPerWeek || 0) * 4} koç görüşmesi
                   </li>
                 )}
                 {(Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0 && (
@@ -363,14 +363,14 @@ export default function ProfilePage() {
           )}
         >
           <div className="grid gap-3 sm:grid-cols-2">
-            {(Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
+            {(Number(packageConfig?.coachMeetingsPerMonth) || Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
               <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
                   <Dumbbell className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-cream-900">{assignedCoach?.name || 'Atanmadı'}</p>
-                  <p className="text-xs text-cream-800/55">Koç · Haftada {packageConfig.coachMeetingsPerWeek} görüşme</p>
+                  <p className="text-xs text-cream-800/55">Koç · Ayda {packageConfig.coachMeetingsPerMonth || (packageConfig.coachMeetingsPerWeek || 0) * 4} görüşme</p>
                 </div>
                 <Link to="/schedule/coach" className="shrink-0 text-brand-600"><ChevronRight className="h-5 w-5" /></Link>
               </div>

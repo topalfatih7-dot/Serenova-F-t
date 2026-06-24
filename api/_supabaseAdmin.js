@@ -10,8 +10,17 @@ import { createClient } from '@supabase/supabase-js'
 
 let _admin = null
 
+function normalizeUrl(raw) {
+  const url = String(raw || '').trim().replace(/^["']|["']$/g, '')
+  return /^https?:\/\/.+/.test(url) ? url : ''
+}
+
 export function getSupabaseUrl() {
-  return process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
+  return (
+    normalizeUrl(process.env.SUPABASE_URL) ||
+    normalizeUrl(process.env.VITE_SUPABASE_URL) ||
+    ''
+  )
 }
 
 export function isSupabaseAdminConfigured() {

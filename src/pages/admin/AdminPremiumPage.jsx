@@ -8,7 +8,8 @@ import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
-import { enrichMemberPremium, getRemainingDays } from '../../services/premiumMembership'
+import { isPaidMembership, PAID_MEMBERSHIPS, getPlanLabel } from '../../data/membershipPlans'
+import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
 
 const STATUS_STYLES = {
@@ -27,7 +28,7 @@ const STATUS_LABELS = {
 
 function PremiumMemberCard({ member, staffName, onEdit }) {
   const info = enrichMemberPremium(member)
-  const missingCoach = !member.assignedCoachId && (member.packageConfig?.coachMeetingsPerWeek || 0) > 0
+  const missingCoach = !member.assignedCoachId && (Number(member.packageConfig?.coachMeetingsPerMonth) || Number(member.packageConfig?.coachMeetingsPerWeek) || 0) > 0
   const missingDiet = !member.assignedDietitianId && (member.packageConfig?.dietitianMeetingsPerMonth || 0) > 0
 
   return (
@@ -62,7 +63,7 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
         </div>
         <div className="rounded-xl bg-cream-50 px-3 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Süre</p>
-          <p className="mt-0.5 text-sm font-bold text-cream-900">{member.packageConfig?.durationWeeks || 12} hafta</p>
+          <p className="mt-0.5 text-sm font-bold text-cream-900">{getDurationMonths(member.packageConfig)} ay</p>
         </div>
         <div className="rounded-xl bg-cream-50 px-3 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Koç</p>
@@ -151,7 +152,7 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
             </div>
             <div className="rounded-xl bg-white px-3 py-2.5 ring-1 ring-cream-200">
               <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Paket süresi</p>
-              <p className="mt-1 text-lg font-bold text-cream-900">{member.packageConfig?.durationWeeks || 12} hafta</p>
+              <p className="mt-1 text-lg font-bold text-cream-900">{getDurationMonths(member.packageConfig)} ay</p>
             </div>
             <div className="col-span-2 rounded-xl bg-white px-3 py-2.5 ring-1 ring-cream-200 sm:col-span-1">
               <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Bitiş tarihi</p>
@@ -235,7 +236,7 @@ export default function AdminPremiumPage() {
 
   const premiumMembers = useMemo(() => {
     return members
-      .filter((m) => ['gumus', 'altin', 'platinum', 'premium'].includes(m.membership))
+      .filter((m) => isPaidMembership(m.membership))
       .filter((m) => {
         const q = search.toLowerCase()
         const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
@@ -258,7 +259,7 @@ export default function AdminPremiumPage() {
   }, [members, search, filter])
 
   const stats = useMemo(() => {
-    const paidPlans = ['gumus', 'altin', 'platinum', 'premium']
+    const paidPlans = PAID_MEMBERSHIPS
     return {
       total: members.filter((m) => paidPlans.includes(m.membership)).length,
       unassigned: members.filter((m) => paidPlans.includes(m.membership) && (!m.assignedCoachId || !m.assignedDietitianId)).length,

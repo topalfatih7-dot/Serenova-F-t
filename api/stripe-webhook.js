@@ -1,36 +1,40 @@
 /**
  * POST /api/stripe-webhook
- * Stripe ödeme olaylarını dinler. `checkout.session.completed` gelince üyeliği
- * SUNUCU tarafında (service-role) aktifleştirir ve `payments` kaydı oluşturur.
- *
- * Gerekli env:
- *   STRIPE_SECRET_KEY
- *   STRIPE_WEBHOOK_SECRET        (Stripe Dashboard → Developers → Webhooks → Signing secret)
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *
- * NOT: İmza doğrulaması için HAM gövde gerekir → bodyParser kapalı.
  */
 import { getStripe, isStripeConfigured } from './_stripe.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 
-// Vercel: gövdeyi ayrıştırma, ham byte'ları biz okuyacağız (imza doğrulaması için)
 export const config = { api: { bodyParser: false } }
 
 const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
 
-function computeExpiry(startDate, durationWeeks) {
+function computeExpiry(startDate, durationMonths) {
   const d = new Date(startDate || today())
-  d.setDate(d.getDate() + (Number(durationWeeks) || 4) * 7)
+  d.setMonth(d.getMonth() + (Number(durationMonths) || 1))
   return d.toISOString().split('T')[0]
 }
 
-function defaultPackageForPlan(planId) {
-  switch (planId) {
-    case 'gumus': return { coachMeetingsPerWeek: 1, dietitianMeetingsPerMonth: 1, durationWeeks: 4, addOns: [] }
-    case 'altin': return { coachMeetingsPerWeek: 2, dietitianMeetingsPerMonth: 2, durationWeeks: 4, addOns: [] }
-    case 'platinum': return { coachMeetingsPerWeek: 3, dietitianMeetingsPerMonth: 4, durationWeeks: 4, addOns: [] }
-    default: return { coachMeetingsPerWeek: 2, dietitianMeetingsPerMonth: 1, durationWeeks: 4, addOns: [] }
+function defaultPackageForPlan(planId, durationMonths = 1) {
+  const months = Number(durationMonths) || 1
+  const configs = {
+    eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
+    diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
+    spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
+    kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+    vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+    gumus: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
+    altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+    platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
+    premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+  }
+  const base = configs[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 }
+  return {
+    coachMeetingsPerWeek: 0,
+    addOns: [],
+    ...base,
+    durationMonths: months,
+    durationWeeks: months * 4,
   }
 }
 
@@ -49,10 +53,9 @@ async function activateMembership(admin, meta, session) {
   if (!memberId || !planId) return { ok: false, error: 'Eksik metadata' }
 
   const amount = Number(meta.planPrice) || (session.amount_total ? session.amount_total / 100 : 0)
-  const durationWeeks = Number(meta.durationWeeks) || 4
+  const durationMonths = Number(meta.durationMonths) || Number(meta.durationWeeks) / 4 || 1
   const sessionId = session.id
 
-  // Idempotency: bu oturum için ödeme zaten kaydedildiyse tekrar işleme.
   const { data: existing } = await admin
     .from('payments')
     .select('id')
@@ -65,9 +68,9 @@ async function activateMembership(admin, meta, session) {
   if (fetchErr || !row) return { ok: false, error: 'Üye bulunamadı' }
 
   const data = row.data || {}
-  const packageConfig = defaultPackageForPlan(planId)
+  const packageConfig = defaultPackageForPlan(planId, durationMonths)
   const started = today()
-  const expires = computeExpiry(started, durationWeeks)
+  const expires = computeExpiry(started, durationMonths)
 
   const newData = {
     ...data,
@@ -90,6 +93,7 @@ async function activateMembership(admin, meta, session) {
       memberName: row.name || '',
       amount,
       packageConfig,
+      durationMonths,
       status: 'completed',
       provider: 'stripe',
       stripeSessionId: sessionId,
@@ -100,7 +104,7 @@ async function activateMembership(admin, meta, session) {
 
   await admin.from('activities').insert({
     member_id: memberId,
-    data: { type: 'payment', text: `${row.name || 'Üye'} ${planId} planı için ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`, createdAt: nowISO() },
+    data: { type: 'payment', text: `${row.name || 'Üye'} ${planId} planı (${durationMonths} ay) için ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`, createdAt: nowISO() },
   })
 
   return { ok: true }
@@ -122,19 +126,17 @@ export default async function handler(req, res) {
 
   let event
   try {
-    // Ham gövde okunabiliyorsa (Vercel/production) imzayı doğrula.
     if (typeof req.on === 'function' && !req.readableEnded) {
       const raw = await readRawBody(req)
       event = stripe.webhooks.constructEvent(raw, sig, webhookSecret)
     } else {
-      // Yerel geliştirme: ham gövde yok → güvenli değil. Sadece bypass açıkken.
       if (process.env.STRIPE_WEBHOOK_DEV_BYPASS !== 'true') {
         return res.status(400).json({ ok: false, error: 'Ham gövde yok; imza doğrulanamıyor.' })
       }
       event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
     }
   } catch (e) {
-    return res.status(400).json({ ok: false, error: `İmza doğrulanamadı: ${e.message}` })
+    return res.status(400).json({ ok: false, error: `İmza doğrulanamıyor: ${e.message}` })
   }
 
   try {
