@@ -13,6 +13,7 @@ import { DEFAULT_COUNTRY_ISO, toE164 } from '../../data/countryCodes'
 import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import ProfileSectionCard from './ProfileSectionCard'
 
 const GENDERS = [
   { value: 'female', label: 'Kadın' },
@@ -167,31 +168,24 @@ export default function PersonalInfoSection({ user }) {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 font-semibold text-cream-900">
-              <User className="h-5 w-5 text-brand-500" /> Kişisel Bilgiler
-            </h2>
-            <p className="mt-1 text-xs text-cream-800/55">
-              Profilinizi ve hedeflerinizi buradan tamamlayıp güncelleyebilirsiniz.
-            </p>
-          </div>
+      <ProfileSectionCard
+        icon={User}
+        title="Kişisel Bilgiler"
+        subtitle="Profilinizi ve hedeflerinizi tamamlayın"
+        accent="brand"
+        delay={0.12}
+        action={(
           <button
             type="button"
             onClick={openEditor}
-            className="shrink-0 rounded-xl bg-brand-500 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-600"
+            className="shrink-0 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:brightness-105"
           >
             Düzenle
           </button>
-        </div>
-
+        )}
+      >
         {completionHints.length > 0 && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <div className="mb-4 flex items-start gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2.5">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p className="text-xs text-amber-800">
               Eksik: {completionHints.join(', ')} — kişisel programlar için tamamlayın.
@@ -199,7 +193,7 @@ export default function PersonalInfoSection({ user }) {
           </div>
         )}
 
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        <dl className="grid gap-3 sm:grid-cols-2">
           {[
             ['Ad Soyad', user.name || '—'],
             ['E-posta', user.email || '—'],
@@ -210,14 +204,20 @@ export default function PersonalInfoSection({ user }) {
             ['Kilo', user.weight ? `${user.weight} kg` : '—'],
             ['Boy', user.height ? `${user.height} cm` : '—'],
             ['Hedefler', user.goals?.length ? user.goals.map((g) => GOALS.find((x) => x.value === g)?.label || g).join(', ') : '—'],
-          ].map(([k, v]) => (
-            <div key={k} className="rounded-xl bg-cream-50/80 px-4 py-3">
-              <dt className="text-[11px] font-medium uppercase tracking-wide text-cream-800/45">{k}</dt>
+          ].map(([k, v], i) => (
+            <motion.div
+              key={k}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * i }}
+              className="rounded-2xl border border-brand-100/60 bg-white/80 px-4 py-3 shadow-sm"
+            >
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-brand-600/70">{k}</dt>
               <dd className="mt-0.5 text-sm font-medium text-cream-900">{v}</dd>
-            </div>
+            </motion.div>
           ))}
         </dl>
-      </motion.div>
+      </ProfileSectionCard>
 
       <Modal open={open} onClose={() => !saving && setOpen(false)} title="Kişisel Bilgiler" size="lg">
         <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">

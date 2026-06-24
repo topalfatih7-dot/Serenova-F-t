@@ -7,9 +7,12 @@ import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'
 import ConsentBanner from '../ui/ConsentBanner'
+import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { useApp } from '../../context/AppContext'
 import { BRAND } from '../../config/brand'
+
+const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
 
 const memberNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
@@ -66,8 +69,15 @@ export default function AppShell() {
         <div className="hidden lg:block">
           <TopBar />
         </div>
-        <main className="member-panel-bg flex-1 overflow-y-auto p-4 sm:p-6">
-          <Outlet />
+        <main className="member-panel-bg relative flex-1 overflow-y-auto">
+          <div className="pointer-events-none sticky top-0 h-0">
+            <div className="relative h-screen w-full overflow-hidden">
+              <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />
+            </div>
+          </div>
+          <div className="relative p-4 sm:p-6">
+            <Outlet />
+          </div>
         </main>
         <footer className="hidden border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40 lg:block">
           {BRAND.name} · Bu platform tıbbi teşhis veya tedavi sunmaz.

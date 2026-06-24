@@ -4,7 +4,7 @@
 > **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Serenova-F-t\`  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-24 (Bkz. §32: **Kurumsal başvuru, navbar & stabilizasyon**; §30–31 önceki değişiklikler)
+> **Son güncelleme:** 2026-06-24 (§34: e-posta **bağlantı** doğrulama, telefon **kapalı**, Vercel deploy)
 
 ---
 
@@ -15,7 +15,8 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§30–32 Değişiklik Günlüğü** bölümlerine bak.
+6. Son değişiklikler için **§30–34 Değişiklik Günlüğü** bölümlerine bak.
+7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -214,7 +215,10 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 | Login/logout | `supabaseDb.js` L262–302 | Telegram bildirimi gönderir |
 | Route guard | `src/components/auth/RequireAuth.jsx` | Rol bazlı redirect |
 | Login UI | `src/pages/auth/LoginPage.jsx` | Rol bazlı yönlendirme |
-| Şifre sıfırlama | `src/pages/auth/ForgotPasswordPage.jsx` | Supabase reset e-postası |
+| Şifre sıfırlama | `ForgotPasswordPage.jsx` → `AuthCallbackPage` → `ResetPasswordPage.jsx` | PKCE; redirect `/auth/callback?next=reset-password` |
+| Auth callback | `src/pages/auth/AuthCallbackPage.jsx` | E-posta/telefon doğrulama linkleri, recovery yönlendirme |
+| İsteğe bağlı doğrulama | `src/services/authVerification.js` + `VerificationSection.jsx` | Profilden e-posta/telefon; kayıtta zorunlu değil |
+| Kayıt oturum açma | `api/auth-unlock-signup.js` + `ensureAuthForSignup()` | Confirm email açıkken bile kayıt sonrası giriş |
 | Şifre kuralları | `src/services/password.js` | `PASSWORD_RULES`, `isPasswordValid` |
 
 ### 5.2 Merkezi State (AppContext)
@@ -419,6 +423,8 @@ Kaynak: `src/App.jsx` satır 56–117
 /login               → LoginPage
 /register            → redirect /onboarding
 /forgot-password     → ForgotPasswordPage
+/auth/callback       → AuthCallbackPage (doğrulama + şifre sıfırlama yönlendirme)
+/reset-password      → ResetPasswordPage
 /onboarding          → OnboardingPage
 /membership          → MembershipComparisonPage
 /builder             → redirect /membership
@@ -523,6 +529,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | HTTP | Amaç |
 |-------|------|------|
 | `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri |
+| `auth-unlock-signup.js` | POST | Kayıt sonrası e-posta onayı (service role) |
 | `contact.js` | POST | Bize Ulaşın → Telegram (ikincil; birincil kayıt Supabase `contact_inquiries`) |
 | `sitemap.js` | GET | Dinamik XML sitemap (`/sitemap.xml` rewrite) |
 
@@ -704,7 +711,11 @@ Kaynak: `.env.example`
 | Değişken | Kapsam | Servis |
 |----------|--------|--------|
 | `VITE_SUPABASE_URL` | İstemci | Supabase proje URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` veya `VITE_SUPABASE_ANON_KEY` | İstemci | Supabase anon key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` veya `VITE_SUPABASE_ANON_KEY` | İstemci | Supabase anon/publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sunucu (GİZLİ) | `api/auth-unlock-signup.js`, Stripe webhook; **VITE_ olmadan** |
+| `SUPABASE_URL` | Sunucu | Service-role istemcisi (yedek: `VITE_SUPABASE_URL`) |
+| `VITE_PHONE_VERIFY_ENABLED` | İstemci | `true` → profilde telefon doğrulama kartı görünür (şu an `false`) |
+| `VITE_PHONE_VERIFY_VIA_EMAIL` | İstemci | Telefon açıkken SMS yoksa e-posta link yedeği (`false` = yalnızca SMS dene) |
 | `TELEGRAM_BOT_TOKEN` | Sunucu | Telegram Bot |
 | `TELEGRAM_CHAT_ID` | Sunucu | Giriş/kayıt bildirimleri |
 | `TELEGRAM_CONTACT_CHAT_ID` | Sunucu | İletişim formu |
@@ -802,7 +813,8 @@ Kaynak: `.env.example`
 | Otomatik program/analiz senkronu | `src/services/memberHealthSync.js` |
 | Sayfa geçişinde scroll üste | `src/components/layout/ScrollToTop.jsx` → `PublicLayout.jsx` |
 | MobileNav bağlantı düzeltmesi | `src/components/layout/MobileNav.jsx` — `/builder` → `/membership` |
-| Giriş sonrası yönlendirme | `src/pages/auth/LoginPage.jsx` |
+| Şifre sıfırlama / doğrulama | `ForgotPasswordPage`, `ResetPasswordPage`, `AuthCallbackPage`, `VerificationSection.jsx`, `authVerification.js` |
+| Service role kurulumu | ✅ Tamamlandı — §34.4 |
 | Rol kontrolü | `src/components/auth/RequireAuth.jsx` |
 | SEO meta / canonical | `src/components/seo/SeoHead.jsx` + `src/config/seo.js` |
 | Sayfa bazlı SEO | `src/config/seo.js` → `PAGE_SEO` |
@@ -823,7 +835,7 @@ Kaynak: `.env.example`
 3. **localDb.js silindi** (2026-06-24) — diskten kaldırıldı; tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
 5. **Ödeme Yönetimi sayfası mock** — `PaymentManagementPage` demo veri kullanır; gerçek `payments` tablosu Stripe webhook ile dolar (§22).
-6. **Şifre sıfırlama** — `ForgotPasswordPage` henüz tam Supabase Auth reset akışına bağlı değil (iyileştirme bekliyor).
+6. **Şifre sıfırlama** — §34 ile Supabase Auth + PKCE bağlandı; Supabase redirect URL'leri ve `SUPABASE_SERVICE_ROLE_KEY` gerekir.
 7. **Üyelik talepleri UI** — `membership_requests` API hazır; üye tarafında talep oluşturma UI henüz eksik (Support/Profil’e eklenecek).
 8. **Daily REST API kullanılmıyor** — odalar deterministik URL ile açılır.
 9. **Seanslar JSONB'de** — ayrı `sessions` tablosu yok.
@@ -1905,7 +1917,8 @@ Yardımcılar (`programSchedule.js`):
 | Özellik | Durum |
 |---------|-------|
 | Ödeme Yönetimi UI | Mock (`mockPayments.js`); Stripe sonraki aşama |
-| Şifre sıfırlama | `ForgotPasswordPage` — Supabase reset bağlanacak |
+| Şifre sıfırlama | ✅ §34 — `ForgotPasswordPage` + `ResetPasswordPage` + `/auth/callback` |
+| E-posta/telefon doğrulama | ✅ E-posta profilden (bağlantı); telefon şimdilik kapalı (`VITE_PHONE_VERIFY_ENABLED=false`) |
 | Üyelik talepleri (üye UI) | API var, arayüz henüz yok |
 
 ### İlgili dosya envanteri (yeni)
@@ -1928,9 +1941,10 @@ Yardımcılar (`programSchedule.js`):
 ### Sonraki adımlar
 
 1. Stripe → `PaymentManagementPage` gerçek `payments` tablosu
-2. `ForgotPasswordPage` → `supabase.auth.resetPasswordForEmail`
+2. ~~`ForgotPasswordPage` → `supabase.auth.resetPasswordForEmail`~~ ✅ §34
 3. Üye panelinde `membership_requests` oluşturma UI (dondur/iptal)
-4. `setup.sql` içine yeni tabloları birleştir (tek kurulum dosyası senkronu) — **tamamlandı (2026-06-24)**
+4. ~~`setup.sql` birleştirme~~ ✅ (2026-06-24)
+5. **Twilio SMS** → §34.5 (telefon şimdilik kapalı; Twilio hazır olunca `VITE_PHONE_VERIFY_ENABLED=true`)
 
 ---
 
@@ -1970,4 +1984,158 @@ Yeni kurulum: yalnızca `supabase/setup.sql` çalıştırılır; migration dosya
 | **Kadromuz dropdown** | Tek `/team` sayfası + filtre; nav'den dropdown kaldır | 3 ayrı SEO sayfası birleşir |
 
 **Dosya:** `src/components/layout/PublicLayout.jsx`
+
+---
+
+## 34. Auth Doğrulama, Şifre Sıfırlama & Ortam Kurulumu (2026-06-24)
+
+### 34.1 Özet — ne değişti?
+
+| Özellik | Önceki | Güncel |
+|---------|--------|--------|
+| Kayıt + e-posta onayı | Confirm email açıksa kayıt yarım kalıyordu | Kayıt tamamlanır; doğrulama **profilden isteğe bağlı** |
+| Şifre sıfırlama | Kod vardı, PKCE/redirect eksikti | `/forgot-password` → e-posta → `/auth/callback` → `/reset-password` |
+| E-posta doğrulama | Yok / çalışmıyordu | Profil → **bağlantı** gönder → tıkla → sonuç ekranı → **Durumu Yenile** |
+| Telefon doğrulama | SMS denemesi 500 veriyordu | **Şimdilik kapalı** (`VITE_PHONE_VERIFY_ENABLED=false`); Twilio hazır olunca açılacak |
+| Auth callback hatası | "Geçersiz bağlantı" + login yönlendirme | Başarı / yönlendirme ekranı; Hotmail prefetch için nazik mesaj |
+| Router hatası | `Link` router dışında kalabiliyordu | `BrowserRouter` en dış katmana alındı (`App.jsx`) |
+| Vercel production | Eski build | ✅ `VITE_PHONE_VERIFY_ENABLED=false` + redeploy (2026-06-24) |
+
+**Tasarım ilkesi:** Kayıt anında e-posta/telefon **zorunlu değil** — kullanıcı önce üye olur, sonra `/profile` → **Hesap Doğrulama** kartından isterse e-postasını onaylar.
+
+**Supabase e-posta şablonu notu:** Varsayılan Magic Link şablonu `{{ .ConfirmationURL }}` kullanır → e-postada **6 haneli kod değil bağlantı** gelir. Kod istenirse Dashboard → Email Templates → Magic Link içine `{{ .Token }}` eklenmeli (opsiyonel).
+
+### 34.2 Akış diyagramları
+
+**Kayıt (onboarding):**
+```
+signUp → oturum yoksa → POST /api/auth-unlock-signup (service role)
+      → signInWithPassword → buildAndPersistMember
+      → members.data.emailVerifiedAt / phoneVerifiedAt = null
+```
+
+**Şifre sıfırlama:**
+```
+/forgot-password → resetPasswordForEmail(redirectTo=/auth/callback?next=reset-password)
+→ kullanıcı e-postadaki linke tıklar → /auth/callback → /reset-password
+→ updateUser({ password })
+```
+
+**Profil — e-posta doğrulama (güncel):**
+```
+Profil → Doğrulama Bağlantısı Gönder → signInWithOtp(email, emailRedirectTo=/auth/callback?verify=email)
+→ kullanıcı e-postadaki bağlantıya tıklar → /auth/callback
+   → oturum varsa: "E-posta onaylandı, sayfayı kapatabilirsiniz"
+   → oturum yoksa (Hotmail/Outlook link ön-taraması): "Profilde Durumu Yenile"
+→ Profil → Durumu Yenile → refreshEmailVerification → emailVerifiedAt kaydedilir
+```
+
+**Hotmail/Outlook uyarısı:** Bazı sağlayıcılar güvenlik taraması için bağlantıyı kullanıcıdan önce açar; token tüketilir, kullanıcı tıklayınca "geçersiz" görünür. Sunucuda onay gerçekleşmiş olabilir — **Durumu Yenile** yeterlidir.
+
+**Profil — telefon doğrulama (şimdilik kapalı):**
+```
+VITE_PHONE_VERIFY_ENABLED=false → VerificationSection telefon kartını göstermez
+Twilio hazır olunca:
+  VITE_PHONE_VERIFY_ENABLED=true
+  updateUser({ phone }) → SMS OTP → verifyOtp(type: 'phone_change')
+  (signInWithOtp({ phone }) KULLANILMAZ — members.email NOT NULL trigger ile 500 verir)
+```
+
+### 34.3 Yeni / güncellenen dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `api/auth-unlock-signup.js` | Kayıt sonrası `email_confirm: true` (service role) |
+| `src/services/authVerification.js` | E-posta bağlantı gönder, `refreshEmailVerification`, telefon (kapalı) |
+| `src/components/profile/VerificationSection.jsx` | E-posta UI; telefon `VITE_PHONE_VERIFY_ENABLED` ile gizli |
+| `src/pages/auth/AuthCallbackPage.jsx` | Sonuç ekranı (`verify=email`), recovery redirect |
+| `src/pages/auth/ResetPasswordPage.jsx` | PKCE oturum bekleme + yeni şifre |
+| `src/pages/auth/ForgotPasswordPage.jsx` | `redirectTo` → `/auth/callback?next=reset-password` |
+| `src/services/supabaseDb.js` | `ensureAuthForSignup`, `patchMemberVerification`, `emailVerifiedAt` |
+| `src/context/AppContext.jsx` | `verificationStatus`, `refreshVerification` |
+| `src/App.jsx` | `BrowserRouter` dış sarmalayıcı; `/auth/callback` rotası |
+| `.env.local` | Yerel Supabase + service role (gitignore) |
+
+**members.data JSONB (yeni alanlar):**
+- `emailVerifiedAt` — ISO string veya `null`
+- `phoneVerifiedAt` — ISO string veya `null`
+- `pendingPhoneVerify` — telefon e-posta yedeği beklerken geçici (telefon açılınca)
+
+### 34.4 Ortam kurulumu — tamamlandı (2026-06-24)
+
+| Alan | Durum | Not |
+|------|--------|-----|
+| `.env.local` (yerel) | ✅ | `VITE_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_PHONE_VERIFY_ENABLED=false` |
+| Vercel Production / Preview / Development | ✅ | `VITE_PHONE_VERIFY_ENABLED=false` eklendi + **production deploy** |
+| Vercel Supabase istemci | ✅ | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| Supabase Auth redirect URL'leri | ✅ | `/auth/callback`, `/reset-password` (localhost + www.yeniform.com) |
+| Kayıt unlock API | ✅ | `api/auth-unlock-signup.js` + service role |
+| Şifre sıfırlama | ✅ | PKCE + `/auth/callback` |
+| E-posta doğrulama | ✅ | Bağlantı + sonuç ekranı + Durumu Yenile |
+| Telefon doğrulama | ⏸ Kapalı | `VITE_PHONE_VERIFY_ENABLED=false` (UI + Vercel) |
+| **Twilio SMS** | ⏳ Sonra | Telefon yeniden açılınca §34.5 |
+
+**Supabase proje:** Yeni Form · ref `rvzksmyhsgxgrxgeabmi` · URL `https://rvzksmyhsgxgrxgeabmi.supabase.co`  
+**Canlı site:** https://www.yeniform.com (deploy: 2026-06-24)
+
+### 34.5 Telefon SMS (Twilio) — telefon yeniden açılınca
+
+Telefon doğrulama şu an **kapalı**. Twilio tam kurulunca:
+
+#### A) Twilio Console (twilio.com/console)
+
+| # | Nerede | Ne alınır |
+|---|--------|-----------|
+| 1 | Ana sayfa / Account Info | **Account SID** (`AC...`) |
+| 2 | Ana sayfa / Account Info | **Auth Token** → Show → kopyala |
+| 3 | **Phone Numbers** → Buy a number | SMS destekli numara (trial'da test için yeterli) |
+| 4 | *(Önerilen)* **Messaging** → **Services** → Create | **Messaging Service SID** (`MG...`) |
+
+> Trial hesapta SMS yalnızca **Verified Caller IDs** listesindeki numaralara gider.
+
+#### B) Supabase — Phone provider
+
+1. [Authentication → Providers → Phone](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/providers)
+2. **Enable Phone provider** → SMS provider: **Twilio**
+3. **Account SID**, **Auth Token**, **Message Service SID** → **Save**
+
+#### C) Uygulama env — telefonu aç
+
+`.env.local` ve Vercel (Production + Preview + Development):
+```
+VITE_PHONE_VERIFY_ENABLED=true
+VITE_PHONE_VERIFY_VIA_EMAIL=false
+```
+Yerel: `npm run dev` yeniden başlatın. Vercel: **Redeploy**.
+
+#### D) Test
+
+Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir → **Onayla**
+
+| Sorun | Çözüm |
+|-------|--------|
+| SMS gelmiyor (trial) | Twilio → Verified Caller IDs → kendi numaranızı doğrulayın |
+| 500 Database error | `signInWithOtp({phone})` kullanmayın; kod `updateUser` + `phone_change` kullanır |
+| Telefon kartı görünmüyor | `VITE_PHONE_VERIFY_ENABLED=true` + redeploy |
+
+> Twilio Auth Token yalnızca Supabase Dashboard'a girilir; repoya veya `VITE_` env'e konmaz.
+
+### 34.6 AppContext aksiyonları (doğrulama)
+
+`useApp()` ile:
+- `verificationStatus` — `{ emailVerified, phoneVerified, email, phone }`
+- `sendEmailVerification`, `confirmEmailVerification` (opsiyonel kod girişi)
+- `refreshVerification` — bağlantı sonrası profilde **Durumu Yenile**
+- `sendPhoneVerification`, `confirmPhoneVerification` — telefon açıkken
+
+### 34.7 Değiştirilen dosyalar (§34)
+
+- `api/auth-unlock-signup.js` (yeni)
+- `src/services/authVerification.js` (yeni)
+- `src/components/profile/VerificationSection.jsx` (yeni)
+- `src/pages/auth/AuthCallbackPage.jsx` (yeni — sonuç ekranı)
+- `src/pages/auth/ResetPasswordPage.jsx`, `ForgotPasswordPage.jsx`
+- `src/services/supabaseDb.js`, `src/context/AppContext.jsx`, `src/pages/ProfilePage.jsx`
+- `src/App.jsx`, `.env.local`, `.env.example`
+- Vercel env: `VITE_PHONE_VERIFY_ENABLED=false` (Production / Preview / Development) + production deploy
 

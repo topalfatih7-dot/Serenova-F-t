@@ -16,6 +16,7 @@ import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
+import * as authVerification from '../services/authVerification'
 
 const AppContext = createContext(null)
 
@@ -463,6 +464,37 @@ export function AppProvider({ children }) {
     await patchCurrentRemote({ settings: { ...currentMember.settings, ...settings } })
   }, [currentMember, patchCurrentRemote])
 
+  const verificationStatus = useMemo(() => {
+    if (!currentMember) return null
+    return {
+      email: currentMember.email,
+      phone: currentMember.phone,
+      emailVerified: Boolean(currentMember.emailVerifiedAt),
+      phoneVerified: Boolean(currentMember.phoneVerifiedAt),
+    }
+  }, [currentMember])
+
+  const sendEmailVerification = useCallback(async () => authVerification.sendEmailVerification(), [])
+  const confirmEmailVerification = useCallback(
+    async (code) => authVerification.confirmEmailVerification(code, currentMember),
+    [currentMember],
+  )
+  const sendPhoneVerification = useCallback(
+    async (phone, countryIso) => authVerification.sendPhoneVerification(phone, countryIso, currentMember),
+    [currentMember],
+  )
+  const confirmPhoneVerification = useCallback(
+    async (code, phone, countryIso, viaEmail) =>
+      authVerification.confirmPhoneVerification(code, phone, currentMember, countryIso, viaEmail),
+    [currentMember],
+  )
+
+  const refreshVerification = useCallback(async () => {
+    const res = await authVerification.refreshEmailVerification(currentMember)
+    await reloadRemote()
+    return res
+  }, [currentMember, reloadRemote])
+
   const value = {
     mode: 'supabase',
     loading,
@@ -568,6 +600,12 @@ export function AppProvider({ children }) {
     toggleMealCompletion,
     updateProfile,
     updateSettings,
+    verificationStatus,
+    sendEmailVerification,
+    confirmEmailVerification,
+    sendPhoneVerification,
+    confirmPhoneVerification,
+    refreshVerification,
     refresh: reloadRemote,
   }
 

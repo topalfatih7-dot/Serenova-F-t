@@ -9,29 +9,49 @@ import { isPasswordValid } from '../../services/password'
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [ready, setReady] = useState(false)
+  const [status, setStatus] = useState('loading')
   const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState(false)
   const { toast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!isSupabaseEnabled || !supabase) return
+    if (!isSupabaseEnabled || !supabase) return undefined
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
-    })
+    let cancelled = false
+    let settled = false
 
-    const hash = window.location.hash || ''
-    if (hash.includes('type=recovery') || hash.includes('access_token')) {
-      setReady(true)
+    const markReady = () => {
+      if (!cancelled && !settled) {
+        settled = true
+        setStatus('ready')
+      }
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        markReady()
+      }
     })
 
-    return () => subscription.unsubscribe()
+    async function waitForSession() {
+      for (let i = 0; i < 8; i += 1) {
+        if (cancelled) return
+        const { data } = await supabase.auth.getSession()
+        if (data.session) {
+          markReady()
+          return
+        }
+        await new Promise((r) => setTimeout(r, 400))
+      }
+      if (!cancelled && !settled) setStatus('invalid')
+    }
+
+    waitForSession()
+
+    return () => {
+      cancelled = true
+      subscription?.unsubscribe()
+    }
   }, [])
 
   const handleSubmit = async (e) => {
@@ -48,7 +68,7 @@ export default function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
-      setDone(true)
+      setStatus('done')
       toast('Şifreniz güncellendi', 'success')
       setTimeout(() => navigate('/login', { replace: true }), 2000)
     } catch (err) {
@@ -75,12 +95,17 @@ export default function ResetPasswordPage() {
         <h1 className="font-display text-2xl font-bold text-cream-900">Yeni Şifre Belirle</h1>
         <p className="mt-2 text-sm text-cream-800/60">Hesabınız için yeni bir şifre oluşturun.</p>
 
-        {done ? (
+        {status === 'done' ? (
           <div className="mt-8 rounded-2xl border border-sage-200 bg-sage-50 p-6 text-center">
             <p className="font-medium text-sage-700">Şifreniz kaydedildi!</p>
             <p className="mt-2 text-sm text-cream-800/60">Giriş sayfasına yönlendiriliyorsunuz…</p>
           </div>
-        ) : !ready ? (
+        ) : status === 'loading' ? (
+          <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-cream-200 bg-white p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+            <p className="text-sm text-cream-800/70">Bağlantı doğrulanıyor…</p>
+          </div>
+        ) : status === 'invalid' ? (
           <div className="mt-8 rounded-2xl border border-cream-200 bg-white p-6 text-center">
             <p className="text-sm text-cream-800/70">Geçersiz veya süresi dolmuş bağlantı.</p>
             <Link to="/forgot-password" className="mt-4 inline-block text-sm font-semibold text-brand-600 hover:underline">

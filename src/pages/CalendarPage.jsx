@@ -434,7 +434,7 @@ export default function CalendarPage() {
   )
 }
 
-// ── Gün Detay Paneli ────────────────────────────────────────────────
+// ── Gün Detay Paneli (tam ekran modal) ──────────────────────────────
 function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
   const { workout: workoutEntries, nutrition: nutritionEntries } = splitEntriesByType(entries)
   const mealGroups = groupEntriesByMeal(nutritionEntries)
@@ -449,17 +449,18 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 32, scale: 0.97 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-        className="fixed inset-x-2 bottom-0 top-[8vh] z-50 mx-auto max-w-5xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:inset-x-4 sm:bottom-auto sm:top-1/2 sm:max-h-[85vh] sm:-translate-y-1/2 sm:rounded-3xl"
-      >
-        <div className={`relative px-6 py-5 ${today ? 'bg-gradient-to-r from-brand-500 to-sage-600' : 'bg-gradient-to-r from-cream-50 to-white'}`}>
+      <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.96 }}
+          transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+          className="pointer-events-auto flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        >
+        <div className={`relative shrink-0 px-6 py-5 ${today ? 'bg-gradient-to-r from-brand-500 to-sage-600' : 'bg-gradient-to-r from-cream-50 to-white'}`}>
           <button
             type="button"
             onClick={onClose}
@@ -504,7 +505,7 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
           )}
         </div>
 
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 180px)' }}>
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Calendar className="h-10 w-10 text-cream-300" />
@@ -566,7 +567,8 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
             </div>
           )}
         </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </>
   )
 }

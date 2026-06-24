@@ -398,6 +398,63 @@ body {
   box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand-400) 35%, transparent);
 }
 
+/* ── Panel animasyonlu arka plan (yüzen emoji + orb) ── */
+@keyframes panelFloatA {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  50% { transform: translateY(-30px) translateX(12px) rotate(9deg); }
+}
+@keyframes panelFloatB {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  50% { transform: translateY(26px) translateX(-14px) rotate(-7deg); }
+}
+@keyframes panelFloatC {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  33% { transform: translateY(-20px) translateX(-10px) rotate(6deg); }
+  66% { transform: translateY(16px) translateX(10px) rotate(-5deg); }
+}
+@keyframes panelOrbDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(36px, -28px) scale(1.14); }
+}
+
+.panel-emoji {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+  line-height: 1;
+}
+.panel-float-a { animation: panelFloatA var(--float-dur, 18s) ease-in-out infinite; }
+.panel-float-b { animation: panelFloatB var(--float-dur, 20s) ease-in-out infinite; }
+.panel-float-c { animation: panelFloatC var(--float-dur, 22s) ease-in-out infinite; }
+.panel-orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  animation: panelOrbDrift var(--orb-dur, 16s) ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-float-a, .panel-float-b, .panel-float-c, .panel-orb { animation: none; }
+}
+
+/* Panel arka plan gradyanları */
+.admin-panel-bg {
+  background-color: var(--color-cream-50);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--color-cream-300) 45%, transparent), transparent 50%),
+    radial-gradient(ellipse 55% 40% at 0% 100%, color-mix(in srgb, var(--color-brand-100) 40%, transparent), transparent 48%),
+    linear-gradient(170deg, var(--color-cream-50) 0%, color-mix(in srgb, var(--color-cream-100) 70%, white) 100%);
+}
+.staff-panel-bg {
+  background-color: var(--color-cream-50);
+  background-image:
+    radial-gradient(ellipse 75% 50% at 0% 0%, color-mix(in srgb, var(--color-brand-100) 50%, transparent), transparent 52%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, color-mix(in srgb, var(--color-sage-100) 45%, transparent), transparent 48%),
+    linear-gradient(165deg, var(--color-cream-50) 0%, color-mix(in srgb, var(--color-brand-50) 75%, white) 100%);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

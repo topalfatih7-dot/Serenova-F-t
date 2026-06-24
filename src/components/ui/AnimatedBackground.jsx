@@ -1,0 +1,80 @@
+import { useMemo } from 'react'
+
+const FLOAT_CLASSES = ['panel-float-a', 'panel-float-b', 'panel-float-c']
+
+const ORB_PRESETS = {
+  member: [
+    { className: 'left-[-6%] top-[-4%] h-72 w-72 bg-brand-300/30', dur: '15s' },
+    { className: 'right-[-8%] top-[20%] h-80 w-80 bg-sage-300/25', dur: '19s' },
+    { className: 'bottom-[-10%] left-[25%] h-72 w-72 bg-warm-200/30', dur: '17s' },
+  ],
+  staff: [
+    { className: 'left-[-8%] top-[-6%] h-80 w-80 bg-brand-300/28', dur: '16s' },
+    { className: 'right-[-6%] bottom-[-8%] h-72 w-72 bg-sage-300/26', dur: '20s' },
+  ],
+  admin: [
+    { className: 'right-[-6%] top-[-6%] h-80 w-80 bg-brand-200/30', dur: '18s' },
+    { className: 'left-[-8%] bottom-[-10%] h-72 w-72 bg-cream-300/40', dur: '15s' },
+  ],
+}
+
+/**
+ * Panellerin arkasında yumuşak, animasyonlu bir atmosfer oluşturur:
+ * blur'lu gradient orb'lar + sektöre uygun yüzen emojiler.
+ * pointer-events yok, içerik etkilenmez. prefers-reduced-motion'a saygılıdır.
+ */
+export default function AnimatedBackground({ emojis = [], accent = 'member', className = '' }) {
+  const orbs = ORB_PRESETS[accent] || ORB_PRESETS.member
+
+  const items = useMemo(
+    () =>
+      emojis.map((emoji, i) => {
+        const left = (i * 13.7 + 5) % 92
+        const top = (i * 19.3 + 6) % 90
+        const size = 26 + (i % 4) * 12
+        const dur = 16 + (i % 5) * 3
+        const delay = (i % 6) * -2.6
+        const opacity = 0.08 + (i % 3) * 0.025
+        return {
+          key: `${emoji}-${i}`,
+          emoji,
+          left,
+          top,
+          size,
+          dur,
+          delay,
+          opacity,
+          floatClass: FLOAT_CLASSES[i % FLOAT_CLASSES.length],
+        }
+      }),
+    [emojis],
+  )
+
+  return (
+    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+      {orbs.map((orb, i) => (
+        <span
+          key={`orb-${i}`}
+          className={`panel-orb ${orb.className}`}
+          style={{ '--orb-dur': orb.dur, animationDelay: `${i * -3}s` }}
+        />
+      ))}
+      {items.map((it) => (
+        <span
+          key={it.key}
+          className={`panel-emoji ${it.floatClass}`}
+          style={{
+            left: `${it.left}%`,
+            top: `${it.top}%`,
+            fontSize: `${it.size}px`,
+            opacity: it.opacity,
+            '--float-dur': `${it.dur}s`,
+            animationDelay: `${it.delay}s`,
+          }}
+        >
+          {it.emoji}
+        </span>
+      ))}
+    </div>
+  )
+}

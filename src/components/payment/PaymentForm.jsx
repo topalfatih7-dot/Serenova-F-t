@@ -23,7 +23,7 @@ function detectBrand(number) {
   return ''
 }
 
-export default function PaymentForm({ amount, onSubmit, onCancel, loading = false }) {
+export default function PaymentForm({ amount, onSubmit, onCancel, loading = false, submitLabel, loadingLabel }) {
   const [card, setCard] = useState('')
   const [expiry, setExpiry] = useState('')
   const [cvv, setCvv] = useState('')
@@ -186,7 +186,9 @@ export default function PaymentForm({ amount, onSubmit, onCancel, loading = fals
 
       <div className="flex items-center justify-center gap-1.5 text-[11px] text-cream-800/50">
         <ShieldCheck className="h-3.5 w-3.5 text-sage-500" />
-        256-bit SSL ile güvenli ödeme · Test ortamı
+        {amount != null
+          ? '256-bit SSL ile güvenli ödeme · Test ortamı'
+          : '256-bit SSL ile kart bilgileriniz güvenle saklanır · Test ortamı'}
       </div>
 
       <div className="flex gap-3">
@@ -201,7 +203,9 @@ export default function PaymentForm({ amount, onSubmit, onCancel, loading = fals
           disabled={loading}
           className="flex flex-[1.4] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
         >
-          {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> İşleniyor…</> : <><Lock className="h-4 w-4" /> {amount != null ? `${amount.toLocaleString('tr-TR')}₺ Öde` : 'Ödemeyi Tamamla'}</>}
+          {loading
+            ? <><Loader2 className="h-4 w-4 animate-spin" /> {loadingLabel || 'İşleniyor…'}</>
+            : <><Lock className="h-4 w-4" /> {amount != null ? `${amount.toLocaleString('tr-TR')}₺ Öde` : (submitLabel || 'Ödemeyi Tamamla')}</>}
         </motion.button>
       </div>
     </form>

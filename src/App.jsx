@@ -15,6 +15,7 @@ import LandingPage from './pages/LandingPage'
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
+const AuthCallbackPage = lazy(() => import('./pages/auth/AuthCallbackPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparisonPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -71,13 +72,16 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <ToastProvider>
-        <NotificationToastBridge />
-        <BrowserRouter>
+    <BrowserRouter>
+      <AppProvider>
+        <ToastProvider>
+          <NotificationToastBridge />
           <GoogleAnalytics />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
+            {/* Navbar/footer olmadan tam ekran auth akışları */}
+            <Route path="auth/callback" element={<AuthCallbackPage />} />
+
             <Route element={<PublicLayout />}>
               <Route index element={<LandingPage />} />
               <Route path="login" element={<LoginPage />} />
@@ -152,8 +156,8 @@ export default function App() {
 
           </Routes>
           </Suspense>
-        </BrowserRouter>
-      </ToastProvider>
-    </AppProvider>
+        </ToastProvider>
+      </AppProvider>
+    </BrowserRouter>
   )
 }

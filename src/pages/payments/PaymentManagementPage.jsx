@@ -21,6 +21,15 @@ function formatTry(amount) {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount)
 }
 
+function detectCardBrand(number) {
+  const n = String(number).replace(/\D/g, '')
+  if (/^4/.test(n)) return 'VISA'
+  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'Mastercard'
+  if (/^3[47]/.test(n)) return 'AMEX'
+  if (/^9792/.test(n) || /^65/.test(n)) return 'Troy'
+  return 'Kart'
+}
+
 function StatusBadge({ status }) {
   const map = {
     completed: 'bg-sage-50 text-sage-700',
@@ -118,9 +127,24 @@ function MemberPayments() {
 
       <Modal open={addCardOpen} onClose={() => setAddCardOpen(false)} title="Yeni Kart Ekle (Demo)">
         <PaymentForm
-          onSuccess={() => {
+          submitLabel="Kartı Kaydet"
+          loadingLabel="Kaydediliyor…"
+          onCancel={() => setAddCardOpen(false)}
+          onSubmit={({ cardNumber, expiry, holder }) => {
+            const digits = String(cardNumber).replace(/\D/g, '')
+            const [mm, yy] = String(expiry).split('/')
+            const newCard = {
+              id: `card-${Date.now()}`,
+              brand: detectCardBrand(digits),
+              last4: digits.slice(-4),
+              holder: holder?.trim() || 'Kart Sahibi',
+              expMonth: Number(mm) || 1,
+              expYear: yy ? Number(`20${yy}`) : new Date().getFullYear(),
+              isDefault: true,
+            }
+            setCards((list) => [...list.map((c) => ({ ...c, isDefault: false })), newCard])
             setAddCardOpen(false)
-            toast('Kart kaydedildi (mock)', 'success')
+            toast('Kart eklendi (mock)', 'success')
           }}
         />
       </Modal>

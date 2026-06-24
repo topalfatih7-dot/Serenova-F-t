@@ -11,6 +11,7 @@ import { notifyTelegram } from './telegramNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile } from '../data/staffProfile'
 import { estimateReadMinutes } from '../utils/blogContent'
+import { getSiteUrl } from '../config/seo'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -476,6 +477,8 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     assignedCoachId,
     assignedDietitianId,
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
+    emailVerifiedAt: null,
+    phoneVerifiedAt: null,
     streak: 0,
     pauseUntil: null,
   }, packageConfig, isPaidMembership(membership))
@@ -500,14 +503,55 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   return { success: true, member }
 }
 
+async function unlockSignupSession(email, password) {
+  try {
+    const res = await fetch('/api/auth-unlock-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.ok) return { success: true }
+    if (res.status === 503) {
+      return { success: false, error: data.error, unlockUnavailable: true }
+    }
+  } catch {
+    /* ağ hatası — aşağıda doğrudan giriş denenecek */
+  }
+  return { success: false }
+}
+
+async function signInAfterSignup(email, password) {
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+  if (!signInError) return { success: true }
+
+  if (/not confirmed|confirm/i.test(signInError.message)) {
+    const unlocked = await unlockSignupSession(email, password)
+    if (unlocked.success) {
+      const retry = await supabase.auth.signInWithPassword({ email, password })
+      if (!retry.error) return { success: true }
+      return { success: false, error: retry.error.message }
+    }
+    if (unlocked.unlockUnavailable) {
+      return { success: false, error: unlocked.error }
+    }
+    return {
+      success: false,
+      error: 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin veya destek ile iletişime geçin.',
+    }
+  }
+
+  return { success: false, error: signInError.message }
+}
+
 // Kayıt için auth kullanıcısını hazırlar ve oturumu açar.
-// İdempotent: yarım kalmış (auth var ama profil yok) kayıtları kurtarır,
-// böylece "Bu e-posta zaten kayıtlı" hatasında kullanıcı kilitlenmez.
+// E-posta doğrulaması kayıtta zorunlu değildir; profilden isteğe bağlı yapılır.
+// İdempotent: yarım kalmış (auth var ama profil yok) kayıtları kurtarır.
 async function ensureAuthForSignup(profile) {
   const email = (profile.email || '').trim().toLowerCase()
   const password = profile.password
+  const emailRedirectTo = `${getSiteUrl()}/auth/callback?verify=email`
 
-  // Telefon numarası zaten kullanımda mı? (aynı numarayla ikinci kayıt engellenir)
   if (profile.phone) {
     const { data: phoneTaken, error: phoneErr } = await supabase.rpc('phone_in_use', { p_phone: profile.phone })
     if (!phoneErr && phoneTaken) {
@@ -515,37 +559,29 @@ async function ensureAuthForSignup(profile) {
     }
   }
 
-  // Mevcut (ör. admin veya önceki üye) oturumunu temizle ki signUp temiz çalışsın.
   try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
 
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name: profile.name } },
+    options: {
+      data: { name: profile.name },
+      emailRedirectTo,
+    },
   })
 
   if (signUpError) {
-    // E-posta zaten kayıtlı: kullanıcının kendi (yarım kalmış) hesabı olabilir → aynı şifreyle giriş dene.
     if (/registered|already|exists/i.test(signUpError.message)) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (!signInError) return { success: true }
-      if (/not confirmed|confirm/i.test(signInError.message)) {
-        return { success: false, error: 'Bu e-posta zaten kayıtlı ancak doğrulanmamış. Lütfen e-postanıza gelen doğrulama bağlantısına tıklayın.' }
-      }
-      return { success: false, error: 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya farklı bir e-posta kullanın.' }
+      const signIn = await signInAfterSignup(email, password)
+      if (signIn.success) return { success: true }
+      return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
     }
     return { success: false, error: signUpError.message }
   }
 
-  // signUp başarılı ama oturum açılmadıysa (e-posta doğrulaması açık) → giriş dene.
   if (!signUpData?.session) {
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) {
-      if (/not confirmed|confirm/i.test(signInError.message)) {
-        return { success: false, error: 'Kaydınız oluşturuldu. Giriş yapmadan önce e-postanıza gelen doğrulama bağlantısına tıklayın.' }
-      }
-      return { success: false, error: signInError.message }
-    }
+    const signIn = await signInAfterSignup(email, password)
+    if (!signIn.success) return signIn
   }
 
   return { success: true }
@@ -583,6 +619,15 @@ export async function saveMemberPatch(member, patch) {
   }
   await upsertMember(updated)
   return updated
+}
+
+/** Oturum açmış üyenin doğrulama alanlarını günceller (tam üye nesnesi gerekmez). */
+export async function patchMemberVerification(userId, patch) {
+  const { data, error } = await supabase.from('members').select('*').eq('id', userId).maybeSingle()
+  if (error || !data) return { success: false, error: 'Üye kaydı bulunamadı' }
+  const member = rowToMember(data)
+  await saveMemberPatch(member, patch)
+  return { success: true }
 }
 
 export async function saveSupportSchedule(member, schedule) {

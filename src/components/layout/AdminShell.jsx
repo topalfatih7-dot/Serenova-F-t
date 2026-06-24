@@ -6,8 +6,11 @@ import {
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
+import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
+
+const ADMIN_EMOJIS = ['📊', '📈', '⚙️', '👥', '💼', '✅', '🚀', '⭐', '📋', '🔔']
 
 const adminNav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
@@ -32,9 +35,10 @@ export default function AdminShell() {
   const { logout } = useApp()
 
   return (
-    <div className="flex min-h-screen bg-cream-50">
+    <div className="admin-panel-bg relative flex min-h-screen overflow-hidden">
       <NoIndexHead />
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white lg:flex">
+      <AnimatedBackground emojis={ADMIN_EMOJIS} accent="admin" />
+      <aside className="relative hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm lg:flex">
         <div className="border-b border-cream-100 p-5">
           <BrandLogo linkTo="/admin" />
           <span className="mt-3 inline-block rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -69,7 +73,7 @@ export default function AdminShell() {
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="relative flex flex-1 flex-col">
         <PanelMobileMenu
           navItems={adminNav}
           brandLink="/admin"
@@ -81,7 +85,7 @@ export default function AdminShell() {
         <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
-        <footer className="border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40">
+        <footer className="border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm">
           {BRAND.name} · Yönetim Paneli
         </footer>
       </div>

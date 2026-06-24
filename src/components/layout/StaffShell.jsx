@@ -4,9 +4,12 @@ import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet } 
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
+import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 import { staffRoleMeta } from '../../utils/staffRoles'
+
+const STAFF_EMOJIS = ['📋', '💪', '🥗', '📊', '🧘', '⭐', '🎯', '💚', '🏅', '🤝']
 
 function staffNavForRole(role) {
   const base = [
@@ -37,9 +40,10 @@ export default function StaffShell() {
   const staffNav = useMemo(() => staffNavForRole(staffUser.role), [staffUser.role])
 
   return (
-    <div className="flex min-h-screen bg-cream-50">
+    <div className="staff-panel-bg relative flex min-h-screen overflow-hidden">
       <NoIndexHead />
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white lg:flex">
+      <AnimatedBackground emojis={STAFF_EMOJIS} accent="staff" />
+      <aside className="relative hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm lg:flex">
         <div className="border-b border-cream-100 p-5">
           <BrandLogo linkTo="/staff" />
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -75,7 +79,7 @@ export default function StaffShell() {
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="relative flex flex-1 flex-col">
         <PanelMobileMenu
           navItems={staffNav}
           brandLink="/staff"
@@ -89,7 +93,7 @@ export default function StaffShell() {
         <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
-        <footer className="border-t border-cream-200 bg-white px-6 py-3 text-center text-[10px] text-cream-800/40">
+        <footer className="border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm">
           {BRAND.name} · {roleLabel} Paneli
         </footer>
       </div>
