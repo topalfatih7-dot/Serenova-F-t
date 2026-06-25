@@ -4,6 +4,7 @@ import { addDays } from 'date-fns'
 import SessionCard from '../components/calendar/SessionCard'
 import Modal from '../components/ui/Modal'
 import EmptyState from '../components/ui/EmptyState'
+import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { Apple } from 'lucide-react'
@@ -32,25 +33,18 @@ export default function DietitianSchedulePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-cream-900">Diyetisyen Randevuları</h1>
-          <p className="mt-1 text-sm text-cream-800/60">Beslenme rehberliği — tıbbi tedavi değildir</p>
-        </div>
-        <div className="flex gap-2">
-          {['upcoming', 'past', 'all'].map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${filter === f ? 'bg-sage-500 text-white' : 'bg-cream-100 text-cream-800'}`}
-            >
-              {f === 'upcoming' ? 'Yaklaşan' : f === 'past' ? 'Geçmiş' : 'Tümü'}
-            </button>
-          ))}
-        </div>
-      </div>
+    <PanelPageShell maxWidth="max-w-4xl">
+      <PanelPageHeader
+        title="Diyetisyen Randevuları"
+        subtitle="Beslenme rehberliği — tıbbi tedavi değildir"
+        icon={Apple}
+        accent="sage"
+        actions={['upcoming', 'past', 'all'].map((f) => (
+          <PanelChip key={f} active={filter === f} onClick={() => setFilter(f)} accent="sage">
+            {f === 'upcoming' ? 'Yaklaşan' : f === 'past' ? 'Geçmiş' : 'Tümü'}
+          </PanelChip>
+        ))}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState icon={Apple} title="Randevu bulunamadı" />
@@ -82,6 +76,6 @@ export default function DietitianSchedulePage() {
           Onayla
         </button>
       </Modal>
-    </div>
+    </PanelPageShell>
   )
 }

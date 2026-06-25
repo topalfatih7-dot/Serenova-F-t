@@ -5,6 +5,7 @@ import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
+import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel } from '../utils/programSchedule'
@@ -66,26 +67,18 @@ export default function ProgramsPage() {
   const filtered = filter === 'all' ? myPrograms : myPrograms.filter((p) => p.type === filter)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-cream-900">Programlarım</h1>
-        <p className="mt-1 text-sm text-cream-800/60">Koçunuz ve diyetisyeniniz tarafından hazırlanan programlar</p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              filter === f.id ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'
-            }`}
-          >
+    <PanelPageShell maxWidth="max-w-3xl">
+      <PanelPageHeader
+        title="Programlarım"
+        subtitle="Koçunuz ve diyetisyeniniz tarafından hazırlanan programlar"
+        icon={ClipboardList}
+        accent="brand"
+        actions={FILTERS.map((f) => (
+          <PanelChip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)} accent="brand">
             {f.label}
-          </button>
+          </PanelChip>
         ))}
-      </div>
+      />
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -99,7 +92,7 @@ export default function ProgramsPage() {
             const isWorkout = p.type === 'workout'
             const Icon = isWorkout ? Dumbbell : Apple
             return (
-              <div key={p.id} className="rounded-2xl border border-cream-200 bg-white p-6 shadow-sm">
+              <div key={p.id} className="glass-card-solid p-6">
                 <div className="flex items-start gap-4">
                   <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${isWorkout ? 'bg-brand-100 text-brand-600' : 'bg-sage-100 text-sage-600'}`}>
                     <Icon className="h-6 w-6" />
@@ -200,6 +193,6 @@ export default function ProgramsPage() {
           </div>
         )}
       </Modal>
-    </div>
+    </PanelPageShell>
   )
 }

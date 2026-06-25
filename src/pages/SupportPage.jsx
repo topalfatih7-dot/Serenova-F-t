@@ -3,6 +3,7 @@ import FAQAccordion from '../components/landing/FAQAccordion'
 import SupportForm from '../components/support/SupportForm'
 import TicketThread from '../components/support/TicketThread'
 import Modal from '../components/ui/Modal'
+import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { AlertTriangle, MessageSquare, ChevronRight } from 'lucide-react'
@@ -34,11 +35,13 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-cream-900">Destek Merkezi</h1>
-        <p className="mt-2 text-cream-800/60">Talepleriniz anlık olarak destek ekibine iletilir</p>
-      </div>
+    <PanelPageShell maxWidth="max-w-3xl" className="space-y-10">
+      <PanelPageHeader
+        title="Destek Merkezi"
+        subtitle="Talepleriniz anlık olarak destek ekibine iletilir"
+        icon={MessageSquare}
+        accent="violet"
+      />
 
       {tickets.length > 0 && (
         <div>
@@ -128,6 +131,6 @@ export default function SupportPage() {
           </div>
         )}
       </Modal>
-    </div>
+    </PanelPageShell>
   )
 }

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, Droplets, Target, Play, CalendarDays, ClipboardList, Star, HeartPulse,
+  Check, CheckCircle, Target, Play, CalendarDays, ClipboardList, Star, HeartPulse,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -102,7 +102,7 @@ function HealthAnalysisPanel({ analysis }) {
               )}
 
               {/* Vücut Durumu */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {bmi && (
                   <div className={`rounded-xl border px-4 py-3 ${bmiColor}`}>
                     <p className="text-xs font-medium opacity-70">VKİ</p>
@@ -116,16 +116,6 @@ function HealthAnalysisPanel({ analysis }) {
                     <p className="text-xs font-medium opacity-70">Günlük Kalori</p>
                     <p className="font-display text-2xl font-bold">{dailyCalories.recommended}</p>
                     <p className="text-xs font-semibold">kcal/gün ({dailyCalories.goal})</p>
-                  </div>
-                )}
-                {dietitianRecommendations?.hydration && (
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-700">
-                    <div className="flex items-center gap-1.5">
-                      <Droplets className="h-4 w-4" />
-                      <p className="text-xs font-medium opacity-70">Günlük Su</p>
-                    </div>
-                    <p className="font-display text-2xl font-bold">{dietitianRecommendations.hydration.amount}</p>
-                    <p className="text-xs font-semibold">{dietitianRecommendations.hydration.unit}/gün</p>
                   </div>
                 )}
               </div>
@@ -160,7 +150,12 @@ function HealthAnalysisPanel({ analysis }) {
                     {coachRecommendations.weeklyPlan.map((day) => (
                       <div key={day.day} className="rounded-xl border border-cream-100 bg-white/80 px-3 py-2.5">
                         <p className="text-xs font-semibold text-brand-700">{day.day}</p>
-                        <p className="text-sm text-cream-900">{day.focus}</p>
+                        <p className="text-sm font-medium text-cream-900">{day.focus}</p>
+                        {day.exerciseNames?.length > 0 && (
+                          <p className="mt-1 text-[11px] text-brand-600/80">
+                            Kütüphane: {day.exerciseNames.join(', ')}
+                          </p>
+                        )}
                         <p className="text-[11px] text-cream-800/50">Yoğunluk: {day.intensity}</p>
                       </div>
                     ))}

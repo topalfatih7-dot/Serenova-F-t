@@ -26,7 +26,7 @@ export default function Sidebar() {
   const { user, membership, membershipStatus, logout } = useApp()
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/60 bg-white/85 shadow-sm shadow-brand-900/[0.03] backdrop-blur-md lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl lg:flex">
       <div className="shrink-0 border-b border-cream-100 p-5">
         <BrandLogo linkTo="/dashboard" />
         <div className="mt-3">
@@ -41,8 +41,8 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                isActive ? 'nav-active-glow font-semibold' : 'text-cream-800 hover:bg-brand-50/60'
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive ? 'nav-active-glow font-semibold scale-[1.02]' : 'text-cream-800 hover:bg-gradient-to-r hover:from-brand-50/80 hover:to-violet-50/50 hover:translate-x-0.5'
               }`
             }
           >
@@ -53,7 +53,7 @@ export default function Sidebar() {
         {membership === 'free' && (
           <NavLink
             to="/membership"
-            className="mt-4 flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-2.5 text-sm font-semibold text-white"
+            className="mt-4 flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 via-violet-500 to-brand-600 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:scale-[1.02] hover:shadow-xl"
           >
             <Crown className="h-4 w-4" /> Planları İncele
           </NavLink>

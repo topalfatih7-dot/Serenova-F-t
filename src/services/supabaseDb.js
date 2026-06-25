@@ -484,9 +484,8 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
       read: false, createdAt: nowISO(),
     }],
     tasks: [
-      { id: `t1-${Date.now()}`, type: 'water', title: 'Günlük 2L su hedefi', done: false, due: 'Bugün', progress: 0, target: 2 },
-      { id: `t2-${Date.now()}`, type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
-      { id: `t3-${Date.now()}`, type: 'workout', title: 'Genel hareket: 20 dk yürüyüş', done: false, due: 'Bugün' },
+      { id: `t1-${Date.now()}`, type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
+      { id: `t2-${Date.now()}`, type: 'workout', title: 'Program takviminden bugünkü hareketi tamamla', done: false, due: 'Bugün' },
     ],
     progress: { weight: [], workouts: [], mood: [] },
     supportSchedule: schedule,

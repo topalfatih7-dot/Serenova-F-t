@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import VideoPlayer from '../components/ui/VideoPlayer'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
+import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
@@ -163,49 +164,41 @@ export default function CalendarPage() {
   }, [days, current, myPrograms, completedActivities])
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* GERİ BUTONU */}
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-2 text-sm font-medium text-cream-800 shadow-sm transition hover:bg-cream-50 hover:border-cream-300"
-      >
+    <PanelPageShell>
+      <button type="button" onClick={() => navigate(-1)} className="panel-back-btn">
         <ArrowLeft className="h-4 w-4" />
         Geri Dön
       </button>
 
-      {/* SAYFA BAŞLIĞI */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-cream-900">Program Takvimi</h1>
-          <p className="mt-1 text-sm text-cream-800/60">
-            Koçunuz ve diyetisyeninizin hazırladığı günlük programlar
-          </p>
-        </div>
-        {monthStats.total > 0 && (
-          <div className="flex items-center gap-3 rounded-2xl border border-cream-200 bg-white px-4 py-2.5 shadow-sm">
-            <Trophy className="h-4 w-4 text-amber-500" />
+      <PanelPageHeader
+        title="Program Takvimi"
+        subtitle="Koçunuz ve diyetisyeninizin hazırladığı günlük programlar"
+        icon={Calendar}
+        accent="brand"
+        actions={monthStats.total > 0 ? (
+          <div className="flex items-center gap-3 rounded-2xl bg-white/20 px-4 py-2.5 backdrop-blur-sm">
+            <Trophy className="h-4 w-4 text-amber-300" />
             <div>
-              <p className="text-xs text-cream-800/50">Bu Ay</p>
-              <p className="text-sm font-bold text-cream-900">{monthStats.done}/{monthStats.total} tamamlandı</p>
+              <p className="text-xs text-white/70">Bu Ay</p>
+              <p className="text-sm font-bold">{monthStats.done}/{monthStats.total} tamamlandı</p>
             </div>
             <div className="relative h-8 w-8">
               <svg className="h-8 w-8 -rotate-90" viewBox="0 0 32 32">
-                <circle cx="16" cy="16" r="13" fill="none" stroke="#f0ebe3" strokeWidth="4" />
+                <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="4" />
                 <circle
-                  cx="16" cy="16" r="13" fill="none" stroke="#4a8aad" strokeWidth="4"
+                  cx="16" cy="16" r="13" fill="none" stroke="white" strokeWidth="4"
                   strokeDasharray={`${2 * Math.PI * 13}`}
                   strokeDashoffset={`${2 * Math.PI * 13 * (1 - monthStats.pct / 100)}`}
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-brand-600">
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold">
                 {monthStats.pct}%
               </span>
             </div>
           </div>
-        )}
-      </div>
+        ) : null}
+      />
 
       {/* HAFTALIK MÜSAİTLİK */}
       <div className="overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white shadow-sm">
@@ -417,7 +410,7 @@ export default function CalendarPage() {
           />
         )}
       </AnimatePresence>
-    </div>
+    </PanelPageShell>
   )
 }
 

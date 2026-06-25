@@ -1,17 +1,18 @@
 import { motion } from 'framer-motion'
 
 export default function StatsCard({ label, value, sub, icon: Icon, accent = 'brand', onClick }) {
-  const iconColors = {
-    brand: 'text-brand-500',
-    sage: 'text-sage-500',
-    gold: 'text-warm-500',
-    cream: 'text-cream-800',
-  }
   const accents = {
-    brand: 'from-brand-50 via-white to-brand-50/30',
-    sage: 'from-sage-50 via-white to-mint-50/40',
-    gold: 'from-warm-50 via-white to-amber-50/40',
-    cream: 'from-cream-100 via-white to-cream-50',
+    brand: 'from-brand-50 via-white to-violet-50/40',
+    sage: 'from-sage-50 via-white to-emerald-50/50',
+    gold: 'from-orange-50 via-white to-amber-50/50',
+    cream: 'from-cream-100 via-white to-brand-50/30',
+  }
+
+  const iconBg = {
+    brand: 'from-brand-500 to-violet-500 text-white',
+    sage: 'from-sage-500 to-emerald-500 text-white',
+    gold: 'from-orange-500 to-amber-500 text-white',
+    cream: 'from-cream-700 to-cream-800 text-white',
   }
 
   const Tag = onClick ? motion.button : motion.div
@@ -26,7 +27,7 @@ export default function StatsCard({ label, value, sub, icon: Icon, accent = 'bra
       <div className="flex items-start justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/55">{label}</p>
         {Icon && (
-          <div className={`rounded-xl bg-white/90 p-2.5 shadow-sm ${iconColors[accent]}`}>
+          <div className={`rounded-xl bg-gradient-to-br p-2.5 shadow-md ${iconBg[accent]}`}>
             <Icon className="h-4 w-4" />
           </div>
         )}

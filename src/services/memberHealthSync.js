@@ -1,4 +1,4 @@
-import { generateHealthAnalysis } from './aiAnalysis'
+import { generateHealthAnalysis, isHealthAnalysisStale } from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
@@ -10,7 +10,8 @@ export async function createAutoProgramsForMember({ memberId, memberName, health
   if (!memberId || !healthAnalysis) return
 
   const dayRotation = [1, 3, 5]
-  const exList = healthAnalysis.coachRecommendations?.exercises || []
+  const exList = (healthAnalysis.coachRecommendations?.exercises || [])
+    .filter((ex) => ex?.id && String(ex.name || '').trim())
   if (exList.length > 0) {
     const workoutEntries = exList.map((ex, i) => ({
       id: `auto-${Date.now()}-${i}`,
@@ -70,7 +71,8 @@ export async function syncMemberHealthAssets({
   const healthAnalysis = generateHealthAnalysis(enriched, exercises || [])
   await updateProfile({ healthAnalysis })
 
-  if ((myPrograms || []).length === 0) {
+  const shouldCreatePrograms = (myPrograms || []).length === 0
+  if (shouldCreatePrograms) {
     await createAutoProgramsForMember({
       memberId: user.id,
       memberName: user.name,
@@ -79,5 +81,5 @@ export async function syncMemberHealthAssets({
     })
   }
 
-  return { synced: true, refreshed: Boolean(user.healthAnalysis) }
+  return { synced: true, refreshed: isHealthAnalysisStale(user.healthAnalysis) }
 }

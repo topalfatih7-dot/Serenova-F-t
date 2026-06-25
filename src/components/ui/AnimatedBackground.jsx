@@ -4,9 +4,10 @@ const FLOAT_CLASSES = ['panel-float-a', 'panel-float-b', 'panel-float-c']
 
 const ORB_PRESETS = {
   member: [
-    { className: 'left-[-6%] top-[-4%] h-72 w-72 bg-brand-300/30', dur: '15s' },
-    { className: 'right-[-8%] top-[20%] h-80 w-80 bg-sage-300/25', dur: '19s' },
-    { className: 'bottom-[-10%] left-[25%] h-72 w-72 bg-warm-200/30', dur: '17s' },
+    { className: 'left-[-6%] top-[-4%] h-80 w-80 bg-brand-400/35', dur: '15s' },
+    { className: 'right-[-8%] top-[15%] h-96 w-96 bg-violet-400/28', dur: '19s' },
+    { className: 'bottom-[-10%] left-[20%] h-80 w-80 bg-sage-400/30', dur: '17s' },
+    { className: 'right-[15%] bottom-[5%] h-72 w-72 bg-warm-400/25', dur: '21s' },
   ],
   staff: [
     { className: 'left-[-8%] top-[-6%] h-80 w-80 bg-brand-300/28', dur: '16s' },
@@ -34,7 +35,7 @@ export default function AnimatedBackground({ emojis = [], accent = 'member', cla
         const size = 26 + (i % 4) * 12
         const dur = 16 + (i % 5) * 3
         const delay = (i % 6) * -2.6
-        const opacity = 0.08 + (i % 3) * 0.025
+        const opacity = 0.1 + (i % 3) * 0.035
         return {
           key: `${emoji}-${i}`,
           emoji,

@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext'
 import Modal from '../../components/ui/Modal'
 import PaymentForm from '../../components/payment/PaymentForm'
 import EmptyState from '../../components/ui/EmptyState'
+import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { MOCK_STAFF_EARNINGS } from '../../data/mockPayments'
 import { getPlanLabel } from '../../data/membershipPlans'
 
@@ -328,22 +329,24 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   }, [audience])
 
   return (
-    <div className="space-y-6">
+    <PanelPageShell maxWidth="max-w-4xl">
       {audience === 'staff' && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/80 to-orange-50/50 px-4 py-3">
           <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <p className="text-sm text-amber-900/80">Personel kazanç ekranı demo veri kullanıyor.</p>
         </div>
       )}
 
-      <div>
-        <h1 className="font-display text-2xl font-bold text-cream-900">{title}</h1>
-        <p className="mt-1 text-sm text-cream-800/60">{subtitle}</p>
-      </div>
+      <PanelPageHeader
+        title={title}
+        subtitle={subtitle}
+        icon={Wallet}
+        accent={audience === 'member' ? 'brand' : audience === 'staff' ? 'warm' : 'violet'}
+      />
 
       {audience === 'member' && <MemberPayments />}
       {audience === 'staff' && <StaffPayments role={staffUser?.role} />}
       {audience === 'admin' && <AdminPayments />}
-    </div>
+    </PanelPageShell>
   )
 }

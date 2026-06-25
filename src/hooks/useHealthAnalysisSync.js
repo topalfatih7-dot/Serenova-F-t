@@ -1,19 +1,22 @@
 import { useEffect, useRef } from 'react'
 import { isHealthTestComplete } from '../data/healthTest'
+import { isHealthAnalysisStale } from '../services/aiAnalysis'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
-/** Sağlık testi tamam ama özet yoksa otomatik üretir. */
+/** Sağlık testi tamam ama özet yoksa veya eski şemadaysa otomatik üretir. */
 export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfile, createProgram }) {
   const syncing = useRef(false)
 
   useEffect(() => {
     if (!user?.id || syncing.current) return
     if (!isHealthTestComplete(user.healthTest, user.gender)) return
+
     const hasSummary =
       user.healthAnalysis?.generatedAt &&
       (user.healthAnalysis?.coachRecommendations?.exercises?.length ||
         user.healthAnalysis?.dietitianRecommendations?.mealPlan?.length)
-    if (hasSummary) return
+
+    if (hasSummary && !isHealthAnalysisStale(user.healthAnalysis)) return
 
     syncing.current = true
     syncMemberHealthAssets({
@@ -27,5 +30,14 @@ export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfi
       .finally(() => {
         syncing.current = false
       })
-  }, [user?.id, user?.healthTest, user?.healthAnalysis, exercises?.length, myPrograms?.length, updateProfile, createProgram])
+  }, [
+    user?.id,
+    user?.healthTest,
+    user?.healthAnalysis,
+    user?.healthAnalysis?.version,
+    exercises?.length,
+    myPrograms?.length,
+    updateProfile,
+    createProgram,
+  ])
 }

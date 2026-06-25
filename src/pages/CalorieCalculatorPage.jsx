@@ -15,6 +15,7 @@ import {
   notifyCalorieChatMessage,
   formatAnalysisReply,
 } from '../services/calorieChat'
+import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 
 function estimateMacros(totalCal) {
   return {
@@ -177,36 +178,38 @@ export default function CalorieCalculatorPage() {
 
   if (!isPaid) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-2 text-sm font-medium text-cream-800 shadow-sm transition hover:bg-cream-50">
+      <PanelPageShell maxWidth="max-w-4xl">
+        <button type="button" onClick={() => navigate(-1)} className="panel-back-btn">
           <ArrowLeft className="h-4 w-4" /> Geri Dön
         </button>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
-          <Flame className="mx-auto h-12 w-12 text-amber-500" />
+        <div className="glass-card-solid overflow-hidden p-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 text-white shadow-lg">
+            <Flame className="h-8 w-8" />
+          </div>
           <h1 className="mt-4 font-display text-xl font-bold text-cream-900">Kalori Hesaplayıcı</h1>
           <p className="mt-2 text-sm text-cream-800/70">Bu özellik Gümüş ve üzeri paketlerde kullanılabilir.</p>
-          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:scale-105">
             Planları İncele
           </Link>
         </div>
-      </div>
+      </PanelPageShell>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <button type="button" onClick={() => navigate(-1)} className="flex items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-2 text-sm font-medium text-cream-800 shadow-sm transition hover:bg-cream-50">
+    <PanelPageShell maxWidth="max-w-4xl">
+      <button type="button" onClick={() => navigate(-1)} className="panel-back-btn">
         <ArrowLeft className="h-4 w-4" /> Geri Dön
       </button>
 
-      <div>
-        <h1 className="font-display text-2xl font-bold text-cream-900">Kalori Hesapla</h1>
-        <p className="mt-1 text-sm text-cream-800/60">
-          {isPlatinum ? 'Yazarak veya fotoğrafla AI kalori analizi' : 'Ne yediğinizi yazın, AI analiz etsin'}
-        </p>
-      </div>
+      <PanelPageHeader
+        title="Kalori Hesapla"
+        subtitle={isPlatinum ? 'Yazarak veya fotoğrafla AI kalori analizi' : 'Ne yediğinizi yazın, AI analiz etsin'}
+        icon={Flame}
+        accent="flame"
+      />
 
-      <div className="flex rounded-2xl border border-cream-200 bg-white p-1.5 shadow-sm">
+      <div className="flex glass-card-solid p-1.5">
         {[
           { id: 'chat', icon: MessageSquare, label: 'Yazarak Analiz' },
           ...(isPlatinum ? [{ id: 'photo', icon: Camera, label: 'Fotoğrafla Analiz' }] : []),
@@ -384,7 +387,7 @@ export default function CalorieCalculatorPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </PanelPageShell>
   )
 }
 
