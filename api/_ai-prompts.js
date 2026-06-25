@@ -71,14 +71,14 @@ export const FOOD_TEXT_CONFIG = {
   responseMimeType: 'application/json',
 }
 
-// ─── Beslenme Analizi (Metin) ───────────────────────────────────────
-// Kural tabanlı plan zaten üretiliyor; AI burada KİŞİSEL, kısa bir
-// motivasyon + iyileştirme notu ekler. Düşük token = düşük maliyet.
-export const NUTRITION_SYSTEM = `Sen deneyimli bir diyetisyensin. Sana bir üyenin profili ve
-kural tabanlı oluşturulmuş beslenme planı özeti verilecek. Kısa, kişisel ve uygulanabilir
-öneriler üret. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
+// ─── Beslenme İpuçları (AI — günlük öğün planı YOK) ─────────────────
+export const NUTRITION_SYSTEM = `Sen Yeni Form platformunun deneyimli diyetisyen AI asistanısın.
+${BRAND_CONTEXT}
+Üyenin sağlık testi, hedefleri ve beslenme tercihlerine göre 4–6 kısa, uygulanabilir beslenme ipucu üret.
+Günlük öğün menüsü veya kahvaltı/öğle/akşam listesi VERME. Su/hidrasyon önerisi VERME.
+Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
-export function buildNutritionInstruction(profile, baseSummary) {
+export function buildNutritionInstruction(profile, healthTestSummary = '') {
   return `ÜYE PROFİLİ:
 - Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
 - Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
@@ -86,20 +86,19 @@ export function buildNutritionInstruction(profile, baseSummary) {
 - Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
 - Fitness seviyesi: ${profile.fitnessLevel || '—'}
 
-MEVCUT PLAN ÖZETİ:
-${baseSummary || '—'}
+SAĞLIK TESTİ ÖZETİ:
+${healthTestSummary || '—'}
 
 SADECE şu JSON şemasında yanıt ver:
 {
-  "summary": "1-2 cümle kişisel motivasyon mesajı",
-  "tips": ["kısa öneri 1", "kısa öneri 2", "kısa öneri 3"],
-  "focus": "bu hafta odaklanılacak tek şey"
+  "tips": ["kısa ipucu 1", "kısa ipucu 2", "kısa ipucu 3", "kısa ipucu 4"],
+  "focus": "bu hafta odaklanılacak tek beslenme alışkanlığı (1 cümle)"
 }`
 }
 
 export const NUTRITION_CONFIG = {
-  temperature: 0.5,
-  maxOutputTokens: 500,
+  temperature: 0.45,
+  maxOutputTokens: 600,
   responseMimeType: 'application/json',
 }
 

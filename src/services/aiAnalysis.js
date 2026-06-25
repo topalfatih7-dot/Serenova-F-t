@@ -5,15 +5,32 @@ import { describeHealthTest } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 2
+export const HEALTH_ANALYSIS_VERSION = 4
 
-export function isHealthAnalysisStale(analysis) {
+const GENERIC_WEEKLY_FOCUS =
+  /\(\d+\s*dk\)|HIIT|Full Body|Üst Vücut|Alt Vücut|Vücut Ağırlığı|Esneklik\s*&\s*Yoga|Kardiyo\s*&|İtme Hareketi|Çekme Hareketi|Olimpik/i
+
+export function isGenericWeeklyPlanDay(day) {
+  if (!day) return true
+  if (Array.isArray(day.exerciseNames) && day.exerciseNames.length > 0) return false
+  return GENERIC_WEEKLY_FOCUS.test(String(day.focus || ''))
+}
+
+export function isHealthAnalysisStale(analysis, libraryCount = 0) {
   if (!analysis?.generatedAt) return true
   if ((analysis.version || 0) < HEALTH_ANALYSIS_VERSION) return true
   if (analysis.dietitianRecommendations?.hydration != null) return true
+  if ((analysis.dietitianRecommendations?.mealPlan || []).length > 0) return true
+  if (!analysis.dietitianRecommendations?.aiGenerated) return true
+
   const weekly = analysis.coachRecommendations?.weeklyPlan || []
-  const hasExercises = (analysis.coachRecommendations?.exercises || []).length > 0
-  if (hasExercises && weekly.some((day) => day.focus && !Array.isArray(day.exerciseNames))) return true
+  if (weekly.some((day) => isGenericWeeklyPlanDay(day))) return true
+
+  if (libraryCount > 0) {
+    const hasLibraryNames = weekly.some((day) => day.exerciseNames?.length > 0)
+    if (!hasLibraryNames) return true
+  }
+
   return false
 }
 
@@ -24,7 +41,7 @@ export function generateHealthAnalysis(profile, exercises = []) {
   const goalCategories = mapGoalsToCategories(enriched.goals || [])
   const healthTestInsights = buildHealthTestInsights(enriched.healthTest, enriched.gender)
   const coachRecommendations = generateCoachList(enriched, exercises, goalCategories, healthTestInsights)
-  const dietitianRecommendations = generateDietitianPlan(enriched, healthTestInsights)
+  const dietitianRecommendations = { tips: [], focus: '', aiGenerated: false }
 
   return {
     version: HEALTH_ANALYSIS_VERSION,
@@ -46,6 +63,7 @@ function buildHealthTestInsights(healthTest = {}, gender) {
   if (!healthTest || typeof healthTest !== 'object') return []
   return describeHealthTest(healthTest, gender)
     .flatMap((section) => section.items.map((item) => `${item.label}: ${item.value}`))
+    .filter((line) => !/su\s*tüketim|günlük\s*su|water\s*intake/i.test(line))
     .slice(0, 12)
 }
 
@@ -265,13 +283,7 @@ function generateWeeklyPlan(profile, libraryExercises = []) {
   const valid = libraryExercises.filter((ex) => ex?.id && ex?.name)
 
   if (valid.length === 0) {
-    return schedule.map((slot) => ({
-      day: slot.day,
-      intensity: slot.intensity,
-      focus: 'Kütüphanede hareket tanımlandığında plan güncellenecek',
-      exerciseNames: [],
-      exercises: [],
-    }))
+    return []
   }
 
   const buckets = schedule.map((slot) => ({ ...slot, items: [] }))
@@ -284,167 +296,8 @@ function generateWeeklyPlan(profile, libraryExercises = []) {
     intensity,
     exerciseNames: items.map((ex) => ex.name),
     exercises: items.map((ex) => ({ id: ex.id, name: ex.name, category: ex.category || '' })),
-    focus: items.length > 0 ? items.map((ex) => ex.name).join(' · ') : 'Aktif dinlenme / hafif yürüyüş',
+    focus: items.map((ex) => ex.name).join(' · '),
   }))
 }
 
-// Beslenme planı oluştur
-function generateDietitianPlan(profile, healthTestInsights = []) {
-  const prefs = profile.nutritionPrefs || []
-  const goals = profile.goals || []
-  const calories = estimateDailyCalories(profile)
-
-  const mealPlan = buildMealPlan(prefs)
-  const tips = buildNutritionTips(prefs, goals, profile.healthTest)
-  if (healthTestInsights.some((t) => t.includes('alerji'))) {
-    tips.unshift('Bildirilen besin alerjileri/intoleranslar plana göre dikkate alınmalıdır.')
-  }
-
-  return {
-    calories,
-    mealPlan,
-    tips,
-    macros: estimateMacros(goals, calories?.recommended),
-    message: buildNutritionMessage(prefs),
-  }
-}
-
-function buildMealPlan(prefs) {
-  const isVegan = prefs.includes('vegan')
-  const isVegetarian = prefs.includes('vegetarian')
-  const isHighProtein = prefs.includes('high-protein')
-  const isKeto = prefs.includes('keto')
-  const isMediterranean = prefs.includes('mediterranean')
-
-  if (isKeto) {
-    return [
-      { meal: 'Kahvaltı', suggestion: 'Yumurta (3 adet), avokado, peynir, yeşil yapraklılar' },
-      { meal: 'Öğle', suggestion: 'Tavuk göğsü, zeytinyağlı sebze kavurması' },
-      { meal: 'Ara Öğün', suggestion: 'Ceviz, badem, tuzu azaltılmış peynir' },
-      { meal: 'Akşam', suggestion: 'Somon veya kırmızı et, brokoli, yeşil salata' },
-    ]
-  }
-  if (isVegan) {
-    return [
-      { meal: 'Kahvaltı', suggestion: 'Yulaf ezmesi, mevsim meyveleri, chia tohumu, bitki sütü' },
-      { meal: 'Öğle', suggestion: 'Mercimek çorbası, tam buğday ekmeği, salata' },
-      { meal: 'Ara Öğün', suggestion: 'Muz veya elma, fıstık ezmesi' },
-      { meal: 'Akşam', suggestion: 'Nohut yemeği, kinoa, zeytinyağlı sebze' },
-    ]
-  }
-  if (isVegetarian) {
-    return [
-      { meal: 'Kahvaltı', suggestion: 'Menemen veya omlet, tam buğday tost, domates' },
-      { meal: 'Öğle', suggestion: 'Peynirli makarna veya sebze güveç, ayran' },
-      { meal: 'Ara Öğün', suggestion: 'Yoğurt, fındık, kuru meyve' },
-      { meal: 'Akşam', suggestion: 'Mercimek köftesi, yeşil salata, sebze çorbası' },
-    ]
-  }
-  if (isMediterranean) {
-    return [
-      { meal: 'Kahvaltı', suggestion: 'Zeytin, peynir, domates, salatalık, tam buğday ekmek' },
-      { meal: 'Öğle', suggestion: 'Balık veya tavuk, zeytinyağlı sebze, bulgur pilavı' },
-      { meal: 'Ara Öğün', suggestion: 'Humus, tam buğday kraker, taze meyve' },
-      { meal: 'Akşam', suggestion: 'Izgara balık, kısır, yoğurtlu meze' },
-    ]
-  }
-  if (isHighProtein) {
-    return [
-      { meal: 'Kahvaltı', suggestion: 'Protein shake veya yumurta beyazı (4–5 adet), yulaf, muz' },
-      { meal: 'Öğle', suggestion: 'Tavuk göğsü 200g, pirinç/bulgur, brokoli' },
-      { meal: 'Ara Öğün', suggestion: 'Yoğurt (200g), fındık karışımı' },
-      { meal: 'Akşam', suggestion: 'Kırmızı et veya balık 150g, tatlı patates, salata' },
-    ]
-  }
-  // Varsayılan dengeli plan
-  return [
-    { meal: 'Kahvaltı', suggestion: 'Yulaf veya tam buğday tost, yumurta, meyve, çay/kahve' },
-    { meal: 'Öğle', suggestion: 'Protein kaynağı (tavuk/balık/kuru baklagil), sebze, pilav/bulgur' },
-    { meal: 'Ara Öğün', suggestion: 'Meyve, yoğurt veya kuruyemiş (küçük porsiyon)' },
-    { meal: 'Akşam', suggestion: 'Hafif protein, bol salata, çorba veya sebze yemeği' },
-  ]
-}
-
-function buildNutritionTips(prefs, goals, healthTest = {}) {
-  const tips = []
-
-  if (goals.includes('fatburn') || goals.includes('weight')) {
-    tips.push('Öğünlerinizi günde 3 ana + 1–2 ara öğün şeklinde düzenleyin.')
-    tips.push('Şeker ve işlenmiş karbonhidratları minimize edin.')
-    tips.push('Her öğünde protein tüketmeye özen gösterin.')
-  }
-  if (goals.includes('muscle')) {
-    tips.push('Antrenman sonrası 30–60 dakika içinde protein alın.')
-    tips.push('Günlük protein hedefi: vücut ağırlığının 1.6–2g/kg\'ı.')
-    tips.push('Karbonhidratları antrenman öncesi ve sonrasında yoğunlaştırın.')
-  }
-  if (prefs.includes('gluten-free')) {
-    tips.push('Buğday, arpa ve çavdar içeren ürünlerden kaçının.')
-    tips.push('Pirinç, mısır, kinoa gibi glutensiz tahılları tercih edin.')
-  }
-  if (prefs.includes('intermittent')) {
-    tips.push('Aralıklı oruç pencerenizde beslenme yoğunluğunuzu koruyun.')
-  }
-  if (goals.includes('heart')) {
-    tips.push('Omega-3 içeriği yüksek somon, uskumru gibi balıkları haftada 2–3 kez tüketin.')
-    tips.push('Tuz tüketiminizi sınırlandırın (günlük 5g altı).')
-  }
-
-  if (healthTest?.mealsPerDay === '1-2') {
-    tips.push('Gün içine yayılmış 3 ana öğün planı oluşturmayı deneyin.')
-  }
-  if ((healthTest?.eatingHabits || []).includes('night_snack')) {
-    tips.push('Gece atıştırmalıklarını azaltmak için akşam yemeğinden sonra bitki çayı tercih edin.')
-  }
-  if ((healthTest?.eatingHabits || []).includes('fast_food')) {
-    tips.push('Fast food yerine haftalık meal prep ile ev yapımı öğünler planlayın.')
-  }
-  if (healthTest?.stressLevel === 'high') {
-    tips.push('Stres yönetimi için magnezyum ve omega-3 içeren besinleri öğünlerinize ekleyin.')
-  }
-  if (String(healthTest?.foodAllergies || '').trim()) {
-    tips.push(`Alerji/intolerans notunuz (${healthTest.foodAllergies}) plana göre dikkate alınmalıdır.`)
-  }
-
-  tips.push('Mevsim sebze ve meyvelerini günlük öğünlerinize dahil edin.')
-
-  return tips.filter((t) => !/\bsu\b/i.test(t)).slice(0, 5)
-}
-
-function estimateMacros(goals, calories) {
-  if (!calories) return null
-  let protein, carb, fat
-
-  if (goals.includes('muscle')) {
-    protein = Math.round((calories * 0.35) / 4)
-    carb = Math.round((calories * 0.45) / 4)
-    fat = Math.round((calories * 0.20) / 9)
-  } else if (goals.includes('fatburn') || goals.includes('weight')) {
-    protein = Math.round((calories * 0.40) / 4)
-    carb = Math.round((calories * 0.30) / 4)
-    fat = Math.round((calories * 0.30) / 9)
-  } else {
-    protein = Math.round((calories * 0.30) / 4)
-    carb = Math.round((calories * 0.45) / 4)
-    fat = Math.round((calories * 0.25) / 9)
-  }
-
-  return { protein, carb, fat, unit: 'gram' }
-}
-
-function buildNutritionMessage(prefs) {
-  const prefMap = {
-    vegan: 'vegan tercihlerinize',
-    vegetarian: 'vejetaryen tercihlerinize',
-    'high-protein': 'yüksek protein hedeflerinize',
-    'low-carb': 'düşük karbonhidrat tercihinize',
-    keto: 'ketojenik beslenme tarzınıza',
-    mediterranean: 'Akdeniz diyeti tercihlerinize',
-    'gluten-free': 'glutensiz beslenme gereksiniminize',
-    intermittent: 'aralıklı oruç programınıza',
-    balanced: 'dengeli beslenme anlayışınıza',
-  }
-  const activePref = prefs.find((p) => prefMap[p])
-  const prefText = activePref ? prefMap[activePref] : 'genel beslenme hedeflerinize'
-  return `${prefText.charAt(0).toUpperCase() + prefText.slice(1)} göre kişiselleştirilmiş beslenme planı hazırlandı. Diyetisyen görüşmesi için Premium planlara geçiş yapabilirsiniz.`
-}
+// Beslenme ipuçları AI ile üretilir (api/ai-nutrition-tips.js → memberHealthSync)

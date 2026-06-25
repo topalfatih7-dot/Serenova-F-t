@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, CheckCircle, Target, Play, CalendarDays, ClipboardList, Star, HeartPulse,
+  Check, CheckCircle, Play, CalendarDays, ClipboardList, Star, HeartPulse, Sparkles,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -33,6 +33,10 @@ function HealthAnalysisPanel({ analysis }) {
   if (!analysis) return null
 
   const { bmi, bmiCategory, dailyCalories, coachRecommendations, dietitianRecommendations, fitnessScore, healthTestInsights, estimatedMetrics } = analysis
+
+  const libraryWeeklyPlan = (coachRecommendations?.weeklyPlan || []).filter(
+    (day) => day.exerciseNames?.length > 0,
+  )
 
   const bmiColors = {
     Normal: 'text-sage-600 bg-sage-50 border-sage-200',
@@ -120,47 +124,32 @@ function HealthAnalysisPanel({ analysis }) {
                 )}
               </div>
 
-              {/* Makro Besinler */}
-              {dietitianRecommendations?.macros && (
+              {libraryWeeklyPlan.length > 0 && (
                 <div>
                   <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <Target className="h-4 w-4 text-brand-500" /> Günlük Makro Hedefler
+                    <CalendarDays className="h-4 w-4 text-brand-500" /> Haftalık Antrenman Planı
+                    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                      Kütüphane
+                    </span>
                   </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Protein', value: dietitianRecommendations.macros.protein, color: 'bg-red-100 text-red-700 border-red-200' },
-                      { label: 'Karbonhidrat', value: dietitianRecommendations.macros.carb, color: 'bg-amber-100 text-amber-700 border-amber-200' },
-                      { label: 'Yağ', value: dietitianRecommendations.macros.fat, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-                    ].map((m) => (
-                      <div key={m.label} className={`rounded-xl border px-3 py-2.5 text-center ${m.color}`}>
-                        <p className="text-lg font-bold">{m.value}g</p>
-                        <p className="text-xs font-medium">{m.label}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {libraryWeeklyPlan.map((day) => (
+                      <div key={day.day} className="rounded-xl border border-cream-100 bg-white/80 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-brand-700">{day.day}</p>
+                        <p className="text-sm font-medium text-cream-900">
+                          {day.exerciseNames.join(' · ')}
+                        </p>
+                        <p className="text-[11px] text-cream-800/50">Yoğunluk: {day.intensity}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {coachRecommendations?.weeklyPlan?.length > 0 && (
-                <div>
-                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <CalendarDays className="h-4 w-4 text-brand-500" /> Haftalık Antrenman Planı
-                  </p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {coachRecommendations.weeklyPlan.map((day) => (
-                      <div key={day.day} className="rounded-xl border border-cream-100 bg-white/80 px-3 py-2.5">
-                        <p className="text-xs font-semibold text-brand-700">{day.day}</p>
-                        <p className="text-sm font-medium text-cream-900">{day.focus}</p>
-                        {day.exerciseNames?.length > 0 && (
-                          <p className="mt-1 text-[11px] text-brand-600/80">
-                            Kütüphane: {day.exerciseNames.join(', ')}
-                          </p>
-                        )}
-                        <p className="text-[11px] text-cream-800/50">Yoğunluk: {day.intensity}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {libraryWeeklyPlan.length === 0 && (coachRecommendations?.exercises?.length > 0 || coachRecommendations?.totalCount > 0) && (
+                <p className="rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 text-xs text-cream-800/70">
+                  Haftalık plan kütüphane hareketlerinden oluşturuluyor… Sayfayı yenileyin veya bir süre sonra tekrar kontrol edin.
+                </p>
               )}
 
               {/* Video Önerileri */}
@@ -198,40 +187,37 @@ function HealthAnalysisPanel({ analysis }) {
                 </div>
               )}
 
-              {/* Beslenme planı */}
-              {dietitianRecommendations?.mealPlan?.length > 0 && (
+              {/* Beslenme İpuçları (AI) */}
+              {(dietitianRecommendations?.tips?.length > 0 || !dietitianRecommendations?.aiGenerated) && (
                 <div>
-                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <Apple className="h-4 w-4 text-sage-500" /> Günlük Beslenme Önerisi
-                  </p>
-                  {dietitianRecommendations.message && (
-                    <p className="mb-3 text-xs leading-relaxed text-cream-800/65">{dietitianRecommendations.message}</p>
-                  )}
-                  <div className="space-y-2">
-                    {dietitianRecommendations.mealPlan.map((m) => (
-                      <div key={m.meal} className="rounded-xl border border-sage-100 bg-sage-50/60 px-3 py-2.5">
-                        <p className="text-xs font-semibold text-sage-800">{m.meal}</p>
-                        <p className="text-sm text-cream-900">{m.suggestion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Beslenme İpuçları */}
-              {dietitianRecommendations?.tips?.length > 0 && (
-                <div>
-                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                  <p className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-cream-900">
                     <Salad className="h-4 w-4 text-sage-500" /> Beslenme İpuçları
+                    {dietitianRecommendations?.aiGenerated && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                        <Sparkles className="h-3 w-3" /> AI
+                      </span>
+                    )}
                   </p>
+                  {dietitianRecommendations?.focus && (
+                    <p className="mb-3 rounded-xl border border-sage-100 bg-sage-50/60 px-3 py-2 text-xs leading-relaxed text-sage-900">
+                      <span className="font-semibold">Bu hafta odak: </span>
+                      {dietitianRecommendations.focus}
+                    </p>
+                  )}
+                  {!dietitianRecommendations?.tips?.length ? (
+                    <p className="text-xs text-cream-800/60">AI beslenme ipuçları hazırlanıyor…</p>
+                  ) : (
                   <ul className="space-y-1.5">
-                    {dietitianRecommendations.tips.map((tip, i) => (
+                    {dietitianRecommendations.tips
+                      .filter((tip) => !/\bsu\b|litre|hidrasyon/i.test(tip))
+                      .map((tip, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-cream-800/70">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage-500" />
                         {tip}
                       </li>
                     ))}
                   </ul>
+                  )}
                 </div>
               )}
             </div>

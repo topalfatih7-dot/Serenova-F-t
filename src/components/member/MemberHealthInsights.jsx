@@ -58,11 +58,12 @@ function AnalysisBlock({ analysis }) {
           {analysis.coachRecommendations.message}
         </p>
       )}
-      {analysis.dietitianRecommendations?.message && (
-        <p className="mt-2 text-xs leading-relaxed text-cream-800/75">
-          <span className="font-semibold text-cream-900">Beslenme: </span>
-          {analysis.dietitianRecommendations.message}
-        </p>
+      {analysis.dietitianRecommendations?.tips?.length > 0 && (
+        <ul className="mt-2 space-y-1 border-t border-brand-100/80 pt-3">
+          {analysis.dietitianRecommendations.tips.slice(0, 4).map((tip, i) => (
+            <li key={i} className="text-xs text-cream-800/70">• {tip}</li>
+          ))}
+        </ul>
       )}
       {analysis.healthTestInsights?.length > 0 && (
         <ul className="mt-3 space-y-1 border-t border-brand-100/80 pt-3">

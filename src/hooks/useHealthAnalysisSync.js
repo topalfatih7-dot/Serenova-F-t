@@ -6,6 +6,7 @@ import { syncMemberHealthAssets } from '../services/memberHealthSync'
 /** Sağlık testi tamam ama özet yoksa veya eski şemadaysa otomatik üretir. */
 export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfile, createProgram }) {
   const syncing = useRef(false)
+  const libraryCount = exercises?.length ?? 0
 
   useEffect(() => {
     if (!user?.id || syncing.current) return
@@ -13,10 +14,13 @@ export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfi
 
     const hasSummary =
       user.healthAnalysis?.generatedAt &&
+      user.healthAnalysis?.dietitianRecommendations?.aiGenerated &&
       (user.healthAnalysis?.coachRecommendations?.exercises?.length ||
-        user.healthAnalysis?.dietitianRecommendations?.mealPlan?.length)
+        user.healthAnalysis?.dietitianRecommendations?.tips?.length)
 
-    if (hasSummary && !isHealthAnalysisStale(user.healthAnalysis)) return
+    const stale = isHealthAnalysisStale(user.healthAnalysis, libraryCount)
+
+    if (hasSummary && !stale) return
 
     syncing.current = true
     syncMemberHealthAssets({
@@ -35,7 +39,7 @@ export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfi
     user?.healthTest,
     user?.healthAnalysis,
     user?.healthAnalysis?.version,
-    exercises?.length,
+    libraryCount,
     myPrograms?.length,
     updateProfile,
     createProgram,
