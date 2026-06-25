@@ -13,8 +13,12 @@ async function notifyHeaders() {
   return h
 }
 
+/** AI chat — varsayılan açık; yalnızca VITE_AI_*_ENABLED=false ile kapatılır. */
 export function isCalorieAiEnabled() {
-  return import.meta.env.VITE_AI_VISION_ENABLED === 'true'
+  const chat = import.meta.env.VITE_AI_CHAT_ENABLED
+  const vision = import.meta.env.VITE_AI_VISION_ENABLED
+  if (chat === 'false' && vision === 'false') return false
+  return chat !== 'false' || vision !== 'false'
 }
 
 /**

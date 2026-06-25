@@ -9,12 +9,11 @@ import {
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
 import { hasPhotoCalorieAccess, hasManualCalorieAccess } from '../data/membershipPlans'
-import { analyzeFoodPhoto, isAiVisionEnabled } from '../services/aiVision'
+import { analyzeFoodPhoto } from '../services/aiVision'
 import {
   analyzeFoodText,
   notifyCalorieChatMessage,
   formatAnalysisReply,
-  isCalorieAiEnabled,
 } from '../services/calorieChat'
 
 function estimateMacros(totalCal) {
@@ -59,7 +58,6 @@ export default function CalorieCalculatorPage() {
 
   const isPaid = hasManualCalorieAccess(membership)
   const isPlatinum = hasPhotoCalorieAccess(membership)
-  const aiEnabled = isCalorieAiEnabled()
 
   const [mode, setMode] = useState('chat')
   const [chatMessages, setChatMessages] = useState([
@@ -103,41 +101,29 @@ export default function CalorieCalculatorPage() {
       membership,
     }).catch(() => {})
 
-    if (aiEnabled) {
-      const result = await analyzeFoodText(text)
-      if (result.ok) {
-        setLastAnalysis(result)
-        const entry = buildCalorieLogEntry({ mode: 'text', input: text, analysis: result })
-        updateProfile({ calorieHistory: appendCalorieHistory(user?.calorieHistory, entry) }).catch(() => {})
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `a-${Date.now()}`,
-            role: 'assistant',
-            type: 'success',
-            content: formatAnalysisReply(result),
-            analysis: result,
-          },
-        ])
-      } else {
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `e-${Date.now()}`,
-            role: 'system',
-            type: 'error',
-            content: result.error || 'AI analizi yapılamadı. Lütfen tekrar deneyin.',
-          },
-        ])
-      }
+    const result = await analyzeFoodText(text)
+    if (result.ok) {
+      setLastAnalysis(result)
+      const entry = buildCalorieLogEntry({ mode: 'text', input: text, analysis: result })
+      updateProfile({ calorieHistory: appendCalorieHistory(user?.calorieHistory, entry) }).catch(() => {})
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          type: 'success',
+          content: formatAnalysisReply(result),
+          analysis: result,
+        },
+      ])
     } else {
       setChatMessages((prev) => [
         ...prev,
         {
-          id: `w-${Date.now()}`,
+          id: `e-${Date.now()}`,
           role: 'system',
-          type: 'warning',
-          content: 'AI analizi şu an kapalı. VITE_AI_VISION_ENABLED=true ve GEMINI_API_KEY ayarlayın.',
+          type: 'error',
+          content: result.error || 'AI analizi yapılamadı. Lütfen birkaç dakika sonra tekrar deneyin.',
         },
       ])
     }
@@ -157,10 +143,6 @@ export default function CalorieCalculatorPage() {
 
   const handlePhotoAnalyze = async () => {
     if (!pendingFile || analyzing) return
-    if (!isAiVisionEnabled()) {
-      toast('Fotoğraf analizi için AI yapılandırması gerekli.', 'info')
-      return
-    }
     setAnalyzing(true)
     setPhotoResult(null)
     const result = await analyzeFoodPhoto(pendingFile)

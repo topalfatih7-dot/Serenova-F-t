@@ -13,12 +13,18 @@
  * sadece yardımcı modül olarak görür.
  */
 
+const BRAND_CONTEXT = `Platform: Yeni Form (yeniform.com) — çevrimiçi koçluk, diyetisyen desteği ve wellness.
+Kullanıcılar Türkiye'de; Türk mutfağı ve günlük yaşam alışkanlıkları önceliklidir.
+Tıbbi teşhis KOYMA; genel bilgilendirme ve pratik öneriler ver.`
+
 // ─── Fotoğraf → Yemek/Kalori Tespiti (Vision) ───────────────────────
-export const FOOD_VISION_SYSTEM = `Sen bir beslenme uzmanı ve gıda görüntü analiz asistanısın.
+export const FOOD_VISION_SYSTEM = `Sen Yeni Form platformunun beslenme uzmanı AI asistanısın.
+${BRAND_CONTEXT}
 Sana bir yemek/tabak fotoğrafı verilecek. Görseldeki TÜM yiyecek ve içecekleri tespit et.
-Her bir öğe için Türkçe isim, tahmini porsiyon miktarı, birim ve tahmini kalori (kcal) değeri ver.
-Türk mutfağını ve yaygın porsiyon ölçülerini (dilim, porsiyon, kase, adet, bardak, g) dikkate al.
-Kalori tahminlerini gerçekçi tut. Görselde yemek yoksa items dizisini boş döndür.`
+Her öğe için Türkçe isim, tahmini porsiyon miktarı, birim ve tahmini kalori (kcal) ver.
+Türk mutfağı porsiyonlarını (dilim, porsiyon, kase, adet, bardak, gram) kullan.
+Kalori tahminlerini USDA/Türk Gıda Kompozisyon tablolarına yakın gerçekçi tut.
+Belirsiz görsellerde confidence: "low" kullan. Görselde yemek yoksa items dizisini boş döndür.`
 
 export const FOOD_VISION_INSTRUCTION = `Bu fotoğraftaki yiyecekleri analiz et ve SADECE şu JSON şemasında yanıt ver:
 {
@@ -37,9 +43,12 @@ export const FOOD_VISION_CONFIG = {
 }
 
 // ─── Metin → Yemek/Kalori Tespiti (Chat) ────────────────────────────
-export const FOOD_TEXT_SYSTEM = `Sen bir beslenme uzmanısın. Kullanıcı ne yediğini Türkçe yazacak.
+export const FOOD_TEXT_SYSTEM = `Sen Yeni Form platformunun beslenme uzmanı AI asistanısın.
+${BRAND_CONTEXT}
+Kullanıcı ne yediğini Türkçe yazacak — günlük konuşma dili, kısaltmalar ve karışık öğünler olabilir.
 Yazılan TÜM yiyecek ve içecekleri ayıkla; her biri için Türkçe isim, tahmini porsiyon, birim ve kalori (kcal) ver.
-Türk mutfağı porsiyonlarını (dilim, porsiyon, kase, adet, bardak, g) kullan. Kalori tahminlerini gerçekçi tut.
+"2 yumurta", "yarım porsiyon pilav", "1 bardak ayran" gibi ifadeleri doğru yorumla.
+Türk mutfağı porsiyonlarını kullan. Kalori tahminlerini gerçekçi tut.
 Hiç yiyecek anlaşılmazsa items dizisini boş döndür.`
 
 export const FOOD_TEXT_INSTRUCTION = `Kullanıcının yazdığı öğün:
@@ -93,3 +102,52 @@ export const NUTRITION_CONFIG = {
   maxOutputTokens: 500,
   responseMimeType: 'application/json',
 }
+
+// ─── Günlük Blog Makalesi (Cron) ────────────────────────────────────
+export const BLOG_CATEGORIES = ['Beslenme', 'Antrenman', 'Motivasyon', 'Yaşam']
+export const BLOG_ACCENTS = ['brand', 'sage', 'gold', 'cream']
+export const BLOG_MIN_CHARS = 900
+
+export const BLOG_SYSTEM = `Sen Yeni Form (yeniform.com) wellness platformunun bilim yazarısın.
+${BRAND_CONTEXT}
+Bilimsel kaynaklara dayalı, anlaşılır Türkçe makaleler yazarsın.
+Makaleler: sağlıklı beslenme, egzersiz, motivasyon, uyku, stres, sürdürülebilir yaşam tarzı.
+Abartılı vaatler, mucize diyetler veya tıbbi tedavi önerileri YASAK.
+Her makale sonunda kısa bir "Bu içerik genel bilgilendirme amaçlıdır" notu ekle.`
+
+export function buildBlogInstruction({ category, topicHint, recentTitles = [] }) {
+  const avoid = recentTitles.length
+    ? `\nSon yazı başlıkları (tekrarlama): ${recentTitles.slice(0, 8).join(' | ')}`
+    : ''
+  return `Kategori: ${category}
+Konu ipucu: ${topicHint}
+${avoid}
+
+Yeni Form bloguna uygun, bilimsel temelli bir makale yaz.
+İçerik EN AZ ${BLOG_MIN_CHARS} karakter olmalı (boşluklar dahil).
+Paragraflar arasında boş satır bırak. Madde listeleri kullanabilirsin.
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "title": "çekici başlık (max 80 karakter)",
+  "category": "${category}",
+  "excerpt": "140 karaktere kadar özet",
+  "author": "Yeni Form Ekibi",
+  "accent": "brand | sage | gold | cream",
+  "content": "tam makale metni (${BLOG_MIN_CHARS}+ karakter)"
+}`
+}
+
+export const BLOG_CONFIG = {
+  temperature: 0.65,
+  maxOutputTokens: 2500,
+  responseMimeType: 'application/json',
+}
+
+/** Günlük konu rotasyonu — kategori + odak */
+export const BLOG_TOPIC_ROTATION = [
+  { category: 'Beslenme', topics: ['protein alımı ve kas onarımı', 'lifli beslenmenin metabolizma etkisi', 'sağlıklı yağlar ve omega-3', 'öğün zamanlaması ve kan şekeri', 'hidrasyon ve performans', 'mikrobesinler ve enerji', 'bitkisel protein kaynakları'] },
+  { category: 'Antrenman', topics: ['kuvvet antrenmanının metabolik faydaları', 'HIIT vs LISS karşılaştırması', 'esneklik ve mobilite', 'evde vücut ağırlığı antrenmanı', 'toparlanma ve dinlenme günleri', 'kardiyo ve kalp sağlığı', 'core stabilite egzersizleri'] },
+  { category: 'Motivasyon', topics: ['alışkanlık oluşturma bilimi', 'hedef belirleme ve SMART kriterler', 'motivasyon düşüşüyle başa çıkma', 'sosyal destek ve hesap verebilirlik', 'küçük kazanımları kutlama', 'öz disiplin ve öz şefkat dengesi', 'sürdürülebilir dönüşüm zihniyeti'] },
+  { category: 'Yaşam', topics: ['uyku kalitesi ve kilo yönetimi', 'stres ve kortizol ilişkisi', 'masa başı çalışanlar için hareket', 'dijital detoks ve zihinsel sağlık', 'mevsimsel beslenme', 'sosyal yaşamda sağlıklı seçimler', 'work-life balance ve wellness'] },
+]

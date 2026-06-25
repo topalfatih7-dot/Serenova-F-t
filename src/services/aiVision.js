@@ -13,8 +13,9 @@ const JPEG_QUALITY = 0.8
  * Gerçek anahtar sunucuda olduğundan, bu yalnızca arayüz kararı içindir.
  * VITE_AI_VISION_ENABLED=true ise UI gerçek analiz dener; değilse demo moda düşer.
  */
+/** AI vision — varsayılan açık; yalnızca VITE_AI_VISION_ENABLED=false ile kapatılır. */
 export function isAiVisionEnabled() {
-  return import.meta.env.VITE_AI_VISION_ENABLED === 'true'
+  return import.meta.env.VITE_AI_VISION_ENABLED !== 'false'
 }
 
 /**

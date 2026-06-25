@@ -77,4 +77,28 @@ export function requireNotifySecret(req) {
   return { ok: true }
 }
 
+/**
+ * Vercel Cron veya manuel tetikleme — CRON_SECRET ile korunur.
+ * Vercel otomatik olarak Authorization: Bearer <CRON_SECRET> gönderir.
+ */
+export function requireCronSecret(req) {
+  const secret = process.env.CRON_SECRET
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+
+  if (!secret) {
+    if (isProd) {
+      return { ok: false, status: 503, error: 'CRON_SECRET production ortamında zorunludur.' }
+    }
+    return { ok: true, skipped: true }
+  }
+
+  const auth = req.headers.authorization || ''
+  if (auth === `Bearer ${secret}`) return { ok: true }
+
+  const header = req.headers['x-cron-secret']
+  if (header === secret) return { ok: true }
+
+  return { ok: false, status: 401, error: 'Yetkisiz cron isteği' }
+}
+
 export { getBearerToken, getUserFromRequest }

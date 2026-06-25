@@ -2,6 +2,12 @@
   "buildCommand": "npm run build",
   "devCommand": "vite --port 5173",
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/ai-blog-generate",
+      "schedule": "0 5 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
