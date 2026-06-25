@@ -20,6 +20,17 @@
 --  NOT: Üyeye ait tüm detaylar (sağlık testi dahil) members.data JSONB
 --  içinde tutulur — yeni/detaylı sağlık testi için ek tablo gerekmez.
 --
+--  members.data önemli anahtarlar:
+--    healthTest      — kayıt/HealthTestWidget sağlık testi cevapları (JSONB)
+--    healthAnalysis  — aiAnalysis.generateHealthAnalysis() çıktısı (VKİ, kalori,
+--                      coachRecommendations.exercises[], dietitianRecommendations.mealPlan[])
+--    goals, nutritionPrefs, fitnessLevel, weight, height, age, calorieHistory, …
+--
+--  posts.data önemli anahtarlar:
+--    title, category, excerpt, author, readMinutes, accent, content,
+--    coverImage, coverImageAlt  — blog kapak görseli (kategori bazlı Unsplash URL)
+--    createdAt, updatedAt
+--
 --  Admin girişi:  admin@serenova.fit  /  Serenova2026!
 --  (Değiştirirseniz aşağıdaki is_admin(), handle_new_user() ve en alttaki
 --   admin bloğundaki e-postayı; ayrıca src/config/brand.js dosyasını güncelleyin.)
@@ -96,7 +107,7 @@ create table if not exists public.programs (
   created_at timestamptz not null default now()
 );
 
--- Blog yazıları
+-- Blog yazıları (içerik + kapak görseli posts.data JSONB içinde)
 create table if not exists public.posts (
   id uuid primary key default gen_random_uuid(),
   published boolean not null default true,

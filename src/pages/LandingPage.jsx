@@ -14,6 +14,7 @@ import RotatingHeroText from '../components/landing/RotatingHeroText'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import HowItWorksSection from '../components/landing/HowItWorksSection'
 import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
+import LatestBlogPosts from '../components/landing/LatestBlogPosts'
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS, sortPlansForDisplay } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
@@ -36,7 +37,7 @@ const fadeUp = {
 }
 
 export default function LandingPage() {
-  const { testimonials, faqs, plans, successStories } = useApp()
+  const { testimonials, faqs, plans, successStories, posts } = useApp()
   const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
   const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
@@ -326,6 +327,9 @@ export default function LandingPage() {
 
       {/* BAŞARI HİKAYELERİ ÖNİZLEME */}
       <SuccessStoriesPreview stories={successStories} />
+
+      {/* SON BLOG YAZILARI */}
+      <LatestBlogPosts posts={posts} limit={3} />
 
       {/* ÜYELER NE DİYOR */}
       {testimonials.length > 0 && (

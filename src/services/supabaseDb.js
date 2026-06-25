@@ -13,6 +13,7 @@ import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths 
 import { notifyTelegram } from './telegramNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile } from '../data/staffProfile'
+import { coverForCategory } from '../utils/blogImages.js'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { getSiteUrl } from '../config/seo'
 
@@ -821,16 +822,22 @@ export async function removeStaff(id) {
 export async function addPost(data) {
   const content = data.content || ''
   const readMinutes = data.readMinutes || estimateReadMinutes(content)
+  const category = data.category || 'Yaşam'
+  const cover = data.coverImage
+    ? { coverImage: data.coverImage, coverImageAlt: data.coverImageAlt || '' }
+    : coverForCategory(category)
   const { data: row, error } = await supabase.from('posts').insert({
     published: data.published !== false,
     data: {
       title: data.title,
-      category: data.category || 'Yaşam',
+      category,
       excerpt: data.excerpt || '',
       author: data.author || 'Yeni Form Ekibi',
       readMinutes,
       accent: data.accent || 'brand',
       content,
+      coverImage: cover.coverImage,
+      coverImageAlt: cover.coverImageAlt,
       createdAt: data.createdAt || today(),
       updatedAt: today(),
     },
@@ -845,16 +852,22 @@ export async function editPost(id, patch) {
   if (!current) return
   const merged = { ...rowToPost(current), ...patch }
   const content = merged.content || ''
+  const category = merged.category || 'Yaşam'
+  const cover = merged.coverImage
+    ? { coverImage: merged.coverImage, coverImageAlt: merged.coverImageAlt || merged.title || '' }
+    : coverForCategory(category)
   await supabase.from('posts').update({
     published: merged.published !== false,
     data: {
       title: merged.title,
-      category: merged.category,
+      category,
       excerpt: merged.excerpt,
       author: merged.author,
       readMinutes: merged.readMinutes || estimateReadMinutes(content),
       accent: merged.accent,
       content,
+      coverImage: cover.coverImage,
+      coverImageAlt: cover.coverImageAlt,
       createdAt: merged.createdAt,
       updatedAt: today(),
     },

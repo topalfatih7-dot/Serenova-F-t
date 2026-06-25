@@ -7,13 +7,7 @@ import { tr } from 'date-fns/locale'
 import { useApp } from '../context/AppContext'
 import SeoHead from '../components/seo/SeoHead'
 import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription } from '../config/seo'
-
-const ACCENTS = {
-  brand: 'from-brand-400 to-brand-600',
-  sage: 'from-sage-400 to-sage-600',
-  gold: 'from-gold-400 to-amber-500',
-  cream: 'from-cream-300 to-cream-500',
-}
+import { resolveBlogCover } from '../utils/blogImages'
 
 export default function BlogPostPage() {
   const { id } = useParams()
@@ -30,6 +24,7 @@ export default function BlogPostPage() {
   }
 
   const paragraphs = post.content.split('\n\n')
+  const cover = resolveBlogCover(post)
 
   return (
     <>
@@ -52,13 +47,19 @@ export default function BlogPostPage() {
         <ArrowLeft className="h-4 w-4" /> Tüm yazılar
       </Link>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`mt-6 rounded-3xl bg-gradient-to-br p-8 text-white ${ACCENTS[post.accent] || ACCENTS.brand}`}>
-        <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur">{post.category}</span>
-        <h1 className="mt-4 font-display text-3xl font-bold leading-tight sm:text-4xl">{post.title}</h1>
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/80">
-          <span className="flex items-center gap-1.5"><User className="h-4 w-4" /> {post.author}</span>
-          <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {post.readMinutes} dk okuma</span>
-          <span>{format(new Date(post.createdAt), 'd MMMM yyyy', { locale: tr })}</span>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6 overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm">
+        <div className="relative aspect-[21/9] min-h-[180px] sm:min-h-[240px]">
+          <img src={cover.url} alt={cover.alt} className="h-full w-full object-cover" />
+          <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent`} />
+          <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 text-white">
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur">{post.category}</span>
+            <h1 className="mt-4 font-display text-2xl font-bold leading-tight sm:text-4xl">{post.title}</h1>
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/85">
+              <span className="flex items-center gap-1.5"><User className="h-4 w-4" /> {post.author}</span>
+              <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {post.readMinutes} dk okuma</span>
+              <span>{format(new Date(post.createdAt), 'd MMMM yyyy', { locale: tr })}</span>
+            </div>
+          </div>
         </div>
       </motion.div>
 

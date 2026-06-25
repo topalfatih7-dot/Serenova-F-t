@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-25 (§37: sağlık testi günlük rutin, takvim erişim kısıtı kaldırıldı, beslenme öğün yapısı)
+> **Son güncelleme:** 2026-06-25 (§38: AI blog cron, kişisel sağlık özeti, blog kapak görselleri, Gemini 2.5 Flash Lite)
 
 ---
 
@@ -15,7 +15,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§30–36 Değişiklik Günlüğü** bölümlerine bak.
+6. Son değişiklikler için **§30–38 Değişiklik Günlüğü** bölümlerine bak.
 7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 8. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
 9. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
@@ -45,6 +45,7 @@
 | `npm run build` | Production build → `dist/` |
 | `npm run preview` | Build önizleme |
 | `npm run lint` | ESLint |
+| `npm run test:ai` | AI endpoint testleri (`scripts/test-ai.mjs`) |
 
 ---
 
@@ -97,6 +98,8 @@ Tarayıcı
   ├─► POST /api/ai-food-text (Kalori chat → Gemini metin analizi)
   │
   ├─► POST /api/ai-food-vision (Fotoğraf kalori — Platinum)
+  │
+  ├─► GET/POST /api/ai-blog-generate (Günlük blog cron — CRON_SECRET)
   │
   └─► Daily.co WebRTC (VideoCallPage → useDailyCall)
 ```
@@ -182,7 +185,9 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 - `assigned_coach_id`, `assigned_dietitian_id`
 
 **JSONB `data` içinde (uygulama tarafı):**
-Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `supportSchedule`, `coachSessions`, `dietitianSessions`, `healthAnalysis`, `notifications`, `tasks`, `progress` (weight, workouts, **meals**, mood), **`completedActivities`** (öğün + aktivite tamamlama), `settings`, `premiumStartedAt`, `premiumExpiresAt`, `pauseUntil`, fotoğraf URL'leri vb.
+Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağlık testi cevapları), **`healthAnalysis`** (kural tabanlı kişisel özet — egzersiz + beslenme), `packageConfig`, `supportSchedule`, `coachSessions`, `dietitianSessions`, `notifications`, `tasks`, `progress` (weight, workouts, **meals**, mood), **`completedActivities`** (öğün + aktivite tamamlama), `calorieHistory`, `settings`, `premiumStartedAt`, `premiumExpiresAt`, fotoğraf URL'leri vb.
+
+**`posts.data` JSONB:** `title`, `category`, `excerpt`, `author`, `readMinutes`, `accent`, `content`, **`coverImage`**, **`coverImageAlt`**, `createdAt`, `updatedAt`.
 
 **Mapping:** `supabaseDb.js` satır 19–57
 - `memberToRow()` — sütun + JSONB ayırır
@@ -412,12 +417,13 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya |
 |-------|------|-------|
-| Ana sayfa | `/` | `LandingPage.jsx` — hero, fiyat, SSS, kadro, yorumlar, iletişim |
+| Ana sayfa | `/` | `LandingPage.jsx` — hero, fiyat, SSS, kadro, yorumlar, **Son Yazılarımız**, iletişim |
 | Üyelik karşılaştırma | `/membership` | `MembershipComparisonPage.jsx` |
 | Kayıt | `/onboarding` | `OnboardingPage.jsx` |
 | Başarı hikâyeleri | `/stories` | `SuccessStoriesPage.jsx` |
-| Blog listesi | `/blog` | `BlogPage.jsx` |
-| Blog yazısı | `/blog/:id` | `BlogPostPage.jsx` |
+| Blog listesi | `/blog` | `BlogPage.jsx` | Supabase `posts` + kapak görselleri |
+| Blog yazısı | `/blog/:id` | `BlogPostPage.jsx` | Hero kapak + içerik |
+| Ana sayfa blog | `/` | `LatestBlogPosts.jsx` | Son 3 yayınlanmış yazı |
 | Kadro profili | `/team/:id` | `StaffProfilePage.jsx` |
 | Kadro listeleri | `/team/coaches`, `/team/dietitians`, `/team/doctors` | `TeamListPage.jsx` (role prop) |
 | Kadro başvurusu | `/team/apply` | `StaffApplicationPage.jsx` |
@@ -570,13 +576,17 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | HTTP | Amaç | Auth |
 |-------|------|------|------|
-| `_guards.js` | — | `requireAuth`, `requireAdmin`, `requireNotifySecret`, CORS | Yardımcı |
+| `_guards.js` | — | `requireAuth`, `requireAdmin`, `requireNotifySecret`, **`requireCronSecret`**, CORS | Yardımcı |
 | `_apiAuth.js` | — | Bearer token → Supabase user | Yardımcı |
 | `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri | `requireNotifySecret` |
 | `contact.js` | POST | Bize Ulaşın → Telegram | `requireNotifySecret` |
 | `calorie-chat-notify.js` | POST | Kalori chat → Telegram | `requireAuth` + secret |
 | `ai-food-text.js` | POST | Gemini metin kalori analizi | `requireAuth` |
 | `ai-food-vision.js` | POST | Gemini fotoğraf kalori analizi | `requireAuth` |
+| `ai-blog-generate.js` | GET/POST | Günlük AI blog üretimi → `posts` | **`requireCronSecret`** |
+| `_gemini.js` | — | Gemini API + model fallback zinciri | Yardımcı |
+| `_ai-prompts.js` | — | Kalori + blog promptları | Yardımcı |
+| `_blog-images.js` | — | Kategori bazlı blog kapak URL'leri | Yardımcı |
 | `daily-room.js` | POST | Daily.co oda oluşturma | `requireAuth` |
 | `stripe-checkout.js` | POST | Stripe ödeme oturumu | — |
 | `stripe-webhook.js` | POST | Ödeme sonrası üyelik aktivasyonu + `sanitizeStaffForPackage` | Stripe imza |
@@ -644,6 +654,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `useRelativeTimeTick.js` | default (30 sn re-render) |
 | `useLocalStorage.js` | `useLocalStorage` |
 | `usePlatformDisplayStats.js` | `usePlatformDisplayStats` — landing/canlı sayaç gösterim eşikleri |
+| `useHealthAnalysisSync.js` | Dashboard'da sağlık testi tamam ama özet yoksa otomatik `syncMemberHealthAssets` |
 
 ### 7.8 Utils (`src/utils/`)
 
@@ -656,6 +667,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `displayPlatformStats.js` | `getDisplayMemberCount`, `getDisplayOnlineCount`, `pickSessionOnlineBoost` — min. 1250 üye / 16–25 çevrimiçi eşikleri |
 | `memberProgress.js` | `buildMealProgress`, streak, workout + öğün ilerleme |
 | `programSchedule.js` | `mealCompletionKey`, `groupEntriesByMeal`, `isMealCompleted`, `splitEntriesByType` |
+| `blogImages.js` | `resolveBlogCover`, `coverForCategory` — kategori bazlı Unsplash kapak |
+| `healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` — sağlık testi → profil |
+| `aiErrors.js` | `formatAiError` — AI hata mesajları |
 
 ### 7.9 Data (`src/data/`)
 
@@ -1090,26 +1104,29 @@ entegrasyonuyla birebir aynıdır: API anahtarı **yalnızca sunucuda** (Vercel
 Environment Variables) tutulur, tarayıcıya asla sızmaz. Anahtar yoksa uygulama
 eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 
-**Seçilen sağlayıcı:** Google **Gemini 2.0 Flash** — en ucuz vision destekli
-model + ücretsiz katman (15 istek/dk, 1500/gün, kart gerekmez). Kurulum: `AI_SETUP.md`.
+**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `AI_SETUP.md`.
 
-### İki AI Entegrasyon Noktası
+### AI Entegrasyon Noktaları
 
 | Özellik | Endpoint | Frontend Servis | Kullanım Yeri |
 |---------|----------|-----------------|----------------|
-| **Fotoğraflı Kalori Tespiti** | `api/ai-food-vision.js` | `src/services/aiVision.js` | `CalorieCalculatorPage.jsx` (Platinum) |
-| **AI Destekli Beslenme Notu** | `api/ai-nutrition.js` | `src/services/aiNutrition.js` | (hazır altyapı, opsiyonel) |
+| **Metin Kalori (Chat)** | `api/ai-food-text.js` | `src/services/calorieChat.js` | `CalorieCalculatorPage.jsx` (Gümüş+) |
+| **Fotoğraflı Kalori** | `api/ai-food-vision.js` | `src/services/aiVision.js` | `CalorieCalculatorPage.jsx` (Platinum) |
+| **Günlük Blog Makalesi** | `api/ai-blog-generate.js` | — (cron) | Vercel Cron → `posts` tablosu |
+| **Kalori Telegram** | `api/calorie-chat-notify.js` | `calorieChat.js` | Chat mesajı → Telegram |
 
-### Yeni Dosyalar
+### Dosyalar
 
 ```
-api/_gemini.js          → Gemini API çağrısı + JSON ayrıştırma (paylaşılan yardımcı)
-api/_ai-prompts.js      → Tüm promptlar tek yerde (maliyet optimize)
-api/ai-food-vision.js   → Fotoğraf → kalori serverless endpoint
-api/ai-nutrition.js     → Profil → beslenme notu serverless endpoint
-src/services/aiVision.js     → Görsel küçültme + /api/ai-food-vision çağrısı
-src/services/aiNutrition.js  → /api/ai-nutrition çağrısı
-AI_SETUP.md             → Adım adım kurulum rehberi
+api/_gemini.js          → Gemini API + model fallback (503/429 → sıradaki model)
+api/_ai-prompts.js      → Kalori + blog promptları (Yeni Form marka bağlamı)
+api/_blog-images.js     → Blog kapak görselleri (kategori → Unsplash URL)
+api/ai-food-vision.js   → Fotoğraf → kalori
+api/ai-food-text.js     → Metin → kalori
+api/ai-blog-generate.js → Günlük blog → Supabase posts (min. 900 karakter)
+scripts/test-ai.mjs     → npm run test:ai
+scripts/patch-blog-covers.mjs → Mevcut yazılara coverImage ekler
+vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generate
 ```
 
 ### Ortam Değişkenleri (Vercel)
@@ -1117,20 +1134,16 @@ AI_SETUP.md             → Adım adım kurulum rehberi
 | Değişken | Açıklama | VITE_ ön eki? |
 |----------|----------|:-------------:|
 | `GEMINI_API_KEY` | Gemini API anahtarı (GİZLİ) | ❌ Hayır |
-| `GEMINI_MODEL` | Model adı (varsayılan `gemini-2.0-flash`) | ❌ Hayır |
-| `VITE_AI_VISION_ENABLED` | Foto analizini arayüzde aç (`true`) | ✅ Evet |
-| `VITE_AI_NUTRITION_ENABLED` | Beslenme notunu arayüzde aç (`true`) | ✅ Evet |
+| `GEMINI_MODEL` | Model (varsayılan `gemini-2.5-flash-lite`) | ❌ Hayır |
+| `CRON_SECRET` | Blog cron koruması (Vercel otomatik Bearer) | ❌ Hayır |
+| `VITE_AI_VISION_ENABLED` | Foto analizi (varsayılan açık; `false` ile kapat) | ✅ Evet |
+| `VITE_AI_CHAT_ENABLED` | Chat kalori analizi bayrağı | ✅ Evet |
 
-### Maliyet Optimizasyonu (otomatik)
-- Görseller gönderilmeden önce 1024px + JPEG %80'e küçültülür.
-- Model'den doğrudan JSON istenir (`responseMimeType`), gereksiz metin yok.
-- `maxOutputTokens` düşük (vision 800, beslenme 500).
-- Promptlar kısa. Analiz başına ~$0.0003 (ücretsiz katmanda bedava).
-
-### Fallback Davranışı
-- `isAiVisionEnabled()` → `VITE_AI_VISION_ENABLED !== 'true'` ise demo preset.
-- AI çağrısı hata verirse (limit, anahtar, ağ) → arayüz demo presete düşer,
-  kullanıcıya bilgi toast'ı gösterilir. **Hiçbir akış kırılmaz.**
+### Davranış (2026-06-25 güncellemesi)
+- Kalori chat/foto **her zaman API'yi dener**; sunucuda `GEMINI_API_KEY` olmalı.
+- `isCalorieAiEnabled()` / `isAiVisionEnabled()` → yalnızca `VITE_AI_*=false` ile kapatılır.
+- Blog cron: günde 1 yazı; aynı gün tekrar üretmez (`force=true` ile test).
+- Yeni blog yazılarına otomatik `coverImage` + `coverImageAlt` atanır.
 
 ### Dashboard Değişikliği
 - `HealthAnalysisPanel` en altındaki **"Planları İncele" (Premium CTA)** kaldırıldı.
@@ -1287,7 +1300,7 @@ AI_SETUP.md             → Adım adım kurulum rehberi
 - **Adım 1 — Hesap:** Yalnızca ad soyad, e-posta, telefon, şifre (+ tekrar). Mobile-first, tek ekrana sığacak kompakt düzen (`min-h-[100dvh]`, `max-w-lg`).
 - **Adım 2 — Üyelik:** Plan seçimi (+ ücretli planlarda ödeme modalı).
 - Kaldırıldı (kayıttan): yaş, cinsiyet, şehir, ölçüler, fotoğraf, hedefler, spor/beslenme tercihleri, sağlık testi, sağlık onayı.
-- Kayıt sonrası otomatik program/analiz **hemen oluşturulmaz** — profil + sağlık testi tamamlanınca `memberHealthSync.js` devreye girer.
+- Kayıt sonrası otomatik program/analiz **sağlık testi tamamlanınca** `memberHealthSync.js` devreye girer (boy/kilo yoksa testten türetilir).
 
 ### 2. Sağlık testi — panel sonrası akış
 - Rehber turu (`OnboardingTutorial`) kapanınca `onComplete` → `HealthTestPrompt` açılır.
@@ -2446,7 +2459,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 | Rota | Dosya | Ana bölümler / bileşenler | Veri |
 |------|-------|----------------------------|------|
-| `/` | `LandingPage.jsx` | Hero, fiyat kartları (`PricingCard`), TrustStrip, WhyUs, SSS (`FAQAccordion`), yorumlar, kadro önizleme, iletişim (`ContactSection`), canlı sayaç (`LiveActiveCounter`) | `useApp().platform.plans`, `site_content`, `usePlatformDisplayStats` |
+| `/` | `LandingPage.jsx` | Hero, fiyat kartları (`PricingCard`), TrustStrip, WhyUs, SSS (`FAQAccordion`), yorumlar, kadro önizleme, **Son Yazılarımız** (`LatestBlogPosts`), iletişim (`ContactSection`), canlı sayaç (`LiveActiveCounter`) | `useApp().platform.plans`, `site_content`, `usePlatformDisplayStats`, `posts` |
 | `/membership` | `MembershipComparisonPage.jsx` | Plan karşılaştırma tablosu, süre seçimi (1/3/6 ay), Stripe/checkout CTA | `plans` tablosu + `membershipPlans.js` fallback |
 | `/onboarding` | `OnboardingPage.jsx` | Çok adımlı kayıt: profil, sağlık testi (`HealthTestStep`), plan seçimi, ödeme | `register`, `registerWithPlan`, `processPremiumPayment` |
 | `/login` | `auth/LoginPage.jsx` | E-posta/şifre giriş, rol yönlendirme | `supabaseDb.login` |
@@ -2607,4 +2620,79 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 ### 37.4 Değiştirilen dosyalar
 
 `healthTest.js`, `HealthTestStep.jsx`, `CalendarPage.jsx`, `programSchedule.js`, `NutritionProgramBuilder.jsx`, `StaffListsPage.jsx`, `AI_PROJE_REHBERI.md`
+
+---
+
+## 38. AI Blog Cron, Kişisel Sağlık Özeti & Blog Kapak Görselleri (2026-06-25)
+
+> **Migration gerekmez** — tüm veriler mevcut JSONB alanlarında (`members.data`, `posts.data`).  
+> `supabase/setup.sql` üst yorum bloğu JSONB şeması ile güncellendi.
+
+### 38.1 Günlük AI blog (Vercel Cron)
+
+| Alan | Değer |
+|------|-------|
+| Endpoint | `api/ai-blog-generate.js` |
+| Cron | `vercel.json` → `0 5 * * *` (08:00 Türkiye) |
+| Koruma | `CRON_SECRET` → `requireCronSecret()` |
+| Model | `gemini-2.5-flash-lite` (+ fallback zinciri) |
+| Min. içerik | 900 karakter |
+| Kayıt | Supabase `posts` — `published: true`, `data.coverImage` |
+
+**Prompt:** `api/_ai-prompts.js` → `BLOG_SYSTEM`, `buildBlogInstruction()`, kategori rotasyonu (`BLOG_TOPIC_ROTATION`).
+
+**Mevcut yazılara görsel:** `node scripts/patch-blog-covers.mjs` (service role gerekir).
+
+### 38.2 Blog kapak görselleri (UI)
+
+| Dosya | Rol |
+|-------|-----|
+| `src/utils/blogImages.js` | `resolveBlogCover`, `coverForCategory` — Unsplash CDN |
+| `api/_blog-images.js` | Sunucu tarafı aynı eşleme (cron) |
+| `src/components/landing/LatestBlogPosts.jsx` | Ana sayfa **"Son Yazılarımız"** (son 3 yazı) |
+| `src/pages/BlogPage.jsx` | Liste kartlarında kapak fotoğrafı |
+| `src/pages/BlogPostPage.jsx` | Hero kapak + başlık overlay |
+| `supabaseDb.addPost/editPost` | `coverImage` otomatik atanır |
+
+### 38.3 Kişisel Sağlık Özeti (Dashboard)
+
+**Akış:**
+1. Üye sağlık testini tamamlar (`HealthTestWidget` veya kayıt sonrası).
+2. `syncMemberHealthAssets()` → `enrichProfileForAnalysis()` → `generateHealthAnalysis()`.
+3. Sonuç `members.data.healthAnalysis` olarak kaydedilir.
+4. Dashboard `HealthAnalysisPanel` — test özeti, VKİ, kalori, makrolar, **kütüphane egzersizleri**, **beslenme planı**, haftalık antrenman.
+
+**Önemli değişiklik:** `profileReadyForAnalysis()` artık yalnızca **sağlık testinin tamamlanmasını** ister; boy/kilo/hedef yoksa `healthProfile.js` test cevaplarından türetir (tahmini metrik uyarısı gösterilir).
+
+| Dosya | Rol |
+|-------|-----|
+| `src/utils/healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` |
+| `src/services/memberHealthSync.js` | Senkron + otomatik program oluşturma |
+| `src/services/aiAnalysis.js` | Kütüphane skorlaması, beslenme ipuçları (test bazlı) |
+| `src/hooks/useHealthAnalysisSync.js` | Dashboard otomatik özet üretimi |
+| `src/pages/DashboardPage.jsx` | Genişletilmiş `HealthAnalysisPanel` |
+
+**Egzersiz kaynağı:** `exercises` tablosu → `supabaseDb.hydrate()` → `coachRecommendations.exercises[]`.
+
+### 38.4 Kalori AI (client güncellemesi)
+
+- `CalorieCalculatorPage.jsx` — chat/foto **doğrudan API çağırır** (client-side kapı kaldırıldı).
+- `calorieChat.js` / `aiVision.js` — varsayılan **açık** (`VITE_AI_*=false` hariç).
+- Promptlar Yeni Form marka bağlamı ile güncellendi (`api/_ai-prompts.js`).
+
+### 38.5 Gemini model fallback
+
+`api/_gemini.js` → sırayla dener: `GEMINI_MODEL` → `gemini-2.5-flash-lite` → `gemini-flash-lite-latest` → `gemini-2.0-flash-lite` (429/503'te).
+
+### 38.6 Ortam değişkenleri (yeni)
+
+| Değişken | Açıklama |
+|----------|----------|
+| `CRON_SECRET` | Blog cron + manuel tetikleme |
+| `VITE_AI_CHAT_ENABLED` | Chat kalori bayrağı |
+| `GEMINI_MODEL` | Önerilen: `gemini-2.5-flash-lite` |
+
+### 38.7 Değiştirilen / eklenen dosyalar
+
+`api/ai-blog-generate.js`, `api/_blog-images.js`, `api/_gemini.js`, `api/_ai-prompts.js`, `api/_guards.js`, `vercel.json`, `.env.example`, `src/utils/blogImages.js`, `src/utils/healthProfile.js`, `src/hooks/useHealthAnalysisSync.js`, `src/components/landing/LatestBlogPosts.jsx`, `src/pages/LandingPage.jsx`, `src/pages/BlogPage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/CalorieCalculatorPage.jsx`, `src/services/memberHealthSync.js`, `src/services/aiAnalysis.js`, `src/services/supabaseDb.js`, `src/services/calorieChat.js`, `src/services/aiVision.js`, `scripts/test-ai.mjs`, `scripts/patch-blog-covers.mjs`, `supabase/setup.sql`, `AI_PROJE_REHBERI.md`
 

@@ -1,14 +1,9 @@
 import { generateHealthAnalysis } from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
+import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 export function profileReadyForAnalysis(profile) {
-  return Boolean(
-    profile?.weight &&
-    profile?.height &&
-    profile?.age &&
-    Array.isArray(profile?.goals) &&
-    profile.goals.length > 0,
-  )
+  return isHealthTestComplete(profile?.healthTest, profile?.gender)
 }
 
 export async function createAutoProgramsForMember({ memberId, memberName, healthAnalysis, createProgram }) {
@@ -71,7 +66,8 @@ export async function syncMemberHealthAssets({
   if (!isHealthTestComplete(user.healthTest, user.gender)) return { synced: false, reason: 'test' }
   if (!profileReadyForAnalysis(user)) return { synced: false, reason: 'profile' }
 
-  const healthAnalysis = generateHealthAnalysis(user, exercises || [])
+  const enriched = enrichProfileForAnalysis(user)
+  const healthAnalysis = generateHealthAnalysis(enriched, exercises || [])
   await updateProfile({ healthAnalysis })
 
   if ((myPrograms || []).length === 0) {

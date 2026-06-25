@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, Droplets, Target, Play, CalendarDays, ClipboardList, Star,
+  Check, Droplets, Target, Play, CalendarDays, ClipboardList, Star, HeartPulse,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -13,8 +13,10 @@ import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/Pr
 import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { isHealthTestComplete } from '../data/healthTest'
 
 function ChartEmpty({ message = 'Henüz veri yok' }) {
   return (
@@ -27,10 +29,10 @@ function ChartEmpty({ message = 'Henüz veri yok' }) {
 
 // ─── KİŞİSEL ANALİZ PANELİ ─────────────────────────────────────────
 function HealthAnalysisPanel({ analysis }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   if (!analysis) return null
 
-  const { bmi, bmiCategory, dailyCalories, coachRecommendations, dietitianRecommendations, fitnessScore } = analysis
+  const { bmi, bmiCategory, dailyCalories, coachRecommendations, dietitianRecommendations, fitnessScore, healthTestInsights, estimatedMetrics } = analysis
 
   const bmiColors = {
     Normal: 'text-sage-600 bg-sage-50 border-sage-200',
@@ -79,6 +81,26 @@ function HealthAnalysisPanel({ analysis }) {
             className="border-t border-brand-100"
           >
             <div className="p-5 space-y-6">
+              {estimatedMetrics && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+                  <HeartPulse className="mt-0.5 h-4 w-4 shrink-0" />
+                  Sağlık testinize göre özet oluşturuldu. Profilinize boy, kilo ve yaş ekleyerek önerileri daha da kişiselleştirebilirsiniz.
+                </div>
+              )}
+
+              {healthTestInsights?.length > 0 && (
+                <div>
+                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                    <HeartPulse className="h-4 w-4 text-brand-500" /> Sağlık Testi Özeti
+                  </p>
+                  <ul className="space-y-1 rounded-xl border border-cream-100 bg-white/80 p-3">
+                    {healthTestInsights.slice(0, 8).map((tip, i) => (
+                      <li key={i} className="text-xs text-cream-800/75">• {tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Vücut Durumu */}
               <div className="grid gap-3 sm:grid-cols-3">
                 {bmi && (
@@ -129,31 +151,75 @@ function HealthAnalysisPanel({ analysis }) {
                 </div>
               )}
 
+              {coachRecommendations?.weeklyPlan?.length > 0 && (
+                <div>
+                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                    <CalendarDays className="h-4 w-4 text-brand-500" /> Haftalık Antrenman Planı
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {coachRecommendations.weeklyPlan.map((day) => (
+                      <div key={day.day} className="rounded-xl border border-cream-100 bg-white/80 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-brand-700">{day.day}</p>
+                        <p className="text-sm text-cream-900">{day.focus}</p>
+                        <p className="text-[11px] text-cream-800/50">Yoğunluk: {day.intensity}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Video Önerileri */}
               {coachRecommendations?.exercises?.length > 0 && (
                 <div>
-                  <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-                    <Play className="h-4 w-4 text-brand-500" /> Video Kütüphanesinden Öneriler
+                  <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                    <Play className="h-4 w-4 text-brand-500" /> Kütüphaneden Önerilen Hareketler
                     <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
                       {coachRecommendations.totalCount} video
                     </span>
                   </p>
+                  {coachRecommendations.message && (
+                    <p className="mb-3 text-xs leading-relaxed text-cream-800/65">{coachRecommendations.message}</p>
+                  )}
                   <div className="grid gap-2 sm:grid-cols-2">
                     {coachRecommendations.exercises.map((ex) => (
-                      <div key={ex.id} className="flex items-center gap-2.5 rounded-xl bg-cream-50 p-3">
+                      <Link
+                        key={ex.id}
+                        to="/library"
+                        className="flex items-center gap-2.5 rounded-xl border border-cream-100 bg-cream-50 p-3 transition hover:border-brand-200 hover:bg-brand-50/50"
+                      >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
                           <Dumbbell className="h-4 w-4" />
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-cream-900">{ex.name}</p>
-                          <p className="text-xs text-cream-800/55">{ex.category}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-cream-900">{ex.name}</p>
+                          <p className="truncate text-xs text-cream-800/55">{ex.category || ex.bodyPart}</p>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   <Link to="/library" className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100">
                     Tüm Kütüphaneyi Gör
                   </Link>
+                </div>
+              )}
+
+              {/* Beslenme planı */}
+              {dietitianRecommendations?.mealPlan?.length > 0 && (
+                <div>
+                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream-900">
+                    <Apple className="h-4 w-4 text-sage-500" /> Günlük Beslenme Önerisi
+                  </p>
+                  {dietitianRecommendations.message && (
+                    <p className="mb-3 text-xs leading-relaxed text-cream-800/65">{dietitianRecommendations.message}</p>
+                  )}
+                  <div className="space-y-2">
+                    {dietitianRecommendations.mealPlan.map((m) => (
+                      <div key={m.meal} className="rounded-xl border border-sage-100 bg-sage-50/60 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-sage-800">{m.meal}</p>
+                        <p className="text-sm text-cream-900">{m.suggestion}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -188,8 +254,11 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
+    exercises, updateProfile, createProgram,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
+
+  useHealthAnalysisSync({ user, exercises, myPrograms, updateProfile, createProgram })
 
   // Stripe ödeme dönüşü: üyeliği tazele (webhook birkaç saniye sürebilir).
   useEffect(() => {
@@ -274,10 +343,14 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Kişisel analiz özeti — Basic paket kullanıcılarına göster */}
-      {user.healthAnalysis && (
+      {/* Kişisel sağlık özeti — sağlık testi sonrası */}
+      {user.healthAnalysis ? (
         <HealthAnalysisPanel analysis={user.healthAnalysis} />
-      )}
+      ) : isHealthTestComplete(user.healthTest, user.gender) ? (
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/50 px-5 py-4 text-sm text-cream-800/70">
+          Kişisel sağlık özetiniz hazırlanıyor…
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>

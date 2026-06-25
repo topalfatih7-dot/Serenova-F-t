@@ -19,6 +19,7 @@ import {
   BLOG_TOPIC_ROTATION,
   buildBlogInstruction,
 } from './_ai-prompts.js'
+import { coverForCategory } from './_blog-images.js'
 import { setCorsHeaders, handleOptions, requireCronSecret } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 
@@ -56,6 +57,7 @@ function normalizePost(result) {
   const content = String(result.content || '').trim()
   const category = BLOG_CATEGORIES.includes(result.category) ? result.category : 'Yaşam'
   const accent = BLOG_ACCENTS.includes(result.accent) ? result.accent : 'brand'
+  const cover = coverForCategory(category)
   return {
     title: String(result.title || 'Yeni Form Blog').slice(0, 120),
     category,
@@ -63,6 +65,8 @@ function normalizePost(result) {
     author: String(result.author || 'Yeni Form Ekibi').slice(0, 60),
     accent,
     content,
+    coverImage: cover.coverImage,
+    coverImageAlt: cover.coverImageAlt,
     readMinutes: estimateReadMinutes(content),
     createdAt: todayIstanbul(),
     updatedAt: todayIstanbul(),

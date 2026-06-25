@@ -2,26 +2,29 @@
 // Basic paket üyelerine kayıt sonrası otomatik olarak uygulanır.
 
 import { describeHealthTest } from '../data/healthTest'
+import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 export function generateHealthAnalysis(profile, exercises = []) {
-  const bmi = calculateBmi(profile.weight, profile.height)
+  const enriched = enrichProfileForAnalysis(profile)
+  const bmi = calculateBmi(enriched.weight, enriched.height)
   const bmiCategory = getBmiCategory(bmi)
-  const goalCategories = mapGoalsToCategories(profile.goals || [])
-  const healthTestInsights = buildHealthTestInsights(profile.healthTest, profile.gender)
-  const coachRecommendations = generateCoachList(profile, exercises, goalCategories, healthTestInsights)
-  const dietitianRecommendations = generateDietitianPlan(profile, healthTestInsights)
+  const goalCategories = mapGoalsToCategories(enriched.goals || [])
+  const healthTestInsights = buildHealthTestInsights(enriched.healthTest, enriched.gender)
+  const coachRecommendations = generateCoachList(enriched, exercises, goalCategories, healthTestInsights)
+  const dietitianRecommendations = generateDietitianPlan(enriched, healthTestInsights)
 
   return {
     generatedAt: new Date().toISOString().split('T')[0],
     bmi: bmi ? Math.round(bmi * 10) / 10 : null,
     bmiCategory,
-    idealWeightRange: getIdealWeightRange(profile.height, profile.gender),
-    dailyCalories: estimateDailyCalories(profile),
+    idealWeightRange: getIdealWeightRange(enriched.height, enriched.gender),
+    dailyCalories: estimateDailyCalories(enriched),
     coachRecommendations,
     dietitianRecommendations,
-    fitnessScore: calculateFitnessScore(profile, healthTestInsights),
-    priorityGoal: getPriorityGoal(profile.goals || []),
+    fitnessScore: calculateFitnessScore(enriched, healthTestInsights),
+    priorityGoal: getPriorityGoal(enriched.goals || []),
     healthTestInsights,
+    estimatedMetrics: enriched.estimatedMetrics === true,
   }
 }
 
@@ -138,13 +141,36 @@ function mapGoalsToCategories(goals) {
 
 // Egzersiz kütüphanesinden hedeflere uygun videolar seç
 function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
-  const filtered = exercises.filter((ex) => {
-    if (!ex.category) return true
-    return goalCategories.some((cat) => ex.category.toLowerCase().includes(cat.toLowerCase()) || cat.toLowerCase().includes(ex.category.toLowerCase()))
+  const ht = profile.healthTest || {}
+  const lowImpactOnly = ht.injuries === 'yes' || (ht.painAreas || []).length > 0
+
+  const scored = exercises.map((ex) => {
+    let score = 0
+    const cat = String(ex.category || ex.bodyPart || '').toLowerCase()
+    const sport = String(ex.sportType || '').toLowerCase()
+    const name = String(ex.name || '').toLowerCase()
+
+    goalCategories.forEach((goalCat) => {
+      const g = goalCat.toLowerCase()
+      if (cat.includes(g) || g.includes(cat) || sport.includes(g) || name.includes(g)) score += 12
+    })
+
+    if (ht.activityFrequency === 'sedentary' && (cat.includes('yoga') || cat.includes('esneklik') || sport.includes('yoga'))) score += 8
+    if (ht.stressLevel === 'high' && (name.includes('nefes') || cat.includes('yoga'))) score += 6
+    if (ht.sleepQuality === 'poor' && cat.includes('esneklik')) score += 5
+
+    if (lowImpactOnly && (name.includes('hiit') || name.includes('sprint') || sport.includes('hiit'))) score -= 15
+    if (lowImpactOnly && (cat.includes('kardiyo') || sport.includes('koşu'))) score -= 4
+
+    return { ex, score }
   })
 
-  const sorted = filtered.length > 0 ? filtered : exercises
-  const selected = sorted.slice(0, 6)
+  scored.sort((a, b) => b.score - a.score)
+  const selected = (scored.filter((s) => s.score > 0).length > 0 ? scored.filter((s) => s.score > 0) : scored)
+    .slice(0, 6)
+    .map((s) => s.ex)
+
+  const fallback = selected.length > 0 ? selected : exercises.slice(0, 6)
 
   const levelTips = {
     beginner:     'Başlangıç seviyeniz için düşük yoğunluklu egzersizlerle başlamanız önerilir.',
@@ -173,7 +199,7 @@ function generateCoachList(profile, exercises, goalCategories, healthTestInsight
     : ''
 
   return {
-    exercises: selected,
+    exercises: fallback,
     totalCount: exercises.length,
     message: `${mainMessage} ${levelMessage}${injuryNote}`,
     weeklyPlan: generateWeeklyPlan(profile),
@@ -315,6 +341,18 @@ function buildNutritionTips(prefs, goals, healthTest = {}) {
   }
   if (healthTest?.mealsPerDay === '1-2') {
     tips.push('Gün içine yayılmış 3 ana öğün planı oluşturmayı deneyin.')
+  }
+  if ((healthTest?.eatingHabits || []).includes('night_snack')) {
+    tips.push('Gece atıştırmalıklarını azaltmak için akşam yemeğinden sonra bitki çayı veya su tercih edin.')
+  }
+  if ((healthTest?.eatingHabits || []).includes('fast_food')) {
+    tips.push('Fast food yerine haftalık meal prep ile ev yapımı öğünler planlayın.')
+  }
+  if (healthTest?.stressLevel === 'high') {
+    tips.push('Stres yönetimi için magnezyum ve omega-3 içeren besinleri öğünlerinize ekleyin.')
+  }
+  if (String(healthTest?.foodAllergies || '').trim()) {
+    tips.push(`Alerji/intolerans notunuz (${healthTest.foodAllergies}) plana göre dikkate alınmalıdır.`)
   }
 
   tips.push('Günlük en az 2–2.5 litre su için.')

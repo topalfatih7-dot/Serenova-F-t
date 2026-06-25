@@ -10,21 +10,15 @@ import JsonLd from '../components/seo/JsonLd'
 import { useApp } from '../context/AppContext'
 import { buildItemListSchema } from '../config/seo'
 import { BLOG_CATEGORIES } from '../data/blogPosts'
-
-const ACCENTS = {
-  brand: 'from-brand-400 to-brand-600',
-  sage: 'from-sage-400 to-sage-600',
-  gold: 'from-gold-400 to-amber-500',
-  cream: 'from-cream-300 to-cream-500',
-}
+import { resolveBlogCover } from '../utils/blogImages'
 
 export default function BlogPage() {
   const { posts } = useApp()
   const [category, setCategory] = useState('all')
 
   const published = useMemo(
-    () => (posts || []).filter((p) => p.published),
-    [posts]
+    () => (posts || []).filter((p) => p.published).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [posts],
   )
   const filtered = category === 'all' ? published : published.filter((p) => p.category === category)
   const featured = filtered[0]
@@ -37,7 +31,7 @@ export default function BlogPage() {
         path: '/blog',
         items: published.map((p) => ({ name: p.title, path: `/blog/${p.id}` })),
       }),
-    [published]
+    [published],
   )
 
   return (
@@ -61,76 +55,89 @@ export default function BlogPage() {
       </PlansAnimatedBackground>
 
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="flex flex-wrap justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setCategory('all')}
-          className={`rounded-full px-4 py-2 text-sm font-medium ${category === 'all' ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'}`}
-        >
-          Tümü
-        </button>
-        {BLOG_CATEGORIES.map((c) => (
+        <div className="flex flex-wrap justify-center gap-2">
           <button
-            key={c}
             type="button"
-            onClick={() => setCategory(c)}
-            className={`rounded-full px-4 py-2 text-sm font-medium ${category === c ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'}`}
+            onClick={() => setCategory('all')}
+            className={`rounded-full px-4 py-2 text-sm font-medium ${category === 'all' ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'}`}
           >
-            {c}
+            Tümü
           </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="mt-12">
-          <EmptyState icon={BookOpen} title="Henüz yazı yok" description="Bu kategoride yayınlanmış bir makale bulunmuyor." />
+          {BLOG_CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={`rounded-full px-4 py-2 text-sm font-medium ${category === c ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-800'}`}
+            >
+              {c}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="mt-10 space-y-8">
-          {featured && (
-            <Link to={`/blog/${featured.id}`} className="group block overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
-              <div className="grid md:grid-cols-2">
-                <div className={`flex min-h-[200px] flex-col justify-end bg-gradient-to-br p-6 text-white ${ACCENTS[featured.accent] || ACCENTS.brand}`}>
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur w-fit">{featured.category}</span>
-                  <h2 className="mt-3 font-display text-2xl font-bold leading-tight">{featured.title}</h2>
-                </div>
-                <div className="flex flex-col justify-center p-6">
-                  <p className="text-cream-800/70">{featured.excerpt}</p>
-                  <div className="mt-4 flex items-center gap-3 text-xs text-cream-800/50">
-                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {featured.author}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {featured.readMinutes} dk</span>
-                    <span>{format(new Date(featured.createdAt), 'd MMM yyyy', { locale: tr })}</span>
-                  </div>
-                  <span className="mt-4 flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all">
-                    Yazıyı oku <ArrowRight className="h-4 w-4" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )}
 
-          {rest.length > 0 && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {rest.map((p) => (
-                <Link key={p.id} to={`/blog/${p.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
-                  <div className={`flex h-28 items-end bg-gradient-to-br p-4 ${ACCENTS[p.accent] || ACCENTS.brand}`}>
-                    <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{p.category}</span>
-                  </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3 className="font-display text-lg font-bold leading-snug text-cream-900">{p.title}</h3>
-                    <p className="mt-2 line-clamp-3 flex-1 text-sm text-cream-800/60">{p.excerpt}</p>
-                    <div className="mt-4 flex items-center justify-between text-xs text-cream-800/50">
-                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {p.readMinutes} dk</span>
-                      <span>{format(new Date(p.createdAt), 'd MMM', { locale: tr })}</span>
+        {filtered.length === 0 ? (
+          <div className="mt-12">
+            <EmptyState icon={BookOpen} title="Henüz yazı yok" description="Bu kategoride yayınlanmış bir makale bulunmuyor." />
+          </div>
+        ) : (
+          <div className="mt-10 space-y-8">
+            {featured && (
+              <Link to={`/blog/${featured.id}`} className="group block overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
+                <div className="grid md:grid-cols-2">
+                  <BlogCover post={featured} className="min-h-[220px] md:min-h-full" />
+                  <div className="flex flex-col justify-center p-6">
+                    <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700 w-fit">{featured.category}</span>
+                    <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-cream-900 group-hover:text-brand-700">{featured.title}</h2>
+                    <p className="mt-2 text-cream-800/70">{featured.excerpt}</p>
+                    <div className="mt-4 flex items-center gap-3 text-xs text-cream-800/50">
+                      <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {featured.author}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {featured.readMinutes} dk</span>
+                      <span>{format(new Date(featured.createdAt), 'd MMM yyyy', { locale: tr })}</span>
                     </div>
+                    <span className="mt-4 flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all">
+                      Yazıyı oku <ArrowRight className="h-4 w-4" />
+                    </span>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                </div>
+              </Link>
+            )}
+
+            {rest.length > 0 && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {rest.map((p) => (
+                  <Link key={p.id} to={`/blog/${p.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
+                    <BlogCover post={p} className="aspect-[16/10]" />
+                    <div className="flex flex-1 flex-col p-5">
+                      <span className="text-xs font-semibold text-brand-600">{p.category}</span>
+                      <h3 className="mt-1 font-display text-lg font-bold leading-snug text-cream-900 group-hover:text-brand-700">{p.title}</h3>
+                      <p className="mt-2 line-clamp-3 flex-1 text-sm text-cream-800/60">{p.excerpt}</p>
+                      <div className="mt-4 flex items-center justify-between text-xs text-cream-800/50">
+                        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {p.readMinutes} dk</span>
+                        <span>{format(new Date(p.createdAt), 'd MMM', { locale: tr })}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+function BlogCover({ post, className = '' }) {
+  const cover = resolveBlogCover(post)
+  return (
+    <div className={`relative overflow-hidden bg-cream-100 ${className}`}>
+      <img
+        src={cover.url}
+        alt={cover.alt}
+        loading="lazy"
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
     </div>
   )
 }
