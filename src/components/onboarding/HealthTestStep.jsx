@@ -3,6 +3,7 @@ import {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
   Sunrise, Sunset, UtensilsCrossed, BedDouble,
 } from 'lucide-react'
+import { isDetailVisible } from '../../data/healthTest'
 
 const ICONS = { HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock }
 
@@ -223,7 +224,7 @@ export default function HealthTestStep({
                 />
               )}
 
-              {q.detail && healthTest[q.key] === q.detail.when && (
+              {q.detail && isDetailVisible(q.detail, healthTest[q.key]) && (
                 <input
                   type="text"
                   placeholder={q.detail.placeholder}

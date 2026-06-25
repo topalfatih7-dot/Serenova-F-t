@@ -5,7 +5,7 @@ import { describeHealthTest } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 4
+export const HEALTH_ANALYSIS_VERSION = 5
 
 const GENERIC_WEEKLY_FOCUS =
   /\(\d+\s*dk\)|HIIT|Full Body|Üst Vücut|Alt Vücut|Vücut Ağırlığı|Esneklik\s*&\s*Yoga|Kardiyo\s*&|İtme Hareketi|Çekme Hareketi|Olimpik/i
@@ -140,6 +140,10 @@ function calculateFitnessScore(profile) {
   if (ht.stressLevel === 'low') score += 5
   if (ht.injuries === 'yes' || ht.painAreas?.length) score -= 8
   if (ht.chronicConditions?.length) score -= 5
+  if (ht.teaCoffee === 'high') score -= 3
+  if (ht.substanceUse === 'regular') score -= 10
+  if (ht.substanceUse === 'occasional') score -= 5
+  if (ht.travelFrequency === 'weekly') score -= 2
 
   return Math.max(0, Math.min(100, score))
 }
@@ -206,6 +210,10 @@ function generateCoachList(profile, exercises, goalCategories, healthTestInsight
     if (ht.activityFrequency === 'sedentary' && (cat.includes('yoga') || cat.includes('esneklik') || sport.includes('yoga'))) score += 8
     if (ht.stressLevel === 'high' && (name.includes('nefes') || cat.includes('yoga'))) score += 6
     if (ht.sleepQuality === 'poor' && cat.includes('esneklik')) score += 5
+    if (ht.teaCoffee === 'high' && (cat.includes('esneklik') || name.includes('nefes') || cat.includes('yoga'))) score += 4
+    if (ht.travelFrequency === 'weekly' && (sport.includes('ev') || name.includes('vücut') || cat.includes('tüm vücut'))) score += 6
+    if (ht.travelFrequency === 'monthly' && sport.includes('ev')) score += 3
+    if ((ht.substanceUse === 'regular' || ht.substanceUse === 'occasional') && (cat.includes('esneklik') || cat.includes('kardiyo'))) score += 3
 
     if (lowImpactOnly && (name.includes('hiit') || name.includes('sprint') || sport.includes('hiit'))) score -= 15
     if (lowImpactOnly && (cat.includes('kardiyo') || sport.includes('koşu'))) score -= 4

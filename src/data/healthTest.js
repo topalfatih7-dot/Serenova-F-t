@@ -161,6 +161,37 @@ export const HEALTH_SECTIONS = [
           { value: 'regularly', label: 'Düzenli' },
         ],
       },
+      {
+        key: 'teaCoffee', type: 'single', required: true,
+        label: 'Günlük çay/kahve tüketim seviyeniz?',
+        options: [
+          { value: 'none', label: 'Hiç', desc: 'Çay/kahve içmem' },
+          { value: 'low', label: 'Az', desc: 'Günde 1–2 fincan' },
+          { value: 'moderate', label: 'Orta', desc: 'Günde 3–4 fincan' },
+          { value: 'high', label: 'Yüksek', desc: 'Günde 5+ fincan' },
+        ],
+      },
+      {
+        key: 'travelFrequency', type: 'single', required: true,
+        label: 'Seyahat sıklığınız nedir?',
+        options: [
+          { value: 'rare', label: 'Nadiren', desc: 'Yılda birkaç kez veya daha az' },
+          { value: 'monthly', label: 'Aylık', desc: 'Ayda 1–2 kez' },
+          { value: 'weekly', label: 'Sık', desc: 'Haftada bir veya daha fazla' },
+        ],
+      },
+      {
+        key: 'substanceUse', type: 'single', required: true,
+        label: 'Madde kullanım durumunuz?',
+        hint: 'Sigara/alkol dışındaki maddeler (reçeteli veya reçetesiz).',
+        options: [
+          { value: 'none', label: 'Kullanmıyorum' },
+          { value: 'past', label: 'Geçmişte kullandım' },
+          { value: 'occasional', label: 'Ara sıra' },
+          { value: 'regular', label: 'Düzenli' },
+        ],
+        detail: { key: 'substanceDetail', when: ['occasional', 'regular'], placeholder: 'Kısaca belirtin (opsiyonel)' },
+      },
     ],
   },
   {
@@ -334,6 +365,13 @@ export const EMPTY_HEALTH_TEST = (() => {
   return obj
 })()
 
+/** Koşullu detay alanı gösterilsin mi? */
+export function isDetailVisible(detail, parentValue) {
+  if (!detail) return false
+  if (Array.isArray(detail.when)) return detail.when.includes(parentValue)
+  return parentValue === detail.when
+}
+
 // Cinsiyete göre uygulanabilir bölümler.
 export function getApplicableSections(gender) {
   return HEALTH_SECTIONS.filter((s) => !s.genderOnly || s.genderOnly === gender)
@@ -405,7 +443,7 @@ export function describeHealthTest(healthTest, gender) {
           display = q.options?.find((o) => o.value === v)?.label || v
         }
         items.push({ label: q.label, value: display })
-        if (q.detail && v === q.detail.when && healthTest[q.detail.key]) {
+        if (q.detail && isDetailVisible(q.detail, v) && healthTest[q.detail.key]) {
           items.push({ label: 'Açıklama', value: healthTest[q.detail.key] })
         }
       })

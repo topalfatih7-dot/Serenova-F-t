@@ -7,7 +7,6 @@ export default function JsonLd({ data }) {
     <>
       {schemas.map((schema, i) => (
         <script
-          // eslint-disable-next-line react/no-danger
           key={`jsonld-${i}`}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}

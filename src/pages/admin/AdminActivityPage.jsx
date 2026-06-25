@@ -2,7 +2,7 @@ import { useApp } from '../../context/AppContext'
 import EmptyState from '../../components/ui/EmptyState'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
-import { Activity, ArrowUpCircle, UserPlus, Award, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
+import { Activity, ArrowUpCircle, UserPlus, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
 
 const TYPE_CONFIG = {
   upgrade: { icon: ArrowUpCircle, color: 'bg-brand-50 text-brand-600', label: 'Yükseltme' },

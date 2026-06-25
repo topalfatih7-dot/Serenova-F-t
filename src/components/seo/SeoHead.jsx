@@ -101,7 +101,6 @@ export default function SeoHead({
     <>
       {schemas.map((schema, i) => (
         <script
-          // eslint-disable-next-line react/no-danger
           key={`ld-${i}`}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}

@@ -32,6 +32,17 @@ export function inferGoalsFromHealthTest(healthTest = {}) {
     goals.add('confidence')
     goals.add('habit')
   }
+  if (healthTest.teaCoffee === 'high') {
+    goals.add('sleep')
+    goals.add('habit')
+  }
+  if (healthTest.travelFrequency === 'weekly' || healthTest.travelFrequency === 'monthly') {
+    goals.add('habit')
+  }
+  if (healthTest.substanceUse === 'regular' || healthTest.substanceUse === 'occasional') {
+    goals.add('habit')
+    goals.add('sleep')
+  }
 
   if (goals.size === 0) goals.add('habit')
   return [...goals]

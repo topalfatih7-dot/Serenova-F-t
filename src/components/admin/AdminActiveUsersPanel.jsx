@@ -5,10 +5,10 @@ import { formatActiveDuration, formatSessionStart, roleLabel, sessionDurationSec
 
 export default function AdminActiveUsersPanel() {
   const { activeUsers } = useApp()
-  const [, setNow] = useState(Date.now())
+  const [, setTick] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    const id = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
 

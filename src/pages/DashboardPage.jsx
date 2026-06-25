@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ChevronDown, ChevronUp, Salad, Activity,
-  Check, CheckCircle, Play, CalendarDays, ClipboardList, Star, HeartPulse, Sparkles,
+  Check, Play, CalendarDays, ClipboardList, Star, HeartPulse, Sparkles,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
