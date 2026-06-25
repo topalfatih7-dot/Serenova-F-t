@@ -45,7 +45,7 @@ export function computeAdminStats(db) {
 
   const expiringSoon = paid.filter((m) => {
     const r = getRemainingDays(m.premiumExpiresAt)
-    return r !== null && r > 0 && r <= 7 && m.membershipStatus !== 'cancelled'
+    return r !== null && r > 0 && r <= 7
   }).length
 
   return {
@@ -53,8 +53,6 @@ export function computeAdminStats(db) {
     premium: paid.length,
     free: free.length,
     active: members.filter((m) => m.membershipStatus === 'active').length,
-    paused: members.filter((m) => m.membershipStatus === 'paused').length,
-    cancelled: members.filter((m) => m.membershipStatus === 'cancelled').length,
     expiring: members.filter((m) => m.membershipStatus === 'expiring').length || expiringSoon,
     newThisMonth: members.filter((m) => m.joinedAt?.startsWith(thisMonth)).length,
     mrr,
@@ -82,9 +80,7 @@ export function computeMembershipBreakdown(db) {
   })
 
   breakdown.push({ name: 'Ücretsiz Aktif', value: members.filter((m) => m.membership === 'free' && m.membershipStatus === 'active').length, color: '#5f9270' })
-  breakdown.push({ name: 'Duraklatılmış', value: members.filter((m) => m.membershipStatus === 'paused').length, color: '#b8924f' })
   breakdown.push({ name: 'Sona Eriyor', value: members.filter((m) => m.membershipStatus === 'expiring').length, color: '#e07b39' })
-  breakdown.push({ name: 'İptal', value: members.filter((m) => m.membershipStatus === 'cancelled').length, color: '#9ca3af' })
 
   return breakdown.filter((x) => x.value > 0)
 }

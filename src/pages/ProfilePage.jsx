@@ -63,7 +63,7 @@ export default function ProfilePage() {
   })
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState({
-    name: user.name, email: user.email, phone: user.phone || '', city: user.city,
+    name: user.name, email: user.email, phone: user.phone || '', city: user.city, district: user.district || '',
     photo: user.photo || null,
   })
 
@@ -427,6 +427,7 @@ export default function ProfilePage() {
           <FormField label="E-posta" icon={Mail} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="E-posta" />
           <FormField label="Telefon" icon={Phone} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="05XX XXX XX XX" />
           <FormField label="Şehir" icon={MapPin} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
+          <FormField label="İlçe" icon={MapPin} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="İlçe" />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
         </div>
       </Modal>

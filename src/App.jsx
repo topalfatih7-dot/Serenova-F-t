@@ -37,7 +37,7 @@ const CorporatePage = lazy(() => import('./pages/CorporatePage'))
 const CorporateApplicationPage = lazy(() => import('./pages/CorporateApplicationPage'))
 const StaffApplicationPage = lazy(() => import('./pages/StaffApplicationPage'))
 const TeamListPage = lazy(() => import('./pages/TeamListPage'))
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
@@ -56,12 +56,12 @@ const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'))
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
-const AdminRequestsPage = lazy(() => import('./pages/admin/AdminRequestsPage'))
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
 const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function RouteFallback() {
   return (
@@ -103,6 +103,9 @@ export default function App() {
               <Route path="corporate" element={<CorporatePage />} />
               <Route path="corporate/apply" element={<CorporateApplicationPage />} />
               <Route path="team/:id" element={<StaffProfilePage />} />
+              <Route path="kvkk" element={<LegalDocumentPage slug="kvkk" />} />
+              <Route path="privacy" element={<LegalDocumentPage slug="privacy" />} />
+              <Route path="terms" element={<LegalDocumentPage slug="terms" />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 
@@ -141,7 +144,6 @@ export default function App() {
                 <Route path="admin/members" element={<AdminMembersPage />} />
                 <Route path="admin/plans" element={<AdminPlansPage />} />
                 <Route path="admin/premium" element={<AdminPremiumPage />} />
-                <Route path="admin/requests" element={<AdminRequestsPage />} />
                 <Route path="admin/applications" element={<AdminApplicationsPage />} />
                 <Route path="admin/library" element={<AdminLibraryPage />} />
                 <Route path="admin/staff" element={<AdminStaffPage />} />

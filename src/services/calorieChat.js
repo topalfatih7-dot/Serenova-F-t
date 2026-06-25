@@ -3,11 +3,12 @@
  */
 
 import { formatAiError } from '../utils/aiErrors.js'
+import { getApiAuthHeaders } from './apiAuth.js'
 
 const NOTIFY_SECRET = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET || ''
 
-function notifyHeaders() {
-  const h = { 'Content-Type': 'application/json' }
+async function notifyHeaders() {
+  const h = await getApiAuthHeaders()
   if (NOTIFY_SECRET) h['X-Notify-Secret'] = NOTIFY_SECRET
   return h
 }
@@ -23,7 +24,7 @@ export async function notifyCalorieChatMessage({ text, userName, userEmail, memb
   try {
     const res = await fetch('/api/calorie-chat-notify', {
       method: 'POST',
-      headers: notifyHeaders(),
+      headers: await notifyHeaders(),
       body: JSON.stringify({ text, userName, userEmail, membership }),
     })
     const data = await res.json().catch(() => ({}))
@@ -40,7 +41,7 @@ export async function analyzeFoodText(text) {
   try {
     const res = await fetch('/api/ai-food-text', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getApiAuthHeaders(),
       body: JSON.stringify({ text }),
     })
     const data = await res.json().catch(() => ({}))

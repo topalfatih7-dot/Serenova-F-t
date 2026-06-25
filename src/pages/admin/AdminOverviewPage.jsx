@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import {
-  Users, Crown, UserCheck, Pause, XCircle, TrendingUp, Calendar, ArrowRight, MessageSquare,
+  Users, Crown, UserCheck, TrendingUp, Calendar, ArrowRight, MessageSquare,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -11,7 +11,7 @@ import { useApp } from '../../context/AppContext'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 
-const ACTIVITY_COLORS = { upgrade: 'text-brand-600', signup: 'text-sage-600', pause: 'text-amber-600', cancel: 'text-red-500', payment: 'text-gold-500', ticket: 'text-purple-600', login: 'text-cream-800', renew: 'text-sage-600', resume: 'text-brand-500' }
+const ACTIVITY_COLORS = { upgrade: 'text-brand-600', signup: 'text-sage-600', payment: 'text-gold-500', ticket: 'text-purple-600', login: 'text-cream-800' }
 
 export default function AdminOverviewPage() {
   useRelativeTimeTick()
@@ -49,11 +49,10 @@ export default function AdminOverviewPage() {
         <StatsCard label="MRR" value={adminStats.mrr ? `${(adminStats.mrr / 1000).toFixed(1)}K₺` : '0₺'} sub={`Toplam gelir: ${adminStats.totalRevenue.toLocaleString('tr-TR')}₺`} icon={TrendingUp} accent="brand" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard label="Aktif" value={adminStats.active} icon={UserCheck} accent="sage" />
-        <StatsCard label="Duraklatılmış" value={adminStats.paused} icon={Pause} accent="gold" />
+        <StatsCard label="Sona Eriyor" value={adminStats.expiring} icon={Calendar} accent="gold" />
         <StatsCard label="Açık Talep" value={adminStats.openTickets} icon={MessageSquare} accent="brand" />
-        <StatsCard label="İptal" value={adminStats.cancelled} icon={XCircle} accent="cream" />
       </div>
 
       {hasMembers && (

@@ -6,8 +6,10 @@ import { useApp } from '../../context/AppContext'
  * @param {'member'|'staff'|'admin'|null} role - null = herhangi bir oturum
  */
 export default function RequireAuth({ role = null }) {
-  const { isAuthenticated, isAdmin, isStaff } = useApp()
+  const { isAuthenticated, isAdmin, isStaff, loading } = useApp()
   const location = useLocation()
+
+  if (loading) return null
 
   if (!isAuthenticated) {
     return (

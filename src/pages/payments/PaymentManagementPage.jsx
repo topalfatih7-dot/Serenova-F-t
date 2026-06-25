@@ -9,16 +9,21 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import Modal from '../../components/ui/Modal'
 import PaymentForm from '../../components/payment/PaymentForm'
-import {
-  MOCK_SAVED_CARDS,
-  MOCK_MEMBER_PAYMENTS,
-  MOCK_STAFF_EARNINGS,
-  MOCK_ADMIN_PAYMENT_SUMMARY,
-} from '../../data/mockPayments'
-import { staffRoleLabel } from '../../utils/staffRoles'
+import EmptyState from '../../components/ui/EmptyState'
+import { MOCK_STAFF_EARNINGS } from '../../data/mockPayments'
+import { getPlanLabel } from '../../data/membershipPlans'
 
 function formatTry(amount) {
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount || 0)
+}
+
+function paymentPlanLabel(p) {
+  const planId = p.packageConfig?.planId || p.packageConfig?.membership || p.plan
+  return getPlanLabel(planId) || p.plan || 'Üyelik ödemesi'
+}
+
+function paymentDate(p) {
+  return p.createdAt || p.date || null
 }
 
 function detectCardBrand(number) {
@@ -47,8 +52,15 @@ function StatusBadge({ status }) {
 
 function MemberPayments() {
   const { toast } = useToast()
-  const [cards, setCards] = useState(MOCK_SAVED_CARDS)
+  const { user, platform } = useApp()
+  const [cards, setCards] = useState([])
   const [addCardOpen, setAddCardOpen] = useState(false)
+
+  const payments = useMemo(() => (
+    (platform?.payments || [])
+      .filter((p) => p.memberId === user?.id)
+      .sort((a, b) => new Date(paymentDate(b) || 0) - new Date(paymentDate(a) || 0))
+  ), [platform?.payments, user?.id])
 
   const setDefault = (id) => {
     setCards((list) => list.map((c) => ({ ...c, isDefault: c.id === id })))
@@ -57,7 +69,7 @@ function MemberPayments() {
 
   const removeCard = (id) => {
     setCards((list) => list.filter((c) => c.id !== id))
-    toast('Kart kaldırıldı (mock)', 'info')
+    toast('Kart kaldırıldı', 'info')
   }
 
   return (
@@ -71,61 +83,74 @@ function MemberPayments() {
             <Plus className="h-3.5 w-3.5" /> Kart Ekle
           </button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {cards.map((card) => (
-            <div key={card.id} className="rounded-2xl border border-cream-200 bg-gradient-to-br from-cream-900 to-brand-900 p-5 text-white shadow-md">
-              <div className="flex items-start justify-between">
-                <p className="text-xs uppercase tracking-widest text-white/60">{card.brand}</p>
-                {card.isDefault && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Varsayılan</span>}
-              </div>
-              <p className="mt-6 font-mono text-lg tracking-widest">•••• •••• •••• {card.last4}</p>
-              <p className="mt-2 text-xs text-white/70">{card.holder} · {String(card.expMonth).padStart(2, '0')}/{card.expYear}</p>
-              <div className="mt-4 flex gap-2">
-                {!card.isDefault && (
-                  <button type="button" onClick={() => setDefault(card.id)} className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
-                    Varsayılan yap
+        {cards.length === 0 ? (
+          <EmptyState
+            icon={CreditCard}
+            title="Kayıtlı kart yok"
+            description="Stripe Customer Portal entegrasyonu sonraki aşamada eklenecek. Ödemeleriniz geçmiş tablosunda görünür."
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {cards.map((card) => (
+              <div key={card.id} className="rounded-2xl border border-cream-200 bg-gradient-to-br from-cream-900 to-brand-900 p-5 text-white shadow-md">
+                <div className="flex items-start justify-between">
+                  <p className="text-xs uppercase tracking-widest text-white/60">{card.brand}</p>
+                  {card.isDefault && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Varsayılan</span>}
+                </div>
+                <p className="mt-6 font-mono text-lg tracking-widest">•••• •••• •••• {card.last4}</p>
+                <p className="mt-2 text-xs text-white/70">{card.holder} · {String(card.expMonth).padStart(2, '0')}/{card.expYear}</p>
+                <div className="mt-4 flex gap-2">
+                  {!card.isDefault && (
+                    <button type="button" onClick={() => setDefault(card.id)} className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
+                      Varsayılan yap
+                    </button>
+                  )}
+                  <button type="button" onClick={() => removeCard(card.id)} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-red-200 hover:bg-white/20">
+                    <Trash2 className="inline h-3 w-3" /> Kaldır
                   </button>
-                )}
-                <button type="button" onClick={() => removeCard(card.id)} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-red-200 hover:bg-white/20">
-                  <Trash2 className="inline h-3 w-3" /> Kaldır
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <History className="h-5 w-5 text-brand-500" /> Ödeme Geçmişim
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-cream-100 bg-cream-50/80 text-left text-xs uppercase tracking-wide text-cream-800/50">
-              <tr>
-                <th className="px-4 py-3">Tarih</th>
-                <th className="px-4 py-3">Plan</th>
-                <th className="px-4 py-3">Tutar</th>
-                <th className="px-4 py-3 hidden sm:table-cell">Kart</th>
-                <th className="px-4 py-3">Durum</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-cream-50">
-              {MOCK_MEMBER_PAYMENTS.map((p) => (
-                <tr key={p.id} className="hover:bg-cream-50/50">
-                  <td className="px-4 py-3 text-cream-800">{format(new Date(p.date), 'd MMM yyyy', { locale: tr })}</td>
-                  <td className="px-4 py-3 font-medium text-cream-900">{p.plan}</td>
-                  <td className="px-4 py-3 font-semibold text-cream-900">{formatTry(p.amount)}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-cream-800/60">{p.method}</td>
-                  <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+        {payments.length === 0 ? (
+          <EmptyState icon={History} title="Henüz ödeme kaydı yok" description="Ücretli paket satın aldığınızda ödemeleriniz burada listelenir." />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="border-b border-cream-100 bg-cream-50/80 text-left text-xs uppercase tracking-wide text-cream-800/50">
+                <tr>
+                  <th className="px-4 py-3">Tarih</th>
+                  <th className="px-4 py-3">Plan</th>
+                  <th className="px-4 py-3">Tutar</th>
+                  <th className="px-4 py-3">Durum</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-cream-50">
+                {payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-cream-50/50">
+                    <td className="px-4 py-3 text-cream-800">
+                      {paymentDate(p) ? format(new Date(paymentDate(p)), 'd MMM yyyy', { locale: tr }) : '—'}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-cream-900">{paymentPlanLabel(p)}</td>
+                    <td className="px-4 py-3 font-semibold text-cream-900">{formatTry(p.amount)}</td>
+                    <td className="px-4 py-3"><StatusBadge status={p.status || 'completed'} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
-      <Modal open={addCardOpen} onClose={() => setAddCardOpen(false)} title="Yeni Kart Ekle (Demo)">
+      <Modal open={addCardOpen} onClose={() => setAddCardOpen(false)} title="Yeni Kart Ekle">
+        <p className="mb-4 text-sm text-cream-800/60">Stripe kart kaydı yakında aktif olacak. Şimdilik ödeme Stripe Checkout üzerinden yapılır.</p>
         <PaymentForm
           submitLabel="Kartı Kaydet"
           loadingLabel="Kaydediliyor…"
@@ -144,7 +169,7 @@ function MemberPayments() {
             }
             setCards((list) => [...list.map((c) => ({ ...c, isDefault: false })), newCard])
             setAddCardOpen(false)
-            toast('Kart eklendi (mock)', 'success')
+            toast('Kart yerel oturuma eklendi (Stripe senkronu yakında)', 'info')
           }}
         />
       </Modal>
@@ -157,6 +182,10 @@ function StaffPayments({ role }) {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+        <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <p className="text-sm text-amber-900/80">Personel hakediş modülü henüz veritabanına bağlanmadı — aşağıdaki özet demo veridir.</p>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
           <p className="text-xs font-medium text-amber-800/70">Bekleyen Hakediş</p>
@@ -181,7 +210,7 @@ function StaffPayments({ role }) {
           <p className="text-xs font-medium text-cream-800/60">Toplam Kazanç</p>
           <p className="mt-1 font-display text-2xl font-bold text-cream-900">{formatTry(earnings.totalEarned)}</p>
           <p className="mt-1 flex items-center gap-1 text-xs text-sage-600">
-            <TrendingUp className="h-3 w-3" /> Tüm zamanlar (mock)
+            <TrendingUp className="h-3 w-3" /> Demo veri
           </p>
         </div>
       </div>
@@ -213,26 +242,34 @@ function StaffPayments({ role }) {
 }
 
 function AdminPayments() {
-  const s = MOCK_ADMIN_PAYMENT_SUMMARY
+  const { platform, adminStats } = useApp()
+
+  const recent = useMemo(() => (
+    [...(platform?.payments || [])]
+      .sort((a, b) => new Date(paymentDate(b) || 0) - new Date(paymentDate(a) || 0))
+      .slice(0, 25)
+  ), [platform?.payments])
+
+  const activePaid = adminStats?.premium ?? 0
 
   return (
     <div className="space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
           <p className="text-xs text-brand-800/70">Aylık Tekrarlayan Gelir</p>
-          <p className="mt-1 font-display text-2xl font-bold text-brand-900">{formatTry(s.mrr)}</p>
+          <p className="mt-1 font-display text-2xl font-bold text-brand-900">{formatTry(adminStats?.mrr)}</p>
         </div>
         <div className="rounded-2xl border border-sage-100 bg-sage-50/50 p-5">
-          <p className="text-xs text-sage-800/70">Aktif Abonelik</p>
-          <p className="mt-1 font-display text-2xl font-bold text-sage-900">{s.activeSubscriptions}</p>
+          <p className="text-xs text-sage-800/70">Ücretli Üye</p>
+          <p className="mt-1 font-display text-2xl font-bold text-sage-900">{activePaid}</p>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
-          <p className="text-xs text-amber-800/70">Personel Hakediş (bekleyen)</p>
-          <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(s.pendingStaffPayouts)}</p>
+          <p className="text-xs text-amber-800/70">Toplam Gelir</p>
+          <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(adminStats?.totalRevenue)}</p>
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-5">
-          <p className="text-xs text-cream-800/60">Platform Komisyonu</p>
-          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{formatTry(s.platformFees)}</p>
+          <p className="text-xs text-cream-800/60">Kayıtlı Ödeme</p>
+          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{platform?.payments?.length ?? 0}</p>
         </div>
       </div>
 
@@ -240,42 +277,36 @@ function AdminPayments() {
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <ArrowDownLeft className="h-5 w-5 text-brand-500" /> Son Üye Ödemeleri
         </h2>
-        <div className="space-y-2">
-          {s.recentTransactions.map((t) => (
-            <div key={t.id} className="flex items-center justify-between rounded-xl border border-cream-200 bg-white px-4 py-3">
-              <div>
-                <p className="font-medium text-cream-900">{t.member}</p>
-                <p className="text-xs text-cream-800/50">{t.plan} · {format(new Date(t.date), 'd MMM yyyy', { locale: tr })}</p>
+        {recent.length === 0 ? (
+          <EmptyState icon={History} title="Ödeme kaydı yok" description="Stripe veya manuel plan değişimlerinde kayıtlar burada görünür." />
+        ) : (
+          <div className="space-y-2">
+            {recent.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded-xl border border-cream-200 bg-white px-4 py-3">
+                <div>
+                  <p className="font-medium text-cream-900">{t.memberName || 'Üye'}</p>
+                  <p className="text-xs text-cream-800/50">
+                    {paymentPlanLabel(t)}
+                    {paymentDate(t) ? ` · ${format(new Date(paymentDate(t)), 'd MMM yyyy', { locale: tr })}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold">{formatTry(t.amount)}</span>
+                  <StatusBadge status={t.status || 'completed'} />
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold">{formatTry(t.amount)}</span>
-                <StatusBadge status={t.status} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
         </h2>
-        <div className="space-y-2">
-          {s.staffPayouts.map((p) => (
-            <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-200 bg-white px-4 py-3">
-              <div>
-                <p className="font-medium text-cream-900">{p.name}</p>
-                <p className="text-xs text-cream-800/50">{staffRoleLabel(p.role)} · {p.sessions ? `${p.sessions} seans` : ''}{p.lists ? `${p.lists} liste` : ''}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-amber-800">{formatTry(p.pending)}</span>
-                <button type="button" className="rounded-lg bg-cream-900 px-3 py-1.5 text-xs font-semibold text-white opacity-60" disabled>
-                  Öde (yakında)
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="rounded-xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm text-cream-800/65">
+          Personel ödeme modülü henüz aktif değil. Seans bazlı hakediş tablosu eklendiğinde bu bölüm doldurulacak.
+        </p>
       </section>
     </div>
   )
@@ -291,19 +322,19 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   }, [audience])
 
   const subtitle = useMemo(() => {
-    if (audience === 'admin') return 'Üye ödemeleri ve personel hakedişleri (demo veri)'
-    if (audience === 'staff') return 'Seans ve liste bazlı kazanç özeti (demo veri)'
-    return 'Kayıtlı kartlarınız ve ödeme geçmişiniz (demo veri)'
+    if (audience === 'admin') return 'Canlı ödeme kayıtları ve abonelik özeti'
+    if (audience === 'staff') return 'Seans ve liste bazlı kazanç özeti (demo)'
+    return 'Ödeme geçmişiniz ve kart yönetimi'
   }, [audience])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/40 px-4 py-3">
-        <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-        <p className="text-sm text-brand-900/80">
-          Bu sayfa şimdilik <strong>mock (demo)</strong> verilerle çalışıyor. Gerçek Stripe entegrasyonu sonraki aşamada eklenecek.
-        </p>
-      </div>
+      {audience === 'staff' && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+          <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <p className="text-sm text-amber-900/80">Personel kazanç ekranı demo veri kullanıyor.</p>
+        </div>
+      )}
 
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">{title}</h1>

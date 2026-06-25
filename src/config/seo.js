@@ -64,28 +64,31 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/corporate', changefreq: 'monthly', priority: '0.7' },
   { path: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
   { path: '/team/apply', changefreq: 'monthly', priority: '0.6' },
+  { path: '/kvkk', changefreq: 'yearly', priority: '0.4' },
+  { path: '/privacy', changefreq: 'yearly', priority: '0.4' },
+  { path: '/terms', changefreq: 'yearly', priority: '0.4' },
 ]
 
 export const PAGE_SEO = {
   '/': {
     title: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
     description:
-      'Kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Ücretsiz Basic paketle hemen başlayın.',
+      'Kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın; Eko, Diyet, Spor, Kurucu ve VIP planlarıyla yükseltin.',
     keywords:
-      'online koçluk, fitness koçu, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness',
+      'online koçluk, fitness koçu, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness, eko paket, kurucu üye',
   },
   '/membership': {
-    title: 'Üyelik Planları — Basic, Gümüş, Altın, Platinum',
+    title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Kurucu & VIP',
     description:
-      'Basic (ücretsiz), Gümüş, Altın ve Platinum üyelik planlarını karşılaştırın. Koç görüşmesi, diyetisyen desteği, kalori hesaplama ve VIP özellikler.',
+      'Basic (ücretsiz), Eko, Diyet, Spor, 100 Kurucu Üye ve VIP paketlerini karşılaştırın. Koç ve diyetisyen görüşmeleri, kalori hesaplama, video kütüphanesi ve kişisel programlar.',
     keywords:
-      'üyelik planları, fitness paketi, online koçluk fiyat, diyetisyen paketi, platinum wellness, Yeni Form üyelik',
+      'üyelik planları, eko paket, diyet paketi, spor paketi, kurucu üye, vip paket, online koçluk fiyat, Yeni Form üyelik',
   },
   '/onboarding': {
     title: 'Kayıt Ol — Ücretsiz Hesap Oluştur',
     description:
-      'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya premium planlarla kişisel wellness yolculuğunuza başlayın.',
-    keywords: 'kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik',
+      'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya Eko, Diyet, Spor, Kurucu ve VIP planlarıyla kişisel wellness yolculuğunuza başlayın.',
+    keywords: 'kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik, eko paket kayıt',
   },
   '/login': {
     title: 'Giriş Yap',
@@ -142,6 +145,21 @@ export const PAGE_SEO = {
     title: 'Kadromuza Katıl — Koç & Diyetisyen Başvurusu',
     description: 'Yeni Form kadrosuna koç veya diyetisyen olarak başvurun. Online wellness platformunda uzman ekibimize katılın.',
     keywords: 'koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer',
+  },
+  '/kvkk': {
+    title: 'KVKK Aydınlatma Metni',
+    description: `${BRAND.name} kişisel verilerin korunması ve KVKK aydınlatma metni.`,
+    keywords: 'KVKK, kişisel veriler, aydınlatma metni, gizlilik',
+  },
+  '/privacy': {
+    title: 'Gizlilik Politikası',
+    description: `${BRAND.name} gizlilik politikası ve çerez kullanımı hakkında bilgi.`,
+    keywords: 'gizlilik politikası, çerezler, veri güvenliği',
+  },
+  '/terms': {
+    title: 'Kullanım Koşulları',
+    description: `${BRAND.name} platform kullanım koşulları ve üyelik sözleşmesi.`,
+    keywords: 'kullanım koşulları, üyelik sözleşmesi, şartlar',
   },
   '/reset-password': {
     title: 'Yeni Şifre Belirle',

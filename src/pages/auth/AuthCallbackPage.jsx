@@ -30,7 +30,7 @@ function stripAuthCodeFromUrl() {
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { reloadRemote } = useApp()
+  const { refresh } = useApp()
   const [phase, setPhase] = useState('loading')
   const [hasSession, setHasSession] = useState(false)
 
@@ -67,12 +67,12 @@ export default function AuthCallbackPage() {
     }
 
     // Doğrulama başarıya ulaştığında UI'ı hemen günceller; oturum yenileme arka planda
-    // yapılır ki reloadRemote yavaşlasa/hata verse bile ekran "doğrulanıyor"da takılmaz.
+    // yapılır ki refresh yavaşlasa/hata verse bile ekran "doğrulanıyor"da takılmaz.
     function markSuccess(session) {
       if (!active) return
       setHasSession(Boolean(session?.user))
       setPhase('success')
-      Promise.resolve(reloadRemote()).catch(() => { /* arka plan; UI'ı bloklama */ })
+      Promise.resolve(refresh()).catch(() => { /* arka plan; UI'ı bloklama */ })
     }
 
     async function finish() {
@@ -140,7 +140,7 @@ export default function AuthCallbackPage() {
       }
 
       if (session?.user) {
-        Promise.resolve(reloadRemote()).catch(() => {})
+        Promise.resolve(refresh()).catch(() => {})
         if (active) navigate('/dashboard', { replace: true })
         return
       }
@@ -154,11 +154,11 @@ export default function AuthCallbackPage() {
     })
 
     return () => { active = false }
-  }, [navigate, searchParams, reloadRemote])
+  }, [navigate, searchParams, refresh])
 
   const goPanel = async () => {
     if (hasSession) {
-      await reloadRemote()
+      await refresh()
       navigate('/dashboard', { replace: true })
       return
     }

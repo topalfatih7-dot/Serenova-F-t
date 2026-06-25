@@ -29,10 +29,31 @@ function itemsTotalCal(items = []) {
   return items.reduce((sum, i) => sum + (Number(i.cal) || 0), 0)
 }
 
+function buildCalorieLogEntry({ mode, input, analysis }) {
+  return {
+    id: `cal-${Date.now()}`,
+    mode,
+    input: input?.slice(0, 500) || '',
+    totalCal: itemsTotalCal(analysis?.items),
+    items: (analysis?.items || []).slice(0, 20).map((i) => ({
+      name: i.name || i.label,
+      cal: i.cal,
+      protein: i.protein,
+      carb: i.carb,
+      fat: i.fat,
+    })),
+    createdAt: new Date().toISOString(),
+  }
+}
+
+function appendCalorieHistory(existing = [], entry) {
+  return [entry, ...existing].slice(0, 100)
+}
+
 export default function CalorieCalculatorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { membership, user } = useApp()
+  const { membership, user, updateProfile } = useApp()
   const fileRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -86,6 +107,8 @@ export default function CalorieCalculatorPage() {
       const result = await analyzeFoodText(text)
       if (result.ok) {
         setLastAnalysis(result)
+        const entry = buildCalorieLogEntry({ mode: 'text', input: text, analysis: result })
+        updateProfile({ calorieHistory: appendCalorieHistory(user?.calorieHistory, entry) }).catch(() => {})
         setChatMessages((prev) => [
           ...prev,
           {
@@ -145,6 +168,8 @@ export default function CalorieCalculatorPage() {
     if (result.ok && result.items?.length > 0) {
       setPhotoResult(result)
       setLastAnalysis(result)
+      const entry = buildCalorieLogEntry({ mode: 'photo', input: pendingFile?.name || 'fotoğraf', analysis: result })
+      updateProfile({ calorieHistory: appendCalorieHistory(user?.calorieHistory, entry) }).catch(() => {})
     } else if (result.ok) {
       toast('Fotoğrafta yemek tespit edilemedi.', 'warning')
       setPhotoResult({ label: 'Tespit Edilemedi', items: [] })

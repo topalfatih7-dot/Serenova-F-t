@@ -5,6 +5,8 @@
  * Domain örneği: yourteam.daily.co
  */
 
+import { getApiAuthHeaders } from '../services/apiAuth.js'
+
 export const VIDEO_CALL_CONFIG = {
   /** Daily.co subdomain (https://DOMAIN/room-name) */
   domain: (import.meta.env.VITE_DAILY_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, ''),
@@ -52,7 +54,7 @@ export async function getDailyToken(roomName, userName, isOwner = false) {
   try {
     const res = await fetch('/api/daily-room', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getApiAuthHeaders(),
       body: JSON.stringify({ roomName, userName, isOwner }),
     })
     const data = await res.json().catch(() => ({}))

@@ -17,6 +17,9 @@ const STATIC_ROUTES = [
   { loc: '/corporate', changefreq: 'monthly', priority: '0.7' },
   { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
   { loc: '/team/apply', changefreq: 'monthly', priority: '0.6' },
+  { loc: '/kvkk', changefreq: 'yearly', priority: '0.4' },
+  { loc: '/privacy', changefreq: 'yearly', priority: '0.4' },
+  { loc: '/terms', changefreq: 'yearly', priority: '0.4' },
 ]
 
 function siteBase() {

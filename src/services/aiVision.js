@@ -3,6 +3,7 @@
  */
 
 import { formatAiError } from '../utils/aiErrors.js'
+import { getApiAuthHeaders } from './apiAuth.js'
 
 const MAX_DIMENSION = 1024
 const JPEG_QUALITY = 0.8
@@ -60,7 +61,7 @@ export async function analyzeFoodPhoto(file) {
     const { dataUrl, mimeType } = await downscaleImage(file)
     const res = await fetch('/api/ai-food-vision', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getApiAuthHeaders(),
       body: JSON.stringify({ image: dataUrl, mimeType }),
     })
     const data = await res.json().catch(() => ({}))

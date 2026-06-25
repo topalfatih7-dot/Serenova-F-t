@@ -14,7 +14,6 @@ delete from public.posts;                 -- blog yazıları
 delete from public.exercises;             -- hareket/egzersiz kütüphanesi
 delete from public.programs;              -- üyelere atanmış programlar
 delete from public.tickets;               -- destek talepleri
-delete from public.membership_requests;   -- üyelik talepleri (dondur/iptal/yenile)
 delete from public.activities;            -- aktivite kayıtları
 delete from public.payments;              -- ödeme kayıtları
 delete from public.staff;                 -- koç & diyetisyen kadrosu

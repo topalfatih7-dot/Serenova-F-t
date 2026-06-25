@@ -1,12 +1,15 @@
 // Kural Tabanlı Analiz Servisi — Kişiselleştirilmiş sağlık analizi
 // Basic paket üyelerine kayıt sonrası otomatik olarak uygulanır.
 
+import { describeHealthTest } from '../data/healthTest'
+
 export function generateHealthAnalysis(profile, exercises = []) {
   const bmi = calculateBmi(profile.weight, profile.height)
   const bmiCategory = getBmiCategory(bmi)
   const goalCategories = mapGoalsToCategories(profile.goals || [])
-  const coachRecommendations = generateCoachList(profile, exercises, goalCategories)
-  const dietitianRecommendations = generateDietitianPlan(profile)
+  const healthTestInsights = buildHealthTestInsights(profile.healthTest, profile.gender)
+  const coachRecommendations = generateCoachList(profile, exercises, goalCategories, healthTestInsights)
+  const dietitianRecommendations = generateDietitianPlan(profile, healthTestInsights)
 
   return {
     generatedAt: new Date().toISOString().split('T')[0],
@@ -16,9 +19,17 @@ export function generateHealthAnalysis(profile, exercises = []) {
     dailyCalories: estimateDailyCalories(profile),
     coachRecommendations,
     dietitianRecommendations,
-    fitnessScore: calculateFitnessScore(profile),
+    fitnessScore: calculateFitnessScore(profile, healthTestInsights),
     priorityGoal: getPriorityGoal(profile.goals || []),
+    healthTestInsights,
   }
+}
+
+function buildHealthTestInsights(healthTest = {}, gender) {
+  if (!healthTest || typeof healthTest !== 'object') return []
+  return describeHealthTest(healthTest, gender)
+    .flatMap((section) => section.items.map((item) => `${item.label}: ${item.value}`))
+    .slice(0, 12)
 }
 
 function calculateBmi(weight, height) {
@@ -75,7 +86,7 @@ function estimateDailyCalories(profile) {
   return { maintenance: total, recommended: total, goal: 'Form koruma' }
 }
 
-function calculateFitnessScore(profile) {
+function calculateFitnessScore(profile, healthTestInsights = []) {
   let score = 50
   const bmi = calculateBmi(profile.weight, profile.height)
   if (bmi) {
@@ -86,7 +97,16 @@ function calculateFitnessScore(profile) {
   if (profile.fitnessLevel === 'advanced') score += 20
   if ((profile.goals || []).length >= 2) score += 10
   if ((profile.nutritionPrefs || []).length >= 1) score += 10
-  return Math.min(100, score)
+
+  const ht = profile.healthTest || {}
+  if (ht.wellbeing >= 4) score += 5
+  if (ht.energy === 'high') score += 5
+  if (ht.sleepQuality === 'good') score += 5
+  if (ht.stressLevel === 'low') score += 5
+  if (ht.injuries === 'yes' || ht.painAreas?.length) score -= 8
+  if (ht.chronicConditions?.length) score -= 5
+
+  return Math.max(0, Math.min(100, score))
 }
 
 function getPriorityGoal(goals) {
@@ -117,7 +137,7 @@ function mapGoalsToCategories(goals) {
 }
 
 // Egzersiz kütüphanesinden hedeflere uygun videolar seç
-function generateCoachList(profile, exercises, goalCategories) {
+function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
   const filtered = exercises.filter((ex) => {
     if (!ex.category) return true
     return goalCategories.some((cat) => ex.category.toLowerCase().includes(cat.toLowerCase()) || cat.toLowerCase().includes(ex.category.toLowerCase()))
@@ -148,11 +168,14 @@ function generateCoachList(profile, exercises, goalCategories) {
   const priorityGoal = getPriorityGoal(profile.goals || [])
   const mainMessage = goalMessages[priorityGoal] || 'Genel sağlık için dengeli program hazırlandı.'
   const levelMessage = levelTips[profile.fitnessLevel] || levelTips.beginner
+  const injuryNote = healthTestInsights.some((t) => t.includes('Sakatlık') || t.includes('Ağrı'))
+    ? ' Sakatlık veya ağrı bildirimi nedeniyle hareket yoğunluğu düşük tutulmalıdır.'
+    : ''
 
   return {
     exercises: selected,
     totalCount: exercises.length,
-    message: `${mainMessage} ${levelMessage}`,
+    message: `${mainMessage} ${levelMessage}${injuryNote}`,
     weeklyPlan: generateWeeklyPlan(profile),
     categories: goalCategories.slice(0, 4),
   }
@@ -184,13 +207,16 @@ function generateWeeklyPlan(profile) {
 }
 
 // Beslenme planı oluştur
-function generateDietitianPlan(profile) {
+function generateDietitianPlan(profile, healthTestInsights = []) {
   const prefs = profile.nutritionPrefs || []
   const goals = profile.goals || []
   const calories = estimateDailyCalories(profile)
 
   const mealPlan = buildMealPlan(prefs)
-  const tips = buildNutritionTips(prefs, goals)
+  const tips = buildNutritionTips(prefs, goals, profile.healthTest)
+  if (healthTestInsights.some((t) => t.includes('alerji'))) {
+    tips.unshift('Bildirilen besin alerjileri/intoleranslar plana göre dikkate alınmalıdır.')
+  }
 
   return {
     calories,
@@ -258,7 +284,7 @@ function buildMealPlan(prefs) {
   ]
 }
 
-function buildNutritionTips(prefs, goals) {
+function buildNutritionTips(prefs, goals, healthTest = {}) {
   const tips = []
 
   if (goals.includes('fatburn') || goals.includes('weight')) {
@@ -282,6 +308,13 @@ function buildNutritionTips(prefs, goals) {
   if (goals.includes('heart')) {
     tips.push('Omega-3 içeriği yüksek somon, uskumru gibi balıkları haftada 2–3 kez tüketin.')
     tips.push('Tuz tüketiminizi sınırlandırın (günlük 5g altı).')
+  }
+
+  if (healthTest?.waterIntake === 'low') {
+    tips.push('Su tüketiminizi artırmayı hedefleyin; günde en az 2 litre önerilir.')
+  }
+  if (healthTest?.mealsPerDay === '1-2') {
+    tips.push('Gün içine yayılmış 3 ana öğün planı oluşturmayı deneyin.')
   }
 
   tips.push('Günlük en az 2–2.5 litre su için.')

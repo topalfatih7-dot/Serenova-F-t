@@ -37,7 +37,7 @@ function memberToRow(member) {
     email: member.email,
     name: member.name || '',
     phone: member.phone || '',
-    role: 'member',
+    role: member.role === 'admin' ? 'admin' : 'member',
     membership: member.membership || 'free',
     membership_status: member.membershipStatus || 'active',
     assigned_coach_id: member.assignedCoachId || null,
@@ -60,6 +60,7 @@ function rowToMember(row) {
     // RLS koç/diyetisyen erişimi sütunlara bağlı; JSONB yedek değerini de oku
     assignedCoachId: row.assigned_coach_id || data.assignedCoachId || null,
     assignedDietitianId: row.assigned_dietitian_id || data.assignedDietitianId || null,
+    role: row.role || data.role || 'member',
   }
 }
 
@@ -136,7 +137,7 @@ export function onAuthChange(cb) {
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], requests: [], staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
+  tickets: [], activities: [], payments: [], exercises: [], staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
   content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
 }
 
@@ -152,10 +153,6 @@ function rowToExercise(row) {
     createdAt: row.created_at,
   }
 }
-function rowToRequest(row) {
-  return { id: row.id, memberId: row.member_id, memberName: row.member_name, type: row.type, status: row.status, requestedUntil: row.requested_until, note: row.note, createdAt: row.created_at }
-}
-
 function rowToStaffApplication(row) {
   return {
     id: row.id,
@@ -268,13 +265,12 @@ export async function hydrate() {
     return { ...EMPTY_DB, staff, posts, content, exercises, plans }
   }
 
-  const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes, requestsRes] = await Promise.all([
+  const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
     supabase.from('members').select('*'),
     supabase.from('programs').select('*').order('created_at', { ascending: false }),
     supabase.from('tickets').select('*').order('created_at', { ascending: false }),
     supabase.from('activities').select('*').order('created_at', { ascending: false }),
     supabase.from('payments').select('*').order('created_at', { ascending: false }),
-    supabase.from('membership_requests').select('*').order('created_at', { ascending: false }),
   ])
 
   let members = (membersRes.data || []).map(rowToMember)
@@ -324,7 +320,6 @@ export async function hydrate() {
     payments: (paymentsRes.data || []).map(rowToPayment),
     exercises,
     plans,
-    requests: (requestsRes.data || []).map(rowToRequest),
     staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
     corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
     contactInquiries: (contactInqRes.data || []).map(rowToContactInquiry),
@@ -465,6 +460,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     photo: profile.photo || null,
     city: profile.city || '',
     district: profile.district || '',
+    phoneCountry: profile.phoneCountry || '',
     goals: profile.goals || [],
     fitnessLevel: profile.fitnessLevel || 'beginner',
     nutritionPrefs: profile.nutritionPrefs || [],
@@ -499,7 +495,6 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
     streak: 0,
-    pauseUntil: null,
   }, packageConfig, isPaidMembership(membership))
 
   await upsertMember(member)
@@ -634,6 +629,35 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 // Çoğu mutasyon: bellekteki member nesnesini düzenle + upsert et.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
+
+  if (patch.calorieHistory) {
+    const prev = member.calorieHistory || []
+    const next = patch.calorieHistory || []
+    const prevIds = new Set(prev.map((e) => e.id))
+    const merged = [...prev]
+    for (const e of next) {
+      if (e?.id && !prevIds.has(e.id)) {
+        merged.push(e)
+        prevIds.add(e.id)
+      }
+    }
+    updated.calorieHistory = merged.slice(-100)
+  }
+
+  if (patch.weight != null && String(patch.weight) !== String(member.weight)) {
+    const w = parseFloat(patch.weight)
+    if (!Number.isNaN(w) && w > 0) {
+      const progress = { ...(member.progress || {}), weight: [...(member.progress?.weight || [])] }
+      const todayStr = today()
+      const last = progress.weight[progress.weight.length - 1]
+      if (!last || last.date !== todayStr || last.value !== w) {
+        progress.weight.push({ date: todayStr, value: w })
+        if (progress.weight.length > 120) progress.weight = progress.weight.slice(-120)
+      }
+      updated.progress = progress
+    }
+  }
+
   if (isPaidMembership(updated.membership)) {
     updated = syncMembershipExpiryStatus(updated)
   }
@@ -697,7 +721,6 @@ export async function changeMemberPlan(member, planId, planPrice = 0, durationMo
     membership: planId,
     membershipStatus: 'active',
     packageConfig,
-    pauseUntil: null,
     lastActiveAt: today(),
   }
 
@@ -925,33 +948,6 @@ export async function editExercise(id, patch) {
 
 export async function removeExercise(id) {
   await supabase.from('exercises').delete().eq('id', id)
-}
-
-// --------------------------- membership requests ---------------------------
-export async function createMembershipRequest(member, type, requestedUntil = null, note = '') {
-  const { error } = await supabase.from('membership_requests').insert({
-    member_id: member.id, member_name: member.name, type, requested_until: requestedUntil || null, note,
-  })
-  if (error) return { success: false, error: error.message }
-  await addActivity('request', `${member.name} ${type} talebi oluşturdu`, member.id)
-  return { success: true }
-}
-
-export async function resolveMembershipRequest(request, approve) {
-  await supabase.from('membership_requests').update({ status: approve ? 'approved' : 'rejected' }).eq('id', request.id)
-  if (approve) {
-    const { data: rows } = await supabase.from('members').select('*').eq('id', request.memberId).limit(1)
-    const member = rows?.[0] ? rowToMember(rows[0]) : null
-    if (member) {
-      let patch = {}
-      if (request.type === 'freeze') patch = { membershipStatus: 'paused', pauseUntil: request.requestedUntil }
-      else if (request.type === 'cancel') patch = { membershipStatus: 'cancelled' }
-      else if (request.type === 'resume') patch = { membershipStatus: 'active', pauseUntil: null }
-      else if (request.type === 'renew') patch = { membershipStatus: 'active' }
-      await upsertMember({ ...member, ...patch, lastActiveAt: today() })
-    }
-  }
-  return { success: true }
 }
 
 // --------------------------- staff applications ---------------------------

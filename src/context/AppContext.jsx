@@ -22,7 +22,7 @@ const AppContext = createContext(null)
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], plans: ALL_PLANS, requests: [], session: null,
+  tickets: [], activities: [], payments: [], exercises: [], plans: ALL_PLANS, session: null,
   content: { testimonials: [], faqs: [], successStories: [] },
 }
 
@@ -206,26 +206,6 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [currentMember, reloadRemote])
 
-  const pauseMembership = useCallback(async (until) => {
-    if (!currentMember) return
-    await patchCurrentRemote({ membershipStatus: 'paused', pauseUntil: until })
-  }, [currentMember, patchCurrentRemote])
-
-  const resumeMembership = useCallback(async () => {
-    if (!currentMember) return
-    await patchCurrentRemote({ membershipStatus: 'active', pauseUntil: null })
-  }, [currentMember, patchCurrentRemote])
-
-  const cancelMembership = useCallback(async () => {
-    if (!currentMember) return
-    await patchCurrentRemote({ membershipStatus: 'cancelled' })
-  }, [currentMember, patchCurrentRemote])
-
-  const renewMembership = useCallback(async () => {
-    if (!currentMember) return
-    await patchCurrentRemote({ membershipStatus: 'active' })
-  }, [currentMember, patchCurrentRemote])
-
   const adminPatchMember = useCallback(async (memberId, patch) => {
     const member = (remoteDb?.members || []).find((m) => m.id === memberId)
     if (!member) return
@@ -303,19 +283,6 @@ export function AppProvider({ children }) {
   const removeExercise = useCallback(async (id) => {
     await sb.removeExercise(id)
     await reloadRemote()
-  }, [reloadRemote])
-
-  const createMembershipRequest = useCallback(async (type, requestedUntil = null, note = '') => {
-    if (!currentMember) return { success: false, error: 'Giriş gerekli' }
-    const r = await sb.createMembershipRequest(currentMember, type, requestedUntil, note)
-    if (r.success) await reloadRemote()
-    return r
-  }, [currentMember, reloadRemote])
-
-  const resolveMembershipRequest = useCallback(async (request, approve) => {
-    const r = await sb.resolveMembershipRequest(request, approve)
-    await reloadRemote()
-    return r
   }, [reloadRemote])
 
   const resolveStaffApplication = useCallback(async (application, approve, adminNote = '') => {
@@ -510,11 +477,9 @@ export function AppProvider({ children }) {
     myTickets: currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : [],
     exercises: db.exercises || [],
     plans: db.plans || ALL_PLANS,
-    membershipRequests: db.requests || [],
     staffApplications: db.staffApplications || [],
     corporateApplications: db.corporateApplications || [],
     contactInquiries: db.contactInquiries || [],
-    myRequests: currentMember ? (db.requests || []).filter((r) => r.memberId === currentMember.id) : [],
     user: currentMember || {},
     membership: currentMember?.membership || 'free',
     membershipStatus: currentMember?.membershipStatus || 'active',
@@ -526,7 +491,6 @@ export function AppProvider({ children }) {
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},
-    pauseUntil: currentMember?.pauseUntil,
     premiumExpiresAt: currentMember?.premiumExpiresAt,
     premiumStartedAt: currentMember?.premiumStartedAt,
     freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
@@ -570,10 +534,6 @@ export function AppProvider({ children }) {
     addPost,
     editPost,
     removePost,
-    pauseMembership,
-    resumeMembership,
-    cancelMembership,
-    renewMembership,
     createTicket,
     setTicketStatus,
     sendTicketReply,
@@ -581,8 +541,6 @@ export function AppProvider({ children }) {
     addExercise,
     editExercise,
     removeExercise,
-    createMembershipRequest,
-    resolveMembershipRequest,
     resolveStaffApplication,
     resolveCorporateApplication,
     updateContactInquiryStatus,
@@ -607,6 +565,7 @@ export function AppProvider({ children }) {
     confirmPhoneVerification,
     refreshVerification,
     refresh: reloadRemote,
+    reloadRemote,
   }
 
   if (!isSupabaseEnabled) {

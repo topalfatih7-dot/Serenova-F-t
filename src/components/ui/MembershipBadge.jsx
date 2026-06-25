@@ -14,16 +14,12 @@ const PLAN_CONFIG = {
 }
 
 const statusColors = {
-  active:    'bg-sage-50 text-sage-700 border-sage-200',
-  paused:    'bg-amber-50 text-amber-700 border-amber-200',
-  cancelled: 'bg-red-50 text-red-600 border-red-200',
-  expiring:  'bg-orange-50 text-orange-700 border-orange-200',
+  active:   'bg-sage-50 text-sage-700 border-sage-200',
+  expiring: 'bg-orange-50 text-orange-700 border-orange-200',
 }
 
 const statusLabels = {
-  paused:    'Duraklatıldı',
-  cancelled: 'Sona Erdi',
-  expiring:  'Sona Eriyor',
+  expiring: 'Sona Eriyor',
 }
 
 export default function MembershipBadge({ tier, status }) {

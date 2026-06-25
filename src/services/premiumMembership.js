@@ -29,11 +29,9 @@ import { isPaidMembership } from '../data/membershipPlans'
 
 /**
  * Süresi dolan üyeleri free plana düşürür; premium erişimi kaldırılır.
- * Duraklatılmış veya manuel iptal edilmiş üyelerde plan değişmez.
  */
 export function syncMembershipExpiryStatus(member) {
   if (!isPaidMembership(member.membership)) return member
-  if (member.membershipStatus === 'paused') return member
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
   if (remaining === null) return member
@@ -42,7 +40,7 @@ export function syncMembershipExpiryStatus(member) {
     return {
       ...member,
       membership: 'free',
-      membershipStatus: 'cancelled',
+      membershipStatus: 'active',
       previousMembership: member.membership,
       packageConfig: null,
       premiumExpiresAt: member.premiumExpiresAt,

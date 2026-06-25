@@ -14,15 +14,11 @@ import { countStaffClients } from '../../services/staffAssignment'
 
 const STATUS_STYLES = {
   active: 'bg-sage-50 text-sage-700 ring-sage-200',
-  paused: 'bg-amber-50 text-amber-700 ring-amber-200',
-  cancelled: 'bg-red-50 text-red-600 ring-red-200',
   expiring: 'bg-orange-50 text-orange-700 ring-orange-200',
 }
 
 const STATUS_LABELS = {
   active: 'Aktif',
-  paused: 'Duraklatıldı',
-  cancelled: 'İptal',
   expiring: 'Sona Eriyor',
 }
 

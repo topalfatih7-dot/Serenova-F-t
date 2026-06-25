@@ -274,7 +274,7 @@ export default function LandingPage() {
           </AnimatePresence>
 
           {/* Masaüstü: grid; Mobil: yatay kaydırma */}
-          <div className="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 hidden items-stretch gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {displayPlans.map((plan, i) => (
               <motion.div
                 key={plan.id}
@@ -282,6 +282,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
                 viewport={{ once: true }}
+                className="h-full"
               >
                 <PricingCard
                   plan={plan}
@@ -302,14 +303,16 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.08 }}
                 viewport={{ once: true }}
-                className="w-[78vw] max-w-xs shrink-0 snap-start"
+                className="flex w-[78vw] max-w-xs shrink-0 snap-start self-stretch"
               >
+                <div className="h-full w-full">
                 <PricingCard
                   plan={plan}
                   featured={plan.id === 'kurucu'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />
+                </div>
               </motion.div>
             ))}
             {/* Son elemandan sonra hafif boşluk */}

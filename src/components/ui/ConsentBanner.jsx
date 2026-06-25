@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { X, Shield } from 'lucide-react'
 
@@ -18,7 +19,11 @@ export default function ConsentBanner() {
         <div className="flex-1">
           <p className="text-sm font-medium text-cream-900">Gizlilik ve KVKK</p>
           <p className="mt-1 text-xs text-cream-800/60">
-            Deneyiminizi iyileştirmek için çerezler kullanıyoruz. Devam ederek KVKK aydınlatma metnini kabul etmiş olursunuz.
+            Deneyiminizi iyileştirmek için çerezler kullanıyoruz. Devam ederek{' '}
+            <Link to="/kvkk" className="font-medium text-brand-600 underline hover:text-brand-700">KVKK aydınlatma metnini</Link>
+            {' '}ve{' '}
+            <Link to="/privacy" className="font-medium text-brand-600 underline hover:text-brand-700">gizlilik politikasını</Link>
+            {' '}kabul etmiş olursunuz.
           </p>
           <button
             type="button"

@@ -1,19 +1,18 @@
 import { useState, useMemo } from 'react'
-import { Search, Crown, Pause, Play, XCircle, RefreshCw, Dumbbell, Apple, Target, Circle } from 'lucide-react'
+import { Search, Crown, Dumbbell, Apple, Target, Circle } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
-import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
 import { getPlanLabel } from '../../data/membershipPlans'
-import { describeHealthTest } from '../../data/healthTest'
+import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
+import AvailabilityView from '../../components/package/AvailabilityView'
+import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 
-const STATUS_LABELS = { active: 'Aktif', paused: 'Duraklatıldı', cancelled: 'İptal', expiring: 'Sona Eriyor' }
+const STATUS_LABELS = { active: 'Aktif', expiring: 'Sona Eriyor' }
 const STATUS_STYLES = {
   active: 'bg-sage-50 text-sage-700',
-  paused: 'bg-amber-50 text-amber-700',
-  cancelled: 'bg-red-50 text-red-600',
   expiring: 'bg-orange-50 text-orange-700',
 }
 
@@ -27,15 +26,13 @@ function InfoRow({ label, value }) {
 }
 
 export default function AdminMembersPage() {
-  const { platform, adminPatchMember, activeUsers } = useApp()
-  const { toast } = useToast()
+  const { platform, activeUsers } = useApp()
   const members = platform.members
   const staff = platform.staff || []
   const [search, setSearch] = useState('')
   const [filterMembership, setFilterMembership] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
-  const [busy, setBusy] = useState(false)
 
   const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
@@ -48,17 +45,6 @@ export default function AdminMembersPage() {
     const matchStatus = filterStatus === 'all' || m.membershipStatus === filterStatus
     return matchSearch && matchMem && matchStatus
   }), [members, search, filterMembership, filterStatus])
-
-  const act = async (patch, msg) => {
-    if (!selected) return
-    setBusy(true)
-    try {
-      await adminPatchMember(selected.id, patch)
-      toast(msg, 'success')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -88,8 +74,6 @@ export default function AdminMembersPage() {
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm">
           <option value="all">Tüm durumlar</option>
           <option value="active">Aktif</option>
-          <option value="paused">Duraklatıldı</option>
-          <option value="cancelled">İptal</option>
           <option value="expiring">Sona Eriyor</option>
         </select>
       </div>
@@ -175,11 +159,15 @@ export default function AdminMembersPage() {
             </div>
 
             <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              <InfoRow label="E-posta" value={selected.email} />
+              <InfoRow label="Telefon" value={selected.phone} />
               <InfoRow label="Üyelik" value={getPlanLabel(selected.membership)} />
               <InfoRow label="Yaş" value={selected.age} />
               <InfoRow label="Cinsiyet" value={selected.gender === 'female' ? 'Kadın' : selected.gender === 'male' ? 'Erkek' : selected.gender} />
               <InfoRow label="Şehir / İlçe" value={[selected.city, selected.district].filter(Boolean).join(' / ')} />
               <InfoRow label="Kilo / Boy" value={selected.weight ? `${selected.weight} kg / ${selected.height || '—'} cm` : '—'} />
+              <InfoRow label="Bel çevresi" value={selected.waist ? `${selected.waist} cm` : '—'} />
+              <InfoRow label="Spor seviyesi" value={FITNESS_LABELS[selected.fitnessLevel] || '—'} />
               <InfoRow label="Kayıt tarihi" value={selected.joinedAt} />
             </div>
 
@@ -202,51 +190,39 @@ export default function AdminMembersPage() {
                 <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-cream-900"><Target className="h-4 w-4 text-brand-500" /> Hedefler</p>
                 <div className="flex flex-wrap gap-2">
                   {selected.goals.map((g) => (
-                    <span key={g} className="rounded-full bg-cream-100 px-3 py-1 text-xs text-cream-800">{g}</span>
+                    <span key={g} className="rounded-full bg-cream-100 px-3 py-1 text-xs text-cream-800">{GOAL_LABELS[g] || g}</span>
                   ))}
                 </div>
               </div>
             )}
 
-            {selected.healthTest && describeHealthTest(selected.healthTest, selected.gender).length > 0 && (
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
-                <p className="mb-3 text-sm font-semibold text-cream-900">Sa\u011fl\u0131k Testi</p>
-                <div className="space-y-4">
-                  {describeHealthTest(selected.healthTest, selected.gender).map((sec) => (
-                    <div key={sec.id}>
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700/80">{sec.title}</p>
-                      <div className="grid gap-x-6 sm:grid-cols-2">
-                        {sec.items.map((it, i) => (
-                          <InfoRow key={i} label={it.label} value={it.value} />
-                        ))}
-                      </div>
-                    </div>
+            {selected.nutritionPrefs?.length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-cream-900">Beslenme Tercihleri</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.nutritionPrefs.map((p) => (
+                    <span key={p} className="rounded-full bg-sage-50 px-3 py-1 text-xs text-sage-800">{NUTRITION_LABELS[p] || p}</span>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2 border-t border-cream-100 pt-4">
-              {selected.membershipStatus !== 'paused' && (
-                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'paused' }, 'Üyelik duraklatıldı')} className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50">
-                  <Pause className="h-4 w-4" /> Duraklat
-                </button>
-              )}
-              {selected.membershipStatus !== 'active' && (
-                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'active', pauseUntil: null }, 'Üyelik aktif edildi')} className="flex items-center gap-2 rounded-xl bg-sage-50 px-4 py-2.5 text-sm font-semibold text-sage-700 hover:bg-sage-100 disabled:opacity-50">
-                  <Play className="h-4 w-4" /> Aktifleştir
-                </button>
-              )}
-              {selected.membershipStatus === 'cancelled' ? (
-                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'active', pauseUntil: null }, 'Üyelik yenilendi')} className="flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50">
-                  <RefreshCw className="h-4 w-4" /> Yenile
-                </button>
-              ) : (
-                <button type="button" disabled={busy} onClick={() => act({ membershipStatus: 'cancelled' }, 'Üyelik iptal edildi')} className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50">
-                  <XCircle className="h-4 w-4" /> İptal Et
-                </button>
-              )}
-            </div>
+            {selected.availability && Object.keys(selected.availability).length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-cream-900">Haftalık Müsaitlik</p>
+                <AvailabilityView value={selected.availability} emptyText="—" />
+              </div>
+            )}
+
+            <MemberHealthInsights member={selected} showLocation={false} />
+
+            {(selected.healthAck || selected.disclaimer) && (
+              <div className="rounded-xl border border-cream-100 bg-cream-50 px-4 py-3 text-xs text-cream-800/70">
+                {selected.healthAck && <p>✓ Sağlık bilgisi doğruluğu onayı verildi</p>}
+                {selected.disclaimer && <p>✓ Tıbbi feragat onayı verildi</p>}
+              </div>
+            )}
+
           </div>
         )}
       </Modal>

@@ -1,226 +1,233 @@
-# Yapılacaklar — Yeni Form (donusum-programi)
+# Yapılacaklar — Yeni Form
 
-> Bu dosya **sizin** yapmanız gereken kurulum adımlarını listeler.  
-> Kod tarafında tamamlanan değişiklikler için `AI_PROJE_REHBERI.md` §18'e bakın.
+> **Son güncelleme:** 2026-06-25  
+> Agent tarafından tamamlananlar ✅ · Senin devam ettireceklerin ⬜
 
 ---
 
-## Yerel geliştirme (redeploy gerekmez)
+## 🚀 Satışa hazırlık özeti
 
-```powershell
+| Öncelik | Durum | Konu |
+|---------|-------|------|
+| P0 | ⬜ | **Stripe** — Vercel'de `STRIPE_*` + `VITE_STRIPE_ENABLED=true` |
+| P0 | ⬜ | **Admin şifresi** — varsayılan `Serenova2026!` değiştir |
+| P0 | ✅ | Yasal sayfalar (`/kvkk`, `/privacy`, `/terms`) |
+| P0 | ✅ | Güvenlik guard'ları + RLS düzeltmeleri |
+| P1 | ⬜ | Admin panelden içerik doldur (SSS, yorumlar, başarı hikayeleri) |
+| P1 | ⬜ | Kadro fotoğrafları ve biyografiler |
+| P1 | ⬜ | Supabase Leaked Password Protection |
+| P1 | ⬜ | Yasal metinleri hukuk danışmanına onaylat |
+| P2 | ⬜ | Personel hakediş modülü (şu an mock) |
+| P2 | ⬜ | Stripe Customer Portal |
+| P2 | ⬜ | `phone_in_use` rate limit |
+| P2 | ⬜ | `AI_PROJE_REHBERI.md` güncelle |
+
+---
+
+## 📌 Bilinçli tercihler (değiştirme)
+
+### Landing pazarlama istatistikleri
+Aşağıdakiler **bilerek** tasarlandı; gerçek sayıların altında gösterilir:
+
+| Gösterim | Kural | Dosya |
+|----------|-------|-------|
+| `%94 Memnuniyet` | Sabit pazarlama metni | `LandingPage`, `TrustStrip`, `CorporatePage` |
+| `1250+` üye | Gerçek üye < 1250 ise | `displayPlatformStats.js` |
+| `2.500+ Üye` | Trust strip fallback | `TrustStrip.jsx` |
+| `16–25` çevrimiçi | Gerçek online < 25 ise oturum boost | `displayPlatformStats.js` |
+
+### Test kartı ödemesi (şimdilik açık)
+Stripe kapalıyken (`VITE_STRIPE_ENABLED` ≠ `true`) **production dahil** test kartı modalı açılır. Ücretli paketler bu yolla aktive edilebilir.
+
+**Stripe canlıya alındığında yapılacak:**
+- Vercel'de `VITE_STRIPE_ENABLED=true` ayarla
+- Test kartı akışını kapat (Stripe checkout zorunlu olsun)
+- `OnboardingPage.jsx` → `isStripeEnabled()` false iken `setPaymentOpen(true)` yerine bilgilendirme mesajı
+
+---
+
+## ✅ Agent tarafından tamamlandı (2026-06-25)
+
+### Satışa hazırlık & yasal
+- [x] Yasal sayfalar: `src/data/legalDocuments.js`, `LegalDocumentPage.jsx`
+- [x] Rotalar: `/kvkk`, `/privacy`, `/terms`
+- [x] Footer + çerez banner yasal linkleri
+- [x] Sitemap + PAGE_SEO yasal rotalar
+- [x] `.env.example` → `VITE_STRIPE_ENABLED=false`
+
+### Güvenlik & guard sistemi
+- [x] `api/_guards.js` — `requireAuth`, `requireAdmin`, `requireNotifySecret`
+- [x] AI endpoint'leri oturum korumalı
+- [x] Daily.co token endpoint oturum korumalı
+- [x] Telegram/iletişim API'leri production'da secret zorunlu
+- [x] `20260625_fix_is_admin_rls_recursion` — HTTP 500 düzeltmesi
+- [x] Programs RLS → yalnızca atanmış danışanlar
+- [x] `membership_requests` tablosu kaldırıldı
+- [x] Storage exercise-videos listeleme kısıtlandı
+
+### Veri & UI
+- [x] `PaymentManagementPage` — üye/admin gerçek `payments` tablosu
+- [x] Auth callback `refresh` düzeltmesi
+- [x] Admin abonelik sayfası yeni paket ID'leri
+- [x] Üyelik dondurma/iptal akışları kaldırıldı
+- [x] Kalori geçmişi merge (race fix)
+- [x] Sağlık testi Türkçe etiketler + koç/diyetisyen görünürlüğü
+- [x] Demo SSS/yorumlar temizlendi, bloglar genişletildi
+- [x] Eşit yükseklikte fiyat kartları
+
+### Vercel (canlı ortam)
+- [x] `TELEGRAM_NOTIFY_SECRET` + `VITE_TELEGRAM_NOTIFY_SECRET` eklendi
+- [x] Production: https://www.yeniform.com
+
+### Supabase migration'ları (canlıya uygulandı)
+- `20260625_audit_rls_plans_cleanup`
+- `20260625_security_guards`
+- `20260625_fix_is_admin_rls_recursion`
+- `20260625_storage_listing_guard`
+- `20260625_clean_demo_content_expand_blogs`
+- `20260625_remove_demo_faqs_membership_freeze`
+
+---
+
+## ⬜ Senin yapman gerekenler
+
+### 1. ACİL — Stripe ödeme (gerçek tahsilat için)
+
+Vercel env listesinde **STRIPE** değişkenleri yok:
+
+| Değişken | Değer |
+|----------|-------|
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → API keys |
+| `STRIPE_WEBHOOK_SECRET` | Webhooks → signing secret |
+| `VITE_STRIPE_ENABLED` | `true` (canlı tahsilat başlayınca) |
+
+Webhook URL: `https://www.yeniform.com/api/stripe-webhook`
+
+```bash
+printf '%s' 'sk_live_...' | npx vercel env add STRIPE_SECRET_KEY production
+printf '%s' 'whsec_...' | npx vercel env add STRIPE_WEBHOOK_SECRET production
+printf '%s' 'true' | npx vercel env add VITE_STRIPE_ENABLED production
+npx vercel --prod
+```
+
+Stripe aktif olunca test kartı akışını kapat (yukarıdaki "Bilinçli tercihler" bölümüne bak).
+
+---
+
+### 2. ACİL — Admin şifresini değiştir
+
+Varsayılan: `admin@serenova.fit` / `Serenova2026!`
+
+1. Supabase Dashboard → Authentication → Users → admin şifresini değiştir
+2. `src/config/brand.js` → `ADMIN_CREDENTIALS.password` güncelle
+3. Admin e-postası değişirse: `setup.sql` `is_admin()` + `brand.js` + Vercel `ADMIN_EMAIL`
+
+---
+
+### 3. Yasal metinleri onaylat
+
+Sayfalar yayında; metinler şablondur. Hukuk danışmanına onaylat:
+
+- `/kvkk`, `/privacy`, `/terms`
+- Güncelleme: `src/data/legalDocuments.js`
+
+---
+
+### 4. İçerik doldur (pazarlama öncesi)
+
+| Görev | Nerede |
+|-------|--------|
+| Kadro fotoğrafları ve biyografiler | `/admin/staff` |
+| Blog yazıları (800+ karakter) | `/admin/blog` |
+| Başarı hikayeleri | `/admin/content` |
+| SSS ve müşteri yorumları | `/admin/content` |
+| GA4 ID doğrula | `brand.js` → `G-40ENH7MC5W` |
+| Sosyal medya URL'leri | Vercel env `VITE_SOCIAL_*` veya `brand.js` |
+| Search Console sitemap | 48 saat sonra kontrol |
+
+---
+
+### 5. Supabase Auth güvenliği
+
+[Leaked Password Protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection):
+
+Supabase Dashboard → Authentication → Settings → Password Security
+
+---
+
+### 6. Yerel geliştirme
+
+```bash
+cp .env.example .env.local
+# TELEGRAM_NOTIFY_SECRET değerlerini Vercel ile aynı yap
 npm run dev
 ```
 
-→ **http://localhost:5173** — Vite + `/api/*` birlikte çalışır (`.env.local` okunur).
+---
 
-- AI, Telegram, Daily API'leri yerelde test edilir; Vercel redeploy gerekmez.
-- `.env.local` değiştirdikten sonra sunucuyu yeniden başlatın (`Ctrl+C` → `npm run dev`).
-- Vercel'in kendi dev sunucusu (alternatif): `npm run dev:vercel` → http://localhost:3000
+### 7. İleride — kod tarafı
 
-| Değişken | Yerel dosya | Açıklama |
-|----------|-------------|----------|
-| `GEMINI_API_KEY` | `.env.local` | AI kalori |
-| `DAILY_API_KEY` | `.env.local` | Video token |
-| `VITE_DAILY_DOMAIN` | `.env.local` | `yeniform.daily.co` |
-| `VITE_AI_VISION_ENABLED` | `.env.local` | `true` |
-| Telegram / Supabase | `.env.local` | Mevcut |
+| Görev | Açıklama |
+|-------|----------|
+| Test kartını production'da kapat | Stripe canlıya alınınca |
+| Personel hakediş modülü | `staff_earnings` + PaymentManagementPage staff |
+| Stripe Customer Portal | Kayıtlı kart yönetimi |
+| `phone_in_use` rate limit | Telefon enumeration riski |
+| `schema.sql` senkron | Yeni kurulumda yalnızca `setup.sql` kullan |
+| `AI_PROJE_REHBERI.md` güncelle | Kaldırılan özellikler, guard sistemi |
 
 ---
 
-## Acil (hemen)
+## Ortam değişkenleri — tam liste
 
-### 1. Telegram token rotate (önerilir)
-- `TELEGRAM_CONTACT_CHAT_ID`: Bize Ulaşın formu **ve** kalori chat mesajlarının gideceği chat. Aynı chat kullanılabilir.
-
-### 2. Vercel ortam değişkenleri
-
-Proje: `topalfatih7-3924s-projects/serenova-f-t` (Vercel CLI ile bağlı)
-
-**2026-06-20 güncel:** Supabase, Telegram, Gemini, Daily (`yeniform.daily.co`) Vercel'e eklendi.
-
-Production deploy için bir kez redeploy yeterli; sonrasında env değişikliklerinde redeploy gerekir, **yerel `.env.local` için gerekmez**.
-
-| Değişken | Ortam | Not |
-|----------|-------|-----|
-| `VITE_SUPABASE_URL` | Production, Preview, Development | `.env.local` ile aynı |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Production, Preview, Development | Supabase API keys |
-| `TELEGRAM_BOT_TOKEN` | Production, Preview | **VITE_ olmadan** |
-| `TELEGRAM_CHAT_ID` | Production, Preview | Giriş/kayıt bildirimleri |
-| `TELEGRAM_CONTACT_CHAT_ID` | Production, Preview | İletişim formu + kalori chat |
-| `GEMINI_API_KEY` | Production, Preview | AI kalori (chat + fotoğraf) |
-| `VITE_AI_VISION_ENABLED` | Production, Preview | `true` |
-| `VITE_DAILY_DOMAIN` | Production, Preview, Development | `yeniform.daily.co` |
-| `VITE_DAILY_ROOM_PREFIX` | Production, Preview, Development | örn. `donusum` |
-| `DAILY_API_KEY` | Production, Preview | Token'lı güvenli odalar (opsiyonel) |
-| `VITE_SITE_URL` | Production, Preview, Development | `https://www.yeniform.com` (SEO) |
-| `APP_URL` | Production, Preview, Development | `https://www.yeniform.com` (sitemap) |
-
-CLI örneği (PowerShell):
-
-```powershell
-"deger" | npx vercel env add DEGISKEN_ADI production
-"deger" | npx vercel env add DEGISKEN_ADI preview
-```
-
-### 6. Vercel — production deploy
-
-Env'ler Vercel'e eklendi (Gemini, Daily `yeniform.daily.co`, Telegram, Supabase).  
-Production'da güncellemek için **bir kez redeploy** yeterli.
-
-SQL Editor'da çalıştırın (veya MCP ile):
-
-`supabase/migrations/20260620_revoke_anon_rpc.sql`
-
-Admin RPC'lerin `anon` rolünden kaldırılması — **henüz uygulanmadıysa zorunlu**.
-
----
-
-## Orta öncelik
-
-### 4. AI (Gemini) kurulumu
-
-Detay: `AI_SETUP.md`
-
-1. [Google AI Studio](https://aistudio.google.com/apikey) → API key
-2. Vercel'e `GEMINI_API_KEY` ekle
-3. `VITE_AI_VISION_ENABLED=true` (chat + fotoğraf analizi için aynı bayrak)
-
-> Eski `VITE_AI_FOOD_ENABLED` ve `custom_foods` otomatik kayıt **kaldırıldı** — artık gerekmez.
-
-### 5. Video görüşme (Daily.co)
-
-Detay: `VIDEO_SETUP.md`
-
-1. Daily.co hesabı → subdomain → `VITE_DAILY_DOMAIN`
-2. Production için `DAILY_API_KEY` (Vercel, gizli)
-3. Randevu penceresi: `VITE_VIDEO_JOIN_MINUTES_BEFORE` / `AFTER` (opsiyonel)
-
-### 6. Supabase ilk kurulum (yeni ortam)
-
-Detay: `SUPABASE_SETUP.md`
-
-Tek dosya: `supabase/setup.sql` → SQL Editor → Run (idempotent).
-
-### 7. Telegram bot kurulumu
-
-Detay: `TELEGRAM_SETUP.md`
-
-- Bot oluştur, chat id'leri al
-- İki chat: sistem bildirimleri vs iletişim/kalori chat
-
----
-
-## Supabase veri akışı — durum (2026-06-20 test)
-
-| Tablo | Kayıt | Durum |
-|-------|-------|-------|
-| members | 12 | Kayıt/giriş akışı çalışıyor |
-| staff | 2 | Kadro sayfaları navbar'dan |
-| payments | 11 | Plan değişiminde yazılıyor |
-| tickets | 1 | Destek formu |
-| custom_foods | 0 | Artık kalori chat'ten **yazılmıyor** (kasıtlı) |
-| membership_requests | 0 | — |
-
-**Kalori chat:** Veritabanına kayıt yok; mesaj → Telegram + AI analiz (oturum içi).  
-**Yeni DB tablosu gerekmez** — mevcut şema yeterli.
-
-### Bilinen güvenlik uyarıları (Supabase Advisor)
-
-- `admin_upsert_staff` / `admin_delete_staff` → migration §3 ile düzelt
-- `custom_foods` permissive RLS (artık kullanılmıyor; ileride tablo kaldırılabilir)
-- Auth leaked password protection kapalı → Dashboard'dan açın
+| Değişken | Durum (Vercel) | Not |
+|----------|----------------|-----|
+| `VITE_SUPABASE_URL` | ✅ | |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | ✅ | |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Gizli |
+| `TELEGRAM_*` | ✅ | |
+| `TELEGRAM_NOTIFY_SECRET` | ✅ | |
+| `VITE_TELEGRAM_NOTIFY_SECRET` | ✅ | |
+| `GEMINI_API_KEY` | ✅ | |
+| `DAILY_API_KEY` | ✅ | |
+| `VITE_SITE_URL` / `APP_URL` | ✅ | |
+| `STRIPE_SECRET_KEY` | ❌ **eksik** | Gerçek tahsilat için |
+| `STRIPE_WEBHOOK_SECRET` | ❌ **eksik** | Gerçek tahsilat için |
+| `VITE_STRIPE_ENABLED` | ❌ **eksik** | `true` = Stripe checkout |
 
 ---
 
 ## Test checklist
 
-- [ ] Landing: Kadro bölümü yok; navbar → Kadromuz dropdown
-- [ ] Navbar → Keşfet → Hikayeler + Blog
-- [ ] `/calorie` — chat mesajı Telegram'a düşüyor mu?
-- [ ] `/calorie` — AI kalori cevabı geliyor mu? (`GEMINI_API_KEY`)
-- [ ] `/call/...` — mobilde tam ekran video + PiP kendi görüntünüz
-- [ ] Onboarding sağlık testi — soru başına tek sayfa
-- [ ] Vercel deploy sonrası `/api/contact` ve `/api/calorie-chat-notify` 503 vermiyor
+- [ ] `/kvkk`, `/privacy`, `/terms` açılıyor
+- [ ] Landing: `%94 memnuniyet` ve `1250+` üye gösterimi
+- [ ] Production'da ücretli plan → test kartı modalı (Stripe kapalıyken)
+- [ ] Giriş yap → `/calorie` AI analizi
+- [ ] Giriş yapmadan `/api/ai-food-text` → 401
+- [ ] Bize Ulaşın → Telegram
+- [ ] Admin → Ödemeler gerçek veri
+- [ ] Stripe checkout (secret ekledikten sonra)
 
 ---
 
-## Vercel env — buradan yönetim
+## Hızlı komutlar
 
-Cursor oturumunda `npx vercel` ile giriş yapıldı (`topalfatih7-3924`).  
-Env ekleme/silme isteklerinizi sohbette yazabilirsiniz; agent CLI ile uygular.
-
-```powershell
+```bash
+npm run dev
+npm run build
 npx vercel env ls
-npx vercel env pull .env.vercel.local   # uzaktan çek
-```
-
-### 6. Vercel CLI
-
-```powershell
-npx vercel env ls
-npx vercel env pull .env.vercel.local
+npx vercel --prod
 ```
 
 ---
 
----
+## Dosya referansları
 
-## SEO & Search Console (www.yeniform.com) — 2026-06-23
-
-Detaylı adımlar: **`SEO_SETUP.md`** · Teknik referans: **`AI_PROJE_REHBERI.md` §23–§24, §29**
-
-### Tamamlanan
-
-**Marka & görseller**
-- [x] `public/brand-logo-alt.png` — kaynak logo
-- [x] `npm run og:image` → `brand-logo.png`, `brand-mark.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png`
-- [x] `BrandLogo.jsx` — gerçek logo PNG (navbar, giriş, kayıt, admin/staff/üye paneli)
-- [x] JSON-LD Organization `logo` → `brand-logo.png`
-- [x] `index.html` favicon + apple-touch-icon güncellendi
-- [x] `site.webmanifest` → `brand-mark.png`
-
-**SEO altyapı**
-- [x] `VITE_SITE_URL` + `APP_URL` = `https://www.yeniform.com`
-- [x] `robots.txt`, `/sitemap.xml` (15 URL), meta + JSON-LD
-- [x] Search Console DNS doğrulama, sitemap, dizin isteği
-
-### Acil — sizin yapmanız gereken
-
-| # | Görev | Nasıl | Detay |
-|---|--------|-------|-------|
-| 1 | **Deploy** | Vercel production | Logo + og-image canlıya çıksın |
-| 2 | **OG debugger testi** | Facebook + LinkedIn | `SEO_SETUP.md` §8 Adım C |
-| 3 | **Sitemap durumu** | Search Console | 24–48 saat sonra “Başarılı” mı? |
-| 4 | **GA4 ID toplayın** | Google Analytics | `SEO_SETUP.md` §8 Adım A → bana `G-…` yazın |
-| 5 | **Sosyal medya URL'leri** | Instagram, Facebook vb. | `SEO_SETUP.md` §8 Adım B → bana linkleri yazın |
-| 6 | Kadro fotoğrafları | `/admin/staff` | Eksik profil görselleri |
-
-### Bana vereceğiniz bilgiler (şablon)
-
-Sohbete kopyalayıp doldurun:
-
-```
-GA4: G-XXXXXXXXXX
-Instagram: https://www.instagram.com/...
-Facebook: https://www.facebook.com/...
-LinkedIn: https://www.linkedin.com/company/...
-(Twitter/YouTube varsa ekleyin)
-```
-
-### Opsiyonel / sonra
-
-| Görev | Nerede |
-|-------|--------|
-| Haftalık Search Console | `SEO_SETUP.md` §8 Adım D |
-| Blog içerik kalitesi | `/admin/blog` |
-| Backlink / sosyal paylaşım | Dış kanal |
-
-### Logo değiştirmek isterseniz
-
-1. `public/brand-logo-alt.png` dosyasını güncelleyin
-2. `npm run og:image`
-3. Deploy
-
----
-
-*Son güncelleme: 2026-06-23 — Marka logo entegrasyonu + SEO görsel standardizasyonu*
+| Konu | Dosya |
+|------|-------|
+| Pazarlama istatistik eşikleri | `src/utils/displayPlatformStats.js` |
+| Yasal metinler | `src/data/legalDocuments.js` |
+| Stripe bayrağı | `src/config/stripe.js` |
+| Env şablonu | `.env.example` |
+| API guard'ları | `api/_guards.js` |
+| Supabase kurulum | `SUPABASE_SETUP.md` |

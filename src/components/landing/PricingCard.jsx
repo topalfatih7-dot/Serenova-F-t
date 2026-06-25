@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Crown, Sparkles, Award, Leaf, Dumbbell } from 'lucide-react'
+import { Check, X, Crown, Sparkles, Award, Leaf, Dumbbell, ChevronDown } from 'lucide-react'
 import { formatMonthlyPrice, getPlanBadge } from '../../data/membershipPlans'
+
+const VISIBLE_COLLAPSED = 6
 
 function planIcon(id, large = false) {
   const cls = large ? 'h-7 w-7' : 'h-5 w-5'
@@ -40,14 +43,19 @@ function badgeStyle(id) {
 }
 
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
+  const [expanded, setExpanded] = useState(false)
   const isFree = plan.price === 0
   const badge = getPlanBadge(plan)
+  const features = plan.features || []
+  const hasMore = features.length > VISIBLE_COLLAPSED
+  const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_COLLAPSED)
+  const hiddenCount = features.length - VISIBLE_COLLAPSED
 
   return (
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-      className={`relative flex flex-col rounded-3xl p-6 sm:p-8 ${cardStyle(plan.id, featured)}`}
+      className={`relative flex h-full min-h-[32rem] flex-col rounded-3xl p-6 sm:p-8 ${cardStyle(plan.id, featured)}`}
     >
       {badge && (
         <span className={`absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-semibold shadow-md ${badgeStyle(plan.id)}`}>
@@ -55,7 +63,6 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         </span>
       )}
 
-      {/* İkon üstte, isim altta */}
       <div className="flex flex-col items-center pt-2 text-center">
         <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ${iconWrapClass(plan.id, featured)}`}>
           {planIcon(plan.id, true)}
@@ -75,22 +82,36 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         </p>
       </div>
 
-      <ul className="mt-6 flex-1 space-y-3">
-        {plan.features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm">
-            {f.included ? (
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-sage-500" />
-            ) : (
-              <X className="mt-0.5 h-4 w-4 shrink-0 text-cream-300" />
-            )}
-            <span className={f.included ? 'text-cream-800' : 'text-cream-800/40'}>{f.text}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6 flex flex-1 flex-col">
+        <ul className="space-y-3">
+          {visibleFeatures.map((f, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-sm">
+              {f.included ? (
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-sage-500" />
+              ) : (
+                <X className="mt-0.5 h-4 w-4 shrink-0 text-cream-300" />
+              )}
+              <span className={f.included ? 'text-cream-800' : 'text-cream-800/40'}>{f.text}</span>
+            </li>
+          ))}
+        </ul>
+
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50/80"
+          >
+            {expanded ? 'Daha az göster' : `${hiddenCount} özellik daha`}
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      </div>
 
       <Link
         to={ctaTo}
-        className={`mt-8 block rounded-full py-3.5 text-center text-sm font-semibold transition ${
+        className={`mt-6 block rounded-full py-3.5 text-center text-sm font-semibold transition ${
           featured || plan.id === 'kurucu'
             ? 'btn-wellness w-full !shadow-md'
             : plan.id === 'vip'

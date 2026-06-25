@@ -203,7 +203,10 @@ export default function PersonalInfoSection({ user }) {
             ['Şehir / İlçe', user.city ? `${user.city}${user.district ? ` / ${user.district}` : ''}` : '—'],
             ['Kilo', user.weight ? `${user.weight} kg` : '—'],
             ['Boy', user.height ? `${user.height} cm` : '—'],
+            ['Bel', user.waist ? `${user.waist} cm` : '—'],
             ['Hedefler', user.goals?.length ? user.goals.map((g) => GOALS.find((x) => x.value === g)?.label || g).join(', ') : '—'],
+            ['Spor Seviyesi', FITNESS_LEVELS.find((f) => f.value === user.fitnessLevel)?.label || '—'],
+            ['Beslenme', user.nutritionPrefs?.length ? user.nutritionPrefs.map((p) => NUTRITION_PREFS.find((x) => x.value === p)?.label || p).join(', ') : '—'],
           ].map(([k, v], i) => (
             <motion.div
               key={k}

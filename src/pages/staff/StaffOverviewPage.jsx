@@ -15,7 +15,7 @@ export function getStaffClients(members, role, staffId) {
   const sid = String(staffId || '')
   return members.filter((m) => {
     if (!isPaidMembership(m.membership)) return false
-    if (m.membershipStatus === 'cancelled') return false
+    if (m.membershipStatus !== 'active' && m.membershipStatus !== 'expiring') return false
     if (role === 'coach') {
       if ((Number(m.packageConfig?.coachMeetingsPerWeek) || 0) <= 0) return false
       return String(m.assignedCoachId || '') === sid

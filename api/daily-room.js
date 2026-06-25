@@ -1,16 +1,9 @@
 /**
  * Vercel Serverless — Daily.co oda oluşturma + katılım tokeni.
- *
- * Neden sunucu tarafı?
- *  - DAILY_API_KEY gizli kalır (tarayıcıda görünmez).
- *  - Private oda → yalnızca token sahibi katılabilir (güvenli görüşme).
- *  - Token'ın süresi sınırlıdır (nbf/exp ile); URL'yi bilen herkes giremez.
- *
- * İstek: { roomName, userName, isOwner? }
- * Yanıt: { ok, token, roomUrl }
- *
- * DAILY_API_KEY yoksa 503 döner; uygulama tokensiz (public) modda çalışmaya devam eder.
+ * Yalnızca oturum açmış kullanıcılar token alabilir.
  */
+
+import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
 
 const DAILY_API = 'https://api.daily.co/v1'
 
@@ -68,12 +61,14 @@ async function createToken(roomName, userName, isOwner) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  if (req.method === 'OPTIONS') return res.status(200).end()
+  setCorsHeaders(res)
+  if (handleOptions(req, res)) return
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST bekleniyor' })
+
+  const auth = await requireAuth(req)
+  if (!auth.ok) {
+    return res.status(auth.status).json({ ok: false, error: auth.error })
+  }
 
   if (!process.env.DAILY_API_KEY) {
     return res.status(503).json({ ok: false, error: 'DAILY_API_KEY tanımlı değil (opsiyonel)' })

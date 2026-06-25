@@ -309,7 +309,12 @@ export default function PublicLayout() {
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Yasal Bilgilendirme</p>
-              <p className="mt-3 text-xs leading-relaxed text-cream-100/40">
+              <div className="mt-3 space-y-2 text-sm text-cream-100/60">
+                <Link to="/kvkk" className="block hover:text-white">KVKK Aydınlatma Metni</Link>
+                <Link to="/privacy" className="block hover:text-white">Gizlilik Politikası</Link>
+                <Link to="/terms" className="block hover:text-white">Kullanım Koşulları</Link>
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-cream-100/40">
                 Bu platform koçluk ve wellness hizmetidir; tıbbi teşhis veya tedavi sunmaz.
                 Beslenme önerileri genel rehberlik amaçlıdır. Sağlık sorunlarınız için doktorunuza danışın.
               </p>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Search, Users, Activity, Target, Salad, CalendarClock,
+  Search, Users, Activity, Target, CalendarClock,
   Dumbbell, Apple, Mail, CalendarRange, Plus, Trash2, Video, UserRound, FileText,
   Check, CalendarCheck,
 } from 'lucide-react'
@@ -10,9 +10,10 @@ import NutritionProgramBuilder from '../../components/staff/NutritionProgramBuil
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AvailabilityView from '../../components/package/AvailabilityView'
+import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
-import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
+import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
 import { AVAILABILITY_WEEKDAYS } from '../../services/availability'
 import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
 import VideoJoinLink from '../../components/video/VideoJoinLink'
@@ -376,11 +377,9 @@ function ClientInfo({ member, role, isCoach }) {
           <p className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><Target className="h-4 w-4 text-brand-500" /> Hedefler</p>
           <Chips values={member.goals} map={GOAL_LABELS} />
         </div>
-        <div>
-          <p className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><Salad className="h-4 w-4 text-sage-500" /> Beslenme Tercihleri</p>
-          <Chips values={member.nutritionPrefs} map={NUTRITION_LABELS} />
-        </div>
       </div>
+
+      <MemberHealthInsights member={member} showLocation compact />
 
       <div>
         <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><CalendarRange className="h-4 w-4 text-brand-500" /> Haftalık Müsaitlik</p>

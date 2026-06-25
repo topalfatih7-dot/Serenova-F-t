@@ -2,21 +2,16 @@ import { useApp } from '../../context/AppContext'
 import EmptyState from '../../components/ui/EmptyState'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
-import { Activity, ArrowUpCircle, UserPlus, Pause, XCircle, Award, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
+import { Activity, ArrowUpCircle, UserPlus, Award, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
 
 const TYPE_CONFIG = {
   upgrade: { icon: ArrowUpCircle, color: 'bg-brand-50 text-brand-600', label: 'Yükseltme' },
   signup: { icon: UserPlus, color: 'bg-sage-50 text-sage-600', label: 'Kayıt' },
-  pause: { icon: Pause, color: 'bg-amber-50 text-amber-600', label: 'Duraklatma' },
-  cancel: { icon: XCircle, color: 'bg-red-50 text-red-600', label: 'İptal' },
   payment: { icon: CreditCard, color: 'bg-gold-400/20 text-gold-600', label: 'Ödeme' },
   ticket: { icon: MessageSquare, color: 'bg-purple-50 text-purple-600', label: 'Destek' },
   login: { icon: LogIn, color: 'bg-cream-100 text-cream-800', label: 'Giriş' },
   logout: { icon: LogOut, color: 'bg-cream-100 text-cream-800', label: 'Çıkış' },
-  renew: { icon: Award, color: 'bg-sage-50 text-sage-600', label: 'Yenileme' },
-  resume: { icon: Award, color: 'bg-brand-50 text-brand-600', label: 'Devam' },
   admin_premium: { icon: Shield, color: 'bg-brand-50 text-brand-600', label: 'Premium Yönetimi' },
-  request: { icon: MessageSquare, color: 'bg-amber-50 text-amber-700', label: 'Talep' },
 }
 
 export default function AdminActivityPage() {

@@ -1,6 +1,5 @@
 import { generateHealthAnalysis } from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
-import { isPaidMembership } from '../data/membershipPlans'
 
 export function profileReadyForAnalysis(profile) {
   return Boolean(
@@ -69,8 +68,6 @@ export async function syncMemberHealthAssets({
   myPrograms = [],
 }) {
   if (!user?.id) return { synced: false }
-  if (isPaidMembership(user.membership)) return { synced: false }
-  if (user.healthAnalysis) return { synced: false, reason: 'already' }
   if (!isHealthTestComplete(user.healthTest, user.gender)) return { synced: false, reason: 'test' }
   if (!profileReadyForAnalysis(user)) return { synced: false, reason: 'profile' }
 
@@ -86,5 +83,5 @@ export async function syncMemberHealthAssets({
     })
   }
 
-  return { synced: true }
+  return { synced: true, refreshed: Boolean(user.healthAnalysis) }
 }

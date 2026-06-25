@@ -247,20 +247,6 @@ export default function DashboardPage() {
         <p className="mt-2 text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
       </div>
 
-      {membershipStatus === 'paused' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-800">Üyeliğiniz duraklatıldı. Yeniden başlatmak için destek alanından talep oluşturun.</p>
-          <Link to="/support" className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white">Destek Alanı</Link>
-        </div>
-      )}
-
-      {membershipStatus === 'cancelled' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">Üyeliğiniz iptal edildi. Yeniden başlatmak için destek alanından talep oluşturun.</p>
-          <Link to="/support" className="rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white">Destek Alanı</Link>
-        </div>
-      )}
-
       {membership === 'free' && freeTrialExpiresAt && !isFreeTrialExpired && (() => {
         const msLeft = new Date(freeTrialExpiresAt) - new Date()
         const hLeft = Math.max(0, Math.ceil(msLeft / 3600000))

@@ -3,6 +3,8 @@
  * Vercel env: TELEGRAM_CONTACT_CHAT_ID + TELEGRAM_BOT_TOKEN
  */
 
+import { setCorsHeaders, handleOptions, requireAuth, requireNotifySecret } from './_guards.js'
+
 function escapeHtml(text) {
   return String(text || '')
     .replace(/&/g, '&amp;')
@@ -27,13 +29,20 @@ function buildCalorieChatMessage(body) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Notify-Secret')
-
-  if (req.method === 'OPTIONS') return res.status(200).end()
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization, X-Notify-Secret')
+  if (handleOptions(req, res)) return
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
+  }
+
+  const auth = await requireAuth(req)
+  if (!auth.ok) {
+    return res.status(auth.status).json({ ok: false, error: auth.error })
+  }
+
+  const guard = requireNotifySecret(req)
+  if (!guard.ok) {
+    return res.status(guard.status).json({ ok: false, error: guard.error })
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN
@@ -44,11 +53,6 @@ export default async function handler(req, res) {
       ok: false,
       error: 'Telegram yapılandırması eksik (TELEGRAM_CONTACT_CHAT_ID)',
     })
-  }
-
-  const notifySecret = process.env.TELEGRAM_NOTIFY_SECRET
-  if (notifySecret && req.headers['x-notify-secret'] !== notifySecret) {
-    return res.status(401).json({ ok: false, error: 'Yetkisiz istek' })
   }
 
   try {

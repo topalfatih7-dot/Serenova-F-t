@@ -2,11 +2,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
-import { Crown, TrendingUp, RefreshCw, XCircle } from 'lucide-react'
+import { isPaidMembership } from '../../data/membershipPlans'
+import { Crown, TrendingUp, RefreshCw } from 'lucide-react'
 
 export default function AdminSubscriptionsPage() {
   const { platform, adminStats, monthlyGrowth } = useApp()
-  const premiumMembers = platform.members.filter((m) => ['gumus', 'altin', 'platinum', 'premium'].includes(m.membership))
+  const premiumMembers = platform.members.filter((m) => isPaidMembership(m.membership))
   const conversionRate = adminStats.totalMembers ? Math.round((adminStats.premium / adminStats.totalMembers) * 100) : 0
 
   return (
@@ -20,7 +21,6 @@ export default function AdminSubscriptionsPage() {
         <StatsCard label="Premium Üye" value={adminStats.premium} sub={`%${conversionRate} dönüşüm`} icon={Crown} accent="brand" />
         <StatsCard label="MRR" value={`${adminStats.mrr.toLocaleString('tr-TR')}₺`} sub="Aktif premium aylık" icon={TrendingUp} accent="sage" />
         <StatsCard label="Toplam Gelir" value={`${adminStats.totalRevenue.toLocaleString('tr-TR')}₺`} icon={RefreshCw} accent="gold" />
-        <StatsCard label="İptal" value={adminStats.cancelled} icon={XCircle} accent="cream" />
       </div>
 
       {platform.payments.length > 0 ? (

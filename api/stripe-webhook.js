@@ -77,7 +77,6 @@ async function activateMembership(admin, meta, session) {
     packageConfig,
     premiumStartedAt: started,
     premiumExpiresAt: expires,
-    pauseUntil: null,
     lastActiveAt: started,
   }
 

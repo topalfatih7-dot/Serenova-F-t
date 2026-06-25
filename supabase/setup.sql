@@ -7,7 +7,7 @@
 --  İçerir:
 --    1) Eklentiler + yardımcı fonksiyonlar (is_admin, is_staff, current_email)
 --    2) Tüm tablolar (members, staff, programs, posts, tickets, activities,
---       payments, site_content, exercises, membership_requests, plans,
+--       payments, site_content, exercises, plans,
 --       staff_applications, corporate_applications, contact_inquiries)
 --    3) Yeni kullanıcı tetikleyicisi (auth.users -> members)
 --    4) RLS politikaları
@@ -32,8 +32,16 @@ create extension if not exists pgcrypto;
 -- ---------------------------------------------------------------------
 create or replace function public.is_admin()
 returns boolean language sql stable
+security definer
 set search_path = public, pg_temp as $$
-  select coalesce((auth.jwt() ->> 'email') = 'admin@serenova.fit', false);
+  select coalesce(
+    (auth.jwt() ->> 'email') = 'admin@serenova.fit',
+    false
+  )
+  or exists (
+    select 1 from public.members m
+    where m.id = auth.uid() and m.role = 'admin'
+  );
 $$;
 
 create or replace function public.current_email()
@@ -145,18 +153,6 @@ create table if not exists public.exercises (
 alter table public.exercises add column if not exists sport_type text default 'Fitness';
 alter table public.exercises add column if not exists body_part text default 'Tüm Vücut';
 
--- Üyelik talepleri (dondur / iptal / yeniden başlat / yenile)
-create table if not exists public.membership_requests (
-  id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete cascade,
-  member_name text default '',
-  type text not null check (type in ('freeze', 'cancel', 'resume', 'renew')),
-  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
-  requested_until date,
-  note text default '',
-  created_at timestamptz not null default now()
-);
-
 -- Paketler (admin panelinden düzenlenebilir)
 create table if not exists public.plans (
   id text primary key,
@@ -167,6 +163,7 @@ create table if not exists public.plans (
   badge text,
   features jsonb not null default '[]'::jsonb,
   limits jsonb not null default '[]'::jsonb,
+  pricing_tiers jsonb not null default '[]'::jsonb,
   color text default 'sage',
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -227,6 +224,17 @@ set search_path = public, pg_temp as $$
   select exists (select 1 from public.staff s where s.email = public.current_email());
 $$;
 
+create or replace function public.staff_manages_member(p_member_id uuid)
+returns boolean language sql stable
+security definer
+set search_path = public, pg_temp as $$
+  select exists (
+    select 1 from public.members m
+    join public.staff s on (s.id = m.assigned_coach_id or s.id = m.assigned_dietitian_id)
+    where m.id = p_member_id and s.email = public.current_email()
+  );
+$$;
+
 -- ---------------------------------------------------------------------
 -- 4) YENİ KULLANICI TETİKLEYİCİSİ
 -- ---------------------------------------------------------------------
@@ -261,7 +269,6 @@ alter table public.activities          enable row level security;
 alter table public.payments            enable row level security;
 alter table public.site_content        enable row level security;
 alter table public.exercises           enable row level security;
-alter table public.membership_requests enable row level security;
 alter table public.plans               enable row level security;
 alter table public.staff_applications  enable row level security;
 alter table public.corporate_applications enable row level security;
@@ -293,11 +300,19 @@ create policy staff_admin_write on public.staff for all using (public.is_admin()
 drop policy if exists staff_self_update on public.staff;
 create policy staff_self_update on public.staff for update using (email = public.current_email());
 
--- programs
+-- programs — personel yalnızca atanmış danışanların programlarını görür/düzenler
 drop policy if exists programs_select on public.programs;
-create policy programs_select on public.programs for select using (public.is_admin() or member_id = auth.uid() or public.is_staff());
+create policy programs_select on public.programs for select using (
+  public.is_admin()
+  or member_id = auth.uid()
+  or public.staff_manages_member(member_id)
+);
 drop policy if exists programs_write on public.programs;
-create policy programs_write on public.programs for all using (public.is_admin() or public.is_staff()) with check (public.is_admin() or public.is_staff());
+create policy programs_write on public.programs for all using (
+  public.is_admin() or public.staff_manages_member(member_id)
+) with check (
+  public.is_admin() or public.staff_manages_member(member_id)
+);
 
 -- posts
 drop policy if exists posts_select on public.posts;
@@ -317,7 +332,11 @@ create policy tickets_update on public.tickets for update using (public.is_admin
 drop policy if exists activities_select on public.activities;
 create policy activities_select on public.activities for select using (public.is_admin());
 drop policy if exists activities_insert on public.activities;
-create policy activities_insert on public.activities for insert with check (auth.uid() is not null);
+create policy activities_insert on public.activities for insert with check (
+  public.is_admin()
+  or public.is_staff()
+  or (member_id = auth.uid())
+);
 
 -- payments
 drop policy if exists payments_select on public.payments;
@@ -339,14 +358,6 @@ create policy exercises_select on public.exercises for select using (true);
 drop policy if exists exercises_admin_write on public.exercises;
 create policy exercises_admin_write on public.exercises for all using (public.is_admin()) with check (public.is_admin());
 
--- membership_requests
-drop policy if exists requests_select on public.membership_requests;
-create policy requests_select on public.membership_requests for select using (public.is_admin() or member_id = auth.uid());
-drop policy if exists requests_insert on public.membership_requests;
-create policy requests_insert on public.membership_requests for insert with check (member_id = auth.uid());
-drop policy if exists requests_update on public.membership_requests;
-create policy requests_update on public.membership_requests for update using (public.is_admin());
-
 -- plans
 drop policy if exists plans_select on public.plans;
 create policy plans_select on public.plans for select using (true);
@@ -356,7 +367,7 @@ create policy plans_admin_write on public.plans for all using (public.is_admin()
 -- staff_applications
 drop policy if exists staff_applications_insert on public.staff_applications;
 create policy staff_applications_insert on public.staff_applications
-  for insert with check (true);
+  for insert with check (false);
 drop policy if exists staff_applications_admin_select on public.staff_applications;
 create policy staff_applications_admin_select on public.staff_applications
   for select using (public.is_admin());
@@ -614,10 +625,6 @@ end $$;
 grant execute on function public.admin_delete_staff(uuid) to authenticated;
 revoke all on function public.admin_delete_staff(uuid) from public, anon;
 
--- increment_food_usage: yalnızca giriş yapmış kullanıcılar
-revoke all on function public.increment_food_usage(uuid) from public, anon;
-grant execute on function public.increment_food_usage(uuid) to authenticated;
-
 -- handle_new_user tetikleyici fonksiyonu — RPC ile çağrılmasın
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 
@@ -629,7 +636,9 @@ values ('exercise-videos', 'exercise-videos', true)
 on conflict (id) do nothing;
 
 drop policy if exists "exercise videos public read" on storage.objects;
-create policy "exercise videos public read" on storage.objects for select using (bucket_id = 'exercise-videos');
+create policy "exercise videos public read" on storage.objects for select using (
+  bucket_id = 'exercise-videos' and (public.is_admin() or owner = auth.uid())
+);
 drop policy if exists "exercise videos admin insert" on storage.objects;
 create policy "exercise videos admin insert" on storage.objects for insert with check (bucket_id = 'exercise-videos' and public.is_admin());
 drop policy if exists "exercise videos admin update" on storage.objects;
@@ -640,20 +649,50 @@ create policy "exercise videos admin delete" on storage.objects for delete using
 -- ---------------------------------------------------------------------
 -- 8) VARSAYILAN PAKETLER
 -- ---------------------------------------------------------------------
-insert into public.plans (id, name, price, period, is_active, badge, features, limits, color, sort_order) values
-('free', 'Ücretsiz', 0, 'Süresiz', true, null,
+insert into public.plans (id, name, price, period, is_active, badge, features, limits, pricing_tiers, color, sort_order) values
+('free', 'Basic', 0, 'Süresiz', true, null,
  '[{"text":"YZ Profil & Vücut Analizi","included":true},{"text":"Kişiselleştirilmiş Koç Listesi","included":true},{"text":"Diyetisyen Beslenme Listesi","included":true},{"text":"Video Kütüphanesi (Temel)","included":true},{"text":"Topluluk Erişimi","included":true},{"text":"Birebir Koç Görüşmesi","included":false},{"text":"Diyetisyen Randevusu","included":false},{"text":"İlerleme Raporları","included":false},{"text":"Öncelikli Destek","included":false}]'::jsonb,
- '["Aylık 1 plan güncellemesi","Temel bildirimler","Standart destek"]'::jsonb, 'sage', 0),
-('gumus', 'Gümüş', 999, 'Aylık', true, null,
- '[{"text":"YZ Profil & Vücut Analizi","included":true},{"text":"Video Kütüphanesi (Tam Erişim)","included":true},{"text":"Haftada 1 Koç Görüşmesi","included":true},{"text":"Aylık 1 Diyetisyen Görüşmesi","included":true},{"text":"Temel İlerleme Takibi","included":true},{"text":"E-posta Desteği","included":true},{"text":"Grup Seansları","included":false},{"text":"Öncelikli Destek","included":false},{"text":"Kişisel Program","included":false}]'::jsonb,
- '["Haftada 1 koç görüşmesi","Aylık 1 diyetisyen"]'::jsonb, 'slate', 1),
-('altin', 'Altın', 1999, 'Aylık', true, 'En Popüler',
- '[{"text":"YZ Profil & Vücut Analizi","included":true},{"text":"Video Kütüphanesi (Tam Erişim)","included":true},{"text":"Haftada 2 Koç Görüşmesi","included":true},{"text":"Aylık 2 Diyetisyen Görüşmesi","included":true},{"text":"Detaylı İlerleme Raporları","included":true},{"text":"Öncelikli Destek","included":true},{"text":"Grup Seansları","included":true},{"text":"Kişisel Program","included":true},{"text":"7/24 VIP Destek","included":false}]'::jsonb,
- '["Haftada 2 koç görüşmesi","Aylık 2 diyetisyen"]'::jsonb, 'gold', 2),
-('platinum', 'Platinum', 3499, 'Aylık', true, 'Premium',
- '[{"text":"YZ Profil & Vücut Analizi","included":true},{"text":"Video Kütüphanesi (Tam Erişim)","included":true},{"text":"Haftada 3 Koç Görüşmesi","included":true},{"text":"Haftada 1 Diyetisyen Görüşmesi","included":true},{"text":"7/24 VIP Destek","included":true},{"text":"Kişisel Program","included":true},{"text":"Grup Seansları","included":true},{"text":"Mental Wellness Seansları","included":true},{"text":"Özel Aktiviteler & Etkinlikler","included":true}]'::jsonb,
- '["Haftada 3 koç görüşmesi","Haftada 1 diyetisyen","7/24 VIP destek"]'::jsonb, 'brand', 3)
-on conflict (id) do nothing;
+ '["Aylık 1 plan güncellemesi","Temel bildirimler","Standart destek"]'::jsonb, '[]'::jsonb, 'sage', 0),
+('eko', 'Eko Paket', 1299, 'Aylık', true, null,
+ '[{"text":"Manuel Kalori Hesaplama","included":true},{"text":"Diyet Programı Ayda 2 Kere","included":true},{"text":"Spor Programı Ayda 1 Kere","included":true},{"text":"Video Kütüphanesi (Sınırlı)","included":true},{"text":"İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Birebir Koç Görüşmesi","included":false},{"text":"Diyetisyen Randevusu","included":false},{"text":"Fotoğraflı Kalori Tespiti","included":false}]'::jsonb,
+ '["Sınırlı video erişimi","Program güncellemeleri"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":1299},{"months":3,"label":"3 Aylık","price":2999},{"months":6,"label":"6 Aylık","price":3999}]'::jsonb,
+ 'sage', 1),
+('diyet', 'Diyet Paketi', 2499, 'Aylık', true, null,
+ '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Diyet Üyeye Özel Diyet Programı","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Birebir Koç Görüşmesi","included":false}]'::jsonb,
+ '["Ayda 2 diyetisyen görüşmesi","Kişisel diyet programı"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
+ 'emerald', 2),
+('spor', 'Spor Paketi', 2499, 'Aylık', true, null,
+ '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Spor Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true}]'::jsonb,
+ '["Ayda 2 koç görüşmesi","Kişisel spor programı"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
+ 'blue', 3),
+('kurucu', '100 Kurucu Üye', 3499, 'Aylık', true, 'Kurucu',
+ '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Kurucu Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Kurucu Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Ömür Boyu %20 İndirim Garantisi","included":true},{"text":"Ömür Boyu Öncelikli Destek","included":true},{"text":"Kurucu Üye Rozeti","included":true}]'::jsonb,
+ '["Ayda 2 koç + 2 diyetisyen","Ömür boyu avantajlar"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":3499,"compareAt":4999},{"months":3,"label":"3 Aylık","price":6999,"compareAt":12999},{"months":6,"label":"6 Aylık","price":10999,"compareAt":19999}]'::jsonb,
+ 'gold', 4),
+('vip', 'Vip Paket', 4999, 'Aylık', true, 'VIP',
+ '[{"text":"Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Vip Üye Rozeti","included":true}]'::jsonb,
+ '["Ayda 2 koç + 2 diyetisyen","Sınırsız destek"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":4999},{"months":3,"label":"3 Aylık","price":12999},{"months":6,"label":"6 Aylık","price":19999}]'::jsonb,
+ 'brand', 5)
+on conflict (id) do update set
+  name = excluded.name,
+  price = excluded.price,
+  period = excluded.period,
+  is_active = excluded.is_active,
+  badge = excluded.badge,
+  features = excluded.features,
+  limits = excluded.limits,
+  pricing_tiers = excluded.pricing_tiers,
+  color = excluded.color,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
+-- Eski planları pasif tut (geriye dönük üyeler korunur)
+update public.plans set is_active = false where id in ('gumus', 'altin', 'platinum');
 
 -- ---------------------------------------------------------------------
 -- 9) ONAYLI ADMIN KULLANICISI
@@ -761,7 +800,7 @@ begin
   );
 end;
 $$;
-revoke all on function public.get_active_users() from public;
+revoke all on function public.get_active_users() from public, anon;
 grant execute on function public.get_active_users() to authenticated;
 
 -- =====================================================================
