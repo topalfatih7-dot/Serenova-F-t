@@ -2,7 +2,7 @@
 // Her bölüm bir alt-adımdır; kayıt formunun 5. adımında soru-soru gösterilir.
 // Cevaplar member.data.healthTest içinde JSONB olarak veritabanına kaydedilir.
 
-// Soru tipleri: 'emoji' | 'single' | 'multi' | 'text'
+// Soru tipleri: 'emoji' | 'single' | 'multi' | 'text' | 'time'
 export const HEALTH_SECTIONS = [
   {
     id: 'general',
@@ -160,6 +160,45 @@ export const HEALTH_SECTIONS = [
           { value: 'rarely', label: 'Nadiren' },
           { value: 'regularly', label: 'Düzenli' },
         ],
+      },
+    ],
+  },
+  {
+    id: 'routine',
+    title: 'Günlük Rutin',
+    subtitle: 'Uyku, çalışma düzeni ve öğün saatleriniz',
+    icon: 'Clock',
+    questions: [
+      {
+        key: 'shiftWork', type: 'single', required: true,
+        label: 'Vardiyalı çalışıyor musunuz?',
+        options: [
+          { value: 'no', label: 'Hayır', desc: 'Düzenli mesai saatlerim var' },
+          { value: 'yes', label: 'Evet', desc: 'Vardiya, gece nöbeti veya dönüşümlü mesai' },
+        ],
+        detail: { key: 'shiftWorkDetail', when: 'yes', placeholder: 'Vardiya düzeninizi kısaca yazın (ör. 2 gün gündüz, 2 gece, 2 izin)' },
+      },
+      {
+        key: 'wakeTime', type: 'time', required: true,
+        label: 'Genelde saat kaçta kalkıyorsunuz?',
+        hint: 'Haftalık ortalama uyanma saatiniz',
+      },
+      {
+        key: 'sleepTime', type: 'time', required: true,
+        label: 'Genelde saat kaçta yatıyorsunuz?',
+        hint: 'Haftalık ortalama yatış saatiniz',
+      },
+      {
+        key: 'breakfastTime', type: 'time', required: true,
+        label: 'Kahvaltıyı genelde saat kaçta yapıyorsunuz?',
+      },
+      {
+        key: 'lunchTime', type: 'time', required: true,
+        label: 'Öğle yemeğini genelde saat kaçta yapıyorsunuz?',
+      },
+      {
+        key: 'dinnerTime', type: 'time', required: true,
+        label: 'Akşam yemeğini genelde saat kaçta yapıyorsunuz?',
       },
     ],
   },
@@ -323,6 +362,10 @@ export function isQuestionAnswered(q, healthTest) {
     if (!q.required) return true
     return typeof val === 'string' && val.trim().length > 0
   }
+  if (q.type === 'time') {
+    if (!q.required) return true
+    return typeof val === 'string' && val.trim().length > 0
+  }
   if (!q.required) return true
   return val !== '' && val != null
 }
@@ -354,9 +397,9 @@ export function describeHealthTest(healthTest, gender) {
         if (q.type === 'multi') {
           if (!Array.isArray(v) || v.length === 0) return
           display = v.map((val) => q.options.find((o) => o.value === val)?.label || val).join(', ')
-        } else if (q.type === 'text') {
+        } else if (q.type === 'text' || q.type === 'time') {
           if (!v) return
-          display = v
+          display = q.type === 'time' ? v.replace(':', '.') : v
         } else {
           if (v === '' || v == null) return
           display = q.options?.find((o) => o.value === v)?.label || v

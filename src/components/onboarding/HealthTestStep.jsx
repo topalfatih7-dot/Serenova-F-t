@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward,
+  HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
+  Sunrise, Sunset, UtensilsCrossed, BedDouble,
 } from 'lucide-react'
 
-const ICONS = { HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2 }
+const ICONS = { HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock }
 
 const THEME = {
   general:   { grad: 'from-brand-500 to-brand-600',    soft: 'bg-brand-50',    ring: 'ring-brand-300',    solid: 'bg-brand-500 border-brand-400 shadow-brand-500/25',    chip: 'border-brand-400 bg-brand-50 text-brand-800 ring-brand-200',    bar: 'bg-brand-500', text: 'text-brand-700' },
@@ -12,6 +13,7 @@ const THEME = {
   lifestyle: { grad: 'from-sky-500 to-blue-600',         soft: 'bg-sky-50',      ring: 'ring-sky-300',      solid: 'bg-sky-500 border-sky-400 shadow-sky-500/25',          chip: 'border-sky-400 bg-sky-50 text-sky-800 ring-sky-200',            bar: 'bg-sky-500', text: 'text-sky-700' },
   recovery:  { grad: 'from-violet-500 to-indigo-600',     soft: 'bg-violet-50',   ring: 'ring-violet-300',   solid: 'bg-violet-500 border-violet-400 shadow-violet-500/25', chip: 'border-violet-400 bg-violet-50 text-violet-800 ring-violet-200', bar: 'bg-violet-500', text: 'text-violet-700' },
   nutrition: { grad: 'from-sage-500 to-emerald-600',      soft: 'bg-sage-50',     ring: 'ring-sage-300',     solid: 'bg-sage-500 border-sage-400 shadow-sage-500/25',       chip: 'border-sage-400 bg-sage-50 text-sage-800 ring-sage-200',         bar: 'bg-sage-500', text: 'text-sage-700' },
+  routine:   { grad: 'from-teal-500 to-cyan-600',        soft: 'bg-teal-50',     ring: 'ring-teal-300',     solid: 'bg-teal-500 border-teal-400 shadow-teal-500/25',       chip: 'border-teal-400 bg-teal-50 text-teal-800 ring-teal-200',         bar: 'bg-teal-500', text: 'text-teal-700' },
   women:     { grad: 'from-pink-500 to-fuchsia-600',      soft: 'bg-pink-50',     ring: 'ring-pink-300',     solid: 'bg-pink-500 border-pink-400 shadow-pink-500/25',       chip: 'border-pink-400 bg-pink-50 text-pink-800 ring-pink-200',         bar: 'bg-pink-500', text: 'text-pink-700' },
 }
 
@@ -37,7 +39,7 @@ export default function HealthTestStep({
   const isAnswered = () => {
     const val = healthTest?.[q.key]
     if (q.type === 'multi') return Array.isArray(val) && val.length > 0
-    if (q.type === 'text') return typeof val === 'string' && val.trim().length > 0
+    if (q.type === 'text' || q.type === 'time') return typeof val === 'string' && val.trim().length > 0
     return val !== '' && val != null
   }
 
@@ -205,6 +207,22 @@ export default function HealthTestStep({
                 />
               )}
 
+              {q.type === 'time' && (
+                <TimeQuestionInput
+                  questionKey={q.key}
+                  value={healthTest[q.key] || ''}
+                  onChange={(v) => updateHealthTest({ [q.key]: v })}
+                  theme={theme}
+                  icon={
+                    q.key === 'wakeTime' || q.key === 'breakfastTime' ? Sunrise
+                      : q.key === 'sleepTime' ? BedDouble
+                        : q.key === 'lunchTime' ? UtensilsCrossed
+                          : q.key === 'dinnerTime' ? Sunset
+                            : Clock
+                  }
+                />
+              )}
+
               {q.detail && healthTest[q.key] === q.detail.when && (
                 <input
                   type="text"
@@ -229,6 +247,28 @@ export default function HealthTestStep({
           </div>
         </motion.div>
       </AnimatePresence>
+    </div>
+  )
+}
+
+function TimeQuestionInput({ questionKey, value, onChange, theme, icon: Icon }) {
+  return (
+    <div className={`flex items-center gap-4 rounded-2xl border-2 border-cream-200 ${theme.soft} px-5 py-4 transition focus-within:border-teal-400 focus-within:ring-4 focus-within:ring-teal-100`}>
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${theme.solid} text-white shadow-md`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <label htmlFor={questionKey} className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+          Saat seçin
+        </label>
+        <input
+          id={questionKey}
+          type="time"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="mt-1 w-full bg-transparent font-display text-2xl font-bold text-cream-900 focus:outline-none sm:text-3xl"
+        />
+      </div>
     </div>
   )
 }

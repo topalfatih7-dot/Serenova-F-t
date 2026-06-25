@@ -1,4 +1,4 @@
-import { isPaidMembership } from '../data/membershipPlans'
+import { isPaidMembership, packageIncludesCoach, packageIncludesDietitian } from '../data/membershipPlans'
 
 function timeToMinutes(t) {
   const [h, m] = String(t || '0:0').split(':').map(Number)
@@ -34,8 +34,11 @@ export function assignStaffOnly(member, staffList, members, options = {}) {
   let coachId = manualCoachId ?? member.assignedCoachId ?? null
   let dietitianId = manualDietitianId ?? member.assignedDietitianId ?? null
 
-  const needCoach = (Number(pkg.coachMeetingsPerMonth) || Number(pkg.coachMeetingsPerWeek) || 0) > 0
-  const needDiet = (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
+  const needCoach = packageIncludesCoach(pkg)
+  const needDiet = packageIncludesDietitian(pkg)
+
+  if (!needCoach) coachId = null
+  if (!needDiet) dietitianId = null
 
   if (autoAssign && schedule) {
     if (needCoach && !coachId && schedule.coachDay != null) {
@@ -47,18 +50,21 @@ export function assignStaffOnly(member, staffList, members, options = {}) {
   }
 
   return {
-    assignedCoachId: coachId,
-    assignedDietitianId: dietitianId,
+    assignedCoachId: needCoach ? coachId : null,
+    assignedDietitianId: needDiet ? dietitianId : null,
   }
 }
 
 /** @deprecated Otomatik randevu üretimi kaldırıldı — admin panelinden elle girilir. */
 export function applyStaffAssignments(member, staffList, members, options = {}) {
+  const pkg = member.packageConfig || {}
+  const needCoach = packageIncludesCoach(pkg)
+  const needDiet = packageIncludesDietitian(pkg)
   const staffOnly = assignStaffOnly(member, staffList, members, options)
   return {
     ...staffOnly,
-    coachSessions: options.coachSessions ?? member.coachSessions ?? [],
-    dietitianSessions: options.dietitianSessions ?? member.dietitianSessions ?? [],
+    coachSessions: needCoach ? (options.coachSessions ?? member.coachSessions ?? []) : [],
+    dietitianSessions: needDiet ? (options.dietitianSessions ?? member.dietitianSessions ?? []) : [],
   }
 }
 

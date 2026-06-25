@@ -9,7 +9,7 @@ import { weekdayLabel } from '../../components/package/SupportScheduler'
 import VideoJoinLink from '../../components/video/VideoJoinLink'
 import StaffVideoPanel from '../../components/video/StaffVideoPanel'
 import { useApp } from '../../context/AppContext'
-import { isPaidMembership } from '../../data/membershipPlans'
+import { isPaidMembership, packageIncludesCoach, packageIncludesDietitian } from '../../data/membershipPlans'
 
 export function getStaffClients(members, role, staffId) {
   const sid = String(staffId || '')
@@ -17,10 +17,10 @@ export function getStaffClients(members, role, staffId) {
     if (!isPaidMembership(m.membership)) return false
     if (m.membershipStatus !== 'active' && m.membershipStatus !== 'expiring') return false
     if (role === 'coach') {
-      if ((Number(m.packageConfig?.coachMeetingsPerWeek) || 0) <= 0) return false
+      if (!packageIncludesCoach(m.packageConfig)) return false
       return String(m.assignedCoachId || '') === sid
     }
-    if ((Number(m.packageConfig?.dietitianMeetingsPerMonth) || 0) <= 0) return false
+    if (!packageIncludesDietitian(m.packageConfig)) return false
     return String(m.assignedDietitianId || '') === sid
   })
 }

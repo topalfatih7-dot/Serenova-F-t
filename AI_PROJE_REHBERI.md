@@ -1,10 +1,10 @@
 # Yeni Form (donusum-programi) — Yapay Zeka Proje Rehberi
 
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
-> **Proje kökü:** `c:\Users\opas2\OneDrive\Desktop\Serenova-F-t\`  
+> **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-24 (§35: stabilizasyon — callback bug, çökme hataları, 27 orphan dosya + git temizliği)
+> **Son güncelleme:** 2026-06-25 (§37: sağlık testi günlük rutin, takvim erişim kısıtı kaldırıldı, beslenme öğün yapısı)
 
 ---
 
@@ -15,8 +15,10 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§30–34 Değişiklik Günlüğü** bölümlerine bak.
+6. Son değişiklikler için **§30–36 Değişiklik Günlüğü** bölümlerine bak.
 7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
+8. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
+9. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -81,7 +83,7 @@ Tarayıcı
   │
   ├─► supabaseDb.hydrate()
   │     ├─ Herkese açık: staff, posts, site_content, exercises, plans
-  │     └─ Giriş varsa: members, programs, tickets, activities, payments, membership_requests
+  │     └─ Giriş varsa: members, programs, tickets, activities, payments
   │     └─ Admin ise ek: staff_applications, corporate_applications, contact_inquiries
   │
   ├─► AppContext → useApp() → tüm sayfalar
@@ -147,7 +149,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 | `payments` | Ödeme kayıtları | Üye kendi; admin hepsi |
 | `site_content` | testimonial, faq, success_story | Herkese okuma; admin yazar |
 | `exercises` | Hareket kütüphanesi | Herkese okuma; admin yazar |
-| `membership_requests` | dondur/iptal/yenile talepleri | Üye oluşturur; admin onaylar |
+| `membership_requests` | ~~dondur/iptal/yenile~~ | **Kaldırıldı** (2026-06-25 migration) |
 | `plans` | Üyelik paketleri | Herkese okuma; admin yazar |
 | `staff_applications` | Koç/diyetisyen kadro başvuruları | RPC ile herkes insert; admin okur/onaylar |
 | `corporate_applications` | Kurumsal wellness başvuruları | RPC ile herkes insert; admin okur/günceller |
@@ -188,7 +190,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 
 ### Seans objesi yapısı (`coachSessions` / `dietitianSessions`)
 
-Üretim: `src/services/supportSessions.js` → `generateSupportSessions()`
+Üretim: **Admin panelinden elle** — `src/components/admin/ManualSessionEditor.jsx` (otomatik `supportSessions.js` kaldırıldı)
 
 ```javascript
 {
@@ -257,7 +259,8 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 | Plan karşılaştırma sayfası | `src/pages/MembershipComparisonPage.jsx` |
 | Admin plan düzenleme | `src/pages/admin/AdminPlansPage.jsx` |
 | Premium üyelik mantığı | `src/services/premiumMembership.js` — **ay bazlı** süre hesabı, süre dolunca `free` plana düşürme |
-| Üyelik talepleri | `src/pages/admin/AdminRequestsPage.jsx` — freeze/cancel/resume/renew |
+| Paket → personel ihtiyacı | `membershipPlans.js` → `packageIncludesCoach`, `packageIncludesDietitian`, `memberNeedsStaffAssignment`, `sanitizeStaffForPackage` (§36.1) |
+| Üyelik dondurma/iptal talepleri | **Kaldırıldı** — `membership_requests` tablosu drop (`20260625_audit_rls_plans_cleanup.sql`); eski `AdminRequestsPage.jsx` silindi |
 | Stripe ödeme + süre | `api/stripe-checkout.js` (`durationMonths`), `api/stripe-webhook.js` |
 
 **Plan ID'leri ve yapıları (2026-06-24 güncellemesi):**
@@ -279,15 +282,29 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `packageConfig`, `su
 
 **Migrasyon:** `supabase/migrations/20260624_new_package_plans.sql`
 
-### 5.5 Paket Oluşturma ve Randevu Üretimi
+### 5.5 Paket Oluşturma, Atama ve Randevu Yönetimi
 
 | Ne | Nerede |
 |----|--------|
 | Paket fiyat hesabı | `src/services/packagePricing.js` — `calculatePackagePrice`, `getRecommendedPackage` |
-| Randevu slot üretimi | `src/services/supportSessions.js` — `generateSupportSessions()` |
-| Koç/diyetisyen otomatik atama | `src/services/staffAssignment.js` — `applyStaffAssignments`, `findAvailableStaff` |
-| Randevu planlama UI | `src/components/package/SupportScheduler.jsx`, `WeeklyAvailability.jsx` |
+| Koç/diyetisyen atama mantığı | `src/services/staffAssignment.js` — `assignStaffOnly`, `applyStaffAssignments` — **paket dışı rol atamasını null yapar** |
+| Paket → personel yardımcıları | `src/data/membershipPlans.js` — `packageIncludesCoach`, `packageIncludesDietitian`, `sanitizeStaffForPackage` |
+| Admin manuel randevu UI | `src/components/admin/ManualSessionEditor.jsx` — pakete göre koç/diyetisyen bölümleri |
+| Admin premium atama UI | `src/pages/admin/AdminPremiumPage.jsx` — pakete göre koç/diyetisyen dropdown'ları |
+| Randevu planlama UI (kayıt) | `src/components/package/SupportScheduler.jsx`, `WeeklyAvailability.jsx` |
+| Otomatik randevu üretimi | **Kaldırıldı** — admin panelinden elle girilir (`supportSessions.js` silindi) |
 | Kaldırıldı | `PackageBuilder.jsx`, `PackageBuilderPage.jsx`, `PackageSummaryCard.jsx`, `NumberSelector.jsx` silindi (`/builder` → `/membership` redirect korunuyor) |
+
+**Paket → personel eşlemesi (2026-06-25):**
+
+| Plan | Koç | Diyetisyen | Admin'de görünen |
+|------|-----|------------|------------------|
+| `eko` | Yok | Yok | Atama bölümü gizli |
+| `diyet` | Yok | Ayda 2 | Yalnızca diyetisyen |
+| `spor` | Ayda 2 | Yok | Yalnızca koç |
+| `kurucu`, `vip` | Ayda 2 | Ayda 2 | Her ikisi |
+
+Plan değişiminde (`changeMemberPlan`, Stripe webhook, `processPremiumPayment`) `sanitizeStaffForPackage()` paket dışı `assignedCoachId`, `assignedDietitianId`, `coachSessions`, `dietitianSessions` temizler.
 
 ### 5.6 Video Görüşme (Daily.co) — YENİ SİSTEM
 
@@ -365,26 +382,29 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 ### 5.10 Admin Paneli
 
-| Sayfa | Rota | Dosya | Tablolar |
-|-------|------|-------|----------|
-| Genel bakış | `/admin` | `AdminOverviewPage.jsx` | activities, tickets, members |
-| Üyeler | `/admin/members` | `AdminMembersPage.jsx` | members |
-| Planlar | `/admin/plans` | `AdminPlansPage.jsx` | plans |
-| Premium | `/admin/premium` | `AdminPremiumPage.jsx` | members |
-| Talepler | `/admin/requests` | `AdminRequestsPage.jsx` | membership_requests |
+**Navigasyon kaynağı:** `src/components/layout/AdminShell.jsx` → `adminNav` dizisi (sidebar + mobil menü)
+
+| Sayfa | Rota | Dosya | Tablolar / Veri |
+|-------|------|-------|-----------------|
+| Genel bakış | `/admin` | `AdminOverviewPage.jsx` | activities, tickets, members, platformStats |
+| Üyeler | `/admin/members` | `AdminMembersPage.jsx` | members — detay modal, `MemberHealthInsights`, pakete göre koç/diyetisyen satırları |
+| Paketler | `/admin/plans` | `AdminPlansPage.jsx` | plans |
+| Premium Yönetimi | `/admin/premium` | `AdminPremiumPage.jsx` | members — **paket bazlı** koç/diyetisyen atama + `ManualSessionEditor` |
 | Başvurular | `/admin/applications` | `AdminApplicationsPage.jsx` | staff_applications, corporate_applications, contact_inquiries |
 | Kütüphane | `/admin/library` | `AdminLibraryPage.jsx` | exercises, storage |
-| Kadro | `/admin/staff` | `AdminStaffPage.jsx` | staff, RPC |
+| Kadromuz | `/admin/staff` | `AdminStaffPage.jsx` | staff, RPC |
 | Blog | `/admin/blog` | `AdminBlogPage.jsx` | posts |
-| İçerik | `/admin/content` | `AdminContentPage.jsx` | site_content (başarı hikâyeleri: Tümü/Yayında/İncelemede) |
+| İçerik | `/admin/content` | `AdminContentPage.jsx` | site_content (başarı hikâyeleri) |
 | Abonelikler | `/admin/subscriptions` | `AdminSubscriptionsPage.jsx` | payments |
 | Ödeme (mock UI) | `/admin/payments` | `PaymentManagementPage.jsx` | mockPayments.js |
-| Seanslar | `/admin/sessions` | `AdminSessionsPage.jsx` | members.data |
+| Seanslar | `/admin/sessions` | `AdminSessionsPage.jsx` | members.data → coachSessions + dietitianSessions |
 | Destek | `/admin/support` | `AdminSupportPage.jsx` | tickets |
 | Analitik | `/admin/analytics` | `AdminAnalyticsPage.jsx` | members, payments |
 | Aktivite | `/admin/activity` | `AdminActivityPage.jsx` | activities |
 
-**Manuel seans ekleme:** `src/components/admin/ManualSessionEditor.jsx`
+**Kaldırılan admin sayfası:** `AdminRequestsPage.jsx` (`/admin/requests`) — üyelik dondurma/iptal talepleri kaldırıldı.
+
+**Manuel seans ekleme:** `src/components/admin/ManualSessionEditor.jsx` — `coachMeetingsPerMonth` ve `coachMeetingsPerWeek` destekler.
 
 **Layout:** `AdminShell` — `src/components/layout/AdminShell.jsx`
 
@@ -403,7 +423,13 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Kadro başvurusu | `/team/apply` | `StaffApplicationPage.jsx` |
 | Kurumsal tanıtım | `/corporate` | `CorporatePage.jsx` |
 | Kurumsal başvuru | `/corporate/apply` | `CorporateApplicationPage.jsx` |
+| KVKK | `/kvkk` | `legal/LegalDocumentPage.jsx` (slug=`kvkk`) |
+| Gizlilik | `/privacy` | `legal/LegalDocumentPage.jsx` (slug=`privacy`) |
+| Kullanım şartları | `/terms` | `legal/LegalDocumentPage.jsx` (slug=`terms`) |
 | 404 | `*` | `NotFoundPage.jsx` |
+
+**Yasal içerik kaynağı:** `src/data/legalDocuments.js` → `LEGAL_DOCUMENTS`  
+**Çerez onayı:** `src/components/ui/ConsentBanner.jsx` (PublicLayout'ta)
 
 **Layout:** `PublicLayout.jsx` — header/footer, `scrollToContactSection` (`src/utils/scrollToContact.js`)
 
@@ -415,7 +441,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |-----------|-------------|
 | `getCurrentMember(db)` | Oturum açmış üye |
 | `getCurrentStaff(db)` | Oturum açmış personel |
-| `computeAdminStats(db)` | KPI: üye sayısı, gelir, açık ticket vb. |
+| `computeAdminStats(db)` | KPI: üye sayısı, gelir, açık ticket, **paket bazlı** `unassignedPremium` |
 | `computeMembershipBreakdown(db)` | Plan dağılımı |
 | `computeMonthlyGrowth(db)` | Aylık büyüme grafiği verisi |
 | `getSessionStats(db)` | Seans istatistikleri |
@@ -452,6 +478,9 @@ Kaynak: `src/App.jsx` satır 56–117
 /corporate           → CorporatePage (kurumsal tanıtım)
 /corporate/apply     → CorporateApplicationPage (kurumsal başvuru)
 /team/:id            → StaffProfilePage
+/kvkk                → LegalDocumentPage (slug=kvkk)
+/privacy             → LegalDocumentPage (slug=privacy)
+/terms               → LegalDocumentPage (slug=terms)
 *                    → NotFoundPage
 ```
 
@@ -504,8 +533,7 @@ Kaynak: `src/App.jsx` satır 56–117
 /admin               → AdminOverviewPage
 /admin/members       → AdminMembersPage
 /admin/plans         → AdminPlansPage
-/admin/premium       → AdminPremiumPage
-/admin/requests      → AdminRequestsPage (üyelik talepleri)
+/admin/premium       → AdminPremiumPage (paket bazlı koç/diyetisyen)
 /admin/applications  → AdminApplicationsPage (kadro + kurumsal + iletişim)
 /admin/library       → AdminLibraryPage
 /admin/staff         → AdminStaffPage
@@ -540,12 +568,22 @@ Kaynak: `src/App.jsx` satır 56–117
 
 ### 7.2 API (`api/`)
 
-| Dosya | HTTP | Amaç |
-|-------|------|------|
-| `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri |
-| `auth-unlock-signup.js` | POST | Kayıt sonrası e-posta onayı (service role) |
-| `contact.js` | POST | Bize Ulaşın → Telegram (ikincil; birincil kayıt Supabase `contact_inquiries`) |
-| `sitemap.js` | GET | Dinamik XML sitemap (`/sitemap.xml` rewrite) |
+| Dosya | HTTP | Amaç | Auth |
+|-------|------|------|------|
+| `_guards.js` | — | `requireAuth`, `requireAdmin`, `requireNotifySecret`, CORS | Yardımcı |
+| `_apiAuth.js` | — | Bearer token → Supabase user | Yardımcı |
+| `telegram-notify.js` | POST | Giriş/kayıt Telegram bildirimleri | `requireNotifySecret` |
+| `contact.js` | POST | Bize Ulaşın → Telegram | `requireNotifySecret` |
+| `calorie-chat-notify.js` | POST | Kalori chat → Telegram | `requireAuth` + secret |
+| `ai-food-text.js` | POST | Gemini metin kalori analizi | `requireAuth` |
+| `ai-food-vision.js` | POST | Gemini fotoğraf kalori analizi | `requireAuth` |
+| `daily-room.js` | POST | Daily.co oda oluşturma | `requireAuth` |
+| `stripe-checkout.js` | POST | Stripe ödeme oturumu | — |
+| `stripe-webhook.js` | POST | Ödeme sonrası üyelik aktivasyonu + `sanitizeStaffForPackage` | Stripe imza |
+| `auth.js` | POST | Auth yardımcıları | — |
+| `sitemap.js` | GET | Dinamik XML sitemap | — |
+
+**İstemci tarafı auth header:** `src/services/apiAuth.js` → `getApiAuthHeaders()` — AI ve Daily API çağrılarında `Authorization: Bearer` ekler.
 
 ### 7.3 Supabase SQL (`supabase/`)
 
@@ -554,6 +592,12 @@ Kaynak: `src/App.jsx` satır 56–117
 | `setup.sql` | **Tek dosya** tertemiz kurulum (şema + RLS + RPC + storage + paketler + admin) |
 | `migrations/20260623_staff_applications.sql` | Kadro başvuruları tablosu + RPC |
 | `migrations/20260624_corporate_contact_cleanup.sql` | Kurumsal + iletişim tabloları; `custom_foods` drop |
+| `migrations/20260625_security_guards.sql` | `is_admin` genişletme, activities RLS, `increment_food_usage` drop |
+| `migrations/20260625_fix_is_admin_rls_recursion.sql` | `is_admin()` RLS özyineleme düzeltmesi |
+| `migrations/20260625_audit_rls_plans_cleanup.sql` | `programs` RLS scope, `membership_requests` drop, staff_applications insert kapatıldı |
+| `migrations/20260625_remove_demo_faqs_membership_freeze.sql` | Demo FAQ silindi, pause/cancel statüleri sıfırlandı |
+| `migrations/20260625_clean_demo_content_expand_blogs.sql` | Demo testimonial/success story silindi, blog içerikleri genişletildi |
+| `migrations/20260625_storage_listing_guard.sql` | Storage listeleme güvenliği |
 
 ### 7.4 Context (`src/context/`)
 
@@ -579,9 +623,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `supabaseDb.js` | `hydrate`, `login`, `logout`, tüm CRUD, başvuru RPC'leri | ✅ Ana veri katmanı |
 | `contactForm.js` | `submitContactForm` → `submitContactInquiry` + Telegram | ✅ |
 | `memberHealthSync.js` | Otomatik program + sağlık analizi senkronu | ✅ (`staffId: null` sistem programları) |
-| `staffAssignment.js` | `applyStaffAssignments`, `findAvailableStaff` | ✅ |
-| `supportSessions.js` | `generateSupportSessions` | ✅ |
+| `staffAssignment.js` | `assignStaffOnly`, `applyStaffAssignments`, `countStaffClients` — paket bazlı atama | ✅ |
 | `packagePricing.js` | `calculatePackagePrice`, `getRecommendedPackage` | ✅ |
+| `apiAuth.js` | `getApiAuthHeaders` — korunan API istekleri için Bearer token | ✅ |
 | `premiumMembership.js` | `computePremiumExpiresAt`, `extendPremiumExpiry` | ✅ |
 | `platformStats.js` | `computeAdminStats`, `getSessionStats` | ✅ |
 | `aiAnalysis.js` | `generateHealthAnalysis` | ✅ (YZ kavramı kaldırıldı, kural tabanlı analiz) |
@@ -617,7 +661,8 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | Export |
 |-------|--------|
-| `membershipPlans.js` | `ALL_PLANS`, `FREE_PLAN`, `GUMUS_PLAN`, `isPaidMembership`, `getDefaultPackageForPlan` |
+| `membershipPlans.js` | `ALL_PLANS`, plan tanımları, `isPaidMembership`, `getDefaultPackageForPlan`, **`packageIncludesCoach`**, **`packageIncludesDietitian`**, **`memberNeedsStaffAssignment`**, **`sanitizeStaffForPackage`** |
+| `legalDocuments.js` | `LEGAL_DOCUMENTS` — KVKK, gizlilik, kullanım şartları metinleri (`/kvkk`, `/privacy`, `/terms`) |
 | `turkeyCities.js` | `TURKEY_CITIES`, `CITY_NAMES`, `getDistricts` |
 | `blogPosts.js` | `BLOG_CATEGORIES`, `DEFAULT_POSTS` (Supabase boşsa fallback) |
 | `countryCodes.js` | `COUNTRY_CODES`, `DEFAULT_COUNTRY_ISO`, `getCountry`, `isValidNationalNumber`, `formatNationalNumber`, `toE164` |
@@ -651,6 +696,7 @@ TeamListPage.jsx                ← /team/coaches|dietitians|doctors (role prop 
 StaffApplicationPage.jsx        ← /team/apply (kadro başvurusu)
 CorporatePage.jsx               ← /corporate
 CorporateApplicationPage.jsx    ← /corporate/apply
+legal/LegalDocumentPage.jsx     ← /kvkk, /privacy, /terms
 NotFoundPage.jsx
 auth/LoginPage.jsx
 auth/ForgotPasswordPage.jsx
@@ -662,8 +708,7 @@ payments/PaymentManagementPage.jsx  ← üye/staff/admin ödeme UI (mock)
 admin/AdminOverviewPage.jsx
 admin/AdminMembersPage.jsx
 admin/AdminPlansPage.jsx
-admin/AdminPremiumPage.jsx
-admin/AdminRequestsPage.jsx
+admin/AdminPremiumPage.jsx      ← paket bazlı koç/diyetisyen atama
 admin/AdminApplicationsPage.jsx ← kadro + kurumsal + iletişim
 admin/AdminLibraryPage.jsx
 admin/AdminStaffPage.jsx
@@ -692,7 +737,9 @@ admin/AdminActivityPage.jsx
 
 **Package:** `SupportScheduler`, `WeeklyAvailability`, `AvailabilityView`
 
-**Admin:** `ManualSessionEditor`
+**Admin:** `ManualSessionEditor`, `StaffFormModal`, `AdminActiveUsersPanel`
+
+**Member:** `MemberHealthInsights` — admin üye detayında sağlık analizi, hedefler, VKİ özeti
 
 **Calendar:** `SessionCard`, `CalendarView`
 
@@ -817,8 +864,8 @@ Kaynak: `.env.example`
 | Yeni API endpoint | `api/` klasörü + `vercel.json` |
 | Renk/stil tema | `src/index.css` @theme bloğu |
 | Toast mesajları | Sayfa içinde `useToast()` |
-| Seans üretim mantığı | `src/services/supportSessions.js` |
-| Koç atama mantığı | `src/services/staffAssignment.js` |
+| Seans / randevu yönetimi | `src/components/admin/ManualSessionEditor.jsx` + `AdminPremiumPage.jsx` |
+| Koç/diyetisyen atama (paket bazlı) | `membershipPlans.js` yardımcıları + `AdminPremiumPage.jsx` + `staffAssignment.js` |
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` — `generateHealthAnalysis()` |
 | Landing üye/çevrimiçi gösterim eşikleri | `src/utils/displayPlatformStats.js`, `src/hooks/usePlatformDisplayStats.js`, `LiveActiveCounter.jsx`, `LandingPage.jsx` |
 | Kayıt akışı (2 adım) | `src/pages/OnboardingPage.jsx` |
@@ -850,7 +897,7 @@ Kaynak: `.env.example`
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
 5. **Ödeme Yönetimi sayfası mock** — `PaymentManagementPage` demo veri kullanır; gerçek `payments` tablosu Stripe webhook ile dolar (§22).
 6. **Şifre sıfırlama** — §34 ile Supabase Auth + PKCE bağlandı; Supabase redirect URL'leri ve `SUPABASE_SERVICE_ROLE_KEY` gerekir.
-7. **Üyelik talepleri UI** — `membership_requests` API hazır; üye tarafında talep oluşturma UI henüz eksik (Support/Profil’e eklenecek).
+7. **Üyelik dondurma/iptal talepleri kaldırıldı** (2026-06-25) — `membership_requests` tablosu ve `AdminRequestsPage` silindi.
 8. **Daily REST API kullanılmıyor** — odalar deterministik URL ile açılır.
 9. **Seanslar JSONB'de** — ayrı `sessions` tablosu yok.
 10. **Doctor rolü** — frontend + DB destekler.
@@ -1633,8 +1680,8 @@ Yardımcı: `src/utils/programSchedule.js` — `entryMatchesDate`, `getProgramEn
 
 ### Takvim (üye)
 
-- `CalendarPage` — tarih + haftalık girdi desteği.
-- **Sadece bugün** program detayı açılır; diğer günler kilitli (`Lock` ikonu).
+- `CalendarPage` — tarih + haftalık girdi desteği; **tüm günler** açılır ve tamamlanabilir (§37).
+- Beslenme listesi: öğün adı + "Öğün içeriği" bloğu (`mealContentText`).
 - Hareket videosu **aynı sayfada** genişletilir (`İzle` / `Gizle`), ayrı modal yok.
 - Tamamlama → `toggleActivityCompletion` → `streak` + `progress.workouts` güncellenir.
 
@@ -1652,7 +1699,7 @@ Yardımcı: `src/utils/programSchedule.js` — `entryMatchesDate`, `getProgramEn
 | `src/components/notifications/NotificationToastBridge.jsx` | Realtime toast |
 | `src/components/auth/WelcomeSuccessModal.jsx` | Kayıt sonrası popup |
 | `src/components/staff/NutritionProgramBuilder.jsx` | Diyetisyen tarihli öğün formu |
-| `src/pages/CalendarPage.jsx` | Kilitli günler + inline video |
+| `src/pages/CalendarPage.jsx` | Takvim + öğün/antrenman tamamlama (tüm günler) |
 | `src/pages/staff/StaffClientsPage.jsx` | Koç tarih modu |
 | `src/context/AppContext.jsx` | `toggleActivityCompletion` |
 
@@ -2236,7 +2283,7 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 
 ### 35.7 Veritabanı / Supabase denetimi
 
-- **15 tablo** aktif ve kod ile eşleşiyor: `members`, `staff`, `programs`, `posts`, `tickets`, `activities`, `payments`, `site_content`, `exercises`, `membership_requests`, `plans`, `user_presence`, `staff_applications`, `corporate_applications`, `contact_inquiries`.
+- **14 tablo** aktif ve kod ile eşleşiyor: `members`, `staff`, `programs`, `posts`, `tickets`, `activities`, `payments`, `site_content`, `exercises`, `plans`, `user_presence`, `staff_applications`, `corporate_applications`, `contact_inquiries`. (`membership_requests` kaldırıldı — §36.3)
 - `plans` tablosu doğrulandı: aktif paketler `free, eko, diyet, spor, kurucu, vip`; eskiler `gumus, altin, platinum` `is_active=false`.
 - `localStorage` kullanımlarının tümü yerinde (FAB konumu, tutorial/banner dismiss, remember-me) — DB'ye taşınması gereken veri yok.
 - Güvenlik advisor uyarıları (`get_advisors`): çoğu kasıtlı public `SECURITY DEFINER` RPC (`submit_*`, `phone_in_use`). **Aksiyon önerisi:** Supabase Dashboard → Auth → "Leaked password protection"ı açın (kod gerektirmez).
@@ -2252,4 +2299,312 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 **Silindi (18 kod + 7 asset + 2 API = 27 dosya):** §35.3 ve §35.4 listeleri.
 
 **Git:** `node_modules/`, `dist/` takibi kaldırıldı.
+
+---
+
+## 36. Paket Bazlı Atama, Güvenlik, Yasal Sayfalar & Sayfa Envanteri (2026-06-25)
+
+> Bu bölüm 2026-06-25 tarihli tüm önemli değişiklikleri ve AI'ın projeyi hızlı anlaması için sayfa envanterini içerir.
+
+### 36.1 Paket bazlı koç / diyetisyen ataması — **yeni sistem**
+
+**İş kuralı:** Müşterinin ödediği pakette hangi görüşme türü varsa admin panelinde yalnızca o atama alanı açılır. Paket değişince paket dışı atamalar ve randevular otomatik temizlenir.
+
+#### Merkezi yardımcılar (`src/data/membershipPlans.js`)
+
+| Fonksiyon | Ne yapar |
+|-----------|----------|
+| `packageIncludesCoach(pkg)` | `coachMeetingsPerMonth` veya `coachMeetingsPerWeek` > 0 |
+| `packageIncludesDietitian(pkg)` | `dietitianMeetingsPerMonth` > 0 |
+| `getCoachMeetingsPerMonth(pkg)` | Aylık koç limiti (haftalık × 4 fallback) |
+| `memberNeedsStaffAssignment(member)` | Pakete göre eksik koç veya diyetisyen ataması var mı |
+| `sanitizeStaffForPackage(pkg, data)` | Paket dışı `assignedCoachId`, `assignedDietitianId`, `coachSessions`, `dietitianSessions` → null/[] |
+
+#### Plan → görüşme eşlemesi (`PACKAGE_BY_PLAN`)
+
+| planId | coachMeetingsPerMonth | dietitianMeetingsPerMonth |
+|--------|----------------------|---------------------------|
+| `eko` | 0 | 0 |
+| `diyet` | 0 | 2 |
+| `spor` | 2 | 0 |
+| `kurucu` | 2 | 2 |
+| `vip` | 2 | 2 |
+
+Legacy planlar (`gumus`, `altin`, `platinum`, `premium`) `coachMeetingsPerWeek` de kullanabilir — `packageIncludesCoach` her iki alanı da okur.
+
+#### Etkilenen dosyalar
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/pages/admin/AdminPremiumPage.jsx` | Atama dropdown'ları ve kart sütunları pakete göre; "Atama eksik" filtresi `memberNeedsStaffAssignment` |
+| `src/components/admin/ManualSessionEditor.jsx` | Koç bölümü `coachMeetingsPerMonth` desteği; pakette görüşme yoksa bilgi mesajı |
+| `src/pages/admin/AdminMembersPage.jsx` | Üye detayında koç/diyetisyen satırları pakete göre |
+| `src/services/staffAssignment.js` | Paket dışı rol atamasını null yapar; seansları filtreler |
+| `src/services/supabaseDb.js` | `changeMemberPlan`, `processPremiumPayment` → `sanitizeStaffForPackage` |
+| `api/stripe-webhook.js` | Ödeme sonrası aktivasyonda inline `sanitizeStaffForPackage` |
+| `src/services/platformStats.js` | `unassignedPremium` → `memberNeedsStaffAssignment` |
+| `src/pages/staff/StaffOverviewPage.jsx` | `getStaffClients` → `packageIncludesCoach/Dietitian` |
+
+#### Admin Premium akışı (`/admin/premium`)
+
+1. Üye kartı: yalnızca paketteki roller için Koç/Diyetisyen sütunu gösterilir.
+2. Düzenleme modalı:
+   - **Spor** → "Koç Ataması" bölümü + koç randevuları
+   - **Diyet** → "Diyetisyen Ataması" bölümü + diyetisyen randevuları
+   - **Kurucu/VIP** → "Koç & Diyetisyen" + her iki randevu editörü
+   - **Eko** → atama bölümü yok; randevu editöründe "birebir görüşme yok" mesajı
+3. Kaydet → `adminUpdatePremium` → `applyStaffAssignments` → Supabase `members`
+
+---
+
+### 36.2 API güvenlik guard'ları
+
+**Amaç:** Hassas API endpoint'lerinin anonim çağrılmasını engellemek.
+
+| Dosya | Rol |
+|-------|-----|
+| `api/_guards.js` | `requireAuth`, `requireAdmin`, `requireNotifySecret`, CORS |
+| `api/_apiAuth.js` | `Authorization: Bearer` → Supabase JWT doğrulama |
+| `src/services/apiAuth.js` | İstemci: `getApiAuthHeaders()` |
+
+**Korumalı endpoint'ler:**
+
+| Endpoint | Guard |
+|----------|-------|
+| `ai-food-text.js` | `requireAuth` |
+| `ai-food-vision.js` | `requireAuth` |
+| `daily-room.js` | `requireAuth` |
+| `calorie-chat-notify.js` | `requireAuth` + `requireNotifySecret` |
+| `telegram-notify.js`, `contact.js` | `requireNotifySecret` (production'da `TELEGRAM_NOTIFY_SECRET` zorunlu) |
+
+---
+
+### 36.3 Supabase güvenlik ve şema migrasyonları (2026-06-25)
+
+| Migration | Özet |
+|-----------|------|
+| `20260625_security_guards.sql` | `is_admin()` e-posta VEYA `members.role=admin`; activities insert RLS; `increment_food_usage` kaldırıldı |
+| `20260625_fix_is_admin_rls_recursion.sql` | `is_admin()` RLS sonsuz döngü düzeltmesi |
+| `20260625_audit_rls_plans_cleanup.sql` | `staff_manages_member()`; programs RLS yalnızca atanan danışanlar; **`membership_requests` tablosu drop**; staff_applications doğrudan insert kapatıldı (yalnızca RPC) |
+| `20260625_remove_demo_faqs_membership_freeze.sql` | Demo FAQ silindi; `paused`/`cancelled` üyelik statüleri `active`'e çekildi |
+| `20260625_clean_demo_content_expand_blogs.sql` | Demo testimonial ve örnek başarı hikâyeleri silindi; blog içerikleri 800+ karakter |
+| `20260625_storage_listing_guard.sql` | Storage bucket listeleme kısıtı |
+
+**Kaldırılan özellikler:** Üyelik dondurma/iptal talepleri (`membership_requests`), demo SSS içerikleri.
+
+---
+
+### 36.4 Yasal sayfalar ve çerez onayı
+
+| Rota | Dosya | İçerik kaynağı |
+|------|-------|----------------|
+| `/kvkk` | `src/pages/legal/LegalDocumentPage.jsx` | `src/data/legalDocuments.js` → `LEGAL_DOCUMENTS.kvkk` |
+| `/privacy` | aynı | `LEGAL_DOCUMENTS.privacy` |
+| `/terms` | aynı | `LEGAL_DOCUMENTS.terms` |
+
+`LegalDocumentPage` slug prop veya URL'den doküman seçer; `SeoHead` ile meta etiketleri ayarlar.
+
+**Çerez banner:** `src/components/ui/ConsentBanner.jsx` — `PublicLayout` içinde; KVKK/gizlilik linkleri.
+
+---
+
+### 36.5 Yeni bileşen: MemberHealthInsights
+
+**Dosya:** `src/components/member/MemberHealthInsights.jsx`  
+**Kullanım:** `AdminMembersPage.jsx` üye detay modalında
+
+Gösterir: VKİ, form skoru, önerilen kalori, koç/diyetisyen öneri metinleri, sağlık testi bölümleri, hedefler, beslenme tercihleri, konum (opsiyonel).
+
+---
+
+### 36.6 Personel paneli — danışan filtreleme
+
+`src/pages/staff/StaffOverviewPage.jsx` → `getStaffClients(members, role, staffId)`:
+
+- Koç rolü: yalnızca `packageIncludesCoach` olan ve `assignedCoachId === staffId` üyeler
+- Diyetisyen: yalnızca `packageIncludesDietitian` olan ve `assignedDietitianId === staffId` üyeler
+
+Böylece spor paketli üye diyetisyen listesinde, diyet paketli üye koç listesinde görünmez.
+
+---
+
+### 36.7 Değiştirilen / eklenen dosyalar (§36 özeti)
+
+**Yeni:** `src/data/legalDocuments.js`, `src/pages/legal/LegalDocumentPage.jsx`, `src/components/member/MemberHealthInsights.jsx`, `api/_guards.js`, `api/_apiAuth.js`, `src/services/apiAuth.js`, `supabase/migrations/20260625_*.sql` (6 dosya)
+
+**Güncellenen:** `AdminPremiumPage.jsx`, `AdminMembersPage.jsx`, `ManualSessionEditor.jsx`, `membershipPlans.js`, `staffAssignment.js`, `supabaseDb.js`, `stripe-webhook.js`, `platformStats.js`, `StaffOverviewPage.jsx`, `App.jsx`, `PublicLayout.jsx`, `ConsentBanner.jsx`, çeşitli API route'ları
+
+**Silinen:** `src/pages/admin/AdminRequestsPage.jsx` (üyelik talepleri UI)
+
+---
+
+### 36.8 Sayfa Envanteri (AI için detaylı)
+
+Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrudan cevap vermesi içindir. Her sayfa: **rota → dosya → layout → veri kaynağı → ana UI blokları**.
+
+#### A) Public sayfalar (`PublicLayout` — header, footer, PromoBanner, ConsentBanner)
+
+| Rota | Dosya | Ana bölümler / bileşenler | Veri |
+|------|-------|----------------------------|------|
+| `/` | `LandingPage.jsx` | Hero, fiyat kartları (`PricingCard`), TrustStrip, WhyUs, SSS (`FAQAccordion`), yorumlar, kadro önizleme, iletişim (`ContactSection`), canlı sayaç (`LiveActiveCounter`) | `useApp().platform.plans`, `site_content`, `usePlatformDisplayStats` |
+| `/membership` | `MembershipComparisonPage.jsx` | Plan karşılaştırma tablosu, süre seçimi (1/3/6 ay), Stripe/checkout CTA | `plans` tablosu + `membershipPlans.js` fallback |
+| `/onboarding` | `OnboardingPage.jsx` | Çok adımlı kayıt: profil, sağlık testi (`HealthTestStep`), plan seçimi, ödeme | `register`, `registerWithPlan`, `processPremiumPayment` |
+| `/login` | `auth/LoginPage.jsx` | E-posta/şifre giriş, rol yönlendirme | `supabaseDb.login` |
+| `/forgot-password` | `auth/ForgotPasswordPage.jsx` | Şifre sıfırlama e-postası | Supabase Auth |
+| `/reset-password` | `auth/ResetPasswordPage.jsx` | Yeni şifre belirleme | Supabase Auth PKCE |
+| `/auth/callback` | `auth/AuthCallbackPage.jsx` | E-posta doğrulama / OAuth callback sonuç ekranı | `establishSession`, `reloadRemote` |
+| `/stories` | `SuccessStoriesPage.jsx` | Başarı hikayeleri grid (`SuccessStoryCard`) | `site_content` kind=`success_story` |
+| `/blog` | `BlogPage.jsx` | Blog listesi, kategori filtre | `posts` |
+| `/blog/:id` | `BlogPostPage.jsx` | Tekil yazı, JSON-LD | `posts` |
+| `/team/coaches` | `TeamListPage.jsx` role=`coaches` | Koç listesi kartları | `staff` role=coach |
+| `/team/dietitians` | `TeamListPage.jsx` role=`dietitians` | Diyetisyen listesi | `staff` role=dietitian |
+| `/team/doctors` | `TeamListPage.jsx` role=`doctors` | Doktor listesi | `staff` role=doctor |
+| `/team/:id` | `StaffProfilePage.jsx` | Kadro profil detayı (`StaffProfileDisplay`) | `staff` |
+| `/team/apply` | `StaffApplicationPage.jsx` | Kadro başvuru formu (çok adımlı) | RPC `submit_staff_application` |
+| `/corporate` | `CorporatePage.jsx` | Kurumsal tanıtım, paket özeti | statik + `corporateApplication.js` |
+| `/corporate/apply` | `CorporateApplicationPage.jsx` | Kurumsal başvuru formu | RPC `submit_corporate_application` |
+| `/kvkk`, `/privacy`, `/terms` | `legal/LegalDocumentPage.jsx` | Yasal metin bölümleri | `legalDocuments.js` |
+
+#### B) Üye paneli (`RequireAuth member` + `AppShell` — Sidebar, TopBar, MobileNav)
+
+| Rota | Dosya | Ana bölümler | Veri / aksiyonlar |
+|------|-------|--------------|-------------------|
+| `/dashboard` | `DashboardPage.jsx` | Sağlık özeti, kilo/antrenman/öğün grafikleri (`ProgressChart`), görevler, yaklaşan seanslar, sürüklenebilir sağlık FAB | `user`, `myPrograms`, `coachSessions`, `dietitianSessions` |
+| `/calendar` | `CalendarPage.jsx` | Diyet listesi \| Koç programı yan yana; öğün tamamlama toggle | `myPrograms`, `completedActivities` |
+| `/schedule/coach` | `CoachSchedulePage.jsx` | Koç randevu listesi, ertele/iptal | `user.coachSessions` |
+| `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Diyetisyen randevu listesi | `user.dietitianSessions` |
+| `/programs` | `ProgramsPage.jsx` | Atanan antrenman/beslenme programları | `programs` |
+| `/library` | `ExerciseLibraryPage.jsx` | Egzersiz arama, video oynatıcı | `exercises` |
+| `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
+| `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
+| `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
+| `/profile` | `ProfilePage.jsx` | Kişisel bilgi, üyelik rozeti, koç/diyetisyen (pakete göre), doğrulama, plan değiştirme | `PersonalInfoSection`, `VerificationSection`, `changePlan` |
+| `/profile/payments` | `payments/PaymentManagementPage.jsx` | Mock ödeme geçmişi (demo banner) | `mockPayments.js` |
+| `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co görüşme odası | `videoCallSession.js`, `useDailyCall` |
+
+#### C) Personel paneli (`RequireAuth staff` + `StaffShell`)
+
+| Rota | Dosya | Rol | Ana işlev |
+|------|-------|-----|-----------|
+| `/staff` | `staff/StaffOverviewPage.jsx` | her ikisi | Danışan sayısı, yaklaşan randevular, `StaffVideoPanel` |
+| `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
+| `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
+| `/staff/lists` | `staff/StaffListsPage.jsx` | diyetisyen | Beslenme listeleri özeti |
+| `/staff/library` | `StaffLibraryGate.jsx` | koç→library, diyetisyen→lists | Rol bazlı yönlendirme |
+| `/staff/payments` | `payments/PaymentManagementPage.jsx` | mock hakediş UI | demo |
+| `/staff/call/:type/:id` | `VideoCallPage.jsx` | görüşme | Daily.co |
+
+**Danışan filtresi:** `getStaffClients()` — paket + atama kontrolü (§36.6).
+
+#### D) Admin paneli (`RequireAuth admin` + `AdminShell`)
+
+| Rota | Dosya | Ne yapılır | Kritik bileşenler |
+|------|-------|------------|-------------------|
+| `/admin` | `AdminOverviewPage.jsx` | KPI kartları, grafikler, açık ticket, atama eksik sayısı | `computeAdminStats`, Recharts |
+| `/admin/members` | `AdminMembersPage.jsx` | Üye arama/liste, detay modal (profil, paket, sağlık) | `MemberHealthInsights`, `AdminActiveUsersPanel` |
+| `/admin/plans` | `AdminPlansPage.jsx` | DB plan CRUD, fiyat kademeleri, özellik listesi | `upsertPlan` |
+| `/admin/premium` | `AdminPremiumPage.jsx` | **Paket bazlı koç/diyetisyen atama**, manuel randevu | `EditPremiumModal`, `ManualSessionEditor`, `adminUpdatePremium` |
+| `/admin/applications` | `AdminApplicationsPage.jsx` | Kadro + kurumsal + iletişim başvuruları (onay/red) | 3 tab |
+| `/admin/library` | `AdminLibraryPage.jsx` | Egzersiz CRUD, video yükleme (Storage) | `uploadExerciseVideo` |
+| `/admin/staff` | `AdminStaffPage.jsx` | Kadro ekle/düzenle/sil | RPC `admin_upsert_staff` |
+| `/admin/blog` | `AdminBlogPage.jsx` | Blog yazısı CRUD | `posts` |
+| `/admin/content` | `AdminContentPage.jsx` | Başarı hikayeleri yönetimi | `site_content` |
+| `/admin/subscriptions` | `AdminSubscriptionsPage.jsx` | Ödeme/abonelik kayıtları listesi | `payments` |
+| `/admin/payments` | `PaymentManagementPage.jsx` | Mock ödeme UI (demo) | `mockPayments.js` |
+| `/admin/sessions` | `AdminSessionsPage.jsx` | Tüm üyelerin koç+diyetisyen seansları tablosu | `coachSessions`, `dietitianSessions` |
+| `/admin/support` | `AdminSupportPage.jsx` | Destek ticket yönetimi | `tickets` |
+| `/admin/analytics` | `AdminAnalyticsPage.jsx` | Gelir, büyüme, plan dağılımı grafikleri | `platformStats` |
+| `/admin/activity` | `AdminActivityPage.jsx` | Admin aktivite akışı | `activities` |
+
+#### E) Layout ve ortak kabuklar
+
+| Dosya | Kullanıldığı yer | İçerik |
+|-------|------------------|--------|
+| `PublicLayout.jsx` | Public rotalar | Navbar (`NavDropdown`), footer, `ConsentBanner`, `PromoBanner`, `ScrollToTop` |
+| `AppShell.jsx` | Üye paneli | `Sidebar`, `TopBar`, `PanelMobileMenu` |
+| `StaffShell.jsx` | Personel paneli | Personel nav, çıkış |
+| `AdminShell.jsx` | Admin paneli | 15 maddelik `adminNav`, `AnimatedBackground`, `NoIndexHead` |
+| `RequireAuth.jsx` | Tüm korumalı rotalar | Rol kontrolü (member/staff/admin), yönlendirme |
+
+#### F) Context — tüm panellerin ortak veri kaynağı
+
+**Dosya:** `src/context/AppContext.jsx`
+
+| Export | Açıklama |
+|--------|----------|
+| `platform` | `members`, `staff`, `programs`, `posts`, `tickets`, `payments`, `plans`, `site_content`, `exercises`… |
+| `user` / `staffUser` | Oturum açmış üye veya personel |
+| `adminUpdatePremium(memberId, opts)` | Koç/diyetisyen atama + seans kaydı |
+| `changePlan(planId, price, months)` | Mevcut üye plan değişimi + `sanitizeStaffForPackage` |
+| `register`, `login`, `logout` | Auth akışları |
+| `reloadRemote()` | `hydrate()` yeniden çağır |
+
+#### G) Hızlı "özellik → dosya" referansı
+
+| Özellik arıyorsan | İlk bakılacak dosya |
+|-------------------|---------------------|
+| Koç atama (admin) | `AdminPremiumPage.jsx` |
+| Paket limitleri | `membershipPlans.js` → `PACKAGE_BY_PLAN` |
+| Plan değişimi sonrası temizlik | `sanitizeStaffForPackage` |
+| Stripe ödeme sonrası üyelik | `api/stripe-webhook.js` |
+| Video görüşme katılım | `videoCallSession.js`, `VideoCallPage.jsx` |
+| Kalori AI | `CalorieCalculatorPage.jsx`, `api/ai-food-text.js` |
+| Sağlık analizi üretimi | `aiAnalysis.js`, `memberHealthSync.js` |
+| Landing istatistikleri | `usePlatformDisplayStats.js`, `displayPlatformStats.js` |
+| SEO meta | `config/seo.js`, `SeoHead.jsx` |
+| Telegram bildirim | `telegramNotify.js`, `api/telegram-notify.js` |
+| Yasal metinler | `legalDocuments.js`, `LegalDocumentPage.jsx` |
+| RLS / DB şema | `supabase/setup.sql`, `supabase/migrations/` |
+
+---
+
+### 36.9 AI görev şablonları
+
+**"Spor paketine koç ataması ekle"** → `AdminPremiumPage.jsx` + `adminUpdatePremium` + `staffAssignment.js`; `packageIncludesCoach` kontrolü.
+
+**"Diyet paketinde diyetisyen görünmüyor"** → `member.packageConfig.dietitianMeetingsPerMonth` ve `packageIncludesDietitian` kontrol et; Stripe webhook `defaultPackageForPlan` eşlemesine bak.
+
+**"Plan değişince eski koç hâlâ atanmış"** → `changeMemberPlan` veya webhook'ta `sanitizeStaffForPackage` çağrılıyor mu kontrol et.
+
+**"API 401 dönüyor"** → İstemci `getApiAuthHeaders()` kullanıyor mu; sunucu `requireAuth` guard'ı var mı.
+
+**"Admin atama eksik sayısı yanlış"** → `memberNeedsStaffAssignment` — eko paketli üyeler sayılmamalı.
+
+---
+
+## 37. Sağlık Testi Günlük Rutin, Takvim Erişimi & Beslenme Öğün Yapısı (2026-06-25)
+
+> Supabase/Vercel migration gerekmez — veriler `members.data.healthTest` (JSONB) ve program `entries` (JSONB) içinde kalır.
+
+### 37.1 Sağlık testi — yeni "Günlük Rutin" bölümü
+
+**Dosya:** `src/data/healthTest.js` → bölüm id: `routine`, ikon: `Clock`
+
+| Soru anahtarı | Tip | İçerik |
+|---------------|-----|--------|
+| `shiftWork` | single | Vardiyalı çalışıyor musunuz? (evet/hayır + açıklama) |
+| `shiftWorkDetail` | text (koşullu) | Vardiya düzeni açıklaması |
+| `wakeTime` | time | Kalkış saati |
+| `sleepTime` | time | Yatış saati |
+| `breakfastTime` | time | Kahvaltı saati |
+| `lunchTime` | time | Öğle yemeği saati |
+| `dinnerTime` | time | Akşam yemeği saati |
+
+**UI:** `src/components/onboarding/HealthTestStep.jsx` — yeni `time` sorusu tipi, teal tema, ikonlu saat seçici.
+
+### 37.2 Takvim erişim kısıtı kaldırıldı
+
+**Dosya:** `src/pages/CalendarPage.jsx` — tüm günler açılır; öğün/antrenman tamamlama her gün için çalışır.
+
+### 37.3 Beslenme listesi — öğün yapısı
+
+**`MEAL_TYPES`:** kahvaltı, sabah–öğle ara, öğle, öğle–akşam ara, akşam.
+
+**Diyetisyen:** `NutritionProgramBuilder.jsx` — öğün adı + tek "Öğün içeriği" alanı; ara öğünler ayrı slotlar.
+
+**Takvim:** `MealGroupRow` — "Öğün içeriği" bloğu (`mealContentText`).
+
+### 37.4 Değiştirilen dosyalar
+
+`healthTest.js`, `HealthTestStep.jsx`, `CalendarPage.jsx`, `programSchedule.js`, `NutritionProgramBuilder.jsx`, `StaffListsPage.jsx`, `AI_PROJE_REHBERI.md`
 

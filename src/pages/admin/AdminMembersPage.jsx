@@ -5,7 +5,7 @@ import Modal from '../../components/ui/Modal'
 import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
 import { getRemainingDays } from '../../services/premiumMembership'
-import { getPlanLabel } from '../../data/membershipPlans'
+import { getPlanLabel, packageIncludesCoach, packageIncludesDietitian } from '../../data/membershipPlans'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
@@ -175,12 +175,20 @@ export default function AdminMembersPage() {
               <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
                 <p className="mb-2 text-sm font-semibold text-cream-900">Üyelik Paketi</p>
                 <div className="grid gap-x-8 sm:grid-cols-2">
-                  <InfoRow label="Aylık koç" value={`${selected.packageConfig?.coachMeetingsPerMonth ?? (selected.packageConfig?.coachMeetingsPerWeek ? selected.packageConfig.coachMeetingsPerWeek * 4 : 0)}`} />
-                  <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
+                  {packageIncludesCoach(selected.packageConfig) && (
+                    <InfoRow label="Aylık koç" value={`${selected.packageConfig?.coachMeetingsPerMonth ?? (selected.packageConfig?.coachMeetingsPerWeek ? selected.packageConfig.coachMeetingsPerWeek * 4 : 0)}`} />
+                  )}
+                  {packageIncludesDietitian(selected.packageConfig) && (
+                    <InfoRow label="Aylık diyetisyen" value={`${selected.packageConfig?.dietitianMeetingsPerMonth ?? 0}`} />
+                  )}
                   <InfoRow label="Süre" value={selected.packageConfig?.durationMonths ? `${selected.packageConfig.durationMonths} ay` : selected.packageConfig?.durationWeeks ? `${selected.packageConfig.durationWeeks} hafta` : '—'} />
                   <InfoRow label="Kalan gün" value={selected.premiumExpiresAt ? `${getRemainingDays(selected.premiumExpiresAt) ?? '—'} gün` : '—'} />
-                  <div className="flex items-center gap-2 py-1.5 text-sm"><Dumbbell className="h-4 w-4 text-brand-500" /> {staffName(selected.assignedCoachId)}</div>
-                  <div className="flex items-center gap-2 py-1.5 text-sm"><Apple className="h-4 w-4 text-sage-500" /> {staffName(selected.assignedDietitianId)}</div>
+                  {packageIncludesCoach(selected.packageConfig) && (
+                    <div className="flex items-center gap-2 py-1.5 text-sm"><Dumbbell className="h-4 w-4 text-brand-500" /> {staffName(selected.assignedCoachId)}</div>
+                  )}
+                  {packageIncludesDietitian(selected.packageConfig) && (
+                    <div className="flex items-center gap-2 py-1.5 text-sm"><Apple className="h-4 w-4 text-sage-500" /> {staffName(selected.assignedDietitianId)}</div>
+                  )}
                 </div>
               </div>
             )}

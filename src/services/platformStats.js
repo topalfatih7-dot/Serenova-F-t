@@ -1,4 +1,4 @@
-import { DEFAULT_PACKAGE, PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership } from '../data/membershipPlans'
+import { DEFAULT_PACKAGE, PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership, memberNeedsStaffAssignment } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { getRemainingDays } from './premiumMembership'
 
@@ -62,7 +62,7 @@ export function computeAdminStats(db) {
       ? Math.round(members.reduce((s, m) => s + (m.streak || 0), 0) / members.length)
       : 0,
     unassignedPremium: paid.filter(
-      (m) => m.membershipStatus === 'active' && (!m.assignedCoachId || !m.assignedDietitianId)
+      (m) => m.membershipStatus === 'active' && memberNeedsStaffAssignment(m)
     ).length,
   }
 }

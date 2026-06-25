@@ -1,14 +1,31 @@
 import { format, getDay, parseISO, isValid } from 'date-fns'
 
 export const MEAL_TYPES = [
-  { id: 'breakfast', label: 'Kahvaltı', short: 'Kah' },
+  { id: 'breakfast', label: 'Kahvaltı', short: 'Kahvaltı' },
+  { id: 'snack_morning', label: 'Sabah–Öğle Arası Ara Öğün', short: 'Sabah Ara' },
   { id: 'lunch', label: 'Öğle Yemeği', short: 'Öğle' },
+  { id: 'snack_afternoon', label: 'Öğle–Akşam Arası Ara Öğün', short: 'Öğle Ara' },
   { id: 'dinner', label: 'Akşam Yemeği', short: 'Akşam' },
-  { id: 'snack', label: 'Ara Öğün', short: 'Ara' },
   { id: 'note', label: 'Dikkat / Not', short: 'Not' },
 ]
 
-export const mealLabel = (id) => MEAL_TYPES.find((m) => m.id === id)?.label || id || ''
+/** Eski kayıtlar için snack → sabah ara öğün */
+export function normalizeMealType(mealType) {
+  if (mealType === 'snack') return 'snack_morning'
+  return mealType || 'note'
+}
+
+export const mealLabel = (id) => {
+  const normalized = normalizeMealType(id)
+  return MEAL_TYPES.find((m) => m.id === normalized)?.label || id || ''
+}
+
+/** Öğün grubunun birleşik içerik metni */
+export function mealContentText(entries = []) {
+  if (!entries.length) return ''
+  const parts = entries.map((e) => e.name || e.exerciseName).filter(Boolean)
+  return parts.join(', ')
+}
 
 /** Girdi belirli bir takvim gününe mi ait? (date veya haftalık day) */
 export function entryMatchesDate(entry, date) {
@@ -37,7 +54,8 @@ export function getProgramEntriesForDate(programs, date) {
     })
   })
   return result.sort((a, b) => {
-    const mealOrder = MEAL_TYPES.findIndex((m) => m.id === a.mealType) - MEAL_TYPES.findIndex((m) => m.id === b.mealType)
+    const mealOrder = MEAL_TYPES.findIndex((m) => m.id === normalizeMealType(a.mealType))
+      - MEAL_TYPES.findIndex((m) => m.id === normalizeMealType(b.mealType))
     if (mealOrder !== 0) return mealOrder
     return (a.start || '').localeCompare(b.start || '')
   })
@@ -66,7 +84,7 @@ export function mealCompletionKey(dateStr, mealType) {
 export function groupEntriesByMeal(entries) {
   const map = new Map()
   ;(entries || []).forEach((entry) => {
-    const mt = entry.mealType || 'note'
+    const mt = normalizeMealType(entry.mealType)
     if (!map.has(mt)) map.set(mt, [])
     map.get(mt).push(entry)
   })

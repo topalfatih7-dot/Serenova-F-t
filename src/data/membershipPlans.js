@@ -295,3 +295,39 @@ export const COACH_MAX_PER_MONTH = 6
 export const DIETITIAN_MAX_PER_MONTH = 6
 export const DURATION_MIN_MONTHS = 1
 export const DURATION_MAX_MONTHS = 12
+
+/** Pakette koç görüşmesi var mı (aylık veya haftalık limit) */
+export function packageIncludesCoach(packageConfig = {}) {
+  return (Number(packageConfig.coachMeetingsPerMonth) || Number(packageConfig.coachMeetingsPerWeek) || 0) > 0
+}
+
+/** Pakette diyetisyen görüşmesi var mı */
+export function packageIncludesDietitian(packageConfig = {}) {
+  return (Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0
+}
+
+/** Koç görüşme limitini aylık olarak döndürür */
+export function getCoachMeetingsPerMonth(packageConfig = {}) {
+  return Number(packageConfig.coachMeetingsPerMonth) || (Number(packageConfig.coachMeetingsPerWeek) || 0) * 4
+}
+
+/** Üyenin paketine göre eksik koç/diyetisyen ataması var mı */
+export function memberNeedsStaffAssignment(member) {
+  const pkg = member?.packageConfig || {}
+  const needsCoach = packageIncludesCoach(pkg) && !member?.assignedCoachId
+  const needsDiet = packageIncludesDietitian(pkg) && !member?.assignedDietitianId
+  return needsCoach || needsDiet
+}
+
+/** Paket kapsamı dışındaki atama ve randevuları temizler (plan değişiminde) */
+export function sanitizeStaffForPackage(packageConfig, data = {}) {
+  const includeCoach = packageIncludesCoach(packageConfig)
+  const includeDiet = packageIncludesDietitian(packageConfig)
+  return {
+    ...data,
+    assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
+    assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
+    coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
+    dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
+  }
+}

@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
-import { isPaidMembership, PAID_MEMBERSHIPS } from '../../data/membershipPlans'
+import { isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, memberNeedsStaffAssignment } from '../../data/membershipPlans'
 import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
 
@@ -24,8 +24,11 @@ const STATUS_LABELS = {
 
 function PremiumMemberCard({ member, staffName, onEdit }) {
   const info = enrichMemberPremium(member)
-  const missingCoach = !member.assignedCoachId && (Number(member.packageConfig?.coachMeetingsPerMonth) || Number(member.packageConfig?.coachMeetingsPerWeek) || 0) > 0
-  const missingDiet = !member.assignedDietitianId && (member.packageConfig?.dietitianMeetingsPerMonth || 0) > 0
+  const showCoach = packageIncludesCoach(member.packageConfig)
+  const showDiet = packageIncludesDietitian(member.packageConfig)
+  const missingCoach = showCoach && !member.assignedCoachId
+  const missingDiet = showDiet && !member.assignedDietitianId
+  const staffCols = [showCoach, showDiet].filter(Boolean).length
 
   return (
     <button
@@ -49,7 +52,7 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-cream-300 group-hover:text-brand-400" />
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className={`mt-4 grid gap-2 ${staffCols === 0 ? 'grid-cols-2' : staffCols === 1 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
         <div className="rounded-xl bg-cream-50 px-3 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Kalan</p>
           <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-cream-900">
@@ -61,20 +64,24 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Süre</p>
           <p className="mt-0.5 text-sm font-bold text-cream-900">{getDurationMonths(member.packageConfig)} ay</p>
         </div>
-        <div className="rounded-xl bg-cream-50 px-3 py-2">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Koç</p>
-          <p className="mt-0.5 flex items-center gap-1 truncate text-sm font-medium text-cream-900">
-            <Dumbbell className={`h-3.5 w-3.5 shrink-0 ${missingCoach ? 'text-amber-500' : 'text-brand-500'}`} />
-            {staffName(member.assignedCoachId)}
-          </p>
-        </div>
-        <div className="rounded-xl bg-cream-50 px-3 py-2">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Diyetisyen</p>
-          <p className="mt-0.5 flex items-center gap-1 truncate text-sm font-medium text-cream-900">
-            <Apple className={`h-3.5 w-3.5 shrink-0 ${missingDiet ? 'text-amber-500' : 'text-sage-500'}`} />
-            {staffName(member.assignedDietitianId)}
-          </p>
-        </div>
+        {showCoach && (
+          <div className="rounded-xl bg-cream-50 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Koç</p>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-sm font-medium text-cream-900">
+              <Dumbbell className={`h-3.5 w-3.5 shrink-0 ${missingCoach ? 'text-amber-500' : 'text-brand-500'}`} />
+              {staffName(member.assignedCoachId)}
+            </p>
+          </div>
+        )}
+        {showDiet && (
+          <div className="rounded-xl bg-cream-50 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Diyetisyen</p>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-sm font-medium text-cream-900">
+              <Apple className={`h-3.5 w-3.5 shrink-0 ${missingDiet ? 'text-amber-500' : 'text-sage-500'}`} />
+              {staffName(member.assignedDietitianId)}
+            </p>
+          </div>
+        )}
       </div>
 
       {(missingCoach || missingDiet || info.premiumExpiringSoon) && (
@@ -111,6 +118,16 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
 
   if (!member) return null
 
+  const showCoach = packageIncludesCoach(member.packageConfig)
+  const showDiet = packageIncludesDietitian(member.packageConfig)
+  const assignmentTitle = showCoach && showDiet
+    ? 'Koç & Diyetisyen'
+    : showCoach
+      ? 'Koç Ataması'
+      : showDiet
+        ? 'Diyetisyen Ataması'
+        : null
+
   const remaining = getRemainingDays(member.premiumExpiresAt)
   const info = enrichMemberPremium(member)
   const coachName = coaches.find((s) => s.id === coachId)?.name || ''
@@ -118,10 +135,10 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
 
   const submit = () => {
     onSave({
-      assignedCoachId: coachId || null,
-      assignedDietitianId: dietitianId || null,
-      coachSessions: coachSessions.map((s) => ({ ...s, coach: coachName || s.coach })),
-      dietitianSessions: dietitianSessions.map((s) => ({ ...s, coach: dietitianName || s.coach })),
+      assignedCoachId: showCoach ? (coachId || null) : null,
+      assignedDietitianId: showDiet ? (dietitianId || null) : null,
+      coachSessions: showCoach ? coachSessions.map((s) => ({ ...s, coach: coachName || s.coach })) : [],
+      dietitianSessions: showDiet ? dietitianSessions.map((s) => ({ ...s, coach: dietitianName || s.coach })) : [],
     })
   }
 
@@ -163,36 +180,42 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
           <p className="mt-2 text-xs text-cream-800/50">Kalan gün paket satın alımından otomatik hesaplanır; buradan değiştirilemez.</p>
         </section>
 
-        {/* Atamalar */}
-        <section className="rounded-2xl border border-cream-200 p-4">
-          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-            <UserCheck className="h-4 w-4 text-brand-500" /> Koç & Diyetisyen
-          </p>
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1 flex items-center gap-1 text-xs text-cream-800/55"><Dumbbell className="h-3 w-3" /> Koç</span>
-              <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm">
-                <option value="">— Atanmadı —</option>
-                {coaches.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {countStaffClients(members, s.id, 'coach')} üye
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1 flex items-center gap-1 text-xs text-cream-800/55"><Apple className="h-3 w-3" /> Diyetisyen</span>
-              <select value={dietitianId} onChange={(e) => setDietitianId(e.target.value)} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm">
-                <option value="">— Atanmadı —</option>
-                {dietitians.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {countStaffClients(members, s.id, 'dietitian')} üye
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
+        {/* Atamalar — yalnızca pakette olan roller */}
+        {assignmentTitle && (
+          <section className="rounded-2xl border border-cream-200 p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
+              <UserCheck className="h-4 w-4 text-brand-500" /> {assignmentTitle}
+            </p>
+            <div className="space-y-3">
+              {showCoach && (
+                <label className="block">
+                  <span className="mb-1 flex items-center gap-1 text-xs text-cream-800/55"><Dumbbell className="h-3 w-3" /> Koç</span>
+                  <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm">
+                    <option value="">— Atanmadı —</option>
+                    {coaches.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} · {countStaffClients(members, s.id, 'coach')} üye
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {showDiet && (
+                <label className="block">
+                  <span className="mb-1 flex items-center gap-1 text-xs text-cream-800/55"><Apple className="h-3 w-3" /> Diyetisyen</span>
+                  <select value={dietitianId} onChange={(e) => setDietitianId(e.target.value)} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm">
+                    <option value="">— Atanmadı —</option>
+                    {dietitians.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} · {countStaffClients(members, s.id, 'dietitian')} üye
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Manuel randevular */}
         <ManualSessionEditor
@@ -238,7 +261,7 @@ export default function AdminPremiumPage() {
         const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
         if (!matchSearch) return false
         if (filter === 'unassigned') {
-          return !m.assignedCoachId || !m.assignedDietitianId
+          return memberNeedsStaffAssignment(m)
         }
         if (filter === 'expiring') {
           const r = getRemainingDays(m.premiumExpiresAt)
@@ -258,7 +281,7 @@ export default function AdminPremiumPage() {
     const paidPlans = PAID_MEMBERSHIPS
     return {
       total: members.filter((m) => paidPlans.includes(m.membership)).length,
-      unassigned: members.filter((m) => paidPlans.includes(m.membership) && (!m.assignedCoachId || !m.assignedDietitianId)).length,
+      unassigned: members.filter((m) => paidPlans.includes(m.membership) && memberNeedsStaffAssignment(m)).length,
       expiring: members.filter((m) => {
         const r = getRemainingDays(m.premiumExpiresAt)
         return paidPlans.includes(m.membership) && r != null && r > 0 && r <= 7

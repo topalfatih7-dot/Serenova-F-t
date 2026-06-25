@@ -2,6 +2,11 @@ import { Plus, Trash2, Dumbbell, Apple } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import AvailabilityView from '../package/AvailabilityView'
+import {
+  packageIncludesCoach,
+  packageIncludesDietitian,
+  getCoachMeetingsPerMonth,
+} from '../../data/membershipPlans'
 
 function uid(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
@@ -84,8 +89,19 @@ function SessionList({ title, icon: Icon, color, sessions, staffName, onChange, 
 
 export default function ManualSessionEditor({ member, coachName, dietitianName, coachSessions, dietitianSessions, onCoachChange, onDietitianChange }) {
   const pkg = member?.packageConfig || {}
-  const coachLimit = Number(pkg.coachMeetingsPerWeek) || 0
+  const showCoach = packageIncludesCoach(pkg)
+  const showDiet = packageIncludesDietitian(pkg)
+  const coachPerWeek = Number(pkg.coachMeetingsPerWeek) || 0
+  const coachPerMonth = getCoachMeetingsPerMonth(pkg)
   const dietLimit = Number(pkg.dietitianMeetingsPerMonth) || 0
+
+  if (!showCoach && !showDiet) {
+    return (
+      <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
+        <p className="text-sm text-cream-800/60">Bu pakette birebir koç veya diyetisyen görüşmesi bulunmuyor.</p>
+      </section>
+    )
+  }
 
   return (
     <section className="space-y-4 rounded-2xl border border-cream-200 p-4">
@@ -93,8 +109,8 @@ export default function ManualSessionEditor({ member, coachName, dietitianName, 
         <p className="text-sm font-semibold text-cream-900">Görüşme Randevuları</p>
         <p className="mt-1 text-xs text-cream-800/55">
           Müşterinin müsaitlik saatlerine ve paket limitlerine göre randevuları elle girin.
-          {coachLimit > 0 && ` · Koç: haftada ${coachLimit}`}
-          {dietLimit > 0 && ` · Diyetisyen: ayda ${dietLimit}`}
+          {showCoach && (coachPerWeek > 0 ? ` · Koç: haftada ${coachPerWeek}` : ` · Koç: ayda ${coachPerMonth}`)}
+          {showDiet && ` · Diyetisyen: ayda ${dietLimit}`}
         </p>
       </div>
 
@@ -105,7 +121,7 @@ export default function ManualSessionEditor({ member, coachName, dietitianName, 
         </div>
       )}
 
-      {coachLimit > 0 && (
+      {showCoach && (
         <SessionList
           title="Koç Randevuları"
           icon={Dumbbell}
@@ -113,11 +129,11 @@ export default function ManualSessionEditor({ member, coachName, dietitianName, 
           sessions={coachSessions}
           staffName={coachName}
           onChange={onCoachChange}
-          maxHint={`Paket: haftada ${coachLimit} görüşme`}
+          maxHint={coachPerWeek > 0 ? `Paket: haftada ${coachPerWeek} görüşme` : `Paket: ayda ${coachPerMonth} görüşme`}
         />
       )}
 
-      {dietLimit > 0 && (
+      {showDiet && (
         <SessionList
           title="Diyetisyen Randevuları"
           icon={Apple}

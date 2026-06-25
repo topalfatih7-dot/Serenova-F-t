@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
-import { mealLabel } from '../../utils/programSchedule'
+import { mealLabel, mealContentText } from '../../utils/programSchedule'
 
 export default function StaffListsPage() {
   const { staffUser, programs } = useApp()
@@ -59,11 +59,11 @@ export default function StaffListsPage() {
                     {p.entries?.length > 0 ? (
                       <ul className="space-y-2">
                         {p.entries.map((entry) => (
-                          <li key={entry.id} className="rounded-lg bg-sage-50/60 px-3 py-2 text-sm text-cream-800">
-                            <span className="text-xs font-bold uppercase text-sage-700">{mealLabel(entry.mealType)}</span>
-                            <span className="mx-2 text-cream-300">·</span>
-                            {entry.name}
-                            {entry.note ? <span className="text-cream-800/50"> — {entry.note}</span> : null}
+                          <li key={entry.id} className="rounded-lg bg-sage-50/60 px-3 py-2.5 text-sm text-cream-800">
+                            <p className="text-sm font-bold text-sage-800">{mealLabel(entry.mealType)}</p>
+                            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">Öğün içeriği</p>
+                            <p className="text-sm leading-relaxed">{entry.name || mealContentText([entry])}</p>
+                            {entry.note ? <p className="mt-1 text-xs text-cream-800/55">Not: {entry.note}</p> : null}
                           </li>
                         ))}
                       </ul>

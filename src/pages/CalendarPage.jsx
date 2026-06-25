@@ -10,7 +10,7 @@ import { tr } from 'date-fns/locale'
 import {
   ChevronLeft, ChevronRight, X, Dumbbell, Apple,
   PlayCircle, Clock, CheckCircle, Circle, Calendar,
-  ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save, Lock,
+  ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save,
 } from 'lucide-react'
 import VideoPlayer from '../components/ui/VideoPlayer'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
@@ -23,6 +23,7 @@ import {
   groupEntriesByMeal,
   isMealCompleted,
   splitEntriesByType,
+  mealContentText,
 } from '../utils/programSchedule'
 
 // ── Yardımcılar ────────────────────────────────────────────────────
@@ -33,9 +34,6 @@ const amountText = (e) => {
   return `${e.amount} tekrar`
 }
 
-function isAccessibleDay(day) {
-  return isToday(day)
-}
 export default function CalendarPage() {
   const { myPrograms, user, updateProfile, toggleActivityCompletion, toggleMealCompletion } = useApp()
   const { toast } = useToast()
@@ -92,7 +90,7 @@ export default function CalendarPage() {
 
   // Aktivite tamamla/geri al
   const toggleActivity = useCallback(async (entryId) => {
-    if (!selectedDateStr || saving || !isToday(selectedDate)) return
+    if (!selectedDateStr || saving) return
     setSaving(true)
     try {
       await toggleActivityCompletion(selectedDateStr, entryId)
@@ -103,16 +101,12 @@ export default function CalendarPage() {
 
   const openDay = useCallback((day) => {
     if (!isSameMonth(day, current)) return
-    if (!isAccessibleDay(day)) {
-      toast('Programlara yalnızca ilgili gün içinde erişebilirsiniz.', 'info')
-      return
-    }
     setSelectedDate(day)
     setExpandedEntryId(null)
-  }, [current, toast])
+  }, [current])
 
   const toggleMeal = useCallback(async (mealType, entryIds) => {
-    if (!selectedDateStr || saving || !isToday(selectedDate)) return
+    if (!selectedDateStr || saving) return
     setSaving(true)
     try {
       await toggleMealCompletion(selectedDateStr, mealType, entryIds)
@@ -310,19 +304,17 @@ export default function CalendarPage() {
               const dots = inMonth ? getDotsForDay(day) : []
               const dateStr = format(day, 'yyyy-MM-dd')
               const dayEntries = getProgramEntriesForDate(myPrograms, day)
-              const accessible = isAccessibleDay(day)
               const dayDone = dayEntries.length > 0
                 ? (completedActivities[dateStr] || []).filter((k) => k.startsWith(`${dateStr}_`)).length
                 : 0
               const allDone = dayEntries.length > 0 && dayDone === dayEntries.length
-              const locked = inMonth && dayEntries.length > 0 && !accessible
 
               return (
                 <motion.button
                   key={day.toISOString()}
                   type="button"
-                  whileHover={inMonth && accessible && dots.length > 0 ? { scale: 1.05 } : {}}
-                  whileTap={inMonth && accessible ? { scale: 0.97 } : {}}
+                  whileHover={inMonth && dots.length > 0 ? { scale: 1.05 } : {}}
+                  whileTap={inMonth ? { scale: 0.97 } : {}}
                   onClick={() => openDay(day)}
                   className={`relative flex min-h-[60px] sm:min-h-[72px] flex-col items-center rounded-xl p-1.5 transition-all ${
                     !inMonth
@@ -331,11 +323,9 @@ export default function CalendarPage() {
                         ? 'bg-brand-500 shadow-lg shadow-brand-500/30'
                         : today
                           ? 'bg-brand-50 ring-2 ring-brand-300'
-                          : locked
-                            ? 'cursor-not-allowed bg-cream-50/80 opacity-70'
-                            : dots.length > 0
-                              ? 'hover:bg-cream-100 cursor-pointer'
-                              : 'cursor-pointer hover:bg-cream-50'
+                          : dots.length > 0
+                            ? 'hover:bg-cream-100 cursor-pointer'
+                            : 'cursor-pointer hover:bg-cream-50'
                   }`}
                 >
                   <span className={`text-xs font-bold ${
@@ -345,10 +335,7 @@ export default function CalendarPage() {
                   </span>
 
                   {/* Tamamlanma göstergesi */}
-                  {locked && (
-                    <Lock className="mt-0.5 h-3 w-3 text-cream-400" />
-                  )}
-                  {allDone && !selected && !locked && (
+                  {allDone && !selected && (
                     <CheckCircle className="mt-0.5 h-3 w-3 text-sage-500" />
                   )}
 
@@ -391,7 +378,7 @@ export default function CalendarPage() {
             <span className="h-2 w-2 rounded-full bg-sage-400" /> Beslenme
           </span>
           <span className="flex items-center gap-1.5 text-xs text-cream-800/60">
-            <Lock className="h-3 w-3 text-cream-400" /> Sadece bugün açılır
+            <CheckCircle className="h-3 w-3 text-sage-500" /> Tamamlanan gün
           </span>
         </div>
       </div>
@@ -426,7 +413,7 @@ export default function CalendarPage() {
             onExpandEntry={setExpandedEntryId}
             onClose={() => { setSelectedDate(null); setExpandedEntryId(null) }}
             saving={saving}
-            canComplete={isToday(selectedDate)}
+            canComplete
           />
         )}
       </AnimatePresence>
@@ -573,6 +560,9 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
 }
 
 function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
+  const content = mealContentText(group.entries)
+  const note = group.entries.find((e) => e.note)?.note
+
   return (
     <div className={`px-5 py-4 ${done ? 'bg-sage-50/60' : 'bg-white'}`}>
       <div className="flex items-start gap-3">
@@ -581,20 +571,23 @@ function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
             {done ? <CheckCircle className="h-6 w-6 text-sage-500" /> : <Circle className="h-6 w-6 text-cream-300" />}
           </button>
         ) : (
-          <Lock className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
+          <Circle className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
         )}
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-bold uppercase tracking-wide ${done ? 'text-sage-700 line-through' : 'text-sage-700'}`}>
+          <p className={`text-sm font-bold ${done ? 'text-sage-700 line-through' : 'text-sage-800'}`}>
             {group.label}
           </p>
-          <ul className="mt-2 space-y-1.5">
-            {group.entries.map((entry) => (
-              <li key={entry.id} className={`text-sm ${done ? 'text-cream-800/45' : 'text-cream-800'}`}>
-                <span className="font-medium">{entry.name || entry.exerciseName}</span>
-                {entry.note ? <span className="text-cream-800/50"> — {entry.note}</span> : null}
-              </li>
-            ))}
-          </ul>
+          {content && (
+            <div className="mt-2 rounded-xl bg-sage-50/80 px-3 py-2.5 ring-1 ring-sage-100">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-sage-600/80">Öğün içeriği</p>
+              <p className={`mt-1 text-sm leading-relaxed ${done ? 'text-cream-800/50' : 'text-cream-900'}`}>{content}</p>
+            </div>
+          )}
+          {note && (
+            <p className="mt-2 text-xs text-cream-800/55">
+              <span className="font-medium text-cream-800/70">Not: </span>{note}
+            </p>
+          )}
           {done && (
             <p className="mt-2 flex items-center gap-1 text-xs font-medium text-sage-600">
               <Zap className="h-3 w-3" /> Öğün tamamlandı
@@ -638,7 +631,7 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canCom
             </AnimatePresence>
           </button>
         ) : (
-          <Lock className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
+          <Circle className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
         )}
 
         <div className="min-w-0 flex-1">

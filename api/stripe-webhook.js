@@ -47,6 +47,26 @@ function readRawBody(req) {
   })
 }
 
+function packageIncludesCoach(pkg = {}) {
+  return (Number(pkg.coachMeetingsPerMonth) || Number(pkg.coachMeetingsPerWeek) || 0) > 0
+}
+
+function packageIncludesDietitian(pkg = {}) {
+  return (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
+}
+
+function sanitizeStaffForPackage(packageConfig, data = {}) {
+  const includeCoach = packageIncludesCoach(packageConfig)
+  const includeDiet = packageIncludesDietitian(packageConfig)
+  return {
+    ...data,
+    assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
+    assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
+    coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
+    dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
+  }
+}
+
 async function activateMembership(admin, meta, session) {
   const memberId = meta.memberId
   const planId = meta.planId
@@ -72,13 +92,13 @@ async function activateMembership(admin, meta, session) {
   const started = today()
   const expires = computeExpiry(started, durationMonths)
 
-  const newData = {
+  const newData = sanitizeStaffForPackage(packageConfig, {
     ...data,
     packageConfig,
     premiumStartedAt: started,
     premiumExpiresAt: expires,
     lastActiveAt: started,
-  }
+  })
 
   const { error: updErr } = await admin
     .from('members')

@@ -5,6 +5,7 @@ import { setRememberMe, clearAllAuthTokens } from './authStorage'
 import { ADMIN_CREDENTIALS } from '../config/brand'
 import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
+  sanitizeStaffForPackage,
 } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
@@ -694,8 +695,10 @@ export async function processPremiumPayment(member, packageConfig, schedule) {
     supportSchedule: schedule,
   }
 
+  const sanitized = sanitizeStaffForPackage(packageConfig, draft)
+
   const updated = withPremiumDates({
-    ...draft,
+    ...sanitized,
     lastActiveAt: today(),
   }, packageConfig, true)
   await upsertMember(updated)
@@ -723,6 +726,8 @@ export async function changeMemberPlan(member, planId, planPrice = 0, durationMo
     packageConfig,
     lastActiveAt: today(),
   }
+
+  draft = sanitizeStaffForPackage(packageConfig, draft)
 
   if (paid) {
     // Yeni plan için süreyi bugünden başlat
