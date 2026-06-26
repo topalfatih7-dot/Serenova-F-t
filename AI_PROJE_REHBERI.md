@@ -681,7 +681,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `blogPosts.js` | `BLOG_CATEGORIES`, `DEFAULT_POSTS` (Supabase boşsa fallback) |
 | `countryCodes.js` | `COUNTRY_CODES`, `DEFAULT_COUNTRY_ISO`, `getCountry`, `isValidNationalNumber`, `formatNationalNumber`, `toE164` |
 | `healthTest.js` | `HEALTH_SECTIONS`, `EMPTY_HEALTH_TEST`, `getApplicableSections`, `isSectionComplete`, `describeHealthTest` |
-| `staffApplication.js` | Kadro başvuru form şeması, validasyon, `STAFF_APPLICATION_STEPS` |
+| `staffApplication.js` | Kadro başvuru form şeması, validasyon, `APPLICATION_STEPS`, koç/diyetisyen alan sabitleri |
 | `corporateApplication.js` | Kurumsal başvuru form şeması, validasyon |
 | `mockPayments.js` | Ödeme yönetimi demo verisi (üye/staff/admin) |
 
@@ -834,7 +834,8 @@ Kaynak: `.env.example`
 | `addExercise/editExercise/removeExercise` | 649–667 | Egzersiz CRUD |
 | `createMembershipRequest(...)` | 670 | Üyelik talebi |
 | `resolveMembershipRequest(...)` | 679 | Talep onay/red |
-| `submitStaffApplication(form)` | — | Kadro başvurusu RPC |
+| `submitStaffApplication(form)` | — | Kadro başvurusu RPC (`buildStaffApplicationPayload`) |
+| `uploadStaffApplicationDoc(file)` | — | Sertifika belgesi → `staff-application-docs` bucket |
 | `resolveStaffApplication(app, approve)` | — | Onay → `admin_upsert_staff` + geçici şifre |
 | `submitCorporateApplication(form)` | — | Kurumsal başvuru RPC |
 | `resolveCorporateApplication(app, status)` | — | Kurumsal durum güncelle |
@@ -1906,7 +1907,22 @@ Yardımcılar (`programSchedule.js`):
 | `staff_applications` | Koç/diyetisyen başvuruları (`status`: pending/approved/rejected) |
 | `submit_staff_application()` | Herkese açık RPC (anon + authenticated) |
 
-**Başvuru formu alanları:**
+**Başvuru formu alanları (2026-06-26 güncellemesi):**
+
+| Adım | Koç | Diyetisyen |
+|------|-----|------------|
+| **1 — Kişisel Bilgiler** | Ad, e-posta, telefon, cinsiyet, il/ilçe (dropdown), salon bilgisi, LinkedIn/Instagram/YouTube/web | Aynı |
+| **2 — Uzmanlık** | 26 uzmanlık alanı, deneyim yılı, yetkin danışan grupları (5 kategori) | Uzmanlık, deneyim, mezuniyet bölümü, diploma/oda no |
+| **3 — Eğitim & Sertifika** | Lise/önlisans/lisans + bölüm + GPA; resmi antrenörlük; uluslararası/branş sertifikaları + belge yükleme | Eğitim listesi + sertifika listesi |
+| **4 — Çalışma Tercihleri** | Günler, saat dilimi (:00/:30), çalışma yaklaşımları, hizmet alanları, özet | Günler, saat dilimi, özet |
+
+**Kaldırılan (koç):** ünvan, bio, birincil sertifika türü, adım 3 müsaitlik (4. adıma taşındı).
+
+**Depolama:** `staff-application-docs` bucket — sertifika PDF/görsel yükleme (`uploadStaffApplicationDoc`).
+
+**Migration:** `20260626_staff_application_docs_storage.sql`
+
+**Önceki alan tablosu (arşiv):**
 
 | Alan | Koç | Diyetisyen |
 |------|:---:|:----------:|
@@ -2695,4 +2711,108 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 ### 38.7 Değiştirilen / eklenen dosyalar
 
 `api/ai-blog-generate.js`, `api/_blog-images.js`, `api/_gemini.js`, `api/_ai-prompts.js`, `api/_guards.js`, `vercel.json`, `.env.example`, `src/utils/blogImages.js`, `src/utils/healthProfile.js`, `src/hooks/useHealthAnalysisSync.js`, `src/components/landing/LatestBlogPosts.jsx`, `src/pages/LandingPage.jsx`, `src/pages/BlogPage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/CalorieCalculatorPage.jsx`, `src/services/memberHealthSync.js`, `src/services/aiAnalysis.js`, `src/services/supabaseDb.js`, `src/services/calorieChat.js`, `src/services/aiVision.js`, `scripts/test-ai.mjs`, `scripts/patch-blog-covers.mjs`, `supabase/setup.sql`, `AI_PROJE_REHBERI.md`
+
+---
+
+## 39. Kadro Başvuru Formu Yenileme (2026-06-26)
+
+### Özet
+
+`/team/apply` sayfası dokümandaki alan listesine göre yenilendi: blog sayfasındaki `PlansAnimatedBackground` hero, **accordion (dokununca açılan) bölümler**, kategorize renkli seçim kartları, toplu belge yükleme, popup başvuru özeti.
+
+### Form adımları
+
+| # | Etiket | İçerik |
+|---|--------|--------|
+| 1 | Kişisel Bilgiler | Accordion: temel bilgiler, konum, salon, sosyal medya |
+| 2 | Uzmanlık & Deneyim | Koç: `COACH_SPECIALTY_GROUPS` (5 kategori grid) + yetkin gruplar (accordion) + **Diğer** metin alanı; Diyetisyen: uzmanlık + mesleki bilgiler |
+| 3 | Eğitim & Sertifika | Koç: eğitim + resmi antrenörlük (**Diğer yok**) + uluslararası/branş (**Diğer → input**) + **toplu belge yükleme** (`certificateFiles[]`); Diyetisyen: liste |
+| 4 | Yaklaşım & Hizmet | Çalışma yaklaşımları + animasyonlu hizmet alanı kartları — **çalışma saatleri kaldırıldı** |
+
+### UX özellikleri
+
+- `AccordionSection` — bölüme dokununca aşağı açılır (`StaffApplicationUi.jsx`)
+- `GroupedChipSelect` / `FlatChipSelect` / `ServiceAreaGrid` — renkli animasyonlu seçimler
+- `OTHER_OPTION` (`'Diğer'`) — uzmanlık, gruplar, sertifikalar (resmi hariç), yaklaşım, hizmet alanları
+- `ApplicationSummaryModal` — adım 4 sonunda popup özet + **Başvuruyu Onayla ve Gönder**
+- `BulkCertUpload` — sertifika PDF/görselleri tek alanda çoklu yükleme
+
+### Supabase
+
+| Öğe | Açıklama |
+|-----|----------|
+| `staff_applications.data` | JSONB: `specialtyOther`, `competentGroupOther`, `workApproachOther`, `serviceAreaOther`, `certificateFiles: [{name, url}]` |
+| `submit_staff_application` | Değişmedi — RPC aynı |
+| `staff-application-docs` | Public bucket; anon insert |
+| `uploadStaffApplicationDoc` | `supabaseDb.js` |
+
+**Kaldırılan alanlar (koç):** `workDays`, `workStart`, `workEnd`, sertifika başına `certDocuments` (yerine `certificateFiles`)
+
+**Migration:** `supabase/migrations/20260626_staff_application_docs_storage.sql` (canlıya uygulandı)
+
+### Admin
+
+`AdminApplicationsPage.jsx` → Kadro detay: Diğer metin alanları, `certificateFiles` linkleri, çalışma saatleri gösterimi kaldırıldı.
+
+### Dosyalar
+
+`src/data/staffApplication.js`, `src/components/staff/StaffApplicationUi.jsx`, `src/pages/StaffApplicationPage.jsx`, `src/pages/admin/AdminApplicationsPage.jsx`, `src/services/supabaseDb.js`
+
+---
+
+## 40. Personel Hakediş Politikası (2026-06-26)
+
+### İş modeli
+
+| Karar | Değer |
+|-------|--------|
+| Personel statüsü | **Serbest meslek** (çalışan değil) — ödeme öncesi/sonrası fatura beklenir |
+| Faturalandırılabilir iş | Yalnızca **tamamlanan video görüşme** (koç + diyetisyen) |
+| Faturalandırılmayan | Antrenman programı, beslenme listesi, revizyonlar |
+| Birim ücret | **500 ₺ / görüşme** (`STAFF_SESSION_RATE_TRY`) |
+| Minimum ödeme eşiği | **Yok** (ileride `STAFF_MIN_PAYOUT_THRESHOLD_TRY` ile eklenebilir) |
+| Ödeme döngüsü | Cumartesi 00:00 → Cuma 23:59 kapanış, **ödeme Cuma** |
+
+### Video katılım zorunluluğu
+
+Hakediş için **üye ve personelin ikisi de** Daily.co odasına katılmalı; eşzamanlı süre en az **15 dk** (`STAFF_MIN_OVERLAP_MINUTES`).
+
+**Seans JSONB alanı (planlanan):**
+
+```json
+{
+  "attendance": {
+    "member": { "joinedAt": "...", "leftAt": "..." },
+    "staff": { "joinedAt": "...", "leftAt": "..." },
+    "overlapMinutes": 28,
+    "billable": true,
+    "evaluatedAt": "..."
+  },
+  "status": "completed"
+}
+```
+
+**Değerlendirme:** `src/services/sessionAttendance.js` → `evaluateSessionBillable()`, `buildSessionAttendancePatch()`
+
+**Uygulama aşamaları:**
+
+1. `VideoCallPage` — join/leave olaylarında `/api/session-attendance` (planlı)
+2. Oda kapanınca veya her iki taraf ayrılınca overlap hesapla
+3. `billable: true` → `staff_earning_lines` satırı (`amount: 500`, `status: pending`)
+4. Admin haftalık batch onayı → EFT + `paid`
+
+**Alternatif (ileri):** Daily.co webhook (`participant.joined` / `left`) — client manipülasyonuna karşı daha güvenilir.
+
+### Veritabanı (planlı)
+
+| Tablo | Açıklama |
+|-------|----------|
+| `staff_earning_lines` | `staff_id`, `member_id`, `session_id`, `type`, `amount`, `period_key`, `status` |
+| `staff_payout_batches` | Haftalık toplu ödeme, fatura ref, `paid_at` |
+
+### Dosyalar
+
+`src/data/staffPayouts.js`, `src/services/sessionAttendance.js`, `src/data/mockPayments.js`, `src/pages/payments/PaymentManagementPage.jsx`
+
+**Mevcut durum:** Kurallar kodlandı; hakediş tabloları ve video attendance API henüz yok — personel ekranı demo veri.
 

@@ -30,27 +30,26 @@ export const MOCK_MEMBER_PAYMENTS = [
 
 export const MOCK_STAFF_EARNINGS = {
   coach: {
-    pendingAmount: 4850,
-    nextPayoutDate: '2026-07-01',
-    sessionRate: 350,
-    sessionsThisMonth: 14,
-    totalEarned: 18200,
+    pendingAmount: 5000,
+    nextPayoutDate: '2026-07-04',
+    sessionRate: 500,
+    sessionsThisMonth: 10,
+    totalEarned: 15000,
     history: [
-      { id: 'e1', period: 'Haziran 2026', amount: 4850, status: 'pending', sessions: 14 },
-      { id: 'e2', period: 'Mayıs 2026', amount: 4200, status: 'paid', sessions: 12, paidAt: '2026-06-05' },
-      { id: 'e3', period: 'Nisan 2026', amount: 3850, status: 'paid', sessions: 11, paidAt: '2026-05-03' },
+      { id: 'e1', period: '2026-W26', amount: 5000, status: 'pending', sessions: 10 },
+      { id: 'e2', period: '2026-W25', amount: 4500, status: 'paid', sessions: 9, paidAt: '2026-06-27' },
+      { id: 'e3', period: '2026-W24', amount: 5500, status: 'paid', sessions: 11, paidAt: '2026-06-20' },
     ],
   },
   dietitian: {
-    pendingAmount: 3200,
-    nextPayoutDate: '2026-07-01',
-    sessionRate: 400,
-    sessionsThisMonth: 8,
-    listsThisMonth: 12,
-    totalEarned: 12400,
+    pendingAmount: 2500,
+    nextPayoutDate: '2026-07-04',
+    sessionRate: 500,
+    sessionsThisMonth: 5,
+    totalEarned: 10000,
     history: [
-      { id: 'e1', period: 'Haziran 2026', amount: 3200, status: 'pending', sessions: 8, lists: 12 },
-      { id: 'e2', period: 'Mayıs 2026', amount: 2900, status: 'paid', sessions: 7, lists: 10, paidAt: '2026-06-05' },
+      { id: 'e1', period: '2026-W26', amount: 2500, status: 'pending', sessions: 5 },
+      { id: 'e2', period: '2026-W25', amount: 3000, status: 'paid', sessions: 6, paidAt: '2026-06-27' },
     ],
   },
 }
@@ -66,8 +65,8 @@ export const MOCK_ADMIN_PAYMENT_SUMMARY = {
     { id: 't3', member: 'Ayşe D.', amount: 1999, plan: 'Platinum', date: '2026-06-20', status: 'completed' },
   ],
   staffPayouts: [
-    { id: 'sp1', name: 'Koç Emre', role: 'coach', pending: 4850, sessions: 14 },
-    { id: 'sp2', name: 'Dyt. Zeynep', role: 'dietitian', pending: 3200, lists: 12 },
-    { id: 'sp3', name: 'Koç Can', role: 'coach', pending: 4400, sessions: 13 },
+    { id: 'sp1', name: 'Koç Emre', role: 'coach', pending: 5000, sessions: 10 },
+    { id: 'sp2', name: 'Dyt. Zeynep', role: 'dietitian', pending: 2500, sessions: 5 },
+    { id: 'sp3', name: 'Koç Can', role: 'coach', pending: 4500, sessions: 9 },
   ],
 }

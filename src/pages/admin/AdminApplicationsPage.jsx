@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Check, X, UserPlus, Dumbbell, Apple, ChevronDown, ChevronUp, Copy,
-  Building2, Mail, MessageSquare,
+  Building2, Mail, MessageSquare, ExternalLink, MapPin,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
@@ -176,7 +176,11 @@ export default function AdminApplicationsPage() {
                       )}
                     </div>
                   </div>
-                  {open && <div className="border-t border-cream-100 bg-cream-50/50 px-4 py-4 text-sm"><p>{d.bio}</p><p className="mt-2 text-cream-800/60">{(d.specialties || []).join(', ')}</p></div>}
+                  {open && (
+                    <div className="border-t border-cream-100 bg-cream-50/50 px-4 py-4 text-sm">
+                      <StaffApplicationDetail app={app} d={d} />
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -267,6 +271,163 @@ export default function AdminApplicationsPage() {
         </div>
         <button type="button" onClick={copyCreds} className="btn-wellness mt-4 w-full !py-3"><Copy className="h-4 w-4" /> Kopyala</button>
       </Modal>
+    </div>
+  )
+}
+
+const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
+const EDU_LEVEL_LABELS = { lise: 'Lise', onlisans: 'Önlisans', lisans: 'Lisans' }
+
+function DetailBlock({ title, children }) {
+  if (!children) return null
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-cream-800/45">{title}</p>
+      <div className="mt-1.5 text-cream-900">{children}</div>
+    </div>
+  )
+}
+
+function TagList({ items }) {
+  if (!items?.length) return <span className="text-cream-800/45">—</span>
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <span key={item} className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium ring-1 ring-cream-200">{item}</span>
+      ))}
+    </div>
+  )
+}
+
+function StaffApplicationDetail({ app, d }) {
+  const isCoach = app.role === 'coach'
+  const location = [d.city, d.district].filter(Boolean).join(' / ')
+  const gym = d.hasGym ? [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · ') : null
+  const socials = [
+    d.linkedin && ['LinkedIn', d.linkedin],
+    d.instagram && ['Instagram', d.instagram],
+    d.youtube && ['YouTube', d.youtube],
+    d.website && ['Web', d.website],
+  ].filter(Boolean)
+
+  return (
+    <div className="space-y-1">
+      <DetailBlock title="İletişim">
+        <p>{app.email} · {app.phone || '—'}</p>
+        {d.gender && <p className="text-cream-800/65">Cinsiyet: {GENDER_LABELS[d.gender] || d.gender}</p>}
+      </DetailBlock>
+
+      {location && (
+        <DetailBlock title="Konum">
+          <p className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand-500" /> {location}</p>
+        </DetailBlock>
+      )}
+
+      {gym && (
+        <DetailBlock title="Salon">
+          <p className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5 text-amber-600" /> {gym}</p>
+        </DetailBlock>
+      )}
+
+      {socials.length > 0 && (
+        <DetailBlock title="Sosyal Medya">
+          <ul className="space-y-1">
+            {socials.map(([label, url]) => (
+              <li key={label}>
+                <a href={url.startsWith('http') ? url : `https://${url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                  {label} <ExternalLink className="h-3 w-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </DetailBlock>
+      )}
+
+      <DetailBlock title="Uzmanlık Alanları">
+        <TagList items={d.specialties} />
+        {d.specialtyOther && <p className="mt-1 text-xs text-cream-800/60">Diğer: {d.specialtyOther}</p>}
+        {d.experienceYears != null && <p className="mt-2 text-cream-800/65">{d.experienceYears} yıl deneyim</p>}
+      </DetailBlock>
+
+      {isCoach ? (
+        <>
+          <DetailBlock title="Yetkin Gruplar">
+            <TagList items={d.competentGroups} />
+            {d.competentGroupOther && <p className="mt-1 text-xs text-cream-800/60">Diğer: {d.competentGroupOther}</p>}
+            {d.chronicDiseaseExamples && <p className="mt-2 text-xs text-cream-800/60">Kronik hastalık örnekleri: {d.chronicDiseaseExamples}</p>}
+          </DetailBlock>
+          <DetailBlock title="Eğitim">
+            <p>
+              {EDU_LEVEL_LABELS[d.educationLevel] || d.educationLevel || '—'}
+              {d.educationDepartment ? ` · ${d.educationDepartment}` : ''}
+              {d.educationGpa ? ` · GPA ${d.educationGpa}` : ''}
+            </p>
+          </DetailBlock>
+          <DetailBlock title="Resmi Antrenörlük">
+            <TagList items={d.officialCoachingCerts} />
+          </DetailBlock>
+          <DetailBlock title="Uluslararası Sertifikalar">
+            <TagList items={d.internationalCerts} />
+            {d.certOtherNotes?.international && <p className="mt-1 text-xs">Diğer: {d.certOtherNotes.international}</p>}
+          </DetailBlock>
+          <DetailBlock title="Branş Sertifikaları">
+            <TagList items={d.branchCerts} />
+            {d.certOtherNotes?.branch && <p className="mt-1 text-xs">Diğer: {d.certOtherNotes.branch}</p>}
+          </DetailBlock>
+          {(d.certificateFiles?.length > 0 || (d.certDocuments && Object.keys(d.certDocuments).length > 0)) && (
+            <DetailBlock title="Yüklenen Belgeler">
+              <ul className="space-y-1">
+                {(d.certificateFiles || []).map((f, i) => (
+                  <li key={f.url || i}>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                      {f.name || `Belge ${i + 1}`} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </li>
+                ))}
+                {Object.entries(d.certDocuments || {}).map(([name, url]) => (
+                  <li key={name}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                      {name} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </DetailBlock>
+          )}
+          <DetailBlock title="Çalışma Yaklaşımları">
+            <TagList items={d.workApproaches} />
+            {d.workApproachOther && <p className="mt-1 text-xs">Diğer: {d.workApproachOther}</p>}
+          </DetailBlock>
+          <DetailBlock title="Hizmet Alanları">
+            <TagList items={d.serviceAreas} />
+            {d.serviceAreaOther && <p className="mt-1 text-xs">Diğer: {d.serviceAreaOther}</p>}
+          </DetailBlock>
+        </>
+      ) : (
+        <>
+          {d.graduationDepartment && <DetailBlock title="Mezuniyet"><p>{d.graduationDepartment}</p></DetailBlock>}
+          {d.licenseNumber && <DetailBlock title="Diploma / Oda No"><p>{d.licenseNumber}</p></DetailBlock>}
+          {d.bio && <DetailBlock title="Tanıtım"><p className="text-cream-800/75">{d.bio}</p></DetailBlock>}
+          {(d.education || []).length > 0 && (
+            <DetailBlock title="Eğitim">
+              <ul className="list-inside list-disc text-cream-800/75">
+                {d.education.filter((e) => e.degree || e.school).map((e, i) => (
+                  <li key={i}>{[e.degree, e.school, e.year].filter(Boolean).join(' · ')}</li>
+                ))}
+              </ul>
+            </DetailBlock>
+          )}
+          {(d.certificates || []).length > 0 && (
+            <DetailBlock title="Sertifikalar">
+              <ul className="list-inside list-disc text-cream-800/75">
+                {d.certificates.filter((c) => c.name).map((c, i) => (
+                  <li key={i}>{[c.name, c.issuer, c.year].filter(Boolean).join(' · ')}</li>
+                ))}
+              </ul>
+            </DetailBlock>
+          )}
+        </>
+      )}
     </div>
   )
 }

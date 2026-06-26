@@ -12,6 +12,7 @@ import PaymentForm from '../../components/payment/PaymentForm'
 import EmptyState from '../../components/ui/EmptyState'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { MOCK_STAFF_EARNINGS } from '../../data/mockPayments'
+import { STAFF_SESSION_RATE_TRY } from '../../data/staffPayouts'
 import { getPlanLabel } from '../../data/membershipPlans'
 
 function formatTry(amount) {
@@ -185,7 +186,10 @@ function StaffPayments({ role }) {
     <div className="space-y-8">
       <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3">
         <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-        <p className="text-sm text-amber-900/80">Personel hakediş modülü henüz veritabanına bağlanmadı — aşağıdaki özet demo veridir.</p>
+        <p className="text-sm text-amber-900/80">
+          Personel hakediş modülü henüz veritabanına bağlanmadı — aşağıdaki özet demo veridir.
+          Faturalandırılabilir görüşme başına {formatTry(STAFF_SESSION_RATE_TRY)}; program ve listeler hakedişe dahil değildir.
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
@@ -198,15 +202,8 @@ function StaffPayments({ role }) {
         <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
           <p className="text-xs font-medium text-brand-800/70">Bu Ay Seans</p>
           <p className="mt-1 font-display text-2xl font-bold text-brand-900">{earnings.sessionsThisMonth}</p>
-          <p className="mt-1 text-xs text-brand-700">Seans başı {formatTry(earnings.sessionRate)}</p>
+          <p className="mt-1 text-xs text-brand-700">Görüşme başı {formatTry(earnings.sessionRate)} · video katılım zorunlu</p>
         </div>
-        {role === 'dietitian' && (
-          <div className="rounded-2xl border border-sage-100 bg-sage-50/50 p-5">
-            <p className="text-xs font-medium text-sage-800/70">Bu Ay Liste</p>
-            <p className="mt-1 font-display text-2xl font-bold text-sage-900">{earnings.listsThisMonth}</p>
-            <p className="mt-1 text-xs text-sage-700">Gönderilen beslenme listeleri</p>
-          </div>
-        )}
         <div className="rounded-2xl border border-cream-200 bg-white p-5">
           <p className="text-xs font-medium text-cream-800/60">Toplam Kazanç</p>
           <p className="mt-1 font-display text-2xl font-bold text-cream-900">{formatTry(earnings.totalEarned)}</p>
@@ -226,8 +223,7 @@ function StaffPayments({ role }) {
               <div>
                 <p className="font-semibold text-cream-900">{row.period}</p>
                 <p className="text-xs text-cream-800/55">
-                  {row.sessions} seans
-                  {row.lists != null ? ` · ${row.lists} liste` : ''}
+                  {row.sessions} faturalandırılabilir görüşme
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -306,7 +302,7 @@ function AdminPayments() {
           <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
         </h2>
         <p className="rounded-xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm text-cream-800/65">
-          Personel ödeme modülü henüz aktif değil. Seans bazlı hakediş tablosu eklendiğinde bu bölüm doldurulacak.
+          Personel ödeme modülü henüz aktif değil. Yalnızca her iki tarafın videoya katıldığı görüşmeler (500₺/görüşme) hakedişe dönüşür.
         </p>
       </section>
     </div>
@@ -324,7 +320,7 @@ export default function PaymentManagementPage({ audience = 'member' }) {
 
   const subtitle = useMemo(() => {
     if (audience === 'admin') return 'Canlı ödeme kayıtları ve abonelik özeti'
-    if (audience === 'staff') return 'Seans ve liste bazlı kazanç özeti (demo)'
+    if (audience === 'staff') return 'Video görüşme hakedişi — Cuma ödeme döngüsü (demo)'
     return 'Ödeme geçmişiniz ve kart yönetimi'
   }, [audience])
 

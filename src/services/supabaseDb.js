@@ -15,6 +15,7 @@ import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
 import { estimateReadMinutes } from '../utils/blogContent'
+import { buildStaffApplicationPayload } from '../data/staffApplication'
 import { getSiteUrl } from '../config/seo'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
@@ -968,26 +969,25 @@ export async function removeExercise(id) {
 }
 
 // --------------------------- staff applications ---------------------------
+export async function uploadStaffApplicationDoc(file) {
+  if (!file) return { success: false, error: 'Dosya seçilmedi' }
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
+  const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
+  if (!allowed.includes(ext)) return { success: false, error: 'Yalnızca PDF veya görsel yükleyebilirsiniz' }
+  if (file.size > 8 * 1024 * 1024) return { success: false, error: 'Dosya en fazla 8 MB olabilir' }
+
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`
+  const { error } = await supabase.storage.from('staff-application-docs').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  })
+  if (error) return { success: false, error: error.message }
+  const { data } = supabase.storage.from('staff-application-docs').getPublicUrl(path)
+  return { success: true, url: data.publicUrl, path }
+}
+
 export async function submitStaffApplication(form) {
-  const payload = {
-    city: form.city || '',
-    title: form.title || '',
-    specialties: form.specialties || [],
-    experienceYears: Number(form.experienceYears) || 0,
-    education: form.education || [],
-    certificates: form.certificates || [],
-    experiences: form.experiences || [],
-    bio: form.bio || '',
-    linkedin: form.linkedin || '',
-    languages: form.languages || ['Türkçe'],
-    workDays: form.workDays || [],
-    workStart: form.workStart || '09:00',
-    workEnd: form.workEnd || '17:00',
-    onlineCoachingExperience: !!form.onlineCoachingExperience,
-    primaryCertification: form.primaryCertification || '',
-    licenseNumber: form.licenseNumber || '',
-    graduationDepartment: form.graduationDepartment || '',
-  }
+  const payload = buildStaffApplicationPayload(form)
 
   const { data, error } = await supabase.rpc('submit_staff_application', {
     p_role: form.role,
@@ -1022,25 +1022,26 @@ export async function resolveStaffApplication(application, approve, adminNote = 
   }
 
   const tempPassword = generateTempPassword()
+  const d = application.data || {}
   const staffPayload = {
     role: application.role,
     name: application.name,
     email: application.email,
     phone: application.phone,
     password: tempPassword,
-    title: application.data?.title || '',
-    specialty: (application.data?.specialties || [])[0] || '',
-    specialties: application.data?.specialties || [],
-    headline: application.data?.title || '',
-    bio: application.data?.bio || '',
-    education: application.data?.education || [],
-    experienceYears: application.data?.experienceYears || 0,
-    experiences: application.data?.experiences || [],
-    certificates: application.data?.certificates || [],
-    languages: application.data?.languages || ['Türkçe'],
-    workDays: application.data?.workDays || [],
-    workStart: application.data?.workStart || '09:00',
-    workEnd: application.data?.workEnd || '17:00',
+    title: d.title || (d.specialties || [])[0] || '',
+    specialty: (d.specialties || [])[0] || '',
+    specialties: d.specialties || [],
+    headline: d.title || (d.specialties || [])[0] || '',
+    bio: d.bio || '',
+    education: d.education || [],
+    experienceYears: d.experienceYears || 0,
+    experiences: d.experiences || [],
+    certificates: d.certificates || [],
+    languages: d.languages || ['Türkçe'],
+    workDays: d.workDays || [],
+    workStart: d.workStart || '09:00',
+    workEnd: d.workEnd || '17:00',
   }
 
   const created = await addStaff(staffPayload)

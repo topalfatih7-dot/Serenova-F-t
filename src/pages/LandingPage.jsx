@@ -223,9 +223,6 @@ export default function LandingPage() {
       {/* CANLI AKTİF ÜYE SAYACI */}
       <LiveActiveCounter />
 
-      {/* GÜVEN ŞERİDİ */}
-      <TrustStrip staffCount={0} />
-
       {/* NASIL ÇALIŞIR */}
       <HowItWorksSection />
 
@@ -348,6 +345,8 @@ export default function LandingPage() {
 
       {/* BİZE ULAŞIN */}
       <ContactSection />
+
+      <TrustStrip />
     </div>
   )
 }

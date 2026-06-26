@@ -1,0 +1,135 @@
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Check, X, Sparkles, ArrowRight } from 'lucide-react'
+import { formatMonthlyPrice, getPlanBadge, RECOMMENDED_PLAN } from '../../data/membershipPlans'
+import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
+
+const VISIBLE_FEATURES = 4
+
+export default function MembershipPlanCard({
+  plan,
+  selected = false,
+  onSelect,
+  recommended,
+  index = 0,
+  mode = 'select',
+  ctaTo,
+  ctaLabel,
+  badge,
+  current = false,
+  compact = false,
+}) {
+  const theme = getPlanTheme(plan.id)
+  const isRecommended = recommended ?? plan.id === RECOMMENDED_PLAN
+  const planBadge = badge ?? getPlanBadge(plan)
+  const included = (plan.features || []).filter((f) => f.included)
+  const daily = dailyPrice(plan.price)
+  const Tag = mode === 'select' ? motion.button : motion(Link)
+  const tagProps = mode === 'select'
+    ? { type: 'button', onClick: () => onSelect?.(plan.id) }
+    : { to: ctaTo || `/onboarding?plan=${plan.id}` }
+
+  return (
+    <Tag
+      {...tagProps}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-20px' }}
+      transition={{ delay: index * 0.07, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.985 }}
+      className={`group relative flex h-full w-full flex-col overflow-hidden rounded-3xl border bg-white text-left shadow-sm transition-all ${
+        selected
+          ? `border-2 ${theme.ring} shadow-lg ${theme.glow}`
+          : isRecommended
+            ? 'border-amber-200/80 shadow-md shadow-amber-100/40 hover:shadow-lg'
+            : 'border-cream-200/80 hover:border-sage-200 hover:shadow-md'
+      } ${compact ? '' : 'min-h-[22rem]'}`}
+    >
+      {isRecommended && (
+        <motion.span
+          aria-hidden
+          initial={{ x: '-120%' }}
+          animate={{ x: '220%' }}
+          transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 2.5, ease: 'easeInOut' }}
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+        />
+      )}
+
+      <div className={`h-2 w-full bg-gradient-to-r ${theme.accent}`} />
+
+      {planBadge && (
+        <span className={`absolute left-1/2 top-3 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md ${
+          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-cream-900/90'
+        }`}>
+          {plan.id === 'kurucu' && <Sparkles className="mr-1 inline h-2.5 w-2.5" />}
+          {planBadge}
+        </span>
+      )}
+
+      {current && (
+        <span className="absolute right-3 top-3 z-20 rounded-full bg-cream-900 px-2.5 py-0.5 text-[9px] font-bold uppercase text-white">
+          Mevcut
+        </span>
+      )}
+
+      {selected && (
+        <span className="absolute right-3 top-3 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white shadow">
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+      )}
+
+      <div className={`flex flex-1 flex-col p-5 ${planBadge ? 'pt-9' : 'pt-5'}`}>
+        <div className="flex flex-col items-center text-center">
+          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition group-hover:scale-105 ${selected || isRecommended ? theme.icon : theme.iconIdle}`}>
+            {planIcon(plan.id, 'h-6 w-6')}
+          </span>
+          <h3 className={`mt-3 font-display text-lg font-bold text-cream-900 ${theme.label}`}>{plan.name}</h3>
+          <p className="mt-1 font-display text-xl font-extrabold text-cream-900">
+            {formatMonthlyPrice(plan.price)}
+          </p>
+          {plan.price > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
+              <Sparkles className="h-3 w-3" />
+              Günde ~{daily.toLocaleString('tr-TR')}₺ — kahve fiyatına wellness
+            </p>
+          )}
+          {plan.price === 0 && (
+            <p className="mt-2 text-xs text-sage-600">Kredi kartı gerekmez · Hemen başlayın</p>
+          )}
+        </div>
+
+        <ul className="mt-4 flex-1 space-y-2 border-t border-cream-100 pt-4">
+          {included.slice(0, VISIBLE_FEATURES).map((f, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs leading-snug text-cream-800/85">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage-500" strokeWidth={3} />
+              <span>{f.text}</span>
+            </li>
+          ))}
+          {(plan.features || []).filter((f) => !f.included).slice(0, 1).map((f, i) => (
+            <li key={`x-${i}`} className="flex items-start gap-2 text-xs text-cream-800/35">
+              <X className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+              <span className="line-through">{f.text}</span>
+            </li>
+          ))}
+          {included.length > VISIBLE_FEATURES && (
+            <li className="text-[10px] font-semibold text-brand-600/80">
+              +{included.length - VISIBLE_FEATURES} özellik daha
+            </li>
+          )}
+        </ul>
+
+        <div className={`mt-4 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition ${selected ? theme.btn : theme.btnIdle}`}>
+          {mode === 'link' ? (
+            <>
+              {ctaLabel || `${plan.name} ile Başla`}
+              <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            </>
+          ) : (
+            selected ? 'Seçildi ✓' : isRecommended ? 'Bu Planı Seç ★' : 'Planı Seç'
+          )}
+        </div>
+      </div>
+    </Tag>
+  )
+}

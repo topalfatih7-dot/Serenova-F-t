@@ -1,88 +1,76 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Crown, Sparkles, Award, Leaf, Dumbbell, ChevronDown } from 'lucide-react'
+import { Check, X, ChevronDown } from 'lucide-react'
 import { formatMonthlyPrice, getPlanBadge } from '../../data/membershipPlans'
+import { getPlanTheme, planIcon, dailyPrice } from '../membership/planTheme'
 
 const VISIBLE_COLLAPSED = 6
 
-function planIcon(id, large = false) {
-  const cls = large ? 'h-7 w-7' : 'h-5 w-5'
-  if (id === 'free') return <Sparkles className={`${cls} text-sage-500`} />
-  if (id === 'eko') return <Leaf className={`${cls} text-sage-600`} />
-  if (id === 'diyet') return <Sparkles className={`${cls} text-emerald-600`} />
-  if (id === 'spor') return <Dumbbell className={`${cls} text-blue-600`} />
-  if (id === 'kurucu') return <Crown className={`${cls} text-amber-600`} />
-  if (id === 'vip') return <Award className={`${cls} text-brand-600`} />
-  return <Crown className={`${cls} text-gold-500`} />
-}
-
-function iconWrapClass(id, featured) {
-  if (id === 'kurucu' || featured) return 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-700 ring-amber-200/80'
-  if (id === 'vip') return 'bg-gradient-to-br from-brand-100 to-brand-50 text-brand-700 ring-brand-200/80'
-  if (id === 'diyet') return 'bg-emerald-50 text-emerald-700 ring-emerald-200/80'
-  if (id === 'spor') return 'bg-blue-50 text-blue-700 ring-blue-200/80'
-  if (id === 'eko') return 'bg-sage-50 text-sage-700 ring-sage-200/80'
-  return 'bg-cream-50 text-sage-700 ring-cream-200/80'
-}
-
-function cardStyle(id, featured) {
-  if (featured || id === 'kurucu') {
-    return 'glass-card-solid border-amber-200/60 bg-gradient-to-b from-amber-50/60 via-white to-sage-50/30 shadow-xl shadow-amber-500/10 ring-2 ring-amber-200/40'
-  }
-  if (id === 'vip') {
-    return 'glass-card-solid border-brand-200/60 bg-gradient-to-b from-brand-50/60 via-white to-white shadow-xl shadow-brand-500/10 ring-2 ring-brand-200/40'
-  }
-  return 'glass-card-solid'
-}
-
-function badgeStyle(id) {
-  if (id === 'kurucu') return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-  if (id === 'vip') return 'bg-gradient-to-r from-brand-500 to-brand-700 text-white'
-  return 'bg-gradient-to-r from-brand-500 to-sage-500 text-white'
-}
-
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
   const [expanded, setExpanded] = useState(false)
+  const theme = getPlanTheme(plan.id)
   const isFree = plan.price === 0
   const badge = getPlanBadge(plan)
   const features = plan.features || []
   const hasMore = features.length > VISIBLE_COLLAPSED
   const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_COLLAPSED)
   const hiddenCount = features.length - VISIBLE_COLLAPSED
+  const daily = dailyPrice(plan.price)
+  const isFeatured = featured || plan.id === 'kurucu'
 
   return (
     <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-      className={`relative flex h-full min-h-[32rem] flex-col rounded-3xl p-6 sm:p-8 ${cardStyle(plan.id, featured)}`}
+      whileHover={{ y: -8 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+      className={`relative flex h-full min-h-[32rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition-shadow hover:shadow-xl ${
+        isFeatured
+          ? `border-amber-200/70 ${theme.glow} ring-2 ring-amber-100/60`
+          : plan.id === 'vip'
+            ? `border-brand-200/70 ${theme.glow} ring-2 ring-brand-100/50`
+            : 'border-cream-200/80 hover:border-sage-200'
+      }`}
     >
+      <div className={`h-2 w-full bg-gradient-to-r ${theme.accent}`} />
+
       {badge && (
-        <span className={`absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1 text-xs font-semibold shadow-md ${badgeStyle(plan.id)}`}>
+        <span className={`absolute -top-0 left-1/2 z-10 -translate-x-1/2 translate-y-3 whitespace-nowrap rounded-full px-4 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-lg ${
+          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-brand-500 to-sage-500'
+        }`}>
           {badge}
         </span>
       )}
 
-      <div className="flex flex-col items-center pt-2 text-center">
-        <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ${iconWrapClass(plan.id, featured)}`}>
-          {planIcon(plan.id, true)}
-        </span>
-        <h3 className="mt-4 font-display text-xl font-bold text-cream-900">{plan.name}</h3>
+      <div className="flex flex-col items-center px-6 pt-10 text-center sm:px-8">
+        <motion.span
+          whileHover={{ scale: 1.08, rotate: 3 }}
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' ? theme.icon : theme.iconIdle}`}
+        >
+          {planIcon(plan.id, 'h-7 w-7')}
+        </motion.span>
+        <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
         {plan.id === 'kurucu' && (
-          <p className="mt-1 text-xs font-medium text-amber-700/90">Sınırlı kontenjan</p>
+          <p className="mt-1 text-xs font-medium text-amber-700/90">Sınırlı kontenjan — erken kayıt avantajı</p>
         )}
       </div>
 
-      <div className="mt-5 text-center">
+      <div className="mt-5 px-6 text-center sm:px-8">
         <p className={`font-display text-2xl font-bold ${isFree ? 'text-sage-700' : 'text-cream-900'}`}>
           {formatMonthlyPrice(plan.price)}
         </p>
-        <p className="mt-1 text-sm text-cream-800/60">
-          {isFree ? plan.period : '3 ve 6 aylık seçenekler de mevcut'}
-        </p>
+        {isFree ? (
+          <p className="mt-1 text-sm text-sage-600">Kredi kartı gerekmez</p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-cream-800/60">3 ve 6 aylık seçenekler de mevcut</p>
+            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
+              Günde ~{daily.toLocaleString('tr-TR')}₺
+            </p>
+          </>
+        )}
       </div>
 
-      <div className="mt-6 flex flex-1 flex-col">
+      <div className="mt-6 flex flex-1 flex-col px-6 sm:px-8">
         <ul className="space-y-3">
           {visibleFeatures.map((f, i) => (
             <li key={i} className="flex items-start gap-2.5 text-sm">
@@ -111,12 +99,10 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
 
       <Link
         to={ctaTo}
-        className={`mt-6 block rounded-full py-3.5 text-center text-sm font-semibold transition ${
-          featured || plan.id === 'kurucu'
-            ? 'btn-wellness w-full !shadow-md'
-            : plan.id === 'vip'
-              ? 'w-full bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md hover:from-brand-700 hover:to-brand-600'
-              : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-brand-200 hover:shadow-md'
+        className={`mx-6 mb-6 mt-6 block rounded-full py-3.5 text-center text-sm font-semibold transition sm:mx-8 ${
+          isFeatured ? theme.btn + ' shadow-lg hover:brightness-105'
+            : plan.id === 'vip' ? theme.btn + ' shadow-md hover:brightness-105'
+              : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-sage-200 hover:shadow-md'
         }`}
       >
         {ctaLabel}

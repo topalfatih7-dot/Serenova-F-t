@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Check, X, Sparkles, Leaf, Crown, Star, Award,
+  Check, Sparkles,
   User, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle,
   Dumbbell, HeartPulse, Shield, ArrowRight, ArrowLeft,
 } from 'lucide-react'
@@ -16,142 +16,24 @@ import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, RECOMMENDED_PLAN, getTierPrice, DURATION_OPTIONS, PLAN_IDS, formatMonthlyPrice, getPlanBadge, sortPlansForDisplay } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled } from '../config/stripe'
 import { startStripeCheckout } from '../services/stripePayment'
+import MembershipPlanCard from '../components/membership/MembershipPlanCard'
+import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
+import MembershipReassurance from '../components/membership/MembershipReassurance'
 
 const STEPS = ['Hesap', 'Üyelik']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
-
-// Yüksek fiyatı küçük günlük tutara bölerek algıyı yumuşatır (fiyat parçalama).
-function dailyPrice(price) {
-  if (!price || price <= 0) return 0
-  return Math.max(1, Math.round(price / 30))
-}
 
 const BENEFITS = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman & beslenme programları' },
   { icon: HeartPulse, text: 'Uzman koç ve diyetisyen desteği' },
   { icon: Shield, text: 'KVKK uyumlu, güvenli ödeme altyapısı' },
 ]
-
-function planIcon(id) {
-  if (id === 'free') return <Leaf className="h-5 w-5" />
-  if (id === 'eko') return <Leaf className="h-5 w-5" />
-  if (id === 'diyet') return <Sparkles className="h-5 w-5" />
-  if (id === 'spor') return <Dumbbell className="h-5 w-5" />
-  if (id === 'kurucu') return <Crown className="h-5 w-5" />
-  if (id === 'vip') return <Award className="h-5 w-5" />
-  if (id === 'gumus') return <Star className="h-5 w-5" />
-  if (id === 'altin') return <Crown className="h-5 w-5" />
-  if (id === 'platinum') return <Award className="h-5 w-5" />
-  return <Sparkles className="h-5 w-5" />
-}
-
-function planRingColor(id, selected) {
-  if (!selected) return 'border-cream-200 hover:border-cream-300'
-  if (id === 'free' || id === 'eko') return 'border-sage-400 ring-2 ring-sage-200'
-  if (id === 'diyet') return 'border-emerald-400 ring-2 ring-emerald-200'
-  if (id === 'spor') return 'border-blue-400 ring-2 ring-blue-200'
-  if (id === 'kurucu' || id === 'altin') return 'border-amber-400 ring-2 ring-amber-200'
-  if (id === 'vip' || id === 'platinum') return 'border-brand-400 ring-2 ring-brand-200'
-  if (id === 'gumus') return 'border-slate-400 ring-2 ring-slate-200'
-  return 'border-brand-400 ring-2 ring-brand-200'
-}
-
-function planIconBg(id, selected) {
-  if (!selected) return 'bg-cream-100 text-cream-800/60'
-  if (id === 'free' || id === 'eko') return 'bg-sage-500 text-white'
-  if (id === 'diyet') return 'bg-emerald-500 text-white'
-  if (id === 'spor') return 'bg-blue-500 text-white'
-  if (id === 'kurucu' || id === 'altin') return 'bg-amber-500 text-white'
-  if (id === 'vip' || id === 'platinum') return 'bg-brand-500 text-white'
-  if (id === 'gumus') return 'bg-slate-500 text-white'
-  return 'bg-brand-500 text-white'
-}
-
-function planBtnBg(id, selected) {
-  if (!selected) return 'bg-cream-100 text-cream-800/70'
-  if (id === 'free' || id === 'eko') return 'bg-sage-500 text-white'
-  if (id === 'diyet') return 'bg-emerald-500 text-white'
-  if (id === 'spor') return 'bg-blue-500 text-white'
-  if (id === 'kurucu' || id === 'altin') return 'bg-amber-500 text-white'
-  if (id === 'vip' || id === 'platinum') return 'bg-brand-500 text-white'
-  if (id === 'gumus') return 'bg-slate-500 text-white'
-  return 'bg-brand-500 text-white'
-}
-
-function planAccent(id) {
-  if (id === 'free' || id === 'eko') return 'from-sage-400 to-sage-600'
-  if (id === 'diyet') return 'from-emerald-400 to-emerald-600'
-  if (id === 'spor') return 'from-blue-400 to-blue-600'
-  if (id === 'kurucu' || id === 'altin') return 'from-amber-400 to-amber-600'
-  if (id === 'vip' || id === 'platinum') return 'from-brand-400 to-brand-600'
-  if (id === 'gumus') return 'from-slate-400 to-slate-600'
-  return 'from-brand-400 to-brand-600'
-}
-
-function PlanCardHeader({ plan, selected, recommended }) {
-  const badge = getPlanBadge(plan)
-  return (
-    <div className="flex flex-col items-center text-center">
-      {badge && (
-        <span className={`mb-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow ${
-          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-cream-900/85'
-        }`}>
-          {plan.id === 'kurucu' && <Sparkles className="h-2.5 w-2.5" />}
-          {badge}
-        </span>
-      )}
-      {!badge && recommended && (
-        <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow">
-          <Sparkles className="h-2.5 w-2.5" />
-          En Çok Tercih
-        </span>
-      )}
-      <span className={`flex h-12 w-12 items-center justify-center rounded-2xl transition ${planIconBg(plan.id, selected || recommended)}`}>
-        {planIcon(plan.id)}
-      </span>
-      <p className="mt-3 font-display text-base font-bold text-cream-900">{plan.name}</p>
-      <p className="mt-1 font-display text-sm font-extrabold text-cream-900">
-        {formatMonthlyPrice(plan.price)}
-      </p>
-    </div>
-  )
-}
-
-function DurationSelector({ planId, value, onChange }) {
-  if (!isPaidMembership(planId)) return null
-  return (
-    <div className="mt-4 rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/55">Paket süresi</p>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {DURATION_OPTIONS.map(({ months, label }) => {
-          const price = getTierPrice(planId, months)
-          const selected = value === months
-          return (
-            <button
-              key={months}
-              type="button"
-              onClick={() => onChange(months)}
-              className={`rounded-xl border px-2 py-2.5 text-center transition ${
-                selected ? 'border-brand-400 bg-white shadow-sm ring-2 ring-brand-100' : 'border-cream-200 bg-white hover:border-cream-300'
-              }`}
-            >
-              <p className="text-[10px] font-semibold text-cream-800/60">{label}</p>
-              <p className="mt-0.5 text-sm font-bold text-cream-900">
-                {months === 1 ? formatMonthlyPrice(price) : `${price.toLocaleString('tr-TR')}₺`}
-              </p>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
 
 function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan }) {
   const { toast } = useToast()
@@ -225,59 +107,24 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
         </p>
 
         <div className="mt-8 rounded-3xl border border-cream-200 bg-white/95 p-5 shadow-lg shadow-brand-900/5 backdrop-blur sm:p-8">
+          <div className="mb-6">
+            <MembershipReassurance compact />
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {plans.map((m) => {
-              const selectedCard = selected === m.id
-              const current = m.id === currentMembership
-              return (
-                <motion.button
-                  key={m.id}
-                  type="button"
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelected(m.id)}
-                  className={`group relative flex flex-col overflow-hidden rounded-3xl border bg-white text-left shadow-sm transition-all ${planRingColor(m.id, selectedCard)} ${selectedCard ? 'shadow-md' : 'hover:shadow-md'}`}
-                >
-                  <div className={`h-2 w-full bg-gradient-to-r ${planAccent(m.id)}`} />
-                  <div className="flex flex-col p-5">
-                    {current && (
-                      <span className="mb-2 self-center rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
-                        Mevcut Plan
-                      </span>
-                    )}
-                    <PlanCardHeader plan={m} selected={selectedCard} recommended={m.id === RECOMMENDED_PLAN} />
-                    {selectedCard && (
-                      <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-white shadow">
-                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                      </span>
-                    )}
-                    <div className="mt-4 space-y-1.5 border-t border-cream-100 pt-4">
-                      {(m.features || []).slice(0, 5).map((f, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                            f.included
-                              ? selectedCard ? planIconBg(m.id, true) : 'bg-sage-100 text-sage-600'
-                              : 'bg-cream-100 text-cream-800/30'
-                          }`}>
-                            {f.included
-                              ? <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                              : <X className="h-2.5 w-2.5" strokeWidth={3} />}
-                          </span>
-                          <span className={`text-xs leading-snug ${f.included ? 'text-cream-800/80' : 'text-cream-800/35 line-through'}`}>
-                            {f.text}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className={`mt-4 rounded-xl py-2 text-center text-xs font-semibold transition-colors ${planBtnBg(m.id, selectedCard)}`}>
-                      {selectedCard ? 'Seçildi ✓' : 'Seç'}
-                    </div>
-                  </div>
-                </motion.button>
-              )
-            })}
+            {plans.map((m, idx) => (
+              <MembershipPlanCard
+                key={m.id}
+                plan={m}
+                index={idx}
+                selected={selected === m.id}
+                onSelect={setSelected}
+                current={m.id === currentMembership}
+                compact
+              />
+            ))}
           </div>
 
-          <DurationSelector planId={selected} value={durationMonths} onChange={setDurationMonths} />
+          <MembershipDurationPicker planId={selected} value={durationMonths} onChange={setDurationMonths} />
 
           <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button type="button" onClick={() => navigate('/profile')} className="rounded-xl px-4 py-2.5 text-sm font-medium text-cream-800 hover:bg-cream-50">
@@ -544,19 +391,26 @@ export default function OnboardingPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-md"
+          className={`w-full ${step === 1 ? 'max-w-xl' : 'max-w-md'}`}
         >
           <div className="mb-8 lg:hidden">
             <BrandLogo />
           </div>
 
-          <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm sm:p-8">
-            <h2 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">
-              {step === 0 ? 'Hesap oluşturun' : 'Planınızı seçin'}
+          <div className="rounded-3xl border border-white/80 bg-white/95 p-6 shadow-xl shadow-sage-900/[0.05] backdrop-blur-sm sm:p-8">
+            <div className="h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
+            <h2 className="mt-5 font-display text-2xl font-bold text-cream-900 sm:text-3xl">
+              {step === 0 ? 'Hesabınızı oluşturun' : 'Planınızı seçin'}
             </h2>
-            <p className="mt-2 text-sm text-cream-800/60">
-              {step === 0 ? 'Birkaç bilgiyle ücretsiz başlayın' : 'Size en uygun üyeliği seçin'}
+            <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+              {step === 0
+                ? 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.'
+                : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
+
+            <div className="mt-5">
+              <MembershipReassurance compact />
+            </div>
 
             <div className="mt-6">
               <Stepper steps={STEPS} currentStep={step} maxReached={maxReached} onStepClick={(t) => t <= maxReached && setStep(t)} />
@@ -640,85 +494,18 @@ export default function OnboardingPage() {
                   )}
 
                   {step === 1 && (
-                    <div className="space-y-3">
-                      {displayPlans.map((m, idx) => {
-                        const selected = data.membership === m.id
-                        const recommended = m.id === RECOMMENDED_PLAN
-                        const daily = dailyPrice(m.price)
-                        const includedFeatures = (m.features || []).filter((f) => f.included)
-                        return (
-                          <motion.button
-                            key={m.id}
-                            type="button"
-                            initial={{ opacity: 0, y: 14 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                            whileHover={{ y: -3 }}
-                            whileTap={{ scale: 0.985 }}
-                            onClick={() => update({ membership: m.id })}
-                            className={`group relative block w-full overflow-hidden rounded-2xl border text-left transition-all ${planRingColor(m.id, selected)} ${
-                              selected
-                                ? 'shadow-lg shadow-brand-500/15'
-                                : recommended
-                                  ? 'shadow-md shadow-amber-300/30 hover:shadow-lg'
-                                  : 'shadow-sm hover:shadow-md'
-                            } ${recommended && !selected ? 'border-amber-300' : ''}`}
-                          >
-                            {/* Önerilen plan için animasyonlu parıltı şeridi */}
-                            {recommended && (
-                              <motion.span
-                                aria-hidden
-                                initial={{ x: '-120%' }}
-                                animate={{ x: '220%' }}
-                                transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }}
-                                className="pointer-events-none absolute inset-y-0 left-0 z-10 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent"
-                              />
-                            )}
-
-                            <div className={`h-1.5 w-full bg-gradient-to-r ${planAccent(m.id)}`} />
-
-                            {/* Üst rozet — seçim işareti */}
-                            <div className="absolute right-3 top-3.5 flex items-center gap-1.5">
-                              {selected && (
-                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-white shadow">
-                                  <Check className="h-3 w-3" strokeWidth={3} />
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex flex-col p-4">
-                              <PlanCardHeader plan={m} selected={selected} recommended={recommended} />
-
-                              {/* Fiyat parçalama — günlük algı */}
-                              {m.price > 0 && (
-                                <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
-                                  <Sparkles className="h-3 w-3" />
-                                  Günde yalnızca ~{daily.toLocaleString('tr-TR')}₺
-                                </p>
-                              )}
-
-                              <ul className="mt-3 grid gap-1.5 border-t border-cream-100 pt-3">
-                                {includedFeatures.slice(0, recommended ? 4 : 3).map((f, i) => (
-                                  <li key={i} className="flex items-start gap-1.5 text-[11px] leading-tight text-cream-800/85">
-                                    <Check className="mt-0.5 h-3 w-3 shrink-0 text-sage-600" strokeWidth={3} />
-                                    <span>{f.text}</span>
-                                  </li>
-                                ))}
-                                {includedFeatures.length > (recommended ? 4 : 3) && (
-                                  <li className="text-[10px] font-medium text-brand-600/80">
-                                    +{includedFeatures.length - (recommended ? 4 : 3)} özellik daha
-                                  </li>
-                                )}
-                              </ul>
-
-                              <div className={`mt-3.5 rounded-xl py-2 text-center text-xs font-bold transition ${planBtnBg(m.id, selected)}`}>
-                                {selected ? 'Seçildi ✓' : recommended ? 'Bu Planı Seç ★' : 'Seç'}
-                              </div>
-                            </div>
-                          </motion.button>
-                        )
-                      })}
-                      <DurationSelector
+                    <div className="space-y-4">
+                      {displayPlans.map((m, idx) => (
+                        <MembershipPlanCard
+                          key={m.id}
+                          plan={m}
+                          index={idx}
+                          selected={data.membership === m.id}
+                          onSelect={(id) => update({ membership: id })}
+                          compact
+                        />
+                      ))}
+                      <MembershipDurationPicker
                         planId={data.membership}
                         value={durationMonths}
                         onChange={setDurationMonths}

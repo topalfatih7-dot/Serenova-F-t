@@ -1,17 +1,147 @@
 /** Koç / diyetisyen başvuru formu — admin onayı sonrası staff kaydına dönüşür */
 
-export const COACH_SPECIALTIES = [
-  'Güç Antrenmanı', 'Kardiyo', 'Fonksiyonel Antrenman', 'HIIT', 'Pilates', 'Mobilite',
-  'Online Koçluk', 'Grup Dersleri', 'Yaşlı Fitness', 'Postür Düzeltme',
+export const GENDERS = [
+  { value: 'female', label: 'Kadın' },
+  { value: 'male', label: 'Erkek' },
 ]
+
+export const EDUCATION_LEVELS = [
+  { value: 'lise', label: 'Lise' },
+  { value: 'onlisans', label: 'Önlisans' },
+  { value: 'lisans', label: 'Lisans' },
+]
+
+export const OTHER_OPTION = 'Diğer'
+
+export const COACH_SPECIALTY_GROUPS = [
+  {
+    id: 'body',
+    label: 'Vücut & Kompozisyon',
+    tone: 'brand',
+    items: ['Kilo Verme', 'Kas Kazanımı (Hipertrofi)', 'Yağ Yakımı', 'Vücut Şekillendirme', 'Obezite Egzersiz Programları'],
+  },
+  {
+    id: 'training',
+    label: 'Antrenman & Performans',
+    tone: 'sky',
+    items: ['Kuvvet Antrenmanı', 'Fonksiyonel Antrenman', 'HIIT', 'Kardiyovasküler Kondisyon', 'Sporcu Performansı', 'Kuvvet ve Kondisyon (Strength & Conditioning)'],
+  },
+  {
+    id: 'wellness',
+    label: 'Esneklik & Düzeltici',
+    tone: 'emerald',
+    items: ['Mobilite & Esneklik', 'Düzeltici Egzersiz (Corrective Exercise)', 'Postür Analizi', 'Pilates', 'Yoga'],
+  },
+  {
+    id: 'populations',
+    label: 'Özel Popülasyonlar',
+    tone: 'amber',
+    items: ['Çocuk ve Ergen Egzersizi', 'Kadın Sağlığı ve Egzersiz', 'Gebelik / Doğum Sonrası Egzersiz', 'İleri Yaş Egzersizleri (65+)', 'Kronik Hastalıklarda Egzersiz'],
+  },
+  {
+    id: 'delivery',
+    label: 'Hizmet Biçimi',
+    tone: 'violet',
+    items: ['Evde Egzersiz Programları', 'Online Koçluk', 'Grup Egzersizleri', 'Kurumsal Wellness'],
+  },
+]
+
+export const COACH_SPECIALTIES = COACH_SPECIALTY_GROUPS.flatMap((g) => g.items)
 
 export const DIETITIAN_SPECIALTIES = [
   'Spor Beslenmesi', 'Klinik Beslenme', 'Kilo Yönetimi', 'Diyabet Beslenmesi',
   'Hamilelik / Emzirme', 'Çocuk Beslenmesi', 'Plant-Based', 'Intolerans / Alerji',
 ]
 
-export const CERTIFICATION_TYPES = [
-  'NASM', 'ACE', 'ISSA', 'ACSM', 'NSCA', 'CrossFit L1/L2', 'TRX', 'Diğer',
+export const COMPETENT_GROUPS = {
+  lifestyle: {
+    label: 'Yaşam Tarzına Göre',
+    items: [
+      'Sedanter Bireyler (Fiziksel olarak inaktif)',
+      'Aktif Yaşam Süren Bireyler',
+      'Rekreatif Sporcular',
+      'Profesyonel Sporcular',
+    ],
+  },
+  goal: {
+    label: 'Hedefe Göre',
+    items: [
+      'Kilo Yönetimi (Kilo Verme, Kilo Alma)',
+      'Kas Kütlesi Artırma',
+      'Yağ Kaybı',
+      'Performans Geliştirme',
+      'Genel Sağlıklı Yaşam',
+    ],
+  },
+  age: {
+    label: 'Yaş Grupları',
+    items: [
+      'Çocuklar (6–12 yaş)',
+      'Ergenler (13–17 yaş)',
+      'Yetişkinler (18–64 yaş)',
+      'İleri Yaş Bireyler (65+)',
+    ],
+  },
+  gender: {
+    label: 'Cinsiyete Özel',
+    items: ['Kadınlar', 'Erkekler'],
+  },
+  special: {
+    label: 'Özel Popülasyonlar',
+    items: [
+      'Obezite Tanılı Bireyler',
+      'Gebeler',
+      'Doğum Sonrası Dönemdeki Bireyler',
+      'Kronik Hastalığı Olan Bireyler',
+      'Ortopedik Sorunu Olan Bireyler',
+      'Masa Başı Çalışanlar',
+      'Hareket Kısıtlılığı Bulunan Bireyler',
+    ],
+  },
+}
+
+export const OFFICIAL_COACHING_CERTIFICATES = [
+  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 1',
+  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 2',
+  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 3',
+  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 4',
+  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 5',
+  'Federasyon Antrenör Belgesi',
+  'Yok',
+]
+
+export const INTERNATIONAL_CERTIFICATES = [
+  'NASM CPT', 'ACE CPT', 'ACSM CPT', 'NSCA CPT', 'NSCA CSCS',
+  'ISSA CPT', 'ISSA Nutrition Coach', 'Precision Nutrition Level 1',
+  'CrossFit Level 1', 'CrossFit Level 2', 'TRX Suspension Training',
+  'Functional Movement Screen (FMS)', 'EXOS', 'Animal Flow',
+  'Kettlebell Certification', 'Diğer',
+]
+
+export const BRANCH_CERTIFICATES = [
+  'Pilates Eğitmenliği', 'Reformer Pilates', 'Yoga Eğitmenliği', 'Hamile Pilatesi',
+  'Medikal Egzersiz', 'Klinik Pilates', 'Corrective Exercise Specialist',
+  'Mobility Specialist', 'Postür Analizi', 'Fonksiyonel Antrenman', 'Diğer',
+]
+
+export const WORK_APPROACHES = [
+  'Kanıta Dayalı Egzersiz Bilimi (Evidence-Based Practice)',
+  'Ulusal / Uluslararası Kılavuzları Takip Ediyorum',
+  'Bilimsel Makaleleri Düzenli Okuyorum',
+  'Sürekli Mesleki Gelişim Eğitimlerine Katılıyorum',
+  'Diğer',
+]
+
+export const SERVICE_AREAS = [
+  'Yüz Yüze Birebir', 'Online Birebir', 'Grup Dersleri', 'Salon / Stüdyo',
+  'Ev Ziyareti', 'Kurumsal Wellness', 'Spor Sahası / Performans Merkezi', OTHER_OPTION,
+]
+
+export const APPLICATION_STEPS = [
+  { id: 1, label: 'Kişisel Bilgiler', short: 'Kişisel' },
+  { id: 2, label: 'Uzmanlık & Deneyim', short: 'Uzmanlık' },
+  { id: 3, label: 'Eğitim & Sertifika', short: 'Eğitim' },
+  { id: 4, label: 'Yaklaşım & Hizmet', short: 'Hizmet' },
 ]
 
 export const EMPTY_STAFF_APPLICATION = {
@@ -20,24 +150,46 @@ export const EMPTY_STAFF_APPLICATION = {
   email: '',
   phone: '',
   city: '',
-  title: '',
-  specialties: [],
-  experienceYears: '',
-  education: [{ degree: '', school: '', year: '' }],
-  certificates: [{ name: '', issuer: '', year: '' }],
-  experiences: [{ title: '', organization: '', period: '', description: '' }],
-  bio: '',
+  district: '',
+  gender: '',
+  hasGym: false,
+  gymName: '',
+  gymCity: '',
+  gymDistrict: '',
+  instagram: '',
+  youtube: '',
+  website: '',
   linkedin: '',
+  specialties: [],
+  specialtyOther: '',
+  experienceYears: '',
+  competentGroups: [],
+  competentGroupOther: '',
+  chronicDiseaseExamples: '',
+  educationLevel: '',
+  educationDepartment: '',
+  educationGpa: '',
+  officialCoachingCerts: [],
+  internationalCerts: [],
+  branchCerts: [],
+  certificateFiles: [],
+  certOtherNotes: { international: '', branch: '' },
+  workApproaches: [],
+  workApproachOther: '',
+  serviceAreas: [],
+  serviceAreaOther: '',
   languages: ['Türkçe'],
-  workDays: [1, 3, 5],
-  workStart: '09:00',
-  workEnd: '17:00',
-  // Koç
-  onlineCoachingExperience: false,
-  primaryCertification: '',
   // Diyetisyen
   licenseNumber: '',
   graduationDepartment: '',
+  education: [{ degree: '', school: '', year: '' }],
+  certificates: [{ name: '', issuer: '', year: '' }],
+  bio: '',
+  title: '',
+}
+
+export function toggleInList(list, item) {
+  return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]
 }
 
 export function applicationToStaffPayload(app, tempPassword) {
@@ -48,10 +200,10 @@ export function applicationToStaffPayload(app, tempPassword) {
     email: app.email,
     phone: app.phone || d.phone || '',
     password: tempPassword,
-    title: d.title || '',
+    title: d.title || (d.specialties || [])[0] || '',
     specialty: (d.specialties || [])[0] || '',
     specialties: d.specialties || [],
-    headline: d.headline || d.title || '',
+    headline: d.title || (d.specialties || [])[0] || '',
     bio: d.bio || '',
     photo: d.photo || null,
     education: d.education || [],
@@ -65,22 +217,142 @@ export function applicationToStaffPayload(app, tempPassword) {
   }
 }
 
-export function validateStaffApplication(form) {
+function baseErrors(form) {
   const errors = []
   if (!form.name?.trim()) errors.push('Ad soyad gerekli')
   if (!form.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.push('Geçerli e-posta gerekli')
   if (!form.phone?.trim()) errors.push('Telefon gerekli')
-  if (!form.city?.trim()) errors.push('Şehir gerekli')
-  if (!form.title?.trim()) errors.push('Ünvan gerekli')
+  if (!form.city?.trim()) errors.push('İl seçin')
+  if (!form.district?.trim()) errors.push('İlçe seçin')
+  if (!form.gender) errors.push('Cinsiyet seçin')
+  if (form.hasGym) {
+    if (!form.gymName?.trim()) errors.push('Salon adı gerekli')
+    if (!form.gymCity?.trim()) errors.push('Salon ili gerekli')
+    if (!form.gymDistrict?.trim()) errors.push('Salon ilçesi gerekli')
+  }
+  return errors
+}
+
+function coachStep2Errors(form) {
+  const errors = []
+  const hasSpecialty = (form.specialties || []).some((s) => s !== OTHER_OPTION) || (form.specialties || []).includes(OTHER_OPTION) && form.specialtyOther?.trim()
+  if (!hasSpecialty) errors.push('En az bir uzmanlık alanı seçin')
+  if ((form.specialties || []).includes(OTHER_OPTION) && !form.specialtyOther?.trim()) errors.push('Diğer uzmanlık alanını yazın')
+  if (!form.experienceYears && form.experienceYears !== 0) errors.push('Deneyim yılı gerekli')
+  const hasGroup = (form.competentGroups || []).some((g) => g !== OTHER_OPTION) || ((form.competentGroups || []).includes(OTHER_OPTION) && form.competentGroupOther?.trim())
+  if (!hasGroup) errors.push('Yetkin olduğunuz en az bir danışan grubu seçin')
+  if ((form.competentGroups || []).includes(OTHER_OPTION) && !form.competentGroupOther?.trim()) errors.push('Diğer danışan grubunu yazın')
+  if ((form.competentGroups || []).includes('Kronik Hastalığı Olan Bireyler') && !form.chronicDiseaseExamples?.trim()) {
+    errors.push('Kronik hastalık örneklerini belirtin')
+  }
+  return errors
+}
+
+function dietitianStep2Errors(form) {
+  const errors = []
   if (!(form.specialties || []).length) errors.push('En az bir uzmanlık alanı seçin')
   if (!form.experienceYears && form.experienceYears !== 0) errors.push('Deneyim yılı gerekli')
+  if (!form.graduationDepartment?.trim()) errors.push('Mezuniyet bölümü gerekli')
+  if (!form.licenseNumber?.trim()) errors.push('Diploma / TDD oda kayıt no gerekli')
+  return errors
+}
+
+function coachStep3Errors(form) {
+  const errors = []
+  if (!form.educationLevel) errors.push('Eğitim düzeyi seçin')
+  if (!form.educationDepartment?.trim()) errors.push('Bölüm bilgisi gerekli')
+  const hasOfficial = (form.officialCoachingCerts || []).some((c) => c !== 'Yok')
+  const hasIntl = (form.internationalCerts || []).some((c) => c !== OTHER_OPTION) || ((form.internationalCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.international?.trim())
+  const hasBranch = (form.branchCerts || []).some((c) => c !== OTHER_OPTION) || ((form.branchCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.branch?.trim())
+  if (!hasOfficial && !hasIntl && !hasBranch) errors.push('En az bir sertifika türü seçin')
+  if ((form.internationalCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.international?.trim()) errors.push('Diğer uluslararası sertifikayı yazın')
+  if ((form.branchCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.branch?.trim()) errors.push('Diğer branş sertifikasını yazın')
+  const needsFiles = hasOfficial || hasIntl || hasBranch
+  if (needsFiles && !(form.certificateFiles || []).length) errors.push('En az bir sertifika belgesi yükleyin')
+  return errors
+}
+
+function dietitianStep3Errors(form) {
+  const errors = []
   const edu = (form.education || []).find((e) => e.degree?.trim() && e.school?.trim())
   if (!edu) errors.push('En az bir eğitim bilgisi girin')
   const cert = (form.certificates || []).find((c) => c.name?.trim())
   if (!cert) errors.push('En az bir sertifika / diploma girin')
-  if (!form.bio?.trim() || form.bio.trim().length < 40) errors.push('Kendinizi tanıtan metin en az 40 karakter olmalı')
-  if (form.role === 'coach' && !form.primaryCertification) errors.push('Birincil sertifika türü seçin')
-  if (form.role === 'dietitian' && !form.graduationDepartment?.trim()) errors.push('Mezuniyet bölümü gerekli')
-  if (form.role === 'dietitian' && !form.licenseNumber?.trim()) errors.push('Diyetisyen diploma / oda kayıt no gerekli')
   return errors
+}
+
+function step4Errors(form) {
+  const errors = []
+  if (form.role === 'coach') {
+    const hasApproach = (form.workApproaches || []).some((a) => a !== OTHER_OPTION) || ((form.workApproaches || []).includes(OTHER_OPTION) && form.workApproachOther?.trim())
+    const hasService = (form.serviceAreas || []).some((a) => a !== OTHER_OPTION) || ((form.serviceAreas || []).includes(OTHER_OPTION) && form.serviceAreaOther?.trim())
+    if (!hasApproach) errors.push('En az bir çalışma yaklaşımı seçin')
+    if ((form.workApproaches || []).includes(OTHER_OPTION) && !form.workApproachOther?.trim()) errors.push('Diğer çalışma yaklaşımını yazın')
+    if (!hasService) errors.push('En az bir hizmet alanı seçin')
+    if ((form.serviceAreas || []).includes(OTHER_OPTION) && !form.serviceAreaOther?.trim()) errors.push('Diğer hizmet alanını yazın')
+  }
+  return errors
+}
+
+export function validateStaffApplicationStep(step, form) {
+  if (step === 1) return baseErrors(form)
+  if (step === 2) return form.role === 'dietitian' ? dietitianStep2Errors(form) : coachStep2Errors(form)
+  if (step === 3) return form.role === 'dietitian' ? dietitianStep3Errors(form) : coachStep3Errors(form)
+  if (step === 4) return [...step4Errors(form), ...baseErrors(form), ...(form.role === 'dietitian' ? dietitianStep2Errors(form) : coachStep2Errors(form)), ...(form.role === 'dietitian' ? dietitianStep3Errors(form) : coachStep3Errors(form))]
+  return []
+}
+
+export function validateStaffApplication(form) {
+  return validateStaffApplicationStep(4, form)
+}
+
+export function buildStaffApplicationPayload(form) {
+  const common = {
+    city: form.city || '',
+    district: form.district || '',
+    gender: form.gender || '',
+    hasGym: !!form.hasGym,
+    gymName: form.gymName || '',
+    gymCity: form.gymCity || '',
+    gymDistrict: form.gymDistrict || '',
+    instagram: form.instagram || '',
+    youtube: form.youtube || '',
+    website: form.website || '',
+    linkedin: form.linkedin || '',
+    specialties: form.specialties || [],
+    specialtyOther: form.specialtyOther || '',
+    experienceYears: Number(form.experienceYears) || 0,
+    languages: form.languages || ['Türkçe'],
+  }
+
+  if (form.role === 'dietitian') {
+    return {
+      ...common,
+      graduationDepartment: form.graduationDepartment || '',
+      licenseNumber: form.licenseNumber || '',
+      education: form.education || [],
+      certificates: form.certificates || [],
+      bio: form.bio || '',
+      title: form.title || '',
+    }
+  }
+
+  return {
+    ...common,
+    competentGroups: form.competentGroups || [],
+    competentGroupOther: form.competentGroupOther || '',
+    chronicDiseaseExamples: form.chronicDiseaseExamples || '',
+    educationLevel: form.educationLevel || '',
+    educationDepartment: form.educationDepartment || '',
+    educationGpa: form.educationGpa || '',
+    officialCoachingCerts: form.officialCoachingCerts || [],
+    internationalCerts: form.internationalCerts || [],
+    branchCerts: form.branchCerts || [],
+    certificateFiles: form.certificateFiles || [],
+    certOtherNotes: form.certOtherNotes || {},
+    workApproaches: form.workApproaches || [],
+    workApproachOther: form.workApproachOther || '',
+    serviceAreas: form.serviceAreas || [],
+    serviceAreaOther: form.serviceAreaOther || '',
+  }
 }

@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Shield, Lock, Users, BadgeCheck } from 'lucide-react'
+import { Shield, Lock, FileText, Scale } from 'lucide-react'
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -10,22 +11,46 @@ const fadeIn = {
   }),
 }
 
-export default function TrustStrip({ staffCount = 0, memberCount }) {
-  const experts = staffCount > 0 ? `${staffCount}+ Uzman` : 'Uzman Kadro'
-  const members = memberCount > 0 ? `${memberCount.toLocaleString('tr-TR')}+ Üye` : '2.500+ Üye'
+const LEGAL_TRUST_ITEMS = [
+  {
+    to: '/kvkk',
+    icon: Shield,
+    label: 'KVKK Uyumlu',
+    sub: 'Aydınlatma metni',
+    accent: 'from-brand-100 to-brand-50 text-brand-600 group-hover:from-brand-500 group-hover:to-brand-600 group-hover:text-white',
+  },
+  {
+    to: '/privacy',
+    icon: Lock,
+    label: 'Gizlilik Politikası',
+    sub: '256-bit SSL güvenliği',
+    accent: 'from-sage-100 to-sage-50 text-sage-700 group-hover:from-sage-500 group-hover:to-sage-600 group-hover:text-white',
+  },
+  {
+    to: '/terms',
+    icon: FileText,
+    label: 'Kullanım Koşulları',
+    sub: 'Üyelik ve hizmet şartları',
+    accent: 'from-amber-100 to-amber-50 text-amber-700 group-hover:from-amber-500 group-hover:to-amber-600 group-hover:text-white',
+  },
+  {
+    to: '/terms',
+    icon: Scale,
+    label: 'Yasal Bilgilendirme',
+    sub: 'Mesafeli satış ve cayma',
+    accent: 'from-cream-200 to-cream-100 text-cream-800 group-hover:from-cream-800 group-hover:to-cream-900 group-hover:text-white',
+  },
+]
 
-  const items = [
-    { icon: Shield, label: 'KVKK Uyumlu', sub: 'Verileriniz korunur' },
-    { icon: Lock, label: '256-bit SSL', sub: 'Güvenli bağlantı' },
-    { icon: Users, label: experts, sub: 'Sertifikalı ekip' },
-    { icon: BadgeCheck, label: members, sub: '%94 memnuniyet' },
-  ]
-
+export default function TrustStrip() {
   return (
-    <section className="relative border-y border-cream-200/80 bg-white/80 backdrop-blur-sm">
-      <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
+    <section className="relative border-t border-cream-200/80 bg-gradient-to-b from-white to-cream-50/60">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <p className="mb-5 text-center text-xs font-semibold uppercase tracking-widest text-cream-800/45">
+          Yasal Bilgilendirme
+        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {items.map((item, i) => {
+          {LEGAL_TRUST_ITEMS.map((item, i) => {
             const Icon = item.icon
             return (
               <motion.div
@@ -35,15 +60,19 @@ export default function TrustStrip({ staffCount = 0, memberCount }) {
                 whileInView="show"
                 custom={i}
                 viewport={{ once: true, margin: '-40px' }}
-                className="group flex items-center gap-3 rounded-2xl border border-cream-100 bg-gradient-to-br from-white to-cream-50/80 px-3 py-3 transition hover:border-brand-200 hover:shadow-sm sm:px-4 sm:py-3.5"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-sage-100 text-brand-600 transition group-hover:scale-105">
-                  <Icon className="h-5 w-5" strokeWidth={2.2} />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-cream-900 sm:text-sm">{item.label}</p>
-                  <p className="truncate text-[10px] text-cream-800/55 sm:text-xs">{item.sub}</p>
-                </div>
+                <Link
+                  to={item.to}
+                  className="group flex h-full items-center gap-3 rounded-2xl border border-cream-100 bg-white px-3 py-3.5 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:px-4 sm:py-4"
+                >
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br transition duration-300 group-hover:scale-105 ${item.accent}`}>
+                    <Icon className="h-5 w-5" strokeWidth={2.2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-cream-900 sm:text-sm">{item.label}</p>
+                    <p className="truncate text-[10px] text-cream-800/55 sm:text-xs">{item.sub}</p>
+                  </div>
+                </Link>
               </motion.div>
             )
           })}

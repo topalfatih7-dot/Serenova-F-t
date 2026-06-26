@@ -17,7 +17,7 @@
 | P1 | ⬜ | Kadro fotoğrafları ve biyografiler |
 | P1 | ⬜ | Supabase Leaked Password Protection |
 | P1 | ⬜ | Yasal metinleri hukuk danışmanına onaylat |
-| P2 | ⬜ | Personel hakediş modülü (şu an mock) |
+| P2 | ⬜ | Personel hakediş modülü — 500₺/görüşme, video katılım zorunlu, Cuma ödeme (§40) |
 | P2 | ⬜ | Stripe Customer Portal |
 | P2 | ⬜ | `phone_in_use` rate limit |
 | P2 | ⬜ | `AI_PROJE_REHBERI.md` güncelle |
@@ -170,7 +170,7 @@ npm run dev
 | Görev | Açıklama |
 |-------|----------|
 | Test kartını production'da kapat | Stripe canlıya alınınca |
-| Personel hakediş modülü | `staff_earnings` + PaymentManagementPage staff |
+| Personel hakediş modülü | `staff_earning_lines` + `sessionAttendance` + `/api/session-attendance` |
 | Stripe Customer Portal | Kayıtlı kart yönetimi |
 | `phone_in_use` rate limit | Telefon enumeration riski |
 | `schema.sql` senkron | Yeni kurulumda yalnızca `setup.sql` kullan |
