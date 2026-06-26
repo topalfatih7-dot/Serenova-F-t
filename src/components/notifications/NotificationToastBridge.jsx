@@ -6,6 +6,7 @@ const TOAST_BY_TYPE = {
   program: 'success',
   assignment: 'success',
   'support-reply': 'info',
+  chat: 'info',
   reminder: 'info',
   appointment: 'info',
 }

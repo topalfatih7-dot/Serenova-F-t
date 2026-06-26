@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Bell } from 'lucide-react'
+import { Bell, MessageCircle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 
 export default function TopBar({ title }) {
-  const { notifications, user, membership } = useApp()
+  const { notifications, user, membership, chatUnreadCount } = useApp()
   const unread = notifications.filter((n) => !n.read).length
 
   return (
@@ -17,6 +17,14 @@ export default function TopBar({ title }) {
         )}
       </div>
       <div className="flex items-center gap-2">
+        <Link to="/messages" className="relative rounded-xl p-2 transition hover:bg-brand-50/80" aria-label="Mesajlar">
+          <MessageCircle className="h-5 w-5 text-brand-600" />
+          {chatUnreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">
+              {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+            </span>
+          )}
+        </Link>
         <Link to="/notifications" className="relative rounded-xl p-2 transition hover:bg-brand-50/80">
           <Bell className="h-5 w-5 text-brand-600" />
           {unread > 0 && (

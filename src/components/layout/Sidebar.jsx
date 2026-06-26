@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
   Dumbbell, Apple, Settings, LogOut, ClipboardList, Library,
-  CalendarDays, Flame, Wallet,
+  CalendarDays, Flame, Wallet, MessageCircle,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
+  { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
@@ -23,7 +24,7 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const { user, membership, membershipStatus, logout } = useApp()
+  const { user, membership, membershipStatus, logout, chatUnreadCount } = useApp()
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl lg:flex">
@@ -47,7 +48,12 @@ export default function Sidebar() {
             }
           >
             <item.icon className="h-4 w-4" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.chatBadge && chatUnreadCount > 0 && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
         {membership === 'free' && (

@@ -43,6 +43,8 @@ const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
 const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
+const StaffMessagesPage = lazy(() => import('./pages/staff/StaffMessagesPage'))
+const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const StaffLibraryGate = lazy(() => import('./components/staff/StaffLibraryGate'))
 const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagementPage'))
 
@@ -118,6 +120,8 @@ export default function App() {
                 <Route path="schedule/coach" element={<CoachSchedulePage />} />
                 <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="messages" element={<MessagesPage />} />
+                <Route path="messages/:role" element={<MessagesPage />} />
                 <Route path="support" element={<SupportPage />} />
                 <Route path="programs" element={<ProgramsPage />} />
                 <Route path="library" element={<ExerciseLibraryPage />} />
@@ -131,6 +135,8 @@ export default function App() {
               <Route element={<StaffShell />}>
                 <Route path="staff" element={<StaffOverviewPage />} />
                 <Route path="staff/clients" element={<StaffClientsPage />} />
+                <Route path="staff/messages" element={<StaffMessagesPage />} />
+                <Route path="staff/messages/:memberId" element={<StaffMessagesPage />} />
                 <Route path="staff/programs" element={<StaffProgramsPage />} />
                 <Route path="staff/lists" element={<StaffListsPage />} />
                 <Route path="staff/library" element={<StaffLibraryGate />} />

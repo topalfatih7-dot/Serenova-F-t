@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet, MessageCircle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -15,6 +15,7 @@ function staffNavForRole(role) {
   const base = [
     { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
     { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
+    { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   ]
   if (role === 'dietitian') {
     return [
@@ -32,7 +33,7 @@ function staffNavForRole(role) {
 }
 
 export default function StaffShell() {
-  const { staffUser, logout } = useApp()
+  const { staffUser, logout, chatUnreadCount } = useApp()
 
   const meta = staffRoleMeta(staffUser.role)
   const RoleIcon = meta.icon
@@ -64,7 +65,12 @@ export default function StaffShell() {
               }
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.chatBadge && chatUnreadCount > 0 && (
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                  {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

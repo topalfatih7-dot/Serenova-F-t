@@ -9,21 +9,9 @@ import { weekdayLabel } from '../../components/package/SupportScheduler'
 import VideoJoinLink from '../../components/video/VideoJoinLink'
 import StaffVideoPanel from '../../components/video/StaffVideoPanel'
 import { useApp } from '../../context/AppContext'
-import { isPaidMembership, packageIncludesCoach, packageIncludesDietitian } from '../../data/membershipPlans'
+import { getStaffClients } from '../../utils/chatAccess'
 
-export function getStaffClients(members, role, staffId) {
-  const sid = String(staffId || '')
-  return members.filter((m) => {
-    if (!isPaidMembership(m.membership)) return false
-    if (m.membershipStatus !== 'active' && m.membershipStatus !== 'expiring') return false
-    if (role === 'coach') {
-      if (!packageIncludesCoach(m.packageConfig)) return false
-      return String(m.assignedCoachId || '') === sid
-    }
-    if (!packageIncludesDietitian(m.packageConfig)) return false
-    return String(m.assignedDietitianId || '') === sid
-  })
-}
+export { getStaffClients }
 
 export function getStaffAppointments(clients, role) {
   const now = new Date()

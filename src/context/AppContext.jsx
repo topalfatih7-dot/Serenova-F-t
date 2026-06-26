@@ -17,6 +17,8 @@ import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
+import * as chatDb from '../services/chatDb'
+import { totalUnreadThreads } from '../utils/chatAccess'
 
 const AppContext = createContext(null)
 
@@ -30,6 +32,9 @@ export function AppProvider({ children }) {
   const [remoteDb, setRemoteDb] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [chatThreads, setChatThreads] = useState([])
+  const [chatMessages, setChatMessages] = useState({})
+  const chatHydratedKey = useRef(null)
 
   const reloadRemote = useCallback(async () => {
     setSyncing(true)
@@ -80,6 +85,78 @@ export function AppProvider({ children }) {
   remoteDbRef.current = remoteDb
 
   useEffect(() => {
+    if (!isSupabaseEnabled || !remoteDb?.session) {
+      setChatThreads([])
+      setChatMessages({})
+      chatHydratedKey.current = null
+      return undefined
+    }
+    const session = remoteDb.session
+    const key = `${session.type}-${session.memberId || session.staffId || ''}`
+    if (chatHydratedKey.current === key) return undefined
+
+    let active = true
+    ;(async () => {
+      const member = remoteDb.members?.find((m) => m.id === session.memberId)
+      const staffUser = remoteDb.staff?.find((s) => s.id === session.staffId)
+      const threads = await chatDb.hydrateChatThreads(
+        session,
+        member,
+        remoteDb.staff || [],
+        staffUser,
+        remoteDb.members || [],
+      )
+      if (active) {
+        setChatThreads(threads)
+        chatHydratedKey.current = key
+      }
+    })()
+    return () => { active = false }
+  }, [remoteDb?.session, remoteDb?.members, remoteDb?.staff])
+
+  const chatUnreadCount = useMemo(() => {
+    const perspective = isStaff ? 'staff' : 'member'
+    const list = isStaff
+      ? chatThreads.filter((t) => String(t.staffId) === String(currentStaff?.id))
+      : chatThreads
+    return totalUnreadThreads(list, perspective)
+  }, [chatThreads, isStaff, currentStaff?.id])
+
+  const loadChatMessages = useCallback(async (threadId) => {
+    const messages = await chatDb.fetchChatMessages(threadId)
+    setChatMessages((prev) => ({ ...prev, [threadId]: messages }))
+    return messages
+  }, [])
+
+  const sendChatMessage = useCallback(async (thread, senderType, senderId, text) => {
+    const r = await chatDb.sendChatMessage({ thread, senderType, senderId, text })
+    if (r.success) {
+      setChatMessages((prev) => ({
+        ...prev,
+        [thread.id]: [...(prev[thread.id] || []), r.message],
+      }))
+      setChatThreads((prev) => prev.map((t) => (t.id === thread.id ? r.thread : t)))
+    }
+    return r
+  }, [])
+
+  const markChatThreadRead = useCallback(async (threadId, readerType) => {
+    const updated = await chatDb.markChatThreadRead(threadId, readerType)
+    if (updated) {
+      setChatThreads((prev) => prev.map((t) => (t.id === threadId ? updated : t)))
+    }
+    return updated
+  }, [])
+
+  const acceptChatConsent = useCallback(async (threadId) => {
+    const updated = await chatDb.recordChatConsent(threadId)
+    if (updated) {
+      setChatThreads((prev) => prev.map((t) => (t.id === threadId ? updated : t)))
+    }
+    return updated
+  }, [])
+
+  useEffect(() => {
     if (!isSupabaseEnabled || !isAuthenticated) return undefined
 
     return startPresenceTracker({
@@ -108,6 +185,7 @@ export function AppProvider({ children }) {
     return subscribeRealtimeSync({
       session: remoteDb.session,
       memberId: currentMember?.id,
+      staffId: currentStaff?.id,
       onTicketsChange: ({ type, id, ticket }) => {
         setRemoteDb((prev) => {
           if (!prev) return prev
@@ -127,8 +205,22 @@ export function AppProvider({ children }) {
           return { ...prev, members: prev.members.map((m) => (m.id === member.id ? member : m)) }
         })
       },
+      onChatThreadChange: (thread) => {
+        setChatThreads((prev) => {
+          const idx = prev.findIndex((t) => t.id === thread.id)
+          if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
+          return [thread, ...prev]
+        })
+      },
+      onChatMessageChange: (message) => {
+        setChatMessages((prev) => {
+          const list = prev[message.threadId] || []
+          if (list.some((m) => m.id === message.id)) return prev
+          return { ...prev, [message.threadId]: [...list, message] }
+        })
+      },
     })
-  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id])
+  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id, currentStaff?.id])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -488,6 +580,13 @@ export function AppProvider({ children }) {
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
     notifications: currentMember?.notifications || [],
+    chatThreads,
+    chatMessages,
+    chatUnreadCount,
+    loadChatMessages,
+    sendChatMessage,
+    markChatThreadRead,
+    acceptChatConsent,
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},

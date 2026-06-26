@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet,
+  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet, MessageCircle,
 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -23,6 +23,7 @@ const memberNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
+  { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
@@ -34,7 +35,7 @@ const memberNav = [
 ]
 
 export default function AppShell() {
-  const { isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings } = useApp()
+  const { isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings, chatUnreadCount } = useApp()
   // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
   // yüzen ikon (FAB) tüm üye sayfalarında kalıcı olsun diye orkestrasyon AppShell'de.
   const [healthPromptOpen, setHealthPromptOpen] = useState(false)

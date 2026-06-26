@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../services/supabaseClient'
 import { fetchActiveUsers } from '../services/presenceService'
 import { rowToTicket, rowToMember } from '../services/supabaseDb'
+import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
 
 export function useActiveUsers(isAdmin) {
   const [activeUsers, setActiveUsers] = useState([])
@@ -29,7 +30,15 @@ export function useActiveUsers(isAdmin) {
   return { activeUsers, refreshActiveUsers: refresh }
 }
 
-export function subscribeRealtimeSync({ session, memberId, onTicketsChange, onMemberChange }) {
+export function subscribeRealtimeSync({
+  session,
+  memberId,
+  staffId,
+  onTicketsChange,
+  onMemberChange,
+  onChatThreadChange,
+  onChatMessageChange,
+}) {
   if (!supabase || !session) return () => {}
 
   const channels = []
@@ -47,6 +56,30 @@ export function subscribeRealtimeSync({ session, memberId, onTicketsChange, onMe
     })
     .subscribe()
   channels.push(ticketChannel)
+
+  const chatThreadChannel = supabase
+    .channel('chat-threads-sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_threads' }, (payload) => {
+      if (!payload.new && payload.eventType === 'DELETE') return
+      if (payload.new) {
+        const thread = rowToChatThread(payload.new)
+        if (session.type === 'member' && thread.memberId !== memberId) return
+        if (session.type === 'staff' && String(thread.staffId) !== String(staffId)) return
+        onChatThreadChange?.(thread)
+      }
+    })
+    .subscribe()
+  channels.push(chatThreadChannel)
+
+  const chatMessageChannel = supabase
+    .channel('chat-messages-sync')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+      if (payload.new) {
+        onChatMessageChange?.(rowToChatMessage(payload.new))
+      }
+    })
+    .subscribe()
+  channels.push(chatMessageChannel)
 
   if (session.type === 'member' && memberId) {
     const memberChannel = supabase

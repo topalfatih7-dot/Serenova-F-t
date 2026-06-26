@@ -2816,3 +2816,47 @@ Hakediş için **üye ve personelin ikisi de** Daily.co odasına katılmalı; e�
 
 **Mevcut durum:** Kurallar kodlandı; hakediş tabloları ve video attendance API henüz yok — personel ekranı demo veri.
 
+---
+
+## 41. Üye–Personel Mesajlaşma (2026-06-26)
+
+### Özet
+
+Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesajlar Supabase'de kalıcı; sohbet öncesi bilgilendirme onayı; okunmamış rozet + üst sıralama.
+
+### Erişim kuralları
+
+| Rol | Kiminle yazışır |
+|-----|-----------------|
+| Üye | Yalnızca `assignedCoachId` / `assignedDietitianId` — pakette ilgili hizmet varsa |
+| Koç / Diyetisyen | Tüm atanmış aktif danışanlar |
+| Program/liste | Personel, danışanın **tüm** programlarını görür (koç antrenman + diyetisyen beslenme) — mevcut `staff_manages_member` RLS |
+
+### Veritabanı
+
+| Tablo | Açıklama |
+|-------|----------|
+| `chat_threads` | `member_id`, `staff_id`, `staff_role`, `last_message_at`, `data` (unread, preview, consent) |
+| `chat_messages` | `thread_id`, `sender_type`, `data.text`, `created_at` |
+
+**Migration:** `supabase/migrations/20260627_member_staff_chat.sql` (canlıya uygulandı)  
+**Realtime:** `chat_threads`, `chat_messages` → `useRealtimeSync`
+
+### Rotalar
+
+| Rota | Sayfa |
+|------|-------|
+| `/messages`, `/messages/:role` | `MessagesPage.jsx` (üye) |
+| `/staff/messages`, `/staff/messages/:memberId` | `StaffMessagesPage.jsx` |
+
+### UI
+
+- `ChatThreadView` — renkli balonlar (koç brand, diyetisyen sage)
+- `ChatConsentModal` — kayıt uyarısı (ilk sohbet)
+- `MemberProgramsPanel` — mesaj ekranında program/liste özeti
+- Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell
+
+### Dosyalar
+
+`src/services/chatDb.js`, `src/utils/chatAccess.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`
+
