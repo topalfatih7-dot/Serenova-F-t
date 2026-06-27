@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-25 (§38: AI blog cron, kişisel sağlık özeti, blog kapak görselleri, Gemini 2.5 Flash Lite)
+> **Son güncelleme:** 2026-06-26 (§41: mesajlaşma mobil/tablet responsive — ChatWorkspace, 768px split)
 
 ---
 
@@ -2853,10 +2853,23 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 
 - `ChatThreadView` — renkli balonlar (koç brand, diyetisyen sage)
 - `ChatConsentModal` — kayıt uyarısı (ilk sohbet)
-- `MemberProgramsPanel` — mesaj ekranında program/liste özeti
+- `ChatCollapsiblePrograms` — rol bazlı program paneli (koç antrenman / diyetisyen beslenme)
+- `ChatWorkspace` — responsive sohbet iskeleti (inbox + thread)
 - Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell
+
+### Responsive düzen (2026-06-26)
+
+| Breakpoint | Davranış |
+|------------|----------|
+| **&lt; 768px (mobil)** | Tek panel: önce sohbet listesi; sohbet seçilince tam ekran thread + geri butonu. Mesaj alanı `100dvh` tabanlı yükseklik; composer altta sabit (`safe-area-inset-bottom`). Uyarı bandı ve başlık alt yazısı sohbet açıkken gizlenir. |
+| **≥ 768px (tablet, `md`)** | Yan yana split: inbox ~220–260px + thread. `max-w-none` ile kenar boşlukları azaltılır; `PanelPageShell` tam genişlik kullanır. |
+| **≥ 1024px (`lg`)** | Inbox genişliği ~260–300px; masaüstü deneyimi. |
+
+**Dosyalar:** `src/components/chat/ChatWorkspace.jsx`, `src/hooks/useMediaQuery.js`
+
+**Mobil rotalar:** Üye `/messages/:role`, personel `/staff/messages/:memberId` — geri ile liste rotasına dönülür.
 
 ### Dosyalar
 
-`src/services/chatDb.js`, `src/utils/chatAccess.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`
+`src/services/chatDb.js`, `src/utils/chatAccess.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useMediaQuery.js`
 

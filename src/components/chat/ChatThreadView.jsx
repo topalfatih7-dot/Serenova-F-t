@@ -53,13 +53,13 @@ export default function ChatThreadView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {live && (
-        <div className="mb-2 shrink-0 flex items-center gap-2 rounded-full bg-sage-50 px-3 py-1.5 text-xs font-semibold text-sage-700">
+        <div className="mb-2 hidden shrink-0 items-center gap-2 rounded-full bg-sage-50 px-3 py-1 sm:flex sm:text-xs font-semibold text-sage-700">
           <Radio className="h-3.5 w-3.5 animate-pulse" />
-          Canlı — mesajlar kayıt altına alınır
+          <span className="truncate">Canlı — mesajlar kayıt altına alınır</span>
         </div>
       )}
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3">
         {messages.length === 0 && (
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-cream-200 bg-cream-50/40 p-4 text-center">
             <StaffIcon className="h-10 w-10 text-cream-300" />
@@ -88,7 +88,7 @@ export default function ChatThreadView({
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm ${bubbleCls}`}>
+              <div className={`max-w-[min(100%,20rem)] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[88%] sm:px-4 sm:py-2.5 ${bubbleCls}`}>
                 <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${isOwn ? 'text-white/75' : 'text-cream-800/45'}`}>
                   {m.senderType === 'staff' ? <StaffIcon className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
                   {labelFor(m)}
@@ -104,21 +104,21 @@ export default function ChatThreadView({
       </div>
 
       {!disabled && (
-        <div className="mt-3 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-3">
+        <div className="mt-2 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-2 sm:mt-3 sm:pt-3">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            rows={2}
-            placeholder="Mesajınızı yazın…"
-            className="flex-1 resize-none rounded-2xl border border-cream-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-100"
+            rows={1}
+            placeholder="Mesaj yazın…"
+            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-cream-200 bg-cream-50/50 px-3 py-2.5 text-base outline-none transition focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-100 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm"
           />
           <motion.button
             type="button"
             whileTap={{ scale: 0.94 }}
             onClick={send}
             disabled={!text.trim()}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-lg shadow-brand-200/50 disabled:opacity-40"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-md shadow-brand-200/50 disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-lg"
             aria-label="Gönder"
           >
             <Send className="h-4 w-4" />
