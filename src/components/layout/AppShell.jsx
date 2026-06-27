@@ -84,7 +84,7 @@ export default function AppShell() {
             </Link>
           )}
         />
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
           <TopBar />
         </div>
         <main className="member-panel-bg relative flex-1 overflow-y-auto">
@@ -97,7 +97,7 @@ export default function AppShell() {
             <Outlet />
           </div>
         </main>
-        <footer className="hidden border-t border-brand-200/30 bg-gradient-to-r from-white/90 to-brand-50/40 px-6 py-3 text-center text-[10px] text-cream-800/50 lg:block">
+        <footer className="hidden border-t border-brand-200/30 bg-gradient-to-r from-white/90 to-brand-50/40 px-6 py-3 text-center text-[10px] text-cream-800/50 md:block">
           {BRAND.name} · Bu platform tıbbi teşhis veya tedavi sunmaz.
         </footer>
       </div>

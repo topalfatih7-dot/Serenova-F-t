@@ -53,14 +53,14 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
           </Link>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-2">
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
           {featured && (
             <motion.article
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="blog-card-vivid group lg:row-span-2"
+              className="blog-card-vivid group md:row-span-2"
             >
               <Link to={`/blog/${featured.id}`} className="block h-full">
                 <BlogCover post={featured} className="aspect-[16/10] w-full sm:aspect-[16/9]" featured />

@@ -27,8 +27,8 @@ export default function Sidebar() {
   const { user, membership, membershipStatus, logout, chatUnreadCount } = useApp()
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl lg:flex">
-      <div className="shrink-0 border-b border-cream-100 p-5">
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl md:flex lg:w-64">
+      <div className="shrink-0 border-b border-cream-100 p-4 lg:p-5">
         <BrandLogo linkTo="/dashboard" />
         <div className="mt-3">
           <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
@@ -36,13 +36,13 @@ export default function Sidebar() {
         <p className="mt-2 truncate text-sm text-cream-800/60">{user.name}</p>
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2.5 lg:space-y-1 lg:p-3">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              `flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium transition-all duration-200 lg:gap-3 lg:px-3 lg:py-2.5 lg:text-sm ${
                 isActive ? 'nav-active-glow font-semibold scale-[1.02]' : 'text-cream-800 hover:bg-gradient-to-r hover:from-brand-50/80 hover:to-violet-50/50 hover:translate-x-0.5'
               }`
             }

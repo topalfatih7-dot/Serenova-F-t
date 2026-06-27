@@ -78,7 +78,7 @@ export default function PublicLayout() {
         key={l.to}
         to={l.to}
         onClick={onClickExtra}
-        className={`group relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition ${
+        className={`group relative flex items-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium transition xl:px-3.5 xl:text-sm ${
           active ? 'text-brand-700' : 'text-cream-800 hover:text-brand-600'
         }`}
       >
@@ -121,7 +121,7 @@ export default function PublicLayout() {
       <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <BrandLogo />
-          <nav ref={navRef} aria-label="Ana menü" className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur md:flex">
+          <nav ref={navRef} aria-label="Ana menü" className="hidden items-center gap-0.5 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur lg:flex xl:gap-1">
             {publicLinks.map((l) => renderNavLink(l))}
             <NavDropdown
               label="Keşfet"
@@ -147,7 +147,7 @@ export default function PublicLayout() {
               activePaths={['/team']}
             />
           </nav>
-          <div className="hidden items-center gap-2.5 md:flex">
+          <div className="hidden items-center gap-2 lg:flex xl:gap-2.5">
             {isAuthenticated ? (
               isAdmin ? (
                 <Link to="/admin" className="flex items-center gap-2 rounded-full bg-cream-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cream-800 hover:shadow-md">
@@ -182,7 +182,7 @@ export default function PublicLayout() {
           </div>
           <button
             type="button"
-            className={`flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white transition md:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-cream-200 bg-white transition lg:hidden ${
               menuOpen ? 'text-brand-600' : 'hamburger-glow text-brand-600'
             }`}
             onClick={() => setMenuOpen(!menuOpen)}
@@ -198,7 +198,7 @@ export default function PublicLayout() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="overflow-hidden border-t border-white/50 bg-white/90 px-4 backdrop-blur-xl md:hidden"
+              className="overflow-hidden border-t border-white/50 bg-white/90 px-4 backdrop-blur-xl lg:hidden"
             >
               <div className="py-3">
                 {publicLinks.map((l) => renderMobileLink(l))}

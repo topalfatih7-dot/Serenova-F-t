@@ -111,13 +111,13 @@ export default function LandingPage() {
           className="absolute -right-20 bottom-1/4 h-64 w-64 rounded-full bg-sage-400/25 blur-3xl"
         />
 
-        <div className="relative mx-auto flex w-full max-w-6xl items-center justify-end px-4 py-20 sm:px-6 lg:min-h-[100svh]">
-          {/* Asimetrik kart — sağ taraf (kompakt) */}
+        <div className="relative mx-auto flex w-full max-w-6xl items-center justify-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[100svh] lg:justify-end">
+          {/* Asimetrik kart — tablet ortada, masaüstünde sağ */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-sm"
+            className="relative w-full max-w-md md:max-w-lg lg:max-w-sm"
           >
             {/* Dekoratif blob'lar */}
             <motion.div
@@ -244,7 +244,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="mt-6 flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 sm:hidden"
+                className="mt-6 flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 lg:hidden"
               >
                 <div className="flex items-center gap-2.5">
                   <motion.div
@@ -271,8 +271,8 @@ export default function LandingPage() {
             )}
           </AnimatePresence>
 
-          {/* Masaüstü: grid; Mobil: yatay kaydırma */}
-          <div className="mt-8 hidden items-stretch gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+          {/* Masaüstü: grid; Tablet/mobil: yatay kaydırma */}
+          <div className="mt-8 hidden items-stretch gap-6 lg:grid lg:grid-cols-3">
             {displayPlans.map((plan, i) => (
               <motion.div
                 key={plan.id}
@@ -292,8 +292,8 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Mobil: yatay kaydırma — pt-6: kartların üstündeki "rozet" (Popüler/Premium) kırpılmasın */}
-          <div className="mt-4 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-6 sm:hidden [scroll-padding:1rem]">
+          {/* Tablet + mobil: yatay kaydırma — pt-6: kartların üstündeki rozet kırpılmasın */}
+          <div className="mt-4 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-6 lg:hidden [scroll-padding:1rem]">
             {displayPlans.map((plan, i) => (
               <motion.div
                 key={plan.id}
@@ -301,7 +301,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.08 }}
                 viewport={{ once: true }}
-                className="flex w-[78vw] max-w-xs shrink-0 snap-start self-stretch"
+                className="flex w-[min(78vw,340px)] max-w-xs shrink-0 snap-start self-stretch sm:w-[320px] md:w-[340px]"
               >
                 <div className="h-full w-full">
                 <PricingCard

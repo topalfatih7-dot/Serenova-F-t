@@ -23,7 +23,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
     <motion.div
       whileHover={{ y: -8 }}
       transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-      className={`relative flex h-full min-h-[32rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition-shadow hover:shadow-xl ${
+      className={`relative flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition-shadow hover:shadow-xl md:min-h-[30rem] lg:min-h-[32rem] ${
         isFeatured
           ? `border-amber-200/70 ${theme.glow} ring-2 ring-amber-100/60`
           : plan.id === 'vip'

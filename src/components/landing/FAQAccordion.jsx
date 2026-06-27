@@ -10,13 +10,13 @@ export default function FAQAccordion({ items }) {
   if (list.length === 0) return null
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-12 lg:items-start">
+    <div className="grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:items-start md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-12">
       <motion.div
         initial={{ opacity: 0, x: -16 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="lg:sticky lg:top-28"
+        className="md:sticky md:top-24 lg:top-28"
       >
         <span className="section-badge">
           <HelpCircle className="h-3.5 w-3.5" />

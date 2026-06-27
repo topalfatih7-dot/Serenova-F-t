@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = 'Sohbetler' }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[minmax(220px,260px)_1fr] md:gap-4 lg:grid-cols-[minmax(260px,300px)_1fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
         <aside
           className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
             showThread ? 'hidden md:flex' : 'flex min-h-[calc(100dvh-11rem)] md:min-h-0'

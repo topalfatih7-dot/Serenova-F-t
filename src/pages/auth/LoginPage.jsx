@@ -92,7 +92,7 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-[calc(100svh-64px)] overflow-hidden">
       {/* Sol panel — marka */}
-      <div className="relative hidden w-[45%] overflow-hidden lg:flex lg:flex-col lg:justify-between">
+      <div className="relative hidden w-[42%] overflow-hidden md:flex md:flex-col md:justify-between lg:w-[45%]">
         <video
           autoPlay
           muted
@@ -113,7 +113,7 @@ export default function LoginPage() {
           className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-brand-400/30 blur-3xl"
         />
 
-        <div className="relative z-10 p-10 xl:p-14">
+        <div className="relative z-10 p-8 md:p-10 xl:p-14">
           <BrandLogo size="lg" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -164,7 +164,7 @@ export default function LoginPage() {
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-md"
         >
-          <div className="mb-8 lg:hidden">
+          <div className="mb-8 md:hidden">
             <BrandLogo />
           </div>
 

@@ -52,7 +52,7 @@ export default function MembershipComparisonPage() {
 
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6">
         {/* Plan kartları */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {displayPlans.map((plan, i) => (
             <MembershipPlanCard
               key={plan.id}

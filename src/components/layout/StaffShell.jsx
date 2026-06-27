@@ -44,7 +44,7 @@ export default function StaffShell() {
     <div className="staff-panel-bg relative flex min-h-screen overflow-hidden">
       <NoIndexHead />
       <AnimatedBackground emojis={STAFF_EMOJIS} accent="staff" />
-      <aside className="relative hidden w-64 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm lg:flex">
+      <aside className="relative hidden w-56 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm md:flex lg:w-64">
         <div className="border-b border-cream-100 p-5">
           <BrandLogo linkTo="/staff" />
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">

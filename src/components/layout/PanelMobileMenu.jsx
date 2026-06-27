@@ -29,7 +29,7 @@ export default function PanelMobileMenu({
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6 lg:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6 md:hidden">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -46,7 +46,7 @@ export default function PanelMobileMenu({
 
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 md:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

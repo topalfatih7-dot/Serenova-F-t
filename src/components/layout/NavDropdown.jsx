@@ -21,7 +21,7 @@ export default function NavDropdown({
       <button
         type="button"
         onClick={onToggle}
-        className={`group relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition ${
+        className={`group relative flex items-center gap-1 rounded-full px-2.5 py-2 text-xs font-medium transition xl:gap-1.5 xl:px-3.5 xl:text-sm ${
           isOpen || isActive ? 'text-brand-700' : 'text-cream-800 hover:text-brand-600'
         }`}
       >
