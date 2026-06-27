@@ -157,7 +157,11 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 | `staff_applications` | Koç/diyetisyen kadro başvuruları | RPC ile herkes insert; admin okur/onaylar |
 | `corporate_applications` | Kurumsal wellness başvuruları | RPC ile herkes insert; admin okur/günceller |
 | `contact_inquiries` | Landing “Bize Ulaşın” mesajları | RPC ile herkes insert; admin okur/günceller |
-| `user_presence` | Video görüşme çevrimiçi durumu | `presenceService.js` (supabaseDb dışı) |
+| `user_presence` | Çevrimiçi durum + admin istatistik | `presenceService.js` (supabaseDb dışı) |
+| `chat_threads` | Üye ↔ personel sohbet thread'leri | Üye kendi; personel atanmış danışan; admin hepsi |
+| `chat_messages` | Üye ↔ personel mesajları | Thread erişimi olanlar |
+| `admin_staff_threads` | Admin ↔ personel sohbet thread'leri | Admin hepsi; personel kendi thread'i |
+| `admin_staff_messages` | Admin ↔ personel mesajları | Thread erişimi olanlar |
 
 **Kaldırılan tablolar:** `custom_foods` (kullanılmıyordu, 2026-06-24 migration ile drop).
 
@@ -172,7 +176,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 |-----------|------|
 | `admin_upsert_staff(...)` | Staff + auth.users oluşturma/güncelleme |
 | `admin_delete_staff(p_id)` | Staff + auth silme |
-| `is_admin()`, `is_staff()`, `current_email()` | RLS yardımcıları |
+| `is_admin()`, `is_staff()`, `current_email()`, `current_staff_id()` | RLS yardımcıları |
 | `handle_new_user()` trigger | Kayıtta `members` satırı açar |
 | `submit_staff_application(...)` | Kadro başvurusu (anon + authenticated) |
 | `submit_corporate_application(...)` | Kurumsal başvuru (anon + authenticated) |
@@ -344,9 +348,13 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |----|--------|
 | İstemci çağrısı | `src/services/telegramNotify.js` → `notifyTelegram(event, payload)` |
 | Sunucu handler | `api/telegram-notify.js` — POST; olay: member_signup, member_login, staff_login, admin_login vb. |
-| İletişim formu | `src/services/contactForm.js` → `api/contact.js` |
+| İletişim formu | `src/services/contactForm.js` → `api/contact.js` → `TELEGRAM_CONTACT_CHAT_ID` |
+| Kadro başvurusu | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_STAFF_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
+| Kurumsal başvuru | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
 | Landing form UI | `src/components/landing/ContactSection.jsx` |
 | Kurulum rehberi | `TELEGRAM_SETUP.md` |
+
+**Kaldırıldı (2026-06-27):** Kalori chat Telegram bildirimi (`api/calorie-chat-notify.js` — deprecated, çağrılmıyor).
 
 **Güvenlik:** `TELEGRAM_BOT_TOKEN` yalnızca Vercel sunucusunda; tarayıcıya gitmez.
 
@@ -360,7 +368,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Diyetisyen randevuları | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Liste, erteleme, iptal |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Atanan programlar |
 | Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Arama, filtre, video |
-| Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Basic erişemez, ücretli paketler manuel giriş, diyet/spor/kurucu/vip fotoğraflı analiz |
+| Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
 | Profil | `/profile` | `ProfilePage.jsx` | Profil, üyelik, atanan koç/diyetisyen |
@@ -375,6 +383,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |-------|------|-------|
 | Genel bakış | `/staff` | `staff/StaffOverviewPage.jsx` — danışan sayısı, haftalık randevular |
 | Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program/liste oluşturma, randevu yönetimi |
+| Mesajlar | `/staff/messages`, `/staff/messages/:memberId` | `staff/StaffMessagesPage.jsx` — danışan sohbetleri |
+| Admin mesajları | `/staff/admin-messages` | `staff/StaffAdminMessagesPage.jsx` — admin ↔ personel |
 | Programlar (koç) | `/staff/programs` | `staff/StaffProgramsPage.jsx` — diyetisyen `/staff/lists`'e yönlendirilir |
 | Listeler (diyetisyen) | `/staff/lists` | `staff/StaffListsPage.jsx` — beslenme listeleri özeti |
 | Kütüphane | `/staff/library` | `StaffLibraryGate.jsx` — diyetisyen → `/staff/lists`; koç → `ExerciseLibraryPage` |
@@ -403,6 +413,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Abonelikler | `/admin/subscriptions` | `AdminSubscriptionsPage.jsx` | payments |
 | Ödeme (mock UI) | `/admin/payments` | `PaymentManagementPage.jsx` | mockPayments.js |
 | Seanslar | `/admin/sessions` | `AdminSessionsPage.jsx` | members.data → coachSessions + dietitianSessions |
+| Mesajlar | `/admin/messages` (+ `/staff/:staffId`, `/audit/:threadId`) | `AdminMessagesPage.jsx` | admin_staff_*, chat_* (denetim salt okunur + PDF) |
 | Destek | `/admin/support` | `AdminSupportPage.jsx` | tickets |
 | Analitik | `/admin/analytics` | `AdminAnalyticsPage.jsx` | members, payments |
 | Aktivite | `/admin/activity` | `AdminActivityPage.jsx` | activities |
@@ -528,6 +539,9 @@ Kaynak: `src/App.jsx` satır 56–117
 /staff/call/:sessionType/:sessionId  → VideoCallPage (staff)
 /staff               → StaffOverviewPage
 /staff/clients       → StaffClientsPage
+/staff/messages      → StaffMessagesPage
+/staff/messages/:memberId → StaffMessagesPage
+/staff/admin-messages → StaffAdminMessagesPage
 /staff/programs      → StaffProgramsPage (koç; diyetisyen → /staff/lists)
 /staff/lists         → StaffListsPage (diyetisyen beslenme listeleri)
 /staff/library       → StaffLibraryGate (diyetisyen → /staff/lists)
@@ -548,6 +562,9 @@ Kaynak: `src/App.jsx` satır 56–117
 /admin/subscriptions → AdminSubscriptionsPage
 /admin/payments      → PaymentManagementPage (admin, mock)
 /admin/sessions      → AdminSessionsPage
+/admin/messages      → AdminMessagesPage (personel sohbet + danışan denetimi)
+/admin/messages/staff/:staffId → AdminMessagesPage
+/admin/messages/audit/:threadId → AdminMessagesPage (salt okunur + PDF)
 /admin/support       → AdminSupportPage
 /admin/analytics     → AdminAnalyticsPage
 /admin/activity      → AdminActivityPage
@@ -2312,7 +2329,7 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 
 ### 35.7 Veritabanı / Supabase denetimi
 
-- **14 tablo** aktif ve kod ile eşleşiyor: `members`, `staff`, `programs`, `posts`, `tickets`, `activities`, `payments`, `site_content`, `exercises`, `plans`, `user_presence`, `staff_applications`, `corporate_applications`, `contact_inquiries`. (`membership_requests` kaldırıldı — §36.3)
+- **18 tablo** aktif ve kod ile eşleşiyor: `members`, `staff`, `programs`, `posts`, `tickets`, `activities`, `payments`, `site_content`, `exercises`, `plans`, `user_presence`, `staff_applications`, `corporate_applications`, `contact_inquiries`, `chat_threads`, `chat_messages`, `admin_staff_threads`, `admin_staff_messages`. (`membership_requests` kaldırıldı — §36.3)
 - `plans` tablosu doğrulandı: aktif paketler `free, eko, diyet, spor, kurucu, vip`; eskiler `gumus, altin, platinum` `is_active=false`.
 - `localStorage` kullanımlarının tümü yerinde (FAB konumu, tutorial/banner dismiss, remember-me) — DB'ye taşınması gereken veri yok.
 - Güvenlik advisor uyarıları (`get_advisors`): çoğu kasıtlı public `SECURITY DEFINER` RPC (`submit_*`, `phone_in_use`). **Aksiyon önerisi:** Supabase Dashboard → Auth → "Leaked password protection"ı açın (kod gerektirmez).
@@ -2830,6 +2847,8 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 |-----|-----------------|
 | Üye | Yalnızca `assignedCoachId` / `assignedDietitianId` — pakette ilgili hizmet varsa |
 | Koç / Diyetisyen | Tüm atanmış aktif danışanlar |
+| Admin | Tüm personel (admin ↔ personel thread); tüm danışan–personel sohbetlerini **salt okunur** görür |
+| Personel | Admin ile ayrı thread (`/staff/admin-messages`) |
 | Program/liste | Personel, danışanın **tüm** programlarını görür (koç antrenman + diyetisyen beslenme) — mevcut `staff_manages_member` RLS |
 
 ### Veritabanı
@@ -2838,9 +2857,19 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 |-------|----------|
 | `chat_threads` | `member_id`, `staff_id`, `staff_role`, `last_message_at`, `data` (unread, preview, consent) |
 | `chat_messages` | `thread_id`, `sender_type`, `data.text`, `created_at` |
+| `admin_staff_threads` | `staff_id`, `last_message_at`, `data` (adminUnread, staffUnread, preview) |
+| `admin_staff_messages` | `thread_id`, `sender_type` (`admin` \| `staff`), `data.text`, `created_at` |
 
-**Migration:** `supabase/migrations/20260627_member_staff_chat.sql` (canlıya uygulandı)  
-**Realtime:** `chat_threads`, `chat_messages` → `useRealtimeSync`
+**Migration (canlı — Yeni Form projesi):**
+
+| Dosya | Supabase migration adı | Durum |
+|-------|------------------------|-------|
+| `20260627_member_staff_chat.sql` | `member_staff_chat` | ✅ Uygulandı (`20260626124337`) |
+| `20260627_admin_staff_chat.sql` | `admin_staff_chat` | ✅ Uygulandı (`20260627170712`) |
+
+**Realtime:** `chat_threads`, `chat_messages`, `admin_staff_threads`, `admin_staff_messages` → `useRealtimeSync`
+
+**Kalıcılık:** Tüm mesajlar ilgili tablolara INSERT ile yazılır; thread meta (`last_message_at`, unread, preview) `data` JSONB içinde güncellenir. Admin denetim görünümü mevcut `chat_*` kayıtlarını okur; PDF dışa aktarım sunucuya yazmaz.
 
 ### Rotalar
 
@@ -2848,14 +2877,19 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 |------|-------|
 | `/messages`, `/messages/:role` | `MessagesPage.jsx` (üye) |
 | `/staff/messages`, `/staff/messages/:memberId` | `StaffMessagesPage.jsx` |
+| `/staff/admin-messages` | `StaffAdminMessagesPage.jsx` (personel ↔ admin) |
+| `/admin/messages`, `/admin/messages/staff/:staffId` | `AdminMessagesPage.jsx` — personel sohbetleri |
+| `/admin/messages/audit`, `/admin/messages/audit/:threadId` | `AdminMessagesPage.jsx` — danışan–personel denetimi + PDF |
 
 ### UI
 
-- `ChatThreadView` — renkli balonlar (koç brand, diyetisyen sage)
+- `ChatThreadView` — renkli balonlar (koç brand, diyetisyen sage); `readOnly` denetim modu
+- `AdminStaffChatView` — admin ↔ personel balonları
 - `ChatConsentModal` — kayıt uyarısı (ilk sohbet)
 - `ChatCollapsiblePrograms` — rol bazlı program paneli (koç antrenman / diyetisyen beslenme)
 - `ChatWorkspace` — responsive sohbet iskeleti (inbox + thread)
-- Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell
+- Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell; `adminStaffUnreadCount` / `staffAdminUnreadCount` — admin/personel admin mesajları
+- PDF: `exportChatPdf.js` — danışan–personel denetim kaydı indirme (`html2pdf.js`, lazy import)
 
 ### Responsive düzen (2026-06-26)
 
@@ -2867,9 +2901,19 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 
 **Dosyalar:** `src/components/chat/ChatWorkspace.jsx`, `src/hooks/useMediaQuery.js`
 
-**Mobil rotalar:** Üye `/messages/:role`, personel `/staff/messages/:memberId` — geri ile liste rotasına dönülür.
+**Mobil rotalar:** Üye `/messages/:role`, personel `/staff/messages/:memberId`, admin `/admin/messages/staff/:staffId` ve `/admin/messages/audit/:threadId` — geri ile liste rotasına dönülür.
+
+### Presence broadcast (2026-06-27)
+
+`presenceService.js` istatistik yayını için Supabase Realtime **`httpSend('stats', payload)`** kullanır (ephemeral kanal + `removeChannel`). Eski `.send()` REST fallback uyarısı kaldırıldı. Abone tarafı: `subscribeOnlineStats()` — broadcast + 30 sn poll yedek.
+
+### Müşteri arayüzü & Telegram (2026-06-27)
+
+- **YZ/AI ifadeleri kaldırıldı** — kalori, dashboard beslenme ipuçları, profil, gizlilik metni; hata mesajları teknik detay göstermez (`formatAiError`).
+- **Kalori → Telegram kaldırıldı** — `notifyCalorieChatMessage` silindi; `api/calorie-chat-notify.js` deprecated.
+- **Başvuru Telegram'ı ayrıldı** — `api/application-notify.js` + `TELEGRAM_STAFF_APPLICATION_CHAT_ID`, `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID`; mesajda yalnızca iletişim bilgileri.
 
 ### Dosyalar
 
-`src/services/chatDb.js`, `src/utils/chatAccess.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useMediaQuery.js`
+`src/services/chatDb.js`, `src/services/adminChatDb.js`, `src/utils/chatAccess.js`, `src/utils/exportChatPdf.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/pages/staff/StaffAdminMessagesPage.jsx`, `src/pages/admin/AdminMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useMediaQuery.js`
 

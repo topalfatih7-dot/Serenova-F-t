@@ -3,6 +3,18 @@ import { supabase } from './supabaseClient'
 const OFFLINE_MS = 90_000
 const HEARTBEAT_MS = 30_000
 
+async function broadcastPresenceStats(stats) {
+  if (!supabase || !stats) return
+  const channel = supabase.channel('presence:stats', { config: { broadcast: { self: false } } })
+  try {
+    await channel.httpSend('stats', stats)
+  } catch {
+    // Non-critical — subscribeOnlineStats also polls get_online_stats
+  } finally {
+    await supabase.removeChannel(channel)
+  }
+}
+
 export async function fetchOnlineStats() {
   const { data, error } = await supabase.rpc('get_online_stats')
   if (error) return { onlineNow: 0, totalMembers: 0 }
@@ -62,8 +74,7 @@ export async function pingPresence({ userId, email, name, role, pagePath }) {
   if (error) return null
 
   const stats = await fetchOnlineStats()
-  supabase.channel('presence:stats', { config: { broadcast: { self: false } } })
-    .send({ type: 'broadcast', event: 'stats', payload: stats })
+  void broadcastPresenceStats(stats)
   return stats
 }
 
@@ -71,8 +82,7 @@ export async function clearPresence(userId) {
   if (!userId) return
   await supabase.from('user_presence').delete().eq('user_id', userId)
   const stats = await fetchOnlineStats()
-  supabase.channel('presence:stats', { config: { broadcast: { self: false } } })
-    .send({ type: 'broadcast', event: 'stats', payload: stats })
+  void broadcastPresenceStats(stats)
 }
 
 export function subscribeOnlineStats(onStats) {

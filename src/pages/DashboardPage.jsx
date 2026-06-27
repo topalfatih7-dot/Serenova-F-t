@@ -187,16 +187,11 @@ function HealthAnalysisPanel({ analysis }) {
                 </div>
               )}
 
-              {/* Beslenme İpuçları (AI) */}
+              {/* Beslenme İpuçları */}
               {(dietitianRecommendations?.tips?.length > 0 || !dietitianRecommendations?.aiGenerated) && (
                 <div>
                   <p className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-cream-900">
                     <Salad className="h-4 w-4 text-sage-500" /> Beslenme İpuçları
-                    {dietitianRecommendations?.aiGenerated && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
-                        <Sparkles className="h-3 w-3" /> AI
-                      </span>
-                    )}
                   </p>
                   {dietitianRecommendations?.focus && (
                     <p className="mb-3 rounded-xl border border-sage-100 bg-sage-50/60 px-3 py-2 text-xs leading-relaxed text-sage-900">
@@ -205,7 +200,7 @@ function HealthAnalysisPanel({ analysis }) {
                     </p>
                   )}
                   {!dietitianRecommendations?.tips?.length ? (
-                    <p className="text-xs text-cream-800/60">AI beslenme ipuçları hazırlanıyor…</p>
+                    <p className="text-xs text-cream-800/60">Beslenme ipuçları hazırlanıyor…</p>
                   ) : (
                   <ul className="space-y-1.5">
                     {dietitianRecommendations.tips

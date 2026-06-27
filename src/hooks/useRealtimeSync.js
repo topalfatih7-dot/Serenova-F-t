@@ -3,6 +3,7 @@ import { supabase } from '../services/supabaseClient'
 import { fetchActiveUsers } from '../services/presenceService'
 import { rowToTicket, rowToMember } from '../services/supabaseDb'
 import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
+import { rowToAdminStaffThread, rowToAdminStaffMessage } from '../services/adminChatDb'
 
 export function useActiveUsers(isAdmin) {
   const [activeUsers, setActiveUsers] = useState([])
@@ -38,6 +39,8 @@ export function subscribeRealtimeSync({
   onMemberChange,
   onChatThreadChange,
   onChatMessageChange,
+  onAdminStaffThreadChange,
+  onAdminStaffMessageChange,
 }) {
   if (!supabase || !session) return () => {}
 
@@ -80,6 +83,29 @@ export function subscribeRealtimeSync({
     })
     .subscribe()
   channels.push(chatMessageChannel)
+
+  const adminStaffThreadChannel = supabase
+    .channel('admin-staff-threads-sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_staff_threads' }, (payload) => {
+      if (!payload.new && payload.eventType === 'DELETE') return
+      if (payload.new) {
+        const thread = rowToAdminStaffThread(payload.new)
+        if (session.type === 'staff' && String(thread.staffId) !== String(staffId)) return
+        onAdminStaffThreadChange?.(thread)
+      }
+    })
+    .subscribe()
+  channels.push(adminStaffThreadChannel)
+
+  const adminStaffMessageChannel = supabase
+    .channel('admin-staff-messages-sync')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_staff_messages' }, (payload) => {
+      if (payload.new) {
+        onAdminStaffMessageChange?.(rowToAdminStaffMessage(payload.new))
+      }
+    })
+    .subscribe()
+  channels.push(adminStaffMessageChannel)
 
   if (session.type === 'member' && memberId) {
     const memberChannel = supabase

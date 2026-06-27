@@ -121,7 +121,7 @@ export default function ProfilePage() {
   const quickLinks = [
     { to: '/programs', icon: ClipboardList, label: 'Programlarım', sub: `${myPrograms.length} program`, color: 'from-brand-500 to-brand-600' },
     { to: '/calendar', icon: CalendarDays, label: 'Takvim', sub: 'Müsaitlik', color: 'from-sage-500 to-emerald-600' },
-    { to: '/calorie', icon: Flame, label: 'Kalori', sub: 'AI analiz', color: 'from-amber-500 to-orange-600' },
+    { to: '/calorie', icon: Flame, label: 'Kalori', sub: 'Tahmini hesap', color: 'from-amber-500 to-orange-600' },
     { to: '/support', icon: Shield, label: 'Destek', sub: 'Yardım & talepler', color: 'from-violet-500 to-purple-600' },
   ]
 

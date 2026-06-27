@@ -8,7 +8,7 @@ const WHY_ITEMS = [
   { icon: Heart, title: 'Kişiye özel koçluk', accent: 'from-rose-400 to-brand-500' },
   { icon: Dumbbell, title: 'Evde antrenman rehberliği', accent: 'from-brand-400 to-brand-600' },
   { icon: Apple, title: 'Beslenme & diyetisyen desteği', accent: 'from-sage-400 to-sage-600' },
-  { icon: Calendar, title: 'Akıllı takvim & hatırlatıcılar', accent: 'from-brand-300 to-sage-500' },
+  { icon: Calendar, title: 'Takvim & hatırlatıcılar', accent: 'from-brand-300 to-sage-500' },
   { icon: Users, title: 'Destekleyici topluluk', accent: 'from-warm-400 to-brand-500' },
   { icon: TrendingUp, title: 'İlerleme takibi & raporlar', accent: 'from-mint-400 to-sage-500' },
   { icon: Sparkles, title: 'Ücretsiz veya Premium esneklik', accent: 'from-gold-400 to-warm-500' },

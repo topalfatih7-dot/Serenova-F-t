@@ -79,6 +79,15 @@ export async function fetchChatThreadsForStaff(staffId) {
   return (data || []).map(rowToChatThread)
 }
 
+export async function fetchAllChatThreadsForAdmin() {
+  const { data, error } = await supabase
+    .from('chat_threads')
+    .select('*')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+  if (error) return []
+  return (data || []).map(rowToChatThread)
+}
+
 export async function fetchChatMessages(threadId, limit = 200) {
   const { data, error } = await supabase
     .from('chat_messages')
@@ -209,6 +218,9 @@ export async function ensureStaffChatThreads(staff, clients = []) {
 
 export async function hydrateChatThreads(session, member, staffList, staffUser, members) {
   if (!session) return []
+  if (session.type === 'admin') {
+    return fetchAllChatThreadsForAdmin()
+  }
   if (session.type === 'member' && member) {
     return ensureMemberChatThreads(member, staffList)
   }

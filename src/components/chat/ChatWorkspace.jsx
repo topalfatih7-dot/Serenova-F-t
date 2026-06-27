@@ -46,11 +46,16 @@ export function ChatPageFrame({ children, className = '' }) {
   )
 }
 
-export function ChatThreadHeader({ title, subtitle }) {
+export function ChatThreadHeader({ title, subtitle, actions }) {
   return (
     <div className="shrink-0 border-b border-cream-100 px-3 py-2.5 sm:px-4 md:px-5">
-      <p className="truncate font-display text-base font-bold text-cream-900 sm:text-lg">{title}</p>
-      {subtitle && <p className="truncate text-xs text-cream-800/55">{subtitle}</p>}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-base font-bold text-cream-900 sm:text-lg">{title}</p>
+          {subtitle && <p className="truncate text-xs text-cream-800/55">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      </div>
     </div>
   )
 }

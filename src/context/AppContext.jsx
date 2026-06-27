@@ -18,7 +18,8 @@ import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
 import * as chatDb from '../services/chatDb'
-import { totalUnreadThreads } from '../utils/chatAccess'
+import * as adminChatDb from '../services/adminChatDb'
+import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads } from '../utils/chatAccess'
 
 const AppContext = createContext(null)
 
@@ -34,6 +35,8 @@ export function AppProvider({ children }) {
   const [syncing, setSyncing] = useState(false)
   const [chatThreads, setChatThreads] = useState([])
   const [chatMessages, setChatMessages] = useState({})
+  const [adminStaffThreads, setAdminStaffThreads] = useState([])
+  const [adminStaffMessages, setAdminStaffMessages] = useState({})
   const chatHydratedKey = useRef(null)
 
   const reloadRemote = useCallback(async () => {
@@ -88,6 +91,8 @@ export function AppProvider({ children }) {
     if (!isSupabaseEnabled || !remoteDb?.session) {
       setChatThreads([])
       setChatMessages({})
+      setAdminStaffThreads([])
+      setAdminStaffMessages({})
       chatHydratedKey.current = null
       return undefined
     }
@@ -99,15 +104,23 @@ export function AppProvider({ children }) {
     ;(async () => {
       const member = remoteDb.members?.find((m) => m.id === session.memberId)
       const staffUser = remoteDb.staff?.find((s) => s.id === session.staffId)
-      const threads = await chatDb.hydrateChatThreads(
-        session,
-        member,
-        remoteDb.staff || [],
-        staffUser,
-        remoteDb.members || [],
-      )
+      const [threads, adminThreads] = await Promise.all([
+        chatDb.hydrateChatThreads(
+          session,
+          member,
+          remoteDb.staff || [],
+          staffUser,
+          remoteDb.members || [],
+        ),
+        adminChatDb.hydrateAdminStaffThreads(
+          session,
+          remoteDb.staff || [],
+          staffUser,
+        ),
+      ])
       if (active) {
         setChatThreads(threads)
+        setAdminStaffThreads(adminThreads)
         chatHydratedKey.current = key
       }
     })()
@@ -115,12 +128,22 @@ export function AppProvider({ children }) {
   }, [remoteDb?.session, remoteDb?.members, remoteDb?.staff])
 
   const chatUnreadCount = useMemo(() => {
-    const perspective = isStaff ? 'staff' : 'member'
-    const list = isStaff
-      ? chatThreads.filter((t) => String(t.staffId) === String(currentStaff?.id))
-      : chatThreads
-    return totalUnreadThreads(list, perspective)
+    if (isStaff) {
+      return totalUnreadThreads(
+        chatThreads.filter((t) => String(t.staffId) === String(currentStaff?.id)),
+        'staff',
+      )
+    }
+    return totalUnreadThreads(chatThreads, 'member')
   }, [chatThreads, isStaff, currentStaff?.id])
+
+  const staffAdminUnreadCount = useMemo(() => (
+    adminStaffThreads.reduce((sum, t) => sum + adminStaffThreadUnreadCount(t, 'staff'), 0)
+  ), [adminStaffThreads])
+
+  const adminStaffUnreadCount = useMemo(() => (
+    adminStaffThreads.reduce((sum, t) => sum + adminStaffThreadUnreadCount(t, 'admin'), 0)
+  ), [adminStaffThreads])
 
   const loadChatMessages = useCallback(async (threadId) => {
     const messages = await chatDb.fetchChatMessages(threadId)
@@ -155,6 +178,49 @@ export function AppProvider({ children }) {
     }
     return updated
   }, [])
+
+  const loadAdminStaffMessages = useCallback(async (threadId) => {
+    const messages = await adminChatDb.fetchAdminStaffMessages(threadId)
+    setAdminStaffMessages((prev) => ({ ...prev, [threadId]: messages }))
+    return messages
+  }, [])
+
+  const sendAdminStaffMessage = useCallback(async (thread, senderType, senderId, text) => {
+    const r = await adminChatDb.sendAdminStaffMessage({ thread, senderType, senderId, text })
+    if (r.success) {
+      setAdminStaffMessages((prev) => ({
+        ...prev,
+        [thread.id]: [...(prev[thread.id] || []), r.message],
+      }))
+      setAdminStaffThreads((prev) => prev.map((t) => (t.id === thread.id ? r.thread : t)))
+    }
+    return r
+  }, [])
+
+  const markAdminStaffThreadRead = useCallback(async (threadId, readerType) => {
+    const updated = await adminChatDb.markAdminStaffThreadRead(threadId, readerType)
+    if (updated) {
+      setAdminStaffThreads((prev) => prev.map((t) => (t.id === threadId ? updated : t)))
+    }
+    return updated
+  }, [])
+
+  const ensureAdminStaffThread = useCallback(async (staff) => {
+    const thread = await adminChatDb.getOrCreateAdminStaffThread(staff)
+    if (thread) {
+      setAdminStaffThreads((prev) => {
+        const idx = prev.findIndex((t) => String(t.staffId) === String(thread.staffId))
+        if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
+        return [thread, ...prev]
+      })
+    }
+    return thread
+  }, [])
+
+  const sortedAdminStaffThreads = useMemo(() => {
+    const perspective = isStaff ? 'staff' : 'admin'
+    return sortAdminStaffThreads(adminStaffThreads, perspective)
+  }, [adminStaffThreads, isStaff])
 
   useEffect(() => {
     if (!isSupabaseEnabled || !isAuthenticated) return undefined
@@ -214,6 +280,20 @@ export function AppProvider({ children }) {
       },
       onChatMessageChange: (message) => {
         setChatMessages((prev) => {
+          const list = prev[message.threadId] || []
+          if (list.some((m) => m.id === message.id)) return prev
+          return { ...prev, [message.threadId]: [...list, message] }
+        })
+      },
+      onAdminStaffThreadChange: (thread) => {
+        setAdminStaffThreads((prev) => {
+          const idx = prev.findIndex((t) => t.id === thread.id)
+          if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
+          return [thread, ...prev]
+        })
+      },
+      onAdminStaffMessageChange: (message) => {
+        setAdminStaffMessages((prev) => {
           const list = prev[message.threadId] || []
           if (list.some((m) => m.id === message.id)) return prev
           return { ...prev, [message.threadId]: [...list, message] }
@@ -583,10 +663,18 @@ export function AppProvider({ children }) {
     chatThreads,
     chatMessages,
     chatUnreadCount,
+    adminStaffThreads: sortedAdminStaffThreads,
+    adminStaffMessages,
+    adminStaffUnreadCount,
+    staffAdminUnreadCount,
     loadChatMessages,
     sendChatMessage,
     markChatThreadRead,
     acceptChatConsent,
+    loadAdminStaffMessages,
+    sendAdminStaffMessage,
+    markAdminStaffThreadRead,
+    ensureAdminStaffThread,
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},

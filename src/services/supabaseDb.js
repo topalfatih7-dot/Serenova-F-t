@@ -11,6 +11,7 @@ import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
+import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
@@ -999,6 +1000,13 @@ export async function submitStaffApplication(form) {
 
   if (error) return { success: false, error: error.message }
   await addActivity('staff_apply', `${form.name} (${staffRoleLabel(form.role)}) kadro başvurusu gönderdi`)
+  notifyStaffApplicationTelegram({
+    name: form.name?.trim(),
+    email: form.email?.trim().toLowerCase(),
+    phone: form.phone?.trim() || '',
+    role: form.role,
+    roleLabel: staffRoleLabel(form.role),
+  })
   return { success: true, id: data }
 }
 
@@ -1077,6 +1085,12 @@ export async function submitCorporateApplication(form) {
   })
   if (error) return { success: false, error: error.message }
   await addActivity('corporate_apply', `${form.companyName} kurumsal başvuru gönderdi`)
+  notifyCorporateApplicationTelegram({
+    companyName: form.companyName?.trim(),
+    contactName: form.contactName?.trim(),
+    email: form.email?.trim().toLowerCase(),
+    phone: form.phone?.trim() || '',
+  })
   return { success: true, id: data }
 }
 

@@ -1,41 +1,16 @@
 /**
- * Kalori chat — AI metin analizi + Telegram bildirimi.
+ * Kalori chat — metin analizi servisi.
  */
 
 import { formatAiError } from '../utils/aiErrors.js'
 import { getApiAuthHeaders } from './apiAuth.js'
 
-const NOTIFY_SECRET = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET || ''
-
-async function notifyHeaders() {
-  const h = await getApiAuthHeaders()
-  if (NOTIFY_SECRET) h['X-Notify-Secret'] = NOTIFY_SECRET
-  return h
-}
-
-/** AI chat — varsayılan açık; yalnızca VITE_AI_*_ENABLED=false ile kapatılır. */
+/** Kalori analizi — varsayılan açık; yalnızca VITE_AI_*_ENABLED=false ile kapatılır. */
 export function isCalorieAiEnabled() {
   const chat = import.meta.env.VITE_AI_CHAT_ENABLED
   const vision = import.meta.env.VITE_AI_VISION_ENABLED
   if (chat === 'false' && vision === 'false') return false
   return chat !== 'false' || vision !== 'false'
-}
-
-/**
- * Chat mesajını Bize Ulaşın Telegram chat'ine iletir (fire-and-forget).
- */
-export async function notifyCalorieChatMessage({ text, userName, userEmail, membership }) {
-  try {
-    const res = await fetch('/api/calorie-chat-notify', {
-      method: 'POST',
-      headers: await notifyHeaders(),
-      body: JSON.stringify({ text, userName, userEmail, membership }),
-    })
-    const data = await res.json().catch(() => ({}))
-    return { ok: res.ok && data.ok, error: data.error }
-  } catch (e) {
-    return { ok: false, error: String(e.message || e) }
-  }
 }
 
 /**

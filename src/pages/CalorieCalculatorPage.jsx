@@ -12,7 +12,6 @@ import { hasPhotoCalorieAccess, hasManualCalorieAccess } from '../data/membershi
 import { analyzeFoodPhoto } from '../services/aiVision'
 import {
   analyzeFoodText,
-  notifyCalorieChatMessage,
   formatAnalysisReply,
 } from '../services/calorieChat'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
@@ -66,7 +65,7 @@ export default function CalorieCalculatorPage() {
       id: 0,
       role: 'system',
       type: 'info',
-      content: 'Merhaba! Ne yediğinizi yazın — AI kalori analizi yapacak.\nÖrnek: “2 yumurta, 1 dilim ekmek, 1 kase yoğurt”',
+      content: 'Merhaba! Ne yediğinizi yazın — tahmini kalori değerlerini hesaplayalım.\nÖrnek: “2 yumurta, 1 dilim ekmek, 1 kase yoğurt”',
     },
   ])
   const [chatInput, setChatInput] = useState('')
@@ -95,13 +94,6 @@ export default function CalorieCalculatorPage() {
     setChatMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: 'user', content: text }])
     setChatProcessing(true)
 
-    notifyCalorieChatMessage({
-      text,
-      userName: user?.name || user?.email?.split('@')[0] || 'Üye',
-      userEmail: user?.email || '',
-      membership,
-    }).catch(() => {})
-
     const result = await analyzeFoodText(text)
     if (result.ok) {
       setLastAnalysis(result)
@@ -124,7 +116,7 @@ export default function CalorieCalculatorPage() {
           id: `e-${Date.now()}`,
           role: 'system',
           type: 'error',
-          content: result.error || 'AI analizi yapılamadı. Lütfen birkaç dakika sonra tekrar deneyin.',
+          content: result.error || 'Analiz yapılamadı. Lütfen birkaç dakika sonra tekrar deneyin.',
         },
       ])
     }
@@ -157,7 +149,7 @@ export default function CalorieCalculatorPage() {
       toast('Fotoğrafta yemek tespit edilemedi.', 'warning')
       setPhotoResult({ label: 'Tespit Edilemedi', items: [] })
     } else {
-      toast(result.error || 'AI analizi yapılamadı.', 'error')
+      toast(result.error || 'Analiz yapılamadı.', 'error')
     }
   }
 
@@ -204,7 +196,7 @@ export default function CalorieCalculatorPage() {
 
       <PanelPageHeader
         title="Kalori Hesapla"
-        subtitle={isPlatinum ? 'Yazarak veya fotoğrafla AI kalori analizi' : 'Ne yediğinizi yazın, AI analiz etsin'}
+        subtitle={isPlatinum ? 'Yazarak veya fotoğrafla tahmini kalori hesabı' : 'Ne yediğinizi yazın, tahmini kalori değerlerini görün'}
         icon={Flame}
         accent="flame"
       />
@@ -241,7 +233,7 @@ export default function CalorieCalculatorPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-cream-900">Ne Yediniz?</p>
-                  <p className="text-xs text-cream-800/50">Mesajınız ekibimize iletilir ve AI kalori analizi yapar</p>
+                  <p className="text-xs text-cream-800/50">Yazdığınız öğün için tahmini kalori değerleri hesaplanır</p>
                 </div>
               </div>
 
@@ -327,7 +319,7 @@ export default function CalorieCalculatorPage() {
                     <div className="flex items-start gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                       <p className="text-xs leading-relaxed text-brand-800">
-                        Fotoğraf yüklendi. AI analizi başlatmadan önce görseli kontrol edin; isterseniz silebilirsiniz.
+                        Fotoğraf yüklendi. Analizi başlatmadan önce görseli kontrol edin; isterseniz silebilirsiniz.
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -336,7 +328,7 @@ export default function CalorieCalculatorPage() {
                         onClick={handlePhotoAnalyze}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105"
                       >
-                        <ScanLine className="h-4 w-4" /> AI ile Analiz Et
+                        <ScanLine className="h-4 w-4" /> Analiz Et
                       </button>
                       <button
                         type="button"

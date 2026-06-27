@@ -1,22 +1,22 @@
-/** AI API hatalarını kullanıcı dostu Türkçe mesaja çevirir */
+/** Analiz API hatalarını kullanıcı dostu Türkçe mesaja çevirir (müşteriye teknik detay göstermez). */
 export function formatAiError(error, code) {
   const raw = String(error || '')
-  const c = code || (raw.includes('429') ? 'quota_exceeded' : null)
+  const c = code || ''
 
-  if (c === 'quota_exceeded' || raw.includes('429') || raw.toLowerCase().includes('quota')) {
-    return 'AI kullanım limitine ulaşıldı. Birkaç dakika bekleyip tekrar deneyin veya Google AI Studio kotanızı kontrol edin.'
+  if (c === 'rate_limit' || raw.includes('429') || raw.toLowerCase().includes('quota')) {
+    return 'Analiz limitine ulaşıldı. Birkaç dakika bekleyip tekrar deneyin.'
   }
   if (c === 'network_error' || raw === 'Failed to fetch' || raw.toLowerCase().includes('fetch failed')) {
-    return 'AI sunucusuna bağlanılamadı. Uygulamayı terminalde npm run dev ile çalıştırdığınızdan emin olun.'
+    return 'Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
   }
-  if (raw.includes('GEMINI_API_KEY') || raw.includes('yapılandırması eksik')) {
-    return 'AI yapılandırması eksik. GEMINI_API_KEY tanımlayın.'
+  if (raw.includes('yapılandırması eksik') || raw.includes('503')) {
+    return 'Kalori analizi şu an kullanılamıyor. Lütfen daha sonra tekrar deneyin.'
   }
-  if (raw.includes('503')) {
-    return 'AI servisi şu an kullanılamıyor. Lütfen daha sonra tekrar deneyin.'
+  if (raw.includes('503') || raw.includes('502')) {
+    return 'Analiz servisi geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.'
   }
-  if (raw.length > 180) {
-    return 'AI analizi başarısız oldu. Lütfen tekrar deneyin.'
+  if (raw && !raw.includes('GEMINI') && !raw.includes('API')) {
+    return raw.slice(0, 180)
   }
-  return raw || 'AI analizi başarısız oldu.'
+  return 'Analiz tamamlanamadı. Lütfen tekrar deneyin.'
 }

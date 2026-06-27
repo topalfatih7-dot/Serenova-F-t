@@ -44,6 +44,7 @@ const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
 const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
 const StaffMessagesPage = lazy(() => import('./pages/staff/StaffMessagesPage'))
+const StaffAdminMessagesPage = lazy(() => import('./pages/staff/StaffAdminMessagesPage'))
 const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const StaffLibraryGate = lazy(() => import('./components/staff/StaffLibraryGate'))
 const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagementPage'))
@@ -56,6 +57,7 @@ const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptio
 const AdminSessionsPage = lazy(() => import('./pages/admin/AdminSessionsPage'))
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'))
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const AdminMessagesPage = lazy(() => import('./pages/admin/AdminMessagesPage'))
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
@@ -137,6 +139,7 @@ export default function App() {
                 <Route path="staff/clients" element={<StaffClientsPage />} />
                 <Route path="staff/messages" element={<StaffMessagesPage />} />
                 <Route path="staff/messages/:memberId" element={<StaffMessagesPage />} />
+                <Route path="staff/admin-messages" element={<StaffAdminMessagesPage />} />
                 <Route path="staff/programs" element={<StaffProgramsPage />} />
                 <Route path="staff/lists" element={<StaffListsPage />} />
                 <Route path="staff/library" element={<StaffLibraryGate />} />
@@ -159,6 +162,10 @@ export default function App() {
                 <Route path="admin/payments" element={<PaymentManagementPage audience="admin" />} />
                 <Route path="admin/sessions" element={<AdminSessionsPage />} />
                 <Route path="admin/support" element={<AdminSupportPage />} />
+                <Route path="admin/messages" element={<AdminMessagesPage />} />
+                <Route path="admin/messages/staff/:staffId" element={<AdminMessagesPage />} />
+                <Route path="admin/messages/audit" element={<AdminMessagesPage />} />
+                <Route path="admin/messages/audit/:threadId" element={<AdminMessagesPage />} />
                 <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
                 <Route path="admin/activity" element={<AdminActivityPage />} />
               </Route>

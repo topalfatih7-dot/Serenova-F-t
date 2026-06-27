@@ -64,7 +64,7 @@ export const LEGAL_DOCUMENTS = {
       },
       {
         heading: 'Üçüncü Taraflar',
-        body: 'Stripe (ödeme), Supabase (veritabanı), Google (analitik/AI hizmetleri), Daily.co (video görüşme) gibi hizmet sağlayıcılar yalnızca hizmet sunumu için veriye erişir.',
+        body: 'Stripe (ödeme), Supabase (veritabanı), Google (analitik), Daily.co (video görüşme) gibi hizmet sağlayıcılar yalnızca hizmet sunumu için veriye erişir.',
       },
       {
         heading: 'Güvenlik',

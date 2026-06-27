@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, Sparkles,
   User, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle,
-  Dumbbell, HeartPulse, Shield, ArrowRight, ArrowLeft,
+  Dumbbell, HeartPulse, ArrowRight, ArrowLeft,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import PaymentForm from '../components/payment/PaymentForm'
@@ -23,8 +23,6 @@ import { isStripeEnabled } from '../config/stripe'
 import { startStripeCheckout } from '../services/stripePayment'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
-import MembershipReassurance from '../components/membership/MembershipReassurance'
-
 const STEPS = ['Hesap', 'Üyelik']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
@@ -32,7 +30,6 @@ const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 const BENEFITS = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman & beslenme programları' },
   { icon: HeartPulse, text: 'Uzman koç ve diyetisyen desteği' },
-  { icon: Shield, text: 'KVKK uyumlu, güvenli ödeme altyapısı' },
 ]
 
 function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan }) {
@@ -107,9 +104,6 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
         </p>
 
         <div className="mt-8 rounded-3xl border border-cream-200 bg-white/95 p-5 shadow-lg shadow-brand-900/5 backdrop-blur sm:p-8">
-          <div className="mb-6">
-            <MembershipReassurance compact />
-          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {plans.map((m, idx) => (
               <MembershipPlanCard
@@ -407,10 +401,6 @@ export default function OnboardingPage() {
                 ? 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.'
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
-
-            <div className="mt-5">
-              <MembershipReassurance compact />
-            </div>
 
             <div className="mt-6">
               <Stepper steps={STEPS} currentStep={step} maxReached={maxReached} onStepClick={(t) => t <= maxReached && setStep(t)} />

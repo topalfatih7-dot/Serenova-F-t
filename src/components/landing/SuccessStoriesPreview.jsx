@@ -8,14 +8,16 @@ const AVATAR_RINGS = [
   'from-amber-400 to-orange-500',
 ]
 
-function StoryPhoto({ className = '' }) {
+function StoryPhoto({ className = '', variant = 'banner' }) {
+  const aspectClass = variant === 'sidebar' ? 'aspect-[4/5] w-full' : 'aspect-[16/10] w-full'
+
   return (
     <div className={`relative overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-black/5 ${className}`}>
-      <div className="aspect-[4/5] w-full sm:aspect-[16/12] md:aspect-[4/5]">
+      <div className={aspectClass}>
         <img
           src="/success-stories-bg.jpg"
           alt="Antrenman yapan erkek üye — dönüşüm hikayesi"
-          className="h-full w-full object-cover object-left lg:object-[20%_center]"
+          className="h-full w-full object-cover object-[30%_center]"
           loading="lazy"
           decoding="async"
         />
@@ -125,25 +127,25 @@ export default function SuccessStoriesPreview({ stories = [] }) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative mb-10 md:hidden"
+          className="relative mb-10 overflow-hidden rounded-3xl lg:hidden"
         >
-          <StoryPhoto />
+          <StoryPhoto variant="banner" />
         </motion.div>
 
-        <div className="grid items-start gap-10 md:grid-cols-12 md:gap-8 lg:gap-12">
-          <div className="min-w-0 md:col-span-7">
+        <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="min-w-0 lg:col-span-7">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center md:text-left"
+              className="text-center lg:text-left"
             >
               <span className="section-badge inline-flex items-center gap-1.5">
                 <Trophy className="h-3.5 w-3.5" />
                 Dönüşümler
               </span>
               <h2 className="section-title mt-4">Gerçek Başarı Hikayeleri</h2>
-              <p className="section-subtitle mx-auto !mt-3 max-w-xl md:mx-0">
+              <p className="section-subtitle mx-auto !mt-3 max-w-xl lg:mx-0">
                 Topluluğumuzdan ilham veren yolculuklar. Sonuçlar kişiden kişiye değişir.
               </p>
             </motion.div>
@@ -178,8 +180,8 @@ export default function SuccessStoriesPreview({ stories = [] }) {
 
               <div
                 ref={scrollRef}
-                className={`-mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 pt-2 [scrollbar-width:thin] md:mx-0 ${
-                  showArrows ? 'px-14 sm:px-16' : 'px-4 md:px-0'
+                className={`-mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 pt-2 [scrollbar-width:thin] lg:mx-0 ${
+                  showArrows ? 'px-14 sm:px-16' : 'px-4 lg:px-0'
                 }`}
               >
                 {approved.map((story, i) => (
@@ -199,18 +201,18 @@ export default function SuccessStoriesPreview({ stories = [] }) {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="relative hidden md:col-span-5 md:block"
+            className="relative hidden lg:col-span-5 lg:block"
           >
             <div className="sticky top-24">
-              <StoryPhoto />
+              <StoryPhoto variant="sidebar" />
             </div>
             <div
               aria-hidden
-              className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-3xl bg-gradient-to-br from-brand-100 to-sage-100"
+              className="absolute -bottom-3 -left-3 -z-10 h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] rounded-3xl bg-gradient-to-br from-brand-100 to-sage-100"
             />
           </motion.div>
         </div>

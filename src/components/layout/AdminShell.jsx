@@ -1,6 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, CreditCard, Calendar, MessageSquare,
+  LayoutDashboard, Users, CreditCard, Calendar, MessageSquare, MessageCircle,
   BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
@@ -23,6 +23,7 @@ const adminNav = [
   { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonelikler' },
   { to: '/admin/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
+  { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri' },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog' },
   { to: '/admin/content', icon: Sparkles, label: 'İçerik' },
@@ -31,7 +32,12 @@ const adminNav = [
 ]
 
 export default function AdminShell() {
-  const { logout } = useApp()
+  const { logout, adminStaffUnreadCount } = useApp()
+
+  const navWithBadges = adminNav.map((item) => ({
+    ...item,
+    badgeCount: item.chatBadge ? adminStaffUnreadCount : 0,
+  }))
 
   return (
     <div className="admin-panel-bg relative flex min-h-screen overflow-hidden">
@@ -45,7 +51,7 @@ export default function AdminShell() {
           </span>
         </div>
         <nav className="flex-1 space-y-1 p-3">
-          {adminNav.map((item) => (
+          {navWithBadges.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -57,7 +63,12 @@ export default function AdminShell() {
               }
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.chatBadge && adminStaffUnreadCount > 0 && (
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                  {adminStaffUnreadCount > 9 ? '9+' : adminStaffUnreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -74,7 +85,7 @@ export default function AdminShell() {
 
       <div className="relative flex flex-1 flex-col">
         <PanelMobileMenu
-          navItems={adminNav}
+          navItems={navWithBadges}
           brandLink="/admin"
           badge={{ label: 'Admin Panel', className: 'bg-cream-900 text-white' }}
           accent="admin"

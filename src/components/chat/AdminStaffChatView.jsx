@@ -1,28 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Send, Dumbbell, Apple, UserRound, Info, Radio } from 'lucide-react'
+import { Send, Shield, UserRound, Radio } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
-const ROLE_META = {
-  coach: {
+const SENDER_META = {
+  admin: {
+    own: 'bg-gradient-to-br from-cream-900 to-cream-800 text-white shadow-md shadow-cream-900/20',
+    other: 'bg-gradient-to-br from-brand-50 to-violet-50 text-cream-900 ring-1 ring-brand-100',
+    label: 'Admin',
+    icon: Shield,
+  },
+  staff: {
     own: 'bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-md shadow-brand-200/40',
     other: 'bg-gradient-to-br from-brand-50 to-violet-50 text-cream-900 ring-1 ring-brand-100',
-    icon: Dumbbell,
-    staffLabel: 'Koç',
-  },
-  dietitian: {
-    own: 'bg-gradient-to-br from-sage-500 to-emerald-600 text-white shadow-md shadow-sage-200/40',
-    other: 'bg-gradient-to-br from-sage-50 to-emerald-50 text-cream-900 ring-1 ring-sage-100',
-    icon: Apple,
-    staffLabel: 'Diyetisyen',
+    label: 'Personel',
+    icon: UserRound,
   },
 }
 
-export default function ChatThreadView({
+export default function AdminStaffChatView({
   messages = [],
-  perspective = 'member',
-  staffRole = 'coach',
+  perspective = 'admin',
   onSend,
   disabled = false,
   readOnly = false,
@@ -31,8 +30,6 @@ export default function ChatThreadView({
 }) {
   const [text, setText] = useState('')
   const scrollRef = useRef(null)
-  const meta = ROLE_META[staffRole] || ROLE_META.coach
-  const StaffIcon = meta.icon
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -46,15 +43,15 @@ export default function ChatThreadView({
   }
 
   const labelFor = (m) => {
-    if (m.senderType === 'system') return 'Sistem'
-    if (m.senderType === 'staff') return meta.staffLabel
-    return 'Siz'
+    if (m.senderType === 'admin') return 'Admin'
+    if (m.senderType === 'staff') return remoteName || 'Personel'
+    return 'Sistem'
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {live && !readOnly && (
-        <div className="mb-2 hidden shrink-0 items-center gap-2 rounded-full bg-sage-50 px-3 py-1 sm:flex sm:text-xs font-semibold text-sage-700">
+        <div className="mb-2 hidden shrink-0 items-center gap-2 rounded-full bg-sage-50 px-3 py-1 font-semibold text-sage-700 sm:flex sm:text-xs">
           <Radio className="h-3.5 w-3.5 animate-pulse" />
           <span className="truncate">Canlı — mesajlar kayıt altına alınır</span>
         </div>
@@ -63,7 +60,7 @@ export default function ChatThreadView({
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3">
         {messages.length === 0 && (
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-cream-200 bg-cream-50/40 p-4 text-center">
-            <StaffIcon className="h-10 w-10 text-cream-300" />
+            <Shield className="h-10 w-10 text-cream-300" />
             <p className="mt-3 text-sm font-medium text-cream-800/70">
               {remoteName ? `${remoteName} ile sohbete başlayın` : 'İlk mesajınızı yazın'}
             </p>
@@ -71,15 +68,9 @@ export default function ChatThreadView({
           </div>
         )}
         {messages.map((m) => {
-          if (m.senderType === 'system') {
-            return (
-              <div key={m.id} className="mx-auto flex max-w-[92%] items-start gap-2 rounded-2xl bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-100">
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-pre-line">{m.text}</span>
-              </div>
-            )
-          }
-          const isOwn = (perspective === 'member' && m.senderType === 'member')
+          const meta = SENDER_META[m.senderType] || SENDER_META.staff
+          const Icon = meta.icon
+          const isOwn = (perspective === 'admin' && m.senderType === 'admin')
             || (perspective === 'staff' && m.senderType === 'staff')
           const bubbleCls = isOwn ? meta.own : meta.other
           return (
@@ -91,7 +82,7 @@ export default function ChatThreadView({
             >
               <div className={`max-w-[min(100%,20rem)] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[88%] sm:px-4 sm:py-2.5 ${bubbleCls}`}>
                 <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${isOwn ? 'text-white/75' : 'text-cream-800/45'}`}>
-                  {m.senderType === 'staff' ? <StaffIcon className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
+                  <Icon className="h-3 w-3" />
                   {labelFor(m)}
                 </div>
                 <p className="whitespace-pre-line leading-relaxed">{m.text}</p>
@@ -119,7 +110,7 @@ export default function ChatThreadView({
             whileTap={{ scale: 0.94 }}
             onClick={send}
             disabled={!text.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-md shadow-brand-200/50 disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-lg"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cream-900 to-cream-800 text-white shadow-md disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl"
             aria-label="Gönder"
           >
             <Send className="h-4 w-4" />

@@ -85,3 +85,27 @@ export function threadUnreadCount(thread, perspective = 'member') {
 export function totalUnreadThreads(threads, perspective = 'member') {
   return (threads || []).reduce((sum, t) => sum + threadUnreadCount(t, perspective), 0)
 }
+
+export function adminStaffThreadUnreadCount(thread, perspective = 'admin') {
+  if (!thread) return 0
+  const key = perspective === 'staff' ? 'staffUnread' : 'adminUnread'
+  return Number(thread[key] ?? thread.data?.[key] ?? 0)
+}
+
+export function sortAdminStaffThreads(threads, perspective = 'admin') {
+  const unreadKey = perspective === 'staff' ? 'staffUnread' : 'adminUnread'
+  return [...threads].sort((a, b) => {
+    const aUnread = Number(a[unreadKey] || a.data?.[unreadKey] || 0) > 0 ? 1 : 0
+    const bUnread = Number(b[unreadKey] || b.data?.[unreadKey] || 0) > 0 ? 1 : 0
+    if (bUnread !== aUnread) return bUnread - aUnread
+    const aTime = new Date(a.lastMessageAt || a.createdAt || 0).getTime()
+    const bTime = new Date(b.lastMessageAt || b.createdAt || 0).getTime()
+    return bTime - aTime
+  })
+}
+
+export function staffRoleLabel(role) {
+  if (role === 'dietitian') return 'Diyetisyen'
+  if (role === 'coach') return 'Koç'
+  return 'Personel'
+}

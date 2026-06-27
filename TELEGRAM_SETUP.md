@@ -57,8 +57,10 @@ Aşağıdakileri **Production**, **Preview** ve **Development** için ekleyin:
 | `TELEGRAM_BOT_TOKEN` | `123456789:AAH...` | BotFather token |
 | `TELEGRAM_CHAT_ID` | `123456789` | Giriş/kayıt bildirimleri chat id |
 | `TELEGRAM_CONTACT_CHAT_ID` | `-1009876543210` | **Bize Ulaşın** formu — ayrı chat/grup id |
+| `TELEGRAM_STAFF_APPLICATION_CHAT_ID` | `-100...` | **Kadro başvurusu** — yalnızca iletişim bilgileri |
+| `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` | `-100...` | **Kurumsal başvuru** — yalnızca iletişim bilgileri |
 
-> **İki ayrı chat:** Sistem bildirimleri (`TELEGRAM_CHAT_ID`) ile iletişim formu (`TELEGRAM_CONTACT_CHAT_ID`) farklı Telegram sohbetlerine gider. Aynı bot token kullanılır.
+> **Ayrı chat'ler:** Sistem bildirimleri, iletişim formu, kadro başvurusu ve kurumsal başvuru farklı Telegram sohbetlerine gider. Aynı bot token kullanılır; chat id'ler farklıdır.
 
 > **Önemli:** `TELEGRAM_BOT_TOKEN` **asla** `VITE_TELEGRAM_BOT_TOKEN` olarak eklemeyin. `VITE_` ile başlayan değişkenler tarayıcıya gider ve herkes görebilir.
 
@@ -188,16 +190,46 @@ curl -X POST "https://SITENIZ.vercel.app/api/contact" \
 
 Telegram iletişim grubunda mesaj görünmeli.
 
-### Form alanları
+---
 
-| Alan | Zorunlu |
-|------|---------|
-| Ad Soyad | Evet |
-| E-posta | Evet |
-| Telefon | Hayır |
-| Konu (seçim) | Evet |
-| Mesaj | Evet (min. 10 karakter) |
-| KVKK onayı | Evet |
+## Başvuru bildirimleri (ayrı Telegram chat'ler)
+
+Kadro ve kurumsal başvurular Supabase'e kaydedildikten sonra `/api/application-notify` üzerinden **yalnızca iletişim bilgileri** ile ayrı chat'lere gider. Başvuru detayları (CV, mesaj, paket seçimi vb.) Telegram'a **gönderilmez** — admin panelinden görülür.
+
+### Vercel env
+
+| Değişken | Açıklama |
+|----------|----------|
+| `TELEGRAM_STAFF_APPLICATION_CHAT_ID` | Kadro başvurusu (koç/diyetisyen) bildirimleri |
+| `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` | Kurumsal wellness başvuru bildirimleri |
+
+Chat ID'leri henüz yoksa değişkeni boş bırakmayın — Vercel'e eklendiğinde redeploy yeterli. Chat ID tanımlı değilse başvuru yine kaydedilir; Telegram bildirimi atlanır.
+
+### Kadro başvurusu mesaj içeriği
+
+- Ad soyad, e-posta, telefon, rol (Koç/Diyetisyen)
+
+### Kurumsal başvuru mesaj içeriği
+
+- Şirket adı, yetkili adı, e-posta, telefon
+
+### Test (kadro)
+
+```bash
+curl -X POST "https://SITENIZ.vercel.app/api/application-notify" \
+  -H "Content-Type: application/json" \
+  -H "X-Notify-Secret: SIZIN-SECRET" \
+  -d '{"type":"staff_application","name":"Test Koç","email":"test@test.com","phone":"05551234567","roleLabel":"Koç"}'
+```
+
+### Test (kurumsal)
+
+```bash
+curl -X POST "https://SITENIZ.vercel.app/api/application-notify" \
+  -H "Content-Type: application/json" \
+  -H "X-Notify-Secret: SIZIN-SECRET" \
+  -d '{"type":"corporate_application","companyName":"Test A.Ş.","contactName":"Ayşe Yılmaz","email":"info@test.com","phone":"05551234567"}'
+```
 
 ---
 
@@ -205,6 +237,8 @@ Telegram iletişim grubunda mesaj görünmeli.
 
 - Giriş/kayıt API: `api/telegram-notify.js`
 - İletişim formu API: `api/contact.js`
+- Başvuru bildirimleri API: `api/application-notify.js`
 - Form bileşeni: `src/components/landing/ContactSection.jsx`
 - İstemci: `src/services/contactForm.js`
+- Başvuru istemci: `src/services/applicationNotify.js`
 - Auth olayları: `src/services/supabaseDb.js`
