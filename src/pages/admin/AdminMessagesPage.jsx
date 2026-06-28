@@ -113,14 +113,18 @@ export default function AdminMessagesPage() {
   const showAuditThread = Boolean(isAudit && activeAudit && (auditThreadId || isWide))
 
   useEffect(() => {
-    if (!activeAdminThread?.id || isAudit) return
+    if (!activeAdminThread?.id || isAudit) return undefined
     loadAdminStaffMessages(activeAdminThread.id)
     markAdminStaffThreadRead(activeAdminThread.id, 'admin')
+    const poll = setInterval(() => loadAdminStaffMessages(activeAdminThread.id), 8000)
+    return () => clearInterval(poll)
   }, [activeAdminThread?.id, isAudit, loadAdminStaffMessages, markAdminStaffThreadRead])
 
   useEffect(() => {
-    if (!activeAudit?.thread?.id || !isAudit) return
+    if (!activeAudit?.thread?.id || !isAudit) return undefined
     loadChatMessages(activeAudit.thread.id)
+    const poll = setInterval(() => loadChatMessages(activeAudit.thread.id), 10000)
+    return () => clearInterval(poll)
   }, [activeAudit?.thread?.id, isAudit, loadChatMessages])
 
   const handleStaffSend = async (text) => {

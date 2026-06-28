@@ -7,6 +7,7 @@ import {
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 import BrandLogo from '../ui/BrandLogo'
+import { resolveFirstName } from '../../utils/displayName'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
@@ -29,6 +30,8 @@ export default function Sidebar() {
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
   } = useApp()
 
+  const displayName = resolveFirstName({ name: user?.name, email: user?.email })
+
   const itemsWithBadges = navItems.map((item) => ({
     ...item,
     badgeCount: item.chatBadge
@@ -47,7 +50,7 @@ export default function Sidebar() {
         <div className="mt-3">
           <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
         </div>
-        <p className="mt-2 truncate text-sm text-cream-800/60">{user.name}</p>
+        <p className="mt-2 truncate text-sm text-cream-800/60">{displayName}</p>
       </div>
 
       <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2.5 lg:space-y-1 lg:p-3">

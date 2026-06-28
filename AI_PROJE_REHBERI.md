@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§42: chat çevrimiçi durumu, panel bildirim rozetleri, kadro profil seed)
+> **Son güncelleme:** 2026-06-28 (§43: realtime mesajlaşma churn düzeltmesi, presence rol düzeltmesi, polling fallback)
 
 ---
 
@@ -3002,4 +3002,48 @@ Menü öğelerinde kırmızı sayaç (`9+` üst sınır); Realtime ile anlık g�
 ### Dosyalar (özet)
 
 `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useChatPresence.js`, `src/services/presenceService.js`, `src/utils/presenceStatus.js`, `src/components/ui/PresenceIndicator.jsx`, `src/components/layout/{AdminShell,StaffShell,Sidebar,AppShell}.jsx`, `src/pages/{MessagesPage,staff/StaffMessagesPage,staff/StaffAdminMessagesPage,admin/AdminMessagesPage}.jsx`, `src/data/{seedTeamProfiles,staffProfile,staffApplication}.js`, `src/components/admin/StaffFormModal.jsx`, `src/pages/StaffApplicationPage.jsx`, `supabase/migrations/20260627_team_public_seed.sql`, `supabase/migrations/20260628_chat_presence_peers.sql`, `AI_PROJE_REHBERI.md`
+
+---
+
+## 43. Realtime Mesajlaşma & Çevrimiçi Durum Düzeltmeleri (2026-06-28)
+
+### Kök neden 1 — Realtime kanal churn (anlık mesaj gitmiyor/gelmiyor)
+
+`AppContext` içindeki `subscribeRealtimeSync` effect'i `remoteDb?.session` **nesne referansına** bağlıydı. `remoteDb` her veri güncellemesinde (mesaj gönderme, bildirim okuma, ticket, realtime member UPDATE) yeni nesne olarak set edildiği için, effect sürekli cleanup + yeniden subscribe çalıştırıyordu. Bu da Supabase realtime kanallarının (`chat-messages-sync`, `chat-threads-sync` vb.) durmadan yıkılıp kurulmasına ve realtime'ın **sessizce durmasına** yol açıyordu.
+
+**Çözüm:** Bağımlılık primitive'lere çekildi → `sessionType` (string) + `currentMember?.id` + `currentStaff?.id`. Kanallar yalnızca oturum kimliği değişince yeniden kurulur.
+
+```js
+const sessionType = remoteDb?.session?.type
+useEffect(() => { /* subscribeRealtimeSync(...) */ },
+  [isSupabaseEnabled, sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
+```
+
+### Kök neden 2 — Yanlış presence rolü (aktiflik sistemi)
+
+`startPresenceTracker → resolvePresenceInfo` oturum tipi henüz hazır değilken `role: s?.type || 'member'` ile **'member'** yazıyordu; bu yüzden koç/diyetisyen/admin satırları `user_presence`'ta yanlış role ile kaydoluyordu (`anyAdminOnline` ve chat peer durumu bozuluyordu).
+
+**Çözüm:**
+- Oturum tipi (`s?.type`) çözülmeden presence yazılmaz (erken `return null`).
+- Rol doğrudan oturumdan alınır; staff adı id **veya** e-posta ile eşleşir; admin adı `authUser`'dan gelir.
+- Mevcut hatalı satırlar düzeltildi: `update user_presence set role='staff'` (staff tablosuyla eşleşen) ve `role='admin'` (admin e-postası).
+
+### Güvence katmanı — Polling fallback
+
+Realtime bir an düşse bile mesajların gelmesi için **açık sohbette 8 sn'lik poll** eklendi (`loadChatMessages`/`loadAdminStaffMessages` periyodik tazeleme): `MessagesPage`, `StaffMessagesPage`, `StaffAdminMessagesPage`, `AdminMessagesPage` (denetim 10 sn).
+
+### Veritabanı doğrulamaları (MCP ile)
+
+| Kontrol | Sonuç |
+|---------|-------|
+| Realtime publication | `chat_threads`, `chat_messages`, `admin_staff_threads`, `admin_staff_messages`, `user_presence`, `members`, `tickets` — ✅ ekli |
+| RLS | Tüm chat + presence tablolarında etkin; politikalar `is_admin()` / `staff_manages_member()` / `auth.uid()` ile doğru |
+| Üye ↔ personel atama | `members.assigned_coach_id` / `assigned_dietitian_id` geçerli staff'a bağlı → `staff_manages_member` çalışıyor |
+| `user_presence` rolleri | admin=1, staff=4, member=6 (düzeltme sonrası) |
+
+**Online eşiği:** `OFFLINE_MS = 90 sn`, heartbeat 30 sn (`presenceService.js` / `presenceStatus.js`).
+
+### Dosyalar
+
+`src/context/AppContext.jsx`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/pages/staff/StaffAdminMessagesPage.jsx`, `src/pages/admin/AdminMessagesPage.jsx`
 

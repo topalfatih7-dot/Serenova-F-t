@@ -12,6 +12,7 @@ import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModa
 import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/ProgressChart'
 import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
+import { resolveFirstName } from '../utils/displayName'
 import { useToast } from '../context/ToastContext'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { format } from 'date-fns'
@@ -283,12 +284,13 @@ export default function DashboardPage() {
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
 
   const planLabel = getPlanLabel(membership)
+  const firstName = resolveFirstName({ name: user?.name, email: user?.email })
 
   return (
     <div className="space-y-6">
       <div className="welcome-banner">
         <p className="text-sm font-medium text-white/80">Hoş geldiniz</p>
-        <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{user.name?.split(' ')[0] || 'Üye'}, bugün harika bir gün olabilir</h1>
+        <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{firstName}, bugün harika bir gün olabilir</h1>
         <p className="mt-2 text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
       </div>
 

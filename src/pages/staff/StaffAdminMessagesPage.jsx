@@ -26,9 +26,11 @@ export default function StaffAdminMessagesPage() {
   const messages = thread ? (adminStaffMessages[thread.id] || []) : []
 
   useEffect(() => {
-    if (!thread?.id) return
+    if (!thread?.id) return undefined
     loadAdminStaffMessages(thread.id)
     markAdminStaffThreadRead(thread.id, 'staff')
+    const poll = setInterval(() => loadAdminStaffMessages(thread.id), 8000)
+    return () => clearInterval(poll)
   }, [thread?.id, loadAdminStaffMessages, markAdminStaffThreadRead])
 
   const handleSend = async (text) => {

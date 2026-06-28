@@ -13,7 +13,26 @@ export function getCurrentMember(db) {
 
 export function getCurrentStaff(db) {
   if (db.session?.type !== 'staff') return null
-  return db.staff.find((s) => s.id === db.session.staffId) || null
+  if (db.session.staffId) {
+    const byId = db.staff.find((s) => s.id === db.session.staffId)
+    if (byId) return byId
+  }
+  const email = (db.session.email || db.authUser?.email || '').toLowerCase()
+  if (email) {
+    const byEmail = db.staff.find((s) => (s.email || '').toLowerCase() === email)
+    if (byEmail) return byEmail
+  }
+  if (db.authUser?.id) {
+    return db.staff.find((s) => s.id === db.authUser.id) || null
+  }
+  return null
+}
+
+export function getPostLoginPath(db) {
+  const type = db?.session?.type
+  if (type === 'admin') return '/admin'
+  if (type === 'staff') return '/staff'
+  return '/dashboard'
 }
 
 const PLAN_COLORS = {

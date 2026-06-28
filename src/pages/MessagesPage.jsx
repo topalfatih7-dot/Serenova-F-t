@@ -52,9 +52,12 @@ export default function MessagesPage() {
   const showThread = Boolean(activeRole && activeContact && (roleParam || isWide))
 
   useEffect(() => {
-    if (!activeThread?.id) return
+    if (!activeThread?.id) return undefined
     loadChatMessages(activeThread.id)
     markChatThreadRead(activeThread.id, 'member')
+    // Realtime yedeği: açık sohbette mesajları periyodik tazele.
+    const poll = setInterval(() => loadChatMessages(activeThread.id), 8000)
+    return () => clearInterval(poll)
   }, [activeThread?.id, loadChatMessages, markChatThreadRead])
 
   const openThread = useCallback((role) => {

@@ -76,8 +76,21 @@ export function AppProvider({ children }) {
   const db = remoteDb || EMPTY_DB
   const currentMember = useMemo(() => getCurrentMember(db), [db])
   const currentStaff = useMemo(() => getCurrentStaff(db), [db])
+  const authUser = db.authUser || null
   const isAdmin = db.session?.type === 'admin'
   const isStaff = db.session?.type === 'staff'
+
+  const user = useMemo(() => {
+    if (isStaff) {
+      return currentStaff || (authUser ? { ...authUser, role: 'staff' } : {})
+    }
+    if (isAdmin) {
+      return { name: authUser?.name || 'Admin', email: authUser?.email }
+    }
+    if (currentMember) return currentMember
+    if (authUser) return { id: authUser.id, name: authUser.name, email: authUser.email }
+    return {}
+  }, [isStaff, isAdmin, currentStaff, currentMember, authUser])
   const isAuthenticated = !!db.session
 
   const adminStats = useMemo(() => computeAdminStats(db), [db])
@@ -256,25 +269,36 @@ export function AppProvider({ children }) {
         if (!user) return null
         const dbNow = remoteDbRef.current
         const s = dbNow?.session
+        // Oturum tipi henüz çözülmediyse presence yazma — yanlış 'member' rolü
+        // kaydedilmesin (koç/diyetisyen/admin online durumu bozulur).
+        if (!s?.type) return null
         let name = user.user_metadata?.name || user.email
-        if (s?.type === 'member') {
+        if (s.type === 'member') {
           const m = dbNow?.members?.find((x) => x.id === user.id)
           if (m?.name) name = m.name
-        } else if (s?.type === 'staff') {
-          const st = dbNow?.staff?.find((x) => x.id === s.staffId)
+        } else if (s.type === 'staff') {
+          const st = dbNow?.staff?.find((x) => x.id === s.staffId || (x.email || '').toLowerCase() === (user.email || '').toLowerCase())
           if (st?.name) name = st.name
+        } else if (s.type === 'admin') {
+          name = dbNow?.authUser?.name || user.user_metadata?.name || 'Admin'
         }
-        return { userId: user.id, email: user.email, name, role: s?.type || 'member' }
+        return { userId: user.id, email: user.email, name, role: s.type }
       },
       getPagePath: () => window.location.pathname,
     })
   }, [isAuthenticated])
 
-  useEffect(() => {
-    if (!isSupabaseEnabled || !remoteDb?.session) return undefined
+  const sessionType = remoteDb?.session?.type
 
+  useEffect(() => {
+    if (!isSupabaseEnabled || !sessionType) return undefined
+
+    // Bağımlılıklar primitive (sessionType + id'ler) — remoteDb nesnesi her veri
+    // güncellemesinde değiştiği için object referansına bağlanırsak kanallar sürekli
+    // yeniden kurulur ve realtime sessizce durur. Bu yüzden yalnızca oturum kimliği
+    // değiştiğinde yeniden abone oluruz.
     return subscribeRealtimeSync({
-      session: remoteDb.session,
+      session: { type: sessionType, memberId: currentMember?.id, staffId: currentStaff?.id },
       memberId: currentMember?.id,
       staffId: currentStaff?.id,
       onTicketsChange: ({ type, id, ticket }) => {
@@ -328,7 +352,7 @@ export function AppProvider({ children }) {
         reloadRemote()
       },
     })
-  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id, currentStaff?.id, reloadRemote])
+  }, [isSupabaseEnabled, sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -680,7 +704,8 @@ export function AppProvider({ children }) {
     staffApplications: db.staffApplications || [],
     corporateApplications: db.corporateApplications || [],
     contactInquiries: db.contactInquiries || [],
-    user: currentMember || {},
+    user,
+    authUser,
     membership: currentMember?.membership || 'free',
     membershipStatus: currentMember?.membershipStatus || 'active',
     packageConfig: currentMember?.packageConfig,

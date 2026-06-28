@@ -10,6 +10,7 @@ import VideoJoinLink from '../../components/video/VideoJoinLink'
 import StaffVideoPanel from '../../components/video/StaffVideoPanel'
 import { useApp } from '../../context/AppContext'
 import { getStaffClients } from '../../utils/chatAccess'
+import { resolveFirstName } from '../../utils/displayName'
 
 export { getStaffClients }
 
@@ -33,6 +34,11 @@ export default function StaffOverviewPage() {
   const RoleIcon = isCoach ? Dumbbell : Apple
 
   const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
+  const firstName = resolveFirstName({
+    name: staffUser.name,
+    email: staffUser.email,
+    fallback: isCoach ? 'Koç' : 'Diyetisyen',
+  })
   const appointments = useMemo(() => getStaffAppointments(clients, staffUser.role), [clients, staffUser.role])
   const myPrograms = useMemo(
     () => (platform.programs || []).filter((p) => p.staffId === staffUser.id),
@@ -55,7 +61,7 @@ export default function StaffOverviewPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">
-            Merhaba, {(staffUser.name || '').split(' ')[0]}
+            Merhaba, {firstName}
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-cream-800/60">
             <RoleIcon className="h-4 w-4" /> {isCoach ? 'Koç paneli' : 'Diyetisyen paneli'}

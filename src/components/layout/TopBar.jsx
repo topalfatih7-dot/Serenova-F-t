@@ -2,10 +2,16 @@ import { Link } from 'react-router-dom'
 import { Bell, MessageCircle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
+import { resolveFirstName } from '../../utils/displayName'
 
 export default function TopBar({ title }) {
-  const { notifications, user, membership, chatUnreadCount } = useApp()
-  const unread = notifications.filter((n) => !n.read).length
+  const { notifications, user, membership, chatUnreadCount, isStaff } = useApp()
+  const unread = (notifications || []).filter((n) => !n.read).length
+  const firstName = resolveFirstName({
+    name: user?.name,
+    email: user?.email,
+    fallback: isStaff ? 'Personel' : 'Üye',
+  })
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-brand-200/40 bg-gradient-to-r from-white/90 via-white/85 to-brand-50/50 px-4 py-3 shadow-sm shadow-brand-500/[0.04] backdrop-blur-xl lg:px-6">
@@ -13,7 +19,7 @@ export default function TopBar({ title }) {
         {title ? (
           <h1 className="font-display text-lg font-semibold text-cream-900">{title}</h1>
         ) : (
-          <p className="text-sm text-cream-800/60">Merhaba, <span className="font-medium text-cream-900">{user.name.split(' ')[0]}</span></p>
+          <p className="text-sm text-cream-800/60">Merhaba, <span className="font-medium text-cream-900">{firstName}</span></p>
         )}
       </div>
       <div className="flex items-center gap-2">

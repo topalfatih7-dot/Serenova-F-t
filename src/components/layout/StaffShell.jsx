@@ -8,6 +8,7 @@ import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 import { staffRoleMeta } from '../../utils/staffRoles'
+import { resolveFirstName } from '../../utils/displayName'
 
 const STAFF_EMOJIS = ['📋', '💪', '🥗', '📊', '🧘', '⭐', '🎯', '💚', '🏅', '🤝']
 
@@ -58,7 +59,9 @@ export default function StaffShell() {
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             <RoleIcon className="h-3 w-3" /> {roleLabel} Paneli
           </span>
-          {staffUser.name && <p className="mt-3 truncate text-sm text-cream-800/60">{staffUser.name}</p>}
+          <p className="mt-3 truncate text-sm text-cream-800/60">
+            {resolveFirstName({ name: staffUser.name, email: staffUser.email, fallback: roleLabel })}
+          </p>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {staffNav.map((item) => (
@@ -98,7 +101,7 @@ export default function StaffShell() {
           navItems={staffNav}
           brandLink="/staff"
           badge={{ label: `${roleLabel} Paneli`, icon: RoleIcon, className: 'bg-brand-500 text-white' }}
-          userName={staffUser.name}
+          userName={resolveFirstName({ name: staffUser.name, email: staffUser.email, fallback: roleLabel })}
           accent="staff"
           logout={logout}
           headerRight={<span className="text-xs font-medium text-cream-800/50">{roleLabel}</span>}

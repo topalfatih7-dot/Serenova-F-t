@@ -5,6 +5,7 @@ import { CheckCircle2, AlertCircle, Loader2, LayoutDashboard, LogIn, Sparkles } 
 import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
 import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services/authVerification'
 import { BRAND } from '../../config/brand'
+import { getPostLoginPath } from '../../services/platformStats'
 import { useApp } from '../../context/AppContext'
 
 function FloatingOrb({ className, delay = 0 }) {
@@ -140,8 +141,8 @@ export default function AuthCallbackPage() {
       }
 
       if (session?.user) {
-        Promise.resolve(refresh()).catch(() => {})
-        if (active) navigate('/dashboard', { replace: true })
+        const db = await refresh().catch(() => null)
+        if (active) navigate(getPostLoginPath(db), { replace: true })
         return
       }
 
@@ -158,8 +159,8 @@ export default function AuthCallbackPage() {
 
   const goPanel = async () => {
     if (hasSession) {
-      await refresh()
-      navigate('/dashboard', { replace: true })
+      const db = await refresh().catch(() => null)
+      navigate(getPostLoginPath(db), { replace: true })
       return
     }
     navigate('/login', { replace: true })

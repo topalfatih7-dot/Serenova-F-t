@@ -109,6 +109,22 @@ function roleForEmail(email, staffList) {
   return 'member'
 }
 
+function findStaffMatch(user, staffList) {
+  if (!user) return null
+  const email = (user.email || '').toLowerCase()
+  return staffList.find((s) => (s.email || '').toLowerCase() === email)
+    || staffList.find((s) => s.id === user.id)
+    || null
+}
+
+function roleForUser(user, staffList) {
+  if (!user) return 'member'
+  const e = (user.email || '').toLowerCase()
+  if (e === ADMIN_EMAIL) return 'admin'
+  if (findStaffMatch(user, staffList)) return 'staff'
+  return 'member'
+}
+
 export async function getSession() {
   const { data } = await supabase.auth.getSession()
   return data?.session || null
@@ -266,7 +282,13 @@ export async function hydrate() {
   })
 
   if (!user) {
-    return { ...EMPTY_DB, staff, posts, content, exercises, plans }
+    return { ...EMPTY_DB, staff, posts, content, exercises, plans, authUser: null }
+  }
+
+  const authUser = {
+    id: user.id,
+    email: (user.email || '').toLowerCase(),
+    name: user.user_metadata?.full_name || user.user_metadata?.name || '',
   }
 
   const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
@@ -278,7 +300,8 @@ export async function hydrate() {
   ])
 
   let members = (membersRes.data || []).map(rowToMember)
-  const role = roleForEmail(user.email, staff)
+  const role = roleForUser(user, staff)
+  const staffMatch = findStaffMatch(user, staff)
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
   let contactInqRes = { data: [] }
@@ -293,12 +316,11 @@ export async function hydrate() {
     contactInqRes = ci
   }
   let session
-  if (role === 'admin') session = { type: 'admin', memberId: null }
+  if (role === 'admin') session = { type: 'admin', memberId: null, email: authUser.email }
   else if (role === 'staff') {
-    const me = staff.find((s) => (s.email || '').toLowerCase() === user.email.toLowerCase())
-    session = { type: 'staff', staffId: me?.id || null }
+    session = { type: 'staff', staffId: staffMatch?.id || null, email: authUser.email }
   } else {
-    session = { type: 'member', memberId: user.id }
+    session = { type: 'member', memberId: user.id, email: authUser.email }
     // Süresi dolmuş üyeliği otomatik free plana düşür
     const meIdx = members.findIndex((m) => m.id === user.id)
     if (meIdx >= 0) {
@@ -328,6 +350,7 @@ export async function hydrate() {
     corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
     contactInquiries: (contactInqRes.data || []).map(rowToContactInquiry),
     session,
+    authUser,
     content,
   }
 }
@@ -342,7 +365,7 @@ async function resolveActorName(user, role, staffList) {
   if (!user) return 'Kullanıcı'
   if (role === 'admin') return user.user_metadata?.name || 'Admin'
   if (role === 'staff') {
-    const s = staffList.find((x) => (x.email || '').toLowerCase() === (user.email || '').toLowerCase())
+    const s = findStaffMatch(user, staffList) || staffList.find((x) => (x.email || '').toLowerCase() === (user.email || '').toLowerCase())
     return s?.name || user.user_metadata?.name || 'Personel'
   }
   const { data } = await supabase.from('members').select('name').eq('id', user.id).maybeSingle()
@@ -371,9 +394,9 @@ export async function login(email, password, remember = false) {
 
   const { data: staffRows } = await supabase.from('staff').select('*')
   const staffList = (staffRows || []).map(rowToStaff)
-  const role = roleForEmail(data.user.email, staffList)
+  const role = roleForUser(data.user, staffList)
   const displayName = await resolveActorName(data.user, role, staffList)
-  const staffMember = staffList.find((s) => (s.email || '').toLowerCase() === data.user.email.toLowerCase())
+  const staffMember = findStaffMatch(data.user, staffList)
 
   const loginText = role === 'admin'
     ? `${displayName} (Admin) giriş yaptı`
@@ -403,9 +426,9 @@ export async function logout() {
   if (user) {
     const { data: staffRows } = await supabase.from('staff').select('*')
     const staffList = (staffRows || []).map(rowToStaff)
-    const role = roleForEmail(user.email, staffList)
+    const role = roleForUser(user, staffList)
     const displayName = await resolveActorName(user, role, staffList)
-    const staffMember = staffList.find((s) => (s.email || '').toLowerCase() === user.email.toLowerCase())
+    const staffMember = findStaffMatch(user, staffList)
 
     if (role === 'staff') {
       await addActivity('logout', `${displayName} (${staffRoleLabel(staffMember?.role)}) çıkış yaptı`)

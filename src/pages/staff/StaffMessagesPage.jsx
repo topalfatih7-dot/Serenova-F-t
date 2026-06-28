@@ -66,9 +66,12 @@ export default function StaffMessagesPage() {
   )
 
   useEffect(() => {
-    if (!active?.thread?.id) return
+    if (!active?.thread?.id) return undefined
     loadChatMessages(active.thread.id)
     markChatThreadRead(active.thread.id, 'staff')
+    // Realtime yedeği: açık sohbette mesajları periyodik tazele.
+    const poll = setInterval(() => loadChatMessages(active.thread.id), 8000)
+    return () => clearInterval(poll)
   }, [active?.thread?.id, loadChatMessages, markChatThreadRead])
 
   const handleSend = async (text) => {
