@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§43: realtime mesajlaşma churn düzeltmesi, presence rol düzeltmesi, polling fallback)
+> **Son güncelleme:** 2026-06-28 (§44: personel mesajlaşma danışan listesi, thread otomatik oluşturma, RLS e-posta case-insensitive)
 
 ---
 
@@ -3046,4 +3046,54 @@ Realtime bir an düşse bile mesajların gelmesi için **açık sohbette 8 sn'li
 ### Dosyalar
 
 `src/context/AppContext.jsx`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/pages/staff/StaffAdminMessagesPage.jsx`, `src/pages/admin/AdminMessagesPage.jsx`
+
+---
+
+## 44. Personel Mesajlaşma — Danışan Listesi & RLS (2026-06-28)
+
+### Belirti
+
+Koç/diyetisyen **Mesajlar** panelinde atanmış danışanlar görünmüyordu; danışan tarafında mesajlaşma da etkilenebiliyordu.
+
+### Kök neden 1 — Inbox yalnızca mevcut thread'lere bağlıydı
+
+`StaffMessagesPage` sohbet listesini `chatThreads` üzerinden kuruyordu; atanmış danışan için henüz `chat_threads` satırı yoksa (ilk mesaj öncesi) danışan inbox'ta **hiç listelenmiyordu**.
+
+**Çözüm:** Inbox artık `getStaffClients` ile gelen **atanmış danışanlar** üzerinden kurulur (`buildStaffChatInbox`); thread yoksa danışan yine listede görünür, seçimde veya mesaj gönderiminde `getOrCreateChatThread` ile otomatik oluşturulur.
+
+### Kök neden 2 — Sohbet hydration danışan değişimini izlemiyordu
+
+`AppContext` chat effect'inde `chatHydratedKey` yalnızca oturum tipi + id ile hesaplanıyordu. Admin yeni danışan atadığında veya personel oturumu açıkken danışan listesi güncellense bile thread oluşturma **tekrar çalışmıyordu**.
+
+**Çözüm:**
+- `staffClientsSignature()` ile danışan id imzası hydration anahtarına eklendi.
+- `getCurrentStaff()` ile personel çözümlemesi (id + e-posta yedeği).
+- `refreshStaffChatThreads()` ve `ensureStaffChatThread()` — sayfa açılışında ve danışan seçiminde thread garantisi.
+
+### Kök neden 3 — Rol & filtre tutarsızlığı
+
+`getStaffClients` ham `role` değerini kullanıyordu; `normalizeStaffRole` olmadan koç ataması diyetisyen dalına düşebiliyordu. Ayrıca `membershipStatus` boş olan aktif üyeler eleniyordu.
+
+**Çözüm:** `normalizeStaffRole`, varsayılan `active` durumu, atama sütunu (`assigned_coach_id` / `assigned_dietitian_id`) önceliği.
+
+### Kök neden 4 — RLS e-posta eşleşmesi (case-sensitive)
+
+`staff_manages_member()` ve `members_select` politikası `s.email = current_email()` ile **birebir** karşılaştırıyordu. JWT e-postası ile `staff.email` farklı büyük/küçük harf taşıyorsa personel **hiç danışan satırı okuyamıyordu** (RLS boş liste).
+
+**Migration:** `20260628_staff_email_rls_case_insensitive.sql`
+
+- `lower(s.email) = lower(current_email())` — `staff_manages_member`, `current_staff_id`, `members_select`, `members_update`
+
+### Yardımcılar (`chatAccess.js`)
+
+| Fonksiyon | Açıklama |
+|-----------|----------|
+| `getStaffClients(members, role, staffId)` | Atanmış aktif ücretli danışanlar |
+| `buildStaffChatInbox(clients, threads, staffUser)` | Danışan ↔ thread eşlemesi |
+| `sortStaffInboxItems(items)` | Okunmamış + son mesaj sıralaması |
+| `staffClientsSignature(...)` | Hydration cache anahtarı için danışan imzası |
+
+### Dosyalar
+
+`src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/utils/chatAccess.js`, `src/services/chatDb.js`, `supabase/migrations/20260628_staff_email_rls_case_insensitive.sql`
 

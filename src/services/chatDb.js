@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
+import { normalizeStaffRole } from '../utils/staffRoles'
 
 const nowISO = () => new Date().toISOString()
 
@@ -206,9 +207,10 @@ export async function markChatThreadRead(threadId, readerType) {
 
 export async function ensureStaffChatThreads(staff, clients = []) {
   if (!staff?.id) return []
+  const role = normalizeStaffRole(staff.role)
   for (const member of clients) {
     await getOrCreateChatThread(member, {
-      role: staff.role,
+      role,
       staffId: staff.id,
       name: staff.name,
     })

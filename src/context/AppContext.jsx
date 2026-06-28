@@ -19,7 +19,8 @@ import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
 import * as chatDb from '../services/chatDb'
 import * as adminChatDb from '../services/adminChatDb'
-import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads } from '../utils/chatAccess'
+import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads, staffClientsSignature, getStaffClients } from '../utils/chatAccess'
+import { normalizeStaffRole } from '../utils/staffRoles'
 
 const AppContext = createContext(null)
 
@@ -110,13 +111,16 @@ export function AppProvider({ children }) {
       return undefined
     }
     const session = remoteDb.session
-    const key = `${session.type}-${session.memberId || session.staffId || ''}`
+    const staffUser = getCurrentStaff(remoteDb)
+    const staffClientsKey = session.type === 'staff' && staffUser
+      ? staffClientsSignature(remoteDb.members || [], staffUser.role, staffUser.id)
+      : ''
+    const key = `${session.type}-${session.memberId || session.staffId || staffUser?.id || ''}-${staffClientsKey}`
     if (chatHydratedKey.current === key) return undefined
 
     let active = true
     ;(async () => {
-      const member = remoteDb.members?.find((m) => m.id === session.memberId)
-      const staffUser = remoteDb.staff?.find((s) => s.id === session.staffId)
+      const member = getCurrentMember(remoteDb)
       const [threads, adminThreads] = await Promise.all([
         chatDb.hydrateChatThreads(
           session,
@@ -207,6 +211,36 @@ export function AppProvider({ children }) {
       setChatThreads((prev) => prev.map((t) => (t.id === threadId ? updated : t)))
     }
     return updated
+  }, [])
+
+  const refreshStaffChatThreads = useCallback(async () => {
+    const dbNow = remoteDbRef.current
+    const staffUser = getCurrentStaff(dbNow)
+    if (!staffUser?.id) return []
+    const clients = getStaffClients(dbNow?.members || [], staffUser.role, staffUser.id)
+    const threads = await chatDb.ensureStaffChatThreads(staffUser, clients)
+    setChatThreads(threads)
+    return threads
+  }, [])
+
+  const ensureStaffChatThread = useCallback(async (member) => {
+    const dbNow = remoteDbRef.current
+    const staffUser = getCurrentStaff(dbNow)
+    if (!staffUser?.id || !member?.id) return null
+    const thread = await chatDb.getOrCreateChatThread(member, {
+      role: normalizeStaffRole(staffUser.role),
+      staffId: staffUser.id,
+      name: staffUser.name,
+    })
+    if (thread) {
+      setChatThreads((prev) => {
+        if (prev.some((t) => t.id === thread.id)) {
+          return prev.map((t) => (t.id === thread.id ? thread : t))
+        }
+        return [thread, ...prev]
+      })
+    }
+    return thread
   }, [])
 
   const acceptChatConsent = useCallback(async (threadId) => {
@@ -726,6 +760,8 @@ export function AppProvider({ children }) {
     loadChatMessages,
     sendChatMessage,
     markChatThreadRead,
+    refreshStaffChatThreads,
+    ensureStaffChatThread,
     acceptChatConsent,
     loadAdminStaffMessages,
     sendAdminStaffMessage,

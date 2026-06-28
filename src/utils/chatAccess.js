@@ -1,4 +1,5 @@
 import { packageIncludesCoach, packageIncludesDietitian, isPaidMembership } from '../data/membershipPlans'
+import { normalizeStaffRole } from './staffRoles'
 
 export const CHAT_CONSENT_KEY = 'yeniform-chat-consent-v1'
 
@@ -44,16 +45,54 @@ export function getMemberChatContacts(member, staffList = []) {
 
 export function getStaffClients(members, role, staffId) {
   const sid = String(staffId || '')
+  if (!sid) return []
+  const normalizedRole = normalizeStaffRole(role)
+  const assignmentKey = normalizedRole === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
+
   return (members || []).filter((m) => {
     if (!isPaidMembership(m.membership)) return false
-    if (m.membershipStatus !== 'active' && m.membershipStatus !== 'expiring') return false
-    if (role === 'coach') {
-      if (!packageIncludesCoach(m.packageConfig)) return false
-      return String(m.assignedCoachId || '') === sid
+    const status = m.membershipStatus || 'active'
+    if (status !== 'active' && status !== 'expiring') return false
+    if (String(m[assignmentKey] || '') !== sid) return false
+    if (normalizedRole === 'coach') {
+      return packageIncludesCoach(m.packageConfig) || Boolean(m.assignedCoachId)
     }
-    if (!packageIncludesDietitian(m.packageConfig)) return false
-    return String(m.assignedDietitianId || '') === sid
+    return packageIncludesDietitian(m.packageConfig) || Boolean(m.assignedDietitianId)
   })
+}
+
+/** Personel paneli: atanmış danışanları mevcut thread kayıtlarıyla eşleştirir */
+export function buildStaffChatInbox(clients, threads, staffUser) {
+  const staffId = String(staffUser?.id || '')
+  const role = normalizeStaffRole(staffUser?.role)
+  const roleThreads = (threads || []).filter(
+    (t) => String(t.staffId) === staffId && t.staffRole === role,
+  )
+  const threadByMember = new Map(roleThreads.map((t) => [String(t.memberId), t]))
+
+  return (clients || []).map((member) => ({
+    member,
+    thread: threadByMember.get(String(member.id)) || null,
+  }))
+}
+
+export function sortStaffInboxItems(items) {
+  return [...items].sort((a, b) => {
+    const aUnread = threadUnreadCount(a.thread, 'staff') > 0 ? 1 : 0
+    const bUnread = threadUnreadCount(b.thread, 'staff') > 0 ? 1 : 0
+    if (bUnread !== aUnread) return bUnread - aUnread
+    const aTime = new Date(a.thread?.lastMessageAt || 0).getTime()
+    const bTime = new Date(b.thread?.lastMessageAt || 0).getTime()
+    if (bTime !== aTime) return bTime - aTime
+    return (a.member?.name || '').localeCompare(b.member?.name || '', 'tr')
+  })
+}
+
+export function staffClientsSignature(members, role, staffId) {
+  return getStaffClients(members, role, staffId)
+    .map((m) => m.id)
+    .sort()
+    .join(',')
 }
 
 export function memberHasChatAccess(member) {

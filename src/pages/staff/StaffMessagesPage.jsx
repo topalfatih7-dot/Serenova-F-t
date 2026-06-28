@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MessageCircle, Search, Shield } from 'lucide-react'
@@ -11,7 +11,12 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { useChatPresence } from '../../hooks/useChatPresence'
-import { getStaffClients, sortThreadsForInbox, threadUnreadCount } from '../../utils/chatAccess'
+import {
+  getStaffClients,
+  buildStaffChatInbox,
+  sortStaffInboxItems,
+  threadUnreadCount,
+} from '../../utils/chatAccess'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { getPlanLabel } from '../../data/membershipPlans'
 import PresenceIndicator, { AvatarWithPresence } from '../../components/ui/PresenceIndicator'
@@ -24,40 +29,36 @@ export default function StaffMessagesPage() {
   const {
     staffUser, platform, chatThreads, chatMessages,
     loadChatMessages, sendChatMessage, markChatThreadRead,
+    refreshStaffChatThreads, ensureStaffChatThread,
   } = useApp()
 
   const [query, setQuery] = useState('')
   const [sending, setSending] = useState(false)
+  const [activeThreadId, setActiveThreadId] = useState(null)
+  const activeThreadRef = useRef(null)
 
   const clients = useMemo(
     () => getStaffClients(platform?.members || [], staffUser?.role, staffUser?.id),
     [platform?.members, staffUser?.role, staffUser?.id],
   )
 
-  const threads = useMemo(() => {
-    const list = chatThreads.filter((t) => t.staffId === staffUser?.id)
-    return sortThreadsForInbox(list, 'staff')
-  }, [chatThreads, staffUser?.id])
-
-  const enriched = useMemo(() => {
-    return threads.map((t) => {
-      const member = clients.find((c) => c.id === t.memberId)
-      return { thread: t, member }
-    }).filter((x) => x.member)
-  }, [threads, clients])
+  const inboxItems = useMemo(
+    () => sortStaffInboxItems(buildStaffChatInbox(clients, chatThreads, staffUser)),
+    [clients, chatThreads, staffUser],
+  )
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return enriched
-    return enriched.filter((x) => (x.member?.name || '').toLowerCase().includes(q))
-  }, [enriched, query])
+    if (!q) return inboxItems
+    return inboxItems.filter(({ member }) => (member?.name || '').toLowerCase().includes(q))
+  }, [inboxItems, query])
 
   const peerIds = useMemo(() => filtered.map(({ member }) => member?.id).filter(Boolean), [filtered])
   const { isOnline, lastSeenAt } = useChatPresence(peerIds)
 
-  const activeMemberId = memberIdParam || (isWide ? filtered[0]?.thread?.memberId : null)
-  const active = enriched.find((x) => x.thread.memberId === activeMemberId)
-  const messages = active?.thread ? (chatMessages[active.thread.id] || []) : []
+  const activeMemberId = memberIdParam || (isWide ? filtered[0]?.member?.id : null)
+  const active = inboxItems.find(({ member }) => String(member.id) === String(activeMemberId))
+  const messages = activeThreadId ? (chatMessages[activeThreadId] || []) : []
   const showThread = Boolean(active?.member && (memberIdParam || isWide))
 
   const memberPrograms = useMemo(
@@ -66,19 +67,47 @@ export default function StaffMessagesPage() {
   )
 
   useEffect(() => {
-    if (!active?.thread?.id) return undefined
-    loadChatMessages(active.thread.id)
-    markChatThreadRead(active.thread.id, 'staff')
-    // Realtime yedeği: açık sohbette mesajları periyodik tazele.
-    const poll = setInterval(() => loadChatMessages(active.thread.id), 8000)
-    return () => clearInterval(poll)
-  }, [active?.thread?.id, loadChatMessages, markChatThreadRead])
+    if (staffUser?.id) refreshStaffChatThreads()
+  }, [staffUser?.id, refreshStaffChatThreads])
+
+  useEffect(() => {
+    if (!active?.member?.id) {
+      setActiveThreadId(null)
+      activeThreadRef.current = null
+      return undefined
+    }
+
+    let cancelled = false
+    let poll = null
+
+    ;(async () => {
+      const thread = active.thread || await ensureStaffChatThread(active.member)
+      if (cancelled || !thread?.id) return
+      activeThreadRef.current = thread
+      setActiveThreadId(thread.id)
+      loadChatMessages(thread.id)
+      markChatThreadRead(thread.id, 'staff')
+      poll = setInterval(() => loadChatMessages(thread.id), 8000)
+    })()
+
+    return () => {
+      cancelled = true
+      if (poll) clearInterval(poll)
+    }
+  }, [active?.member?.id, active?.thread?.id, ensureStaffChatThread, loadChatMessages, markChatThreadRead])
 
   const handleSend = async (text) => {
-    if (!active?.thread) return
+    if (!active?.member) return
     setSending(true)
     try {
-      const r = await sendChatMessage(active.thread, 'staff', staffUser.id, text)
+      const thread = activeThreadRef.current || active.thread || await ensureStaffChatThread(active.member)
+      if (!thread?.id) {
+        toast('Sohbet başlatılamadı', 'error')
+        return
+      }
+      activeThreadRef.current = thread
+      setActiveThreadId(thread.id)
+      const r = await sendChatMessage(thread, 'staff', staffUser.id, text)
       if (!r.success) toast(r.error || 'Mesaj gönderilemedi', 'error')
     } finally {
       setSending(false)
@@ -105,10 +134,10 @@ export default function StaffMessagesPage() {
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-2">
         {filtered.map(({ thread, member }) => {
           const unread = threadUnreadCount(thread, 'staff')
-          const isActive = member.id === activeMemberId
+          const isActive = String(member.id) === String(activeMemberId)
           return (
             <motion.button
-              key={thread.id}
+              key={member.id}
               type="button"
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate(`/staff/messages/${member.id}`)}
@@ -124,7 +153,7 @@ export default function StaffMessagesPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{member.name}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
-                  {thread.lastPreview || 'Henüz mesaj yok'}
+                  {thread?.lastPreview || 'Henüz mesaj yok'}
                 </p>
               </div>
               {unread > 0 && (
