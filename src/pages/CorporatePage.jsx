@@ -111,6 +111,40 @@ function SilentVideo({ src, poster, className = '', style, label }) {
   )
 }
 
+function CorporateWellnessVideo() {
+  return (
+    <div className="corporate-video-showcase">
+      <div aria-hidden className="corporate-video-showcase-glow" />
+      <div aria-hidden className="corporate-video-showcase-blob corporate-video-showcase-blob-a" />
+      <div aria-hidden className="corporate-video-showcase-blob corporate-video-showcase-blob-b" />
+      <div aria-hidden className="corporate-video-showcase-ring" />
+      <div aria-hidden className="corporate-video-showcase-dots" />
+      <div aria-hidden className="corporate-video-showcase-shadow" />
+
+      <span className="corporate-video-showcase-chip">
+        <HeartPulse className="h-3.5 w-3.5 text-brand-500" />
+        Canlı seans
+      </span>
+
+      <div className="corporate-video-frame">
+        <div className="corporate-video-frame-inner relative">
+          <SilentVideo
+            src={CORPORATE_VIDEOS.wellness.src}
+            poster={CORPORATE_VIDEOS.wellness.poster}
+            label={CORPORATE_VIDEOS.wellness.label}
+            className="corporate-video-media"
+          />
+          <div className="corporate-video-vignette" />
+          <div className="corporate-video-caption">
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-white/75">Grup seansı</p>
+            <p className="mt-0.5 text-sm font-semibold leading-snug text-white">Wellness & yoga atölyeleri</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CorporatePage() {
   return (
     <div className="overflow-x-hidden bg-cream-50/30">
@@ -291,31 +325,9 @@ export default function CorporatePage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-            className="relative order-1 lg:order-none"
+            className="relative order-1 px-1 sm:px-2 lg:order-none lg:px-0"
           >
-            <div className="relative overflow-hidden rounded-3xl rounded-bl-[3rem] shadow-2xl shadow-brand-900/15 ring-1 ring-black/5">
-              <SilentVideo
-                src={CORPORATE_VIDEOS.wellness.src}
-                poster={CORPORATE_VIDEOS.wellness.poster}
-                label={CORPORATE_VIDEOS.wellness.label}
-                className="aspect-[4/3] w-full object-cover sm:aspect-video lg:aspect-[4/5] lg:max-h-[520px]"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-cream-900/40 via-transparent to-transparent" />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/25 bg-white/15 px-4 py-3 backdrop-blur-md sm:bottom-6 sm:left-6 sm:right-auto sm:max-w-xs"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Grup seansı</p>
-                <p className="mt-0.5 text-sm font-medium text-white">Wellness & yoga atölyeleri</p>
-              </motion.div>
-            </div>
-            <div
-              aria-hidden
-              className="absolute -bottom-4 -right-4 -z-10 hidden h-full w-full rounded-3xl bg-gradient-to-br from-brand-200 to-sage-200 lg:block"
-            />
+            <CorporateWellnessVideo />
           </motion.div>
 
           {/* Metin — sağ */}
