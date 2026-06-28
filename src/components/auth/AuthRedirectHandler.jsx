@@ -10,7 +10,9 @@ export default function AuthRedirectHandler() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (location.pathname === '/auth/callback') return
+    // Auth işlem sayfaları kendi parametrelerini kendileri yönetir — buradan dokunmayız.
+    const AUTH_PAGES = ['/auth/callback', '/reset-password', '/login', '/forgot-password']
+    if (AUTH_PAGES.includes(location.pathname)) return
 
     const params = new URLSearchParams(location.search)
     const hashRaw = (window.location.hash || '').replace(/^#/, '')

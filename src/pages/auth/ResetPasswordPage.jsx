@@ -109,7 +109,12 @@ export default function ResetPasswordPage() {
             type: recoveryType,
           })
           if (!cancelled) {
-            if (!error && data?.session) { markReady(); return }
+            if (!error && data?.session) {
+              // Token işlendi — URL'den temizle (AuthRedirectHandler döngüsünü önle)
+              window.history.replaceState({}, '', '/reset-password')
+              markReady()
+              return
+            }
             // token hatalıysa aşağı devam et (mevcut oturumu dene)
           }
         } catch { /* devam */ }
