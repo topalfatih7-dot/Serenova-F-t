@@ -3,7 +3,7 @@
  */
 import { supabase } from './supabaseClient'
 
-export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1) {
+export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null) {
   let token = null
   try {
     const { data } = await supabase.auth.getSession()
@@ -18,7 +18,7 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ planId, flow, durationMonths }),
+      body: JSON.stringify({ planId, flow, durationMonths, email: email || undefined }),
     })
     json = await res.json().catch(() => ({}))
     if (!res.ok || !json?.url) {

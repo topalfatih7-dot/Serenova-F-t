@@ -4,6 +4,7 @@
  */
 import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, isPaidPlanId, toMinorUnits, getTierPrice } from './_stripe.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+import { normalizeEmailAddress } from './_email.js'
 
 function getOrigin(req) {
   return (
@@ -51,6 +52,15 @@ export default async function handler(req, res) {
     }
     const user = userData.user
 
+    let checkoutEmail = normalizeEmailAddress(body.email)
+      || normalizeEmailAddress(user.email)
+      || normalizeEmailAddress(user.user_metadata?.email)
+
+    if (!checkoutEmail) {
+      const { data: memberRow } = await admin.from('members').select('email').eq('id', user.id).maybeSingle()
+      checkoutEmail = normalizeEmailAddress(memberRow?.email)
+    }
+
     let planName = PLAN_FALLBACK[planId]?.name || planId
     let planPrice = getTierPrice(planId, durationMonths)
 
@@ -76,10 +86,9 @@ export default async function handler(req, res) {
     const cancelPath = flow === 'change' ? '/onboarding' : '/onboarding'
 
     const stripe = getStripe()
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams = {
       mode: 'payment',
       payment_method_types: ['card'],
-      customer_email: user.email || undefined,
       client_reference_id: user.id,
       line_items: [
         {
@@ -103,7 +112,10 @@ export default async function handler(req, res) {
       },
       success_url: `${origin}${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${cancelPath}?payment=cancelled`,
-    })
+    }
+    if (checkoutEmail) sessionParams.customer_email = checkoutEmail
+
+    const session = await stripe.checkout.sessions.create(sessionParams)
 
     return res.status(200).json({ ok: true, url: session.url, id: session.id })
   } catch (e) {

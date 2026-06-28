@@ -2,6 +2,7 @@
 // Tüm veriler Supabase üzerinden yönetilir.
 import { supabase, syncAutoRefresh } from './supabaseClient'
 import { setRememberMe, clearAllAuthTokens } from './authStorage'
+import { normalizeEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { ADMIN_CREDENTIALS } from '../config/brand'
 import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
@@ -388,7 +389,7 @@ export async function login(email, password, remember = false) {
   syncAutoRefresh(remember)
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim(), password,
+    email: sanitizeEmailInput(email), password,
   })
   if (error) return { success: false, error: 'E-posta veya şifre hatalı.' }
 
@@ -476,7 +477,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 
   const member = withPremiumDates({
     id: user.id,
-    email: user.email,
+    email: normalizeEmailAddress(user.email) || normalizeEmailAddress(profile.email) || sanitizeEmailInput(user.email),
     name: profile.name,
     phone: profile.phone || '',
     age: profile.age,
@@ -588,7 +589,10 @@ async function signInAfterSignup(email, password) {
 // E-posta doğrulaması kayıtta zorunlu değildir; profilden isteğe bağlı yapılır.
 // İdempotent: yarım kalmış (auth var ama profil yok) kayıtları kurtarır.
 async function ensureAuthForSignup(profile) {
-  const email = (profile.email || '').trim().toLowerCase()
+  const email = normalizeEmailAddress(profile.email)
+  if (!email) {
+    return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
+  }
   const password = profile.password
   const emailRedirectTo = `${getSiteUrl()}/auth/callback?verify=email`
 
@@ -611,6 +615,9 @@ async function ensureAuthForSignup(profile) {
   })
 
   if (signUpError) {
+    if (/validate email|invalid format|invalid email/i.test(signUpError.message)) {
+      return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
+    }
     if (/registered|already|exists/i.test(signUpError.message)) {
       const signIn = await signInAfterSignup(email, password)
       if (signIn.success) return { success: true }

@@ -24,7 +24,7 @@ import { startStripeCheckout } from '../services/stripePayment'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 const STEPS = ['Hesap', 'Üyelik']
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 const BENEFITS = [
@@ -32,7 +32,7 @@ const BENEFITS = [
   { icon: HeartPulse, text: 'Uzman koç ve diyetisyen desteği' },
 ]
 
-function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan }) {
+function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan, userEmail }) {
   const { toast } = useToast()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -68,7 +68,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan 
     if (isPaid) {
       if (isStripeEnabled()) {
         setSaving(true)
-        const r = await startStripeCheckout(selected, 'change', durationMonths)
+        const r = await startStripeCheckout(selected, 'change', durationMonths, userEmail)
         if (!r.success) { setSaving(false); toast(r.error || 'Ödeme başlatılamadı', 'error') }
         return
       }
@@ -176,7 +176,7 @@ export default function OnboardingPage() {
     membership: preselectedPlan,
   })
 
-  const { register, registerWithPlan, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership } = useApp()
+  const { register, registerWithPlan, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff
@@ -195,6 +195,7 @@ export default function OnboardingPage() {
         currentMembership={currentMembership}
         preselectedPlan={preselectedPlan}
         changePlan={changePlan}
+        userEmail={user?.email}
       />
     )
   }
@@ -206,7 +207,7 @@ export default function OnboardingPage() {
   const isPaid = isPaidMembership(data.membership)
 
   const errors = {
-    email: data.email && !EMAIL_RE.test(data.email.trim()) ? 'Geçerli bir e-posta adresi girin (ör. ad@site.com)' : '',
+    email: data.email && !isValidEmailAddress(data.email) ? 'Geçerli bir e-posta adresi girin (ör. ad@site.com)' : '',
     phone: data.phone && !isValidNationalNumber(data.phoneCountry, data.phone) ? 'Geçerli bir cep telefonu numarası girin' : '',
     password: data.password && !isPasswordValid(data.password) ? 'Şifre gereksinimleri karşılanmıyor' : '',
     confirmPassword: data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : '',
@@ -216,7 +217,7 @@ export default function OnboardingPage() {
     if (step === 0) {
       return (
         data.name.trim() &&
-        EMAIL_RE.test(data.email.trim()) &&
+        isValidEmailAddress(data.email) &&
         isValidNationalNumber(data.phoneCountry, data.phone) &&
         isPasswordValid(data.password) &&
         data.password === data.confirmPassword
@@ -228,7 +229,7 @@ export default function OnboardingPage() {
 
   const buildProfile = () => ({
     name: data.name.trim(),
-    email: data.email.trim(),
+    email: sanitizeEmailInput(data.email),
     phone: toE164(data.phoneCountry, data.phone),
     phoneCountry: data.phoneCountry,
     password: data.password,
@@ -279,7 +280,7 @@ export default function OnboardingPage() {
       setSubmitting(false)
       return
     }
-    const r = await startStripeCheckout(data.membership, 'register', durationMonths)
+    const r = await startStripeCheckout(data.membership, 'register', durationMonths, sanitizeEmailInput(data.email))
     if (!r.success) {
       setSubmitting(false)
       toast(`${r.error} Ücretsiz üye olarak kaydınız tamamlandı; planı profilinizden yükseltebilirsiniz.`, 'warning')
@@ -420,7 +421,7 @@ export default function OnboardingPage() {
                       )}
 
                       <FormField emphasis label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
-                      <FormField emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} error={errors.email} />
+                      <FormField emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} onBlur={() => update({ email: sanitizeEmailInput(data.email) })} error={errors.email} />
 
                       <PhoneField
                         emphasis

@@ -11,6 +11,7 @@ import { BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
+import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
 
 const FEATURES = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman programları' },
@@ -59,7 +60,7 @@ export default function LoginPage() {
 
   const validate = () => {
     const e = {}
-    if (!email.includes('@')) e.email = 'Geçerli e-posta girin'
+    if (!isValidEmailAddress(email)) e.email = 'Geçerli e-posta girin'
     if (password.length < 6) e.password = 'En az 6 karakter'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -67,10 +68,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!validate()) return
+    const cleanEmail = sanitizeEmailInput(email)
+    if (cleanEmail !== email) setEmail(cleanEmail)
+    const fieldErrors = {}
+    if (!isValidEmailAddress(cleanEmail)) fieldErrors.email = 'Geçerli e-posta girin'
+    if (password.length < 6) fieldErrors.password = 'En az 6 karakter'
+    setErrors(fieldErrors)
+    if (Object.keys(fieldErrors).length) return
     setLoading(true)
     try {
-      const result = await login(email, password, remember)
+      const result = await login(cleanEmail, password, remember)
       if (!result.success) {
         toast(result.error || 'Giriş başarısız', 'error')
         return
@@ -182,6 +189,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmail(sanitizeEmailInput(email))}
                 error={errors.email}
               />
 
