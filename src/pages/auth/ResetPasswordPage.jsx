@@ -27,6 +27,8 @@ export default function ResetPasswordPage() {
       }
     }
 
+    // Supabase recovery hash'i (#access_token=…&type=recovery) otomatik işler;
+    // PASSWORD_RECOVERY veya SIGNED_IN eventi geldiğinde form gösterilebilir.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         markReady()
@@ -34,14 +36,19 @@ export default function ResetPasswordPage() {
     })
 
     async function waitForSession() {
-      for (let i = 0; i < 8; i += 1) {
-        if (cancelled) return
+      // Önce mevcut oturumu anında kontrol et
+      const { data: immediate } = await supabase.auth.getSession()
+      if (immediate?.session) { markReady(); return }
+
+      // Hash'ten oturum oluşturulması için kısa bir bekleme
+      for (let i = 0; i < 12; i += 1) {
+        if (cancelled || settled) return
+        await new Promise((r) => setTimeout(r, 400))
         const { data } = await supabase.auth.getSession()
         if (data.session) {
           markReady()
           return
         }
-        await new Promise((r) => setTimeout(r, 400))
       }
       if (!cancelled && !settled) setStatus('invalid')
     }
@@ -69,8 +76,10 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
       setStatus('done')
-      toast('Şifreniz güncellendi', 'success')
-      setTimeout(() => navigate('/login', { replace: true }), 2000)
+      toast('Şifreniz güncellendi. Giriş sayfasına yönlendiriliyorsunuz…', 'success')
+      // Oturumu temizle — eski recovery token artık geçersiz; kullanıcı yeniden giriş yapmalı
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+      setTimeout(() => navigate('/login', { replace: true }), 2500)
     } catch (err) {
       toast(err.message || 'Şifre güncellenemedi', 'error')
     } finally {

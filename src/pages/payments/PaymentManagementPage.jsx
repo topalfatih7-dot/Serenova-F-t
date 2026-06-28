@@ -124,8 +124,8 @@ function MemberPayments() {
         {payments.length === 0 ? (
           <EmptyState icon={History} title="Henüz ödeme kaydı yok" description="Ücretli paket satın aldığınızda ödemeleriniz burada listelenir." />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white">
+            <table className="w-full min-w-[480px] text-sm">
               <thead className="border-b border-cream-100 bg-cream-50/80 text-left text-xs uppercase tracking-wide text-cream-800/50">
                 <tr>
                   <th className="px-4 py-3">Tarih</th>

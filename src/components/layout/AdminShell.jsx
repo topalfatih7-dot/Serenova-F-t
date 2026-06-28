@@ -94,7 +94,7 @@ export default function AdminShell() {
         </div>
       </aside>
 
-      <div className="relative flex flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <PanelMobileMenu
           navItems={navWithBadges}
           brandLink="/admin"

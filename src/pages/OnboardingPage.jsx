@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, Sparkles,
   User, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle,
-  Dumbbell, HeartPulse, ArrowRight, ArrowLeft,
+  Dumbbell, HeartPulse, ArrowRight, ArrowLeft, CheckSquare2, Square,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import PaymentForm from '../components/payment/PaymentForm'
@@ -166,6 +166,7 @@ export default function OnboardingPage() {
   const [showErrors, setShowErrors] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(false)
   const [welcomePaid, setWelcomePaid] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -220,7 +221,8 @@ export default function OnboardingPage() {
         isValidEmailAddress(data.email) &&
         isValidNationalNumber(data.phoneCountry, data.phone) &&
         isPasswordValid(data.password) &&
-        data.password === data.confirmPassword
+        data.password === data.confirmPassword &&
+        termsAccepted
       )
     }
     if (step === 1) return !!data.membership
@@ -507,7 +509,40 @@ export default function OnboardingPage() {
               </AnimatePresence>
             </div>
 
-            <div className="mt-7 flex items-center gap-3">
+            {/* Yasal onay kutusu — yalnızca adım 0'da gösterilir */}
+            {step === 0 && (
+              <div className="mt-5">
+                <button
+                  type="button"
+                  onClick={() => setTermsAccepted((v) => !v)}
+                  className={`flex w-full items-start gap-2.5 rounded-xl border p-3 text-left transition ${
+                    showErrors && !termsAccepted
+                      ? 'border-red-300 bg-red-50/50'
+                      : termsAccepted
+                        ? 'border-brand-200 bg-brand-50/40'
+                        : 'border-cream-200 bg-cream-50/40 hover:border-brand-200'
+                  }`}
+                  aria-pressed={termsAccepted}
+                >
+                  <span className="mt-0.5 shrink-0 text-brand-500">
+                    {termsAccepted
+                      ? <CheckSquare2 className="h-4 w-4" />
+                      : <Square className="h-4 w-4 text-cream-400" />}
+                  </span>
+                  <span className="text-xs leading-relaxed text-cream-800/70">
+                    <Link to="/terms" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>Kullanım Şartları</Link>
+                    {' '}ve{' '}
+                    <Link to="/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>KVKK Aydınlatma Metni</Link>
+                    {' '}kapsamında kişisel verilerimin işlenmesini kabul ediyorum.
+                  </span>
+                </button>
+                {showErrors && !termsAccepted && (
+                  <p className="mt-1.5 text-xs font-medium text-red-500">Devam etmek için koşulları kabul etmelisiniz.</p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center gap-3">
               {step > 0 && (
                 <button type="button" onClick={back} className="flex items-center gap-1.5 rounded-2xl border border-cream-200 px-4 py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50">
                   <ArrowLeft className="h-4 w-4" /> Geri

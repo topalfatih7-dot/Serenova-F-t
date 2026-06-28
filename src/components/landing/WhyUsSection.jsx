@@ -1,24 +1,78 @@
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Heart, Users, Calendar, Shield, Sparkles, Dumbbell, Apple, TrendingUp,
+  Heart, Users, Calendar, Shield, Sparkles, Dumbbell, Apple, TrendingUp, ChevronRight, X,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { BRAND } from '../../config/brand'
 
 const WHY_ITEMS = [
-  { icon: Heart, title: 'Kişiye özel koçluk', accent: 'from-rose-400 to-brand-500' },
-  { icon: Dumbbell, title: 'Evde antrenman rehberliği', accent: 'from-brand-400 to-brand-600' },
-  { icon: Apple, title: 'Beslenme & diyetisyen desteği', accent: 'from-sage-400 to-sage-600' },
-  { icon: Calendar, title: 'Takvim & hatırlatıcılar', accent: 'from-brand-300 to-sage-500' },
-  { icon: Users, title: 'Destekleyici topluluk', accent: 'from-warm-400 to-brand-500' },
-  { icon: TrendingUp, title: 'İlerleme takibi & raporlar', accent: 'from-mint-400 to-sage-500' },
-  { icon: Sparkles, title: 'Ücretsiz veya Premium esneklik', accent: 'from-gold-400 to-warm-500' },
-  { icon: Shield, title: 'KVKK uyumlu güvenli platform', accent: 'from-cream-300 to-brand-400' },
+  {
+    icon: Heart,
+    title: 'Kişiye özel koçluk',
+    accent: 'from-rose-400 to-brand-500',
+    description: 'Hedeflerinize, beden yapınıza ve yaşam tarzınıza göre tasarlanmış birebir koçluk. Sizi tanıyan bir uzman, her adımda yanınızda.',
+    cta: { label: 'Koçlarımızı tanıyın', to: '/team/coaches' },
+  },
+  {
+    icon: Dumbbell,
+    title: 'Evde antrenman rehberliği',
+    accent: 'from-brand-400 to-brand-600',
+    description: 'Ekipman gerektirmeyen, eve uyarlanmış antrenman programları. Video rehberli hareketler ve haftalık plan güncellemeleri.',
+    cta: { label: 'Programları keşfedin', to: '/membership' },
+  },
+  {
+    icon: Apple,
+    title: 'Beslenme & diyetisyen desteği',
+    accent: 'from-sage-400 to-sage-600',
+    description: 'Alanında uzman diyetisyenlerimiz kişiye özel beslenme planı hazırlar. Aylık görüşmelerle ilerlemenizi birlikte takip ederiz.',
+    cta: { label: 'Diyetisyenlerimizi görün', to: '/team/dietitians' },
+  },
+  {
+    icon: Calendar,
+    title: 'Takvim & hatırlatıcılar',
+    accent: 'from-brand-300 to-sage-500',
+    description: 'Randevularınızı, antrenman günlerinizi ve öğün zamanlarınızı tek panelde görün. Kaçırmamak için otomatik hatırlatıcılar.',
+    cta: { label: 'Üyeliğe başlayın', to: '/onboarding' },
+  },
+  {
+    icon: Users,
+    title: 'Destekleyici topluluk',
+    accent: 'from-warm-400 to-brand-500',
+    description: 'Aynı dönüşüm yolculuğundaki binlerce üye ile bağlantı kurun. Başarı hikayeleri, motivasyon ve ortak hedefler.',
+    cta: { label: 'Başarı hikayelerini oku', to: '/stories' },
+  },
+  {
+    icon: TrendingUp,
+    title: 'İlerleme takibi & raporlar',
+    accent: 'from-mint-400 to-sage-500',
+    description: 'Kilo, ölçü ve antrenman verilerinizi haftalık grafiklerde izleyin. Koçunuz da aynı verilere bakarak planınızı günceller.',
+    cta: { label: 'Planları karşılaştırın', to: '/membership' },
+  },
+  {
+    icon: Sparkles,
+    title: 'Ücretsiz veya Premium esneklik',
+    accent: 'from-gold-400 to-warm-500',
+    description: 'Ücretsiz paketle başlayın, hazır olduğunuzda yükseltin. Koç, diyetisyen veya her ikisini birden içeren esnek paketler.',
+    cta: { label: 'Paketleri inceleyin', to: '/membership' },
+  },
+  {
+    icon: Shield,
+    title: 'KVKK uyumlu güvenli platform',
+    accent: 'from-cream-300 to-brand-400',
+    description: 'Sağlık verileriniz uçtan uca şifreli, KVKK tam uyumlu altyapıda saklanır. Verileriniz üçüncü taraflarla asla paylaşılmaz.',
+    cta: { label: 'Gizlilik politikamız', to: '/kvkk' },
+  },
 ]
 
 export default function WhyUsSection() {
+  const [activeItem, setActiveItem] = useState(null)
+
+  const toggle = (title) => setActiveItem((prev) => (prev === title ? null : title))
+
   return (
     <section className="relative isolate min-h-[520px] overflow-hidden sm:min-h-[580px] lg:min-h-[640px]">
-      {/* Spor yapan kadın — tam genişlik arka plan */}
+      {/* Arka plan görseli */}
       <div className="absolute inset-0">
         <img
           src="/why-us-bg.jpg"
@@ -49,6 +103,7 @@ export default function WhyUsSection() {
           <ul className="mt-8 grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:mt-10">
             {WHY_ITEMS.map((item, i) => {
               const Icon = item.icon
+              const isOpen = activeItem === item.title
               return (
                 <motion.li
                   key={item.title}
@@ -56,17 +111,54 @@ export default function WhyUsSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05, duration: 0.4 }}
-                  whileHover={{ scale: 1.02, x: 4 }}
-                  className="group flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3.5 backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.14] sm:px-4 sm:py-4"
+                  className="group rounded-2xl border border-white/10 bg-white/[0.08] backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.14]"
                 >
-                  <span
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-lg shadow-black/20 transition group-hover:scale-110`}
+                  <button
+                    type="button"
+                    onClick={() => toggle(item.title)}
+                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left sm:px-4 sm:py-4"
+                    aria-expanded={isOpen}
                   >
-                    <Icon className="h-5 w-5" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-sm font-semibold leading-snug text-white sm:text-[0.9375rem]">
-                    {item.title}
-                  </span>
+                    <span
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-lg shadow-black/20 transition group-hover:scale-110`}
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={2.2} />
+                    </span>
+                    <span className="flex-1 text-sm font-semibold leading-snug text-white sm:text-[0.9375rem]">
+                      {item.title}
+                    </span>
+                    <span className="shrink-0 text-white/50 transition group-hover:text-white/80">
+                      {isOpen
+                        ? <X className="h-4 w-4" />
+                        : <ChevronRight className="h-4 w-4" />}
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        key="detail"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-white/10 px-4 pb-4 pt-3">
+                          <p className="text-sm leading-relaxed text-white/75">{item.description}</p>
+                          {item.cta && (
+                            <Link
+                              to={item.cta.to}
+                              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-warm-300 transition hover:text-warm-200 hover:underline"
+                            >
+                              {item.cta.label}
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.li>
               )
             })}
@@ -74,7 +166,7 @@ export default function WhyUsSection() {
         </motion.div>
       </div>
 
-      {/* Mobilde görsel hissi — sağ alt köşe vurgu */}
+      {/* Mobil vurgu efekti */}
       <div
         aria-hidden
         className="pointer-events-none absolute bottom-0 right-0 h-32 w-32 bg-gradient-to-tl from-brand-500/30 to-transparent blur-2xl lg:hidden"

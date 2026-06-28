@@ -8,12 +8,8 @@ import { Bell } from 'lucide-react'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
-  { id: 'support-reply', label: 'Destek' },
-  { id: 'reminder', label: 'Hatırlatıcı' },
-  { id: 'assignment', label: 'Atamalar' },
-  { id: 'no-response', label: 'Yanıt bekleniyor' },
-  { id: 'health-warning', label: 'Sağlık' },
-  { id: 'upsell', label: 'Öneriler' },
+  { id: 'unread', label: 'Okunmamışlar' },
+  { id: 'read', label: 'Okunanlar' },
 ]
 
 export default function NotificationsPage() {
@@ -23,7 +19,9 @@ export default function NotificationsPage() {
 
   const filtered = filter === 'all'
     ? notifications
-    : notifications.filter((n) => n.type === filter)
+    : filter === 'unread'
+      ? notifications.filter((n) => !n.read)
+      : notifications.filter((n) => n.read)
 
   const unread = notifications.filter((n) => !n.read).length
 

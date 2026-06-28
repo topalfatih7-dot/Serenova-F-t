@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
@@ -9,6 +9,8 @@ import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { resolveFirstName } from '../../utils/displayName'
+import StaffForcePasswordChange from '../auth/StaffForcePasswordChange'
+import { supabase } from '../../services/supabaseClient'
 
 const STAFF_EMOJIS = ['📋', '💪', '🥗', '📊', '🧘', '⭐', '🎯', '💚', '🏅', '🤝']
 
@@ -35,7 +37,30 @@ function staffNavForRole(role) {
 }
 
 export default function StaffShell() {
-  const { staffUser, logout, chatUnreadCount, staffAdminUnreadCount } = useApp()
+  const { staffUser, logout, chatUnreadCount, staffAdminUnreadCount, refresh } = useApp()
+
+  // İlk giriş kontrolü: geçici şifreyle giriş yapan personel için şifre değiştirme zorunluluğu
+  const mustChangePassword = Boolean(staffUser?.data?.tempPasswordIssued)
+  const [passwordChanged, setPasswordChanged] = useState(false)
+
+  const handlePasswordChanged = useCallback(async () => {
+    // Supabase kaydının ardından staffUser.data.tempPasswordIssued'ı sıfırla
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        await supabase
+          .from('staff')
+          .update({ data: { ...(staffUser?.data || {}), tempPasswordIssued: false } })
+          .eq('id', staffUser.id)
+      }
+    } catch {
+      // Güncelleme başarısız olsa bile kullanıcıya devam ettir; bir sonraki girişte yeniden sorar.
+    }
+    await refresh().catch(() => {})
+    setPasswordChanged(true)
+  }, [staffUser, refresh])
+
+  const showForceChange = mustChangePassword && !passwordChanged
 
   const meta = staffRoleMeta(staffUser.role)
   const RoleIcon = meta.icon
@@ -53,6 +78,14 @@ export default function StaffShell() {
     <div className="staff-panel-bg relative flex min-h-screen overflow-hidden">
       <NoIndexHead />
       <AnimatedBackground emojis={STAFF_EMOJIS} accent="staff" />
+
+      {/* Geçici şifre değiştirme ekranı — ilk girişte gösterilir */}
+      {showForceChange && (
+        <StaffForcePasswordChange
+          staffName={staffUser?.name}
+          onDone={handlePasswordChanged}
+        />
+      )}
       <aside className="relative hidden w-56 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm md:flex lg:w-64">
         <div className="border-b border-cream-100 p-5">
           <BrandLogo linkTo="/staff" />

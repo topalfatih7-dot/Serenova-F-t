@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Mail, Lock, Eye, EyeOff, Shield, Loader2, Sparkles, ArrowRight,
-  HeartPulse, Dumbbell,
+  HeartPulse, Dumbbell, CheckSquare2, Square,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(() => getRememberMe())
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const { login, isAuthenticated, isAdmin, isStaff } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -73,6 +74,7 @@ export default function LoginPage() {
     const fieldErrors = {}
     if (!isValidEmailAddress(cleanEmail)) fieldErrors.email = 'Geçerli e-posta girin'
     if (password.length < 6) fieldErrors.password = 'En az 6 karakter'
+    if (!termsAccepted) fieldErrors.terms = 'Devam etmek için koşulları kabul etmelisiniz'
     setErrors(fieldErrors)
     if (Object.keys(fieldErrors).length) return
     setLoading(true)
@@ -235,6 +237,40 @@ export default function LoginPage() {
                 <Link to="/forgot-password" className="text-sm font-semibold text-brand-600 hover:underline">
                   Şifremi unuttum
                 </Link>
+              </div>
+
+              {/* Yasal onay kutusu */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTermsAccepted((v) => !v)
+                    if (errors.terms) setErrors((e) => ({ ...e, terms: undefined }))
+                  }}
+                  className={`flex w-full items-start gap-2.5 rounded-xl border p-3 text-left transition ${
+                    errors.terms
+                      ? 'border-red-300 bg-red-50/50'
+                      : termsAccepted
+                        ? 'border-brand-200 bg-brand-50/40'
+                        : 'border-cream-200 bg-cream-50/40 hover:border-brand-200'
+                  }`}
+                  aria-pressed={termsAccepted}
+                >
+                  <span className="mt-0.5 shrink-0 text-brand-500">
+                    {termsAccepted
+                      ? <CheckSquare2 className="h-4 w-4" />
+                      : <Square className="h-4 w-4 text-cream-400" />}
+                  </span>
+                  <span className="text-xs leading-relaxed text-cream-800/70">
+                    <Link to="/terms" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>Kullanım Şartları</Link>
+                    {' '}ve{' '}
+                    <Link to="/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>KVKK Aydınlatma Metni</Link>
+                    {' '}kapsamında kişisel verilerimin işlenmesini kabul ediyorum.
+                  </span>
+                </button>
+                {errors.terms && (
+                  <p className="mt-1.5 text-xs font-medium text-red-500">{errors.terms}</p>
+                )}
               </div>
 
               <motion.button

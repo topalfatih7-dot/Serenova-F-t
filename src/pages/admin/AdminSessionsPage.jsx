@@ -33,25 +33,25 @@ export default function AdminSessionsPage() {
           Premium üye olmadığı için seans yok. Premium kayıt oluşturun.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white p-6">
+        <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white">
           <table className="w-full min-w-[600px] text-sm">
             <thead>
               <tr className="border-b border-cream-100 text-left">
-                <th className="pb-3 font-medium text-cream-800/60">Üye</th>
-                <th className="pb-3 font-medium text-cream-800/60">Tür</th>
-                <th className="pb-3 font-medium text-cream-800/60">Başlık</th>
-                <th className="pb-3 font-medium text-cream-800/60">Uzman</th>
-                <th className="pb-3 font-medium text-cream-800/60">Durum</th>
+                <th className="px-4 py-3 font-medium text-cream-800/60">Üye</th>
+                <th className="px-4 py-3 font-medium text-cream-800/60">Tür</th>
+                <th className="px-4 py-3 font-medium text-cream-800/60">Başlık</th>
+                <th className="px-4 py-3 font-medium text-cream-800/60">Uzman</th>
+                <th className="px-4 py-3 font-medium text-cream-800/60">Durum</th>
               </tr>
             </thead>
             <tbody>
               {sessions.map((s) => (
                 <tr key={s.id} className="border-b border-cream-50">
-                  <td className="py-3 font-medium">{s.memberName}</td>
-                  <td className="py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : 'text-sage-600'}>{s.sessionType}</span></td>
-                  <td className="py-3">{s.title}</td>
-                  <td className="py-3 text-cream-800/70">{s.coach}</td>
-                  <td className="py-3">
+                  <td className="px-4 py-3 font-medium">{s.memberName}</td>
+                  <td className="px-4 py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : 'text-sage-600'}>{s.sessionType}</span></td>
+                  <td className="px-4 py-3">{s.title}</td>
+                  <td className="px-4 py-3 text-cream-800/70">{s.coach}</td>
+                  <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.status === 'scheduled' ? 'bg-brand-50 text-brand-700' : s.status === 'completed' ? 'bg-sage-50 text-sage-700' : 'bg-red-50 text-red-600'}`}>
                       {s.status}
                     </span>

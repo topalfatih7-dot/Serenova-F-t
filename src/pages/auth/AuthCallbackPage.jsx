@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertCircle, Loader2, LayoutDashboard, LogIn, Sparkles } from 'lucide-react'
@@ -7,6 +7,8 @@ import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services
 import { BRAND } from '../../config/brand'
 import { getPostLoginPath } from '../../services/platformStats'
 import { useApp } from '../../context/AppContext'
+
+const AUTO_REDIRECT_SECONDS = 10
 
 function FloatingOrb({ className, delay = 0 }) {
   return (
@@ -34,6 +36,9 @@ export default function AuthCallbackPage() {
   const { refresh } = useApp()
   const [phase, setPhase] = useState('loading')
   const [hasSession, setHasSession] = useState(false)
+  const [countdown, setCountdown] = useState(AUTO_REDIRECT_SECONDS)
+  const countdownRef = useRef(null)
+  const dbRef = useRef(null)
 
   useEffect(() => {
     if (!isSupabaseEnabled || !supabase) {
@@ -73,7 +78,7 @@ export default function AuthCallbackPage() {
       if (!active) return
       setHasSession(Boolean(session?.user))
       setPhase('success')
-      Promise.resolve(refresh()).catch(() => { /* arka plan; UI'ı bloklama */ })
+      Promise.resolve(refresh()).then((db) => { dbRef.current = db }).catch(() => { /* arka plan; UI'ı bloklama */ })
     }
 
     async function finish() {
@@ -157,14 +162,33 @@ export default function AuthCallbackPage() {
     return () => { active = false }
   }, [navigate, searchParams, refresh])
 
-  const goPanel = async () => {
+  // 10 saniyelik geri sayım — yalnızca başarı ekranında çalışır
+  const goPanel = useCallback(async () => {
+    if (countdownRef.current) clearInterval(countdownRef.current)
     if (hasSession) {
-      const db = await refresh().catch(() => null)
+      const db = dbRef.current || await refresh().catch(() => null)
       navigate(getPostLoginPath(db), { replace: true })
       return
     }
     navigate('/login', { replace: true })
-  }
+  }, [hasSession, navigate, refresh])
+
+  useEffect(() => {
+    if (phase !== 'success') return undefined
+    setCountdown(AUTO_REDIRECT_SECONDS)
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(countdownRef.current)
+          goPanel()
+          return 0
+        }
+        return c - 1
+      })
+    }, 1000)
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
+  }, [phase, goPanel])
+
 
   const copy = {
     loading: {
@@ -273,7 +297,9 @@ export default function AuthCallbackPage() {
                   </button>
                 )}
                 {phase === 'success' && (
-                  <p className="text-xs text-cream-800/45">Oturumunuz açık; panele yönlendirileceksiniz.</p>
+                  <p className="text-xs text-cream-800/45">
+                    Oturumunuz açık; {countdown} saniye içinde otomatik yönlendirileceksiniz.
+                  </p>
                 )}
                 {phase === 'prefetch' && (
                   <Link

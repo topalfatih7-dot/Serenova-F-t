@@ -54,12 +54,16 @@ export default function CoachSchedulePage() {
         subtitle="Birebir antrenman görüşmeleriniz"
         icon={Dumbbell}
         accent="brand"
-        actions={['upcoming', 'past', 'all'].map((f) => (
+      />
+
+      {/* Filtre sekmeleri — ayrı satırda, dar ekranlarda tam genişlik */}
+      <div className="flex flex-wrap gap-2">
+        {['upcoming', 'past', 'all'].map((f) => (
           <PanelChip key={f} active={filter === f} onClick={() => setFilter(f)} accent="brand">
             {f === 'upcoming' ? 'Yaklaşan' : f === 'past' ? 'Geçmiş' : 'Tümü'}
           </PanelChip>
         ))}
-      />
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState icon={Calendar} title="Randevu bulunamadı" description="Koç randevularınız admin tarafından planlandığında burada görünecek." />
