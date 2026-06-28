@@ -16,9 +16,9 @@ const WHY_ITEMS = [
   },
   {
     icon: Dumbbell,
-    title: 'Evde antrenman rehberliği',
+    title: 'Evde ve salonda antrenman rehberliği',
     accent: 'from-brand-400 to-brand-600',
-    description: 'Ekipman gerektirmeyen, eve uyarlanmış antrenman programları. Video rehberli hareketler ve haftalık plan güncellemeleri.',
+    description: 'Salon programınızı veya ev antrenmanınızı koçunuzla birlikte planlayın. Video rehberli hareketler ve haftalık güncellemeler.',
     cta: { label: 'Programları keşfedin', to: '/membership' },
   },
   {
@@ -152,7 +152,7 @@ export default function WhyUsSection() {
                           {item.cta && (
                             <Link
                               to={item.cta.to}
-                              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-warm-300 transition hover:text-warm-200 hover:underline"
+                              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-white/90 transition hover:text-white hover:underline"
                             >
                               {item.cta.label}
                               <ChevronRight className="h-3.5 w-3.5" />

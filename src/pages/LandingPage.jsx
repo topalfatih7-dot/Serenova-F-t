@@ -71,26 +71,22 @@ export default function LandingPage() {
           HERO — Video Arka Plan + Asimetrik Kart
       ═══════════════════════════════════════════ */}
       <section className="relative flex min-h-[100svh] items-center overflow-hidden">
-        {/* Video arka plan — sessiz, döngüsel, bulanık (spor yapan kadınlar) */}
+        {/* Video yüklenene kadar düz renk — poster/görsel fallback kaldırıldı (ekstra indirme yok) */}
+        <div aria-hidden className="absolute inset-0 bg-cream-900" />
         <video
           autoPlay
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           aria-hidden
-          poster="/hero-bg.png"
           className="absolute inset-0 h-full w-full object-cover"
           style={{ filter: 'blur(3px) brightness(0.55) saturate(1.2)' }}
         >
-          {/* Telifsiz stok video (Mixkit). Kendi videonuzu /public/hero-video.mp4 olarak
-              ekleyip aşağıdaki src'yi "/hero-video.mp4" ile değiştirebilirsiniz. */}
           <source
             src="https://assets.mixkit.co/active_storage/video_items/100526/1725383305/100526-video-720.mp4"
             type="video/mp4"
           />
-          {/* Video yoksa/oynatılamazsa görsel fallback */}
-          <img src="/hero-bg.png" alt="Yeni Form wellness platformu — fitness ve sağlıklı yaşam" className="h-full w-full object-cover" />
         </video>
 
         {/* Gradient overlay — sol koyu, sağ açık */}
@@ -161,8 +157,8 @@ export default function LandingPage() {
                 custom={2}
                 className="mt-3 text-sm leading-relaxed text-white/80"
               >
-                Ücretsiz başlayın veya Premium ile birebir koç ve diyetisyen desteği alın.
-                Evde, güvenle, kendi hızınızda.
+                İster spor salonunda, ister evde antrenman yapın — koç ve diyetisyeniniz size özel
+                program hazırlasın. Ücretsiz keşfedin, hedefinize kendi hızınızda ulaşın.
               </motion.p>
 
               <motion.div
@@ -229,7 +225,7 @@ export default function LandingPage() {
             <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
           </motion.div>
 
-          {/* Mobil swipe ipucu */}
+          {/* Mobil swipe ipucu — ok animasyonu CSS (.plans-swipe-nudge), Framer infinite kaldırıldı */}
           <AnimatePresence>
             {swipeHint && (
               <motion.div
@@ -239,14 +235,10 @@ export default function LandingPage() {
                 className="mt-6 flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 lg:hidden"
               >
                 <div className="flex items-center gap-2.5">
-                  <motion.div
-                    animate={{ x: [-4, 4, -4] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="flex items-center gap-0.5 text-brand-600"
-                  >
+                  <div className="plans-swipe-nudge flex items-center gap-0.5 text-brand-600">
                     <ChevronLeft className="h-4 w-4" />
                     <ChevronRight className="h-4 w-4" />
-                  </motion.div>
+                  </div>
                   <p className="text-xs font-medium text-brand-700">
                     Tüm planları karşılaştırmak için sola kaydırın
                   </p>
@@ -263,16 +255,12 @@ export default function LandingPage() {
             )}
           </AnimatePresence>
 
-          {/* Masaüstü: grid; Tablet/mobil: yatay kaydırma */}
+          {/* Masaüstü: grid — kart girişi CSS (.plans-card-reveal), Framer whileInView ×3 kaldırıldı */}
           <div className="mt-8 hidden items-stretch gap-6 lg:grid lg:grid-cols-3">
             {displayPlans.map((plan, i) => (
-              <motion.div
+              <div
                 key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                viewport={{ once: true, margin: "50px" }}
-                className="h-full"
+                className={`plans-card-reveal plans-card-reveal-delay-${i + 1} h-full`}
               >
                 <PricingCard
                   plan={plan}
@@ -280,20 +268,16 @@ export default function LandingPage() {
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          {/* Tablet + mobil: yatay kaydırma — pt-6: kartların üstündeki rozet kırpılmasın */}
+          {/* Tablet + mobil: yatay kaydırma */}
           <div className="mt-4 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-6 lg:hidden [scroll-padding:1rem]">
             {displayPlans.map((plan, i) => (
-              <motion.div
+              <div
                 key={plan.id}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.08 }}
-                viewport={{ once: true, margin: "50px" }}
-                className="flex w-[min(78vw,340px)] max-w-xs shrink-0 snap-start self-stretch sm:w-[320px] md:w-[340px]"
+                className={`plans-card-reveal plans-card-reveal-delay-${i + 1} flex w-[min(78vw,340px)] max-w-xs shrink-0 snap-start self-stretch sm:w-[320px] md:w-[340px]`}
               >
                 <div className="h-full w-full">
                 <PricingCard
@@ -303,7 +287,7 @@ export default function LandingPage() {
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />
                 </div>
-              </motion.div>
+              </div>
             ))}
             {/* Son elemandan sonra hafif boşluk */}
             <div className="w-4 shrink-0" />

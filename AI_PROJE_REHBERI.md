@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§44: personel mesajlaşma danışan listesi, thread otomatik oluşturma, RLS e-posta case-insensitive)
+> **Son güncelleme:** 2026-06-28 (§45: landing performans, SEO slug profilleri, UX metin/düzen iyileştirmeleri)
 
 ---
 
@@ -3096,4 +3096,57 @@ Koç/diyetisyen **Mesajlar** panelinde atanmış danışanlar görünmüyordu; d
 ### Dosyalar
 
 `src/pages/staff/StaffMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/utils/chatAccess.js`, `src/services/chatDb.js`, `supabase/migrations/20260628_staff_email_rls_case_insensitive.sql`
+
+---
+
+## 45. Landing Performans, SEO Slug Profilleri & UX İyileştirmeleri (2026-06-28)
+
+### Landing performans optimizasyonu
+
+Scroll/navigasyon lag'ini azaltmak için Framer Motion tabanlı **sürekli (infinite) orb animasyonları** CSS'e taşındı; reflow tetikleyen animasyonlar kaldırıldı.
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/index.css` | `landingOrbPulseA/B/C`, `landingBlobRotateCW/CCW` keyframe'leri + `prefers-reduced-motion` |
+| `SectionBackdrop.jsx` | 3× JS orb → `.landing-orb-a/b/c` CSS sınıfları |
+| `PlansAnimatedBackground.jsx` | JS orb kaldırıldı; CSS aurora yeterli |
+| `LandingPage.jsx` hero | rotate/scale JS blob'ları CSS'e; video `poster` + `<img>` fallback kaldırıldı, `preload="metadata"` |
+| `PromoBanner.jsx` | `height:'auto'` → `opacity + y` (reflow yok) |
+| `RotatingHeroText.jsx` | `filter:blur()` kaldırıldı (metin rasterization maliyeti) |
+| `WhyUsSection.jsx` | `viewport margin:'50px'`; accordion süresi kısaltıldı |
+| Diğer landing bileşenleri | Tüm `whileInView` → `viewport={{ once: true, margin: "50px" }}` |
+
+### UX / metin düzenlemeleri
+
+| Alan | Değişiklik |
+|------|------------|
+| **WhyUsSection** | Accordion CTA linkleri `text-white/90`; "Evde ve salonda antrenman rehberliği" |
+| **LandingPage hero** | Metin: ev + spor salonu hedef kitlesi; video arkası poster/görsel kaldırıldı |
+| **LatestBlogPosts** | Sağ sütun `md:grid-rows-2` ile eşit yükseklik; dikey kart düzeni, excerpt eklendi |
+
+### SEO — kadro profil slug'ları
+
+"Koç Ahmet Yeni Form" gibi aramalar için SEO dostu URL'ler:
+
+| Fonksiyon | Dosya | Açıklama |
+|-----------|-------|----------|
+| `slugifyTurkish()` | `src/config/seo.js` | Türkçe karakter destekli slug |
+| `staffPublicSlug(member)` | `src/config/seo.js` | Örn. `koc-ahmet-yilmaz` |
+| `staffProfilePath(member)` | `src/config/seo.js` | `/team/koc-ahmet-yilmaz` |
+| `findStaffMember(staff, param)` | `src/config/seo.js` | UUID veya slug ile eşleşme |
+| `buildStaffProfileKeywords()` | `src/config/seo.js` | `"koç ahmet", "ahmet yeni form"` vb. meta keywords |
+
+**Davranış:**
+- Profil linkleri artık slug URL kullanır (`StaffMemberCard`, `TeamListPage` ItemList schema).
+- UUID ile erişim (`/team/<uuid>`) otomatik slug URL'ine **301 benzeri client redirect** (`StaffProfilePage` → `<Navigate replace>`).
+- `buildPersonSchema` → `url`, `sameAs` (sosyal linkler) eklendi.
+- `api/sitemap.js` → kadro profilleri slug path ile listelenir (`priority: 0.6`).
+- `index.html`, `PAGE_SEO['/']` → ev + spor salonu anahtar kelimeleri.
+- `BlogPostPage` → kategori/yazar keywords meta.
+
+**Örnek URL:** `/team/koc-ahmet-yilmaz` (koç rolü + isim slug)
+
+### Dosyalar
+
+`src/index.css`, `src/config/seo.js`, `src/pages/LandingPage.jsx`, `src/pages/StaffProfilePage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/TeamListPage.jsx`, `src/components/landing/{WhyUsSection,LatestBlogPosts,PromoBanner,RotatingHeroText,SectionBackdrop,PlansAnimatedBackground}.jsx`, `src/components/staff/StaffMemberCard.jsx`, `src/pages/auth/AuthCallbackPage.jsx`, `api/sitemap.js`, `index.html`, `AI_PROJE_REHBERI.md`
 

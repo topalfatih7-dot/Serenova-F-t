@@ -22,6 +22,30 @@ const STATIC_ROUTES = [
   { loc: '/terms', changefreq: 'yearly', priority: '0.4' },
 ]
 
+function slugifyTurkish(text) {
+  return String(text || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen', doctor: 'doktor' }
+
+function staffPublicSlug(member) {
+  const namePart = slugifyTurkish(member?.name)
+  if (!namePart) return member?.id || ''
+  const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
+  return `${rolePrefix}-${namePart}`
+}
+
 function siteBase() {
   return (
     process.env.VITE_SITE_URL ||
@@ -83,14 +107,14 @@ async function fetchDynamicUrls() {
   try {
     const { data: staff } = await client
       .from('staff')
-      .select('id, created_at')
+      .select('id, name, role, created_at')
       .eq('active', true)
 
     for (const member of staff || []) {
       urls.push({
-        path: `/team/${member.id}`,
+        path: `/team/${staffPublicSlug(member)}`,
         changefreq: 'monthly',
-        priority: '0.5',
+        priority: '0.6',
         lastmod: (member.created_at || '').slice(0, 10),
       })
     }

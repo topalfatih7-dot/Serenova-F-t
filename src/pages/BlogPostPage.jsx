@@ -31,6 +31,7 @@ export default function BlogPostPage() {
       <SeoHead
         title={post.title}
         description={post.excerpt || truncateDescription(post.content)}
+        keywords={[post.category, post.author, 'Yeni Form blog', 'sağlıklı yaşam', 'fitness'].filter(Boolean).join(', ')}
         canonicalPath={`/blog/${post.id}`}
         ogType="article"
         jsonLd={[

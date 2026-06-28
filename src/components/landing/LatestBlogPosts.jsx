@@ -53,49 +53,70 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
           </Link>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2">
+        {/* Mobil: stack | Masaüstü: sol 1 featured = sağ 2 kart toplam yüksekliği */}
+        <div className="mt-12 grid gap-6 md:grid-cols-2 md:items-stretch md:min-h-[32rem] lg:min-h-[34rem]">
           {featured && (
             <motion.article
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "50px" }}
+              viewport={{ once: true, margin: '50px' }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="blog-card-vivid group md:row-span-2"
+              className="blog-card-vivid group flex min-h-0 flex-col md:h-full"
             >
-              <Link to={`/blog/${featured.id}`} className="block h-full">
-                <BlogCover post={featured} className="aspect-[16/10] w-full sm:aspect-[16/9]" featured />
-                <div className="p-6">
-                  <span className="inline-flex rounded-full bg-gradient-to-r from-brand-500 to-violet-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+              <Link to={`/blog/${featured.id}`} className="flex h-full min-h-0 flex-col">
+                <BlogCover
+                  post={featured}
+                  featured
+                  className="aspect-[16/10] w-full shrink-0 md:aspect-auto md:min-h-[12rem] md:flex-[1.2]"
+                />
+                <div className="flex flex-1 flex-col p-6 md:p-7">
+                  <span className="inline-flex w-fit rounded-full bg-gradient-to-r from-brand-500 to-violet-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
                     {featured.category}
                   </span>
-                  <h3 className="mt-3 font-display text-xl font-bold leading-snug text-cream-900 transition group-hover:text-brand-600">
+                  <h3 className="mt-3 font-display text-xl font-bold leading-snug text-cream-900 transition group-hover:text-brand-600 md:text-2xl">
                     {featured.title}
                   </h3>
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-cream-800/70">{featured.excerpt}</p>
-                  <BlogMeta post={featured} className="mt-4" />
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-cream-800/70 md:line-clamp-[7] md:flex-1 md:text-[0.9375rem] md:leading-relaxed">
+                    {featured.excerpt}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-cream-200/60 pt-4 md:mt-auto">
+                    <BlogMeta post={featured} className="!mt-0" />
+                    <span className="hidden items-center gap-1 text-sm font-semibold text-brand-600 transition group-hover:gap-1.5 md:inline-flex">
+                      Devamını oku <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </div>
                 </div>
               </Link>
             </motion.article>
           )}
 
-          <div className="flex flex-col gap-4">
+          <div className="flex min-h-0 flex-col gap-4 md:h-full md:gap-5">
             {rest.map((post, i) => (
               <motion.article
                 key={post.id}
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "50px" }}
+                viewport={{ once: true, margin: '50px' }}
                 transition={{ delay: i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="blog-card-vivid group"
+                className="blog-card-vivid group flex min-h-0 flex-1 flex-col"
               >
-                <Link to={`/blog/${post.id}`} className="flex flex-col sm:flex-row">
-                  <BlogCover post={post} className="aspect-[16/9] w-full sm:aspect-auto sm:h-full sm:w-44 sm:min-h-[148px] sm:shrink-0" />
-                  <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
+                <Link
+                  to={`/blog/${post.id}`}
+                  className="flex h-full min-h-0 flex-col overflow-hidden md:flex-row md:items-stretch"
+                >
+                  <BlogCover
+                    post={post}
+                    className="aspect-[16/10] w-full shrink-0 md:aspect-auto md:h-full md:w-[40%] md:max-w-[13.5rem] md:min-h-[8rem] md:self-stretch lg:max-w-[15rem]"
+                  />
+                  <div className="flex min-h-0 flex-1 flex-col justify-center p-4 md:px-5 md:py-4 lg:p-5">
                     <span className="text-xs font-bold uppercase tracking-wide text-violet-600">{post.category}</span>
-                    <h3 className="mt-1 line-clamp-2 font-display text-base font-bold text-cream-900 transition group-hover:text-brand-600">
+                    <h3 className="mt-1.5 line-clamp-2 font-display text-base font-bold leading-snug text-cream-900 transition group-hover:text-brand-600 lg:text-[1.0625rem]">
                       {post.title}
                     </h3>
-                    <BlogMeta post={post} className="mt-2" />
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-cream-800/65 md:line-clamp-3">
+                      {post.excerpt}
+                    </p>
+                    <BlogMeta post={post} className="mt-3" />
                   </div>
                 </Link>
               </motion.article>
@@ -115,7 +136,7 @@ function BlogCover({ post, className = '', featured = false }) {
         src={cover.url}
         alt={cover.alt}
         loading="lazy"
-        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110"
       />
       <div className={`absolute inset-0 bg-gradient-to-t ${featured ? 'from-violet-900/50 via-brand-900/10' : 'from-black/30 via-transparent'} to-transparent`} />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-violet-500/15 opacity-0 transition group-hover:opacity-100" />

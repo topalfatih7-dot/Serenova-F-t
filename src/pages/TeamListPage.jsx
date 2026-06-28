@@ -5,7 +5,7 @@ import { ArrowLeft, Dumbbell, Apple, Stethoscope } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import JsonLd from '../components/seo/JsonLd'
 import StaffMemberCard from '../components/staff/StaffMemberCard'
-import { buildItemListSchema } from '../config/seo'
+import { buildItemListSchema, staffProfilePath } from '../config/seo'
 
 const roleConfig = {
   coaches: {
@@ -58,7 +58,7 @@ export default function TeamListPage({ role: roleProp }) {
         ? buildItemListSchema({
             name: config.label,
             path: `/team/${role}`,
-            items: members.map((m) => ({ name: m.name, path: `/team/${m.id}` })),
+            items: members.map((m) => ({ name: m.name, path: staffProfilePath(m) })),
           })
         : null,
     [members, config, role]

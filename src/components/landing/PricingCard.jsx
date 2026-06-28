@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { Check, X, ChevronDown } from 'lucide-react'
 import { formatMonthlyPrice, getPlanBadge } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from '../membership/planTheme'
@@ -20,10 +19,9 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
   const isFeatured = featured || plan.id === 'kurucu'
 
   return (
-    <motion.div
-      whileHover={{ y: -8 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-      className={`relative flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition-shadow hover:shadow-xl md:min-h-[30rem] lg:min-h-[32rem] ${
+    // Hover animasyonu CSS (.plans-pricing-card) — Framer spring kaldırıldı
+    <div
+      className={`plans-pricing-card relative flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm md:min-h-[30rem] lg:min-h-[32rem] ${
         isFeatured
           ? `border-amber-200/70 ${theme.glow} ring-2 ring-amber-100/60`
           : plan.id === 'vip'
@@ -42,12 +40,11 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       )}
 
       <div className="flex flex-col items-center px-6 pt-10 text-center sm:px-8">
-        <motion.span
-          whileHover={{ scale: 1.08, rotate: 3 }}
-          className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' ? theme.icon : theme.iconIdle}`}
+        <span
+          className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' ? theme.icon : theme.iconIdle}`}
         >
           {planIcon(plan.id, 'h-7 w-7')}
-        </motion.span>
+        </span>
         <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
         {plan.id === 'kurucu' && (
           <p className="mt-1 text-xs font-medium text-amber-700/90">Sınırlı kontenjan — erken kayıt avantajı</p>
@@ -107,6 +104,6 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       >
         {ctaLabel}
       </Link>
-    </motion.div>
+    </div>
   )
 }

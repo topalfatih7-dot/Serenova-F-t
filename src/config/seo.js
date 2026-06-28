@@ -51,6 +51,66 @@ export function teamListPathForRole(role) {
   return '/team/doctors'
 }
 
+/** Türkçe karakter destekli URL slug (ör. "Koç Ahmet Yılmaz" → "koc-ahmet-yilmaz") */
+export function slugifyTurkish(text) {
+  return String(text || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen', doctor: 'doktor' }
+
+/** SEO dostu profil slug — "koç ahmet yeniform" aramaları için rol öneki eklenir */
+export function staffPublicSlug(member) {
+  const namePart = slugifyTurkish(member?.name)
+  if (!namePart) return member?.id || ''
+  const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
+  return `${rolePrefix}-${namePart}`
+}
+
+export function staffProfilePath(member) {
+  const slug = staffPublicSlug(member)
+  return slug ? `/team/${slug}` : '/'
+}
+
+/** UUID veya slug ile kadro üyesi bul */
+export function findStaffMember(staffList, param) {
+  if (!param) return null
+  const list = (staffList || []).filter((s) => s.active !== false)
+  const byId = list.find((s) => s.id === param)
+  if (byId) return byId
+  return list.find((s) => staffPublicSlug(s) === param)
+}
+
+/** Kadro profili meta keywords — "koç ahmet yeni form" gibi aramalar için */
+export function buildStaffProfileKeywords(member, roleLabel) {
+  const name = (member?.name || '').trim()
+  const first = name.split(/\s+/)[0] || ''
+  const roleLower = (roleLabel || '').toLowerCase()
+  const brand = BRAND.name
+  const keywords = new Set([
+    name,
+    `${roleLower} ${first}`.toLowerCase(),
+    `${first} ${roleLower}`.toLowerCase(),
+    `${name} ${brand}`.toLowerCase(),
+    `${brand} ${roleLower}`.toLowerCase(),
+    `${first} ${brand}`.toLowerCase(),
+    member?.specialty,
+    member?.title,
+    ...(member?.specialties || []),
+  ].filter(Boolean))
+  return [...keywords].join(', ')
+}
+
 /** Statik public rotalar — sitemap ve varsayılan meta eşlemesi */
 export const STATIC_PUBLIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
@@ -73,9 +133,9 @@ export const PAGE_SEO = {
   '/': {
     title: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
     description:
-      'Kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın; Eko, Diyet, Spor, Kurucu ve VIP planlarıyla yükseltin.',
+      'Evde veya spor salonunda antrenman — kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
     keywords:
-      'online koçluk, fitness koçu, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness, eko paket, kurucu üye',
+      'online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness',
   },
   '/membership': {
     title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Kurucu & VIP',
@@ -262,7 +322,7 @@ export function buildArticleSchema(post) {
   }
 }
 
-export function buildPersonSchema(member) {
+export function buildPersonSchema(member, { profilePath } = {}) {
   if (!member) return null
   const profile = typeof member.specialties !== 'undefined' ? member : { ...member }
   const credentials = (profile.certificates || [])
@@ -275,6 +335,8 @@ export function buildPersonSchema(member) {
   const alumni = (profile.education || [])
     .filter((e) => e?.school)
     .map((e) => ({ '@type': 'EducationalOrganization', name: e.school }))
+  const sameAs = [profile.instagram, profile.youtube, profile.linkedin, profile.website]
+    .filter(Boolean)
 
   return {
     '@context': 'https://schema.org',
@@ -283,9 +345,11 @@ export function buildPersonSchema(member) {
     jobTitle: profile.title || profile.specialty || profile.role,
     description: profile.headline || profile.bio || profile.description,
     image: profile.photo || undefined,
+    url: profilePath ? absoluteUrl(profilePath) : undefined,
     knowsAbout: profile.specialties?.length ? profile.specialties : undefined,
     hasCredential: credentials.length ? credentials : undefined,
     alumniOf: alumni.length ? alumni : undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
     worksFor: { '@type': 'Organization', name: BRAND.name },
   }
 }

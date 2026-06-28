@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ChevronRight, Award, Briefcase } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { normalizeStaffProfile } from '../../data/staffProfile'
+import { staffProfilePath } from '../../config/seo'
 
 export default function StaffMemberCard({ member, config, index = 0 }) {
   const profile = normalizeStaffProfile(member)
@@ -18,7 +19,7 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
       transition={{ delay: index * 0.07, duration: 0.5 }}
     >
       <Link
-        to={`/team/${member.id}`}
+        to={staffProfilePath(member)}
         className="group flex h-full flex-col overflow-hidden rounded-3xl border border-cream-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
       >
         <div className="relative aspect-[4/5] max-h-72 overflow-hidden sm:max-h-none sm:aspect-auto sm:h-64">
