@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§48: token_hash iletme hatası düzeltmesi, ForgotPasswordPage yeni modern tasarım)
+> **Son güncelleme:** 2026-06-28 (§49: AuthRedirectHandler sonsuz döngü düzeltmesi — reset-password ve auth sayfaları artık atlanıyor)
 
 ---
 
@@ -3385,5 +3385,52 @@ https://www.yeniform.com/auth/callback?token_hash=pkce_3451b143e825...&type=reco
 ### Dosyalar
 
 `src/pages/auth/{ForgotPasswordPage,ResetPasswordPage,AuthCallbackPage}.jsx`
+`AI_PROJE_REHBERI.md`
+
+---
+
+## 49. AuthRedirectHandler Sonsuz Döngü Düzeltmesi (2026-06-28)
+
+### Sorun (videoda gözlemlenen)
+
+Deploy sonrası şifre sıfırlama sayfası 20-30 kez farklı URL'lere gidip geliyordu. Kök neden:
+
+```
+AuthCallbackPage → navigate /reset-password?token_hash=pkce_XXX&type=recovery
+AuthRedirectHandler (her sayfada çalışır!):
+  - pathname = /reset-password ≠ /auth/callback → atlamıyor
+  - tokenHash = pkce_XXX → null değil → erken return yapmıyor
+  - type = recovery → params'a next=reset-password ekliyor
+  - navigate /auth/callback?token_hash=pkce_XXX&type=recovery&next=reset-password
+AuthCallbackPage → navigate /reset-password?token_hash=pkce_XXX&type=recovery
+AuthRedirectHandler → ... → SONSUZ DÖNGÜ
+```
+
+### Düzeltme
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `AuthRedirectHandler.jsx` | `AUTH_PAGES` listesi: `/auth/callback`, `/reset-password`, `/login`, `/forgot-password` → hepsi atlanıyor |
+| `ResetPasswordPage.jsx` | `verifyOtp` başarısında `window.history.replaceState({}, '', '/reset-password')` → URL'den `token_hash` + `type` temizleniyor |
+
+### Tam şifre sıfırlama akışı (§49 sonrası — son hâli)
+
+```
+/forgot-password (aynı tarayıcı)
+  → supabase.auth.resetPasswordForEmail → PKCE code_verifier localStorage'a kaydedilir
+  → Supabase recovery e-postası gönderilir
+  → Kullanıcı linke AYNI TARAYICIDA tıklar
+  → https://www.yeniform.com/auth/callback?token_hash=pkce_XXX&type=recovery&next=reset-password
+  → AuthRedirectHandler: /auth/callback → ATLA
+  → AuthCallbackPage: isRecovery=true → navigate /reset-password?token_hash=pkce_XXX&type=recovery
+  → AuthRedirectHandler: /reset-password → ATLA (yeni eklendi)
+  → ResetPasswordPage: verifyOtp(token_hash) → BAŞARI → URL /reset-password'e temizlendi
+  → Şifre formu açılır → updateUser({ password }) → signOut(local) → /login
+```
+
+### Dosyalar
+
+`src/components/auth/AuthRedirectHandler.jsx`
+`src/pages/auth/ResetPasswordPage.jsx`
 `AI_PROJE_REHBERI.md`
 
