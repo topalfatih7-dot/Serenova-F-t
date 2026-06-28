@@ -1,5 +1,4 @@
-// Orb animasyonları CSS'e taşındı (landing-orb-a/b/c) → JS RAF yükü sıfırlandı
-import { motion } from 'framer-motion'
+// Orb animasyonları CSS'e taşındı; scroll yoğun bölümlerde statik orb kullanılır
 import { BRAND } from '../../config/brand'
 
 const VARIANTS = {
@@ -38,32 +37,32 @@ export default function SectionBackdrop({ variant = 'team', children, className 
   const v = VARIANTS[variant] || VARIANTS.team
 
   return (
-    <section className={`relative overflow-hidden ${className}`}>
+    <section className={`relative isolate overflow-hidden ${className}`}>
       <div aria-hidden className={`absolute inset-0 bg-gradient-to-br ${v.gradient}`} />
 
-      {/* Dekoratif orb'lar — Framer Motion yerine pure CSS animasyonu (sıfır JS RAF yükü) */}
+      {/* Statik orb'lar — blur + pulse animasyonu scroll lag'i yaratıyordu */}
       <div
         aria-hidden
-        className={`landing-orb-a absolute -left-24 top-0 h-80 w-80 rounded-full blur-3xl ${v.orb1}`}
+        className={`landing-orb-static absolute -left-24 top-0 h-80 w-80 rounded-full blur-3xl ${v.orb1}`}
       />
       <div
         aria-hidden
-        className={`landing-orb-b absolute -right-20 bottom-0 h-72 w-72 rounded-full blur-3xl ${v.orb2}`}
+        className={`landing-orb-static absolute -right-20 bottom-0 h-72 w-72 rounded-full blur-3xl ${v.orb2}`}
       />
       <div
         aria-hidden
-        className={`landing-orb-c absolute left-1/3 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${v.orb3}`}
+        className={`landing-orb-static absolute left-1/3 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${v.orb3}`}
       />
 
       <div
         aria-hidden
-        className="absolute inset-0 opacity-50"
+        className="absolute inset-0 opacity-40"
         style={{
           backgroundImage: `radial-gradient(circle, ${v.dots} 1px, transparent 1px)`,
           backgroundSize: '28px 28px',
         }}
       />
-      <div className="relative">{children}</div>
+      <div className="relative z-[1]">{children}</div>
     </section>
   )
 }
@@ -73,12 +72,7 @@ export function SectionHeader({ badge, badgeIcon: BadgeIcon, title, subtitle, da
   const subtitleMx = align === 'left' ? '' : 'mx-auto'
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '50px' }}
-      className={`${alignClass} ${className}`}
-    >
+    <div className={`section-reveal-in ${alignClass} ${className}`}>
       <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wide ${
         dark
           ? 'border border-white/20 bg-white/10 text-white/90 backdrop-blur-md'
@@ -95,7 +89,7 @@ export function SectionHeader({ badge, badgeIcon: BadgeIcon, title, subtitle, da
           {subtitle}
         </p>
       )}
-    </motion.div>
+    </div>
   )
 }
 

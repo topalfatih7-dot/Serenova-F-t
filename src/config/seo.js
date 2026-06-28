@@ -287,12 +287,12 @@ export function buildWebSiteSchema() {
 
 export function buildFaqSchema(faqs = []) {
   const items = (faqs || [])
-    .filter((f) => f?.question && f?.answer)
+    .filter((f) => (f?.q || f?.question) && (f?.a || f?.answer))
     .slice(0, 20)
     .map((f) => ({
       '@type': 'Question',
-      name: f.question,
-      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      name: f.q || f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.a || f.answer },
     }))
   if (!items.length) return null
   return {

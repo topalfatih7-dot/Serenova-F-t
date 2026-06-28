@@ -568,6 +568,101 @@ body {
   .landing-blob-ccw { animation: none; }
 }
 
+/* Statik orb — SectionBackdrop gibi scroll yoğun bölümlerde animasyon kapalı */
+.landing-orb-static {
+  opacity: 0.42;
+  will-change: auto;
+}
+
+/* ── SSS bölümü arka planı — 48× Framer Motion yerine statik CSS ── */
+.faq-section-bg {
+  contain: strict;
+  isolation: isolate;
+  pointer-events: none;
+}
+.faq-section-bg-gradient {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand-100) 90%, transparent), color-mix(in srgb, #e0f2fe 70%, transparent), color-mix(in srgb, var(--color-brand-200) 50%, transparent));
+}
+.faq-section-bg-vignette {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.25), rgba(255,255,255,0.1), rgba(255,255,255,0.35));
+}
+.faq-mark {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+  opacity: 0.22;
+}
+
+/* Scroll giriş animasyonları — Framer whileInView yerine CSS */
+@keyframes sectionRevealIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sectionRevealLeft {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.section-reveal-in {
+  animation: sectionRevealIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section-reveal-left {
+  animation: sectionRevealLeft 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.faq-item-reveal {
+  animation: sectionRevealIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.faq-item-reveal-delay-1 { animation-delay: 0.05s; }
+.faq-item-reveal-delay-2 { animation-delay: 0.1s; }
+.faq-item-reveal-delay-3 { animation-delay: 0.15s; }
+.faq-item-reveal-delay-4 { animation-delay: 0.2s; }
+.faq-item-reveal-delay-5 { animation-delay: 0.25s; }
+.faq-item-reveal-delay-6 { animation-delay: 0.3s; }
+.faq-item-reveal-delay-7 { animation-delay: 0.35s; }
+.faq-item-reveal-delay-8 { animation-delay: 0.4s; }
+.testimonial-rating-in {
+  animation: sectionRevealIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@supports (animation-timeline: view()) {
+  .section-reveal-in,
+  .section-reveal-left,
+  .faq-item-reveal,
+  .testimonial-rating-in {
+    animation: sectionRevealIn linear both;
+    animation-timeline: view();
+    animation-range: entry 8% cover 25%;
+    animation-delay: 0s;
+  }
+}
+
+/* SSS accordion açılışı — height:auto Framer yerine CSS grid */
+.faq-answer-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.faq-answer-grid.is-open {
+  grid-template-rows: 1fr;
+}
+.faq-answer-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-reveal-in,
+  .section-reveal-left,
+  .faq-item-reveal,
+  .testimonial-rating-in {
+    animation: none;
+  }
+  .faq-answer-grid {
+    transition: none;
+  }
+}
+
 /* ── Blog bölümü — canlı aurora arka plan ── */
 @keyframes blogSectionWave {
   0% { opacity: 0.85; transform: scale(1) translateY(0); }

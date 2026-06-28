@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ChevronDown, Star, Quote, BadgeCheck } from 'lucide-react'
 import SectionBackdrop, { SectionHeader } from './SectionBackdrop'
 
@@ -12,7 +11,7 @@ function TestimonialCard({ item }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <article className="relative flex h-full w-[min(85vw,340px)] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border border-white/15 bg-white/95 p-6 shadow-lg backdrop-blur-md transition hover:shadow-xl sm:w-[360px] sm:p-7">
+    <article className="relative flex h-full w-[min(85vw,340px)] shrink-0 snap-center flex-col overflow-hidden rounded-3xl border border-white/15 bg-white p-6 shadow-lg transition hover:shadow-xl sm:w-[360px] sm:p-7">
       <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br from-brand-100/80 to-sage-100/80" aria-hidden />
 
       <div className="relative flex items-center justify-between gap-3">
@@ -118,12 +117,7 @@ export default function TestimonialCarousel({ testimonials }) {
         />
 
         {count >= 1 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "50px" }}
-            className="mx-auto mt-6 flex w-fit items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 backdrop-blur-md"
-          >
+          <div className="testimonial-rating-in mx-auto mt-6 flex w-fit items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2.5">
             <div className="flex gap-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} className="h-4 w-4 fill-gold-400 text-gold-400" />
@@ -131,7 +125,7 @@ export default function TestimonialCarousel({ testimonials }) {
             </div>
             <span className="text-lg font-bold text-white">{avgRating}</span>
             <span className="text-sm text-white/60">· {count} değerlendirme</span>
-          </motion.div>
+          </div>
         )}
 
         <div className="relative mt-10">
@@ -142,7 +136,7 @@ export default function TestimonialCarousel({ testimonials }) {
                 onClick={() => scrollByDir(-1)}
                 disabled={!canLeft}
                 aria-label="Önceki yorum"
-                className={`absolute -left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white shadow-lg backdrop-blur-md transition hover:bg-white/30 sm:flex sm:h-12 sm:w-12 ${
+                className={`absolute -left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white shadow-lg transition hover:bg-white/30 sm:flex sm:h-12 sm:w-12 ${
                   canLeft ? 'opacity-100' : 'pointer-events-none opacity-30'
                 }`}
               >
@@ -153,7 +147,7 @@ export default function TestimonialCarousel({ testimonials }) {
                 onClick={() => scrollByDir(1)}
                 disabled={!canRight}
                 aria-label="Sonraki yorum"
-                className={`absolute -right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white shadow-lg backdrop-blur-md transition hover:bg-white/30 sm:flex sm:h-12 sm:w-12 ${
+                className={`absolute -right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white shadow-lg transition hover:bg-white/30 sm:flex sm:h-12 sm:w-12 ${
                   canRight ? 'opacity-100' : 'pointer-events-none opacity-30'
                 }`}
               >
@@ -166,17 +160,10 @@ export default function TestimonialCarousel({ testimonials }) {
             ref={scrollRef}
             className="-mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 pt-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-10 [&::-webkit-scrollbar]:hidden"
           >
-            {list.map((item, i) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "50px" }}
-                transition={{ delay: Math.min(i, 4) * 0.07, duration: 0.45 }}
-                className="shrink-0"
-              >
+            {list.map((item) => (
+              <div key={item.id} className="shrink-0">
                 <TestimonialCard item={item} />
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

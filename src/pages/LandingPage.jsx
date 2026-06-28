@@ -309,9 +309,9 @@ export default function LandingPage() {
         <TestimonialCarousel testimonials={testimonials} />
       )}
 
-      {/* SSS */}
+      {/* SSS — arka plan statik CSS, accordion CSS grid */}
       {faqs.length > 0 && (
-        <section className="relative overflow-hidden py-16 sm:py-24">
+        <section className="relative isolate overflow-hidden py-16 sm:py-24">
           <FAQQuestionMarksBackground />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <FAQAccordion items={faqs} />
