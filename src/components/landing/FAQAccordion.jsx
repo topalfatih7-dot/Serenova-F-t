@@ -14,7 +14,7 @@ export default function FAQAccordion({ items }) {
       <motion.div
         initial={{ opacity: 0, x: -16 }}
         whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "50px" }}
         transition={{ duration: 0.5 }}
         className="md:sticky md:top-24 lg:top-28"
       >
@@ -59,7 +59,7 @@ export default function FAQAccordion({ items }) {
               key={item.id || i}
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
               transition={{ delay: i * 0.05, duration: 0.4 }}
               className={`overflow-hidden rounded-2xl border transition ${
                 isOpen

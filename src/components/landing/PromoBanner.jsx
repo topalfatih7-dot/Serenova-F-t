@@ -26,10 +26,12 @@ export default function PromoBanner() {
   return (
     <AnimatePresence>
       {visible && (
+        // height:'auto' kaldırıldı — layout recalculation (reflow) tetiklerdi.
+        // Sadece opacity + translateY kullanılır; compositor katmanında çalışır.
         <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
+          initial={{ opacity: 0, y: -40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="relative overflow-hidden border-b border-brand-700/20 bg-gradient-to-r from-brand-700 via-brand-600 to-sage-600 text-white"
         >

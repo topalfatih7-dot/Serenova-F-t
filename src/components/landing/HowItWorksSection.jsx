@@ -43,7 +43,7 @@ export default function HowItWorksSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "50px" }}
           className="relative mb-10 overflow-hidden rounded-3xl shadow-xl shadow-brand-900/10 md:hidden"
         >
           <div className="aspect-[16/10] w-full">
@@ -66,7 +66,7 @@ export default function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "50px" }}
             transition={{ duration: 0.6 }}
             className="relative hidden md:col-span-5 md:block"
           >
@@ -93,7 +93,7 @@ export default function HowItWorksSection() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
               className="text-center md:text-left"
             >
               <span className="section-badge hidden md:inline-flex">Süreç</span>
@@ -152,7 +152,7 @@ export default function HowItWorksSection() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
               className="mt-10 text-center md:text-left"
             >
               <Link to="/onboarding?plan=free" className="btn-wellness group inline-flex">

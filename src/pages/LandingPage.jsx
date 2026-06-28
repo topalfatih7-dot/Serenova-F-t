@@ -97,18 +97,14 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-        {/* Animasyonlu orb'lar */}
-        <motion.div
+        {/* Dekoratif orb'lar — CSS animasyonu (JS RAF yükü yok) */}
+        <div
           aria-hidden
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-brand-400/30 blur-3xl"
+          className="landing-orb-a absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-brand-400/30 blur-3xl"
         />
-        <motion.div
+        <div
           aria-hidden
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute -right-20 bottom-1/4 h-64 w-64 rounded-full bg-sage-400/25 blur-3xl"
+          className="landing-orb-b absolute -right-20 bottom-1/4 h-64 w-64 rounded-full bg-sage-400/25 blur-3xl"
         />
 
         <div className="relative mx-auto flex w-full max-w-6xl items-center justify-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[100svh] lg:justify-end">
@@ -119,18 +115,14 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full max-w-md md:max-w-lg lg:max-w-sm"
           >
-            {/* Dekoratif blob'lar */}
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            {/* Dekoratif blob'lar — CSS rotate (JS rotate animasyonu kaldırıldı) */}
+            <div
               aria-hidden
-              className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-400/30 blur-2xl"
+              className="landing-blob-cw absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-400/30 blur-2xl"
             />
-            <motion.div
-              animate={{ rotate: [360, 0] }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            <div
               aria-hidden
-              className="absolute -bottom-6 -left-10 h-24 w-24 rounded-full bg-sage-400/25 blur-xl"
+              className="landing-blob-ccw absolute -bottom-6 -left-10 h-24 w-24 rounded-full bg-sage-400/25 blur-xl"
             />
 
             {/* Asimetrik kart gövdesi */}
@@ -231,7 +223,7 @@ export default function LandingPage() {
       ═══════════════════════════════════════════ */}
       <PlansAnimatedBackground>
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+          <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '50px' }} className="text-center">
             <span className="section-badge">Planlar</span>
             <h2 className="section-title mt-4">Üyelik Seçenekleri</h2>
             <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
@@ -279,7 +271,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "50px" }}
                 className="h-full"
               >
                 <PricingCard
@@ -300,7 +292,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.08 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "50px" }}
                 className="flex w-[min(78vw,340px)] max-w-xs shrink-0 snap-start self-stretch sm:w-[320px] md:w-[340px]"
               >
                 <div className="h-full w-full">

@@ -10,13 +10,12 @@ import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
 
-function FloatingOrb({ className, delay = 0 }) {
+// Orb animasyonu CSS sınıflarına taşındı — JS RAF döngüsü ortadan kalktı
+function FloatingOrb({ className, variant = 'a' }) {
   return (
-    <motion.div
+    <div
       aria-hidden
-      className={`absolute rounded-full blur-3xl ${className}`}
-      animate={{ y: [0, -18, 0], x: [0, 12, 0], scale: [1, 1.08, 1] }}
-      transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay }}
+      className={`absolute rounded-full blur-3xl landing-orb-${variant} ${className}`}
     />
   )
 }
@@ -212,9 +211,9 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-cream-900 via-brand-900 to-sage-900 px-4 py-10">
-      <FloatingOrb className="left-[8%] top-[12%] h-56 w-56 bg-brand-400/30" delay={0} />
-      <FloatingOrb className="right-[6%] top-[20%] h-72 w-72 bg-sage-400/25" delay={1.2} />
-      <FloatingOrb className="bottom-[10%] left-[30%] h-64 w-64 bg-violet-400/20" delay={2} />
+      <FloatingOrb variant="a" className="left-[8%] top-[12%] h-56 w-56 bg-brand-400/30" />
+      <FloatingOrb variant="b" className="right-[6%] top-[20%] h-72 w-72 bg-sage-400/25" />
+      <FloatingOrb variant="c" className="bottom-[10%] left-[30%] h-64 w-64 bg-violet-400/20" />
 
       <motion.div
         initial={{ opacity: 0, y: -10 }}

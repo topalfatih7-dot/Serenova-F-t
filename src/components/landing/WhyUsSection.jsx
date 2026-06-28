@@ -86,10 +86,11 @@ export default function WhyUsSection() {
       </div>
 
       <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center px-4 py-14 sm:px-6 sm:py-20 lg:max-w-3xl lg:py-24 lg:pl-2 xl:max-w-4xl">
+        {/* margin:'50px' → elemanlar görünür alana 50px kala animasyon başlar (pop-in engellenir) */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: '50px' }}
           transition={{ duration: 0.55 }}
         >
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white/90 backdrop-blur-md">
@@ -109,8 +110,8 @@ export default function WhyUsSection() {
                   key={item.title}
                   initial={{ opacity: 0, x: -16 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05, duration: 0.4 }}
+                  viewport={{ once: true, margin: '50px' }}
+                  transition={{ delay: i * 0.04, duration: 0.35 }}
                   className="group rounded-2xl border border-white/10 bg-white/[0.08] backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.14]"
                 >
                   <button
@@ -136,12 +137,14 @@ export default function WhyUsSection() {
 
                   <AnimatePresence>
                     {isOpen && (
+                      // height:'auto' animasyonu burada kullanıcı tıklamasıyla tetiklenir
+                      // (scroll sırasında değil), kabul edilebilir performans. Süre kısa tutuldu.
                       <motion.div
                         key="detail"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
                         className="overflow-hidden"
                       >
                         <div className="border-t border-white/10 px-4 pb-4 pt-3">

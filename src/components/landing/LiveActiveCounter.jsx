@@ -55,7 +55,7 @@ export default function LiveActiveCounter({ className = '' }) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "50px" }}
           className="flex items-center gap-3"
         >
           <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand-100">
@@ -79,7 +79,7 @@ export default function LiveActiveCounter({ className = '' }) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "50px" }}
           transition={{ delay: 0.08 }}
           className="flex items-center gap-3"
         >

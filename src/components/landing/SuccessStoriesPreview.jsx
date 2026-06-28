@@ -115,18 +115,17 @@ export default function SuccessStoriesPreview({ stories = [] }) {
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-white via-warm-50/40 to-sage-50/30 py-14 sm:py-20">
-      <motion.div
+      {/* CSS-only dekoratif orb — JS animasyonu kaldırıldı */}
+      <div
         aria-hidden
-        animate={{ scale: [1, 1.12, 1], opacity: [0.2, 0.35, 0.2] }}
-        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-sage-200/40 blur-3xl"
+        className="landing-orb-b absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-sage-200/40 blur-3xl"
       />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "50px" }}
           className="relative mb-10 overflow-hidden rounded-3xl lg:hidden"
         >
           <StoryPhoto variant="banner" />
@@ -137,7 +136,7 @@ export default function SuccessStoriesPreview({ stories = [] }) {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
               className="text-center lg:text-left"
             >
               <span className="section-badge inline-flex items-center gap-1.5">
@@ -189,7 +188,7 @@ export default function SuccessStoriesPreview({ stories = [] }) {
                     key={story.id}
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: true, margin: "50px" }}
                     transition={{ delay: i * 0.07, duration: 0.45 }}
                     className="shrink-0"
                   >
@@ -203,7 +202,7 @@ export default function SuccessStoriesPreview({ stories = [] }) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "50px" }}
             transition={{ duration: 0.6 }}
             className="relative hidden lg:col-span-5 lg:block"
           >

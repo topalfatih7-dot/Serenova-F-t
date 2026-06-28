@@ -121,7 +121,7 @@ export default function TestimonialCarousel({ testimonials }) {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "50px" }}
             className="mx-auto mt-6 flex w-fit items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 backdrop-blur-md"
           >
             <div className="flex gap-0.5">
@@ -171,7 +171,7 @@ export default function TestimonialCarousel({ testimonials }) {
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "50px" }}
                 transition={{ delay: Math.min(i, 4) * 0.07, duration: 0.45 }}
                 className="shrink-0"
               >

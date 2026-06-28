@@ -504,6 +504,62 @@ body {
     linear-gradient(165deg, var(--color-cream-50) 0%, color-mix(in srgb, var(--color-brand-50) 75%, white) 100%);
 }
 
+/* ────────────────────────────────────────────────────────────────
+   Landing Dekoratif Orb Animasyonları — Tamamen CSS, JS-sız
+   GPU-only: yalnızca transform (scale) ve opacity kullanılır.
+   Framer Motion yerine CSS kullanmak RAF overhead'ini ortadan kaldırır.
+──────────────────────────────────────────────────────────────── */
+@keyframes landingOrbPulseA {
+  0%, 100% { transform: scale(1);    opacity: 0.40; }
+  50%       { transform: scale(1.20); opacity: 0.65; }
+}
+@keyframes landingOrbPulseB {
+  0%, 100% { transform: scale(1);    opacity: 0.30; }
+  50%       { transform: scale(1.15); opacity: 0.55; }
+}
+@keyframes landingOrbPulseC {
+  0%, 100% { transform: scale(1);    opacity: 0.20; }
+  50%       { transform: scale(1.18); opacity: 0.45; }
+}
+/* Hero bloblarının döndürme animasyonu — pure CSS rotate */
+@keyframes landingBlobRotateCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes landingBlobRotateCCW {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+.landing-orb-a {
+  will-change: transform, opacity;
+  animation: landingOrbPulseA 12s ease-in-out infinite;
+}
+.landing-orb-b {
+  will-change: transform, opacity;
+  animation: landingOrbPulseB 15s ease-in-out infinite 2s;
+}
+.landing-orb-c {
+  will-change: transform, opacity;
+  animation: landingOrbPulseC 18s ease-in-out infinite 4s;
+}
+.landing-blob-cw {
+  will-change: transform;
+  animation: landingBlobRotateCW 30s linear infinite;
+}
+.landing-blob-ccw {
+  will-change: transform;
+  animation: landingBlobRotateCCW 20s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-orb-a,
+  .landing-orb-b,
+  .landing-orb-c,
+  .landing-blob-cw,
+  .landing-blob-ccw { animation: none; }
+}
+
 /* ── Blog bölümü — canlı aurora arka plan ── */
 @keyframes blogSectionWave {
   0% { opacity: 0.85; transform: scale(1) translateY(0); }

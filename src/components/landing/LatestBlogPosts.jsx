@@ -58,7 +58,7 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
             <motion.article
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="blog-card-vivid group md:row-span-2"
             >
@@ -84,7 +84,7 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
                 key={post.id}
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "50px" }}
                 transition={{ delay: i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="blog-card-vivid group"
               >

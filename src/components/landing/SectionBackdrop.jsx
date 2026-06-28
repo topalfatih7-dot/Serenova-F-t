@@ -1,3 +1,4 @@
+// Orb animasyonları CSS'e taşındı (landing-orb-a/b/c) → JS RAF yükü sıfırlandı
 import { motion } from 'framer-motion'
 import { BRAND } from '../../config/brand'
 
@@ -39,24 +40,21 @@ export default function SectionBackdrop({ variant = 'team', children, className 
   return (
     <section className={`relative overflow-hidden ${className}`}>
       <div aria-hidden className={`absolute inset-0 bg-gradient-to-br ${v.gradient}`} />
-      <motion.div
+
+      {/* Dekoratif orb'lar — Framer Motion yerine pure CSS animasyonu (sıfır JS RAF yükü) */}
+      <div
         aria-hidden
-        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.65, 0.4] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute -left-24 top-0 h-80 w-80 rounded-full blur-3xl ${v.orb1}`}
+        className={`landing-orb-a absolute -left-24 top-0 h-80 w-80 rounded-full blur-3xl ${v.orb1}`}
       />
-      <motion.div
+      <div
         aria-hidden
-        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.55, 0.3] }}
-        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className={`absolute -right-20 bottom-0 h-72 w-72 rounded-full blur-3xl ${v.orb2}`}
+        className={`landing-orb-b absolute -right-20 bottom-0 h-72 w-72 rounded-full blur-3xl ${v.orb2}`}
       />
-      <motion.div
+      <div
         aria-hidden
-        animate={{ scale: [1, 1.18, 1], opacity: [0.2, 0.45, 0.2] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-        className={`absolute left-1/3 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${v.orb3}`}
+        className={`landing-orb-c absolute left-1/3 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${v.orb3}`}
       />
+
       <div
         aria-hidden
         className="absolute inset-0 opacity-50"
@@ -78,7 +76,7 @@ export function SectionHeader({ badge, badgeIcon: BadgeIcon, title, subtitle, da
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: true, margin: '50px' }}
       className={`${alignClass} ${className}`}
     >
       <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wide ${
