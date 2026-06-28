@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm
+ * action: unlock-signup | email-send | email-confirm | password-reset
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -59,6 +59,34 @@ async function sendOtpEmail(email, redirectTo) {
     return {
       ok: false,
       error: payload?.msg || payload?.error_description || error.message || 'Doğrulama e-postası gönderilemedi.',
+    }
+  }
+  return { ok: true }
+}
+
+async function sendRecoveryEmail(email, redirectTo) {
+  const url = getSupabaseUrl()
+  const anonKey = getAnonKey()
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !anonKey || !serviceKey) {
+    return { ok: false, error: 'Sunucu yapılandırması eksik.' }
+  }
+
+  const res = await fetch(`${url}/auth/v1/recover`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: anonKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({ email, redirect_to: redirectTo }),
+  })
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}))
+    return {
+      ok: false,
+      error: payload?.msg || payload?.error_description || payload?.message || 'Sıfırlama e-postası gönderilemedi.',
     }
   }
   return { ok: true }
@@ -144,6 +172,22 @@ async function handleEmailSend(req, res) {
   })
 }
 
+async function handlePasswordReset(res, body) {
+  const email = String(body.email || '').trim().toLowerCase()
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta girin.' })
+  }
+
+  const redirectTo = `${getAppUrl()}/auth/callback?next=reset-password`
+  const sent = await sendRecoveryEmail(email, redirectTo)
+  if (!sent.ok) return res.status(500).json({ ok: false, error: sent.error })
+
+  return res.status(200).json({
+    ok: true,
+    message: 'Sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.',
+  })
+}
+
 async function handleEmailConfirm(req, res, body) {
   const evt = String(body.evt || '').trim()
   if (!evt) return res.status(400).json({ ok: false, error: 'Doğrulama jetonu eksik.' })
@@ -223,6 +267,7 @@ export default async function handler(req, res) {
     if (action === 'unlock-signup') return handleUnlockSignup(res, body)
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
+    if (action === 'password-reset') return handlePasswordReset(res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

@@ -1,0 +1,75 @@
+/**
+ * Supabase PKCE + token_hash + implicit-hash oturum kurulumu.
+ * Tüm Supabase recovery / magic-link yönlendirme biçimlerini destekler.
+ */
+function stripQueryKeys(keys) {
+  const params = new URLSearchParams(window.location.search)
+  let changed = false
+  keys.forEach((key) => {
+    if (params.has(key)) { params.delete(key); changed = true }
+  })
+  if (!changed) return
+  const qs = params.toString()
+  window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+}
+
+export function stripAuthCodeFromUrl() { stripQueryKeys(['code']) }
+export function stripTokenHashFromUrl() { stripQueryKeys(['token_hash', 'type']) }
+
+/**
+ * URL'deki her türlü Supabase auth parametresinden oturum kurar:
+ *   1. token_hash + type  → verifyOtp  (özel şablon / magic-link)
+ *   2. code               → exchangeCodeForSession  (PKCE — en yaygın)
+ *   3. hash access_token  → setSession  (implicit — fallback)
+ *   4. Bekle & dene       → localStorage'daki mevcut oturum
+ */
+export async function establishAuthSessionFromUrl(supabase, { waitMs = 6000 } = {}) {
+  if (!supabase) return null
+
+  const params    = new URLSearchParams(window.location.search)
+  const hashRaw   = (window.location.hash || '').replace(/^#/, '')
+  const hashParams = new URLSearchParams(hashRaw)
+
+  // 1) token_hash (özel şablon — Dashboard'da recovery.html yapıştırıldığında)
+  const token_hash = params.get('token_hash') || hashParams.get('token_hash')
+  const otpType    = params.get('type')        || hashParams.get('type')
+  if (token_hash && otpType) {
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash, type: otpType })
+    if (!error && data?.session) { stripTokenHashFromUrl(); return data.session }
+  }
+
+  // 2) PKCE code (client-side resetPasswordForEmail ile oluşturulan code_verifier gerekli)
+  const code = params.get('code')
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data?.session) { stripAuthCodeFromUrl(); return data.session }
+  }
+
+  // 3) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)
+  const accessToken  = hashParams.get('access_token')
+  const refreshToken = hashParams.get('refresh_token')
+  if (accessToken && refreshToken) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    })
+    if (!error && data?.session) {
+      window.history.replaceState({}, '', window.location.pathname + window.location.search)
+      return data.session
+    }
+  }
+
+  // 4) Mevcut oturum (zaten localStorage'da)
+  const { data: { session: immediate } } = await supabase.auth.getSession()
+  if (immediate?.user) return immediate
+
+  // 5) Supabase'in URL'i async işlemesi için kısa bekleme
+  const started = Date.now()
+  while (Date.now() - started < waitMs) {
+    await new Promise((r) => setTimeout(r, 350))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) return session
+  }
+
+  return null
+}

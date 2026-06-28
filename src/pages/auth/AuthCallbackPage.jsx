@@ -6,6 +6,7 @@ import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
 import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services/authVerification'
 import { BRAND } from '../../config/brand'
 import { getPostLoginPath } from '../../services/platformStats'
+import { establishAuthSessionFromUrl } from '../../services/authSessionFromUrl'
 import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
@@ -18,15 +19,6 @@ function FloatingOrb({ className, variant = 'a' }) {
       className={`absolute rounded-full blur-3xl landing-orb-${variant} ${className}`}
     />
   )
-}
-
-function stripAuthCodeFromUrl() {
-  const params = new URLSearchParams(window.location.search)
-  if (!params.has('code')) return
-  params.delete('code')
-  const qs = params.toString()
-  const clean = `${window.location.pathname}${qs ? `?${qs}` : ''}`
-  window.history.replaceState({}, '', clean)
 }
 
 export default function AuthCallbackPage() {
@@ -48,27 +40,7 @@ export default function AuthCallbackPage() {
     let active = true
 
     async function establishSession() {
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
-
-      if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error && data?.session) {
-          stripAuthCodeFromUrl()
-          return data.session
-        }
-      }
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) return session
-
-      const started = Date.now()
-      while (Date.now() - started < 6000) {
-        const { data: { session: s } } = await supabase.auth.getSession()
-        if (s?.user) return s
-        await new Promise((r) => setTimeout(r, 350))
-      }
-      return null
+      return establishAuthSessionFromUrl(supabase)
     }
 
     // Doğrulama başarıya ulaştığında UI'ı hemen günceller; oturum yenileme arka planda
@@ -90,14 +62,20 @@ export default function AuthCallbackPage() {
       const isRecovery =
         hash.includes('type=recovery') ||
         searchParams.get('type') === 'recovery' ||
-        searchParams.get('next') === 'reset-password'
+        searchParams.get('next') === 'reset-password' ||
+        hashParams.get('type') === 'recovery'
 
       if (isRecovery) {
-        const session = await establishSession()
-        if (session && active) {
-          navigate('/reset-password', { replace: true })
-        } else if (active) {
-          setPhase('error')
+        // token_hash parametresini ResetPasswordPage'e taşı — oturum kurma orada yapılır.
+        // AuthCallbackPage burada verifyOtp çağırırsa token tek kullanımlık olduğundan
+        // ResetPasswordPage tekrar çağırınca "already used" hatası alır.
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash')
+        const recoveryType = searchParams.get('type') || hashParams.get('type') || 'recovery'
+        if (active) {
+          const dest = tokenHash
+            ? `/reset-password?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(recoveryType)}`
+            : '/reset-password'
+          navigate(dest, { replace: true })
         }
         return
       }

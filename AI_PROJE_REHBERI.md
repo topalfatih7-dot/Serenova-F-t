@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§45: landing performans, SEO slug profilleri, UX metin/düzen iyileştirmeleri)
+> **Son güncelleme:** 2026-06-28 (§48: token_hash iletme hatası düzeltmesi, ForgotPasswordPage yeni modern tasarım)
 
 ---
 
@@ -17,8 +17,9 @@
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
 6. Son değişiklikler için **§30–42 Değişiklik Günlüğü** bölümlerine bak.
 7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
-8. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
-9. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
+8. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
+9. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
+10. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -226,7 +227,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 | Login/logout | `supabaseDb.js` L262–302 | Telegram bildirimi gönderir |
 | Route guard | `src/components/auth/RequireAuth.jsx` | Rol bazlı redirect |
 | Login UI | `src/pages/auth/LoginPage.jsx` | Rol bazlı yönlendirme |
-| Şifre sıfırlama | `ForgotPasswordPage.jsx` → `AuthCallbackPage` → `ResetPasswordPage.jsx` | PKCE; redirect `/auth/callback?next=reset-password` |
+| Şifre sıfırlama | `ForgotPasswordPage.jsx` → `POST /api/auth` → `AuthCallbackPage` → `ResetPasswordPage.jsx` | Sunucu recover + token_hash (PKCE); §46 |
 | Auth callback | `src/pages/auth/AuthCallbackPage.jsx` | E-posta/telefon doğrulama linkleri, recovery yönlendirme |
 | İsteğe bağlı doğrulama | `src/services/authVerification.js` + `VerificationSection.jsx` | Profilden e-posta/telefon; kayıtta zorunlu değil |
 | Kayıt oturum açma | `api/auth-unlock-signup.js` + `ensureAuthForSignup()` | Confirm email açıkken bile kayıt sonrası giriş |
@@ -2143,9 +2144,12 @@ signUp → oturum yoksa → POST /api/auth-unlock-signup (service role)
 
 **Şifre sıfırlama:**
 ```
-/forgot-password → resetPasswordForEmail(redirectTo=/auth/callback?next=reset-password)
-→ kullanıcı e-postadaki linke tıklar → /auth/callback → /reset-password
-→ updateUser({ password })
+/forgot-password → POST /api/auth { action: password-reset, email }
+→ Sunucu APP_URL ile redirect: /auth/callback?next=reset-password
+→ Supabase Recovery e-postası (token_hash şablonu — §46)
+→ /auth/callback?token_hash=…&type=recovery&next=reset-password
+→ verifyOtp(token_hash, type: recovery) → oturum
+→ /reset-password → updateUser({ password }) → signOut → /login
 ```
 
 **Profil — e-posta doğrulama (güncel 2026-06-24, sunucu API):**
@@ -2182,14 +2186,15 @@ Twilio hazır olunca:
 
 | Dosya | Görev |
 |-------|-------|
-| `api/auth.js` | Birleşik auth: unlock-signup, email-send, email-confirm |
+| `api/auth.js` | Birleşik auth: unlock-signup, email-send, email-confirm, **password-reset** |
 | `api/_appUrl.js` | Sunucu tarafı kanonik site URL (`APP_URL`) |
 | `src/services/authVerification.js` | API üzerinden bağlantı gönder, `confirmEmailVerificationByEvt` |
 | `src/components/profile/VerificationSection.jsx` | E-posta UI; telefon `VITE_PHONE_VERIFY_ENABLED` ile gizli |
 | `src/components/auth/AuthRedirectHandler.jsx` | `/?code=` / `#error=` → `/auth/callback` yönlendirme |
 | `src/pages/auth/AuthCallbackPage.jsx` | evt + PKCE doğrulama, hata/otp_expired UI |
 | `src/pages/auth/ResetPasswordPage.jsx` | PKCE oturum bekleme + yeni şifre |
-| `src/pages/auth/ForgotPasswordPage.jsx` | `redirectTo` → `/auth/callback?next=reset-password` |
+| `src/pages/auth/ForgotPasswordPage.jsx` | Sunucu API ile sıfırlama e-postası (`password-reset`) |
+| `src/services/authSessionFromUrl.js` | PKCE code + token_hash oturum kurulumu |
 | `src/services/supabaseDb.js` | `ensureAuthForSignup`, `patchMemberVerification`, `emailVerifiedAt` |
 | `src/context/AppContext.jsx` | `verificationStatus`, `refreshVerification` |
 | `src/App.jsx` | `BrowserRouter` dış sarmalayıcı; `/auth/callback` rotası |
@@ -3149,4 +3154,236 @@ Scroll/navigasyon lag'ini azaltmak için Framer Motion tabanlı **sürekli (infi
 ### Dosyalar
 
 `src/index.css`, `src/config/seo.js`, `src/pages/LandingPage.jsx`, `src/pages/StaffProfilePage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/TeamListPage.jsx`, `src/components/landing/{WhyUsSection,LatestBlogPosts,PromoBanner,RotatingHeroText,SectionBackdrop,PlansAnimatedBackground}.jsx`, `src/components/staff/StaffMemberCard.jsx`, `src/pages/auth/AuthCallbackPage.jsx`, `api/sitemap.js`, `index.html`, `AI_PROJE_REHBERI.md`
+
+---
+
+## 46. Şifre Sıfırlama Düzeltmesi & Özel E-posta Şablonları (2026-06-28)
+
+### Sorun
+
+E-posta doğrulama (profil → bağlantı gönder) çalışıyordu; **şifre sıfırlama çalışmıyordu**. Kök nedenler:
+
+| # | Neden | Etki |
+|---|--------|------|
+| 1 | Uygulama `flowType: 'pkce'` kullanıyor; varsayılan Supabase **Recovery** şablonu `{{ .ConfirmationURL }}` ile PKCE `code` üretiyor | Farklı tarayıcı/cihazda `exchangeCodeForSession` başarısız (code_verifier yok) |
+| 2 | `ForgotPasswordPage` istemciden `resetPasswordForEmail` + `getSiteUrl()` (tarayıcı origin) çağırıyordu | Production'da yanlış redirect; e-posta doğrulama gibi sunucu `APP_URL` kullanılmıyordu |
+| 3 | `AuthRedirectHandler` kök URL'deki `?code=` parametresini otomatik `verify=email` sanıyordu | Recovery linki e-posta doğrulama akışına düşebiliyordu |
+
+E-posta doğrulama **evt jetonu** ile oturumsuz da tamamlanabildiği için etkilenmiyordu; şifre sıfırlama oturuma **mutlaka** ihtiyaç duyar.
+
+### Çözüm (kod)
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `api/auth.js` | `action: password-reset` → `/auth/v1/recover` (service role) + `getAppUrl()` redirect |
+| `src/pages/auth/ForgotPasswordPage.jsx` | İstemci Supabase çağrısı kaldırıldı → `POST /api/auth` |
+| `src/services/authSessionFromUrl.js` | **Yeni** — `verifyOtp({ token_hash, type })` + `exchangeCodeForSession` + oturum bekleme |
+| `src/pages/auth/AuthCallbackPage.jsx` | `establishSession()` → paylaşılan helper |
+| `src/pages/auth/ResetPasswordPage.jsx` | token_hash oturumu; yalnızca `PASSWORD_RECOVERY` eventi |
+| `src/components/auth/AuthRedirectHandler.jsx` | Recovery `type=recovery` / `token_hash` ayrımı; `code` → otomatik `verify=email` kaldırıldı |
+
+### Güncel şifre sıfırlama akışı
+
+```
+/forgot-password
+  → POST /api/auth { action: "password-reset", email }
+  → sendRecoveryEmail → redirect_to=https://www.yeniform.com/auth/callback?next=reset-password
+  → Supabase Recovery e-postası (Dashboard şablonu — aşağıda)
+  → Kullanıcı linke tıklar
+  → /auth/callback?token_hash=…&type=recovery&next=reset-password
+  → verifyOtp → oturum → /reset-password
+  → updateUser({ password }) → signOut(local) → /login
+```
+
+### Supabase Dashboard — zorunlu manuel adımlar
+
+> Kod tek başına yeterli değil; **Recovery e-posta şablonunu Dashboard'da güncellemeniz gerekir.**
+
+#### A) E-posta şablonları (Türkçe, Yeni Form markası)
+
+Kaynak HTML: `supabase/email-templates/`
+
+| Dosya | Dashboard → Email Templates | Subject (konu) |
+|-------|----------------------------|------------------|
+| `recovery.html` | **Reset Password** | `Yeni Form — Şifre sıfırlama bağlantınız` |
+| `magic-link.html` | **Magic Link** | `Yeni Form — E-posta doğrulama bağlantınız` |
+| `confirm-signup.html` | **Confirm signup** | `Yeni Form — Hesabınızı doğrulayın` |
+
+**Recovery şablonu kritik satır** (PKCE uyumlu):
+
+```html
+<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=reset-password">
+  Yeni Şifre Belirle
+</a>
+```
+
+Magic Link (profil e-posta doğrulama) — `RedirectTo` sunucudan gelir (`evt` jetonlu URL):
+
+```html
+<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=magiclink">
+  E-postamı Doğrula
+</a>
+```
+
+Detaylı adımlar: `supabase/email-templates/README.md`
+
+Dashboard: [Email Templates](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/templates)
+
+#### B) Özel gönderen — info@yeniform.com
+
+Supabase varsayılan gönderici: `noreply@mail.app.supabase.io`. Kendi adresiniz için:
+
+1. [Authentication → SMTP Settings](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/smtp)
+2. **Enable Custom SMTP**
+3. Önerilen:
+   - **Sender email:** `info@yeniform.com`
+   - **Sender name:** `Yeni Form`
+   - SMTP: Resend / SendGrid / Brevo / Amazon SES (domain DNS: SPF + DKIM + DMARC)
+
+> SMTP kimlik bilgileri repoya veya `VITE_` env'e **konmaz** — yalnızca Supabase Dashboard.
+
+#### C) URL yapılandırması
+
+[Authentication → URL Configuration](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/url-configuration)
+
+| Alan | Değer |
+|------|-------|
+| Site URL | `https://www.yeniform.com` |
+| Redirect URLs | `https://www.yeniform.com/**`, `http://localhost:5173/**` |
+
+#### D) Vercel env (değişmedi)
+
+```
+APP_URL=https://www.yeniform.com
+VITE_SITE_URL=https://www.yeniform.com
+SUPABASE_SERVICE_ROLE_KEY=…
+```
+
+### Test planı
+
+1. Dashboard'da **Recovery** şablonunu `supabase/email-templates/recovery.html` ile güncelle → Save
+2. `/forgot-password` → kayıtlı e-posta gir → "Bağlantı gönderildi"
+3. E-postadaki linke tıkla (farklı tarayıcıda da dene) → `/reset-password` formu açılmalı
+4. Yeni şifre kaydet → `/login` yönlendirmesi → yeni şifre ile giriş
+5. *(Opsiyonel)* SMTP kur → gönderen `info@yeniform.com` görünmeli
+
+### Değiştirilen / eklenen dosyalar
+
+- `api/auth.js`
+- `src/services/authSessionFromUrl.js` *(yeni)*
+- `src/pages/auth/{ForgotPasswordPage,ResetPasswordPage,AuthCallbackPage}.jsx`
+- `src/components/auth/AuthRedirectHandler.jsx`
+- `supabase/email-templates/{recovery,magic-link,confirm-signup}.html`, `README.md`
+- `AI_PROJE_REHBERI.md` (bu bölüm)
+
+---
+
+## 47. Şifre Sıfırlama — Kök Neden Düzeltmesi & Yeni Sayfa (2026-06-28)
+
+### Log analizi ile tespit edilen sorun
+
+Supabase auth loglarından:
+
+```
+action: user_recovery_requested  path: /recover  status: 200   ← API çalışıyor, mail gidiyor
+action: user_recovery_requested  path: /otp       status: 200   ← e-posta doğrulama (magic_link)
+mail.send  mail_type: magic_link  ← sadece e-posta doğrulama için log var
+```
+
+**Kök neden:** §46'da eklenen `api/auth.js → password-reset` aksiyonu sunucu tarafından `/auth/v1/recover` çağırıyor.
+Sunucu taraflı recover çağrısı PKCE `code_verifier` oluşturmuyor.
+Supabase **implicit flow** ile hash token (`#access_token=...&type=recovery`) gönderiyor.
+`supabase-js` ise `flowType: 'pkce'` yapılandırmasıyla hash tokenleri **işlemiyor** → oturum kurulamıyor → `/reset-password` "geçersiz bağlantı" gösteriyor.
+
+### Çözüm
+
+| Değişiklik | Detay |
+|------------|-------|
+| `ForgotPasswordPage.jsx` | Sunucu API kaldırıldı. **Client-side** `supabase.auth.resetPasswordForEmail` kullanıyor; PKCE `code_verifier` localStorage'a kaydediliyor |
+| `authSessionFromUrl.js` | **3 yol** → token_hash (custom template) + code (PKCE) + implicit hash token (fallback: `setSession`) |
+| `ResetPasswordPage.jsx` | **Tamamen yeniden yazıldı**: tam sayfa marka tasarımı, şifre güç göstergesi, göz ikonu, animasyonlu durumlar |
+| `AuthCallbackPage.jsx` | Recovery tespiti genişletildi; her durumda `/reset-password`'e navigate edilir, oturum kurulumu `ResetPasswordPage`'e bırakıldı |
+
+### Güncel şifre sıfırlama akışı (düzeltilmiş)
+
+```
+/forgot-password
+  → supabase.auth.resetPasswordForEmail(email, { redirectTo: /auth/callback?next=reset-password })
+  → PKCE code_verifier localStorage'a kaydedilir
+  → Supabase varsayılan recovery e-postası gönderilir (noreply@mail.app.supabase.io)
+  → Kullanıcı linke tıklar
+  → Supabase PKCE ile code üretir
+  → https://www.yeniform.com/auth/callback?next=reset-password&code=XXX
+  → AuthCallbackPage: next=reset-password → isRecovery=true → navigate /reset-password
+  → ResetPasswordPage: establishAuthSessionFromUrl → exchangeCodeForSession(code) → oturum ✓
+  → Şifre formu açılır → updateUser({ password }) → signOut(local) → /login
+```
+
+**Özel SMTP + custom template kurulunca** (§46 devam eder):
+- Recovery e-postasında `token_hash` + `type=recovery` URL olarak gelir
+- `authSessionFromUrl.js` bu durumu da işler (adım 1: `verifyOtp`)
+- Farklı tarayıcıda / cihazda da çalışır
+
+### Yeni ResetPasswordPage özellikleri
+
+- Tam sayfa gradient arka plan (AuthCallbackPage ile aynı marka dili)
+- Şifre güç göstergesi (PASSWORD_RULES üzerinden canlı)
+- Göz ikonu ile şifre görünürlük toggle
+- Animasyonlu durumlar: loading → ready → done | invalid
+- Eşleşme kontrolü (canlı, anında geri bildirim)
+- Kaydet butonu: tüm kurallar sağlanmadan disabled
+
+### Dosyalar
+
+`src/pages/auth/{ForgotPasswordPage,ResetPasswordPage,AuthCallbackPage}.jsx`
+`src/services/authSessionFromUrl.js`
+`AI_PROJE_REHBERI.md`
+
+---
+
+## 48. token_hash Yönlendirme Hatası & ForgotPasswordPage Yeniden Tasarım (2026-06-28)
+
+### Log'dan tespit edilen ikinci hata
+
+Kullanıcı tarafından paylaşılan gerçek e-posta bağlantısı:
+```
+https://www.yeniform.com/auth/callback?token_hash=pkce_3451b143e825...&type=recovery&next=reset-password
+```
+
+`pkce_` önekli `token_hash` → client-side PKCE ile üretildi (§47 düzeltmesi doğru çalışıyor).
+
+**Yeni sorun:** `AuthCallbackPage` `isRecovery` durumunda önce `verifyOtp(token_hash)` çağırıp token'ı **tek kullanımlık olduğu için tüketiyordu**, sonra `/reset-password`'e yönlendiriyordu ama `token_hash`'i URL'e **taşımıyordu**. `ResetPasswordPage` token_hash'siz açılıyordu → `getSession()` null → "geçersiz bağlantı".
+
+### Düzeltme
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `AuthCallbackPage.jsx` | Recovery'de `verifyOtp` **kaldırıldı**. Token tüketilmeden `/reset-password?token_hash=pkce_...&type=recovery` URL'ye taşınır |
+| `ResetPasswordPage.jsx` | `useSearchParams()` ile `token_hash` okunur → `verifyOtp` burada tek sefer çağrılır → oturum kurulur → form gösterilir |
+
+### Güncel DOĞRU şifre sıfırlama akışı (§48 sonrası)
+
+```
+/forgot-password → supabase.auth.resetPasswordForEmail (PKCE, code_verifier localStorage)
+→ Supabase recovery e-postası (default template: {{ .ConfirmationURL }})
+→ Kullanıcı tıklar → Supabase PKCE işler
+→ /auth/callback?token_hash=pkce_XXX&type=recovery&next=reset-password
+→ AuthCallbackPage: isRecovery=true → navigate /reset-password?token_hash=pkce_XXX&type=recovery
+→ ResetPasswordPage: verifyOtp({ token_hash: 'pkce_XXX', type: 'recovery' }) → oturum ✓
+→ Şifre formu → updateUser({ password }) → signOut(local) → /login
+```
+
+### ForgotPasswordPage yeni tasarım
+
+- Tam sayfa gradient arka plan (marka renkleri)
+- Üst şerit (brand → sage → violet gradyan)
+- Mail ikonu kartı
+- AnimatePresence: form ↔ başarı durumu geçişi
+- Başarı ekranında: e-posta adresi göster, spam uyarısı, "Farklı e-posta dene" butonu
+- "Hesabınızı hatırladınız mı? Giriş yapın" alt bağlantısı
+
+### Dosyalar
+
+`src/pages/auth/{ForgotPasswordPage,ResetPasswordPage,AuthCallbackPage}.jsx`
+`AI_PROJE_REHBERI.md`
 

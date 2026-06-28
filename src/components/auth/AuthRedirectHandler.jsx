@@ -22,16 +22,17 @@ export default function AuthRedirectHandler() {
     const code = params.get('code')
     const authError = params.get('error')
     const errorCode = params.get('error_code')
+    const tokenHash = params.get('token_hash')
+    const flowType = params.get('type')
     const hasHashTokens = hashRaw.includes('access_token') || hashRaw.includes('type=')
 
-    if (!code && !authError && !errorCode && !hasHashTokens) return
+    if (!code && !authError && !errorCode && !hasHashTokens && !tokenHash) return
 
-    if (!params.has('verify') && !params.has('next') && !params.get('type')) {
-      if (hashRaw.includes('type=recovery') || params.get('type') === 'recovery') {
-        params.set('next', 'reset-password')
-      } else if (code || authError || errorCode === 'otp_expired' || params.get('evt')) {
-        params.set('verify', 'email')
-      }
+    if (flowType === 'recovery' || hashRaw.includes('type=recovery')) {
+      if (!params.has('next')) params.set('next', 'reset-password')
+    } else if (!params.has('verify') && !params.has('next') && params.get('evt')) {
+      // E-posta doğrulama bağlantılarımız evt jetonu taşır; yalnızca o zaman verify=email eklenir.
+      params.set('verify', 'email')
     }
 
     const qs = params.toString()
