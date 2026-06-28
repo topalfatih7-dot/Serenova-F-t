@@ -74,14 +74,9 @@ export default function StaffShell() {
             >
               <item.icon className="h-4 w-4" />
               <span className="flex-1">{item.label}</span>
-              {item.chatBadge && chatUnreadCount > 0 && (
+              {item.badgeCount > 0 && (
                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                  {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
-                </span>
-              )}
-              {item.adminChatBadge && staffAdminUnreadCount > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                  {staffAdminUnreadCount > 9 ? '9+' : staffAdminUnreadCount}
+                  {item.badgeCount > 9 ? '9+' : item.badgeCount}
                 </span>
               )}
             </NavLink>

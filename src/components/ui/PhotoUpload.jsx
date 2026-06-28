@@ -30,7 +30,7 @@ function resizeImage(file, maxDim = 720, quality = 0.82) {
   })
 }
 
-export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı', hint }) {
+export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı', hint, variant = 'body' }) {
   const inputRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -53,6 +53,13 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
     }
   }
 
+  const isPortrait = variant === 'portrait'
+  const previewClass = isPortrait ? 'h-36 w-36 rounded-2xl object-cover' : 'h-44 w-32 object-cover'
+  const placeholderTitle = isPortrait ? 'Profil fotoğrafı ekle *' : 'Fotoğraf ekle (isteğe bağlı)'
+  const placeholderHint = isPortrait
+    ? 'Net portre, yüzünüz görünür olmalı'
+    : 'Tüm vücut görünecek şekilde, dik dururken'
+
   return (
     <div className="block">
       {label && (
@@ -63,7 +70,7 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
 
       {value ? (
         <div className="relative inline-flex overflow-hidden rounded-2xl border border-cream-200 bg-cream-50">
-          <img src={value} alt="Boy fotoğrafı önizleme" className="h-44 w-32 object-cover" />
+          <img src={value} alt="Fotoğraf önizleme" className={previewClass} />
           <div className="absolute right-1.5 top-1.5 flex gap-1.5">
             <button
               type="button"
@@ -98,9 +105,9 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
             </span>
           )}
           <span className="text-sm font-medium text-cream-900">
-            {loading ? 'Yükleniyor...' : 'Fotoğraf ekle (isteğe bağlı)'}
+            {loading ? 'Yükleniyor...' : placeholderTitle}
           </span>
-          <span className="text-xs text-cream-800/55">Tüm vücut görünecek şekilde, dik dururken</span>
+          <span className="text-xs text-cream-800/55">{placeholderHint}</span>
         </button>
       )}
 

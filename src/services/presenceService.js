@@ -30,6 +30,35 @@ export async function fetchActiveUsers() {
   return Array.isArray(data) ? data : []
 }
 
+export async function fetchPresenceForUsers(userIds = [], { includeAdmins = false } = {}) {
+  if (!supabase) return []
+  const ids = [...new Set(userIds.filter(Boolean))]
+  const rows = []
+
+  if (ids.length) {
+    const { data, error } = await supabase
+      .from('user_presence')
+      .select('user_id, last_seen_at, role')
+      .in('user_id', ids)
+    if (!error && data) rows.push(...data)
+  }
+
+  if (includeAdmins) {
+    const { data, error } = await supabase
+      .from('user_presence')
+      .select('user_id, last_seen_at, role')
+      .eq('role', 'admin')
+    if (!error && data) rows.push(...data)
+  }
+
+  const seen = new Set()
+  return rows.filter((r) => {
+    if (seen.has(r.user_id)) return false
+    seen.add(r.user_id)
+    return true
+  })
+}
+
 export async function pingPresence({ userId, email, name, role, pagePath }) {
   const now = new Date().toISOString()
   const { data: existing } = await supabase

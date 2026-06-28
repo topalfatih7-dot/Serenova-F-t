@@ -1,9 +1,10 @@
-/** Kadro profili — admin form, Supabase JSONB ve public sayfalar için ortak şema */
+/** Kadro profili — admin form, başvuru onayı, Supabase JSONB ve public sayfalar için ortak şema */
 
 export const EMPTY_EDUCATION = { degree: '', school: '', year: '' }
 export const EMPTY_EXPERIENCE = { title: '', organization: '', period: '', description: '' }
 export const EMPTY_CERTIFICATE = { name: '', issuer: '', year: '' }
 
+/** Başvuru formu ve admin panelinde ortak profil alanları */
 export const EMPTY_STAFF_FORM = {
   role: 'coach',
   name: '',
@@ -16,6 +17,13 @@ export const EMPTY_STAFF_FORM = {
   headline: '',
   bio: '',
   photo: null,
+  city: '',
+  district: '',
+  gender: '',
+  instagram: '',
+  youtube: '',
+  website: '',
+  linkedin: '',
   education: [],
   experienceYears: '',
   experiences: [],
@@ -52,6 +60,14 @@ export function normalizeStaffProfile(raw = {}) {
     specialties,
     headline: raw.headline || '',
     bio: raw.bio || raw.description || '',
+    photo: raw.photo || null,
+    city: raw.city || '',
+    district: raw.district || '',
+    gender: raw.gender || '',
+    instagram: raw.instagram || '',
+    youtube: raw.youtube || '',
+    website: raw.website || '',
+    linkedin: raw.linkedin || '',
     education: Array.isArray(raw.education) ? raw.education : [],
     experienceYears: raw.experienceYears === '' || raw.experienceYears == null
       ? ''
@@ -62,6 +78,35 @@ export function normalizeStaffProfile(raw = {}) {
     workDays: Array.isArray(raw.workDays) ? raw.workDays : [],
     workStart: raw.workStart || '09:00',
     workEnd: raw.workEnd || '17:00',
+  }
+}
+
+/** Supabase staff.data JSONB payload — tek kaynak */
+export function staffProfileDataPayload(data) {
+  const n = normalizeStaffProfile(data)
+  return {
+    phone: n.phone || '',
+    title: n.title || '',
+    specialty: n.specialty || '',
+    specialties: n.specialties || [],
+    headline: n.headline || '',
+    bio: n.bio || '',
+    photo: n.photo || null,
+    city: n.city || '',
+    district: n.district || '',
+    gender: n.gender || '',
+    instagram: n.instagram || '',
+    youtube: n.youtube || '',
+    website: n.website || '',
+    linkedin: n.linkedin || '',
+    education: n.education || [],
+    experienceYears: Number(n.experienceYears) || 0,
+    experiences: n.experiences || [],
+    certificates: n.certificates || [],
+    languages: n.languages || ['Türkçe'],
+    workDays: n.workDays || [],
+    workStart: n.workStart || '09:00',
+    workEnd: n.workEnd || '17:00',
   }
 }
 

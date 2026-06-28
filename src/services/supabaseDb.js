@@ -13,10 +13,10 @@ import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths 
 import { notifyTelegram } from './telegramNotify'
 import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
-import { normalizeStaffProfile } from '../data/staffProfile'
+import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
 import { estimateReadMinutes } from '../utils/blogContent'
-import { buildStaffApplicationPayload } from '../data/staffApplication'
+import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { getSiteUrl } from '../config/seo'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
@@ -760,24 +760,7 @@ export async function changeMemberPlan(member, planId, planPrice = 0, durationMo
 
 // --------------------------- staff (admin) ---------------------------
 function staffDataPayload(data) {
-  const n = normalizeStaffProfile(data)
-  return {
-    phone: n.phone || '',
-    title: n.title || '',
-    specialty: n.specialty || '',
-    specialties: n.specialties || [],
-    headline: n.headline || '',
-    bio: n.bio || '',
-    photo: n.photo || null,
-    education: n.education || [],
-    experienceYears: Number(n.experienceYears) || 0,
-    experiences: n.experiences || [],
-    certificates: n.certificates || [],
-    languages: n.languages || ['Türkçe'],
-    workDays: n.workDays || [],
-    workStart: n.workStart || '09:00',
-    workEnd: n.workEnd || '17:00',
-  }
+  return staffProfileDataPayload(data)
 }
 
 export async function addStaff(data) {
@@ -1030,27 +1013,7 @@ export async function resolveStaffApplication(application, approve, adminNote = 
   }
 
   const tempPassword = generateTempPassword()
-  const d = application.data || {}
-  const staffPayload = {
-    role: application.role,
-    name: application.name,
-    email: application.email,
-    phone: application.phone,
-    password: tempPassword,
-    title: d.title || (d.specialties || [])[0] || '',
-    specialty: (d.specialties || [])[0] || '',
-    specialties: d.specialties || [],
-    headline: d.title || (d.specialties || [])[0] || '',
-    bio: d.bio || '',
-    education: d.education || [],
-    experienceYears: d.experienceYears || 0,
-    experiences: d.experiences || [],
-    certificates: d.certificates || [],
-    languages: d.languages || ['Türkçe'],
-    workDays: d.workDays || [],
-    workStart: d.workStart || '09:00',
-    workEnd: d.workEnd || '17:00',
-  }
+  const staffPayload = applicationToStaffPayload(application, tempPassword)
 
   const created = await addStaff(staffPayload)
   if (!created.success) return created

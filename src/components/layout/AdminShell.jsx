@@ -17,26 +17,41 @@ const adminNav = [
   { to: '/admin/members', icon: Users, label: 'Üyeler' },
   { to: '/admin/plans', icon: Package, label: 'Paketler' },
   { to: '/admin/premium', icon: Crown, label: 'Premium Yönetimi' },
-  { to: '/admin/applications', icon: UserPlus, label: 'Başvurular' },
+  { to: '/admin/applications', icon: UserPlus, label: 'Başvurular', applicationsBadge: true },
   { to: '/admin/library', icon: Library, label: 'Kütüphane' },
   { to: '/admin/staff', icon: Stethoscope, label: 'Kadromuz' },
   { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonelikler' },
   { to: '/admin/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-  { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri' },
+  { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri', supportBadge: true },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog' },
   { to: '/admin/content', icon: Sparkles, label: 'İçerik' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analitik' },
   { to: '/admin/activity', icon: Activity, label: 'Aktivite' },
 ]
 
+function NavBadge({ count }) {
+  if (!count) return null
+  return (
+    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
 export default function AdminShell() {
-  const { logout, adminStaffUnreadCount } = useApp()
+  const { logout, adminStaffUnreadCount, pendingApplicationsCount, openSupportTicketsCount } = useApp()
 
   const navWithBadges = adminNav.map((item) => ({
     ...item,
-    badgeCount: item.chatBadge ? adminStaffUnreadCount : 0,
+    badgeCount: item.applicationsBadge
+      ? pendingApplicationsCount
+      : item.chatBadge
+        ? adminStaffUnreadCount
+        : item.supportBadge
+          ? openSupportTicketsCount
+          : 0,
   }))
 
   return (
@@ -64,11 +79,7 @@ export default function AdminShell() {
             >
               <item.icon className="h-4 w-4" />
               <span className="flex-1">{item.label}</span>
-              {item.chatBadge && adminStaffUnreadCount > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                  {adminStaffUnreadCount > 9 ? '9+' : adminStaffUnreadCount}
-                </span>
-              )}
+              <NavBadge count={item.badgeCount} />
             </NavLink>
           ))}
         </nav>

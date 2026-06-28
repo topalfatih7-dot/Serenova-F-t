@@ -16,12 +16,26 @@ dist-ssr
 .env
 .env.*
 !.env.example
+.env.vercel-check
+
+# Yerel gizli dosyalar
+.cron-secret.local.txt
+*.local.txt
+*.secret
+*.secret.*
+secrets/
+credentials.json
+*.pem
+*.p12
+*.key
+*.keystore
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
@@ -30,3 +44,10 @@ dist-ssr
 
 .vercel
 .env*
+
+# Supabase CLI geçici dosyalar
+supabase/.temp/
+supabase/.branches/
+
+# Vite cache
+.vite/

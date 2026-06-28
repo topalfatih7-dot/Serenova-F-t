@@ -9,6 +9,8 @@ import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace } from '
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import { useChatPresence } from '../../hooks/useChatPresence'
+import PresenceIndicator, { AvatarWithPresence } from '../../components/ui/PresenceIndicator'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { adminStaffThreadUnreadCount, sortThreadsForInbox, staffRoleLabel } from '../../utils/chatAccess'
 import { downloadChatTranscriptPdf, mapMemberStaffMessagesForExport } from '../../utils/exportChatPdf'
@@ -72,6 +74,9 @@ export default function AdminMessagesPage() {
     if (!q) return staffList
     return staffList.filter(({ staff: s }) => (s.name || '').toLowerCase().includes(q))
   }, [staffList, query])
+
+  const staffPeerIds = useMemo(() => filteredStaff.map(({ staff: s }) => s.id).filter(Boolean), [filteredStaff])
+  const { isOnline, lastSeenAt } = useChatPresence(staffPeerIds)
 
   const activeStaffId = !isAudit
     ? (staffIdParam || (isWide ? filteredStaff[0]?.staff?.id : null))
@@ -197,9 +202,11 @@ export default function AdminMessagesPage() {
                 isActive ? 'bg-cream-900 text-white shadow-md' : unread > 0 ? 'bg-amber-50/80 hover:bg-amber-50' : 'hover:bg-cream-50'
               }`}
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isActive ? 'bg-white/15 text-white' : 'bg-cream-100 text-cream-800'}`}>
-                {(s.name || '?')[0]}
-              </span>
+              <AvatarWithPresence lastSeenAt={lastSeenAt(s.id)} online={isOnline(s.id)}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isActive ? 'bg-white/15 text-white' : 'bg-cream-100 text-cream-800'}`}>
+                  {(s.name || '?')[0]}
+                </span>
+              </AvatarWithPresence>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{s.name}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
@@ -267,6 +274,13 @@ export default function AdminMessagesPage() {
       <ChatThreadHeader
         title={activeStaffEntry.staff.name}
         subtitle={`${staffRoleMeta(activeStaffEntry.staff.role).label} · Admin iletişimi`}
+        presence={(
+          <PresenceIndicator
+            lastSeenAt={lastSeenAt(activeStaffEntry.staff.id)}
+            online={isOnline(activeStaffEntry.staff.id)}
+            showLabel
+          />
+        )}
       />
       <ChatThreadBody>
         <AdminStaffChatView

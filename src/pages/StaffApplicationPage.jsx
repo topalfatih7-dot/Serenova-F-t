@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
+import PhotoUpload from '../components/ui/PhotoUpload'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import { useToast } from '../context/ToastContext'
 import { submitStaffApplication, uploadStaffApplicationDoc } from '../services/supabaseDb'
@@ -202,8 +203,15 @@ export default function StaffApplicationPage() {
             <motion.div key={`${step}-${form.role}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
               {step === 1 && (
                 <>
-                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
+                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim, cinsiyet ve profil fotoğrafı" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
+                      <PhotoUpload
+                        value={form.photo}
+                        onChange={(photo) => update({ photo })}
+                        label="Profil Fotoğrafı"
+                        variant="portrait"
+                        hint="Kadro sayfasında görünecek net bir portre yükleyin."
+                      />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
                       <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" className={inputCls} />
                       <PhoneField value={form.phone} onValueChange={(phone) => update({ phone })} label="" />

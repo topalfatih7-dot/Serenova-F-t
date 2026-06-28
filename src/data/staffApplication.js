@@ -149,6 +149,7 @@ export const EMPTY_STAFF_APPLICATION = {
   name: '',
   email: '',
   phone: '',
+  photo: null,
   city: '',
   district: '',
   gender: '',
@@ -194,24 +195,63 @@ export function toggleInList(list, item) {
 
 export function applicationToStaffPayload(app, tempPassword) {
   const d = app.data || {}
+  const specialties = (d.specialties || []).filter(Boolean)
+  const primarySpecialty = specialties.find((s) => s !== OTHER_OPTION) || specialties[0] || ''
+
+  let education = Array.isArray(d.education) ? [...d.education] : []
+  let certificates = Array.isArray(d.certificates) ? [...d.certificates] : []
+
+  if (app.role === 'coach') {
+    if (d.educationLevel && d.educationDepartment) {
+      const levelLabel = EDUCATION_LEVELS.find((l) => l.value === d.educationLevel)?.label || d.educationLevel
+      education.unshift({
+        degree: `${levelLabel} — ${d.educationDepartment}`,
+        school: d.educationGpa ? `GPA: ${d.educationGpa}` : '',
+        year: '',
+      })
+    }
+    certificates = [
+      ...(d.officialCoachingCerts || []).filter((c) => c && c !== 'Yok').map((name) => ({ name, issuer: 'Resmi Antrenörlük', year: '' })),
+      ...(d.internationalCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Uluslararası', year: '' })),
+      ...(d.branchCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Branş Sertifikası', year: '' })),
+      ...certificates,
+    ]
+  } else if (d.graduationDepartment) {
+    education.unshift({
+      degree: d.graduationDepartment,
+      school: d.licenseNumber ? `Oda/Diploma No: ${d.licenseNumber}` : '',
+      year: '',
+    })
+  }
+
+  const bio = d.bio || ''
+  const title = d.title || primarySpecialty || ''
+
   return {
     role: app.role,
     name: app.name,
     email: app.email,
     phone: app.phone || d.phone || '',
     password: tempPassword,
-    title: d.title || (d.specialties || [])[0] || '',
-    specialty: (d.specialties || [])[0] || '',
-    specialties: d.specialties || [],
-    headline: d.title || (d.specialties || [])[0] || '',
-    bio: d.bio || '',
+    title,
+    specialty: primarySpecialty,
+    specialties,
+    headline: bio ? bio.slice(0, 140) : title,
+    bio,
     photo: d.photo || null,
-    education: d.education || [],
-    experienceYears: d.experienceYears || 0,
+    city: d.city || '',
+    district: d.district || '',
+    gender: d.gender || '',
+    instagram: d.instagram || '',
+    youtube: d.youtube || '',
+    website: d.website || '',
+    linkedin: d.linkedin || '',
+    education,
+    experienceYears: Number(d.experienceYears) || 0,
     experiences: d.experiences || [],
-    certificates: d.certificates || [],
+    certificates,
     languages: d.languages || ['Türkçe'],
-    workDays: d.workDays || [],
+    workDays: d.workDays?.length ? d.workDays : [1, 3, 5],
     workStart: d.workStart || '09:00',
     workEnd: d.workEnd || '17:00',
   }
@@ -225,6 +265,7 @@ function baseErrors(form) {
   if (!form.city?.trim()) errors.push('İl seçin')
   if (!form.district?.trim()) errors.push('İlçe seçin')
   if (!form.gender) errors.push('Cinsiyet seçin')
+  if (!form.photo) errors.push('Profil fotoğrafı gerekli')
   if (form.hasGym) {
     if (!form.gymName?.trim()) errors.push('Salon adı gerekli')
     if (!form.gymCity?.trim()) errors.push('Salon ili gerekli')
@@ -308,6 +349,7 @@ export function validateStaffApplication(form) {
 
 export function buildStaffApplicationPayload(form) {
   const common = {
+    photo: form.photo || null,
     city: form.city || '',
     district: form.district || '',
     gender: form.gender || '',

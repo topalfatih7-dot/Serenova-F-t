@@ -10,9 +10,11 @@ import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { useChatPresence } from '../../hooks/useChatPresence'
 import { getStaffClients, sortThreadsForInbox, threadUnreadCount } from '../../utils/chatAccess'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { getPlanLabel } from '../../data/membershipPlans'
+import PresenceIndicator, { AvatarWithPresence } from '../../components/ui/PresenceIndicator'
 
 export default function StaffMessagesPage() {
   const { memberId: memberIdParam } = useParams()
@@ -49,6 +51,9 @@ export default function StaffMessagesPage() {
     if (!q) return enriched
     return enriched.filter((x) => (x.member?.name || '').toLowerCase().includes(q))
   }, [enriched, query])
+
+  const peerIds = useMemo(() => filtered.map(({ member }) => member?.id).filter(Boolean), [filtered])
+  const { isOnline, lastSeenAt } = useChatPresence(peerIds)
 
   const activeMemberId = memberIdParam || (isWide ? filtered[0]?.thread?.memberId : null)
   const active = enriched.find((x) => x.thread.memberId === activeMemberId)
@@ -108,9 +113,11 @@ export default function StaffMessagesPage() {
                 isActive ? 'bg-gradient-to-r from-brand-500 to-violet-600 text-white shadow-md' : unread > 0 ? 'bg-rose-50/80 hover:bg-rose-50' : 'hover:bg-cream-50'
               }`}
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-700'}`}>
-                {(member.name || '?')[0]}
-              </span>
+              <AvatarWithPresence lastSeenAt={lastSeenAt(member.id)} online={isOnline(member.id)}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-700'}`}>
+                  {(member.name || '?')[0]}
+                </span>
+              </AvatarWithPresence>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{member.name}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
@@ -134,6 +141,13 @@ export default function StaffMessagesPage() {
       <ChatThreadHeader
         title={active.member.name}
         subtitle={`${meta.label} · ${getPlanLabel(active.member?.membership) || active.member?.membership}`}
+        presence={(
+          <PresenceIndicator
+            lastSeenAt={lastSeenAt(active.member.id)}
+            online={isOnline(active.member.id)}
+            showLabel
+          />
+        )}
       />
       <div className="shrink-0 px-3 sm:px-4 md:px-5">
         <ChatCollapsiblePrograms

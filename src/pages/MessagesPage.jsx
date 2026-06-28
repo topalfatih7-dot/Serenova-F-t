@@ -8,9 +8,11 @@ import ChatConsentModal from '../components/chat/ChatConsentModal'
 import ChatCollapsiblePrograms from '../components/chat/ChatCollapsiblePrograms'
 import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace } from '../components/chat/ChatWorkspace'
 import EmptyState from '../components/ui/EmptyState'
+import PresenceIndicator, { AvatarWithPresence } from '../components/ui/PresenceIndicator'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useChatPresence } from '../hooks/useChatPresence'
 import {
   getMemberChatContacts,
   sortThreadsForInbox,
@@ -37,6 +39,8 @@ export default function MessagesPage() {
 
   const contacts = useMemo(() => getMemberChatContacts(user, staff), [user, staff])
   const sortedThreads = useMemo(() => sortThreadsForInbox(chatThreads, 'member'), [chatThreads])
+  const peerIds = useMemo(() => contacts.map((c) => c.staffId).filter(Boolean), [contacts])
+  const { isOnline, lastSeenAt } = useChatPresence(peerIds)
 
   const activeRole = roleParam === 'dietitian' ? 'dietitian' : roleParam === 'coach' ? 'coach' : null
   const activeContact = contacts.find((c) => c.role === activeRole)
@@ -117,9 +121,14 @@ export default function MessagesPage() {
                 isActive ? 'bg-gradient-to-r from-brand-500 to-violet-600 text-white shadow-md' : 'hover:bg-cream-50'
               }`}
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : c.role === 'dietitian' ? 'bg-sage-100 text-sage-700' : 'bg-brand-100 text-brand-700'}`}>
-                <RoleIcon className="h-5 w-5" />
-              </span>
+              <AvatarWithPresence
+                lastSeenAt={lastSeenAt(c.staffId)}
+                online={isOnline(c.staffId)}
+              >
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : c.role === 'dietitian' ? 'bg-sage-100 text-sage-700' : 'bg-brand-100 text-brand-700'}`}>
+                  <RoleIcon className="h-5 w-5" />
+                </span>
+              </AvatarWithPresence>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{c.name}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>{c.title}</p>
@@ -144,7 +153,17 @@ export default function MessagesPage() {
     </div>
   ) : (
     <>
-      <ChatThreadHeader title={activeContact.name} subtitle={staffRoleMeta(activeRole).label} />
+      <ChatThreadHeader
+        title={activeContact.name}
+        subtitle={staffRoleMeta(activeRole).label}
+        presence={(
+          <PresenceIndicator
+            lastSeenAt={lastSeenAt(activeContact.staffId)}
+            online={isOnline(activeContact.staffId)}
+            showLabel
+          />
+        )}
+      />
       <div className="shrink-0 px-3 sm:px-4 md:px-5">
         <ChatCollapsiblePrograms key={activeRole} programs={myPrograms} role={activeRole} />
       </div>

@@ -265,6 +265,11 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
         </p>
 
         <SummarySection title="Kişisel">
+          {form.photo && (
+            <div className="mb-3 flex justify-center">
+              <img src={form.photo} alt={form.name} className="h-24 w-24 rounded-2xl object-cover ring-2 ring-brand-100" />
+            </div>
+          )}
           <SummaryRow label="Rol" value={staffRoleLabel(form.role)} />
           <SummaryRow label="Ad Soyad" value={form.name} />
           <SummaryRow label="E-posta" value={form.email} />

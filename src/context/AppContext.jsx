@@ -145,6 +145,31 @@ export function AppProvider({ children }) {
     adminStaffThreads.reduce((sum, t) => sum + adminStaffThreadUnreadCount(t, 'admin'), 0)
   ), [adminStaffThreads])
 
+  const pendingApplicationsCount = useMemo(() => {
+    if (!isAdmin) return 0
+    const staffPending = (db.staffApplications || []).filter((a) => a.status === 'pending').length
+    const corpPending = (db.corporateApplications || []).filter((a) => a.status === 'pending').length
+    const contactNew = (db.contactInquiries || []).filter((a) => a.status === 'new').length
+    return staffPending + corpPending + contactNew
+  }, [isAdmin, db.staffApplications, db.corporateApplications, db.contactInquiries])
+
+  const openSupportTicketsCount = useMemo(() => {
+    if (isAdmin) {
+      return (db.tickets || []).filter((t) => t.status === 'open' || t.status === 'pending').length
+    }
+    if (currentMember) {
+      return (db.tickets || []).filter(
+        (t) => t.memberId === currentMember.id && (t.status === 'open' || t.status === 'pending'),
+      ).length
+    }
+    return 0
+  }, [isAdmin, db.tickets, currentMember?.id])
+
+  const notificationUnreadCount = useMemo(
+    () => (currentMember?.notifications || []).filter((n) => !n.read).length,
+    [currentMember?.notifications],
+  )
+
   const loadChatMessages = useCallback(async (threadId) => {
     const messages = await chatDb.fetchChatMessages(threadId)
     setChatMessages((prev) => ({ ...prev, [threadId]: messages }))
@@ -299,8 +324,11 @@ export function AppProvider({ children }) {
           return { ...prev, [message.threadId]: [...list, message] }
         })
       },
+      onApplicationsChange: () => {
+        reloadRemote()
+      },
     })
-  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id, currentStaff?.id])
+  }, [isSupabaseEnabled, remoteDb?.session, currentMember?.id, currentStaff?.id, reloadRemote])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -667,6 +695,9 @@ export function AppProvider({ children }) {
     adminStaffMessages,
     adminStaffUnreadCount,
     staffAdminUnreadCount,
+    pendingApplicationsCount,
+    openSupportTicketsCount,
+    notificationUnreadCount,
     loadChatMessages,
     sendChatMessage,
     markChatThreadRead,

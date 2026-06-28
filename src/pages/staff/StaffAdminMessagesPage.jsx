@@ -5,9 +5,12 @@ import AdminStaffChatView from '../../components/chat/AdminStaffChatView'
 import { ChatPageFrame, ChatThreadBody, ChatThreadHeader } from '../../components/chat/ChatWorkspace'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import { useChatPresence } from '../../hooks/useChatPresence'
+import PresenceIndicator from '../../components/ui/PresenceIndicator'
 
 export default function StaffAdminMessagesPage() {
   const { toast } = useToast()
+  const { anyAdminOnline } = useChatPresence([], { includeAdmins: true })
   const {
     staffUser, adminStaffThreads, adminStaffMessages,
     loadAdminStaffMessages, sendAdminStaffMessage, markAdminStaffThreadRead,
@@ -57,7 +60,11 @@ export default function StaffAdminMessagesPage() {
 
       <ChatPageFrame className="min-h-[calc(100dvh-11rem)] md:min-h-[calc(100dvh-12rem)]">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl">
-          <ChatThreadHeader title="Admin" subtitle="Yönetim ekibi" />
+          <ChatThreadHeader
+            title="Admin"
+            subtitle="Yönetim ekibi"
+            presence={<PresenceIndicator online={anyAdminOnline} showLabel />}
+          />
           <ChatThreadBody>
             <AdminStaffChatView
               messages={messages}

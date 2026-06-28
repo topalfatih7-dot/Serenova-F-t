@@ -28,14 +28,17 @@ const memberNav = [
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
   { to: '/library', icon: Library, label: 'Kütüphane' },
-  { to: '/notifications', icon: Bell, label: 'Bildirimler' },
-  { to: '/support', icon: HelpCircle, label: 'Destek' },
+  { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
+  { to: '/support', icon: HelpCircle, label: 'Destek', supportBadge: true },
   { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/profile', icon: Settings, label: 'Profil' },
 ]
 
 export default function AppShell() {
-  const { isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings, chatUnreadCount } = useApp()
+  const {
+    isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings,
+    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
+  } = useApp()
   // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
   // yüzen ikon (FAB) tüm üye sayfalarında kalıcı olsun diye orkestrasyon AppShell'de.
   const [healthPromptOpen, setHealthPromptOpen] = useState(false)
@@ -58,9 +61,19 @@ export default function AppShell() {
   }
 
   const unread = (notifications || []).filter((n) => !n.read).length
-  const navItems = membership === 'free'
+  const baseNav = membership === 'free'
     ? [...memberNav, { to: '/membership', icon: Crown, label: 'Planları İncele' }]
     : memberNav
+  const navItems = baseNav.map((item) => ({
+    ...item,
+    badgeCount: item.chatBadge
+      ? chatUnreadCount
+      : item.notificationsBadge
+        ? notificationUnreadCount
+        : item.supportBadge
+          ? openSupportTicketsCount
+          : 0,
+  }))
 
   return (
     <div className="flex h-screen overflow-hidden">

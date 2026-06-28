@@ -41,6 +41,7 @@ export function subscribeRealtimeSync({
   onChatMessageChange,
   onAdminStaffThreadChange,
   onAdminStaffMessageChange,
+  onApplicationsChange,
 }) {
   if (!supabase || !session) return () => {}
 
@@ -106,6 +107,18 @@ export function subscribeRealtimeSync({
     })
     .subscribe()
   channels.push(adminStaffMessageChannel)
+
+  if (session.type === 'admin') {
+    for (const table of ['staff_applications', 'corporate_applications', 'contact_inquiries']) {
+      const appChannel = supabase
+        .channel(`apps-sync-${table}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          onApplicationsChange?.()
+        })
+        .subscribe()
+      channels.push(appChannel)
+    }
+  }
 
   if (session.type === 'member' && memberId) {
     const memberChannel = supabase

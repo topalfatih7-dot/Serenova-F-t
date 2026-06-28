@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-26 (§41: mesajlaşma mobil/tablet responsive — ChatWorkspace, 768px split)
+> **Son güncelleme:** 2026-06-28 (§42: chat çevrimiçi durumu, panel bildirim rozetleri, kadro profil seed)
 
 ---
 
@@ -15,7 +15,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§30–38 Değişiklik Günlüğü** bölümlerine bak.
+6. Son değişiklikler için **§30–42 Değişiklik Günlüğü** bölümlerine bak.
 7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 8. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
 9. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
@@ -242,6 +242,8 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 - İçerik: `testimonials`, `faqs`, `successStories`, `posts`, `exercises`, `plans`
 - Admin: `platform`, `adminStats`, `membershipBreakdown`, `monthlyGrowth`, `sessionStats`
 - Başvurular (admin hydrate): `staffApplications`, `corporateApplications`, `contactInquiries`
+- Mesajlaşma: `chatThreads`, `chatMessages`, `adminStaffThreads`, `adminStaffMessages`
+- **Bildirim rozetleri (2026-06-28):** `chatUnreadCount`, `adminStaffUnreadCount`, `staffAdminUnreadCount`, `pendingApplicationsCount`, `openSupportTicketsCount`, `notificationUnreadCount` — nav badge kaynakları (§42)
 
 **Aksiyonlar (tam liste):**
 `login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `changePlan` (mevcut üyenin planını değiştirir — yeni kayıt OLUŞTURMAZ), `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `resolveStaffApplication`, `resolveCorporateApplication`, `updateContactInquiryStatus`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `toggleMealCompletion`, `updateProfile`, `updateSettings`, `refresh`
@@ -377,6 +379,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 **Layout:** `AppShell` → `Sidebar` + `TopBar` + `MobileNav`
 
+**Nav rozetleri (2026-06-28):** Mesajlar (`chatUnreadCount`), Bildirimler (`notificationUnreadCount`), Destek (`openSupportTicketsCount`) — `Sidebar.jsx` + mobil `AppShell` / `PanelMobileMenu` (§42)
+
 ### 5.9 Personel Paneli
 
 | Sayfa | Rota | Dosya |
@@ -392,6 +396,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Video görüşme | `/staff/call/:type/:id` | `VideoCallPage.jsx` |
 
 **Layout:** `StaffShell` — `src/components/layout/StaffShell.jsx`
+
+**Nav rozeti:** Mesajlar menüsünde danışan + admin okunmamış toplamı (`chatUnreadCount + staffAdminUnreadCount`) — §42
 
 **Rol yardımcıları:** `src/utils/staffRoles.js` — `coach`, `dietitian`, `doctor`
 
@@ -423,6 +429,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 **Manuel seans ekleme:** `src/components/admin/ManualSessionEditor.jsx` — `coachMeetingsPerMonth` ve `coachMeetingsPerWeek` destekler.
 
 **Layout:** `AdminShell` — `src/components/layout/AdminShell.jsx`
+
+**Nav rozetleri (2026-06-28):** Başvurular (`pendingApplicationsCount`), Mesajlar (`adminStaffUnreadCount`), Destek Talepleri (`openSupportTicketsCount`) — §42
 
 ### 5.11 Genel (Public) Sayfalar
 
@@ -625,6 +633,10 @@ Kaynak: `src/App.jsx` satır 56–117
 | `migrations/20260625_remove_demo_faqs_membership_freeze.sql` | Demo FAQ silindi, pause/cancel statüleri sıfırlandı |
 | `migrations/20260625_clean_demo_content_expand_blogs.sql` | Demo testimonial/success story silindi, blog içerikleri genişletildi |
 | `migrations/20260625_storage_listing_guard.sql` | Storage listeleme güvenliği |
+| `migrations/20260627_member_staff_chat.sql` | Üye ↔ personel chat tabloları + RLS |
+| `migrations/20260627_admin_staff_chat.sql` | Admin ↔ personel chat tabloları + RLS |
+| `migrations/20260627_team_public_seed.sql` | Kadro vitrin profilleri seed (`public/team` görselleri) |
+| `migrations/20260628_chat_presence_peers.sql` | Chat partnerlerinin `user_presence` okuma RLS'i |
 
 ### 7.4 Context (`src/context/`)
 
@@ -672,6 +684,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `useLocalStorage.js` | `useLocalStorage` |
 | `usePlatformDisplayStats.js` | `usePlatformDisplayStats` — landing/canlı sayaç gösterim eşikleri |
 | `useHealthAnalysisSync.js` | Dashboard'da sağlık testi tamam ama özet yoksa otomatik `syncMemberHealthAssets` |
+| `useChatPresence.js` | Sohbet partnerlerinin çevrimiçi durumu (`isOnline`, `lastSeenAt`, `anyAdminOnline`) |
+| `useMediaQuery.js` | Responsive breakpoint hook (chat split vb.) |
+| `useRealtimeSync.js` | Supabase Realtime abonelikleri (chat, başvurular, tickets) |
 
 ### 7.8 Utils (`src/utils/`)
 
@@ -687,6 +702,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `blogImages.js` | `resolveBlogCover`, `coverForCategory` — kategori bazlı Unsplash kapak |
 | `healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` — sağlık testi → profil |
 | `aiErrors.js` | `formatAiError` — AI hata mesajları |
+| `presenceStatus.js` | `isUserOnline`, `formatLastSeen` — çevrimiçi eşik (90 sn) |
+| `chatAccess.js` | Thread erişim, inbox sıralama, okunmamış sayımı |
+| `exportChatPdf.js` | Admin denetim sohbeti PDF dışa aktarım |
 
 ### 7.9 Data (`src/data/`)
 
@@ -784,7 +802,7 @@ admin/AdminActivityPage.jsx
 
 **Social:** `SuccessStoryCard`
 
-**UI:** `BrandLogo`, `MembershipBadge`, `StatsCard`, `Modal`, `LoadingScreen`, `ConfigErrorScreen`, `EmptyState`, `Skeleton`, `FormField`, `PhoneField` (ülke kodlu telefon girişi), `PhotoUpload`, `Stepper`, `RangeSelector`, `ToggleGroup`, `DisclaimerBox`, `ConsentBanner`, `OnboardingTutorial`, `VideoPlayer`
+**UI:** `BrandLogo`, `MembershipBadge`, `StatsCard`, `Modal`, `LoadingScreen`, `ConfigErrorScreen`, `EmptyState`, `Skeleton`, `FormField`, `PhoneField` (ülke kodlu telefon girişi), `PhotoUpload`, `Stepper`, `RangeSelector`, `ToggleGroup`, `DisclaimerBox`, `ConsentBanner`, `OnboardingTutorial`, `VideoPlayer`, `PresenceIndicator` (çevrimiçi nokta + `AvatarWithPresence`)
 
 **SEO:** `SeoHead`, `PublicRouteSeo`, `JsonLd`, `NoIndexHead`
 
@@ -2888,7 +2906,7 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 - `ChatConsentModal` — kayıt uyarısı (ilk sohbet)
 - `ChatCollapsiblePrograms` — rol bazlı program paneli (koç antrenman / diyetisyen beslenme)
 - `ChatWorkspace` — responsive sohbet iskeleti (inbox + thread)
-- Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell; `adminStaffUnreadCount` / `staffAdminUnreadCount` — admin/personel admin mesajları
+- Nav rozeti: `chatUnreadCount` — Sidebar, TopBar, StaffShell, AppShell mobil; `adminStaffUnreadCount` / `staffAdminUnreadCount` — admin/personel admin mesajları; **§42** ile birleşik başvuru/destek/bildirim rozetleri eklendi
 - PDF: `exportChatPdf.js` — danışan–personel denetim kaydı indirme (`html2pdf.js`, lazy import)
 
 ### Responsive düzen (2026-06-26)
@@ -2907,6 +2925,8 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 
 `presenceService.js` istatistik yayını için Supabase Realtime **`httpSend('stats', payload)`** kullanır (ephemeral kanal + `removeChannel`). Eski `.send()` REST fallback uyarısı kaldırıldı. Abone tarafı: `subscribeOnlineStats()` — broadcast + 30 sn poll yedek.
 
+**Chat çevrimiçi durumu (2026-06-28 — §42):** Sohbet partnerlerinin `user_presence` kaydı `useChatPresence` + `fetchPresenceForUsers()` ile okunur; inbox avatarında yeşil/gri nokta, thread başlığında etiket. RLS: `20260628_chat_presence_peers.sql`.
+
 ### Müşteri arayüzü & Telegram (2026-06-27)
 
 - **YZ/AI ifadeleri kaldırıldı** — kalori, dashboard beslenme ipuçları, profil, gizlilik metni; hata mesajları teknik detay göstermez (`formatAiError`).
@@ -2915,5 +2935,71 @@ Paket kapsamındaki **atanmış koç/diyetisyen** ile güvenli mesajlaşma. Mesa
 
 ### Dosyalar
 
-`src/services/chatDb.js`, `src/services/adminChatDb.js`, `src/utils/chatAccess.js`, `src/utils/exportChatPdf.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/pages/staff/StaffAdminMessagesPage.jsx`, `src/pages/admin/AdminMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useMediaQuery.js`
+`src/services/chatDb.js`, `src/services/adminChatDb.js`, `src/utils/chatAccess.js`, `src/utils/exportChatPdf.js`, `src/components/chat/*`, `src/pages/MessagesPage.jsx`, `src/pages/staff/StaffMessagesPage.jsx`, `src/pages/staff/StaffAdminMessagesPage.jsx`, `src/pages/admin/AdminMessagesPage.jsx`, `src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useMediaQuery.js`, `src/hooks/useChatPresence.js`, `src/components/ui/PresenceIndicator.jsx`, `src/utils/presenceStatus.js`
+
+---
+
+## 42. Chat Çevrimiçi Durumu, Panel Rozetleri & Kadro Profil Birleşimi (2026-06-28)
+
+### Chat çevrimiçi / çevrimdışı göstergesi
+
+Sohbet partnerlerinin anlık durumu `user_presence` tablosundan okunur; 90 sn içinde heartbeat varsa **çevrimiçi** sayılır (`presenceStatus.js`).
+
+| Ekran | Gösterim |
+|-------|----------|
+| Üye → koç/diyetisyen | `MessagesPage` — inbox avatar noktası + thread başlığı etiketi |
+| Personel → danışan | `StaffMessagesPage` — aynı |
+| Admin → personel | `AdminMessagesPage` — personel listesi + sohbet başlığı |
+| Personel → admin | `StaffAdminMessagesPage` — herhangi bir admin çevrimiçiyse "Çevrimiçi" |
+
+**Hook:** `useChatPresence(userIds, { includeAdmins })` → `{ isOnline, lastSeenAt, anyAdminOnline }`
+
+**Servis:** `presenceService.js` → `fetchPresenceForUsers(userIds)` (Realtime `postgres_changes` + poll yedek)
+
+**UI:** `PresenceIndicator.jsx`, `AvatarWithPresence`, `ChatThreadHeader.presence` prop (`ChatWorkspace.jsx`)
+
+**RLS migration:** `supabase/migrations/20260628_chat_presence_peers.sql` — policy `user_presence_chat_peers`:
+- Üye yalnızca kendi `chat_threads` partnerinin presence'ını okur
+- Personel, admin rolündeki kullanıcıların presence'ını okuyabilir (`admin_staff_threads` varsa)
+
+### Panel navigasyon bildirim rozetleri
+
+Menü öğelerinde kırmızı sayaç (`9+` üst sınır); Realtime ile anlık güncellenir.
+
+| Panel | Menü | Kaynak (`AppContext`) | Tetikleyici |
+|-------|------|----------------------|-------------|
+| **Admin** | Başvurular | `pendingApplicationsCount` | `staff_applications` pending + `corporate_applications` pending + `contact_inquiries` new |
+| **Admin** | Mesajlar | `adminStaffUnreadCount` | `admin_staff_threads.data.adminUnread` |
+| **Admin** | Destek Talepleri | `openSupportTicketsCount` | Tüm açık/bekleyen ticket'lar |
+| **Üye** | Mesajlar | `chatUnreadCount` | Atanmış personel thread'leri |
+| **Üye** | Bildirimler | `notificationUnreadCount` | `members.notifications` okunmamış |
+| **Üye** | Destek | `openSupportTicketsCount` | Üyenin açık ticket'ları |
+| **Personel** | Mesajlar | `chatUnreadCount + staffAdminUnreadCount` | Danışan + admin mesajları toplamı |
+
+**Layout dosyaları:** `AdminShell.jsx`, `StaffShell.jsx`, `Sidebar.jsx`, `AppShell.jsx` (mobil nav), `PanelMobileMenu.jsx`
+
+**Realtime:** `useRealtimeSync.js` — admin için `staff_applications`, `corporate_applications`, `contact_inquiries` INSERT/UPDATE dinlenir → `reloadRemote()`
+
+### Kadro vitrin seed & birleşik profil şeması
+
+| Öğe | Açıklama |
+|-----|----------|
+| `public/team/team-coach-*.png`, `team-dietitian-*.png` | Landing Kadromuz görselleri |
+| `src/data/seedTeamProfiles.js` | 4 referans profil (2 koç, 2 diyetisyen) |
+| `20260627_team_public_seed.sql` | `staff` tablosuna vitrin kayıtları |
+| `src/data/staffProfile.js` | `staffProfileDataPayload()` — admin manuel ekleme + başvuru onayı ortak şema |
+| `src/data/staffApplication.js` | `applicationToStaffPayload()` — onay sonrası staff kaydına dönüşüm |
+
+**Kadro başvurusu (2026-06-28):** Zorunlu profil fotoğrafı (`PhotoUpload` variant `portrait`); şehir, ilçe, cinsiyet, sosyal linkler başvuru formunda.
+
+**Admin manuel ekleme:** `StaffFormModal.jsx` — başvuru formu ile aynı alan seti (foto, konum, sosyal vb.).
+
+### Güvenlik / repo
+
+- `.gitignore` genişletildi: `.cron-secret.local.txt`, `.env*.local`, IDE/OS artefaktları
+- `.cron-secret.local.txt` git takibinden çıkarıldı (yerel cron secret)
+
+### Dosyalar (özet)
+
+`src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useChatPresence.js`, `src/services/presenceService.js`, `src/utils/presenceStatus.js`, `src/components/ui/PresenceIndicator.jsx`, `src/components/layout/{AdminShell,StaffShell,Sidebar,AppShell}.jsx`, `src/pages/{MessagesPage,staff/StaffMessagesPage,staff/StaffAdminMessagesPage,admin/AdminMessagesPage}.jsx`, `src/data/{seedTeamProfiles,staffProfile,staffApplication}.js`, `src/components/admin/StaffFormModal.jsx`, `src/pages/StaffApplicationPage.jsx`, `supabase/migrations/20260627_team_public_seed.sql`, `supabase/migrations/20260628_chat_presence_peers.sql`, `AI_PROJE_REHBERI.md`
 

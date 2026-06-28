@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Trash2, Check, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import PhotoUpload from '../ui/PhotoUpload'
+import PhoneField from '../ui/PhoneField'
 import { STAFF_ROLES } from '../../utils/staffRoles'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
 import { WEEKDAYS } from '../package/SupportScheduler'
+import { GENDERS } from '../../data/staffApplication'
+import { CITY_NAMES, getDistricts } from '../../data/turkeyCities'
 import {
   EMPTY_STAFF_FORM,
   EMPTY_EDUCATION,
@@ -57,6 +60,7 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
   const [error, setError] = useState('')
   const [tab, setTab] = useState('profile')
 
+  const districts = useMemo(() => getDistricts(form.city), [form.city])
   const update = (patch) => setForm((f) => normalizeStaffProfile({ ...f, ...patch }))
 
   const toggleDay = (d) => {
@@ -69,6 +73,22 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
   const submit = () => {
     if (!form.name?.trim() || !form.email?.includes('@')) {
       setError('Ad ve geçerli e-posta gerekli.')
+      return
+    }
+    if (!form.phone?.trim()) {
+      setError('Telefon gerekli.')
+      return
+    }
+    if (!form.city?.trim() || !form.district?.trim()) {
+      setError('İl ve ilçe seçin.')
+      return
+    }
+    if (!form.gender) {
+      setError('Cinsiyet seçin.')
+      return
+    }
+    if (!form.photo) {
+      setError('Profil fotoğrafı gerekli.')
       return
     }
     const passwordRequired = !isEdit || (form.password && form.password.length > 0)
@@ -97,6 +117,8 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
     { id: 'certs', label: 'Sertifikalar' },
     { id: 'access', label: 'Erişim' },
   ]
+
+  const inputCls = 'w-full rounded-xl border border-cream-200 px-4 py-3 text-sm'
 
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Uzman Profilini Düzenle' : 'Yeni Uzman Ekle'} size="xl">
@@ -137,13 +159,27 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               value={form.photo}
               onChange={(photo) => update({ photo })}
               label="Profil Fotoğrafı"
-              hint="Kadro sayfalarında ve profilde görünür. Net portre önerilir."
+              variant="portrait"
+              hint="Kadro sayfalarında görünür. Net portre önerilir."
             />
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-              <input value={form.title} onChange={(e) => update({ title: e.target.value })} placeholder="Unvan (ör. Uzman Diyetisyen)" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-              <input value={form.specialty} onChange={(e) => update({ specialty: e.target.value })} placeholder="Ana uzmanlık alanı" className="rounded-xl border border-cream-200 px-4 py-3 text-sm sm:col-span-2" />
+              <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
+              <PhoneField value={form.phone} onValueChange={(phone) => update({ phone })} label="Telefon *" />
+              <input value={form.title} onChange={(e) => update({ title: e.target.value })} placeholder="Unvan (ör. Uzman Diyetisyen)" className={inputCls} />
+              <select value={form.gender} onChange={(e) => update({ gender: e.target.value })} className={`${inputCls} ${form.gender ? '' : 'text-cream-800/40'}`}>
+                <option value="">Cinsiyet seçin *</option>
+                {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+              </select>
+              <select value={form.city} onChange={(e) => update({ city: e.target.value, district: '' })} className={inputCls}>
+                <option value="">İl *</option>
+                {CITY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select value={form.district} onChange={(e) => update({ district: e.target.value })} disabled={!form.city} className={inputCls}>
+                <option value="">{form.city ? 'İlçe *' : '—'}</option>
+                {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <input value={form.specialty} onChange={(e) => update({ specialty: e.target.value })} placeholder="Ana uzmanlık alanı" className={`${inputCls} sm:col-span-2`} />
             </div>
 
             <label className="block">
@@ -157,7 +193,7 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               />
             </label>
 
-            <input value={form.headline} onChange={(e) => update({ headline: e.target.value })} placeholder="Kısa slogan (kartlarda görünür)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+            <input value={form.headline} onChange={(e) => update({ headline: e.target.value })} placeholder="Kısa slogan (kartlarda görünür)" className={inputCls} />
 
             <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} placeholder="Detaylı biyografi (profil sayfasında)" rows={5} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
 
@@ -178,8 +214,15 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               value={form.experienceYears}
               onChange={(e) => update({ experienceYears: e.target.value })}
               placeholder="Toplam deneyim (yıl)"
-              className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm sm:max-w-xs"
+              className={`${inputCls} sm:max-w-xs`}
             />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input value={form.linkedin} onChange={(e) => update({ linkedin: e.target.value })} placeholder="LinkedIn (opsiyonel)" className={inputCls} />
+              <input value={form.instagram} onChange={(e) => update({ instagram: e.target.value })} placeholder="Instagram (opsiyonel)" className={inputCls} />
+              <input value={form.youtube} onChange={(e) => update({ youtube: e.target.value })} placeholder="YouTube (opsiyonel)" className={inputCls} />
+              <input value={form.website} onChange={(e) => update({ website: e.target.value })} placeholder="Web sitesi (opsiyonel)" className={inputCls} />
+            </div>
           </>
         )}
 
@@ -233,13 +276,10 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
 
         {tab === 'access' && (
           <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" type="email" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-              <input value={form.phone} onChange={(e) => update({ phone: e.target.value })} placeholder="Telefon" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-            </div>
+            <input value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" type="email" className={inputCls} />
 
             <div>
-              <input value={form.password} onChange={(e) => update({ password: e.target.value })} placeholder={isEdit ? 'Şifre (değiştirmek için doldurun)' : 'Şifre *'} type="password" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+              <input value={form.password} onChange={(e) => update({ password: e.target.value })} placeholder={isEdit ? 'Şifre (değiştirmek için doldurun)' : 'Şifre *'} type="password" className={inputCls} />
               {form.password && (
                 <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                   {PASSWORD_RULES.map((r) => {

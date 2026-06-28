@@ -313,6 +313,9 @@ function StaffApplicationDetail({ app, d }) {
   return (
     <div className="space-y-1">
       <DetailBlock title="İletişim">
+        {d.photo && (
+          <img src={d.photo} alt={app.name} className="mb-3 h-20 w-20 rounded-xl object-cover ring-2 ring-brand-100" />
+        )}
         <p>{app.email} · {app.phone || '—'}</p>
         {d.gender && <p className="text-cream-800/65">Cinsiyet: {GENDER_LABELS[d.gender] || d.gender}</p>}
       </DetailBlock>

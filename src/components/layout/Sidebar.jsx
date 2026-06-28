@@ -17,14 +17,28 @@ const navItems = [
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
   { to: '/library', icon: Library, label: 'Kütüphane' },
-  { to: '/notifications', icon: Bell, label: 'Bildirimler' },
-  { to: '/support', icon: HelpCircle, label: 'Destek' },
+  { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
+  { to: '/support', icon: HelpCircle, label: 'Destek', supportBadge: true },
   { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   { to: '/profile', icon: Settings, label: 'Profil' },
 ]
 
 export default function Sidebar() {
-  const { user, membership, membershipStatus, logout, chatUnreadCount } = useApp()
+  const {
+    user, membership, membershipStatus, logout,
+    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
+  } = useApp()
+
+  const itemsWithBadges = navItems.map((item) => ({
+    ...item,
+    badgeCount: item.chatBadge
+      ? chatUnreadCount
+      : item.notificationsBadge
+        ? notificationUnreadCount
+        : item.supportBadge
+          ? openSupportTicketsCount
+          : 0,
+  }))
 
   return (
     <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl md:flex lg:w-64">
@@ -37,7 +51,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2.5 lg:space-y-1 lg:p-3">
-        {navItems.map((item) => (
+        {itemsWithBadges.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -49,9 +63,9 @@ export default function Sidebar() {
           >
             <item.icon className="h-4 w-4" />
             <span className="flex-1">{item.label}</span>
-            {item.chatBadge && chatUnreadCount > 0 && (
+            {item.badgeCount > 0 && (
               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                {item.badgeCount > 9 ? '9+' : item.badgeCount}
               </span>
             )}
           </NavLink>
