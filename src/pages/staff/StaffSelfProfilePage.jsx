@@ -1,0 +1,15 @@
+import { useApp } from '../../context/AppContext'
+import StaffProfileEditor from '../../components/staff/StaffProfileEditor'
+
+export default function StaffSelfProfilePage() {
+  const { staffUser, updateStaffProfile } = useApp()
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <StaffProfileEditor
+        staffUser={staffUser}
+        onSave={(payload) => updateStaffProfile(staffUser.id, payload)}
+      />
+    </div>
+  )
+}

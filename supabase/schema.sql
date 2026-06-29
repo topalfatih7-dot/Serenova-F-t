@@ -179,9 +179,24 @@ language sql
 stable
 as $$
   select exists (
-    select 1 from public.staff s where s.email = public.current_email()
+    select 1 from public.staff s where lower(s.email) = lower(public.current_email())
   );
 $$;
+
+create or replace function public.current_staff_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select s.id from public.staff s
+  where lower(s.email) = lower(public.current_email())
+  limit 1;
+$$;
+
+revoke all on function public.current_staff_id() from public;
+grant execute on function public.current_staff_id() to authenticated;
 
 -- ---- members ----
 drop policy if exists members_select on public.members;
@@ -219,7 +234,12 @@ drop policy if exists staff_admin_write on public.staff;
 create policy staff_admin_write on public.staff for all using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists staff_self_update on public.staff;
-create policy staff_self_update on public.staff for update using (email = public.current_email());
+create policy staff_self_update on public.staff for update
+  using (lower(email) = lower(public.current_email()))
+  with check (
+    lower(email) = lower(public.current_email())
+    and id = public.current_staff_id()
+  );
 
 -- ---- programs ----
 drop policy if exists programs_select on public.programs;
@@ -415,6 +435,52 @@ begin
 end $$;
 
 grant execute on function public.admin_upsert_staff(uuid, text, text, text, text, boolean, jsonb) to authenticated;
+
+create or replace function public.staff_update_self_profile(
+  p_name text,
+  p_data jsonb
+) returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id uuid := public.current_staff_id();
+  v_current jsonb;
+  v_merged jsonb;
+begin
+  if v_id is null then
+    raise exception 'Yetkisiz: personel oturumu gerekli.';
+  end if;
+
+  select coalesce(data, '{}'::jsonb) into v_current
+  from public.staff
+  where id = v_id;
+
+  v_merged := coalesce(v_current, '{}'::jsonb)
+    || coalesce(p_data, '{}'::jsonb)
+    || jsonb_build_object(
+      'specialty', v_current->'specialty',
+      'specialties', coalesce(v_current->'specialties', '[]'::jsonb),
+      'experienceYears', coalesce(v_current->'experienceYears', to_jsonb(0)),
+      'languages', coalesce(v_current->'languages', '["Türkçe"]'::jsonb),
+      'education', coalesce(v_current->'education', '[]'::jsonb),
+      'experiences', coalesce(v_current->'experiences', '[]'::jsonb),
+      'certificates', coalesce(v_current->'certificates', '[]'::jsonb)
+    );
+
+  update public.staff
+  set
+    name = coalesce(nullif(trim(p_name), ''), name),
+    data = v_merged
+  where id = v_id;
+
+  return v_id;
+end;
+$$;
+
+revoke all on function public.staff_update_self_profile(text, jsonb) from public, anon;
+grant execute on function public.staff_update_self_profile(text, jsonb) to authenticated;
 
 create or replace function public.admin_delete_staff(p_id uuid)
 returns void

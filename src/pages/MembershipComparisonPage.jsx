@@ -51,26 +51,12 @@ export default function MembershipComparisonPage() {
       />
 
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6">
-        {/* Plan kartları */}
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {displayPlans.map((plan, i) => (
-            <MembershipPlanCard
-              key={plan.id}
-              plan={plan}
-              index={i}
-              mode="link"
-              ctaTo={isMember ? `/onboarding?plan=${plan.id}` : `/onboarding?plan=${plan.id}`}
-              ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
-            />
-          ))}
-        </div>
-
         {/* Nasıl üye olunur */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-14 rounded-3xl border border-sage-200/60 bg-gradient-to-br from-sage-50/80 via-white to-teal-50/50 p-6 sm:p-8"
+          className="rounded-3xl border border-sage-200/60 bg-gradient-to-br from-sage-50/80 via-white to-teal-50/50 p-6 sm:p-8"
         >
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
@@ -103,6 +89,20 @@ export default function MembershipComparisonPage() {
             })}
           </div>
         </motion.section>
+
+        {/* Plan kartları */}
+        <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {displayPlans.map((plan, i) => (
+            <MembershipPlanCard
+              key={plan.id}
+              plan={plan}
+              index={i}
+              mode="link"
+              ctaTo={isMember ? `/onboarding?plan=${plan.id}` : `/onboarding?plan=${plan.id}`}
+              ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+            />
+          ))}
+        </div>
 
         {/* Karşılaştırma tablosu */}
         <div className="mt-14 text-center">
@@ -160,10 +160,6 @@ export default function MembershipComparisonPage() {
           </div>
         </motion.div>
 
-        <div className="mt-10">
-          <MembershipReassurance />
-        </div>
-
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -178,6 +174,10 @@ export default function MembershipComparisonPage() {
             Ücretsiz başlayın — risk yok
           </Link>
         </motion.div>
+
+        <div className="mt-10">
+          <MembershipReassurance />
+        </div>
       </div>
     </div>
   )

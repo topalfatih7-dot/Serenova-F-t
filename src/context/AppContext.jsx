@@ -489,6 +489,12 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
+  const updateStaffProfile = useCallback(async (id, patch) => {
+    const r = await sb.updateStaffSelfProfile(id, patch)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const removeStaff = useCallback(async (id) => {
     await sb.removeStaff(id)
     await reloadRemote()
@@ -806,6 +812,7 @@ export function AppProvider({ children }) {
     saveSupportSchedule,
     addStaff,
     editStaff,
+    updateStaffProfile,
     removeStaff,
     adminPatchMember,
     adminUpdatePremium,

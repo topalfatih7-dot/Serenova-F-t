@@ -145,7 +145,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 | Tablo | Amaç | RLS özeti |
 |-------|------|-----------|
 | `members` | Üyeler; detaylar `data` JSONB | Üye kendi; staff atanan; admin hepsi |
-| `staff` | Koç/diyetisyen/doktor kadrosu | Herkese okuma; admin yazma |
+| `staff` | Koç/diyetisyen/doktor kadrosu | Herkese okuma; admin yazma (`admin_upsert_staff`); personel kendi `name`+`data` günceller (`staff_update_self_profile` RPC) |
 | `programs` | Antrenman/beslenme programları | Üye/staff/admin |
 | `posts` | Blog yazıları | Yayınlanan herkese; admin yazar |
 | `tickets` | Destek talepleri + mesajlar | Üye kendi; admin hepsi |
@@ -861,7 +861,8 @@ Kaynak: `.env.example`
 | `saveSupportSchedule(member, schedule)` | 494 | Randevu planı kaydet |
 | `processPremiumPayment(...)` | 504 | Premium ödeme işle |
 | `addStaff(data)` | 536 | Kadro ekle (RPC) |
-| `editStaff(id, patch)` | 553 | Kadro düzenle |
+| `editStaff(id, patch)` | 553 | Kadro düzenle (admin RPC) |
+| `updateStaffSelfProfile(id, patch)` | — | Personel kendi profili (`staff_update_self_profile` RPC; kilitli alanlar DB'de korunur) |
 | `removeStaff(id)` | 571 | Kadro sil |
 | `addPost/editPost/removePost` | 576–603 | Blog CRUD |
 | `addContent/editContent/removeContent` | 605–619 | Site içerik CRUD |
@@ -2556,6 +2557,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | Rota | Dosya | Rol | Ana işlev |
 |------|-------|-----|-----------|
 | `/staff` | `staff/StaffOverviewPage.jsx` | her ikisi | Danışan sayısı, yaklaşan randevular, `StaffVideoPanel` |
+| `/staff/profile` | `staff/StaffSelfProfilePage.jsx` | her ikisi | Personel profil düzenleme (`StaffProfileEditor`); şifre değişimi mevcut şifre ile |
 | `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
 | `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
 | `/staff/lists` | `staff/StaffListsPage.jsx` | diyetisyen | Beslenme listeleri özeti |
@@ -3433,4 +3435,59 @@ AuthRedirectHandler → ... → SONSUZ DÖNGÜ
 `src/components/auth/AuthRedirectHandler.jsx`
 `src/pages/auth/ResetPasswordPage.jsx`
 `AI_PROJE_REHBERI.md`
+
+---
+
+## 50. Personel Profil Düzenleme + DB Güvenliği (2026-06-29)
+
+### Personel paneli — `/staff/profile`
+
+Koç ve diyetisyenler kendi profillerini panelden günceller. **Başvuru onayında kaydedilen alanlar düzenlenemez** (UI + DB):
+
+| Düzenlenebilir | Kilitli (admin / başvuru onayı) |
+|----------------|----------------------------------|
+| Ad, telefon, unvan, cinsiyet, il/ilçe | E-posta, rol |
+| Fotoğraf, slogan, biyografi | Uzmanlık, deneyim yılı, diller |
+| Çalışma günleri/saatleri | Eğitim, iş deneyimi, sertifikalar |
+| Sosyal medya linkleri | |
+
+**Sekmeler:** Profil · Çalışma · Güvenlik (Uzmanlık/Eğitim/Sertifikalar kaldırıldı).
+
+**Şifre:** Güvenlik sekmesinde önce **mevcut şifre** doğrulanır (`signInWithPassword`), ardından `updateUser({ password })`.
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `src/pages/staff/StaffSelfProfilePage.jsx` | Personel profil sayfası |
+| `src/components/staff/StaffProfileEditor.jsx` | Sekmeli düzenleyici + kilitli alan filtresi (`lockedProfileFields`) |
+| `src/services/supabaseDb.js` | `updateStaffSelfProfile()` → RPC |
+| `src/context/AppContext.jsx` | `updateStaffProfile` context API |
+| `src/components/layout/StaffShell.jsx` | Menü: **Profilim** |
+| `supabase/migrations/20260629_staff_self_profile_update.sql` | RLS + RPC migration |
+
+### Veritabanı
+
+**RLS `staff_self_update`:** Büyük/küçük harf duyarsız e-posta; `WITH CHECK (id = current_staff_id())`.
+
+**RPC `staff_update_self_profile(p_name, p_data)`:**
+
+- `security definer`; yalnızca `current_staff_id()` satırını günceller.
+- `name` + birleştirilmiş `data` JSONB.
+- Başvuru onaylı anahtarlar her zaman mevcut kayıttan geri yazılır: `specialty`, `specialties`, `experienceYears`, `languages`, `education`, `experiences`, `certificates`.
+- Admin kadro CRUD hâlâ `admin_upsert_staff` RPC ile.
+
+**Uygulama (Supabase SQL Editor):**
+
+```sql
+-- supabase/migrations/20260629_staff_self_profile_update.sql içeriğini çalıştırın
+```
+
+Yeni kurulumlarda `setup.sql` bu RPC ve güncel RLS'yi içerir.
+
+### Üyelik / kurumsal (aynı dönem)
+
+- `MembershipReassurance` hero'dan kaldırıldı; üyelik sayfası sonuna taşındı.
+- "Nasıl üye olursunuz?" plan kartlarının üstüne alındı.
+- Kurumsal sayfa: video vitrinindeki "Canlı seans" chip kaldırıldı.
 

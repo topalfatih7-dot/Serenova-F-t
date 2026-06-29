@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
 import PlansAnimatedBackground from '../landing/PlansAnimatedBackground'
-import MembershipReassurance from './MembershipReassurance'
 
 export default function MembershipHero({ title, subtitle, children }) {
   return (
@@ -15,9 +14,6 @@ export default function MembershipHero({ title, subtitle, children }) {
           <span className="section-badge">Üyeliklerimiz</span>
           <h1 className="section-title mt-4">{title}</h1>
           <p className="section-subtitle mx-auto max-w-2xl">{subtitle}</p>
-          <div className="mx-auto mt-8 max-w-2xl">
-            <MembershipReassurance compact />
-          </div>
         </motion.div>
       </PlansAnimatedBackground>
       {children}

@@ -40,6 +40,7 @@ const TeamListPage = lazy(() => import('./pages/TeamListPage'))
 const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
+const StaffSelfProfilePage = lazy(() => import('./pages/staff/StaffSelfProfilePage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
 const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
@@ -144,6 +145,7 @@ export default function App() {
                 <Route path="staff/lists" element={<StaffListsPage />} />
                 <Route path="staff/library" element={<StaffLibraryGate />} />
                 <Route path="staff/payments" element={<PaymentManagementPage audience="staff" />} />
+                <Route path="staff/profile" element={<StaffSelfProfilePage />} />
               </Route>
             </Route>
 

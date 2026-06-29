@@ -828,6 +828,24 @@ export async function editStaff(id, patch) {
   return { success: true }
 }
 
+/** Personelin kendi profilini güncellemesi — RPC staff_update_self_profile + RLS */
+export async function updateStaffSelfProfile(id, patch) {
+  const user = await getUser()
+  if (!user?.email) return { success: false, error: 'Oturum gerekli.' }
+
+  const merged = normalizeStaffProfile(patch)
+  const { data: staffId, error } = await supabase.rpc('staff_update_self_profile', {
+    p_name: merged.name?.trim() || '',
+    p_data: staffProfileDataPayload(merged),
+  })
+
+  if (error) return { success: false, error: error.message }
+  if (id && staffId && id !== staffId) {
+    return { success: false, error: 'Yetkisiz profil güncellemesi.' }
+  }
+  return { success: true, id: staffId }
+}
+
 export async function removeStaff(id) {
   await supabase.rpc('admin_delete_staff', { p_id: id })
 }

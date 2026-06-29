@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -17,6 +17,7 @@ const STAFF_EMOJIS = ['📋', '💪', '🥗', '📊', '🧘', '⭐', '🎯', '�
 function staffNavForRole(role) {
   const base = [
     { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
+    { to: '/staff/profile', icon: UserCircle, label: 'Profilim' },
     { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
     { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
     { to: '/staff/admin-messages', icon: Shield, label: 'Admin Mesajları', adminChatBadge: true },

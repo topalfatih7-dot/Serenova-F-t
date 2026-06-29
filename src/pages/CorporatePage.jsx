@@ -121,11 +121,6 @@ function CorporateWellnessVideo() {
       <div aria-hidden className="corporate-video-showcase-dots" />
       <div aria-hidden className="corporate-video-showcase-shadow" />
 
-      <span className="corporate-video-showcase-chip">
-        <HeartPulse className="h-3.5 w-3.5 text-brand-500" />
-        Canlı seans
-      </span>
-
       <div className="corporate-video-frame">
         <div className="corporate-video-frame-inner relative">
           <SilentVideo
