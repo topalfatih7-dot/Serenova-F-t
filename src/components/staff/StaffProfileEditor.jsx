@@ -68,7 +68,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
   const completionHints = [
     !form.photo && 'Profil fotoğrafı',
     !form.bio && 'Biyografi',
-    !form.headline && 'Kısa slogan',
   ].filter(Boolean)
 
   const toggleDay = (d) => {
@@ -104,7 +103,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
         gender: form.gender,
         city: form.city,
         district: form.district,
-        headline: form.headline,
         bio: form.bio,
         photo: form.photo,
         workDays: form.workDays,
@@ -303,10 +301,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                     </select>
                   </label>
                 </div>
-                <label className="block">
-                  <FieldLabel>Kısa slogan</FieldLabel>
-                  <input value={form.headline} onChange={(e) => update({ headline: e.target.value })} className={inputCls} placeholder="Kartlarda görünen tek cümle tanıtım" />
-                </label>
                 <label className="block">
                   <FieldLabel>Biyografi</FieldLabel>
                   <textarea

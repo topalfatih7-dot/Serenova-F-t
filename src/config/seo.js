@@ -343,7 +343,7 @@ export function buildPersonSchema(member, { profilePath } = {}) {
     '@type': 'Person',
     name: profile.name,
     jobTitle: profile.title || profile.specialty || profile.role,
-    description: profile.headline || profile.bio || profile.description,
+    description: profile.bio || profile.description,
     image: profile.photo || undefined,
     url: profilePath ? absoluteUrl(profilePath) : undefined,
     knowsAbout: profile.specialties?.length ? profile.specialties : undefined,

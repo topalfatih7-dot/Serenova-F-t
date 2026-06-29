@@ -124,7 +124,7 @@ export default function AdminStaffPage() {
                 </div>
 
                 {p.specialty && <p className="mt-2 text-sm font-medium text-brand-600">{p.specialty}</p>}
-                {p.headline && <p className="mt-2 line-clamp-2 text-sm text-cream-800/65">{p.headline}</p>}
+                {p.bio && <p className="mt-2 line-clamp-2 text-sm text-cream-800/65">{p.bio}</p>}
 
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-cream-800/55">
                   {p.experienceYears > 0 && (

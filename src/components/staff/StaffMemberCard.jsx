@@ -64,8 +64,8 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
             </div>
           </div>
 
-          {profile.headline && (
-            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-cream-800/65">{profile.headline}</p>
+          {profile.bio && (
+            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-cream-800/65">{profile.bio}</p>
           )}
 
           {tags.length > 0 && (

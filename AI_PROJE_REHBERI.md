@@ -1608,7 +1608,6 @@ Detaylı kurulum: `SEO_SETUP.md`
 | `title` | string | Unvan (ör. Uzman Diyetisyen) |
 | `specialty` | string | Ana uzmanlık (kart başlığı) |
 | `specialties` | string[] | Uzmanlık etiketleri |
-| `headline` | string | Kısa slogan (liste kartları) |
 | `bio` | string | Uzun biyografi (profil sayfası) |
 | `education` | `{degree,school,year}[]` | Eğitim |
 | `experienceYears` | number | Toplam deneyim yılı |
@@ -3447,7 +3446,7 @@ Koç ve diyetisyenler kendi profillerini panelden günceller. **Başvuru onayın
 | Düzenlenebilir | Kilitli (admin / başvuru onayı) |
 |----------------|----------------------------------|
 | Ad, telefon, unvan, cinsiyet, il/ilçe | E-posta, rol |
-| Fotoğraf, slogan, biyografi | Uzmanlık, deneyim yılı, diller |
+| Fotoğraf, biyografi | Uzmanlık, deneyim yılı, diller |
 | Çalışma günleri/saatleri | Eğitim, iş deneyimi, sertifikalar |
 | Sosyal medya linkleri | |
 
@@ -3490,4 +3489,12 @@ Yeni kurulumlarda `setup.sql` bu RPC ve güncel RLS'yi içerir.
 - `MembershipReassurance` hero'dan kaldırıldı; üyelik sayfası sonuna taşındı.
 - "Nasıl üye olursunuz?" plan kartlarının üstüne alındı.
 - Kurumsal sayfa: video vitrinindeki "Canlı seans" chip kaldırıldı.
+
+### headline (slogan) kaldırıldı (2026-06-30)
+
+`staff.data.headline` alanı kullanımdan kaldırıldı. Başvuru onayı, admin formu ve personel profil düzenlemede slogan istenmez.
+
+- `staffProfileDataPayload` artık `headline` yazmaz; migration `20260630_remove_staff_headline.sql` mevcut kayıtlardan siler.
+- `staff_update_self_profile` RPC birleştirme sonrası `- 'headline'` uygular.
+- Public kartlar ve SEO açıklamaları `bio` kullanır.
 

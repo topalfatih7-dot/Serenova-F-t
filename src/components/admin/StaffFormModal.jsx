@@ -193,8 +193,6 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               />
             </label>
 
-            <input value={form.headline} onChange={(e) => update({ headline: e.target.value })} placeholder="Kısa slogan (kartlarda görünür)" className={inputCls} />
-
             <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} placeholder="Detaylı biyografi (profil sayfasında)" rows={5} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
 
             <label className="block">

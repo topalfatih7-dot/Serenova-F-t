@@ -236,7 +236,6 @@ export function applicationToStaffPayload(app, tempPassword) {
     title,
     specialty: primarySpecialty,
     specialties,
-    headline: bio ? bio.slice(0, 140) : title,
     bio,
     photo: d.photo || null,
     city: d.city || '',

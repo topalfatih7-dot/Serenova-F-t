@@ -71,7 +71,6 @@ export default function StaffProfileDisplay({ member }) {
               <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{profile.name}</h1>
               {profile.title && <p className="mt-1 text-lg text-white/90">{profile.title}</p>}
               {profile.specialty && <p className="mt-2 text-sm font-semibold text-white/80">{profile.specialty}</p>}
-              {profile.headline && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75">{profile.headline}</p>}
 
               <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                 {profile.experienceYears > 0 && (

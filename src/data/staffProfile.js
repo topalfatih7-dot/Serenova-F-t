@@ -14,7 +14,6 @@ export const EMPTY_STAFF_FORM = {
   title: '',
   specialty: '',
   specialties: [],
-  headline: '',
   bio: '',
   photo: null,
   city: '',
@@ -58,7 +57,6 @@ export function normalizeStaffProfile(raw = {}) {
     title: raw.title || '',
     specialty: raw.specialty || specialties[0] || '',
     specialties,
-    headline: raw.headline || '',
     bio: raw.bio || raw.description || '',
     photo: raw.photo || null,
     city: raw.city || '',
@@ -89,7 +87,6 @@ export function staffProfileDataPayload(data) {
     title: n.title || '',
     specialty: n.specialty || '',
     specialties: n.specialties || [],
-    headline: n.headline || '',
     bio: n.bio || '',
     photo: n.photo || null,
     city: n.city || '',
@@ -112,5 +109,5 @@ export function staffProfileDataPayload(data) {
 
 export function staffPublicSummary(member) {
   const n = normalizeStaffProfile(member)
-  return n.headline || n.bio || ''
+  return n.bio || ''
 }

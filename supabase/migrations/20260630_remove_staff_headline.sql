@@ -1,14 +1,9 @@
--- Personel kendi profil güncellemesi: RLS düzeltmesi + güvenli RPC
--- - staff_self_update: büyük/küçük harf duyarsız e-posta eşleşmesi
--- - staff_update_self_profile: yalnızca name + data; kilitli alanlar korunur
+-- Kaldırılan headline (slogan) alanını staff.data JSONB'den temizle
+-- staff_update_self_profile artık headline yazmaz / siler
 
-drop policy if exists staff_self_update on public.staff;
-create policy staff_self_update on public.staff for update
-  using (lower(email) = lower(public.current_email()))
-  with check (
-    lower(email) = lower(public.current_email())
-    and id = public.current_staff_id()
-  );
+update public.staff
+set data = data - 'headline'
+where data ? 'headline';
 
 create or replace function public.staff_update_self_profile(
   p_name text,
@@ -31,7 +26,6 @@ begin
   from public.staff
   where id = v_id;
 
-  -- Düzenlenebilir alanları birleştir; başvuru onaylı alanları mevcut kayıttan koru
   v_merged := coalesce(v_current, '{}'::jsonb)
     || coalesce(p_data, '{}'::jsonb)
     || jsonb_build_object(

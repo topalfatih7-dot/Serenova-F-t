@@ -39,8 +39,7 @@ export default function StaffProfilePage() {
       <SeoHead
         title={`${profile.name} — ${meta.label}`}
         description={truncateDescription(
-          profile.headline
-            || profile.bio
+          profile.bio
             || `${profile.name}, Yeni Form ${meta.label.toLowerCase()} kadrosu. Evde ve salonda kişisel antrenman desteği.`
         )}
         keywords={buildStaffProfileKeywords(profile, meta.label)}

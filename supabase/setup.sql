@@ -665,7 +665,8 @@ begin
       'education', coalesce(v_current->'education', '[]'::jsonb),
       'experiences', coalesce(v_current->'experiences', '[]'::jsonb),
       'certificates', coalesce(v_current->'certificates', '[]'::jsonb)
-    );
+    )
+    - 'headline';
 
   update public.staff
   set
