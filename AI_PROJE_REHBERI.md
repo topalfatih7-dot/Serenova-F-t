@@ -131,12 +131,33 @@ Eski `schema.sql` + `migrate_*.sql` + `seed.sql` + `create_admin.sql` dosyaları
 | Dosya | Ne yapar | Ne zaman çalıştırılır |
 |-------|----------|----------------------|
 | `setup.sql` | Eklentiler, tüm tablolar, RLS, trigger, RPC'ler, storage bucket, varsayılan paketler ve onaylı admin kullanıcısı | İlk/temiz kurulum — Supabase SQL Editor |
-| `migrations/*.sql` | Artımlı değişiklikler (staff_applications, corporate_applications, contact_inquiries, vb.) | `supabase migration` veya SQL Editor |
+| `migrations/*.sql` | Artımlı değişiklikler (staff_applications, corporate_applications, contact_inquiries, vb.) | Cursor Supabase MCP `apply_migration` **(tercih)** veya SQL Editor |
 
 > **`custom_foods` kaldırıldı** (2026-06-24) — kalori chat artık bu tabloya yazmıyor. Migration: `20260624_corporate_contact_cleanup.sql`.
 
+### Uzak Supabase projesi (production)
 
-**Çalıştırma:** Supabase Dashboard → SQL Editor → `supabase/setup.sql` içeriğini yapıştır → Run.
+| | |
+|---|---|
+| Proje adı | **Yeni Form** |
+| Project ref / ID | `rvzksmyhsgxgrxgeabmi` |
+| Bölge | `ap-south-1` |
+| API URL | `https://rvzksmyhsgxgrxgeabmi.supabase.co` |
+
+Cursor **Supabase MCP** eklentisi bağlıyken ajan, bu projede migration uygulayabilir, SQL doğrulaması yapabilir ve şema değişikliklerini uzaktan yönetebilir.
+
+### Migration uygulama (tercih: Cursor Supabase MCP)
+
+1. Repoda `supabase/migrations/YYYYMMDD_aciklama.sql` oluştur veya güncelle.
+2. MCP **`apply_migration`** — `project_id: rvzksmyhsgxgrxgeabmi`, `name: snake_case`, `query: <dosya içeriği>`.
+3. MCP **`list_migrations`** — uzak kayıtta göründüğünü doğrula.
+4. MCP **`execute_sql`** — RPC / RLS / veri temizliği kontrol sorgusu.
+
+**Manuel alternatif:** Supabase Dashboard → SQL Editor → migration dosya içeriğini yapıştır → Run.
+
+**İlk/temiz kurulum:** `setup.sql` (idempotent) — yeni boş projede tek seferde tüm şema.
+
+**Çalıştırma (manuel kurulum):** Supabase Dashboard → SQL Editor → `supabase/setup.sql` içeriğini yapıştır → Run.
 Tekrar çalıştırmak güvenlidir (her şey `if not exists` / `on conflict` / `create or replace`).
 Admin: `admin@serenova.fit` / `Serenova2026!`.
 
@@ -3464,6 +3485,7 @@ Koç ve diyetisyenler kendi profillerini panelden günceller. **Başvuru onayın
 | `src/context/AppContext.jsx` | `updateStaffProfile` context API |
 | `src/components/layout/StaffShell.jsx` | Menü: **Profilim** |
 | `supabase/migrations/20260629_staff_self_profile_update.sql` | RLS + RPC migration |
+| `supabase/migrations/20260630_remove_staff_headline.sql` | headline temizliği |
 
 ### Veritabanı
 
@@ -3474,12 +3496,24 @@ Koç ve diyetisyenler kendi profillerini panelden günceller. **Başvuru onayın
 - `security definer`; yalnızca `current_staff_id()` satırını günceller.
 - `name` + birleştirilmiş `data` JSONB.
 - Başvuru onaylı anahtarlar her zaman mevcut kayıttan geri yazılır: `specialty`, `specialties`, `experienceYears`, `languages`, `education`, `experiences`, `certificates`.
+- Birleştirme sonrası `- 'headline'` ile slogan alanı silinir.
 - Admin kadro CRUD hâlâ `admin_upsert_staff` RPC ile.
 
-**Uygulama (Supabase SQL Editor):**
+**Uzak projede uygulama durumu (2026-06-29, MCP ile):**
+
+| Repo dosyası | Uzak migration adı | Durum |
+|---|---|---|
+| `20260629_staff_self_profile_update.sql` | `staff_self_profile_update` | ✅ Uygulandı |
+| `20260630_remove_staff_headline.sql` | `remove_staff_headline` | ✅ Uygulandı |
+
+**Doğrulama sorgusu (2026-06-29):**
 
 ```sql
--- supabase/migrations/20260629_staff_self_profile_update.sql içeriğini çalıştırın
+SELECT
+  EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'staff_update_self_profile') AS rpc_exists,
+  (SELECT count(*) FROM public.staff WHERE data ? 'headline') AS staff_with_headline,
+  (SELECT count(*) FROM pg_policies WHERE tablename = 'staff' AND policyname = 'staff_self_update') AS self_update_policy;
+-- Sonuç: rpc_exists=true, staff_with_headline=0, self_update_policy=1
 ```
 
 Yeni kurulumlarda `setup.sql` bu RPC ve güncel RLS'yi içerir.
@@ -3494,7 +3528,7 @@ Yeni kurulumlarda `setup.sql` bu RPC ve güncel RLS'yi içerir.
 
 `staff.data.headline` alanı kullanımdan kaldırıldı. Başvuru onayı, admin formu ve personel profil düzenlemede slogan istenmez.
 
-- `staffProfileDataPayload` artık `headline` yazmaz; migration `20260630_remove_staff_headline.sql` mevcut kayıtlardan siler.
+- `staffProfileDataPayload` artık `headline` yazmaz; migration `20260630_remove_staff_headline.sql` mevcut kayıtlardan siler (**uzak projede uygulandı**).
 - `staff_update_self_profile` RPC birleştirme sonrası `- 'headline'` uygular.
 - Public kartlar ve SEO açıklamaları `bio` kullanır.
 
