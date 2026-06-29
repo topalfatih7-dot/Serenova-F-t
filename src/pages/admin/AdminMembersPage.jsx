@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Search, Crown, Dumbbell, Apple, Target, Circle } from 'lucide-react'
+import { Search, Crown, Dumbbell, Apple, Target, Circle, Trash2 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
 import { getPlanLabel, packageIncludesCoach, packageIncludesDietitian } from '../../data/membershipPlans'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
@@ -26,13 +27,16 @@ function InfoRow({ label, value }) {
 }
 
 export default function AdminMembersPage() {
-  const { platform, activeUsers } = useApp()
+  const { platform, activeUsers, removeMember } = useApp()
+  const toast = useToast()
   const members = platform.members
   const staff = platform.staff || []
   const [search, setSearch] = useState('')
   const [filterMembership, setFilterMembership] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
@@ -231,7 +235,55 @@ export default function AdminMembersPage() {
               </div>
             )}
 
+            {selected.role !== 'admin' && selected.email?.toLowerCase() !== 'admin@serenova.fit' && (
+              <div className="rounded-xl border border-red-100 bg-red-50/50 px-4 py-4">
+                <p className="text-sm font-semibold text-red-800">Üyeliği kalıcı sil</p>
+                <p className="mt-1 text-xs text-red-700/80">
+                  Ödemeler, abonelikler, programlar, destek talepleri ve sohbet geçmişi dahil tüm kayıtlar silinir.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setDeleteTarget(selected); setSelectedId(null) }}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+                >
+                  <Trash2 className="h-4 w-4" /> Üyeyi Sil
+                </button>
+              </div>
+            )}
+
           </div>
+        )}
+      </Modal>
+
+      <Modal open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} title="Üyeyi Sil">
+        {deleteTarget && (
+          <>
+            <p className="text-sm text-cream-800/70">
+              <strong className="text-cream-900">{deleteTarget.name}</strong> ({deleteTarget.email}) ve ilişkili tüm veriler kalıcı olarak silinecek. Bu işlem geri alınamaz.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl border border-cream-200 py-2.5 text-sm font-semibold text-cream-800">Vazgeç</button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true)
+                  try {
+                    await removeMember(deleteTarget.id)
+                    setDeleteTarget(null)
+                    toast('Üye ve ilişkili kayıtlar silindi', 'info')
+                  } catch (e) {
+                    toast(e?.message || 'Silme başarısız', 'error')
+                  } finally {
+                    setDeleting(false)
+                  }
+                }}
+                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {deleting ? 'Siliniyor…' : 'Kalıcı Sil'}
+              </button>
+            </div>
+          </>
         )}
       </Modal>
     </div>

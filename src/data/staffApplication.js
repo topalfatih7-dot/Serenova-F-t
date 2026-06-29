@@ -264,7 +264,6 @@ function baseErrors(form) {
   if (!form.city?.trim()) errors.push('İl seçin')
   if (!form.district?.trim()) errors.push('İlçe seçin')
   if (!form.gender) errors.push('Cinsiyet seçin')
-  if (!form.photo) errors.push('Profil fotoğrafı gerekli')
   if (form.hasGym) {
     if (!form.gymName?.trim()) errors.push('Salon adı gerekli')
     if (!form.gymCity?.trim()) errors.push('Salon ili gerekli')

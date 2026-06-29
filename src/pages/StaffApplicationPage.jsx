@@ -203,14 +203,15 @@ export default function StaffApplicationPage() {
             <motion.div key={`${step}-${form.role}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
               {step === 1 && (
                 <>
-                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim, cinsiyet ve profil fotoğrafı" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
+                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
                       <PhotoUpload
                         value={form.photo}
                         onChange={(photo) => update({ photo })}
-                        label="Profil Fotoğrafı"
+                        label="Profil Fotoğrafı (isteğe bağlı)"
                         variant="portrait"
-                        hint="Kadro sayfasında görünecek net bir portre yükleyin."
+                        optional
+                        hint="Onay sonrası profilinizde görünebilir; şimdilik atlayabilirsiniz."
                       />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
                       <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" className={inputCls} />

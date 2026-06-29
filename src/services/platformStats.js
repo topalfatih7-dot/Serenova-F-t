@@ -1,6 +1,7 @@
 import { DEFAULT_PACKAGE, PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership, memberNeedsStaffAssignment } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { getRemainingDays } from './premiumMembership'
+import { memberIdSet, filterByMemberIds } from '../utils/memberScopedData'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -50,6 +51,9 @@ const PLAN_COLORS = {
 
 export function computeAdminStats(db) {
   const members = db.members
+  const memberIds = memberIdSet(members)
+  const payments = filterByMemberIds(db.payments, memberIds)
+  const tickets = filterByMemberIds(db.tickets, memberIds)
   const paid = members.filter((m) => isPaidMembership(m.membership))
   const free = members.filter((m) => m.membership === 'free')
   const thisMonth = today().slice(0, 7)
@@ -75,8 +79,8 @@ export function computeAdminStats(db) {
     expiring: members.filter((m) => m.membershipStatus === 'expiring').length || expiringSoon,
     newThisMonth: members.filter((m) => m.joinedAt?.startsWith(thisMonth)).length,
     mrr,
-    totalRevenue: db.payments.reduce((s, p) => s + (p.amount || 0), 0),
-    openTickets: db.tickets.filter((t) => t.status !== 'closed').length,
+    totalRevenue: payments.reduce((s, p) => s + (p.amount || 0), 0),
+    openTickets: tickets.filter((t) => t.status !== 'closed').length,
     avgStreak: members.length
       ? Math.round(members.reduce((s, m) => s + (m.streak || 0), 0) / members.length)
       : 0,
@@ -105,11 +109,13 @@ export function computeMembershipBreakdown(db) {
 }
 
 export function computeMonthlyGrowth(db) {
+  const memberIds = memberIdSet(db.members)
+  const payments = filterByMemberIds(db.payments, memberIds)
   const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz']
   const year = new Date().getFullYear()
   return months.map((month, i) => {
     const monthStr = `${year}-${String(i + 1).padStart(2, '0')}`
-    const monthPayments = db.payments.filter((p) => p.createdAt?.startsWith(monthStr))
+    const monthPayments = payments.filter((p) => p.createdAt?.startsWith(monthStr))
     const gelir = monthPayments.reduce((s, p) => s + (p.amount || 0), 0)
     return {
       month,

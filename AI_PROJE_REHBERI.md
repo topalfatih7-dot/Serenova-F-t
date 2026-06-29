@@ -198,6 +198,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 |-----------|------|
 | `admin_upsert_staff(...)` | Staff + auth.users oluşturma/güncelleme |
 | `admin_delete_staff(p_id)` | Staff + auth silme |
+| `admin_delete_member(p_id)` | Üye + ödemeler, programlar, destek, sohbet, auth silme |
 | `is_admin()`, `is_staff()`, `current_email()`, `current_staff_id()` | RLS yardımcıları |
 | `handle_new_user()` trigger | Kayıtta `members` satırı açar |
 | `submit_staff_application(...)` | Kadro başvurusu (anon + authenticated) |
@@ -3017,7 +3018,7 @@ Menü öğelerinde kırmızı sayaç (`9+` üst sınır); Realtime ile anlık g�
 | `src/data/staffProfile.js` | `staffProfileDataPayload()` — admin manuel ekleme + başvuru onayı ortak şema |
 | `src/data/staffApplication.js` | `applicationToStaffPayload()` — onay sonrası staff kaydına dönüşüm |
 
-**Kadro başvurusu (2026-06-28):** Zorunlu profil fotoğrafı (`PhotoUpload` variant `portrait`); şehir, ilçe, cinsiyet, sosyal linkler başvuru formunda.
+**Kadro başvurusu (2026-06-28):** İsteğe bağlı profil fotoğrafı (`PhotoUpload` variant `portrait`, `optional`); şehir, ilçe, cinsiyet, sosyal linkler başvuru formunda.
 
 **Admin manuel ekleme:** `StaffFormModal.jsx` — başvuru formu ile aynı alan seti (foto, konum, sosyal vb.).
 
@@ -3571,4 +3572,45 @@ Koç ve diyetisyen için başvuru formundaki tüm alanlar:
 
 - Profil fotoğrafı Supabase Storage URL ise `html2canvas` `useCORS: true` ile render edilir.
 - Kurumsal ve iletişim başvurularında CV özelliği yok (yalnızca kadro).
+
+---
+
+## 52. Üye Silme CASCADE + Yetim Veri Temizliği (2026-07-01)
+
+Manuel DB silmelerinden kalan ödeme, abonelik ve destek kayıtları artık görünmez; admin panelden güvenli üye silme eklendi.
+
+### Sorun
+
+`payments`, `tickets`, `activities` tablolarında `member_id` **ON DELETE SET NULL** idi. Üye `members` veya `auth.users` üzerinden silindiğinde satırlar kalıyor; JSONB içindeki `memberName`, `amount`, paket bilgisi admin gelir/abonelik ekranlarında hayalet veri olarak görünüyordu.
+
+### Çözüm
+
+| Katman | Değişiklik |
+|--------|------------|
+| **Migration** `20260701_member_cascade_delete.sql` | Yetim satırları siler; FK → `ON DELETE CASCADE`; `admin_delete_member(p_id)` RPC |
+| **hydrate** | `memberScopedData.js` ile payments/tickets/activities/programs yalnızca mevcut üye ID'leri |
+| **platformStats** | Gelir ve bilet istatistikleri filtrelenmiş ödemelerden |
+| **Admin UI** | `/admin/members` → üye detayında **Üyeyi Sil** (admin hesabı korunur) |
+
+### `admin_delete_member(p_id)`
+
+- Yalnızca `is_admin()` çağırabilir
+- `admin@serenova.fit` / `role = admin` silinemez
+- Sıra: `DELETE members` (CASCADE → programs, payments, tickets, activities, chat_threads, chat_messages) → `DELETE auth.users`
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `supabase/migrations/20260701_member_cascade_delete.sql` | Yetim temizlik + FK + RPC |
+| `src/utils/memberScopedData.js` | `memberIdSet`, `filterByMemberIds`, `filterProgramsForMembers` |
+| `src/services/supabaseDb.js` | `hydrate` filtresi, `removeMember()` |
+| `src/context/AppContext.jsx` | `removeMember` |
+| `src/pages/admin/AdminMembersPage.jsx` | Silme UI |
+| `src/data/staffApplication.js` | Profil fotoğrafı artık zorunlu değil |
+| `src/components/ui/PhotoUpload.jsx` | `optional` prop |
+
+### Uzak Supabase
+
+Migration MCP `apply_migration` ile **Yeni Form** (`rvzksmyhsgxgrxgeabmi`) projesine **uygulandı** (2026-07-01).
 

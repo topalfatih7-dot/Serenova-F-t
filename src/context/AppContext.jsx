@@ -500,6 +500,11 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [reloadRemote])
 
+  const removeMember = useCallback(async (id) => {
+    await sb.removeMember(id)
+    await reloadRemote()
+  }, [reloadRemote])
+
   const createProgram = useCallback(async (data) => {
     const p = await sb.createProgram(data)
     await reloadRemote()
@@ -814,6 +819,7 @@ export function AppProvider({ children }) {
     editStaff,
     updateStaffProfile,
     removeStaff,
+    removeMember,
     adminPatchMember,
     adminUpdatePremium,
     createProgram,

@@ -19,6 +19,7 @@ import { coverForCategory } from '../utils/blogImages.js'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { getSiteUrl } from '../config/seo'
+import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -301,6 +302,7 @@ export async function hydrate() {
   ])
 
   let members = (membersRes.data || []).map(rowToMember)
+  const memberIds = memberIdSet(members)
   const role = roleForUser(user, staff)
   const staffMatch = findStaffMatch(user, staff)
   let staffAppsRes = { data: [] }
@@ -340,11 +342,11 @@ export async function hydrate() {
     version: 2,
     members,
     staff,
-    programs: (programsRes.data || []).map(rowToProgram),
+    programs: filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds),
     posts,
-    tickets: (ticketsRes.data || []).map(rowToTicket),
-    activities: (activitiesRes.data || []).map(rowToActivity),
-    payments: (paymentsRes.data || []).map(rowToPayment),
+    tickets: filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds),
+    activities: filterByMemberIds((activitiesRes.data || []).map(rowToActivity), memberIds),
+    payments: filterByMemberIds((paymentsRes.data || []).map(rowToPayment), memberIds),
     exercises,
     plans,
     staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
@@ -848,6 +850,11 @@ export async function updateStaffSelfProfile(id, patch) {
 
 export async function removeStaff(id) {
   await supabase.rpc('admin_delete_staff', { p_id: id })
+}
+
+export async function removeMember(id) {
+  const { error } = await supabase.rpc('admin_delete_member', { p_id: id })
+  if (error) throw error
 }
 
 // --------------------------- posts (admin) ---------------------------

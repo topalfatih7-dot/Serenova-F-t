@@ -118,7 +118,7 @@ create table if not exists public.posts (
 -- Destek talepleri
 create table if not exists public.tickets (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   status text not null default 'open',
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
@@ -127,7 +127,7 @@ create table if not exists public.tickets (
 -- Aktivite kayıtları
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -135,7 +135,7 @@ create table if not exists public.activities (
 -- Ödemeler
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -702,6 +702,40 @@ end $$;
 
 grant execute on function public.admin_delete_staff(uuid) to authenticated;
 revoke all on function public.admin_delete_staff(uuid) from public, anon;
+
+create or replace function public.admin_delete_member(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth, pg_temp
+as $$
+declare
+  v_role text;
+  v_email text;
+begin
+  if not public.is_admin() then
+    raise exception 'Yetkisiz işlem: yalnızca admin üye silebilir.';
+  end if;
+
+  select role, email into v_role, v_email
+  from public.members
+  where id = p_id;
+
+  if v_role is null then
+    raise exception 'Üye bulunamadı.';
+  end if;
+
+  if v_role = 'admin' or lower(coalesce(v_email, '')) = 'admin@serenova.fit' then
+    raise exception 'Admin hesabı silinemez.';
+  end if;
+
+  delete from public.members where id = p_id;
+  delete from auth.users where id = p_id;
+end;
+$$;
+
+revoke all on function public.admin_delete_member(uuid) from public, anon;
+grant execute on function public.admin_delete_member(uuid) to authenticated;
 
 -- handle_new_user tetikleyici fonksiyonu — RPC ile çağrılmasın
 revoke all on function public.handle_new_user() from public, anon, authenticated;

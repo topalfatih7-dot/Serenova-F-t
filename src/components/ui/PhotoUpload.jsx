@@ -30,7 +30,7 @@ function resizeImage(file, maxDim = 720, quality = 0.82) {
   })
 }
 
-export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı', hint, variant = 'body' }) {
+export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı', hint, variant = 'body', optional = false }) {
   const inputRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -55,7 +55,9 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
 
   const isPortrait = variant === 'portrait'
   const previewClass = isPortrait ? 'h-36 w-36 rounded-2xl object-cover' : 'h-44 w-32 object-cover'
-  const placeholderTitle = isPortrait ? 'Profil fotoğrafı ekle *' : 'Fotoğraf ekle (isteğe bağlı)'
+  const placeholderTitle = isPortrait
+    ? (optional ? 'Profil fotoğrafı ekle (isteğe bağlı)' : 'Profil fotoğrafı ekle *')
+    : 'Fotoğraf ekle (isteğe bağlı)'
   const placeholderHint = isPortrait
     ? 'Net portre, yüzünüz görünür olmalı'
     : 'Tüm vücut görünecek şekilde, dik dururken'

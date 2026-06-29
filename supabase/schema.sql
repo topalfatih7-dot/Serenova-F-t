@@ -77,7 +77,7 @@ create table if not exists public.posts (
 -- Destek talepleri
 create table if not exists public.tickets (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   status text not null default 'open',
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
@@ -86,7 +86,7 @@ create table if not exists public.tickets (
 -- Aktivite kayıtları (admin akışı)
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -94,7 +94,7 @@ create table if not exists public.activities (
 -- Ödemeler
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
-  member_id uuid references public.members(id) on delete set null,
+  member_id uuid references public.members(id) on delete cascade,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
