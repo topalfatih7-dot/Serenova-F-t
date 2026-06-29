@@ -916,7 +916,7 @@ Kaynak: `.env.example`
 | Kadromuza Katıl (navbar alt) | `PublicLayout.jsx` → `teamDropdownFooter` → `NavDropdown` `footer` prop |
 | Kurumsal menü | `PublicLayout.jsx` → `corporateSubLinks` |
 | Menü linki (admin) | `src/components/layout/AdminShell.jsx` |
-| Başvurular admin | `src/pages/admin/AdminApplicationsPage.jsx` (Kadro / Kurumsal / İletişim) |
+| Başvurular admin | `src/pages/admin/AdminApplicationsPage.jsx` (Kadro / Kurumsal / İletişim; kadro → **CV PDF**) |
 | Kadro başvuru formu | `src/pages/StaffApplicationPage.jsx`, `src/data/staffApplication.js` |
 | Kurumsal başvuru formu | `src/pages/CorporateApplicationPage.jsx`, `src/data/corporateApplication.js` |
 | Bize Ulaşın DB kaydı | `src/services/contactForm.js` → `submitContactInquiry` |
@@ -2595,7 +2595,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/admin/members` | `AdminMembersPage.jsx` | Üye arama/liste, detay modal (profil, paket, sağlık) | `MemberHealthInsights`, `AdminActiveUsersPanel` |
 | `/admin/plans` | `AdminPlansPage.jsx` | DB plan CRUD, fiyat kademeleri, özellik listesi | `upsertPlan` |
 | `/admin/premium` | `AdminPremiumPage.jsx` | **Paket bazlı koç/diyetisyen atama**, manuel randevu | `EditPremiumModal`, `ManualSessionEditor`, `adminUpdatePremium` |
-| `/admin/applications` | `AdminApplicationsPage.jsx` | Kadro + kurumsal + iletişim başvuruları (onay/red) | 3 tab |
+| `/admin/applications` | `AdminApplicationsPage.jsx` | Kadro + kurumsal + iletişim başvuruları (onay/red, **CV PDF**) | 3 tab |
 | `/admin/library` | `AdminLibraryPage.jsx` | Egzersiz CRUD, video yükleme (Storage) | `uploadExerciseVideo` |
 | `/admin/staff` | `AdminStaffPage.jsx` | Kadro ekle/düzenle/sil | RPC `admin_upsert_staff` |
 | `/admin/blog` | `AdminBlogPage.jsx` | Blog yazısı CRUD | `posts` |
@@ -3531,4 +3531,44 @@ Yeni kurulumlarda `setup.sql` bu RPC ve güncel RLS'yi içerir.
 - `staffProfileDataPayload` artık `headline` yazmaz; migration `20260630_remove_staff_headline.sql` mevcut kayıtlardan siler (**uzak projede uygulandı**).
 - `staff_update_self_profile` RPC birleştirme sonrası `- 'headline'` uygular.
 - Public kartlar ve SEO açıklamaları `bio` kullanır.
+
+---
+
+## 51. Kadro Başvurusu CV PDF İndirme (2026-06-30)
+
+Admin panelinde gelen personel başvurularından tek tıkla **A4 PDF özgeçmiş** oluşturulur. Veritabanı değişikliği yok — mevcut `staff_applications` kaydı client-side HTML → PDF (`html2pdf.js`).
+
+### Kullanım
+
+**Rota:** `/admin/applications` → **Kadro** sekmesi
+
+| Konum | Buton | Davranış |
+|-------|-------|----------|
+| Başvuru kartı (kapalı) | **CV İndir** | Anında PDF indirir |
+| Detay açık | **PDF Olarak İndir** | Aynı; üstte vurgulu CV kutusu |
+
+Dosya adı: `cv-{ad-soyad-slug}-{basvuru-tarihi}.pdf`
+
+### PDF içeriği
+
+Koç ve diyetisyen için başvuru formundaki tüm alanlar:
+
+- Fotoğraf, iletişim, konum, salon (varsa), sosyal medya, diller
+- Uzmanlık, deneyim, yetkin gruplar, eğitim, sertifikalar
+- Koç: resmi/uluslararası/branş sertifikaları, çalışma yaklaşımı, hizmet alanları, belge listesi
+- Diyetisyen: mezuniyet, oda no, tanıtım, eğitim ve sertifika listeleri
+- Alt bilgi: başvuru tarihi, durum (bekliyor/onaylandı/reddedildi)
+
+### Dosyalar
+
+| Dosya | Görev |
+|-------|-------|
+| `src/utils/exportStaffApplicationCv.js` | `buildStaffApplicationCvHtml`, `downloadStaffApplicationCvPdf` |
+| `src/pages/admin/AdminApplicationsPage.jsx` | CV İndir butonları + yükleme durumu |
+| `src/utils/exportChatPdf.js` | Aynı `html2pdf.js` lazy import kalıbı (referans) |
+
+### Notlar
+
+- Profil fotoğrafı Supabase Storage URL ise `html2canvas` `useCORS: true` ile render edilir.
+- Kurumsal ve iletişim başvurularında CV özelliği yok (yalnızca kadro).
 

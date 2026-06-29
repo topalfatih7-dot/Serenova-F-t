@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import {
   Check, X, UserPlus, Dumbbell, Apple, ChevronDown, ChevronUp, Copy,
-  Building2, Mail, MessageSquare, ExternalLink, MapPin,
+  Building2, Mail, MessageSquare, ExternalLink, MapPin, FileDown, Loader2,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
+import { downloadStaffApplicationCvPdf } from '../../utils/exportStaffApplicationCv'
 
 const SECTIONS = [
   { id: 'staff', label: 'Kadro', icon: UserPlus },
@@ -47,6 +48,7 @@ export default function AdminApplicationsPage() {
   const [rejectTarget, setRejectTarget] = useState(null)
   const [rejectNote, setRejectNote] = useState('')
   const [approvedCreds, setApprovedCreds] = useState(null)
+  const [cvBusy, setCvBusy] = useState(null)
 
   const pendingStaff = (staffApplications || []).filter((a) => a.status === 'pending').length
   const pendingCorp = (corporateApplications || []).filter((a) => a.status === 'pending').length
@@ -115,6 +117,18 @@ export default function AdminApplicationsPage() {
     toast('Kopyalandı', 'success')
   }
 
+  const downloadCv = async (app) => {
+    setCvBusy(app.id)
+    try {
+      const filename = await downloadStaffApplicationCvPdf(app)
+      toast(`CV indirildi: ${filename}`, 'success')
+    } catch {
+      toast('CV oluşturulamadı. Lütfen tekrar deneyin.', 'error')
+    } finally {
+      setCvBusy(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -167,6 +181,16 @@ export default function AdminApplicationsPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${st.style}`}>{st.label}</span>
+                      <button
+                        type="button"
+                        disabled={cvBusy === app.id}
+                        onClick={() => downloadCv(app)}
+                        className="flex items-center gap-1 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100 disabled:opacity-60"
+                        title="Başvurudan CV PDF oluştur"
+                      >
+                        {cvBusy === app.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        CV İndir
+                      </button>
                       <button type="button" onClick={() => setExpanded(open ? null : app.id)} className="rounded-lg border border-cream-200 p-2">{open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button>
                       {app.status === 'pending' && (
                         <>
@@ -178,6 +202,21 @@ export default function AdminApplicationsPage() {
                   </div>
                   {open && (
                     <div className="border-t border-cream-100 bg-cream-50/50 px-4 py-4 text-sm">
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-gradient-to-r from-brand-50/80 to-sage-50/50 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-semibold text-cream-900">Özgeçmiş (CV)</p>
+                          <p className="text-xs text-cream-800/55">Başvuru bilgilerinden A4 PDF oluşturulur — arşiv ve değerlendirme için.</p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={cvBusy === app.id}
+                          onClick={() => downloadCv(app)}
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:brightness-105 disabled:opacity-60"
+                        >
+                          {cvBusy === app.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                          PDF Olarak İndir
+                        </button>
+                      </div>
                       <StaffApplicationDetail app={app} d={d} />
                     </div>
                   )}
