@@ -131,7 +131,7 @@ export default function AuthCallbackPage() {
           recordSocialLogin().catch(() => {})
         }
 
-        const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/dashboard')
+        const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
         if (!active) return
         navigate(dest, { replace: true })
         refresh().catch(() => {})

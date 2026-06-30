@@ -58,9 +58,7 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
   const placeholderTitle = isPortrait
     ? (optional ? 'Profil fotoğrafı ekle (isteğe bağlı)' : 'Profil fotoğrafı ekle *')
     : 'Fotoğraf ekle (isteğe bağlı)'
-  const placeholderHint = isPortrait
-    ? 'Net portre, yüzünüz görünür olmalı'
-    : 'Tüm vücut görünecek şekilde, dik dururken'
+  const placeholderHint = isPortrait ? 'Net portre, yüzünüz görünür olmalı' : ''
 
   return (
     <div className="block">
@@ -109,7 +107,9 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
           <span className="text-sm font-medium text-cream-900">
             {loading ? 'Yükleniyor...' : placeholderTitle}
           </span>
-          <span className="text-xs text-cream-800/55">{placeholderHint}</span>
+          {placeholderHint ? (
+            <span className="text-xs text-cream-800/55">{placeholderHint}</span>
+          ) : null}
         </button>
       )}
 

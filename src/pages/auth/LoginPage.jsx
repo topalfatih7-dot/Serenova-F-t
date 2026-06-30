@@ -59,7 +59,7 @@ export default function LoginPage() {
     }
     if (isAdmin) navigate('/admin', { replace: true })
     else if (isStaff) navigate('/staff', { replace: true })
-    else navigate('/dashboard', { replace: true })
+    else navigate('/profile', { replace: true })
   }, [isAuthenticated, isAdmin, isStaff, redirectTo, navigate])
 
   const showFormError = (message) => {
@@ -96,7 +96,7 @@ export default function LoginPage() {
           ? '/admin'
           : result.role === 'staff'
             ? '/staff'
-            : '/dashboard'
+            : '/profile'
       navigate(target, { replace: true })
     } finally {
       setLoading(false)

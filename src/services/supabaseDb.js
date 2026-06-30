@@ -712,7 +712,7 @@ export async function resolveQuickPostLoginPath(session, { plan = 'free' } = {})
   const role = roleForUser(user, staff)
   if (role === 'admin') return '/admin'
   if (role === 'staff') return '/staff'
-  return '/dashboard'
+  return '/profile'
 }
 
 /** Sosyal giriş sonrası aktivite / bildirim kaydı (şifresiz). */

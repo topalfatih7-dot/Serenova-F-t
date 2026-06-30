@@ -12,7 +12,7 @@ import { useToast } from '../context/ToastContext'
 import {
   User, Bell, LogOut, Edit, CalendarClock, CalendarDays,
   Dumbbell, Apple, ClipboardList, ChevronRight, MapPin, Mail, Phone, Camera,
-  Flame, CalendarCheck, Scale, Ruler, Heart, Shield, Activity,
+  Flame, Scale, Ruler, Heart, Shield, Activity, Stethoscope,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import VerificationSection from '../components/profile/VerificationSection'
@@ -76,8 +76,11 @@ export default function ProfilePage() {
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 3)
 
-  const upcomingCount = [...(coachSessions || []), ...(dietitianSessions || [])]
-    .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date()).length
+  const expertCards = [
+    { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule/coach', iconClass: 'text-brand-500' },
+    { icon: Apple, label: 'Diyetisyen', name: assignedDietitian?.name, to: '/schedule/dietitian', iconClass: 'text-sage-500' },
+    { icon: Stethoscope, label: 'Doktor', name: null, to: '/team/doctors', iconClass: 'text-cream-700' },
+  ]
 
   const handleSave = () => {
     updateProfile(form)
@@ -162,7 +165,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
-          <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
+          <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-center">
             <div className="relative shrink-0">
               {user.photo ? (
                 <img src={user.photo} alt={user.name} className="h-28 w-28 rounded-2xl object-cover ring-4 ring-white shadow-lg sm:h-32 sm:w-32" />
@@ -181,12 +184,13 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="min-w-0 flex-1 text-center sm:pb-1 sm:text-left">
+            <div className="min-w-0 flex-1 text-center sm:text-left">
               <h1 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">{user.name}</h1>
-              <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-cream-800/60 sm:justify-start">
-                <span className="flex items-center gap-1 truncate"><Mail className="h-3.5 w-3.5 shrink-0" /> {user.email}</span>
-                {user.city && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {user.city}</span>}
-              </div>
+              {user.city && (
+                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-cream-800/60 sm:justify-start">
+                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {user.city}</span>
+                </div>
+              )}
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
                 <span className="rounded-full bg-gradient-to-r from-brand-100 to-sage-100 px-3 py-1 text-xs font-semibold text-brand-800">
@@ -196,25 +200,26 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {[
-              { icon: ClipboardList, label: 'Program', value: myPrograms.length },
-              { icon: CalendarCheck, label: 'Randevu', value: upcomingCount },
-              { icon: Flame, label: 'Seri', value: user.streak || 0 },
-              { icon: Dumbbell, label: 'Koç', value: assignedCoach ? '✓' : '—' },
-            ].map((s, i) => (
+          {/* Uzmanlar */}
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            {expertCards.map((item, i) => (
               <motion.div
-                key={s.label}
+                key={item.label}
                 variants={fadeUp}
                 initial="hidden"
                 animate="show"
                 custom={i + 1}
-                className="rounded-2xl border border-white/80 bg-gradient-to-br from-white to-cream-50/80 p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-4"
               >
-                <s.icon className="mx-auto h-4 w-4 text-brand-500 sm:h-5 sm:w-5" />
-                <p className="mt-1 font-display text-xl font-bold text-cream-900 sm:text-2xl">{s.value}</p>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45 sm:text-xs">{s.label}</p>
+                <Link
+                  to={item.to}
+                  className="flex flex-col items-center rounded-2xl border border-white/80 bg-gradient-to-br from-white to-cream-50/80 p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md sm:p-4"
+                >
+                  <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${item.iconClass}`} />
+                  <p className="mt-2 text-sm font-semibold text-cream-900 sm:text-base">{item.label}</p>
+                  <p className="mt-0.5 truncate text-[10px] text-cream-800/50 sm:text-xs">
+                    {item.name || 'Atanmadı'}
+                  </p>
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -422,7 +427,7 @@ export default function ProfilePage() {
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profil Fotoğrafı & İletişim">
         <div className="space-y-4">
-          <PhotoUpload value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+          <PhotoUpload label="" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
           <FormField label="Ad Soyad" icon={User} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ad Soyad" />
           <FormField label="E-posta" icon={Mail} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="E-posta" />
           <FormField label="Telefon" icon={Phone} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="05XX XXX XX XX" />

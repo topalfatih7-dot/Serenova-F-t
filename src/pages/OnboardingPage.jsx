@@ -390,7 +390,7 @@ export default function OnboardingPage() {
     if (!r.success) {
       setSubmitting(false)
       toast(`${r.error} Ücretsiz üye olarak kaydınız tamamlandı; planı profilinizden yükseltebilirsiniz.`, 'warning')
-      navigate('/dashboard')
+      navigate('/profile')
     }
     // başarılıysa tarayıcı Stripe'a yönlendirilir
   }
@@ -747,7 +747,7 @@ export default function OnboardingPage() {
         open={welcomeOpen}
         planName={selectedPlan?.name}
         isPaid={welcomePaid}
-        onContinue={() => navigate('/dashboard')}
+        onContinue={() => navigate('/profile')}
       />
     </div>
   )

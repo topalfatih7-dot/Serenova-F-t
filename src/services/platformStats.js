@@ -33,7 +33,7 @@ export function getPostLoginPath(db) {
   const type = db?.session?.type
   if (type === 'admin') return '/admin'
   if (type === 'staff') return '/staff'
-  return '/dashboard'
+  return '/profile'
 }
 
 const PLAN_COLORS = {
