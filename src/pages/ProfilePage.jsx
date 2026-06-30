@@ -19,8 +19,6 @@ import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
 import { getPlanLabel } from '../data/membershipPlans'
 import { getRemainingDays } from '../services/premiumMembership'
-import { formatBirthDate, ageFromBirthDate, birthDateError } from '../utils/birthDate'
-
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }),
@@ -57,7 +55,6 @@ export default function ProfilePage() {
   }, [])
   const [healthEditOpen, setHealthEditOpen] = useState(false)
   const [healthForm, setHealthForm] = useState({
-    birthDate: user.birthDate || '',
     weight: user.weight || '',
     height: user.height || '',
     waist: user.waist || '',
@@ -81,14 +78,7 @@ export default function ProfilePage() {
   }
 
   const handleHealthSave = async () => {
-    if (birthDateError(healthForm.birthDate)) {
-      toast('Geçerli bir doğum tarihi girin', 'warning')
-      return
-    }
-    const patch = {
-      ...healthForm,
-      age: healthForm.birthDate ? ageFromBirthDate(healthForm.birthDate) : '',
-    }
+    const patch = { ...healthForm }
     await updateProfile(patch)
     setHealthEditOpen(false)
     const merged = { ...user, ...patch }
@@ -107,7 +97,6 @@ export default function ProfilePage() {
 
   const openHealthEdit = () => {
     setHealthForm({
-      birthDate: user.birthDate || '',
       weight: user.weight || '',
       height: user.height || '',
       waist: user.waist || '',
@@ -130,11 +119,18 @@ export default function ProfilePage() {
     { to: '/support', icon: Shield, label: 'Destek', sub: 'Yardım & talepler', color: 'from-violet-500 to-purple-600' },
   ]
 
+  const bmiValue = (() => {
+    const w = parseFloat(user.weight)
+    const h = parseFloat(user.height)
+    if (!w || !h) return '—'
+    return (w / ((h / 100) ** 2)).toFixed(1)
+  })()
+
   const bodyMetrics = [
     { icon: Scale, label: 'Kilo', value: user.weight ? `${user.weight} kg` : '—' },
     { icon: Ruler, label: 'Boy', value: user.height ? `${user.height} cm` : '—' },
     { icon: Activity, label: 'Bel', value: user.waist ? `${user.waist} cm` : '—' },
-    { icon: Heart, label: 'Doğum Tarihi', value: formatBirthDate(user.birthDate) },
+    { icon: Heart, label: 'VKİ', value: bmiValue },
   ]
 
   return (
@@ -397,7 +393,6 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <p className="text-sm text-cream-800/65">Yalnızca vücut ölçülerinizi güncelleyin. Diğer bilgiler Kişisel Bilgiler bölümünden düzenlenir.</p>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Doğum Tarihi" icon={Heart} type="date" value={healthForm.birthDate} onChange={(e) => setHealthForm({ ...healthForm, birthDate: e.target.value })} />
             <FormField label="Kilo (kg)" icon={Scale} type="number" value={healthForm.weight} onChange={(e) => setHealthForm({ ...healthForm, weight: e.target.value })} placeholder="Kilo" />
             <FormField label="Boy (cm)" icon={Ruler} type="number" value={healthForm.height} onChange={(e) => setHealthForm({ ...healthForm, height: e.target.value })} placeholder="Boy" />
             <FormField label="Bel (cm)" icon={Activity} type="number" value={healthForm.waist} onChange={(e) => setHealthForm({ ...healthForm, waist: e.target.value })} placeholder="Bel" />
