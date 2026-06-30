@@ -1,20 +1,31 @@
-import { Crown, Sparkles, Star, Award, Leaf, Dumbbell } from 'lucide-react'
+import { Crown, Sparkles, Star, Award } from 'lucide-react'
+import { getMembershipBadgeTier } from '../../data/membershipPlans'
 
-const PLAN_CONFIG = {
-  free:     { label: 'Ücretsiz', icon: Sparkles, cls: 'border-cream-200 bg-cream-100 text-cream-800' },
-  eko:      { label: 'Eko Paket', icon: Leaf, cls: 'border-sage-300 bg-sage-50 text-sage-700' },
-  diyet:    { label: 'Diyet Paketi', icon: Sparkles, cls: 'border-emerald-300 bg-emerald-50 text-emerald-700' },
-  spor:     { label: 'Spor Paketi', icon: Dumbbell, cls: 'border-blue-300 bg-blue-50 text-blue-700' },
-  kurucu:   { label: 'Kurucu Üye', icon: Crown, cls: 'border-amber-300/60 bg-gradient-to-r from-amber-50 to-amber-100/50 text-amber-700' },
-  vip:      { label: 'Vip Paket', icon: Award, cls: 'border-brand-300/60 bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700' },
-  gumus:    { label: 'Gümüş', icon: Star, cls: 'border-slate-300 bg-slate-50 text-slate-700' },
-  altin:    { label: 'Altın', icon: Crown, cls: 'border-amber-300/60 bg-gradient-to-r from-amber-50 to-amber-100/50 text-amber-700' },
-  platinum: { label: 'Platinum', icon: Award, cls: 'border-brand-300/60 bg-gradient-to-r from-brand-50 to-brand-100/50 text-brand-700' },
-  premium:  { label: 'Premium', icon: Crown, cls: 'border-gold-400/50 bg-gradient-to-r from-brand-50 to-gold-400/10 text-brand-700' },
+const BADGE_CONFIG = {
+  free: {
+    label: 'Basic',
+    icon: Sparkles,
+    cls: 'border-cream-200 bg-cream-100 text-cream-800',
+  },
+  silver: {
+    label: 'Silver',
+    icon: Star,
+    cls: 'border-slate-300/80 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-200/60 text-slate-700 shadow-sm shadow-slate-200/40',
+  },
+  gold: {
+    label: 'Gold',
+    icon: Crown,
+    cls: 'border-amber-400/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/80 text-amber-800 shadow-sm shadow-amber-200/40',
+  },
+  platinum: {
+    label: 'Platinum',
+    icon: Award,
+    cls: 'border-brand-300/70 bg-gradient-to-r from-slate-50 via-brand-50 to-violet-100/70 text-brand-800 shadow-sm shadow-brand-200/30',
+  },
 }
 
 const statusColors = {
-  active:   'bg-sage-50 text-sage-700 border-sage-200',
+  active: 'bg-sage-50 text-sage-700 border-sage-200',
   expiring: 'bg-orange-50 text-orange-700 border-orange-200',
 }
 
@@ -23,7 +34,8 @@ const statusLabels = {
 }
 
 export default function MembershipBadge({ tier, status }) {
-  const config = PLAN_CONFIG[tier] || PLAN_CONFIG.free
+  const badgeTier = getMembershipBadgeTier(tier)
+  const config = BADGE_CONFIG[badgeTier] || BADGE_CONFIG.free
   const Icon = config.icon
 
   return (

@@ -186,15 +186,10 @@ export default function ProfilePage() {
 
             <div className="min-w-0 flex-1 text-center sm:text-left">
               <h1 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">{user.name}</h1>
-              {user.city && (
-                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-cream-800/60 sm:justify-start">
-                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {user.city}</span>
-                </div>
-              )}
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
                 <span className="rounded-full bg-gradient-to-r from-brand-100 to-sage-100 px-3 py-1 text-xs font-semibold text-brand-800">
-                  {getPlanLabel(membership)} Üye
+                  {getPlanLabel(membership)}
                 </span>
               </div>
             </div>

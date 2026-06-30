@@ -60,6 +60,16 @@ export function getPlanLabel(id) {
   return PLAN_LABELS[id] || id
 }
 
+/** Üyelik planı → görsel rozet seviyesi */
+export function getMembershipBadgeTier(membership) {
+  if (membership === 'eko' || membership === 'gumus') return 'silver'
+  if (membership === 'diyet' || membership === 'spor' || membership === 'altin') return 'gold'
+  if (membership === 'vip' || membership === 'platinum' || membership === 'premium' || membership === 'kurucu') {
+    return 'platinum'
+  }
+  return 'free'
+}
+
 /** Plan + süre için fiyat (TL) */
 export const PLAN_PRICING = {
   eko: { 1: 1299, 3: 2999, 6: 3999 },
