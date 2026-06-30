@@ -1088,28 +1088,45 @@ export async function upsertExerciseTaxonomy(taxonomy) {
   return { success: true, id: data.id }
 }
 
+// Bazı eski veritabanlarında exercises tablosunda sport_type / body_part
+// sütunları bulunmayabilir. Bu durumda PostgREST "schema cache" hatası döner;
+// payload'ı opsiyonel sütunlar olmadan tekrar deneriz (category değeri korunur).
+const isMissingExerciseColumnError = (error) =>
+  !!error && (error.code === 'PGRST204' || error.code === '42703' ||
+    /body_part|sport_type/.test(error.message || ''))
+
+const stripOptionalExerciseColumns = ({ sport_type, body_part, ...rest }) => rest
+
 export async function addExercise(data) {
-  const { error } = await supabase.from('exercises').insert({
+  const payload = {
     name: data.name,
     description: data.description || '',
     category: data.bodyPart || data.category || 'Tüm Vücut',
     sport_type: data.sportType || 'Fitness',
     body_part: data.bodyPart || data.category || 'Tüm Vücut',
     video_url: data.videoUrl || '',
-  })
+  }
+  let { error } = await supabase.from('exercises').insert(payload)
+  if (isMissingExerciseColumnError(error)) {
+    ;({ error } = await supabase.from('exercises').insert(stripOptionalExerciseColumns(payload)))
+  }
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
 
 export async function editExercise(id, patch) {
-  const { error } = await supabase.from('exercises').update({
+  const payload = {
     name: patch.name,
     description: patch.description || '',
     category: patch.bodyPart || patch.category || 'Tüm Vücut',
     sport_type: patch.sportType || 'Fitness',
     body_part: patch.bodyPart || patch.category || 'Tüm Vücut',
     video_url: patch.videoUrl || '',
-  }).eq('id', id)
+  }
+  let { error } = await supabase.from('exercises').update(payload).eq('id', id)
+  if (isMissingExerciseColumnError(error)) {
+    ;({ error } = await supabase.from('exercises').update(stripOptionalExerciseColumns(payload)).eq('id', id))
+  }
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
