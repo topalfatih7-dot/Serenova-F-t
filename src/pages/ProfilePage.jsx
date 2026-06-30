@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { format } from 'date-fns'
-import { tr } from 'date-fns/locale'
 import { motion } from 'framer-motion'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
@@ -10,15 +8,14 @@ import PhotoUpload from '../components/ui/PhotoUpload'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
-  User, Bell, LogOut, Edit, CalendarClock, CalendarDays,
-  Dumbbell, Apple, ClipboardList, ChevronRight, MapPin, Mail, Phone, Camera,
+  User, Bell, LogOut, Edit, CalendarDays,
+  Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
   Flame, Scale, Ruler, Heart, Shield, Activity, Stethoscope,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
-import VideoJoinLink from '../components/video/VideoJoinLink'
 
 import { getPlanLabel, packageIncludesDoctor } from '../data/membershipPlans'
 
@@ -30,7 +27,7 @@ const fadeUp = {
 export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
-    coachSessions, dietitianSessions, doctorSessions, updateProfile, updateSettings, logout,
+    updateProfile, updateSettings, logout,
     createProgram, exercises, refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
@@ -67,16 +64,6 @@ export default function ProfilePage() {
     name: user.name, email: user.email, phone: user.phone || '', city: user.city, district: user.district || '',
     photo: user.photo || null,
   })
-
-  const hasSupport =
-    (Number(packageConfig?.coachMeetingsPerMonth) || Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
-    (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 ||
-    packageIncludesDoctor(packageConfig)
-
-  const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || []), ...(doctorSessions || [])]
-    .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date())
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 3)
 
   const expertCards = [
     { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule/coach', iconClass: 'text-brand-500' },
@@ -282,17 +269,6 @@ export default function ProfilePage() {
 
           {/* Kişisel bilgiler — tam profil */}
           <PersonalInfoSection user={user} />
-
-          <VerificationSection
-            user={user}
-            verificationStatus={verificationStatus}
-            onSendEmailVerification={sendEmailVerification}
-            onConfirmEmailVerification={confirmEmailVerification}
-            onSendPhoneVerification={sendPhoneVerification}
-            onConfirmPhoneVerification={confirmPhoneVerification}
-            onRefresh={refresh}
-            onRefreshStatus={refreshVerification}
-          />
         </div>
 
         {/* Sağ: bildirim + abonelik */}
@@ -354,84 +330,19 @@ export default function ProfilePage() {
               ))}
             </div>
           </ProfileSectionCard>
+
+          <VerificationSection
+            user={user}
+            verificationStatus={verificationStatus}
+            onSendEmailVerification={sendEmailVerification}
+            onConfirmEmailVerification={confirmEmailVerification}
+            onSendPhoneVerification={sendPhoneVerification}
+            onConfirmPhoneVerification={confirmPhoneVerification}
+            onRefresh={refresh}
+            onRefreshStatus={refreshVerification}
+          />
         </div>
       </div>
-
-      {/* Uzmanlar */}
-      {membership !== 'free' && hasSupport && (
-        <ProfileSectionCard
-          icon={CalendarClock}
-          title="Uzmanlarım"
-          subtitle="Koç, diyetisyen ve doktor randevularınız"
-          accent="sage"
-          delay={0.25}
-          action={(
-            <Link to="/calendar" className="text-xs font-semibold text-sage-700 hover:underline">Takvime git</Link>
-          )}
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(Number(packageConfig?.coachMeetingsPerMonth) || Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 && (
-              <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
-                  <Dumbbell className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-cream-900">{assignedCoach?.name || 'Atanmadı'}</p>
-                  <p className="text-xs text-cream-800/55">Koç · Ayda {packageConfig.coachMeetingsPerMonth || (packageConfig.coachMeetingsPerWeek || 0) * 4} görüşme</p>
-                </div>
-                <Link to="/schedule/coach" className="shrink-0 text-brand-600"><ChevronRight className="h-5 w-5" /></Link>
-              </div>
-            )}
-            {(Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 && (
-              <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
-                  <Apple className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-cream-900">{assignedDietitian?.name || 'Atanmadı'}</p>
-                  <p className="text-xs text-cream-800/55">Diyetisyen · Ayda {packageConfig.dietitianMeetingsPerMonth} görüşme</p>
-                </div>
-                <Link to="/schedule/dietitian" className="shrink-0 text-sage-600"><ChevronRight className="h-5 w-5" /></Link>
-              </div>
-            )}
-            {packageIncludesDoctor(packageConfig) && (
-              <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
-                  <Stethoscope className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-cream-900">{assignedDoctor?.name || 'Atanmadı'}</p>
-                  <p className="text-xs text-cream-800/55">Doktor · Ayda {packageConfig.doctorMeetingsPerMonth} görüşme</p>
-                </div>
-                <Link to="/schedule/doctor" className="shrink-0 text-teal-700"><ChevronRight className="h-5 w-5" /></Link>
-              </div>
-            )}
-          </div>
-          {upcomingSessions.length > 0 && (
-            <div className="mt-4 border-t border-cream-100 pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/45">Yaklaşan</p>
-              <div className="space-y-2">
-                {upcomingSessions.map((s) => {
-                  const sessionType = coachSessions?.some((cs) => cs.id === s.id)
-                    ? 'coach'
-                    : doctorSessions?.some((ds) => ds.id === s.id)
-                      ? 'doctor'
-                      : 'dietitian'
-                  return (
-                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 px-3 py-2.5 text-sm">
-                      <span className="font-medium text-cream-900">{s.title}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-cream-800/60">{format(new Date(s.date), 'd MMM, HH:mm', { locale: tr })}</span>
-                        <VideoJoinLink session={s} sessionType={sessionType} size="sm" />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </ProfileSectionCard>
-      )}
 
       <motion.button
         type="button"
