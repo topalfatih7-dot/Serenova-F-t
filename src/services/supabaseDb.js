@@ -20,6 +20,7 @@ import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
+import { displayNameFromAuthUser } from '../utils/memberProfile'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -290,7 +291,7 @@ export async function hydrate() {
   const authUser = {
     id: user.id,
     email: (user.email || '').toLowerCase(),
-    name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+    name: displayNameFromAuthUser(user),
   }
 
   const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
@@ -372,7 +373,7 @@ async function resolveActorName(user, role, staffList) {
     return s?.name || user.user_metadata?.name || 'Personel'
   }
   const { data } = await supabase.from('members').select('name').eq('id', user.id).maybeSingle()
-  return data?.name || user.user_metadata?.name || 'Üye'
+  return data?.name || displayNameFromAuthUser(user) || 'Üye'
 }
 
 async function addActivity(type, text, memberId = null) {
@@ -524,6 +525,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
     streak: 0,
+    profileComplete: true,
   }, packageConfig, isPaidMembership(membership))
 
   await upsertMember(member)
@@ -640,6 +642,85 @@ export async function register(profile, membership = 'free', packageConfig = nul
   const auth = await ensureAuthForSignup(profile)
   if (!auth.success) return auth
   return buildAndPersistMember(profile, membership, packageConfig)
+}
+
+/** OAuth ile oturum açıkken eksik profil alanlarını tamamlar (telefon, plan vb.). */
+export async function completeOAuthMember(profile, membership = 'free', packageConfig = null, opts = {}) {
+  const user = await getUser()
+  if (!user) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+
+  const email = normalizeEmailAddress(user.email) || normalizeEmailAddress(profile.email)
+  if (!email) {
+    return { success: false, error: 'E-posta adresi alınamadı. Lütfen farklı bir giriş yöntemi deneyin.' }
+  }
+
+  const name = (profile.name || displayNameFromAuthUser(user) || '').trim()
+  if (!name) {
+    return { success: false, error: 'Ad soyad bilgisi gerekli.' }
+  }
+
+  const phone = profile.phone || ''
+  if (phone) {
+    const { data: phoneTaken, error: phoneErr } = await supabase.rpc('phone_in_use', { p_phone: phone })
+    if (!phoneErr && phoneTaken) {
+      const { data: existing } = await supabase.from('members').select('id').eq('phone', phone).maybeSingle()
+      if (existing?.id && existing.id !== user.id) {
+        return { success: false, error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.' }
+      }
+      if (!existing?.id) {
+        return { success: false, error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.' }
+      }
+    }
+  } else {
+    return { success: false, error: 'Telefon numarası gerekli — randevu hatırlatmaları için kullanılır.' }
+  }
+
+  if (name !== displayNameFromAuthUser(user)) {
+    await supabase.auth.updateUser({ data: { name, full_name: name } })
+  }
+
+  const mergedProfile = {
+    ...profile,
+    name,
+    email,
+    phone,
+  }
+
+  return buildAndPersistMember(mergedProfile, membership, packageConfig, opts)
+}
+
+/** Sosyal giriş sonrası aktivite / bildirim kaydı (şifresiz). */
+export async function recordSocialLogin() {
+  const user = await getUser()
+  if (!user) return { success: false }
+
+  const { data: staffRows } = await supabase.from('staff').select('*')
+  const staffList = (staffRows || []).map(rowToStaff)
+  const role = roleForUser(user, staffList)
+  const displayName = await resolveActorName(user, role, staffList)
+  const staffMember = findStaffMatch(user, staffList)
+
+  const loginText = role === 'admin'
+    ? `${displayName} (Admin) giriş yaptı`
+    : role === 'staff'
+      ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
+      : `${displayName} giriş yaptı`
+
+  await addActivity('login', loginText, role === 'member' ? user.id : null)
+
+  if (role === 'admin') {
+    notifyTelegram('admin_login', { name: displayName, email: user.email })
+  } else if (role === 'staff') {
+    notifyTelegram('staff_login', {
+      name: displayName,
+      email: user.email,
+      role: staffRoleLabel(staffMember?.role),
+    })
+  } else {
+    notifyTelegram('member_login', { name: displayName, email: user.email })
+  }
+
+  return { success: true, role }
 }
 
 export async function registerWithPayment(profile, packageConfig) {

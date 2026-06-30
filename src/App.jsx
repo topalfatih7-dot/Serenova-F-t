@@ -7,6 +7,7 @@ import AppShell from './components/layout/AppShell'
 import AdminShell from './components/layout/AdminShell'
 import StaffShell from './components/layout/StaffShell'
 import RequireAuth from './components/auth/RequireAuth'
+import ProfileCompletionGate from './components/auth/ProfileCompletionGate'
 import NotificationToastBridge from './components/notifications/NotificationToastBridge'
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
@@ -115,6 +116,7 @@ export default function App() {
             </Route>
 
             <Route element={<RequireAuth role="member" />}>
+              <Route element={<ProfileCompletionGate />}>
               <Route path="call/:sessionType/:sessionId" element={<VideoCallPage audience="member" />} />
               <Route element={<AppShell />}>
                 <Route path="dashboard" element={<DashboardPage />} />
@@ -130,6 +132,7 @@ export default function App() {
                 <Route path="library" element={<ExerciseLibraryPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="profile/payments" element={<PaymentManagementPage audience="member" />} />
+              </Route>
               </Route>
             </Route>
 

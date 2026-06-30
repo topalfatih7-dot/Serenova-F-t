@@ -12,6 +12,8 @@ import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
 import LegalConsentCheckbox from '../../components/ui/LegalConsentCheckbox'
+import SocialAuthButtons from '../../components/auth/SocialAuthButtons'
+import FormErrorModal from '../../components/ui/FormErrorModal'
 import AuthFormShell, { AuthFormCard } from '../../components/auth/AuthFormShell'
 import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
 
@@ -29,6 +31,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [errorModal, setErrorModal] = useState({ open: false, message: '' })
   const { login, isAuthenticated, isAdmin, isStaff } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -61,12 +64,9 @@ export default function LoginPage() {
     else navigate('/dashboard', { replace: true })
   }, [isAuthenticated, isAdmin, isStaff, redirectTo, navigate])
 
-  const validate = () => {
-    const e = {}
-    if (!isValidEmailAddress(email)) e.email = 'Geçerli e-posta girin'
-    if (password.length < 6) e.password = 'En az 6 karakter'
-    setErrors(e)
-    return Object.keys(e).length === 0
+  const showFormError = (message) => {
+    setErrorModal({ open: true, message })
+    toast(message, 'error', 5000)
   }
 
   const handleSubmit = async (e) => {
@@ -78,12 +78,19 @@ export default function LoginPage() {
     if (password.length < 6) fieldErrors.password = 'En az 6 karakter'
     if (!termsAccepted) fieldErrors.terms = 'Devam etmek için koşulları kabul etmelisiniz'
     setErrors(fieldErrors)
-    if (Object.keys(fieldErrors).length) return
+    if (Object.keys(fieldErrors).length) {
+      const msg = fieldErrors.terms
+        || fieldErrors.email
+        || fieldErrors.password
+        || 'Lütfen formu kontrol edin.'
+      showFormError(msg)
+      return
+    }
     setLoading(true)
     try {
       const result = await login(cleanEmail, password, remember)
       if (!result.success) {
-        toast(result.error || 'Giriş başarısız', 'error')
+        showFormError(result.error || 'Giriş başarısız. E-posta veya şifreyi kontrol edin.')
         return
       }
       toast('Hoş geldiniz!', 'success')
@@ -179,7 +186,11 @@ export default function LoginPage() {
             <h2 className="font-display text-[1.75rem] font-bold leading-tight text-cream-900">Tekrar hoş geldiniz</h2>
             <p className="mt-2 text-base text-cream-800/60">Hesabınıza giriş yapın</p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <div className="mt-6">
+              <SocialAuthButtons flow="login" remember={remember} />
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <FormField
                 large
                 emphasis
@@ -270,6 +281,12 @@ export default function LoginPage() {
           </AuthFormShell>
         </motion.div>
       </div>
+
+      <FormErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ open: false, message: '' })}
+      />
     </div>
   )
 }

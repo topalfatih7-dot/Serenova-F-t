@@ -5,8 +5,10 @@ import { CheckCircle2, AlertCircle, Loader2, LayoutDashboard, LogIn, Sparkles } 
 import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
 import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services/authVerification'
 import { BRAND } from '../../config/brand'
-import { getPostLoginPath } from '../../services/platformStats'
+import { getPostLoginPath, getCurrentMember } from '../../services/platformStats'
 import { establishAuthSessionFromUrl } from '../../services/authSessionFromUrl'
+import { recordSocialLogin } from '../../services/supabaseDb'
+import { memberNeedsProfileCompletion } from '../../utils/memberProfile'
 import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
@@ -124,7 +126,23 @@ export default function AuthCallbackPage() {
 
       if (session?.user) {
         const db = await refresh().catch(() => null)
-        if (active) navigate(getPostLoginPath(db), { replace: true })
+        if (!active) return
+
+        const flow = searchParams.get('flow')
+        const plan = searchParams.get('plan') || 'free'
+        const member = getCurrentMember(db)
+        const needsProfile = memberNeedsProfileCompletion(member)
+
+        if (needsProfile) {
+          navigate(`/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`, { replace: true })
+          return
+        }
+
+        if (flow === 'login' || flow === 'signup') {
+          await recordSocialLogin().catch(() => {})
+        }
+
+        navigate(getPostLoginPath(db), { replace: true })
         return
       }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,10 +15,12 @@ import Modal from '../components/ui/Modal'
 import BrandLogo from '../components/ui/BrandLogo'
 import AuthFormShell, { AuthFormCard } from '../components/auth/AuthFormShell'
 import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
+import SocialAuthButtons from '../components/auth/SocialAuthButtons'
+import FormErrorModal from '../components/ui/FormErrorModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay, getDefaultPackageForPlan } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled } from '../config/stripe'
@@ -27,6 +29,7 @@ import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
+import { memberNeedsProfileCompletion, displayNameFromAuthUser } from '../utils/memberProfile'
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 const BENEFITS = [
@@ -169,6 +172,9 @@ export default function OnboardingPage() {
   const [welcomeOpen, setWelcomeOpen] = useState(false)
   const [welcomePaid, setWelcomePaid] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [errorModal, setErrorModal] = useState({ open: false, message: '' })
+  const [submitHighlight, setSubmitHighlight] = useState(false)
+  const submitBtnRef = useRef(null)
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -179,10 +185,33 @@ export default function OnboardingPage() {
     membership: preselectedPlan,
   })
 
-  const { register, registerWithPlan, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user } = useApp()
+  const { register, registerWithPlan, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff
+  const isOAuthFlow = searchParams.get('oauth') === '1' || (isExistingMember && memberNeedsProfileCompletion(user))
+  const oauthPrefilledRef = useRef(false)
+
+  useEffect(() => {
+    if (searchParams.get('oauth') === '1' && !isAuthenticated && !loading) {
+      navigate('/login', {
+        replace: true,
+        state: { message: 'Sosyal hesap bağlantısı için önce giriş yapın.' },
+      })
+    }
+  }, [searchParams, isAuthenticated, loading, navigate])
+
+  useEffect(() => {
+    if (!isOAuthFlow || !isAuthenticated || oauthPrefilledRef.current) return
+    oauthPrefilledRef.current = true
+    const name = user?.name || displayNameFromAuthUser(authUser) || ''
+    const email = user?.email || authUser?.email || ''
+    setData((d) => ({
+      ...d,
+      name: d.name || name,
+      email: d.email || email,
+    }))
+  }, [isOAuthFlow, isAuthenticated, user, authUser])
 
   useEffect(() => {
     if (!isExistingMember && searchParams.get('payment') === 'cancelled') {
@@ -191,7 +220,7 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isExistingMember && !welcomeOpen) {
+  if (isExistingMember && !welcomeOpen && !isOAuthFlow) {
     return (
       <PlanChangeView
         plans={sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)}
@@ -209,6 +238,52 @@ export default function OnboardingPage() {
   const selectedPrice = isPaidMembership(data.membership) ? getTierPrice(data.membership, durationMonths) : 0
   const isPaid = isPaidMembership(data.membership)
 
+  const showFormError = (message) => {
+    setErrorModal({ open: true, message })
+    toast(message, 'error', 5000)
+  }
+
+  const getValidationError = () => {
+    if (step === 0) {
+      if (!data.name.trim()) return 'Ad soyad alanını doldurun.'
+      if (!isOAuthFlow && !isValidEmailAddress(data.email)) {
+        return 'Geçerli bir e-posta adresi girin (ör. ad@site.com).'
+      }
+      if (!data.phone?.trim() || !isValidNationalNumber(data.phoneCountry, data.phone)) {
+        return 'Geçerli bir cep telefonu numarası girin.'
+      }
+      if (!isOAuthFlow && !isPasswordValid(data.password)) {
+        return 'Şifre en az 8 karakter, bir büyük harf ve bir rakam içermelidir.'
+      }
+      if (!isOAuthFlow && data.password !== data.confirmPassword) {
+        return 'Şifreler eşleşmiyor — iki alanı da aynı yazın.'
+      }
+      if (!termsAccepted) {
+        return 'Devam etmek için kullanım koşullarını ve gizlilik politikasını kabul etmelisiniz.'
+      }
+    }
+    if (step === 1 && !data.membership) return 'Kayıt için bir üyelik planı seçin.'
+    return 'Lütfen eksik veya hatalı alanları düzeltin.'
+  }
+
+  const scrollToSubmit = () => {
+    window.setTimeout(() => {
+      submitBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+  }
+
+  const handlePlanSelect = (id) => {
+    update({ membership: id })
+    setSubmitHighlight(true)
+    scrollToSubmit()
+  }
+
+  const handleDurationChange = (months) => {
+    setDurationMonths(months)
+    setSubmitHighlight(true)
+    scrollToSubmit()
+  }
+
   const errors = {
     email: data.email && !isValidEmailAddress(data.email) ? 'Geçerli bir e-posta adresi girin (ör. ad@site.com)' : '',
     phone: data.phone && !isValidNationalNumber(data.phoneCountry, data.phone) ? 'Geçerli bir cep telefonu numarası girin' : '',
@@ -218,13 +293,19 @@ export default function OnboardingPage() {
 
   const canNext = () => {
     if (step === 0) {
-      return (
+      const baseOk = (
         data.name.trim() &&
-        isValidEmailAddress(data.email) &&
         isValidNationalNumber(data.phoneCountry, data.phone) &&
-        isPasswordValid(data.password) &&
-        data.password === data.confirmPassword &&
         termsAccepted
+      )
+      if (isOAuthFlow) {
+        return baseOk
+      }
+      return (
+        baseOk &&
+        isValidEmailAddress(data.email) &&
+        isPasswordValid(data.password) &&
+        data.password === data.confirmPassword
       )
     }
     if (step === 1) return !!data.membership
@@ -233,22 +314,38 @@ export default function OnboardingPage() {
 
   const buildProfile = () => ({
     name: data.name.trim(),
-    email: sanitizeEmailInput(data.email),
+    email: sanitizeEmailInput(isOAuthFlow ? (user?.email || authUser?.email || data.email) : data.email),
     phone: toE164(data.phoneCountry, data.phone),
     phoneCountry: data.phoneCountry,
-    password: data.password,
+    password: isOAuthFlow ? undefined : data.password,
     fitnessLevel: 'beginner',
     goals: [],
     nutritionPrefs: [],
   })
 
+  const persistRegistration = async (membership, paymentAmount = 0) => {
+    const profile = buildProfile()
+    const packageConfig = isPaidMembership(membership)
+      ? getDefaultPackageForPlan(membership, durationMonths)
+      : null
+    const paymentOpts = paymentAmount ? { payment: paymentAmount } : {}
+
+    if (isOAuthFlow) {
+      return completeOAuthMember(profile, membership, packageConfig, paymentOpts)
+    }
+    if (isPaidMembership(membership)) {
+      return registerWithPlan(profile, membership, paymentAmount, durationMonths)
+    }
+    return register(profile, 'free')
+  }
+
   const finishFree = async () => {
     if (submitting) return
     setSubmitting(true)
     try {
-      const result = await register(buildProfile(), 'free')
+      const result = await persistRegistration('free')
       if (!result.success) {
-        toast(result.error, 'error')
+        showFormError(result.error || 'Kayıt tamamlanamadı.')
         return
       }
       setWelcomePaid(false)
@@ -261,10 +358,10 @@ export default function OnboardingPage() {
   const handlePaidPayment = () => {
     setPaying(true)
     setTimeout(async () => {
-      const result = await registerWithPlan(buildProfile(), data.membership, selectedPrice, durationMonths)
+      const result = await persistRegistration(data.membership, selectedPrice)
       setPaying(false)
       if (!result.success) {
-        toast(result.error, 'error')
+        showFormError(result.error || 'Kayıt tamamlanamadı.')
         return
       }
       setPaymentOpen(false)
@@ -278,13 +375,16 @@ export default function OnboardingPage() {
   const startStripeRegister = async () => {
     if (submitting) return
     setSubmitting(true)
-    const reg = await register(buildProfile(), 'free')
+    const reg = isOAuthFlow
+      ? await completeOAuthMember(buildProfile(), 'free')
+      : await register(buildProfile(), 'free')
     if (!reg.success) {
-      toast(reg.error, 'error')
+      showFormError(reg.error || 'Kayıt tamamlanamadı.')
       setSubmitting(false)
       return
     }
-    const r = await startStripeCheckout(data.membership, 'register', durationMonths, sanitizeEmailInput(data.email))
+    const checkoutEmail = sanitizeEmailInput(user?.email || authUser?.email || data.email)
+    const r = await startStripeCheckout(data.membership, 'register', durationMonths, checkoutEmail)
     if (!r.success) {
       setSubmitting(false)
       toast(`${r.error} Ücretsiz üye olarak kaydınız tamamlandı; planı profilinizden yükseltebilirsiniz.`, 'warning')
@@ -303,18 +403,26 @@ export default function OnboardingPage() {
   }
 
   const next = () => {
-    if (!canNext()) { setShowErrors(true); return }
+    if (!canNext()) {
+      setShowErrors(true)
+      showFormError(getValidationError())
+      return
+    }
     setShowErrors(false)
     if (step === 1) {
+      setSubmitHighlight(false)
       finish()
       return
     }
     setStep(1)
     setMaxReached(1)
+    setSubmitHighlight(Boolean(data.membership))
+    window.setTimeout(scrollToSubmit, 350)
   }
 
   const back = () => {
     setShowErrors(false)
+    setSubmitHighlight(false)
     setStep(0)
   }
 
@@ -385,7 +493,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Sağ panel — kayıt formu */}
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-4 py-10 sm:px-8">
+      <div className={`flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-4 py-10 sm:px-8 ${step === 1 ? 'pb-36 md:pb-10' : ''}`}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -395,11 +503,15 @@ export default function OnboardingPage() {
           <AuthFormCard>
             <div className="h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
             <h2 className="mt-5 font-display text-[1.75rem] font-bold leading-tight text-cream-900">
-              {step === 0 ? 'Hesabınızı oluşturun' : 'Planınızı seçin'}
+              {step === 0
+                ? (isOAuthFlow ? 'Son bir adım kaldı' : 'Hesabınızı oluşturun')
+                : 'Planınızı seçin'}
             </h2>
             <p className="mt-2 text-base leading-relaxed text-cream-800/65">
               {step === 0
-                ? 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.'
+                ? (isOAuthFlow
+                  ? 'Google, Apple veya Facebook ile bağlandınız. Randevu hatırlatmaları için telefon numaranızı girin.'
+                  : 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.')
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
 
@@ -416,12 +528,30 @@ export default function OnboardingPage() {
                       {showErrors && !canNext() && (
                         <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
                           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
-                          <p className="text-base text-red-700">Lütfen tüm alanları eksiksiz ve doğru doldurun.</p>
+                          <p className="text-base text-red-700">
+                            {isOAuthFlow
+                              ? 'Lütfen ad soyad ve telefon numaranızı kontrol edin; koşulları kabul ettiğinizden emin olun.'
+                              : 'Lütfen tüm alanları eksiksiz ve doğru doldurun.'}
+                          </p>
                         </div>
                       )}
 
+                      {isOAuthFlow && (user?.email || authUser?.email) && (
+                        <div className="rounded-2xl border border-sage-200 bg-sage-50/80 px-4 py-3 text-sm text-sage-900">
+                          <span className="font-semibold">Bağlı hesap:</span>{' '}
+                          {user?.email || authUser?.email}
+                        </div>
+                      )}
+
+                      {!isOAuthFlow && (
+                        <SocialAuthButtons flow="signup" plan={data.membership} remember />
+                      )}
+
                       <FormField large emphasis label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
-                      <FormField large emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} onBlur={() => update({ email: sanitizeEmailInput(data.email) })} error={errors.email} />
+
+                      {!isOAuthFlow && (
+                        <FormField large emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} onBlur={() => update({ email: sanitizeEmailInput(data.email) })} error={errors.email} />
+                      )}
 
                       <PhoneField
                         large
@@ -431,8 +561,11 @@ export default function OnboardingPage() {
                         onCountryChange={(iso) => update({ phoneCountry: iso, phone: '' })}
                         onValueChange={(phone) => update({ phone })}
                         error={errors.phone}
+                        hint="Randevu ve hatırlatma mesajları bu numaraya gönderilir."
                       />
 
+                      {!isOAuthFlow && (
+                      <>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
@@ -482,26 +615,31 @@ export default function OnboardingPage() {
                         </ul>
                       )}
                       {errors.confirmPassword && <p className="text-xs text-red-600">{errors.confirmPassword}</p>}
+                      </>
+                      )}
                     </div>
                   )}
 
                   {step === 1 && (
-                    <div className="space-y-4">
+                    <div className="max-h-[min(72vh,600px)] space-y-5 overflow-y-auto overscroll-contain scroll-smooth snap-y snap-proximity pb-12 pr-1 [-ms-overflow-style:none] [scrollbar-width:thin]">
                       {displayPlans.map((m, idx) => (
-                        <MembershipPlanCard
-                          key={m.id}
-                          plan={m}
-                          index={idx}
-                          selected={data.membership === m.id}
-                          onSelect={(id) => update({ membership: id })}
-                          compact
-                        />
+                        <div key={m.id} className="snap-center shrink-0 scroll-mt-2">
+                          <MembershipPlanCard
+                            plan={m}
+                            index={idx}
+                            selected={data.membership === m.id}
+                            onSelect={handlePlanSelect}
+                            compact
+                          />
+                        </div>
                       ))}
-                      <MembershipDurationPicker
-                        planId={data.membership}
-                        value={durationMonths}
-                        onChange={setDurationMonths}
-                      />
+                      <div className="snap-end shrink-0 pb-2 pt-1">
+                        <MembershipDurationPicker
+                          planId={data.membership}
+                          value={durationMonths}
+                          onChange={handleDurationChange}
+                        />
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -517,7 +655,17 @@ export default function OnboardingPage() {
               />
             )}
 
-            <div className="mt-4 flex items-center gap-3">
+            {step === 1 && <div className="mt-6 shrink-0 md:mt-8" aria-hidden />}
+
+            <div
+              ref={submitBtnRef}
+              className={
+                step === 1
+                  ? 'fixed inset-x-0 bottom-0 z-40 border-t border-cream-200/80 bg-white/95 px-4 pb-4 pt-5 shadow-[0_-8px_30px_rgba(26,35,50,0.08)] backdrop-blur-md md:relative md:inset-auto md:mt-8 md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0 md:shadow-none'
+                  : 'mt-4'
+              }
+            >
+            <div className="mx-auto flex max-w-[440px] items-center gap-3">
               {step > 0 && (
                 <button type="button" onClick={back} className="flex items-center gap-1.5 rounded-2xl border border-cream-200 px-4 py-4 text-base font-semibold text-cream-800 transition hover:bg-cream-50">
                   <ArrowLeft className="h-5 w-5" /> Geri
@@ -527,16 +675,47 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={next}
                 disabled={submitting}
+                animate={
+                  step === 1 && submitHighlight
+                    ? {
+                      boxShadow: [
+                        '0 10px 40px rgba(74, 138, 173, 0.35)',
+                        '0 10px 50px rgba(95, 146, 112, 0.55)',
+                        '0 10px 40px rgba(74, 138, 173, 0.35)',
+                      ],
+                      scale: [1, 1.02, 1],
+                    }
+                    : { boxShadow: '0 10px 25px rgba(74, 138, 173, 0.25)', scale: 1 }
+                }
+                transition={
+                  step === 1 && submitHighlight
+                    ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }
+                    : { duration: 0.3 }
+                }
                 whileHover={{ scale: submitting ? 1 : 1.01 }}
                 whileTap={{ scale: submitting ? 1 : 0.99 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-4 text-base font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
+                className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-base font-semibold text-white transition hover:brightness-105 disabled:opacity-60 ${
+                  step === 1 && submitHighlight
+                    ? 'bg-gradient-to-r from-brand-500 via-sage-500 to-brand-500 ring-4 ring-brand-300/60 ring-offset-2'
+                    : 'bg-gradient-to-r from-brand-500 to-sage-500 shadow-lg shadow-brand-500/25'
+                }`}
               >
                 {submitting && <Loader2 className="h-5 w-5 animate-spin" />}
                 {step === 1
-                  ? (submitting ? 'Kaydediliyor…' : isPaid ? 'Ödemeye Geç' : 'Ücretsiz Kayıt Ol')
+                  ? (submitting
+                    ? 'Kaydediliyor…'
+                    : isPaid
+                      ? `${selectedPlan?.name} · Ödemeye Geç`
+                      : 'Ücretsiz Kayıt Ol')
                   : 'Devam Et'}
                 {!submitting && <ArrowRight className="h-5 w-5" />}
               </motion.button>
+            </div>
+            {step === 1 && submitHighlight && (
+              <p className="mx-auto mt-2 max-w-[440px] text-center text-xs font-medium text-brand-600">
+                {selectedPlan?.name} seçildi — kaydı tamamlamak için butona basın
+              </p>
+            )}
             </div>
 
           <p className="mt-6 text-center text-base text-cream-800/60">
@@ -553,6 +732,12 @@ export default function OnboardingPage() {
       <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
         <PaymentForm amount={selectedPrice} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaidPayment} />
       </Modal>
+
+      <FormErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ open: false, message: '' })}
+      />
 
       <WelcomeSuccessModal
         open={welcomeOpen}

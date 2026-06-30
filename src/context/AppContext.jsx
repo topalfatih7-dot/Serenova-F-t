@@ -426,6 +426,12 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
+  const completeOAuthMember = useCallback(async (profile, membership, packageConfig, opts = {}) => {
+    const r = await sb.completeOAuthMember(profile, membership, packageConfig, opts)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const savePlan = useCallback(async (plan) => {
     await sb.upsertPlan(plan)
     await reloadRemote()
@@ -807,6 +813,7 @@ export function AppProvider({ children }) {
     login,
     logout,
     register,
+    completeOAuthMember,
     registerWithPayment,
     registerWithPlan,
     savePlan,

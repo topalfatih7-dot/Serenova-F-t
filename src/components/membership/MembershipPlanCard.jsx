@@ -44,7 +44,7 @@ export default function MembershipPlanCard({
           : isRecommended
             ? 'border-amber-200/80 shadow-md shadow-amber-100/40 hover:shadow-lg'
             : 'border-cream-200/80 hover:border-sage-200 hover:shadow-md'
-      } ${compact ? '' : 'min-h-[22rem]'}`}
+      } ${compact ? 'min-h-[17.5rem]' : 'min-h-[22rem]'}`}
     >
       {isRecommended && (
         <motion.span
