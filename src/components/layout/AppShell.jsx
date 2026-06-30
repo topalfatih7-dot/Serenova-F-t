@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet, MessageCircle,
+  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet, MessageCircle, Stethoscope,
 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -25,8 +25,9 @@ const memberNav = [
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
   { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
+  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç' },
   { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen' },
+  { to: '/schedule/doctor', icon: Stethoscope, label: 'Doktor' },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
   { to: '/library', icon: Library, label: 'Kütüphane' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
