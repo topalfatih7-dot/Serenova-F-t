@@ -131,7 +131,7 @@ export default function AuthCallbackPage() {
         const flow = searchParams.get('flow')
         const plan = searchParams.get('plan') || 'free'
         const member = getCurrentMember(db)
-        const needsProfile = memberNeedsProfileCompletion(member)
+        const needsProfile = memberNeedsProfileCompletion(member, db?.authUser)
 
         if (needsProfile) {
           navigate(`/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`, { replace: true })

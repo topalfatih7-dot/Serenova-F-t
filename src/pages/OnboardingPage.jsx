@@ -29,7 +29,7 @@ import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
-import { memberNeedsProfileCompletion, displayNameFromAuthUser } from '../utils/memberProfile'
+import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser } from '../utils/memberProfile'
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 const BENEFITS = [
@@ -189,7 +189,9 @@ export default function OnboardingPage() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff
-  const isOAuthFlow = searchParams.get('oauth') === '1' || (isExistingMember && memberNeedsProfileCompletion(user))
+  const isOAuthFlow = isSocialAuthUser(authUser) && (
+    searchParams.get('oauth') === '1' || (isExistingMember && memberNeedsProfileCompletion(user, authUser))
+  )
   const oauthPrefilledRef = useRef(false)
 
   useEffect(() => {

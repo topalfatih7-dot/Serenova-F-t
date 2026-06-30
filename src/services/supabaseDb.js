@@ -292,6 +292,8 @@ export async function hydrate() {
     id: user.id,
     email: (user.email || '').toLowerCase(),
     name: displayNameFromAuthUser(user),
+    identities: user.identities || [],
+    app_metadata: user.app_metadata || {},
   }
 
   const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
