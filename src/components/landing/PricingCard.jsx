@@ -16,7 +16,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
   const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_COLLAPSED)
   const hiddenCount = features.length - VISIBLE_COLLAPSED
   const daily = dailyPrice(plan.price)
-  const isFeatured = featured || plan.id === 'kurucu'
+  const isFeatured = featured || plan.id === 'vip'
 
   return (
     // Hover animasyonu CSS (.plans-pricing-card) — Framer spring kaldırıldı
@@ -33,7 +33,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
 
       {badge && (
         <span className={`absolute -top-0 left-1/2 z-10 -translate-x-1/2 translate-y-3 whitespace-nowrap rounded-full px-4 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-lg ${
-          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-brand-500 to-sage-500'
+          plan.id === 'vip' ? 'bg-gradient-to-r from-brand-500 to-violet-500' : 'bg-gradient-to-r from-brand-500 to-sage-500'
         }`}>
           {badge}
         </span>
@@ -46,8 +46,8 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
           {planIcon(plan.id, 'h-7 w-7')}
         </span>
         <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
-        {plan.id === 'kurucu' && (
-          <p className="mt-1 text-xs font-medium text-amber-700/90">Sınırlı kontenjan — erken kayıt avantajı</p>
+        {plan.id === 'doktor' && (
+          <p className="mt-1 text-xs font-medium text-teal-700/90">Uzman doktor ile online sağlık danışmanlığı</p>
         )}
       </div>
 

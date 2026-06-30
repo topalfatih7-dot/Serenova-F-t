@@ -20,7 +20,7 @@ export default function VideoJoinLink({
   const path = audience === 'staff'
     ? staffCallPath(sessionType, session.id)
     : memberCallPath(sessionType, session.id)
-  const meta = SESSION_TYPE_META[sessionType === 'dietitian' ? 'dietitian' : 'coach']
+  const meta = SESSION_TYPE_META[sessionType] || SESSION_TYPE_META.coach
   const sizeClass = size === 'sm'
     ? 'px-3 py-1.5 text-xs'
     : 'px-4 py-2.5 text-sm'

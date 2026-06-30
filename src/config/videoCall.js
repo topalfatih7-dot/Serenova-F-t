@@ -87,4 +87,15 @@ export const SESSION_TYPE_META = {
     ring: 'ring-sage-200',
     btn: 'bg-sage-500 hover:bg-sage-600',
   },
+  doctor: {
+    label: 'Doktor Görüşmesi',
+    roleLabel: 'Doktor',
+    memberLabel: 'Danışan',
+    accent: 'amber',
+    gradient: 'from-amber-600 to-orange-800',
+    lightBg: 'bg-amber-50',
+    text: 'text-amber-700',
+    ring: 'ring-amber-200',
+    btn: 'bg-amber-500 hover:bg-amber-600',
+  },
 }

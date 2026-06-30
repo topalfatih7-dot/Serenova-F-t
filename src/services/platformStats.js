@@ -41,7 +41,7 @@ const PLAN_COLORS = {
   eko: '#5f9270',
   diyet: '#059669',
   spor: '#2563eb',
-  kurucu: '#d97706',
+  doktor: '#d97706',
   vip: '#4a8aad',
   gumus: '#64748b',
   altin: '#d97706',
@@ -92,7 +92,7 @@ export function computeAdminStats(db) {
 
 export function computeMembershipBreakdown(db) {
   const members = db.members
-  const planIds = ['eko', 'diyet', 'spor', 'kurucu', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'diyet', 'spor', 'kurucu', 'vip'].includes(id))]
+  const planIds = ['eko', 'diyet', 'spor', 'doktor', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'diyet', 'spor', 'doktor', 'vip'].includes(id))]
   const breakdown = []
 
   planIds.forEach((planId) => {

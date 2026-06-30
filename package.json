@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test:ai": "node scripts/test-ai.mjs",
     "og:image": "node scripts/generate-og-image.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migrate": "node scripts/db-migrate.mjs"
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.91.0",

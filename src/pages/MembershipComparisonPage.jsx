@@ -9,16 +9,17 @@ import MembershipReassurance from '../components/membership/MembershipReassuranc
 import { getPlanTheme, planIcon } from '../components/membership/planTheme'
 
 const comparisonRows = [
-  { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, eko: false, diyet: true, spor: true, kurucu: true, vip: true },
-  { feature: 'Manuel Kalori Hesaplama', free: false, eko: true, diyet: true, spor: true, kurucu: true, vip: true },
-  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko: false, diyet: true, spor: true, kurucu: true, vip: true },
-  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko: false, diyet: '2', spor: false, kurucu: '2', vip: '2' },
-  { feature: 'Koç Görüşmesi / Ay', free: false, eko: false, diyet: false, spor: '2', kurucu: '2', vip: '2' },
-  { feature: 'Diyet Programı', free: 'Otomatik', eko: 'Ayda 2', diyet: 'Özel', spor: false, kurucu: 'Özel', vip: 'Özel' },
-  { feature: 'Spor Programı', free: 'Otomatik', eko: 'Ayda 1', diyet: false, spor: 'Özel', kurucu: 'Özel', vip: 'Özel' },
-  { feature: 'Video Kütüphanesi', free: 'Temel', eko: 'Sınırlı', diyet: false, spor: 'Sınırsız', kurucu: 'Sınırsız', vip: 'Sınırsız' },
-  { feature: 'İlerleme Raporları', free: 'Temel', eko: true, diyet: 'Sınırsız', spor: 'Sınırsız', kurucu: 'Sınırsız', vip: 'Sınırsız' },
-  { feature: 'Destek', free: 'Standart', eko: 'Standart', diyet: 'Sınırsız', spor: 'Sınırsız', kurucu: 'Öncelikli', vip: 'Sınırsız' },
+  { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, eko: false, diyet: true, spor: true, vip: true, doktor: false },
+  { feature: 'Manuel Kalori Hesaplama', free: false, eko: true, diyet: true, spor: true, vip: true, doktor: false },
+  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko: false, diyet: true, spor: true, vip: true, doktor: false },
+  { feature: 'Online Doktor Seansı', free: false, eko: false, diyet: false, spor: false, vip: false, doktor: true },
+  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko: false, diyet: '2', spor: false, vip: '2', doktor: false },
+  { feature: 'Koç Görüşmesi / Ay', free: false, eko: false, diyet: false, spor: '2', vip: '2', doktor: false },
+  { feature: 'Diyet Programı', free: 'Otomatik', eko: 'Ayda 2', diyet: 'Özel', spor: false, vip: 'Özel', doktor: false },
+  { feature: 'Spor Programı', free: 'Otomatik', eko: 'Ayda 1', diyet: false, spor: 'Özel', vip: 'Özel', doktor: false },
+  { feature: 'Video Kütüphanesi', free: 'Temel', eko: 'Sınırlı', diyet: false, spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
+  { feature: 'İlerleme Raporları', free: 'Temel', eko: true, diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
+  { feature: 'Destek', free: 'Standart', eko: 'Standart', diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
 ]
 
 const HOW_IT_WORKS = [

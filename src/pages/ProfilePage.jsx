@@ -20,7 +20,7 @@ import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 import VideoJoinLink from '../components/video/VideoJoinLink'
 
-import { getPlanLabel } from '../data/membershipPlans'
+import { getPlanLabel, packageIncludesDoctor } from '../data/membershipPlans'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -30,13 +30,14 @@ const fadeUp = {
 export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
-    coachSessions, dietitianSessions, updateProfile, updateSettings, logout,
+    coachSessions, dietitianSessions, doctorSessions, updateProfile, updateSettings, logout,
     createProgram, exercises, refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
+  const assignedDoctor = (staff || []).find((s) => s.id === user.assignedDoctorId)
   const { toast } = useToast()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -69,9 +70,10 @@ export default function ProfilePage() {
 
   const hasSupport =
     (Number(packageConfig?.coachMeetingsPerMonth) || Number(packageConfig?.coachMeetingsPerWeek) || 0) > 0 ||
-    (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0
+    (Number(packageConfig?.dietitianMeetingsPerMonth) || 0) > 0 ||
+    packageIncludesDoctor(packageConfig)
 
-  const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || [])]
+  const upcomingSessions = [...(coachSessions || []), ...(dietitianSessions || []), ...(doctorSessions || [])]
     .filter((s) => s.status === 'scheduled' && new Date(s.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 3)
@@ -79,7 +81,7 @@ export default function ProfilePage() {
   const expertCards = [
     { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule/coach', iconClass: 'text-brand-500' },
     { icon: Apple, label: 'Diyetisyen', name: assignedDietitian?.name, to: '/schedule/dietitian', iconClass: 'text-sage-500' },
-    { icon: Stethoscope, label: 'Doktor', name: null, to: '/team/doctors', iconClass: 'text-cream-700' },
+    { icon: Stethoscope, label: 'Doktor', name: assignedDoctor?.name, to: '/schedule/doctor', iconClass: 'text-teal-600' },
   ]
 
   const handleSave = () => {
@@ -315,6 +317,11 @@ export default function ProfilePage() {
                     <Apple className="h-4 w-4 text-sage-500" /> Ayda {packageConfig.dietitianMeetingsPerMonth} diyetisyen görüşmesi
                   </li>
                 )}
+                {packageIncludesDoctor(packageConfig) && (
+                  <li className="flex items-center gap-2 rounded-xl bg-violet-50/80 px-3 py-2 text-sm text-cream-800">
+                    <Stethoscope className="h-4 w-4 text-teal-600" /> Ayda {packageConfig.doctorMeetingsPerMonth} doktor görüşmesi
+                  </li>
+                )}
               </ul>
             )}
             <p className="mt-4 text-xs text-cream-800/50">
@@ -355,7 +362,7 @@ export default function ProfilePage() {
         <ProfileSectionCard
           icon={CalendarClock}
           title="Uzmanlarım"
-          subtitle="Koç ve diyetisyen randevularınız"
+          subtitle="Koç, diyetisyen ve doktor randevularınız"
           accent="sage"
           delay={0.25}
           action={(
@@ -387,13 +394,29 @@ export default function ProfilePage() {
                 <Link to="/schedule/dietitian" className="shrink-0 text-sage-600"><ChevronRight className="h-5 w-5" /></Link>
               </div>
             )}
+            {packageIncludesDoctor(packageConfig) && (
+              <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                  <Stethoscope className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-cream-900">{assignedDoctor?.name || 'Atanmadı'}</p>
+                  <p className="text-xs text-cream-800/55">Doktor · Ayda {packageConfig.doctorMeetingsPerMonth} görüşme</p>
+                </div>
+                <Link to="/schedule/doctor" className="shrink-0 text-teal-700"><ChevronRight className="h-5 w-5" /></Link>
+              </div>
+            )}
           </div>
           {upcomingSessions.length > 0 && (
             <div className="mt-4 border-t border-cream-100 pt-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/45">Yaklaşan</p>
               <div className="space-y-2">
                 {upcomingSessions.map((s) => {
-                  const sessionType = coachSessions?.some((cs) => cs.id === s.id) ? 'coach' : 'dietitian'
+                  const sessionType = coachSessions?.some((cs) => cs.id === s.id)
+                    ? 'coach'
+                    : doctorSessions?.some((ds) => ds.id === s.id)
+                      ? 'doctor'
+                      : 'dietitian'
                   return (
                     <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 px-3 py-2.5 text-sm">
                       <span className="font-medium text-cream-900">{s.title}</span>

@@ -792,11 +792,11 @@ insert into public.plans (id, name, price, period, is_active, badge, features, l
  '["Ayda 2 koç görüşmesi","Kişisel spor programı"]'::jsonb,
  '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
  'blue', 3),
-('kurucu', '100 Kurucu Üye', 3499, 'Aylık', true, 'Kurucu',
- '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Kurucu Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Kurucu Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Ömür Boyu %20 İndirim Garantisi","included":true},{"text":"Ömür Boyu Öncelikli Destek","included":true},{"text":"Kurucu Üye Rozeti","included":true}]'::jsonb,
- '["Ayda 2 koç + 2 diyetisyen","Ömür boyu avantajlar"]'::jsonb,
- '[{"months":1,"label":"Aylık","price":3499,"compareAt":4999},{"months":3,"label":"3 Aylık","price":6999,"compareAt":12999},{"months":6,"label":"6 Aylık","price":10999,"compareAt":19999}]'::jsonb,
- 'gold', 4),
+('doktor', 'Doktor Paketi', 2500, 'Aylık', true, null,
+ '[{"text":"Online Doktor Seansı","included":true}]'::jsonb,
+ '["Online doktor görüşmesi"]'::jsonb,
+ '[{"months":1,"label":"Aylık","price":2500},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
+ 'teal', 4),
 ('vip', 'Vip Paket', 4999, 'Aylık', true, 'VIP',
  '[{"text":"Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Vip Üye Rozeti","included":true}]'::jsonb,
  '["Ayda 2 koç + 2 diyetisyen","Sınırsız destek"]'::jsonb,
@@ -816,7 +816,7 @@ on conflict (id) do update set
   updated_at = now();
 
 -- Eski planları pasif tut (geriye dönük üyeler korunur)
-update public.plans set is_active = false where id in ('gumus', 'altin', 'platinum');
+update public.plans set is_active = false where id in ('gumus', 'altin', 'platinum', 'kurucu');
 
 -- ---------------------------------------------------------------------
 -- 9) ONAYLI ADMIN KULLANICISI

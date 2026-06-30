@@ -648,16 +648,22 @@ export function AppProvider({ children }) {
     await patchCurrentRemote({ notifications })
   }, [currentMember, patchCurrentRemote])
 
+  const sessionKey = (type) => {
+    if (type === 'coach') return 'coachSessions'
+    if (type === 'doctor') return 'doctorSessions'
+    return 'dietitianSessions'
+  }
+
   const rescheduleSession = useCallback(async (id, type, newDate) => {
     if (!currentMember) return
-    const key = type === 'coach' ? 'coachSessions' : 'dietitianSessions'
+    const key = sessionKey(type)
     const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, date: newDate, status: 'rescheduled' } : s))
     await patchCurrentRemote({ [key]: sessions })
   }, [currentMember, patchCurrentRemote])
 
   const cancelSession = useCallback(async (id, type) => {
     if (!currentMember) return
-    const key = type === 'coach' ? 'coachSessions' : 'dietitianSessions'
+    const key = sessionKey(type)
     const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, status: 'cancelled' } : s))
     await patchCurrentRemote({ [key]: sessions })
   }, [currentMember, patchCurrentRemote])
@@ -767,6 +773,7 @@ export function AppProvider({ children }) {
     supportSchedule: currentMember?.supportSchedule || null,
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
+    doctorSessions: currentMember?.doctorSessions || [],
     notifications: currentMember?.notifications || [],
     chatThreads,
     chatMessages,

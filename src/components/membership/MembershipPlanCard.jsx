@@ -60,9 +60,9 @@ export default function MembershipPlanCard({
 
       {planBadge && (
         <span className={`absolute left-1/2 top-3 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md ${
-          plan.id === 'kurucu' ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-cream-900/90'
+          plan.id === 'doktor' ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-cream-900/90'
         }`}>
-          {plan.id === 'kurucu' && <Sparkles className="mr-1 inline h-2.5 w-2.5" />}
+          {plan.id === 'doktor' && <Sparkles className="mr-1 inline h-2.5 w-2.5" />}
           {planBadge}
         </span>
       )}

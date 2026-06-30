@@ -21,14 +21,15 @@ function defaultPackageForPlan(planId, durationMonths = 1) {
     eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
     diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
     spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
-    kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+    doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 2 },
+    kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
     vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
     gumus: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
     altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
     platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
     premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
   }
-  const base = configs[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 }
+  const base = configs[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 }
   return {
     coachMeetingsPerWeek: 0,
     addOns: [],
@@ -55,15 +56,22 @@ function packageIncludesDietitian(pkg = {}) {
   return (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
 }
 
+function packageIncludesDoctor(pkg = {}) {
+  return (Number(pkg.doctorMeetingsPerMonth) || 0) > 0
+}
+
 function sanitizeStaffForPackage(packageConfig, data = {}) {
   const includeCoach = packageIncludesCoach(packageConfig)
   const includeDiet = packageIncludesDietitian(packageConfig)
+  const includeDoctor = packageIncludesDoctor(packageConfig)
   return {
     ...data,
     assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
     assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
+    assignedDoctorId: includeDoctor ? (data.assignedDoctorId ?? null) : null,
     coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
     dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
+    doctorSessions: includeDoctor ? (data.doctorSessions ?? []) : [],
   }
 }
 

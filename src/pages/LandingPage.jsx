@@ -264,7 +264,7 @@ export default function LandingPage() {
               >
                 <PricingCard
                   plan={plan}
-                  featured={plan.id === 'kurucu'}
+                  featured={plan.id === 'vip'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />
@@ -282,7 +282,7 @@ export default function LandingPage() {
                 <div className="h-full w-full">
                 <PricingCard
                   plan={plan}
-                  featured={plan.id === 'kurucu'}
+                  featured={plan.id === 'vip'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
                   ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
                 />

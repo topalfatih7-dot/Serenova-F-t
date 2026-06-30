@@ -1,10 +1,11 @@
-import { Leaf, Sparkles, Dumbbell, Crown, Award, Star } from 'lucide-react'
+import { Leaf, Sparkles, Dumbbell, Crown, Award, Star, Stethoscope } from 'lucide-react'
 
 export function planIcon(id, className = 'h-5 w-5') {
   const props = { className }
   if (id === 'free' || id === 'eko') return <Leaf {...props} />
   if (id === 'diyet') return <Sparkles {...props} />
   if (id === 'spor') return <Dumbbell {...props} />
+  if (id === 'doktor') return <Stethoscope {...props} />
   if (id === 'kurucu' || id === 'altin') return <Crown {...props} />
   if (id === 'vip' || id === 'platinum') return <Award {...props} />
   if (id === 'gumus') return <Star {...props} />
@@ -55,6 +56,17 @@ export const PLAN_THEME = {
     btn: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white',
     btnIdle: 'bg-sky-50 text-sky-800',
     label: 'text-sky-700',
+  },
+  doktor: {
+    accent: 'from-teal-400 via-cyan-500 to-brand-600',
+    glow: 'shadow-teal-200/45',
+    ring: 'border-teal-300 ring-teal-100',
+    icon: 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white',
+    iconIdle: 'bg-teal-50 text-teal-700',
+    chip: 'bg-teal-50 text-teal-800 ring-teal-100',
+    btn: 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white',
+    btnIdle: 'bg-teal-50 text-teal-800',
+    label: 'text-teal-700',
   },
   kurucu: {
     accent: 'from-amber-300 via-orange-400 to-rose-400',

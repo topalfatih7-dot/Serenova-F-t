@@ -475,8 +475,10 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   const schedule = profile.supportSchedule || null
   const assignedCoachId = null
   const assignedDietitianId = null
+  const assignedDoctorId = null
   const coachSessions = []
   const dietitianSessions = []
+  const doctorSessions = []
 
   // Koç/diyetisyen ve randevular admin panelinden elle atanır
 
@@ -509,6 +511,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     lastActiveAt: today(),
     coachSessions,
     dietitianSessions,
+    doctorSessions,
     notifications: [{
       id: `n-${Date.now()}`, type: 'reminder', title: 'Yeni Form’a hoş geldiniz!',
       message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
@@ -523,6 +526,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     availability: profile.availability || {},
     assignedCoachId,
     assignedDietitianId,
+    assignedDoctorId,
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
     emailVerifiedAt: null,
     phoneVerifiedAt: null,

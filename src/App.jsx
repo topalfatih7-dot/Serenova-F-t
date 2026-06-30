@@ -23,6 +23,7 @@ const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparison
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CoachSchedulePage = lazy(() => import('./pages/CoachSchedulePage'))
 const DietitianSchedulePage = lazy(() => import('./pages/DietitianSchedulePage'))
+const DoctorSchedulePage = lazy(() => import('./pages/DoctorSchedulePage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SupportPage = lazy(() => import('./pages/SupportPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -124,6 +125,7 @@ export default function App() {
                 <Route path="calorie" element={<CalorieCalculatorPage />} />
                 <Route path="schedule/coach" element={<CoachSchedulePage />} />
                 <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
+                <Route path="schedule/doctor" element={<DoctorSchedulePage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="messages" element={<MessagesPage />} />
                 <Route path="messages/:role" element={<MessagesPage />} />

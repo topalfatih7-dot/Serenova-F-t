@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Check, X, Edit3, Save, Plus, Trash2, Crown, Sparkles, Star, Award,
+  Check, X, Edit3, Save, Plus, Trash2, Crown, Sparkles, Star, Award, Stethoscope,
   Package, ChevronDown, ChevronUp, DollarSign, Tag, ToggleLeft, ToggleRight, Leaf, Dumbbell,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
@@ -19,6 +19,7 @@ function planIcon(id) {
   if (id === 'eko')      return <Leaf className="h-5 w-5 text-sage-500" />
   if (id === 'diyet')    return <Sparkles className="h-5 w-5 text-emerald-500" />
   if (id === 'spor')     return <Dumbbell className="h-5 w-5 text-blue-500" />
+  if (id === 'doktor')   return <Stethoscope className="h-5 w-5 text-teal-600" />
   if (id === 'kurucu')   return <Crown className="h-5 w-5 text-amber-500" />
   if (id === 'vip')      return <Award className="h-5 w-5 text-brand-500" />
   if (id === 'gumus')    return <Star className="h-5 w-5 text-slate-400" />

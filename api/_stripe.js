@@ -26,7 +26,7 @@ export const PLAN_FALLBACK = {
   eko: { name: 'Eko Paket', price: 1299, durationMonths: 1 },
   diyet: { name: 'Diyet Paketi', price: 2499, durationMonths: 1 },
   spor: { name: 'Spor Paketi', price: 2499, durationMonths: 1 },
-  kurucu: { name: '100 Kurucu Üye', price: 3499, durationMonths: 1 },
+  doktor: { name: 'Doktor Paketi', price: 2500, durationMonths: 1 },
   vip: { name: 'Vip Paket', price: 4999, durationMonths: 1 },
   // geriye dönük
   gumus: { name: 'Gümüş Üyelik', price: 999, durationMonths: 1 },
@@ -39,7 +39,7 @@ export const TIER_PRICES = {
   eko: { 1: 1299, 3: 2999, 6: 3999 },
   diyet: { 1: 2499, 3: 6499, 6: 9999 },
   spor: { 1: 2499, 3: 6499, 6: 9999 },
-  kurucu: { 1: 3499, 3: 6999, 6: 10999 },
+  doktor: { 1: 2500, 3: 6499, 6: 9999 },
   vip: { 1: 4999, 3: 12999, 6: 19999 },
 }
 

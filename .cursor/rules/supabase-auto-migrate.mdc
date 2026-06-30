@@ -1,0 +1,16 @@
+---
+description: Supabase migration ve plan değişikliklerinde otomatik DB senkronu
+alwaysApply: true
+---
+
+# Supabase — otomatik veritabanı senkronu
+
+`supabase/migrations/*.sql`, `membershipPlans.js` paket tanımları veya `setup.sql` plan bölümü değiştiğinde:
+
+1. **Kullanıcıya SQL çalıştırmasını söyleme** — `npm run db:migrate` komutunu kendin çalıştır.
+2. Migration script: `scripts/db-migrate.mjs` (service role, `.env.local`).
+3. Gerekirse `scripts/db-migrate.mjs` içindeki `ACTIVE_PLANS` ile `membershipPlans.js` uyumlu tut.
+4. Komut sonrası çıktıyı doğrula; hata varsa düzelt ve tekrar çalıştır.
+5. Opsiyonel ham SQL için `.env.local` içine `DATABASE_URL` veya `SUPABASE_DB_URL` eklenebilir.
+
+Sıra: Basic(0) → Eko(1) → Diyet(2) → Spor(3) → Doktor(4) → Vip(5).

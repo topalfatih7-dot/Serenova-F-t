@@ -138,16 +138,16 @@ export const PAGE_SEO = {
       'online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness',
   },
   '/membership': {
-    title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Kurucu & VIP',
+    title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Doktor & VIP',
     description:
-      'Basic (ücretsiz), Eko, Diyet, Spor, 100 Kurucu Üye ve VIP paketlerini karşılaştırın. Koç ve diyetisyen görüşmeleri, kalori hesaplama, video kütüphanesi ve kişisel programlar.',
+      'Basic (ücretsiz), Eko, Diyet, Spor, Doktor Paketi ve VIP paketlerini karşılaştırın. Koç, diyetisyen ve doktor görüşmeleri, kalori hesaplama, video kütüphanesi ve kişisel programlar.',
     keywords:
-      'üyelik planları, eko paket, diyet paketi, spor paketi, kurucu üye, vip paket, online koçluk fiyat, Yeni Form üyelik',
+      'üyelik planları, eko paket, diyet paketi, spor paketi, doktor paketi, vip paket, online koçluk fiyat, Yeni Form üyelik',
   },
   '/onboarding': {
     title: 'Kayıt Ol — Ücretsiz Hesap Oluştur',
     description:
-      'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya Eko, Diyet, Spor, Kurucu ve VIP planlarıyla kişisel wellness yolculuğunuza başlayın.',
+      'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya Eko, Diyet, Spor, Doktor Paketi ve VIP planlarıyla kişisel wellness yolculuğunuza başlayın.',
     keywords: 'kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik, eko paket kayıt',
   },
   '/login': {
