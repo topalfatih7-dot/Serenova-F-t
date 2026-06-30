@@ -223,62 +223,62 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {quickLinks.map((item, i) => (
-          <motion.div key={item.to} variants={fadeUp} initial="hidden" animate="show" custom={i}>
-            <Link
-              to={item.to}
-              className="group flex flex-col gap-2 rounded-2xl border border-white/80 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
+      {/* Vücut metrikleri — tam genişlik */}
+      <ProfileSectionCard
+        icon={Activity}
+        title="Sağlık Özeti"
+        subtitle="Vücut ölçülerinizi takip edin"
+        accent="amber"
+        delay={0.1}
+        action={(
+          <button
+            type="button"
+            onClick={openHealthEdit}
+            className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-amber-500/25 transition hover:brightness-105 sm:text-sm"
+          >
+            Ölçüleri Güncelle
+          </button>
+        )}
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {bodyMetrics.map((m, i) => (
+            <motion.div
+              key={m.label}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15 + i * 0.05 }}
+              className="rounded-2xl border border-amber-100/80 bg-white/80 p-3 text-center shadow-sm"
             >
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white shadow-sm transition group-hover:scale-105`}>
-                <item.icon className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-cream-900">{item.label}</p>
-                <p className="text-xs text-cream-800/50">{item.sub}</p>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+              <m.icon className="mx-auto h-4 w-4 text-amber-600" />
+              <p className="mt-2 font-display text-lg font-bold text-cream-900">{m.value}</p>
+              <p className="text-[11px] font-medium text-cream-800/50">{m.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </ProfileSectionCard>
 
       <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
-        {/* Sol: sağlık + kişisel */}
+        {/* Sol: hızlı erişim + kişisel */}
         <div className="space-y-5 lg:col-span-3">
-          {/* Vücut metrikleri */}
-          <ProfileSectionCard
-            icon={Activity}
-            title="Sağlık Özeti"
-            subtitle="Vücut ölçülerinizi takip edin"
-            accent="amber"
-            delay={0.1}
-            action={(
-              <button
-                type="button"
-                onClick={openHealthEdit}
-                className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-amber-500/25 transition hover:brightness-105 sm:text-sm"
-              >
-                Ölçüleri Güncelle
-              </button>
-            )}
-          >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {bodyMetrics.map((m, i) => (
-                <motion.div
-                  key={m.label}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.15 + i * 0.05 }}
-                  className="rounded-2xl border border-amber-100/80 bg-white/80 p-3 text-center shadow-sm"
+          {/* Hızlı erişim — 2x2 */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {quickLinks.map((item, i) => (
+              <motion.div key={item.to} variants={fadeUp} initial="hidden" animate="show" custom={i}>
+                <Link
+                  to={item.to}
+                  className="group flex h-full flex-col gap-2 rounded-2xl border border-white/80 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
                 >
-                  <m.icon className="mx-auto h-4 w-4 text-amber-600" />
-                  <p className="mt-2 font-display text-lg font-bold text-cream-900">{m.value}</p>
-                  <p className="text-[11px] font-medium text-cream-800/50">{m.label}</p>
-                </motion.div>
-              ))}
-            </div>
-          </ProfileSectionCard>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white shadow-sm transition group-hover:scale-105`}>
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-cream-900">{item.label}</p>
+                    <p className="text-xs text-cream-800/50">{item.sub}</p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
 
           {/* Kişisel bilgiler — tam profil */}
           <PersonalInfoSection user={user} />
