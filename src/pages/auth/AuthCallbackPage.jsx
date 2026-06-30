@@ -7,8 +7,7 @@ import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services
 import { BRAND } from '../../config/brand'
 import { getPostLoginPath, getCurrentMember } from '../../services/platformStats'
 import { establishAuthSessionFromUrl } from '../../services/authSessionFromUrl'
-import { recordSocialLogin } from '../../services/supabaseDb'
-import { memberNeedsProfileCompletion } from '../../utils/memberProfile'
+import { recordSocialLogin, resolveQuickPostLoginPath } from '../../services/supabaseDb'
 import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
@@ -125,24 +124,17 @@ export default function AuthCallbackPage() {
       }
 
       if (session?.user) {
-        const db = await refresh().catch(() => null)
-        if (!active) return
-
         const flow = searchParams.get('flow')
         const plan = searchParams.get('plan') || 'free'
-        const member = getCurrentMember(db)
-        const needsProfile = memberNeedsProfileCompletion(member, db?.authUser)
-
-        if (needsProfile) {
-          navigate(`/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`, { replace: true })
-          return
-        }
 
         if (flow === 'login' || flow === 'signup') {
-          await recordSocialLogin().catch(() => {})
+          recordSocialLogin().catch(() => {})
         }
 
-        navigate(getPostLoginPath(db), { replace: true })
+        const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/dashboard')
+        if (!active) return
+        navigate(dest, { replace: true })
+        refresh().catch(() => {})
         return
       }
 

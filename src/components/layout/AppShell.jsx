@@ -20,6 +20,7 @@ import { BRAND } from '../../config/brand'
 const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
 
 const memberNav = [
+  { to: '/profile', icon: Settings, label: 'Profil' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
@@ -31,7 +32,6 @@ const memberNav = [
   { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
   { to: '/support', icon: HelpCircle, label: 'Destek', supportBadge: true },
   { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
-  { to: '/profile', icon: Settings, label: 'Profil' },
 ]
 
 export default function AppShell() {

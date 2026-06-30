@@ -1,4 +1,5 @@
 import { createContext, useContext, useCallback, useState, useMemo, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import LoadingScreen from '../components/ui/LoadingScreen'
 import ConfigErrorScreen from '../components/ui/ConfigErrorScreen'
 import { isSupabaseEnabled, supabase } from '../services/supabaseClient'
@@ -21,6 +22,7 @@ import * as chatDb from '../services/chatDb'
 import * as adminChatDb from '../services/adminChatDb'
 import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads, staffClientsSignature, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
+import { isAuthFastPath } from '../utils/authPaths'
 
 const AppContext = createContext(null)
 
@@ -31,6 +33,8 @@ const EMPTY_DB = {
 }
 
 export function AppProvider({ children }) {
+  const location = useLocation()
+  const authFastPath = isAuthFastPath(location.pathname)
   const [remoteDb, setRemoteDb] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -873,12 +877,12 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={value}>
-      {loading ? (
+      {loading && !authFastPath ? (
         <LoadingScreen message="Veriler hazırlanıyor…" />
       ) : (
         <>
           {children}
-          {syncing && <LoadingScreen message="İşleniyor…" overlay />}
+          {syncing && !authFastPath && <LoadingScreen message="İşleniyor…" overlay />}
         </>
       )}
     </AppContext.Provider>

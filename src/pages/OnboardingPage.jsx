@@ -545,10 +545,6 @@ export default function OnboardingPage() {
                         </div>
                       )}
 
-                      {!isOAuthFlow && (
-                        <SocialAuthButtons flow="signup" plan={data.membership} remember />
-                      )}
-
                       <FormField large emphasis label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
 
                       {!isOAuthFlow && (
@@ -719,6 +715,12 @@ export default function OnboardingPage() {
               </p>
             )}
             </div>
+
+            {step === 0 && !isOAuthFlow && (
+              <div className="mt-6">
+                <SocialAuthButtons flow="signup" plan={data.membership} remember position="bottom" />
+              </div>
+            )}
 
           <p className="mt-6 text-center text-base text-cream-800/60">
             Zaten hesabınız var mı?{' '}

@@ -20,7 +20,7 @@ import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
-import { displayNameFromAuthUser } from '../utils/memberProfile'
+import { displayNameFromAuthUser, memberNeedsProfileCompletion } from '../utils/memberProfile'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -689,6 +689,30 @@ export async function completeOAuthMember(profile, membership = 'free', packageC
   }
 
   return buildAndPersistMember(mergedProfile, membership, packageConfig, opts)
+}
+
+/** OAuth callback — tam hydrate beklemeden yönlendirme rotası (3–4 hafif sorgu). */
+export async function resolveQuickPostLoginPath(session, { plan = 'free' } = {}) {
+  if (!session?.user) return '/login'
+  const user = session.user
+  const { data: memberRow } = await supabase.from('members').select('*').eq('id', user.id).maybeSingle()
+  const member = memberRow ? rowToMember(memberRow) : null
+  const authUser = {
+    id: user.id,
+    email: (user.email || '').toLowerCase(),
+    name: displayNameFromAuthUser(user),
+    identities: user.identities || [],
+    app_metadata: user.app_metadata || {},
+  }
+  if (memberNeedsProfileCompletion(member, authUser)) {
+    return `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`
+  }
+  const { data: staffRows } = await supabase.from('staff').select('*')
+  const staff = (staffRows || []).map(rowToStaff)
+  const role = roleForUser(user, staff)
+  if (role === 'admin') return '/admin'
+  if (role === 'staff') return '/staff'
+  return '/dashboard'
 }
 
 /** Sosyal giriş sonrası aktivite / bildirim kaydı (şifresiz). */

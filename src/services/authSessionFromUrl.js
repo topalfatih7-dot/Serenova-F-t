@@ -23,7 +23,7 @@ export function stripTokenHashFromUrl() { stripQueryKeys(['token_hash', 'type'])
  *   3. hash access_token  → setSession  (implicit — fallback)
  *   4. Bekle & dene       → localStorage'daki mevcut oturum
  */
-export async function establishAuthSessionFromUrl(supabase, { waitMs = 6000 } = {}) {
+export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = {}) {
   if (!supabase) return null
 
   const params    = new URLSearchParams(window.location.search)
@@ -38,14 +38,21 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 6000 } = 
     if (!error && data?.session) { stripTokenHashFromUrl(); return data.session }
   }
 
-  // 2) PKCE code (client-side resetPasswordForEmail ile oluşturulan code_verifier gerekli)
+  // 2) detectSessionInUrl PKCE oturumu kurmuş olabilir — kod değişiminden önce kontrol
+  const { data: { session: preExchange } } = await supabase.auth.getSession()
+  if (preExchange?.user) {
+    if (params.get('code')) stripAuthCodeFromUrl()
+    return preExchange
+  }
+
+  // 3) PKCE code (client-side resetPasswordForEmail ile oluşturulan code_verifier gerekli)
   const code = params.get('code')
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data?.session) { stripAuthCodeFromUrl(); return data.session }
   }
 
-  // 3) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)
+  // 4) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)
   const accessToken  = hashParams.get('access_token')
   const refreshToken = hashParams.get('refresh_token')
   if (accessToken && refreshToken) {
@@ -59,14 +66,14 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 6000 } = 
     }
   }
 
-  // 4) Mevcut oturum (zaten localStorage'da)
+  // 5) Mevcut oturum (zaten localStorage'da)
   const { data: { session: immediate } } = await supabase.auth.getSession()
   if (immediate?.user) return immediate
 
-  // 5) Supabase'in URL'i async işlemesi için kısa bekleme
+  // 6) Supabase'in URL'i async işlemesi için kısa bekleme
   const started = Date.now()
   while (Date.now() - started < waitMs) {
-    await new Promise((r) => setTimeout(r, 350))
+    await new Promise((r) => setTimeout(r, 200))
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) return session
   }

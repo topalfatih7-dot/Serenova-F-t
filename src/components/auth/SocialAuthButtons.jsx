@@ -62,21 +62,50 @@ const BUTTONS = [
   },
 ]
 
+function AuthDivider({ label, panelBg = 'bg-white' }) {
+  return (
+    <div className="relative py-1">
+      <div className="absolute inset-0 flex items-center" aria-hidden>
+        <div className="w-full border-t border-cream-200" />
+      </div>
+      <p className={`relative mx-auto w-fit px-3 text-sm font-medium text-cream-800/50 ${panelBg}`}>
+        {label}
+      </p>
+    </div>
+  )
+}
+
 /**
- * @param {{ flow?: 'login'|'signup', plan?: string, remember?: boolean, compact?: boolean }} props
+ * @param {{ flow?: 'login'|'signup', plan?: string, remember?: boolean, compact?: boolean, position?: 'top'|'bottom' }} props
  */
-export default function SocialAuthButtons({ flow = 'login', plan, remember = true, compact = false }) {
+export default function SocialAuthButtons({
+  flow = 'login',
+  plan,
+  remember = true,
+  compact = false,
+  position = 'top',
+}) {
   const { toast } = useToast()
   const [loadingId, setLoadingId] = useState(null)
   const [configError, setConfigError] = useState({ open: false, message: '' })
   const providersUrl = getSupabaseAuthProvidersUrl()
+  const isBottom = position === 'bottom'
 
   const handleClick = async (provider) => {
     if (loadingId) return
     setLoadingId(provider)
+    const timeout = window.setTimeout(() => {
+      setLoadingId(null)
+      toast('Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin.', 'error', 5000)
+    }, 12000)
+    let redirecting = false
     try {
       const result = await signInWithSocial(provider, { flow, plan, remember })
-      if (!result.success && !result.redirecting) {
+      if (result.redirecting) {
+        redirecting = true
+        return
+      }
+      if (!result.success) {
         const msg = result.error || 'Giriş başlatılamadı'
         toast(msg, 'error', 6000)
         if (result.providerNotConfigured) {
@@ -84,46 +113,46 @@ export default function SocialAuthButtons({ flow = 'login', plan, remember = tru
         }
       }
     } finally {
-      if (!window.location.href.includes('accounts.google')) {
-        setLoadingId(null)
-      }
+      window.clearTimeout(timeout)
+      if (!redirecting) setLoadingId(null)
     }
   }
+
+  const buttons = BUTTONS.map(({ id, label, Icon, className, iconWrap }) => (
+    <button
+      key={id}
+      type="button"
+      disabled={!!loadingId}
+      onClick={() => handleClick(id)}
+      className={`flex w-full items-center justify-center gap-3 rounded-2xl border-2 px-4 py-4 text-base font-semibold transition disabled:opacity-60 ${className}`}
+    >
+      {loadingId === id ? (
+        <Loader2 className="h-[22px] w-[22px] shrink-0 animate-spin" />
+      ) : (
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${iconWrap}`}>
+          <Icon />
+        </span>
+      )}
+      {label}
+    </button>
+  ))
 
   return (
     <>
     <div className={compact ? 'space-y-2.5' : 'space-y-3'}>
-      {!compact && (
+      {!isBottom && !compact && (
         <p className="text-center text-sm leading-relaxed text-cream-800/65">
           Tek tıkla güvenli giriş — şifre yazmanıza gerek yok.
         </p>
       )}
-      {BUTTONS.map(({ id, label, Icon, className, iconWrap }) => (
-        <button
-          key={id}
-          type="button"
-          disabled={!!loadingId}
-          onClick={() => handleClick(id)}
-          className={`flex w-full items-center justify-center gap-3 rounded-2xl border-2 px-4 py-4 text-base font-semibold transition disabled:opacity-60 ${className}`}
-        >
-          {loadingId === id ? (
-            <Loader2 className="h-[22px] w-[22px] shrink-0 animate-spin" />
-          ) : (
-            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${iconWrap}`}>
-              <Icon />
-            </span>
-          )}
-          {label}
-        </button>
-      ))}
-      <div className="relative py-1">
-        <div className="absolute inset-0 flex items-center" aria-hidden>
-          <div className="w-full border-t border-cream-200" />
-        </div>
-        <p className="relative mx-auto w-fit bg-white px-3 text-sm font-medium text-cream-800/50">
-          veya e-posta ile
+      {!isBottom && <AuthDivider label="veya e-posta ile" />}
+      {isBottom && <AuthDivider label="veya sosyal hesap ile" />}
+      {buttons}
+      {isBottom && !compact && (
+        <p className="text-center text-xs leading-relaxed text-cream-800/50">
+          Google, Apple veya Facebook ile şifresiz devam edin.
         </p>
-      </div>
+      )}
     </div>
 
     <FormErrorModal

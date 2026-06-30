@@ -11,7 +11,6 @@ import { BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
-import LegalConsentCheckbox from '../../components/ui/LegalConsentCheckbox'
 import SocialAuthButtons from '../../components/auth/SocialAuthButtons'
 import FormErrorModal from '../../components/ui/FormErrorModal'
 import AuthFormShell, { AuthFormCard } from '../../components/auth/AuthFormShell'
@@ -30,7 +29,6 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(() => getRememberMe())
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(false)
   const [errorModal, setErrorModal] = useState({ open: false, message: '' })
   const { login, isAuthenticated, isAdmin, isStaff } = useApp()
   const { toast } = useToast()
@@ -76,11 +74,9 @@ export default function LoginPage() {
     const fieldErrors = {}
     if (!isValidEmailAddress(cleanEmail)) fieldErrors.email = 'Geçerli e-posta girin'
     if (password.length < 6) fieldErrors.password = 'En az 6 karakter'
-    if (!termsAccepted) fieldErrors.terms = 'Devam etmek için koşulları kabul etmelisiniz'
     setErrors(fieldErrors)
     if (Object.keys(fieldErrors).length) {
-      const msg = fieldErrors.terms
-        || fieldErrors.email
+      const msg = fieldErrors.email
         || fieldErrors.password
         || 'Lütfen formu kontrol edin.'
       showFormError(msg)
@@ -186,10 +182,6 @@ export default function LoginPage() {
             <h2 className="font-display text-[1.75rem] font-bold leading-tight text-cream-900">Tekrar hoş geldiniz</h2>
             <p className="mt-2 text-base text-cream-800/60">Hesabınıza giriş yapın</p>
 
-            <div className="mt-6">
-              <SocialAuthButtons flow="login" remember={remember} />
-            </div>
-
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <FormField
                 large
@@ -249,15 +241,6 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              <LegalConsentCheckbox
-                accepted={termsAccepted}
-                onChange={(next) => {
-                  setTermsAccepted(next)
-                  if (errors.terms) setErrors((e) => ({ ...e, terms: undefined }))
-                }}
-                error={errors.terms}
-              />
-
               <motion.button
                 type="submit"
                 disabled={loading}
@@ -270,6 +253,10 @@ export default function LoginPage() {
                 {!loading && <ArrowRight className="h-5 w-5" />}
               </motion.button>
             </form>
+
+            <div className="mt-6">
+              <SocialAuthButtons flow="login" remember={remember} position="bottom" />
+            </div>
 
             <p className="mt-6 text-center text-base text-cream-800/60">
               Hesabınız yok mu?{' '}

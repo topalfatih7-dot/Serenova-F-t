@@ -56,7 +56,8 @@ export async function signInWithSocial(provider, opts = {}) {
 
   const options = { redirectTo }
   if (provider === 'google') {
-    options.queryParams = { access_type: 'offline', prompt: 'select_account' }
+    options.queryParams = { access_type: 'offline' }
+    if (flow === 'signup') options.queryParams.prompt = 'select_account'
   }
   if (provider === 'apple') {
     options.scopes = 'name email'
@@ -74,7 +75,7 @@ export async function signInWithSocial(provider, opts = {}) {
     return { success: false, error: error.message }
   }
   if (data?.url) {
-    window.location.assign(data.url)
+    window.location.replace(data.url)
     return { success: true, redirecting: true }
   }
   return { success: false, error: 'Giriş sayfasına yönlendirilemedi.' }
