@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Mail, Lock, Eye, EyeOff, Shield, Loader2, Sparkles, ArrowRight,
-  HeartPulse, Dumbbell, CheckSquare2, Square,
+  HeartPulse, Dumbbell,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -11,6 +11,8 @@ import { BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
+import LegalConsentCheckbox from '../../components/ui/LegalConsentCheckbox'
+import AuthFormShell, { AuthFormCard } from '../../components/auth/AuthFormShell'
 import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
 
 const FEATURES = [
@@ -171,18 +173,15 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-md"
         >
-          <div className="mb-8 md:hidden">
-            <BrandLogo />
-          </div>
-
-          <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm sm:p-8">
-            <h2 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">Tekrar hoş geldiniz</h2>
-            <p className="mt-2 text-sm text-cream-800/60">Hesabınıza giriş yapın</p>
+          <AuthFormShell>
+          <AuthFormCard className="bg-white/90 shadow-brand-900/[0.06]">
+            <h2 className="font-display text-[1.75rem] font-bold leading-tight text-cream-900">Tekrar hoş geldiniz</h2>
+            <p className="mt-2 text-base text-cream-800/60">Hesabınıza giriş yapın</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <FormField
+                large
                 emphasis
                 label="E-posta"
                 icon={Mail}
@@ -196,14 +195,14 @@ export default function LoginPage() {
               />
 
               <div>
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
+                <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cream-700" />
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full rounded-2xl border py-3.5 pl-11 pr-12 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 ${
+                    className={`w-full rounded-2xl border py-4 pl-12 pr-12 text-base text-cream-900 outline-none transition placeholder:text-cream-800/55 ${
                       errors.password
                         ? 'border-red-400 bg-red-50/50 focus:border-red-500 focus:ring-4 focus:ring-red-100'
                         : 'border-cream-400 bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100'
@@ -216,83 +215,59 @@ export default function LoginPage() {
                     onClick={() => setShowPass(!showPass)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500"
                   >
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
-                {errors.password && <p className="mt-1.5 block text-xs font-medium text-red-500">{errors.password}</p>}
+                {errors.password && <p className="mt-2 block text-sm font-medium text-red-500">{errors.password}</p>}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setRemember((v) => !v)}
-                  className="flex select-none items-center gap-2.5 text-sm font-medium text-cream-800/80"
+                  className="flex select-none items-center gap-2.5 text-base font-medium text-cream-800/80"
                   aria-pressed={remember}
                 >
-                  <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${remember ? 'bg-brand-500' : 'bg-cream-300'}`}>
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${remember ? 'translate-x-[1.125rem]' : 'translate-x-0.5'}`} />
+                  <span className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${remember ? 'bg-brand-500' : 'bg-cream-300'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${remember ? 'translate-x-[1.125rem]' : 'translate-x-0.5'}`} />
                   </span>
                   Beni hatırla
                 </button>
-                <Link to="/forgot-password" className="text-sm font-semibold text-brand-600 hover:underline">
+                <Link to="/forgot-password" className="text-base font-semibold text-brand-600 hover:underline">
                   Şifremi unuttum
                 </Link>
               </div>
 
-              {/* Yasal onay kutusu */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTermsAccepted((v) => !v)
-                    if (errors.terms) setErrors((e) => ({ ...e, terms: undefined }))
-                  }}
-                  className={`flex w-full items-start gap-2.5 rounded-xl border p-3 text-left transition ${
-                    errors.terms
-                      ? 'border-red-300 bg-red-50/50'
-                      : termsAccepted
-                        ? 'border-brand-200 bg-brand-50/40'
-                        : 'border-cream-200 bg-cream-50/40 hover:border-brand-200'
-                  }`}
-                  aria-pressed={termsAccepted}
-                >
-                  <span className="mt-0.5 shrink-0 text-brand-500">
-                    {termsAccepted
-                      ? <CheckSquare2 className="h-4 w-4" />
-                      : <Square className="h-4 w-4 text-cream-400" />}
-                  </span>
-                  <span className="text-xs leading-relaxed text-cream-800/70">
-                    <Link to="/terms" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>Kullanım Şartları</Link>
-                    {' '}ve{' '}
-                    <Link to="/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>KVKK Aydınlatma Metni</Link>
-                    {' '}kapsamında kişisel verilerimin işlenmesini kabul ediyorum.
-                  </span>
-                </button>
-                {errors.terms && (
-                  <p className="mt-1.5 text-xs font-medium text-red-500">{errors.terms}</p>
-                )}
-              </div>
+              <LegalConsentCheckbox
+                accepted={termsAccepted}
+                onChange={(next) => {
+                  setTermsAccepted(next)
+                  if (errors.terms) setErrors((e) => ({ ...e, terms: undefined }))
+                }}
+                error={errors.terms}
+              />
 
               <motion.button
                 type="submit"
                 disabled={loading}
                 whileHover={{ scale: loading ? 1 : 1.01 }}
                 whileTap={{ scale: loading ? 1 : 0.99 }}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-4 text-base font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
                 {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-                {!loading && <ArrowRight className="h-4 w-4" />}
+                {!loading && <ArrowRight className="h-5 w-5" />}
               </motion.button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-cream-800/60">
+            <p className="mt-6 text-center text-base text-cream-800/60">
               Hesabınız yok mu?{' '}
               <Link to="/onboarding" className="font-semibold text-brand-600 hover:underline">
                 Ücretsiz kayıt olun
               </Link>
             </p>
-          </div>
+          </AuthFormCard>
+          </AuthFormShell>
         </motion.div>
       </div>
     </div>

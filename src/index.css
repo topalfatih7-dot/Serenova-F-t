@@ -1124,6 +1124,25 @@ body {
   }
 }
 
+/* Giriş / kayıt — sabit kart genişliği; inputlarda 16px+ (iOS odak yakınlaştırmasını önler) */
+.auth-form-shell {
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.auth-form-card {
+  font-size: inherit;
+}
+
+.auth-form-card input,
+.auth-form-card select,
+.auth-form-card textarea,
+.auth-form-card button[type="button"] {
+  font-size: max(16px, 1em);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

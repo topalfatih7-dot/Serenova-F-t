@@ -16,13 +16,14 @@ export default function PhoneField({
   error,
   hint,
   emphasis = false,
+  large = false,
 }) {
   const selected = getCountry(country)
 
   return (
     <div>
       {label && (
-        <span className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide ${emphasis ? 'text-cream-800' : 'text-cream-800/55'}`}>
+        <span className={`mb-2 block font-semibold uppercase tracking-wide ${large ? 'text-sm text-cream-800' : `text-xs ${emphasis ? 'text-cream-800' : 'text-cream-800/55'}`}`}>
           {label}
         </span>
       )}
@@ -61,14 +62,14 @@ export default function PhoneField({
             placeholder={country === 'TR' ? '5XX XXX XX XX' : 'Numara'}
             value={value}
             onChange={(e) => onValueChange?.(formatNationalNumber(country, e.target.value))}
-            className="w-full bg-transparent py-3.5 pl-3 pr-4 text-sm text-cream-900 outline-none placeholder:text-cream-800/40"
+            className={`w-full bg-transparent outline-none placeholder:text-cream-800/40 ${large ? 'py-4 pl-3 pr-4 text-base text-cream-900' : 'py-3.5 pl-3 pr-4 text-sm text-cream-900'}`}
           />
         </div>
       </div>
       {error ? (
-        <span className="mt-1.5 block text-xs font-medium text-red-500">{error}</span>
+        <span className={`mt-2 block font-medium text-red-500 ${large ? 'text-sm' : 'text-xs'}`}>{error}</span>
       ) : hint ? (
-        <span className="mt-1.5 block text-xs text-cream-800/50">{hint}</span>
+        <span className={`mt-2 block text-cream-800/50 ${large ? 'text-sm' : 'text-xs'}`}>{hint}</span>
       ) : null}
     </div>
   )

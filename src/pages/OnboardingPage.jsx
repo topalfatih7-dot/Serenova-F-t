@@ -4,14 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, Sparkles,
   User, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle,
-  Dumbbell, HeartPulse, ArrowRight, ArrowLeft, CheckSquare2, Square,
+  Dumbbell, HeartPulse, ArrowRight, ArrowLeft,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
 import PaymentForm from '../components/payment/PaymentForm'
 import FormField from '../components/ui/FormField'
+import LegalConsentCheckbox from '../components/ui/LegalConsentCheckbox'
 import PhoneField from '../components/ui/PhoneField'
 import Modal from '../components/ui/Modal'
 import BrandLogo from '../components/ui/BrandLogo'
+import AuthFormShell, { AuthFormCard } from '../components/auth/AuthFormShell'
 import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -388,18 +390,14 @@ export default function OnboardingPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className={`w-full ${step === 1 ? 'max-w-xl' : 'max-w-md'}`}
         >
-          <div className="mb-8 md:hidden">
-            <BrandLogo />
-          </div>
-
-          <div className="rounded-3xl border border-white/80 bg-white/95 p-6 shadow-xl shadow-sage-900/[0.05] backdrop-blur-sm sm:p-8">
+          <AuthFormShell>
+          <AuthFormCard>
             <div className="h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
-            <h2 className="mt-5 font-display text-2xl font-bold text-cream-900 sm:text-3xl">
+            <h2 className="mt-5 font-display text-[1.75rem] font-bold leading-tight text-cream-900">
               {step === 0 ? 'Hesabınızı oluşturun' : 'Planınızı seçin'}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+            <p className="mt-2 text-base leading-relaxed text-cream-800/65">
               {step === 0
                 ? 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.'
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
@@ -416,16 +414,17 @@ export default function OnboardingPage() {
                   {step === 0 && (
                     <div className="space-y-4">
                       {showErrors && !canNext() && (
-                        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2">
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-                          <p className="text-xs text-red-700">Lütfen tüm alanları eksiksiz ve doğru doldurun.</p>
+                        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+                          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                          <p className="text-base text-red-700">Lütfen tüm alanları eksiksiz ve doğru doldurun.</p>
                         </div>
                       )}
 
-                      <FormField emphasis label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
-                      <FormField emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} onBlur={() => update({ email: sanitizeEmailInput(data.email) })} error={errors.email} />
+                      <FormField large emphasis label="Ad Soyad" icon={User} placeholder="Adınız ve soyadınız" value={data.name} onChange={(e) => update({ name: e.target.value })} />
+                      <FormField large emphasis label="E-posta" icon={Mail} type="email" placeholder="ornek@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} onBlur={() => update({ email: sanitizeEmailInput(data.email) })} error={errors.email} />
 
                       <PhoneField
+                        large
                         emphasis
                         country={data.phoneCountry}
                         value={data.phone}
@@ -436,46 +435,46 @@ export default function OnboardingPage() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
+                          <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
                           <div className="relative">
-                            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
+                            <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cream-700" />
                             <input
                               type={showPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               value={data.password}
                               onChange={(e) => update({ password: e.target.value })}
-                              className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-10 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                              className="w-full rounded-2xl border border-cream-400 bg-white py-4 pl-12 pr-11 text-base text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                             />
                             <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                             </button>
                           </div>
                         </div>
                         <div>
-                          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800">Tekrar</span>
+                          <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-cream-800">Tekrar</span>
                           <div className="relative">
-                            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
+                            <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cream-700" />
                             <input
                               type={showConfirmPassword ? 'text' : 'password'}
                               placeholder="••••••••"
                               value={data.confirmPassword}
                               onChange={(e) => update({ confirmPassword: e.target.value })}
-                              className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-10 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                              className="w-full rounded-2xl border border-cream-400 bg-white py-4 pl-12 pr-11 text-base text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
                             />
                             <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
-                              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                             </button>
                           </div>
                         </div>
                       </div>
 
                       {data.password && (
-                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                           {PASSWORD_RULES.map((r) => {
                             const ok = r.test(data.password)
                             return (
-                              <li key={r.label} className={`flex items-center gap-1.5 text-[11px] ${ok ? 'text-sage-600' : 'text-cream-800/45'}`}>
-                                <Check className={`h-3 w-3 ${ok ? '' : 'opacity-30'}`} strokeWidth={3} />
+                              <li key={r.label} className={`flex items-center gap-1.5 text-sm ${ok ? 'text-sage-600' : 'text-cream-800/45'}`}>
+                                <Check className={`h-4 w-4 ${ok ? '' : 'opacity-30'}`} strokeWidth={3} />
                                 {r.label}
                               </li>
                             )
@@ -509,43 +508,19 @@ export default function OnboardingPage() {
               </AnimatePresence>
             </div>
 
-            {/* Yasal onay kutusu — yalnızca adım 0'da gösterilir */}
             {step === 0 && (
-              <div className="mt-5">
-                <button
-                  type="button"
-                  onClick={() => setTermsAccepted((v) => !v)}
-                  className={`flex w-full items-start gap-2.5 rounded-xl border p-3 text-left transition ${
-                    showErrors && !termsAccepted
-                      ? 'border-red-300 bg-red-50/50'
-                      : termsAccepted
-                        ? 'border-brand-200 bg-brand-50/40'
-                        : 'border-cream-200 bg-cream-50/40 hover:border-brand-200'
-                  }`}
-                  aria-pressed={termsAccepted}
-                >
-                  <span className="mt-0.5 shrink-0 text-brand-500">
-                    {termsAccepted
-                      ? <CheckSquare2 className="h-4 w-4" />
-                      : <Square className="h-4 w-4 text-cream-400" />}
-                  </span>
-                  <span className="text-xs leading-relaxed text-cream-800/70">
-                    <Link to="/terms" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>Kullanım Şartları</Link>
-                    {' '}ve{' '}
-                    <Link to="/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>KVKK Aydınlatma Metni</Link>
-                    {' '}kapsamında kişisel verilerimin işlenmesini kabul ediyorum.
-                  </span>
-                </button>
-                {showErrors && !termsAccepted && (
-                  <p className="mt-1.5 text-xs font-medium text-red-500">Devam etmek için koşulları kabul etmelisiniz.</p>
-                )}
-              </div>
+              <LegalConsentCheckbox
+                className="mt-5"
+                accepted={termsAccepted}
+                onChange={setTermsAccepted}
+                error={showErrors && !termsAccepted}
+              />
             )}
 
             <div className="mt-4 flex items-center gap-3">
               {step > 0 && (
-                <button type="button" onClick={back} className="flex items-center gap-1.5 rounded-2xl border border-cream-200 px-4 py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50">
-                  <ArrowLeft className="h-4 w-4" /> Geri
+                <button type="button" onClick={back} className="flex items-center gap-1.5 rounded-2xl border border-cream-200 px-4 py-4 text-base font-semibold text-cream-800 transition hover:bg-cream-50">
+                  <ArrowLeft className="h-5 w-5" /> Geri
                 </button>
               )}
               <motion.button
@@ -554,23 +529,24 @@ export default function OnboardingPage() {
                 disabled={submitting}
                 whileHover={{ scale: submitting ? 1 : 1.01 }}
                 whileTap={{ scale: submitting ? 1 : 0.99 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-4 text-base font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:brightness-105 disabled:opacity-60"
               >
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {submitting && <Loader2 className="h-5 w-5 animate-spin" />}
                 {step === 1
                   ? (submitting ? 'Kaydediliyor…' : isPaid ? 'Ödemeye Geç' : 'Ücretsiz Kayıt Ol')
                   : 'Devam Et'}
-                {!submitting && <ArrowRight className="h-4 w-4" />}
+                {!submitting && <ArrowRight className="h-5 w-5" />}
               </motion.button>
             </div>
-          </div>
 
-          <p className="mt-6 text-center text-sm text-cream-800/60">
+          <p className="mt-6 text-center text-base text-cream-800/60">
             Zaten hesabınız var mı?{' '}
             <Link to="/login" className="font-semibold text-brand-600 hover:underline">
               Giriş yapın
             </Link>
           </p>
+          </AuthFormCard>
+          </AuthFormShell>
         </motion.div>
       </div>
 
