@@ -10,14 +10,16 @@ import { useToast } from '../context/ToastContext'
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Scale, Ruler, Heart, Shield, Activity, Stethoscope,
+  Flame, Scale, Ruler, Heart, Shield, Activity, Stethoscope, Clock,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
-import { getPlanLabel, packageIncludesDoctor } from '../data/membershipPlans'
+import { getPlanLabel } from '../data/membershipPlans'
+import { getRemainingDays } from '../services/premiumMembership'
+import { formatBirthDate, ageFromBirthDate, birthDateError } from '../utils/birthDate'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -26,11 +28,12 @@ const fadeUp = {
 
 export default function ProfilePage() {
   const {
-    user, membership, membershipStatus, settings, packageConfig, myPrograms, staff,
+    user, membership, membershipStatus, settings, myPrograms, staff,
     updateProfile, updateSettings, logout,
     createProgram, exercises, refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
+    premiumExpiresAt,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
@@ -54,7 +57,7 @@ export default function ProfilePage() {
   }, [])
   const [healthEditOpen, setHealthEditOpen] = useState(false)
   const [healthForm, setHealthForm] = useState({
-    age: user.age || '',
+    birthDate: user.birthDate || '',
     weight: user.weight || '',
     height: user.height || '',
     waist: user.waist || '',
@@ -78,9 +81,17 @@ export default function ProfilePage() {
   }
 
   const handleHealthSave = async () => {
-    await updateProfile(healthForm)
+    if (birthDateError(healthForm.birthDate)) {
+      toast('Geçerli bir doğum tarihi girin', 'warning')
+      return
+    }
+    const patch = {
+      ...healthForm,
+      age: healthForm.birthDate ? ageFromBirthDate(healthForm.birthDate) : '',
+    }
+    await updateProfile(patch)
     setHealthEditOpen(false)
-    const merged = { ...user, ...healthForm }
+    const merged = { ...user, ...patch }
     const result = await syncMemberHealthAssets({
       user: merged,
       exercises,
@@ -96,13 +107,15 @@ export default function ProfilePage() {
 
   const openHealthEdit = () => {
     setHealthForm({
-      age: user.age || '',
+      birthDate: user.birthDate || '',
       weight: user.weight || '',
       height: user.height || '',
       waist: user.waist || '',
     })
     setHealthEditOpen(true)
   }
+
+  const remainingDays = getRemainingDays(premiumExpiresAt)
 
   const handleLogout = () => {
     logout()
@@ -121,7 +134,7 @@ export default function ProfilePage() {
     { icon: Scale, label: 'Kilo', value: user.weight ? `${user.weight} kg` : '—' },
     { icon: Ruler, label: 'Boy', value: user.height ? `${user.height} cm` : '—' },
     { icon: Activity, label: 'Bel', value: user.waist ? `${user.waist} cm` : '—' },
-    { icon: Heart, label: 'Yaş', value: user.age || '—' },
+    { icon: Heart, label: 'Doğum Tarihi', value: formatBirthDate(user.birthDate) },
   ]
 
   return (
@@ -276,33 +289,47 @@ export default function ProfilePage() {
           <ProfileSectionCard
             icon={Shield}
             title="Üyelik Planınız"
-            subtitle="Aktif paket ve görüşme haklarınız"
+            subtitle="Aktif paket süreniz"
             accent="violet"
             delay={0.15}
           >
             <p className="font-display text-3xl font-bold text-cream-900">{getPlanLabel(membership)}</p>
-            {packageConfig && membership !== 'free' && (
-              <ul className="mt-4 space-y-2.5">
-                {(Number(packageConfig.coachMeetingsPerMonth) || Number(packageConfig.coachMeetingsPerWeek) || 0) > 0 && (
-                  <li className="flex items-center gap-2 rounded-xl bg-violet-50/80 px-3 py-2 text-sm text-cream-800">
-                    <Dumbbell className="h-4 w-4 text-brand-500" /> Ayda {packageConfig.coachMeetingsPerMonth || (packageConfig.coachMeetingsPerWeek || 0) * 4} koç görüşmesi
-                  </li>
-                )}
-                {(Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0 && (
-                  <li className="flex items-center gap-2 rounded-xl bg-violet-50/80 px-3 py-2 text-sm text-cream-800">
-                    <Apple className="h-4 w-4 text-sage-500" /> Ayda {packageConfig.dietitianMeetingsPerMonth} diyetisyen görüşmesi
-                  </li>
-                )}
-                {packageIncludesDoctor(packageConfig) && (
-                  <li className="flex items-center gap-2 rounded-xl bg-violet-50/80 px-3 py-2 text-sm text-cream-800">
-                    <Stethoscope className="h-4 w-4 text-teal-600" /> Ayda {packageConfig.doctorMeetingsPerMonth} doktor görüşmesi
-                  </li>
-                )}
-              </ul>
+            {membership !== 'free' && premiumExpiresAt && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-4 overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-fuchsia-500/10 p-[1px] shadow-md shadow-violet-500/10"
+              >
+                <div className="rounded-[calc(1rem-1px)] bg-gradient-to-br from-white/95 via-violet-50/40 to-fuchsia-50/30 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-violet-600/75">Kalan Süre</p>
+                      <p className="mt-1 font-display text-3xl font-bold">
+                        <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                          {remainingDays ?? '—'}
+                        </span>
+                        <span className="ml-1 text-base font-semibold text-violet-700/80">gün</span>
+                      </p>
+                      <p className="mt-1 text-xs text-cream-800/55">
+                        {new Date(premiumExpiresAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} tarihine kadar
+                      </p>
+                    </div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30">
+                      <Clock className="h-7 w-7" />
+                    </div>
+                  </div>
+                  {membershipStatus === 'expiring' && (
+                    <p className="mt-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 text-xs font-semibold text-orange-700">
+                      Süreniz yakında doluyor — yenilemek için destek ile iletişime geçin.
+                    </p>
+                  )}
+                </div>
+              </motion.div>
             )}
-            <p className="mt-4 text-xs text-cream-800/50">
-              Plan değişikliği için <Link to="/support" className="font-semibold text-brand-600 hover:underline">Destek</Link> üzerinden bize ulaşın.
-            </p>
+            {membership === 'free' && (
+              <p className="mt-4 text-sm text-cream-800/60">Ücretsiz plandasınız. Premium özellikler için plan yükseltin.</p>
+            )}
           </ProfileSectionCard>
 
           <ProfileSectionCard
@@ -370,7 +397,7 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <p className="text-sm text-cream-800/65">Yalnızca vücut ölçülerinizi güncelleyin. Diğer bilgiler Kişisel Bilgiler bölümünden düzenlenir.</p>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Yaş" icon={Heart} type="number" value={healthForm.age} onChange={(e) => setHealthForm({ ...healthForm, age: e.target.value })} placeholder="Yaş" />
+            <FormField label="Doğum Tarihi" icon={Heart} type="date" value={healthForm.birthDate} onChange={(e) => setHealthForm({ ...healthForm, birthDate: e.target.value })} />
             <FormField label="Kilo (kg)" icon={Scale} type="number" value={healthForm.weight} onChange={(e) => setHealthForm({ ...healthForm, weight: e.target.value })} placeholder="Kilo" />
             <FormField label="Boy (cm)" icon={Ruler} type="number" value={healthForm.height} onChange={(e) => setHealthForm({ ...healthForm, height: e.target.value })} placeholder="Boy" />
             <FormField label="Bel (cm)" icon={Activity} type="number" value={healthForm.waist} onChange={(e) => setHealthForm({ ...healthForm, waist: e.target.value })} placeholder="Bel" />

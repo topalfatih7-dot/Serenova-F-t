@@ -41,6 +41,47 @@ export function digitsOnly(value) {
   return String(value || '').replace(/\D/g, '')
 }
 
+/** Ulusal numarayı ülke kurallarına göre normalize eder (çift ülke kodu, baştaki 0 vb.). */
+export function normalizeNationalDigits(iso, raw) {
+  const country = getCountry(iso)
+  let d = digitsOnly(raw)
+  if ((iso === 'TR' || iso === 'CY') && d.startsWith('0')) d = d.slice(1)
+  if (d.startsWith(country.dial) && d.length > country.max) d = d.slice(country.dial.length)
+  return d.slice(0, country.max)
+}
+
+/** E.164 numarayı ülke + ulusal parçaya ayırır. */
+export function parseE164(e164) {
+  const digits = digitsOnly(e164)
+  if (!digits) return null
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.dial.length - a.dial.length)
+  for (const c of sorted) {
+    if (digits.startsWith(c.dial)) {
+      const national = normalizeNationalDigits(c.iso, digits.slice(c.dial.length))
+      return { iso: c.iso, dial: c.dial, national }
+    }
+  }
+  const fallback = getCountry(DEFAULT_COUNTRY_ISO)
+  return { iso: fallback.iso, dial: fallback.dial, national: normalizeNationalDigits(fallback.iso, digits) }
+}
+
+/** E.164 numarayı okunabilir biçimde gösterir: +90 505 765 43 21 */
+export function formatE164(e164) {
+  if (!e164) return '—'
+  const parsed = parseE164(e164)
+  if (!parsed?.national) return e164
+  const formatted = formatNationalNumber(parsed.iso, parsed.national)
+  return `+${parsed.dial} ${formatted}`.trim()
+}
+
+/** Kayıt/güncelleme için tutarlı E.164 üretir. */
+export function normalizeE164(e164) {
+  if (!e164) return ''
+  const parsed = parseE164(e164)
+  if (!parsed?.national) return e164
+  return `+${parsed.dial}${parsed.national}`
+}
+
 // Ülkeye göre ulusal numarayı okunabilir biçimde gruplar.
 export function formatNationalNumber(iso, raw) {
   const country = getCountry(iso)
@@ -70,7 +111,6 @@ export function isValidNationalNumber(iso, raw) {
 // E.164 benzeri tam numara: +{dial}{national}
 export function toE164(iso, raw) {
   const country = getCountry(iso)
-  let d = digitsOnly(raw)
-  if ((iso === 'TR' || iso === 'CY') && d.startsWith('0')) d = d.slice(1)
+  const d = normalizeNationalDigits(iso, raw)
   return `+${country.dial}${d}`
 }

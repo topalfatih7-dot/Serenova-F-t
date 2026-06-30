@@ -18,6 +18,8 @@ import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffPro
 import { coverForCategory } from '../utils/blogImages.js'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
+import { normalizeE164 } from '../data/countryCodes'
+import { ageFromBirthDate } from '../utils/birthDate'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
 import { displayNameFromAuthUser, memberNeedsProfileCompletion } from '../utils/memberProfile'
@@ -486,8 +488,9 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     id: user.id,
     email: normalizeEmailAddress(user.email) || normalizeEmailAddress(profile.email) || sanitizeEmailInput(user.email),
     name: profile.name,
-    phone: profile.phone || '',
-    age: profile.age,
+    phone: profile.phone ? normalizeE164(profile.phone) : '',
+    birthDate: profile.birthDate || '',
+    age: profile.birthDate ? ageFromBirthDate(profile.birthDate) : profile.age,
     gender: profile.gender || '',
     weight: profile.weight || '',
     height: profile.height || '',
@@ -775,6 +778,10 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 // Çoğu mutasyon: bellekteki member nesnesini düzenle + upsert et.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
+
+  if (patch.phone != null && patch.phone !== '') {
+    updated.phone = normalizeE164(patch.phone)
+  }
 
   if (patch.calorieHistory) {
     const prev = member.calorieHistory || []

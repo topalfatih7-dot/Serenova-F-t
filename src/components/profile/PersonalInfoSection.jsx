@@ -9,11 +9,12 @@ import PhoneField from '../ui/PhoneField'
 import PhotoUpload from '../ui/PhotoUpload'
 import Modal from '../ui/Modal'
 import { CITY_NAMES, getDistricts } from '../../data/turkeyCities'
-import { DEFAULT_COUNTRY_ISO, toE164 } from '../../data/countryCodes'
+import { DEFAULT_COUNTRY_ISO, toE164, formatE164, parseE164, formatNationalNumber } from '../../data/countryCodes'
 import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import ProfileSectionCard from './ProfileSectionCard'
+import { ageFromBirthDate, birthDateError, formatBirthDate } from '../../utils/birthDate'
 
 const GENDERS = [
   { value: 'female', label: 'Kadın' },
@@ -44,7 +45,6 @@ const NUTRITION_PREFS = [
 ]
 
 const LIMITS = {
-  age: { min: 13, max: 100 },
   weight: { min: 30, max: 300 },
   height: { min: 120, max: 250 },
   waist: { min: 40, max: 200 },
@@ -68,7 +68,7 @@ export default function PersonalInfoSection({ user }) {
     email: user.email || '',
     phone: user.phone || '',
     phoneCountry: user.phoneCountry || DEFAULT_COUNTRY_ISO,
-    age: user.age || '',
+    birthDate: user.birthDate || '',
     gender: user.gender || '',
     city: user.city || '',
     district: user.district || '',
@@ -83,19 +83,28 @@ export default function PersonalInfoSection({ user }) {
 
   const districts = getDistricts(form.city)
   const errors = {
-    age: rangeError('age', form.age),
+    birthDate: birthDateError(form.birthDate),
     weight: rangeError('weight', form.weight),
     height: rangeError('height', form.height),
     waist: rangeError('waist', form.waist),
   }
 
+  const phoneFromUser = () => {
+    if (!user.phone) return { phone: '', phoneCountry: user.phoneCountry || DEFAULT_COUNTRY_ISO }
+    const parsed = parseE164(user.phone)
+    return {
+      phone: parsed ? formatNationalNumber(parsed.iso, parsed.national) : user.phone,
+      phoneCountry: user.phoneCountry || parsed?.iso || DEFAULT_COUNTRY_ISO,
+    }
+  }
+
   const openEditor = () => {
+    const phoneFields = phoneFromUser()
     setForm({
       name: user.name || '',
       email: user.email || '',
-      phone: user.phone || '',
-      phoneCountry: user.phoneCountry || DEFAULT_COUNTRY_ISO,
-      age: user.age || '',
+      ...phoneFields,
+      birthDate: user.birthDate || '',
       gender: user.gender || '',
       city: user.city || '',
       district: user.district || '',
@@ -111,8 +120,8 @@ export default function PersonalInfoSection({ user }) {
   }
 
   const handleSave = async () => {
-    if (errors.age || errors.weight || errors.height || errors.waist) {
-      toast('Lütfen geçerli ölçü değerleri girin', 'warning')
+    if (errors.birthDate || errors.weight || errors.height || errors.waist) {
+      toast('Lütfen geçerli bilgiler girin', 'warning')
       return
     }
     setSaving(true)
@@ -120,6 +129,7 @@ export default function PersonalInfoSection({ user }) {
       const patch = {
         ...form,
         phone: form.phone ? toE164(form.phoneCountry, form.phone) : form.phone,
+        age: form.birthDate ? ageFromBirthDate(form.birthDate) : '',
       }
       await updateProfile(patch)
       const merged = { ...user, ...patch }
@@ -159,7 +169,7 @@ export default function PersonalInfoSection({ user }) {
   }
 
   const completionHints = [
-    !user.age && 'Yaş',
+    !user.birthDate && 'Doğum tarihi',
     !user.gender && 'Cinsiyet',
     !user.weight && 'Kilo',
     !user.height && 'Boy',
@@ -197,8 +207,8 @@ export default function PersonalInfoSection({ user }) {
           {[
             ['Ad Soyad', user.name || '—'],
             ['E-posta', user.email || '—'],
-            ['Telefon', user.phone || '—'],
-            ['Yaş', user.age || '—'],
+            ['Telefon', user.phone ? formatE164(user.phone) : '—'],
+            ['Doğum Tarihi', formatBirthDate(user.birthDate)],
             ['Cinsiyet', GENDERS.find((g) => g.value === user.gender)?.label || '—'],
             ['Şehir / İlçe', user.city ? `${user.city}${user.district ? ` / ${user.district}` : ''}` : '—'],
             ['Kilo', user.weight ? `${user.weight} kg` : '—'],
@@ -239,7 +249,7 @@ export default function PersonalInfoSection({ user }) {
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FormField label="Yaş" icon={CalendarDays} type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} error={errors.age} />
+            <FormField label="Doğum Tarihi" icon={CalendarDays} type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} error={errors.birthDate} />
             <FormField label="Cinsiyet" as="select" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={form.gender ? '' : 'text-cream-800/40'}>
               <option value="">Seçin</option>
               {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}

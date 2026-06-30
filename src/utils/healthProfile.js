@@ -1,5 +1,7 @@
 /** Sağlık testi cevaplarından profil alanlarını türetir. */
 
+import { ageFromBirthDate } from './birthDate'
+
 export function inferGoalsFromHealthTest(healthTest = {}) {
   const goals = new Set()
   const habits = healthTest.eatingHabits || []
@@ -80,17 +82,17 @@ export function enrichProfileForAnalysis(profile) {
     ? profile.nutritionPrefs
     : inferNutritionPrefsFromHealthTest(ht)
 
-  const age = profile?.age || 30
+  const age = profile?.birthDate ? ageFromBirthDate(profile.birthDate) : profile?.age
   const weight = profile?.weight || 70
   const height = profile?.height || 170
-  const estimatedMetrics = !(profile?.age && profile?.weight && profile?.height)
+  const estimatedMetrics = !((profile?.birthDate || profile?.age) && profile?.weight && profile?.height)
 
   return {
     ...profile,
     goals,
     fitnessLevel,
     nutritionPrefs,
-    age,
+    age: age || 30,
     weight,
     height,
     estimatedMetrics,
