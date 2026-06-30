@@ -15,9 +15,9 @@ const navItems = [
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
   { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Görüşmeleri', compact: true },
-  { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen Görüşmeleri', compact: true },
-  { to: '/schedule/doctor', icon: Stethoscope, label: 'Doktor Görüşmeleri', compact: true },
+  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları', compact: true },
+  { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen Randevuları', compact: true },
+  { to: '/schedule/doctor', icon: Stethoscope, label: 'Doktor Randevuları', compact: true },
   { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
   { to: '/library', icon: Library, label: 'Kütüphane' },
   { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
@@ -66,7 +66,7 @@ export default function Sidebar() {
             }
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            <span className={`flex-1 whitespace-nowrap ${item.compact ? 'text-[11px] lg:text-xs' : ''}`}>{item.label}</span>
+            <span className={`flex-1 whitespace-nowrap ${item.compact ? 'text-[13px]' : ''}`}>{item.label}</span>
             {item.badgeCount > 0 && (
               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
                 {item.badgeCount > 9 ? '9+' : item.badgeCount}
