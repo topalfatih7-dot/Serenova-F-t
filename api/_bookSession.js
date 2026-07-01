@@ -1,7 +1,7 @@
 /**
  * Self-servis randevu — book_staff_session RPC ile aynı kurallar + doktor tek seferlik limiti.
+ * HTTP handler: POST /api/auth { action: 'book-session', ... }
  */
-import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { countUsedDoctorSessions, syncMemberPackages } from './_memberPackages.js'
 
 const TZ = 'Europe/Istanbul'
@@ -30,10 +30,6 @@ function sessionKey(type) {
 
 function activeStatuses() {
   return new Set(['scheduled', 'rescheduled'])
-}
-
-function countStatuses() {
-  return new Set(['scheduled', 'rescheduled', 'completed'])
 }
 
 function parseSessionDate(s) {
@@ -191,42 +187,4 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
   if (updErr) return { ok: false, error: updErr.message }
 
   return { ok: true, session }
-}
-
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-
-  if (req.method === 'OPTIONS') return res.status(200).end()
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Yalnızca POST' })
-
-  if (!isSupabaseAdminConfigured()) {
-    return res.status(503).json({ ok: false, error: 'Sunucu yapılandırması eksik.' })
-  }
-
-  try {
-    const authHeader = req.headers.authorization || req.headers.Authorization || ''
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-    if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
-
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
-    const admin = getSupabaseAdmin()
-    const { data: userData, error: userErr } = await admin.auth.getUser(token)
-    if (userErr || !userData?.user) {
-      return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
-    }
-
-    const result = await bookSessionForMember(
-      admin,
-      userData.user.id,
-      body.type,
-      body.startsAt,
-      body.duration
-    )
-    if (!result.ok) return res.status(400).json(result)
-    return res.status(200).json(result)
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e.message || e) })
-  }
 }

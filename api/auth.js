@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset
+ * action: unlock-signup | email-send | email-confirm | password-reset | book-session
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
+import { bookSessionForMember } from './_bookSession.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -245,6 +246,27 @@ async function handleEmailConfirm(req, res, body) {
   return res.status(200).json({ ok: true, emailVerifiedAt: nextData.emailVerifiedAt })
 }
 
+async function handleBookSession(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await bookSessionForMember(
+    admin,
+    userData.user.id,
+    body.type,
+    body.startsAt,
+    body.duration,
+  )
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -268,6 +290,7 @@ export default async function handler(req, res) {
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(res, body)
+    if (action === 'book-session') return handleBookSession(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

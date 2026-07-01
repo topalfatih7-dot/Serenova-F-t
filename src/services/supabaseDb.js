@@ -1137,13 +1137,18 @@ export async function bookStaffSession(type, startsAtISO, duration = 30) {
   if (!session?.access_token) return { success: false, error: 'Oturum gerekli.' }
 
   try {
-    const res = await fetch('/api/book-session', {
+    const res = await fetch('/api/auth', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ type, startsAt: startsAtISO, duration }),
+      body: JSON.stringify({
+        action: 'book-session',
+        type,
+        startsAt: startsAtISO,
+        duration,
+      }),
     })
     const json = await res.json()
     if (!json.ok) return { success: false, error: json.error || 'Randevu oluşturulamadı.' }
