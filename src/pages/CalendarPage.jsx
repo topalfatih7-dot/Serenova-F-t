@@ -61,18 +61,18 @@ export default function CalendarPage() {
     const set = new Set()
     days.forEach((day) => {
       if (!isSameMonth(day, current)) return
-      if (getProgramEntriesForDate(myPrograms, day).length > 0) {
+      if (getProgramEntriesForDate(myPrograms, day, user).length > 0) {
         set.add(format(day, 'yyyy-MM-dd'))
       }
     })
     return set
-  }, [days, current, myPrograms])
+  }, [days, current, myPrograms, user])
 
   // Seçili günün program girdileri
   const selectedEntries = useMemo(() => {
     if (!selectedDate) return []
-    return getProgramEntriesForDate(myPrograms, selectedDate)
-  }, [myPrograms, selectedDate])
+    return getProgramEntriesForDate(myPrograms, selectedDate, user)
+  }, [myPrograms, selectedDate, user])
 
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null
 
@@ -141,7 +141,7 @@ export default function CalendarPage() {
   const getDotsForDay = (day) => {
     const dateStr = format(day, 'yyyy-MM-dd')
     if (!daysWithPrograms.has(dateStr)) return []
-    const entries = getProgramEntriesForDate(myPrograms, day)
+    const entries = getProgramEntriesForDate(myPrograms, day, user)
     const dots = []
     if (entries.some((e) => e.programType === 'workout')) dots.push('workout')
     if (entries.some((e) => e.programType === 'nutrition')) dots.push('nutrition')
@@ -155,13 +155,18 @@ export default function CalendarPage() {
     days.forEach((day) => {
       if (!isSameMonth(day, current)) return
       const dateStr = format(day, 'yyyy-MM-dd')
-      const entries = getProgramEntriesForDate(myPrograms, day)
-      total += entries.length
+      const entries = getProgramEntriesForDate(myPrograms, day, user)
+      const { workout, nutrition } = splitEntriesByType(entries)
+      const mealGroups = groupEntriesByMeal(nutrition)
       const keys = completedActivities[dateStr] || []
-      done += entries.filter((e) => keys.includes(completionKey(dateStr, e.id))).length
+      total += workout.length + mealGroups.length
+      done += workout.filter((e) => keys.includes(completionKey(dateStr, e.id))).length
+      done += mealGroups.filter((g) =>
+        isMealCompleted(completedActivities, dateStr, g.mealType, g.entries)
+      ).length
     })
     return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
-  }, [days, current, myPrograms, completedActivities])
+  }, [days, current, myPrograms, completedActivities, user])
 
   return (
     <PanelPageShell>
@@ -296,11 +301,18 @@ export default function CalendarPage() {
               const selected = selectedDate && isSameDay(day, selectedDate)
               const dots = inMonth ? getDotsForDay(day) : []
               const dateStr = format(day, 'yyyy-MM-dd')
-              const dayEntries = getProgramEntriesForDate(myPrograms, day)
-              const dayDone = dayEntries.length > 0
-                ? (completedActivities[dateStr] || []).filter((k) => k.startsWith(`${dateStr}_`)).length
+              const dayEntries = getProgramEntriesForDate(myPrograms, day, user)
+              const { workout: dayWorkout, nutrition: dayNutrition } = splitEntriesByType(dayEntries)
+              const dayMealGroups = groupEntriesByMeal(dayNutrition)
+              const dayTaskTotal = dayWorkout.length + dayMealGroups.length
+              const dayKeys = completedActivities[dateStr] || []
+              const dayDone = dayTaskTotal > 0
+                ? dayWorkout.filter((e) => dayKeys.includes(completionKey(dateStr, e.id))).length
+                  + dayMealGroups.filter((g) =>
+                    isMealCompleted(completedActivities, dateStr, g.mealType, g.entries)
+                  ).length
                 : 0
-              const allDone = dayEntries.length > 0 && dayDone === dayEntries.length
+              const allDone = dayTaskTotal > 0 && dayDone === dayTaskTotal
 
               return (
                 <motion.button
@@ -346,12 +358,12 @@ export default function CalendarPage() {
                   )}
 
                   {/* İlerleme mini-bar */}
-                  {inMonth && dayEntries.length > 0 && dayDone > 0 && !allDone && (
+                  {inMonth && dayTaskTotal > 0 && dayDone > 0 && !allDone && (
                     <div className="mt-auto w-full">
                       <div className="h-0.5 overflow-hidden rounded-full bg-cream-200">
                         <div
                           className={`h-0.5 rounded-full ${selected ? 'bg-white/60' : 'bg-brand-400'}`}
-                          style={{ width: `${(dayDone / dayEntries.length) * 100}%` }}
+                          style={{ width: `${(dayDone / dayTaskTotal) * 100}%` }}
                         />
                       </div>
                     </div>

@@ -1485,6 +1485,7 @@ export async function createProgram(data) {
       cycleStartDate: data.cycleStartDate || null,
       cycleLength: data.cycleLength || null,
       cycleLoop: data.cycleLoop !== undefined ? data.cycleLoop : null,
+      cycleSameDaily: data.cycleSameDaily !== undefined ? data.cycleSameDaily : null,
       sessionDuration: data.sessionDuration || null,
       createdAt: nowISO(),
     },

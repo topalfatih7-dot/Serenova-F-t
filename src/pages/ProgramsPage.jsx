@@ -8,7 +8,7 @@ import VideoPlayer from '../components/ui/VideoPlayer'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
-import { mealLabel, CYCLE_PLAN_LENGTH } from '../utils/programSchedule'
+import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation } from '../utils/programSchedule'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
@@ -45,6 +45,14 @@ function groupLabel(key, program = null) {
 }
 
 function groupBySchedule(entries = [], program = null) {
+  if (program?.scheduleType === 'cycle14' && !usesLegacyCycleDayRotation(program)) {
+    return [{
+      key: 'daily',
+      label: 'Günlük menü (her gün aynı)',
+      items: dedupeDailyNutritionEntries(entries),
+    }]
+  }
+
   const groups = {}
   entries.forEach((e) => {
     const key = groupKey(e)
@@ -112,7 +120,7 @@ export default function ProgramsPage() {
                       </span>
                       {p.scheduleType === 'cycle14' && (
                         <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
-                          14 Günlük Plan
+                          14 Gün · Her Gün Aynı
                         </span>
                       )}
                       {isWorkout && p.sessionDuration && (
@@ -126,7 +134,7 @@ export default function ProgramsPage() {
                         {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
                         {' — '}
                         {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
-                        {' · 14 gün sonra biter'}
+                        {' · her gün aynı menü'}
                       </p>
                     )}
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-cream-800/50">

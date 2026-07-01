@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
-import { mealLabel, mealContentText, formatEntrySchedule } from '../../utils/programSchedule'
+import { mealLabel, mealContentText, formatEntrySchedule, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation } from '../../utils/programSchedule'
 
 export default function StaffListsPage() {
   const { staffUser, programs } = useApp()
@@ -32,9 +32,11 @@ export default function StaffListsPage() {
         <div className="space-y-3">
           {mine.map((p) => {
             const open = expanded === p.id
-            const mealCount = new Set(
-              (p.entries || []).map((e) => `${e.cycleDay ?? e.date ?? e.day}_${e.mealType}`)
-            ).size
+            const mealCount = p.scheduleType === 'cycle14' && !usesLegacyCycleDayRotation(p)
+              ? dedupeDailyNutritionEntries(p.entries || []).length
+              : new Set(
+                  (p.entries || []).map((e) => `${e.cycleDay ?? e.date ?? e.day}_${e.mealType}`)
+                ).size
             return (
               <div key={p.id} className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
                 <button
@@ -48,7 +50,7 @@ export default function StaffListsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-cream-900">{p.title}</p>
                     {p.scheduleType === 'cycle14' && (
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">14 günlük plan</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">14 gün · her gün aynı</p>
                     )}
                     <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
                       <User className="h-3 w-3" /> {p.memberName} · {format(new Date(p.createdAt), 'd MMM yyyy', { locale: tr })}

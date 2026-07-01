@@ -7,9 +7,9 @@ import {
   splitEntriesByType,
 } from './programSchedule'
 
-function dayFullyComplete(date, programs, completedActivities) {
+function dayFullyComplete(date, programs, completedActivities, member = null) {
   const dateStr = format(date, 'yyyy-MM-dd')
-  const entries = getProgramEntriesForDate(programs, date)
+  const entries = getProgramEntriesForDate(programs, date, member)
   if (entries.length === 0) return false
 
   const { workout, nutrition } = splitEntriesByType(entries)
@@ -25,23 +25,23 @@ function dayFullyComplete(date, programs, completedActivities) {
 }
 
 /** Kesintisiz tamamlanan gün serisi */
-export function computeStreak(programs, completedActivities, today = new Date()) {
+export function computeStreak(programs, completedActivities, today = new Date(), member = null) {
   let streak = 0
   let cursor = startOfDay(today)
 
-  const todayComplete = dayFullyComplete(cursor, programs, completedActivities)
+  const todayComplete = dayFullyComplete(cursor, programs, completedActivities, member)
   if (!todayComplete) {
     cursor = subDays(cursor, 1)
   }
 
   while (true) {
-    const entries = getProgramEntriesForDate(programs, cursor)
+    const entries = getProgramEntriesForDate(programs, cursor, member)
     if (entries.length === 0) {
       cursor = subDays(cursor, 1)
       if (format(cursor, 'yyyy-MM-dd') < '2020-01-01') break
       continue
     }
-    if (!dayFullyComplete(cursor, programs, completedActivities)) break
+    if (!dayFullyComplete(cursor, programs, completedActivities, member)) break
     streak += 1
     cursor = subDays(cursor, 1)
     if (streak > 365) break
@@ -56,7 +56,7 @@ function weekKey(date) {
 }
 
 /** Haftalık antrenman grafiği verisi */
-export function buildWorkoutProgress(programs, completedActivities, existing = []) {
+export function buildWorkoutProgress(programs, completedActivities, existing = [], member = null) {
   const map = new Map((existing || []).map((r) => [r.week, { ...r }]))
 
   const allDates = new Set([
@@ -72,7 +72,7 @@ export function buildWorkoutProgress(programs, completedActivities, existing = [
   allDates.forEach((dateStr) => {
     const date = new Date(`${dateStr}T12:00:00`)
     const wk = weekKey(date)
-    const entries = getProgramEntriesForDate(programs, date)
+    const entries = getProgramEntriesForDate(programs, date, member)
     const workoutEntries = entries.filter((e) => e.programType === 'workout')
     if (workoutEntries.length === 0) return
 
@@ -89,7 +89,7 @@ export function buildWorkoutProgress(programs, completedActivities, existing = [
 }
 
 /** Haftalık öğün tamamlama grafiği (beslenme listeleri) */
-export function buildMealProgress(programs, completedActivities, existing = []) {
+export function buildMealProgress(programs, completedActivities, existing = [], member = null) {
   const map = new Map((existing || []).map((r) => [r.week, { ...r }]))
 
   const allDates = new Set(Object.keys(completedActivities || {}))
@@ -103,8 +103,8 @@ export function buildMealProgress(programs, completedActivities, existing = []) 
   allDates.forEach((dateStr) => {
     const date = new Date(`${dateStr}T12:00:00`)
     const wk = weekKey(date)
-    const entries = getProgramEntriesForDate(programs, date)
-    const nutrition = entries.filter((e) => e.programType === 'nutrition')
+    const entries = getProgramEntriesForDate(programs, date, member)
+    const nutrition = entries.filter((e) => e.programType === 'nutrition' || e.mealType)
     const mealGroups = groupEntriesByMeal(nutrition)
     if (mealGroups.length === 0) return
 
@@ -121,14 +121,14 @@ export function buildMealProgress(programs, completedActivities, existing = []) 
   return Array.from(map.values()).sort((a, b) => a.week.localeCompare(b.week)).slice(-12)
 }
 
-export function buildProgressPatch(programs, completedActivities, currentProgress = {}) {
+export function buildProgressPatch(programs, completedActivities, currentProgress = {}, member = null) {
   return {
-    streak: computeStreak(programs, completedActivities),
+    streak: computeStreak(programs, completedActivities, new Date(), member),
     progress: {
       weight: currentProgress.weight || [],
       mood: currentProgress.mood || [],
-      workouts: buildWorkoutProgress(programs, completedActivities, currentProgress.workouts),
-      meals: buildMealProgress(programs, completedActivities, currentProgress.meals),
+      workouts: buildWorkoutProgress(programs, completedActivities, currentProgress.workouts, member),
+      meals: buildMealProgress(programs, completedActivities, currentProgress.meals, member),
     },
   }
 }

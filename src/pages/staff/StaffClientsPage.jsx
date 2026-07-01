@@ -17,6 +17,13 @@ import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../se
 import { AVAILABILITY_WEEKDAYS } from '../../services/availability'
 import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
 import VideoJoinLink from '../../components/video/VideoJoinLink'
+import {
+  findEntriesOutsidePackage,
+  getMemberPackageDateRange,
+  getPackageWindowsForProgramType,
+  isDateInPackageWindows,
+  memberHasProgramTypePackage,
+} from '../../utils/programPackageScope'
 
 const weekdayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
 
@@ -53,7 +60,7 @@ function expandEverydayEntries(list) {
 }
 
 // Koç program oluşturucu — kütüphane kartları + sepet UX
-function CoachProgramBuilder({ exercises, onCreate }) {
+function CoachProgramBuilder({ exercises, onCreate, packageRange }) {
   const { toast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -67,6 +74,16 @@ function CoachProgramBuilder({ exercises, onCreate }) {
   const [timeMode, setTimeMode] = useState('global')
   const [globalTime, setGlobalTime] = useState({ start: '09:00', end: '10:00' })
   const [dayTimes, setDayTimes] = useState({})
+
+  const dateBounds = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    if (!packageRange) {
+      return { min: today, max: format(addDays(new Date(), 90), 'yyyy-MM-dd') }
+    }
+    const min = packageRange.start > today ? packageRange.start : today
+    const max = packageRange.end || format(addDays(new Date(), 365), 'yyyy-MM-dd')
+    return { min, max: max >= min ? max : min }
+  }, [packageRange])
 
   const currentKey = scheduleMode === 'date'
     ? `date:${selectedDate}`
@@ -307,11 +324,17 @@ function CoachProgramBuilder({ exercises, onCreate }) {
           <input
             type="date"
             value={selectedDate}
-            min={format(new Date(), 'yyyy-MM-dd')}
-            max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
+            min={dateBounds.min}
+            max={dateBounds.max}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
           />
+          {packageRange && (
+            <p className="mt-1.5 text-[11px] text-brand-800/70">
+              Paket süresi: {packageRange.start}
+              {packageRange.end ? ` — ${packageRange.end}` : ' (süresiz)'}
+            </p>
+          )}
         </div>
       )}
 
@@ -664,8 +687,36 @@ export default function StaffClientsPage() {
     m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
   )
 
+  const programType = isCoach ? 'workout' : 'nutrition'
+  const packageRange = useMemo(() => {
+    if (!programClient) return null
+    return getMemberPackageDateRange(programClient, programType)
+  }, [programClient, programType])
+
   const handleCreate = (data) => {
     if (!programClient) return
+    if (!memberHasProgramTypePackage(programClient, programType)) {
+      toast('Üyenin bu program türü için aktif paketi yok', 'error')
+      return
+    }
+    const outside = findEntriesOutsidePackage(data.entries || [], programClient, programType)
+    if (outside.length) {
+      const dates = [...new Set(outside.map((e) => e.date))].join(', ')
+      toast(`Paket süresi dışındaki tarihler: ${dates}`, 'error')
+      return
+    }
+    if (data.scheduleType === 'cycle14' && data.cycleStartDate) {
+      const windows = getPackageWindowsForProgramType(programClient, programType)
+      if (!isDateInPackageWindows(data.cycleStartDate, windows)) {
+        toast('Liste başlangıç tarihi üyenin paket süresi içinde olmalı', 'error')
+        return
+      }
+      const endDate = format(addDays(new Date(`${data.cycleStartDate}T12:00:00`), (data.cycleLength || 14) - 1), 'yyyy-MM-dd')
+      if (!isDateInPackageWindows(endDate, windows)) {
+        toast('14 günlük listenin bitiş tarihi paket süresini aşıyor', 'error')
+        return
+      }
+    }
     createProgram({
       type: isCoach ? 'workout' : 'nutrition',
       memberId: programClient.id,
@@ -754,8 +805,8 @@ export default function StaffClientsPage() {
       <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — ${isCoach ? 'Program' : 'Beslenme Listesi'}`} size="xl">
         {programClient && (
           isCoach
-            ? <CoachProgramBuilder member={programClient} exercises={exercises} onCreate={handleCreate} />
-            : <NutritionProgramBuilder onCreate={handleCreate} />
+            ? <CoachProgramBuilder exercises={exercises} packageRange={packageRange} onCreate={handleCreate} />
+            : <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreate} />
         )}
       </Modal>
     </div>

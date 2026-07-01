@@ -846,7 +846,7 @@ export function AppProvider({ children }) {
     const newKeys = dayKeys.includes(key) ? dayKeys.filter((k) => k !== key) : [...dayKeys, key]
     const completedActivities = { ...current, [dateStr]: newKeys }
     const myProgs = (remoteDb?.programs || []).filter((p) => p.memberId === currentMember.id)
-    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress)
+    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress, currentMember)
     await patchCurrentRemote({ completedActivities, ...progressPatch })
   }, [currentMember, remoteDb?.programs, patchCurrentRemote])
 
@@ -866,7 +866,7 @@ export function AppProvider({ children }) {
     }
     const completedActivities = { ...current, [dateStr]: newKeys }
     const myProgs = (remoteDb?.programs || []).filter((p) => p.memberId === currentMember.id)
-    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress)
+    const progressPatch = buildProgressPatch(myProgs, completedActivities, currentMember.progress, currentMember)
     await patchCurrentRemote({ completedActivities, ...progressPatch })
   }, [currentMember, remoteDb?.programs, patchCurrentRemote])
 
