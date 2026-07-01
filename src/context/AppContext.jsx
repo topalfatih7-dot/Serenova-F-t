@@ -20,8 +20,10 @@ import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
 import * as chatDb from '../services/chatDb'
 import * as adminChatDb from '../services/adminChatDb'
-import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads, staffClientsSignature, getStaffClients } from '../utils/chatAccess'
+import * as staffCollabChatDb from '../services/staffCollabChatDb'
+import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads, getStaffClients, staffCollabThreadUnreadCount, sortStaffCollabThreads, chatHydrationKey } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
+import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isAuthFastPath } from '../utils/authPaths'
 
 const AppContext = createContext(null)
@@ -42,7 +44,25 @@ export function AppProvider({ children }) {
   const [chatMessages, setChatMessages] = useState({})
   const [adminStaffThreads, setAdminStaffThreads] = useState([])
   const [adminStaffMessages, setAdminStaffMessages] = useState({})
+  const [staffCollabThreads, setStaffCollabThreads] = useState([])
+  const [staffCollabMessages, setStaffCollabMessages] = useState({})
   const chatHydratedKey = useRef(null)
+  const chatThreadIdsRef = useRef(new Set())
+  const adminStaffThreadIdsRef = useRef(new Set())
+  const staffCollabThreadIdsRef = useRef(new Set())
+  const sessionTypeRef = useRef(null)
+
+  useEffect(() => {
+    chatThreadIdsRef.current = new Set((chatThreads || []).map((t) => t.id))
+  }, [chatThreads])
+
+  useEffect(() => {
+    adminStaffThreadIdsRef.current = new Set((adminStaffThreads || []).map((t) => t.id))
+  }, [adminStaffThreads])
+
+  useEffect(() => {
+    staffCollabThreadIdsRef.current = new Set((staffCollabThreads || []).map((t) => t.id))
+  }, [staffCollabThreads])
 
   const reloadRemote = useCallback(async () => {
     setSyncing(true)
@@ -70,10 +90,9 @@ export function AppProvider({ children }) {
       }
     })()
     const unsub = sb.onAuthChange(async (event) => {
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        const d = await sb.hydrate()
-        if (active) setRemoteDb(d)
-      }
+      if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
+      const d = await sb.hydrate()
+      if (active) setRemoteDb(d)
     })
     return () => { active = false; unsub?.() }
   }, [])
@@ -105,48 +124,76 @@ export function AppProvider({ children }) {
   const remoteDbRef = useRef(remoteDb)
   remoteDbRef.current = remoteDb
 
+  const chatHydrationKeyString = useMemo(() => {
+    if (!remoteDb?.session) return ''
+    return chatHydrationKey(
+      remoteDb.session,
+      getCurrentMember(remoteDb),
+      getCurrentStaff(remoteDb),
+      remoteDb.members || [],
+      remoteDb.staff || [],
+    )
+  }, [remoteDb])
+
   useEffect(() => {
     if (!isSupabaseEnabled || !remoteDb?.session) {
       setChatThreads([])
       setChatMessages({})
       setAdminStaffThreads([])
       setAdminStaffMessages({})
+      setStaffCollabThreads([])
+      setStaffCollabMessages({})
       chatHydratedKey.current = null
+      chatThreadIdsRef.current = new Set()
+      adminStaffThreadIdsRef.current = new Set()
+      staffCollabThreadIdsRef.current = new Set()
       return undefined
     }
-    const session = remoteDb.session
-    const staffUser = getCurrentStaff(remoteDb)
-    const staffClientsKey = session.type === 'staff' && staffUser
-      ? staffClientsSignature(remoteDb.members || [], staffUser.role, staffUser.id)
-      : ''
-    const key = `${session.type}-${session.memberId || session.staffId || staffUser?.id || ''}-${staffClientsKey}`
-    if (chatHydratedKey.current === key) return undefined
+    if (!chatHydrationKeyString) return undefined
+    if (chatHydratedKey.current === chatHydrationKeyString) return undefined
+
+    const remoteDbSnapshot = remoteDbRef.current
+    if (!remoteDbSnapshot?.session) return undefined
+
+    const session = remoteDbSnapshot.session
+    const staffUser = getCurrentStaff(remoteDbSnapshot)
+    const key = chatHydrationKeyString
 
     let active = true
     ;(async () => {
-      const member = getCurrentMember(remoteDb)
-      const [threads, adminThreads] = await Promise.all([
+      const member = getCurrentMember(remoteDbSnapshot)
+      const [threads, adminThreads, collabThreads] = await Promise.all([
         chatDb.hydrateChatThreads(
           session,
           member,
-          remoteDb.staff || [],
+          remoteDbSnapshot.staff || [],
           staffUser,
-          remoteDb.members || [],
+          remoteDbSnapshot.members || [],
         ),
         adminChatDb.hydrateAdminStaffThreads(
           session,
-          remoteDb.staff || [],
+          remoteDbSnapshot.staff || [],
+          staffUser,
+        ),
+        staffCollabChatDb.hydrateStaffCollabThreads(
+          session,
+          remoteDbSnapshot.members || [],
+          remoteDbSnapshot.staff || [],
           staffUser,
         ),
       ])
       if (active) {
         setChatThreads(threads)
         setAdminStaffThreads(adminThreads)
+        setStaffCollabThreads(collabThreads)
+        chatThreadIdsRef.current = new Set(threads.map((t) => t.id))
+        adminStaffThreadIdsRef.current = new Set(adminThreads.map((t) => t.id))
+        staffCollabThreadIdsRef.current = new Set(collabThreads.map((t) => t.id))
         chatHydratedKey.current = key
       }
     })()
     return () => { active = false }
-  }, [remoteDb?.session, remoteDb?.members, remoteDb?.staff])
+  }, [chatHydrationKeyString])
 
   const chatUnreadCount = useMemo(() => {
     if (isStaff) {
@@ -165,6 +212,17 @@ export function AppProvider({ children }) {
   const adminStaffUnreadCount = useMemo(() => (
     adminStaffThreads.reduce((sum, t) => sum + adminStaffThreadUnreadCount(t, 'admin'), 0)
   ), [adminStaffThreads])
+
+  const staffCollabUnreadCount = useMemo(() => {
+    const role = normalizeStaffRole(currentStaff?.role)
+    if (role !== 'coach' && role !== 'dietitian') return 0
+    return staffCollabThreads.reduce((sum, t) => sum + staffCollabThreadUnreadCount(t, role), 0)
+  }, [staffCollabThreads, currentStaff?.role])
+
+  const sortedStaffCollabThreads = useMemo(() => {
+    const role = normalizeStaffRole(currentStaff?.role)
+    return sortStaffCollabThreads(staffCollabThreads, role === 'dietitian' ? 'dietitian' : 'coach')
+  }, [staffCollabThreads, currentStaff?.role])
 
   const pendingApplicationsCount = useMemo(() => {
     if (!isAdmin) return 0
@@ -293,6 +351,60 @@ export function AppProvider({ children }) {
     return thread
   }, [])
 
+  const loadStaffCollabMessages = useCallback(async (threadId) => {
+    const messages = await staffCollabChatDb.fetchStaffCollabMessages(threadId)
+    setStaffCollabMessages((prev) => ({ ...prev, [threadId]: messages }))
+    return messages
+  }, [])
+
+  const sendStaffCollabMessage = useCallback(async (thread, senderType, senderId, text) => {
+    const r = await staffCollabChatDb.sendStaffCollabMessage({ thread, senderType, senderId, text })
+    if (r.success) {
+      setStaffCollabMessages((prev) => ({
+        ...prev,
+        [thread.id]: [...(prev[thread.id] || []), r.message],
+      }))
+      setStaffCollabThreads((prev) => prev.map((t) => (t.id === thread.id ? r.thread : t)))
+    }
+    return r
+  }, [])
+
+  const markStaffCollabThreadRead = useCallback(async (threadId, readerType) => {
+    const updated = await staffCollabChatDb.markStaffCollabThreadRead(threadId, readerType)
+    if (updated) {
+      setStaffCollabThreads((prev) => prev.map((t) => (t.id === threadId ? updated : t)))
+    }
+    return updated
+  }, [])
+
+  const refreshStaffCollabThreads = useCallback(async () => {
+    const dbNow = remoteDbRef.current
+    const staffUser = getCurrentStaff(dbNow)
+    if (!staffUser?.id) return []
+    const threads = await staffCollabChatDb.ensureStaffCollabThreads(
+      staffUser,
+      dbNow?.members || [],
+      dbNow?.staff || [],
+    )
+    setStaffCollabThreads(threads)
+    return threads
+  }, [])
+
+  const ensureStaffCollabThread = useCallback(async (member) => {
+    const dbNow = remoteDbRef.current
+    if (!member?.id) return null
+    const thread = await staffCollabChatDb.getOrCreateStaffCollabThread(member, dbNow?.staff || [])
+    if (thread) {
+      setStaffCollabThreads((prev) => {
+        if (prev.some((t) => t.id === thread.id)) {
+          return prev.map((t) => (t.id === thread.id ? thread : t))
+        }
+        return [thread, ...prev]
+      })
+    }
+    return thread
+  }, [])
+
   const sortedAdminStaffThreads = useMemo(() => {
     const perspective = isStaff ? 'staff' : 'admin'
     return sortAdminStaffThreads(adminStaffThreads, perspective)
@@ -327,6 +439,7 @@ export function AppProvider({ children }) {
   }, [isAuthenticated])
 
   const sessionType = remoteDb?.session?.type
+  sessionTypeRef.current = sessionType
 
   useEffect(() => {
     if (!isSupabaseEnabled || !sessionType) return undefined
@@ -339,6 +452,21 @@ export function AppProvider({ children }) {
       session: { type: sessionType, memberId: currentMember?.id, staffId: currentStaff?.id },
       memberId: currentMember?.id,
       staffId: currentStaff?.id,
+      isChatMessageRelevant: (threadId) => {
+        if (!threadId) return false
+        if (sessionTypeRef.current === 'admin') return true
+        return chatThreadIdsRef.current.has(threadId)
+      },
+      isAdminStaffMessageRelevant: (threadId) => {
+        if (!threadId) return false
+        if (sessionTypeRef.current === 'admin') return true
+        return adminStaffThreadIdsRef.current.has(threadId)
+      },
+      isStaffCollabMessageRelevant: (threadId) => {
+        if (!threadId) return false
+        if (sessionTypeRef.current === 'admin') return true
+        return staffCollabThreadIdsRef.current.has(threadId)
+      },
       onTicketsChange: ({ type, id, ticket }) => {
         setRemoteDb((prev) => {
           if (!prev) return prev
@@ -355,10 +483,18 @@ export function AppProvider({ children }) {
       onMemberChange: (member) => {
         setRemoteDb((prev) => {
           if (!prev) return prev
-          return { ...prev, members: prev.members.map((m) => (m.id === member.id ? member : m)) }
+          const staffUser = getCurrentStaff(prev)
+          const compacted = applySessionCompactionToMember(
+            member,
+            prev.session?.type,
+            staffUser,
+            prev.members,
+          )
+          return { ...prev, members: prev.members.map((m) => (m.id === compacted.id ? compacted : m)) }
         })
       },
       onChatThreadChange: (thread) => {
+        chatThreadIdsRef.current.add(thread.id)
         setChatThreads((prev) => {
           const idx = prev.findIndex((t) => t.id === thread.id)
           if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
@@ -373,6 +509,7 @@ export function AppProvider({ children }) {
         })
       },
       onAdminStaffThreadChange: (thread) => {
+        adminStaffThreadIdsRef.current.add(thread.id)
         setAdminStaffThreads((prev) => {
           const idx = prev.findIndex((t) => t.id === thread.id)
           if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
@@ -381,6 +518,21 @@ export function AppProvider({ children }) {
       },
       onAdminStaffMessageChange: (message) => {
         setAdminStaffMessages((prev) => {
+          const list = prev[message.threadId] || []
+          if (list.some((m) => m.id === message.id)) return prev
+          return { ...prev, [message.threadId]: [...list, message] }
+        })
+      },
+      onStaffCollabThreadChange: (thread) => {
+        staffCollabThreadIdsRef.current.add(thread.id)
+        setStaffCollabThreads((prev) => {
+          const idx = prev.findIndex((t) => t.id === thread.id)
+          if (idx >= 0) return prev.map((t, i) => (i === idx ? thread : t))
+          return [thread, ...prev]
+        })
+      },
+      onStaffCollabMessageChange: (message) => {
+        setStaffCollabMessages((prev) => {
           const list = prev[message.threadId] || []
           if (list.some((m) => m.id === message.id)) return prev
           return { ...prev, [message.threadId]: [...list, message] }
@@ -668,6 +820,18 @@ export function AppProvider({ children }) {
     await patchCurrentRemote({ [key]: sessions })
   }, [currentMember, patchCurrentRemote])
 
+  // Self-servis randevu: personel müsaitliğinden çakışmasız randevu oluştur
+  const bookSession = useCallback(async (type, dateISO, duration) => {
+    const r = await sb.bookStaffSession(type, dateISO, duration)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
+  const getStaffBookedSlots = useCallback(
+    (staffId, type, fromISO, toISO) => sb.getStaffBookedSlots(staffId, type, fromISO, toISO),
+    [],
+  )
+
   const toggleTask = useCallback(async (id) => {
     if (!currentMember) return
     const tasks = (currentMember.tasks || []).map((t) => (t.id === id ? { ...t, done: !t.done } : t))
@@ -747,7 +911,35 @@ export function AppProvider({ children }) {
     return res
   }, [currentMember, reloadRemote])
 
-  const value = {
+  const myPrograms = useMemo(
+    () => (currentMember ? (db.programs || []).filter((p) => p.memberId === currentMember.id) : []),
+    [currentMember?.id, db.programs],
+  )
+
+  const myTickets = useMemo(
+    () => (currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : []),
+    [currentMember?.id, db.tickets],
+  )
+
+  const platform = useMemo(() => ({
+    members: db.members,
+    staff: db.staff || [],
+    programs: db.programs || [],
+    tickets: db.tickets,
+    activities: db.activities,
+    payments: db.payments,
+  }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
+
+  const isFreeTrialExpired = useMemo(
+    () => Boolean(
+      currentMember?.membership === 'free'
+      && currentMember?.freeTrialExpiresAt
+      && new Date() > new Date(currentMember.freeTrialExpiresAt),
+    ),
+    [currentMember?.membership, currentMember?.freeTrialExpiresAt],
+  )
+
+  const value = useMemo(() => ({
     mode: 'supabase',
     loading,
     syncing,
@@ -758,8 +950,8 @@ export function AppProvider({ children }) {
     staff: db.staff || [],
     programs: db.programs || [],
     posts: db.posts || [],
-    myPrograms: currentMember ? (db.programs || []).filter((p) => p.memberId === currentMember.id) : [],
-    myTickets: currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : [],
+    myPrograms,
+    myTickets,
     exercises: db.exercises || [],
     plans: db.plans || ALL_PLANS,
     staffApplications: db.staffApplications || [],
@@ -795,27 +987,26 @@ export function AppProvider({ children }) {
     sendAdminStaffMessage,
     markAdminStaffThreadRead,
     ensureAdminStaffThread,
+    staffCollabThreads: sortedStaffCollabThreads,
+    staffCollabMessages,
+    staffCollabUnreadCount,
+    loadStaffCollabMessages,
+    sendStaffCollabMessage,
+    markStaffCollabThreadRead,
+    refreshStaffCollabThreads,
+    ensureStaffCollabThread,
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},
     premiumExpiresAt: currentMember?.premiumExpiresAt,
     premiumStartedAt: currentMember?.premiumStartedAt,
     freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
-    isFreeTrialExpired: currentMember?.membership === 'free' && currentMember?.freeTrialExpiresAt
-      ? new Date() > new Date(currentMember.freeTrialExpiresAt)
-      : false,
+    isFreeTrialExpired,
     testimonials: db.content?.testimonials || [],
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],
     exerciseTaxonomy: db.content?.exerciseTaxonomy || null,
-    platform: {
-      members: db.members,
-      staff: db.staff || [],
-      programs: db.programs || [],
-      tickets: db.tickets,
-      activities: db.activities,
-      payments: db.payments,
-    },
+    platform,
     adminStats,
     membershipBreakdown,
     monthlyGrowth,
@@ -863,6 +1054,8 @@ export function AppProvider({ children }) {
     markAllNotificationsRead,
     rescheduleSession,
     cancelSession,
+    bookSession,
+    getStaffBookedSlots,
     toggleTask,
     toggleActivityCompletion,
     toggleMealCompletion,
@@ -876,7 +1069,119 @@ export function AppProvider({ children }) {
     refreshVerification,
     refresh: reloadRemote,
     reloadRemote,
-  }
+  }), [
+    loading,
+    syncing,
+    isAuthenticated,
+    isAdmin,
+    isStaff,
+    currentStaff,
+    db.staff,
+    db.programs,
+    db.posts,
+    db.plans,
+    db.staffApplications,
+    db.corporateApplications,
+    db.contactInquiries,
+    db.content,
+    myPrograms,
+    myTickets,
+    db.exercises,
+    user,
+    authUser,
+    currentMember,
+    chatThreads,
+    chatMessages,
+    chatUnreadCount,
+    sortedAdminStaffThreads,
+    adminStaffMessages,
+    adminStaffUnreadCount,
+    staffAdminUnreadCount,
+    pendingApplicationsCount,
+    openSupportTicketsCount,
+    notificationUnreadCount,
+    sortedStaffCollabThreads,
+    staffCollabMessages,
+    staffCollabUnreadCount,
+    isFreeTrialExpired,
+    platform,
+    adminStats,
+    membershipBreakdown,
+    monthlyGrowth,
+    sessionStats,
+    activeUsers,
+    verificationStatus,
+    loadChatMessages,
+    sendChatMessage,
+    markChatThreadRead,
+    refreshStaffChatThreads,
+    ensureStaffChatThread,
+    acceptChatConsent,
+    loadAdminStaffMessages,
+    sendAdminStaffMessage,
+    markAdminStaffThreadRead,
+    ensureAdminStaffThread,
+    loadStaffCollabMessages,
+    sendStaffCollabMessage,
+    markStaffCollabThreadRead,
+    refreshStaffCollabThreads,
+    ensureStaffCollabThread,
+    login,
+    logout,
+    register,
+    completeOAuthMember,
+    registerWithPayment,
+    registerWithPlan,
+    savePlan,
+    changePlan,
+    processPremiumPayment,
+    upgradeToPremium,
+    savePackage,
+    saveSupportSchedule,
+    addStaff,
+    editStaff,
+    updateStaffProfile,
+    removeStaff,
+    removeMember,
+    adminPatchMember,
+    adminUpdatePremium,
+    createProgram,
+    addPost,
+    editPost,
+    removePost,
+    createTicket,
+    setTicketStatus,
+    sendTicketReply,
+    uploadExerciseVideo,
+    addExercise,
+    editExercise,
+    removeExercise,
+    resolveStaffApplication,
+    resolveCorporateApplication,
+    updateContactInquiryStatus,
+    addContent,
+    editContent,
+    removeContent,
+    saveExerciseTaxonomy,
+    submitSuccessStory,
+    markNotificationRead,
+    markAllNotificationsRead,
+    rescheduleSession,
+    cancelSession,
+    bookSession,
+    getStaffBookedSlots,
+    toggleTask,
+    toggleActivityCompletion,
+    toggleMealCompletion,
+    updateProfile,
+    updateSettings,
+    sendEmailVerification,
+    confirmEmailVerification,
+    sendPhoneVerification,
+    confirmPhoneVerification,
+    refreshVerification,
+    reloadRemote,
+  ])
 
   if (!isSupabaseEnabled) {
     return <ConfigErrorScreen />

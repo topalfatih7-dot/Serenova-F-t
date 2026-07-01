@@ -1,357 +1,16 @@
-// Detaylı sağlık testi tanımı (veri odaklı).
-// Her bölüm bir alt-adımdır; kayıt formunun 5. adımında soru-soru gösterilir.
-// Cevaplar member.data.healthTest içinde JSONB olarak veritabanına kaydedilir.
+// Detaylı sağlık testi — paket (koç/diyetisyen) + cinsiyete göre filtrelenir.
+// audience: 'shared' | 'coach' | 'dietitian'
 
-// Soru tipleri: 'emoji' | 'single' | 'multi' | 'text' | 'time'
-export const HEALTH_SECTIONS = [
-  {
-    id: 'general',
-    title: 'Genel Durum',
-    subtitle: 'Kendinizi son zamanlarda nasıl hissediyorsunuz?',
-    icon: 'HeartPulse',
-    questions: [
-      {
-        key: 'wellbeing', type: 'emoji', required: true,
-        label: 'Genel sağlık durumunuzu nasıl değerlendirirsiniz?',
-        options: [
-          { value: '1', emoji: '😣', label: 'Kötü' },
-          { value: '2', emoji: '🙁', label: 'Zayıf' },
-          { value: '3', emoji: '😐', label: 'Orta' },
-          { value: '4', emoji: '🙂', label: 'İyi' },
-          { value: '5', emoji: '😄', label: 'Mükemmel' },
-        ],
-      },
-      {
-        key: 'energy', type: 'single', required: true,
-        label: 'Gün içindeki enerji seviyeniz genelde nasıldır?',
-        options: [
-          { value: 'low', label: 'Düşük', desc: 'Sık sık yorgun hissederim' },
-          { value: 'medium', label: 'Orta', desc: 'İdare eder' },
-          { value: 'high', label: 'Yüksek', desc: 'Gün boyu zinde' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'medical',
-    title: 'Tıbbi Geçmiş',
-    subtitle: 'Kronik rahatsızlıklar ve ilaç kullanımı',
-    icon: 'Stethoscope',
-    questions: [
-      {
-        key: 'chronicConditions', type: 'multi', required: false,
-        label: 'Doktor teşhisli kronik bir rahatsızlığınız var mı?',
-        hint: 'Birden fazla seçebilirsiniz. Yoksa boş bırakın.',
-        options: [
-          { value: 'diabetes', label: 'Diyabet' },
-          { value: 'heart', label: 'Kalp/Damar' },
-          { value: 'hypertension', label: 'Hipertansiyon' },
-          { value: 'cholesterol', label: 'Yüksek Kolesterol' },
-          { value: 'asthma', label: 'Astım/KOAH' },
-          { value: 'thyroid', label: 'Tiroid' },
-          { value: 'joint', label: 'Eklem/Omurga' },
-          { value: 'kidney', label: 'Böbrek' },
-          { value: 'digestive', label: 'Sindirim Sistemi' },
-          { value: 'other', label: 'Diğer' },
-        ],
-      },
-      {
-        key: 'medications', type: 'single', required: true,
-        label: 'Düzenli olarak ilaç/takviye kullanıyor musunuz?',
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'yes', label: 'Evet' },
-        ],
-        detail: { key: 'medicationDetail', when: 'yes', placeholder: 'Hangi ilaç/takviye? (ör. tansiyon ilacı, D vitamini)' },
-      },
-      {
-        key: 'familyHistory', type: 'multi', required: false,
-        label: 'Ailenizde aşağıdakilerden geçmişi olan var mı?',
-        hint: 'Birinci derece akrabalar (anne/baba/kardeş). Yoksa boş bırakın.',
-        options: [
-          { value: 'heart', label: 'Kalp Hastalığı' },
-          { value: 'diabetes', label: 'Diyabet' },
-          { value: 'obesity', label: 'Obezite' },
-          { value: 'hypertension', label: 'Tansiyon' },
-          { value: 'cancer', label: 'Kanser' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'physical',
-    title: 'Fiziksel Durum',
-    subtitle: 'Sakatlık, ameliyat ve ağrı geçmişi',
-    icon: 'Bone',
-    questions: [
-      {
-        key: 'injuries', type: 'single', required: true,
-        label: 'Egzersizi kısıtlayan bir sakatlığınız var mı?',
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'yes', label: 'Evet' },
-        ],
-        detail: { key: 'injuryDetail', when: 'yes', placeholder: 'Kısaca açıklayın (ör. diz menisküs, bel fıtığı)' },
-      },
-      {
-        key: 'surgeries', type: 'single', required: true,
-        label: 'Son 2 yılda geçirdiğiniz bir ameliyat oldu mu?',
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'yes', label: 'Evet' },
-        ],
-        detail: { key: 'surgeryDetail', when: 'yes', placeholder: 'Hangi ameliyat ve ne zaman?' },
-      },
-      {
-        key: 'painAreas', type: 'multi', required: false,
-        label: 'Düzenli ağrı yaşadığınız bölge var mı?',
-        hint: 'Yoksa boş bırakın.',
-        options: [
-          { value: 'lowback', label: 'Bel' },
-          { value: 'neck', label: 'Boyun' },
-          { value: 'knee', label: 'Diz' },
-          { value: 'shoulder', label: 'Omuz' },
-          { value: 'hip', label: 'Kalça' },
-          { value: 'ankle', label: 'Ayak Bileği' },
-          { value: 'wrist', label: 'El Bileği' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'lifestyle',
-    title: 'Yaşam Tarzı',
-    subtitle: 'Günlük aktivite ve alışkanlıklar',
-    icon: 'Activity',
-    questions: [
-      {
-        key: 'activityFrequency', type: 'single', required: true,
-        label: 'Haftalık fiziksel aktivite sıklığınız nedir?',
-        options: [
-          { value: 'sedentary', label: 'Hareketsiz', desc: 'Neredeyse hiç' },
-          { value: 'light', label: 'Hafif', desc: 'Haftada 1–2 gün' },
-          { value: 'moderate', label: 'Orta', desc: 'Haftada 3–4 gün' },
-          { value: 'active', label: 'Aktif', desc: 'Haftada 5+ gün' },
-        ],
-      },
-      {
-        key: 'sittingHours', type: 'single', required: true,
-        label: 'Günde ortalama kaç saat oturarak geçiriyorsunuz?',
-        options: [
-          { value: '<4', label: '4 saatten az' },
-          { value: '4-8', label: '4–8 saat' },
-          { value: '8+', label: '8 saatten fazla' },
-        ],
-      },
-      {
-        key: 'smoking', type: 'single', required: true,
-        label: 'Sigara kullanıyor musunuz?',
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'yes', label: 'Evet' },
-          { value: 'quit', label: 'Bıraktım' },
-        ],
-      },
-      {
-        key: 'alcohol', type: 'single', required: true,
-        label: 'Alkol tüketiminiz ne sıklıkta?',
-        options: [
-          { value: 'never', label: 'Hiç' },
-          { value: 'rarely', label: 'Nadiren' },
-          { value: 'regularly', label: 'Düzenli' },
-        ],
-      },
-      {
-        key: 'teaCoffee', type: 'single', required: true,
-        label: 'Günlük çay/kahve tüketim seviyeniz?',
-        options: [
-          { value: 'none', label: 'Hiç', desc: 'Çay/kahve içmem' },
-          { value: 'low', label: 'Az', desc: 'Günde 1–2 fincan' },
-          { value: 'moderate', label: 'Orta', desc: 'Günde 3–4 fincan' },
-          { value: 'high', label: 'Yüksek', desc: 'Günde 5+ fincan' },
-        ],
-      },
-      {
-        key: 'travelFrequency', type: 'single', required: true,
-        label: 'Seyahat sıklığınız nedir?',
-        options: [
-          { value: 'rare', label: 'Nadiren', desc: 'Yılda birkaç kez veya daha az' },
-          { value: 'monthly', label: 'Aylık', desc: 'Ayda 1–2 kez' },
-          { value: 'weekly', label: 'Sık', desc: 'Haftada bir veya daha fazla' },
-        ],
-      },
-      {
-        key: 'substanceUse', type: 'single', required: true,
-        label: 'Madde kullanım durumunuz?',
-        hint: 'Sigara/alkol dışındaki maddeler (reçeteli veya reçetesiz).',
-        options: [
-          { value: 'none', label: 'Kullanmıyorum' },
-          { value: 'past', label: 'Geçmişte kullandım' },
-          { value: 'occasional', label: 'Ara sıra' },
-          { value: 'regular', label: 'Düzenli' },
-        ],
-        detail: { key: 'substanceDetail', when: ['occasional', 'regular'], placeholder: 'Kısaca belirtin (opsiyonel)' },
-      },
-    ],
-  },
-  {
-    id: 'routine',
-    title: 'Günlük Rutin',
-    subtitle: 'Uyku, çalışma düzeni ve öğün saatleriniz',
-    icon: 'Clock',
-    questions: [
-      {
-        key: 'shiftWork', type: 'single', required: true,
-        label: 'Vardiyalı çalışıyor musunuz?',
-        options: [
-          { value: 'no', label: 'Hayır', desc: 'Düzenli mesai saatlerim var' },
-          { value: 'yes', label: 'Evet', desc: 'Vardiya, gece nöbeti veya dönüşümlü mesai' },
-        ],
-        detail: { key: 'shiftWorkDetail', when: 'yes', placeholder: 'Vardiya düzeninizi kısaca yazın (ör. 2 gün gündüz, 2 gece, 2 izin)' },
-      },
-      {
-        key: 'wakeTime', type: 'time', required: true,
-        label: 'Genelde saat kaçta kalkıyorsunuz?',
-        hint: 'Haftalık ortalama uyanma saatiniz',
-      },
-      {
-        key: 'sleepTime', type: 'time', required: true,
-        label: 'Genelde saat kaçta yatıyorsunuz?',
-        hint: 'Haftalık ortalama yatış saatiniz',
-      },
-      {
-        key: 'breakfastTime', type: 'time', required: true,
-        label: 'Kahvaltıyı genelde saat kaçta yapıyorsunuz?',
-      },
-      {
-        key: 'lunchTime', type: 'time', required: true,
-        label: 'Öğle yemeğini genelde saat kaçta yapıyorsunuz?',
-      },
-      {
-        key: 'dinnerTime', type: 'time', required: true,
-        label: 'Akşam yemeğini genelde saat kaçta yapıyorsunuz?',
-      },
-    ],
-  },
-  {
-    id: 'recovery',
-    title: 'Uyku & Stres',
-    subtitle: 'Dinlenme ve ruhsal denge',
-    icon: 'Moon',
-    questions: [
-      {
-        key: 'sleepHours', type: 'single', required: true,
-        label: 'Ortalama günlük uyku süreniz?',
-        options: [
-          { value: '<4', label: '4 saatten az' },
-          { value: '4-6', label: '4–6 saat' },
-          { value: '7-8', label: '7–8 saat' },
-          { value: '8+', label: '8+ saat' },
-        ],
-      },
-      {
-        key: 'sleepQuality', type: 'single', required: true,
-        label: 'Uyku kaliteniz nasıl?',
-        options: [
-          { value: 'poor', label: 'Kötü', desc: 'Sık uyanırım' },
-          { value: 'fair', label: 'Orta' },
-          { value: 'good', label: 'İyi', desc: 'Dinlenmiş uyanırım' },
-        ],
-      },
-      {
-        key: 'stressLevel', type: 'single', required: true,
-        label: 'Genel stres seviyeniz?',
-        options: [
-          { value: 'low', label: 'Düşük' },
-          { value: 'medium', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' },
-        ],
-      },
-      {
-        key: 'mood', type: 'emoji', required: true,
-        label: 'Son 2 haftadaki genel ruh haliniz?',
-        options: [
-          { value: 'down', emoji: '😔', label: 'Düşük' },
-          { value: 'neutral', emoji: '😐', label: 'Nötr' },
-          { value: 'good', emoji: '🙂', label: 'İyi' },
-          { value: 'great', emoji: '😄', label: 'Çok İyi' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'nutrition',
-    title: 'Beslenme',
-    subtitle: 'Yeme alışkanlıkları ve hedef ilişkisi',
-    icon: 'Apple',
-    questions: [
-      {
-        key: 'mealsPerDay', type: 'single', required: true,
-        label: 'Günde kaç öğün yersiniz?',
-        options: [
-          { value: '1-2', label: '1–2 öğün' },
-          { value: '3', label: '3 öğün' },
-          { value: '4-5', label: '4–5 öğün' },
-        ],
-      },
-      {
-        key: 'eatingHabits', type: 'multi', required: false,
-        label: 'Sizin için geçerli olanları işaretleyin',
-        hint: 'Birden fazla seçebilirsiniz.',
-        options: [
-          { value: 'skip_meals', label: 'Öğün atlarım' },
-          { value: 'night_snack', label: 'Gece atıştırırım' },
-          { value: 'fast_food', label: 'Sık fast food' },
-          { value: 'sugary_drinks', label: 'Şekerli içecek' },
-          { value: 'emotional', label: 'Duygusal yeme' },
-          { value: 'regular', label: 'Düzenli beslenirim' },
-        ],
-      },
-      {
-        key: 'waterIntake', type: 'single', required: true,
-        label: 'Günlük su tüketiminiz?',
-        options: [
-          { value: 'low', label: '1 L altı' },
-          { value: 'medium', label: '1–2 L' },
-          { value: 'high', label: '2 L üzeri' },
-        ],
-      },
-      {
-        key: 'foodAllergies', type: 'text', required: false,
-        label: 'Besin alerjiniz veya intoleransınız var mı?',
-        placeholder: 'Ör. laktoz, gluten, fıstık — yoksa boş bırakın',
-      },
-    ],
-  },
-  {
-    id: 'women',
-    title: 'Kadın Sağlığı',
-    subtitle: 'Programınızın güvenli planlanması için',
-    icon: 'Flower2',
-    genderOnly: 'female',
-    questions: [
-      {
-        key: 'pregnancy', type: 'single', required: true,
-        label: 'Şu anki durumunuz?',
-        options: [
-          { value: 'none', label: 'İlgili değil' },
-          { value: 'pregnant', label: 'Hamileyim' },
-          { value: 'postpartum', label: 'Yeni doğum yaptım' },
-          { value: 'breastfeeding', label: 'Emziriyorum' },
-        ],
-      },
-      {
-        key: 'menstrualRegular', type: 'single', required: false,
-        label: 'Adet döngünüz düzenli mi?',
-        options: [
-          { value: 'regular', label: 'Düzenli' },
-          { value: 'irregular', label: 'Düzensiz' },
-          { value: 'na', label: 'Belirtmek istemiyorum' },
-        ],
-      },
-    ],
-  },
-]
+import { packageIncludesCoach, packageIncludesDietitian } from './membershipPlans'
+import { HEALTH_SECTIONS } from './healthTestSections'
+
+export { HEALTH_SECTIONS }
+
+export const HEALTH_AUDIENCE_META = {
+  shared: { label: 'Genel', chip: 'bg-amber-100 text-amber-800 ring-amber-200', border: 'border-amber-100 bg-amber-50/50' },
+  coach: { label: 'Koç', chip: 'bg-brand-100 text-brand-800 ring-brand-200', border: 'border-brand-100 bg-brand-50/40' },
+  dietitian: { label: 'Diyetisyen', chip: 'bg-sage-100 text-sage-800 ring-sage-200', border: 'border-sage-100 bg-sage-50/40' },
+}
 
 // Boş test nesnesi (tüm anahtarlar tanımlı olsun ki kontrollü inputlar uyarı vermesin).
 export const EMPTY_HEALTH_TEST = (() => {
@@ -372,19 +31,82 @@ export function isDetailVisible(detail, parentValue) {
   return parentValue === detail.when
 }
 
-// Cinsiyete göre uygulanabilir bölümler.
-export function getApplicableSections(gender) {
-  return HEALTH_SECTIONS.filter((s) => !s.genderOnly || s.genderOnly === gender)
+/** AI analizi ve eski kayıtlar için yeni cevapları kanonik değerlere çevirir. */
+export function normalizeHealthTestForAnalysis(ht) {
+  if (!ht) return {}
+  const n = { ...ht }
+
+  const wellbeingMap = { very_low: '1', low: '2', medium: '3', good: '4', excellent: '5' }
+  if (wellbeingMap[n.wellbeing]) n.wellbeing = wellbeingMap[n.wellbeing]
+
+  if (n.injuries === 'yes_ongoing' || n.injuries === 'yes_recovered') n.injuries = 'yes'
+
+  if (n.medications === 'regular' || n.medications === 'occasional') n.medications = 'yes'
+  if (n.medications === 'none') n.medications = 'no'
+
+  const activityMap = { '0': 'sedentary', '1_2': 'light', '3_4': 'moderate', '5_plus': 'active' }
+  if (activityMap[n.activityFrequency]) n.activityFrequency = activityMap[n.activityFrequency]
+
+  const sittingMap = { under_4: '<4', '4_6': '4-8', '7_9': '8+', '10_plus': '8+' }
+  if (sittingMap[n.sittingHours]) n.sittingHours = sittingMap[n.sittingHours]
+
+  const teaMap = { '0_1': 'low', '2_3': 'moderate', '4_5': 'moderate', '6_plus': 'high' }
+  if (teaMap[n.teaCoffee]) n.teaCoffee = teaMap[n.teaCoffee]
+
+  const substanceMap = { no: 'none', yes: 'regular' }
+  if (substanceMap[n.substanceUse]) n.substanceUse = substanceMap[n.substanceUse]
+
+  const smokeMap = { never: 'no', daily: 'yes', former: 'quit', occasional: 'yes' }
+  if (smokeMap[n.smoking]) n.smoking = smokeMap[n.smoking]
+
+  const alcoholMap = { none: 'never', monthly: 'rarely', weekly: 'regularly', frequent: 'regularly' }
+  if (alcoholMap[n.alcohol]) n.alcohol = alcoholMap[n.alcohol]
+
+  if (Array.isArray(n.chronicConditions)) {
+    n.chronicConditions = n.chronicConditions.filter((v) => v !== 'none')
+    if (n.chronicConditions.includes('heartDisease')) {
+      n.chronicConditions = [...new Set([...n.chronicConditions.filter((v) => v !== 'heartDisease'), 'heart'])]
+    }
+  }
+
+  if (Array.isArray(n.familyHistory) && n.familyHistory.includes('heartDisease')) {
+    n.familyHistory = [...new Set([...n.familyHistory.filter((v) => v !== 'heartDisease'), 'heart'])]
+  }
+
+  return n
+}
+
+export function getHealthPackageContext(packageConfig = {}) {
+  return {
+    hasCoach: packageIncludesCoach(packageConfig),
+    hasDietitian: packageIncludesDietitian(packageConfig),
+  }
+}
+
+function sectionApplies(section, gender, ctx) {
+  if (section.genderOnly && section.genderOnly !== gender) return false
+  const aud = section.audience || 'shared'
+  if (aud === 'shared') return true
+  if (aud === 'coach') return ctx.hasCoach
+  if (aud === 'dietitian') return ctx.hasDietitian
+  return true
+}
+
+// Cinsiyet + pakete göre uygulanabilir bölümler.
+export function getApplicableSections(gender, packageConfig = null) {
+  const ctx = getHealthPackageContext(packageConfig || {})
+  return HEALTH_SECTIONS.filter((s) => sectionApplies(s, gender, ctx))
 }
 
 // Tüm soruları düz liste olarak döndürür (kayıt akışında soru-soru gösterim için).
-export function getApplicableQuestions(gender) {
-  return getApplicableSections(gender).flatMap((section) =>
+export function getApplicableQuestions(gender, packageConfig = null) {
+  return getApplicableSections(gender, packageConfig).flatMap((section) =>
     section.questions.map((q) => ({
       ...q,
       sectionId: section.id,
       sectionTitle: section.title,
       sectionIcon: section.icon,
+      audience: section.audience || 'shared',
     })),
   )
 }
@@ -418,15 +140,25 @@ export function isSectionComplete(section, healthTest) {
   })
 }
 
-// Tüm zorunlu sorular cevaplanmış mı? (gender'a göre)
-export function isHealthTestComplete(healthTest, gender) {
-  return getApplicableSections(gender).every((s) => isSectionComplete(s, healthTest))
+// Tüm zorunlu sorular cevaplanmış mı? (cinsiyet + paket)
+export function isHealthTestComplete(healthTest, gender, packageConfig = null) {
+  return getApplicableSections(gender, packageConfig).every((s) => isSectionComplete(s, healthTest))
 }
 
-// Admin/panel görünümü için: cevaplanmış soruları okunabilir etiket/değer çiftlerine çevirir.
-export function describeHealthTest(healthTest, gender) {
+// Admin/panel görünümü — cevaplanmış sorular; pakette olmayan bölümler de yanıt varsa gösterilir.
+export function describeHealthTest(healthTest, gender, packageConfig = null) {
   if (!healthTest) return []
-  return getApplicableSections(gender)
+  const ctx = getHealthPackageContext(packageConfig || {})
+  const sections = HEALTH_SECTIONS.filter((section) => {
+    if (section.genderOnly && section.genderOnly !== gender) return false
+    if (sectionApplies(section, gender, ctx)) return true
+    return section.questions.some((q) => {
+      const v = healthTest[q.key]
+      if (q.type === 'multi') return Array.isArray(v) && v.length > 0
+      return v !== '' && v != null
+    })
+  })
+  return sections
     .map((section) => {
       const items = []
       section.questions.forEach((q) => {
@@ -447,7 +179,7 @@ export function describeHealthTest(healthTest, gender) {
           items.push({ label: 'Açıklama', value: healthTest[q.detail.key] })
         }
       })
-      return { id: section.id, title: section.title, items }
+      return { id: section.id, title: section.title, audience: section.audience || 'shared', items }
     })
     .filter((s) => s.items.length > 0)
 }

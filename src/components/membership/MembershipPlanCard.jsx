@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Sparkles, ArrowRight } from 'lucide-react'
+import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatMonthlyPrice, getPlanBadge, RECOMMENDED_PLAN } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
 
@@ -19,15 +20,25 @@ export default function MembershipPlanCard({
   current = false,
   compact = false,
 }) {
+  const [expanded, setExpanded] = useState(false)
   const theme = getPlanTheme(plan.id)
   const isRecommended = recommended ?? plan.id === RECOMMENDED_PLAN
   const planBadge = badge ?? getPlanBadge(plan)
-  const included = (plan.features || []).filter((f) => f.included)
+  const features = plan.features || []
+  const hasMore = features.length > VISIBLE_FEATURES
+  const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_FEATURES)
+  const hiddenCount = features.length - VISIBLE_FEATURES
   const daily = dailyPrice(plan.price)
   const Tag = mode === 'select' ? motion.button : motion(Link)
   const tagProps = mode === 'select'
     ? { type: 'button', onClick: () => onSelect?.(plan.id) }
     : { to: ctaTo || `/onboarding?plan=${plan.id}` }
+
+  const toggleFeatures = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setExpanded((v) => !v)
+  }
 
   return (
     <Tag
@@ -100,21 +111,27 @@ export default function MembershipPlanCard({
         </div>
 
         <ul className="mt-4 flex-1 space-y-2 border-t border-cream-100 pt-4">
-          {included.slice(0, VISIBLE_FEATURES).map((f, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs leading-snug text-cream-800/85">
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage-500" strokeWidth={3} />
-              <span>{f.text}</span>
+          {visibleFeatures.map((f, i) => (
+            <li key={i} className={`flex items-start gap-2 text-xs leading-snug ${f.included ? 'text-cream-800/85' : 'text-cream-800/35'}`}>
+              {f.included ? (
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sage-500" strokeWidth={3} />
+              ) : (
+                <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cream-300" strokeWidth={2} />
+              )}
+              <span className={!f.included ? 'line-through' : ''}>{f.text}</span>
             </li>
           ))}
-          {(plan.features || []).filter((f) => !f.included).slice(0, 1).map((f, i) => (
-            <li key={`x-${i}`} className="flex items-start gap-2 text-xs text-cream-800/35">
-              <X className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-              <span className="line-through">{f.text}</span>
-            </li>
-          ))}
-          {included.length > VISIBLE_FEATURES && (
-            <li className="text-[10px] font-semibold text-brand-600/80">
-              +{included.length - VISIBLE_FEATURES} özellik daha
+          {hasMore && (
+            <li>
+              <button
+                type="button"
+                onClick={toggleFeatures}
+                aria-expanded={expanded}
+                className="flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold text-brand-600 transition hover:bg-brand-50/80"
+              >
+                {expanded ? 'Daha az göster' : `+${hiddenCount} özellik daha`}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+              </button>
             </li>
           )}
         </ul>

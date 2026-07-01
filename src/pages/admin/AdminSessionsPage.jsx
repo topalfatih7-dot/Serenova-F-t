@@ -1,18 +1,28 @@
+import { useEffect, useState } from 'react'
 import StatsCard from '../../components/ui/StatsCard'
 import { useApp } from '../../context/AppContext'
+import { fetchAdminSessionSummaries } from '../../services/supabaseDb'
 import { isPaidMembership } from '../../data/membershipPlans'
-import { Calendar, Video, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Calendar, Video, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react'
 
 export default function AdminSessionsPage() {
-  const { platform, sessionStats } = useApp()
+  const { sessionStats, platform } = useApp()
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const sessions = platform.members
-    .filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active')
-    .flatMap((m) => [
-      ...(m.coachSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Koç' })),
-      ...(m.dietitianSessions || []).map((s) => ({ ...s, memberName: m.name, sessionType: 'Diyetisyen' })),
-    ])
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+  useEffect(() => {
+    let active = true
+    fetchAdminSessionSummaries()
+      .then((rows) => {
+        if (active) {
+          setSessions(rows.sort((a, b) => new Date(b.date) - new Date(a.date)))
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
+  }, [])
 
   return (
     <div className="space-y-8">
@@ -28,7 +38,11 @@ export default function AdminSessionsPage() {
         <StatsCard label="Açık Talep" value={sessionStats.noResponseAlerts} icon={AlertTriangle} accent="cream" />
       </div>
 
-      {sessions.length === 0 ? (
+      {loading ? (
+        <p className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-cream-200 py-12 text-sm text-cream-800/50">
+          <Loader2 className="h-4 w-4 animate-spin" /> Seanslar yükleniyor…
+        </p>
+      ) : sessions.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-cream-200 py-12 text-center text-sm text-cream-800/50">
           Premium üye olmadığı için seans yok. Premium kayıt oluşturun.
         </p>
@@ -48,7 +62,7 @@ export default function AdminSessionsPage() {
               {sessions.map((s) => (
                 <tr key={s.id} className="border-b border-cream-50">
                   <td className="px-4 py-3 font-medium">{s.memberName}</td>
-                  <td className="px-4 py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : 'text-sage-600'}>{s.sessionType}</span></td>
+                  <td className="px-4 py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : s.sessionType === 'Doktor' ? 'text-teal-600' : 'text-sage-600'}>{s.sessionType}</span></td>
                   <td className="px-4 py-3">{s.title}</td>
                   <td className="px-4 py-3 text-cream-800/70">{s.coach}</td>
                   <td className="px-4 py-3">

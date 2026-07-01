@@ -178,7 +178,7 @@ export default function AdminSupportPage() {
               </div>
             )}
 
-            <TicketThread ticket={activeTicket} perspective="admin" onReply={handleReply} live />
+            <TicketThread ticket={activeTicket} perspective="admin" memberName={activeTicket.memberName} onReply={handleReply} live />
 
             <div className="flex flex-wrap gap-2 border-t border-cream-100 pt-4">
               {activeTicket.status !== 'in-progress' && activeTicket.status !== 'closed' && (

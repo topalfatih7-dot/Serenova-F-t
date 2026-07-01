@@ -10,7 +10,7 @@ import {
 } from '../data/membershipPlans'
 import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
-import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
+import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths, extendPremiumExpiry } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
@@ -22,7 +22,22 @@ import { normalizeE164 } from '../data/countryCodes'
 import { ageFromBirthDate } from '../utils/birthDate'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
+import { shouldSkipExpiryPersistDuringPayment } from '../utils/stripePaymentGrace'
 import { displayNameFromAuthUser, memberNeedsProfileCompletion } from '../utils/memberProfile'
+import {
+  syncMemberPackages,
+  addMemberPackage,
+  resolvePackagePurchase,
+  createPackageEntry,
+  migrateLegacyToPackages,
+  isOneTimePlan,
+  isPackageEntryActive,
+  memberExpirySyncNeedsPersist,
+} from '../utils/memberPackages'
+import {
+  compactMembersForRole,
+  extractSessionsFromMemberData,
+} from '../utils/memberSessions'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -30,7 +45,7 @@ const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
 
 // --------------------------- map: row <-> object ---------------------------
-const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'role', 'password']
+const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'assignedDoctorId', 'role', 'password']
 
 function memberData(member) {
   const data = {}
@@ -51,6 +66,7 @@ function memberToRow(member) {
     membership_status: member.membershipStatus || 'active',
     assigned_coach_id: member.assignedCoachId || null,
     assigned_dietitian_id: member.assignedDietitianId || null,
+    assigned_doctor_id: member.assignedDoctorId || null,
     data: memberData(member),
     updated_at: nowISO(),
   }
@@ -58,19 +74,26 @@ function memberToRow(member) {
 
 function rowToMember(row) {
   const data = row.data || {}
-  return {
-    ...data,
+  const {
+    assignedCoachId: _c,
+    assignedDietitianId: _d,
+    assignedDoctorId: _doc,
+    ...dataRest
+  } = data
+  const raw = {
+    ...dataRest,
     id: row.id,
     email: row.email,
     name: row.name,
-    phone: row.phone || data.phone || '',
+    phone: row.phone || dataRest.phone || '',
     membership: row.membership,
     membershipStatus: row.membership_status,
-    // RLS koç/diyetisyen erişimi sütunlara bağlı; JSONB yedek değerini de oku
-    assignedCoachId: row.assigned_coach_id || data.assignedCoachId || null,
-    assignedDietitianId: row.assigned_dietitian_id || data.assignedDietitianId || null,
-    role: row.role || data.role || 'member',
+    assignedCoachId: row.assigned_coach_id ?? null,
+    assignedDietitianId: row.assigned_dietitian_id ?? null,
+    assignedDoctorId: row.assigned_doctor_id ?? null,
+    role: row.role || dataRest.role || 'member',
   }
+  return syncMemberPackages(raw)
 }
 
 function rowToStaff(row) {
@@ -158,6 +181,207 @@ export async function resolveAuthUser() {
 export function onAuthChange(cb) {
   const { data } = supabase.auth.onAuthStateChange((event, session) => cb(event, session))
   return () => data?.subscription?.unsubscribe?.()
+}
+
+/** Tam veri yenilemesi gerektiren auth olayları (TOKEN_REFRESHED hariç) */
+export const AUTH_EVENTS_REQUIRING_HYDRATE = new Set([
+  'INITIAL_SESSION',
+  'SIGNED_IN',
+  'SIGNED_OUT',
+  'USER_UPDATED',
+])
+
+let hydrateInFlight = null
+
+async function fetchAuthenticatedBundle(user, staff) {
+  const role = roleForUser(user, staff)
+  const staffMatch = findStaffMatch(user, staff)
+
+  let members
+  let programs
+  let tickets
+  let activities
+  let payments
+  let staffAppsRes = { data: [] }
+  let corporateAppsRes = { data: [] }
+  let contactInqRes = { data: [] }
+
+  if (role === 'member') {
+    const memberId = user.id
+    const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
+      supabase.from('members').select('*').eq('id', memberId).maybeSingle(),
+      supabase.from('programs').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+      supabase.from('tickets').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+      supabase.from('activities').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+      supabase.from('payments').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+    ])
+    members = membersRes.data ? [rowToMember(membersRes.data)] : []
+    programs = (programsRes.data || []).map(rowToProgram)
+    tickets = (ticketsRes.data || []).map(rowToTicket)
+    activities = (activitiesRes.data || []).map(rowToActivity)
+    payments = (paymentsRes.data || []).map(rowToPayment)
+  } else {
+    const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
+      supabase.from('members').select('*'),
+      supabase.from('programs').select('*').order('created_at', { ascending: false }),
+      supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+      supabase.from('activities').select('*').order('created_at', { ascending: false }),
+      supabase.from('payments').select('*').order('created_at', { ascending: false }),
+    ])
+    members = (membersRes.data || []).map(rowToMember)
+    const memberIds = memberIdSet(members)
+    programs = filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds)
+    tickets = filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds)
+    activities = filterByMemberIds((activitiesRes.data || []).map(rowToActivity), memberIds)
+    payments = filterByMemberIds((paymentsRes.data || []).map(rowToPayment), memberIds)
+
+    if (role === 'admin') {
+      const [sa, ca, ci] = await Promise.all([
+        supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
+        supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
+        supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
+      ])
+      staffAppsRes = sa
+      corporateAppsRes = ca
+      contactInqRes = ci
+    }
+  }
+
+  members = compactMembersForRole(members, role, staffMatch)
+
+  return {
+    members,
+    programs,
+    tickets,
+    activities,
+    payments,
+    role,
+    staffMatch,
+    staffAppsRes,
+    corporateAppsRes,
+    contactInqRes,
+  }
+}
+
+async function hydrateOnce() {
+  const user = await resolveAuthUser()
+
+  const [staffRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
+    supabase.from('staff').select('*').order('created_at', { ascending: true }),
+    supabase.from('posts').select('*').order('created_at', { ascending: false }),
+    supabase.from('site_content').select('*').order('sort', { ascending: true }),
+    supabase.from('exercises').select('*').order('name', { ascending: true }),
+    supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+  ])
+
+  const staff = (staffRes.data || []).map(rowToStaff)
+  const posts = (postsRes.data || []).map(rowToPost)
+  const exercises = (exercisesRes.data || []).map(rowToExercise)
+  const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
+  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
+  ;(contentRes.data || []).forEach((r) => {
+    const item = { id: r.id, ...(r.data || {}) }
+    if (r.kind === 'testimonial') content.testimonials.push(item)
+    else if (r.kind === 'faq') content.faqs.push(item)
+    else if (r.kind === 'success_story') content.successStories.push(item)
+    else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
+  })
+
+  if (!user) {
+    return { ...EMPTY_DB, staff, posts, content, exercises, plans, authUser: null }
+  }
+
+  const authUser = {
+    id: user.id,
+    email: (user.email || '').toLowerCase(),
+    name: displayNameFromAuthUser(user),
+    identities: user.identities || [],
+    app_metadata: user.app_metadata || {},
+  }
+
+  const {
+    members: initialMembers,
+    programs,
+    tickets,
+    activities,
+    payments,
+    role,
+    staffMatch,
+    staffAppsRes,
+    corporateAppsRes,
+    contactInqRes,
+  } = await fetchAuthenticatedBundle(user, staff)
+
+  let members = initialMembers
+  let session
+  if (role === 'admin') session = { type: 'admin', memberId: null, email: authUser.email }
+  else if (role === 'staff') {
+    session = { type: 'staff', staffId: staffMatch?.id || null, email: authUser.email }
+  } else {
+    session = { type: 'member', memberId: user.id, email: authUser.email }
+    const meIdx = members.findIndex((m) => m.id === user.id)
+    if (meIdx >= 0 && !shouldSkipExpiryPersistDuringPayment()) {
+      const before = members[meIdx]
+      const synced = syncMembershipExpiryStatus(before)
+      if (memberExpirySyncNeedsPersist(before, synced)) {
+        await upsertMember(synced)
+        members = members.map((m, i) => (i === meIdx ? synced : m))
+      }
+    }
+  }
+
+  return {
+    version: 2,
+    members,
+    staff,
+    programs,
+    posts,
+    tickets,
+    activities,
+    payments,
+    exercises,
+    plans,
+    staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
+    corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
+    contactInquiries: (contactInqRes.data || []).map(rowToContactInquiry),
+    session,
+    authUser,
+    content,
+  }
+}
+
+export async function hydrate() {
+  if (!hydrateInFlight) {
+    hydrateInFlight = hydrateOnce().finally(() => { hydrateInFlight = null })
+  }
+  return hydrateInFlight
+}
+
+/** Tek üyenin randevu dizileri — admin/staff listede strip edilmişse lazy load için. */
+export async function fetchMemberSessions(memberId) {
+  const { data, error } = await supabase.from('members').select('data').eq('id', memberId).maybeSingle()
+  if (error || !data) {
+    return { coachSessions: [], dietitianSessions: [], doctorSessions: [] }
+  }
+  return extractSessionsFromMemberData(data.data || {})
+}
+
+/** Admin seans sayfası — yalnızca randevu alanları (tüm üye blob'u context'e alınmaz). */
+export async function fetchAdminSessionSummaries() {
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, name, membership, membership_status, data')
+  if (error) return []
+  return (data || []).flatMap((row) => {
+    if (!isPaidMembership(row.membership) || row.membership_status !== 'active') return []
+    const sessions = extractSessionsFromMemberData(row.data || {})
+    const name = row.name || ''
+    return [
+      ...(sessions.coachSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Koç' })),
+      ...(sessions.dietitianSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Diyetisyen' })),
+      ...(sessions.doctorSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Doktor' })),
+    ]
+  })
 }
 
 const EMPTY_DB = {
@@ -260,107 +484,6 @@ export async function upsertPlan(plan) {
     updated_at: new Date().toISOString(),
   }, { onConflict: 'id' })
   if (error) throw error
-}
-
-export async function hydrate() {
-  const user = await resolveAuthUser()
-
-  const [staffRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
-    supabase.from('staff').select('*').order('created_at', { ascending: true }),
-    supabase.from('posts').select('*').order('created_at', { ascending: false }),
-    supabase.from('site_content').select('*').order('sort', { ascending: true }),
-    supabase.from('exercises').select('*').order('name', { ascending: true }),
-    supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
-  ])
-
-  const staff = (staffRes.data || []).map(rowToStaff)
-  const posts = (postsRes.data || []).map(rowToPost)
-  const exercises = (exercisesRes.data || []).map(rowToExercise)
-  const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
-  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
-  ;(contentRes.data || []).forEach((r) => {
-    const item = { id: r.id, ...(r.data || {}) }
-    if (r.kind === 'testimonial') content.testimonials.push(item)
-    else if (r.kind === 'faq') content.faqs.push(item)
-    else if (r.kind === 'success_story') content.successStories.push(item)
-    else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
-  })
-
-  if (!user) {
-    return { ...EMPTY_DB, staff, posts, content, exercises, plans, authUser: null }
-  }
-
-  const authUser = {
-    id: user.id,
-    email: (user.email || '').toLowerCase(),
-    name: displayNameFromAuthUser(user),
-    identities: user.identities || [],
-    app_metadata: user.app_metadata || {},
-  }
-
-  const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
-    supabase.from('members').select('*'),
-    supabase.from('programs').select('*').order('created_at', { ascending: false }),
-    supabase.from('tickets').select('*').order('created_at', { ascending: false }),
-    supabase.from('activities').select('*').order('created_at', { ascending: false }),
-    supabase.from('payments').select('*').order('created_at', { ascending: false }),
-  ])
-
-  let members = (membersRes.data || []).map(rowToMember)
-  const memberIds = memberIdSet(members)
-  const role = roleForUser(user, staff)
-  const staffMatch = findStaffMatch(user, staff)
-  let staffAppsRes = { data: [] }
-  let corporateAppsRes = { data: [] }
-  let contactInqRes = { data: [] }
-  if (role === 'admin') {
-    const [sa, ca, ci] = await Promise.all([
-      supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
-      supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
-      supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
-    ])
-    staffAppsRes = sa
-    corporateAppsRes = ca
-    contactInqRes = ci
-  }
-  let session
-  if (role === 'admin') session = { type: 'admin', memberId: null, email: authUser.email }
-  else if (role === 'staff') {
-    session = { type: 'staff', staffId: staffMatch?.id || null, email: authUser.email }
-  } else {
-    session = { type: 'member', memberId: user.id, email: authUser.email }
-    // Süresi dolmuş üyeliği otomatik free plana düşür
-    const meIdx = members.findIndex((m) => m.id === user.id)
-    if (meIdx >= 0) {
-      const synced = syncMembershipExpiryStatus(members[meIdx])
-      if (synced.membership !== members[meIdx].membership) {
-        await upsertMember(synced)
-        members = members.map((m, i) => (i === meIdx ? synced : m))
-      } else if (synced.membershipStatus !== members[meIdx].membershipStatus) {
-        await upsertMember(synced)
-        members = members.map((m, i) => (i === meIdx ? synced : m))
-      }
-    }
-  }
-
-  return {
-    version: 2,
-    members,
-    staff,
-    programs: filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds),
-    posts,
-    tickets: filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds),
-    activities: filterByMemberIds((activitiesRes.data || []).map(rowToActivity), memberIds),
-    payments: filterByMemberIds((paymentsRes.data || []).map(rowToPayment), memberIds),
-    exercises,
-    plans,
-    staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
-    corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
-    contactInquiries: (contactInqRes.data || []).map(rowToContactInquiry),
-    session,
-    authUser,
-    content,
-  }
 }
 
 // --------------------------- persistence helpers ---------------------------
@@ -871,36 +994,53 @@ export async function changeMemberPlan(member, planId, planPrice = 0, durationMo
   const months = Number(durationMonths) || 1
   const packageConfig = getDefaultPackageForPlan(planId, months)
 
-  let draft = {
-    ...member,
-    membership: planId,
-    membershipStatus: 'active',
-    packageConfig,
-    lastActiveAt: today(),
-  }
+  let draft = syncMemberPackages({ ...member })
+  let activePackages = migrateLegacyToPackages(draft)
 
-  draft = sanitizeStaffForPackage(packageConfig, draft)
-
-  if (paid) {
-    // Yeni plan için süreyi bugünden başlat
-    draft.premiumStartedAt = null
-    draft.premiumExpiresAt = null
-    draft.freeTrialExpiresAt = null
-    draft = withPremiumDates(draft, packageConfig, true)
+  if (!paid) {
+    activePackages = []
+    draft = {
+      ...draft,
+      activePackages,
+      membership: 'free',
+      membershipStatus: 'active',
+      packageConfig: DEFAULT_PACKAGE,
+      premiumStartedAt: null,
+      premiumExpiresAt: null,
+      freeTrialExpiresAt: null,
+    }
   } else {
-    draft.premiumStartedAt = null
-    draft.premiumExpiresAt = null
-    draft.freeTrialExpiresAt = null
+    activePackages = resolvePackagePurchase(
+      activePackages,
+      planId,
+      packageConfig,
+      { price: planPrice },
+    )
+    draft = {
+      ...draft,
+      activePackages,
+      membership: planId,
+      membershipStatus: 'active',
+      premiumStartedAt: today(),
+      premiumExpiresAt: null,
+      freeTrialExpiresAt: null,
+    }
+    draft = syncMemberPackages(draft)
+    if (!packageConfig.billingType) {
+      draft = withPremiumDates(draft, packageConfig, true)
+    }
   }
 
+  draft = sanitizeStaffForPackage(draft.packageConfig, draft)
+  draft.lastActiveAt = today()
   await upsertMember(draft)
 
   if (paid && planPrice > 0) {
     await supabase.from('payments').insert({
       member_id: member.id,
-      data: { memberName: member.name, amount: planPrice, packageConfig, status: 'completed', createdAt: nowISO() },
+      data: { memberName: member.name, amount: planPrice, packageConfig, planId, status: 'completed', createdAt: nowISO() },
     })
-    await addActivity('upgrade', `${member.name} planını ${planId} olarak değiştirdi (${planPrice.toLocaleString('tr-TR')}₺)`, member.id)
+    await addActivity('upgrade', `${member.name} planını ${planId} olarak ${isOneTimePlan(planId) ? 'ekledi' : 'değiştirdi'} (${planPrice.toLocaleString('tr-TR')}₺)`, member.id)
   } else {
     await addActivity('plan_change', `${member.name} planını ${planId} olarak değiştirdi`, member.id)
   }
@@ -964,6 +1104,53 @@ export async function updateStaffSelfProfile(id, patch) {
     return { success: false, error: 'Yetkisiz profil güncellemesi.' }
   }
   return { success: true, id: staffId }
+}
+
+/** Stripe webhook idempotency — ödeme tamamlandı mı */
+export async function findStripePaymentBySession(sessionId) {
+  if (!sessionId || !supabase) return null
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, member_id, data')
+    .filter('data->>stripeSessionId', 'eq', sessionId)
+    .maybeSingle()
+  if (error) return null
+  return data
+}
+
+/** Self-servis randevu: bir personelin dolu başlangıç saatleri (ISO) */
+export async function getStaffBookedSlots(staffId, type, fromISO, toISO) {
+  if (!staffId) return []
+  const { data, error } = await supabase.rpc('staff_booked_slots', {
+    p_staff_id: staffId,
+    p_type: type,
+    p_from: fromISO,
+    p_to: toISO,
+  })
+  if (error) return []
+  return (data || []).map((d) => new Date(d).toISOString())
+}
+
+/** Self-servis randevu: çakışmasız randevu oluşturur (API sunucu tarafında doğrular) */
+export async function bookStaffSession(type, startsAtISO, duration = 30) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return { success: false, error: 'Oturum gerekli.' }
+
+  try {
+    const res = await fetch('/api/book-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ type, startsAt: startsAtISO, duration }),
+    })
+    const json = await res.json()
+    if (!json.ok) return { success: false, error: json.error || 'Randevu oluşturulamadı.' }
+    return { success: true, session: json.session }
+  } catch (e) {
+    return { success: false, error: String(e.message || e) }
+  }
 }
 
 export async function removeStaff(id) {
@@ -1289,6 +1476,11 @@ export async function createProgram(data) {
       title: data.title, description: data.description || '',
       items: Array.isArray(data.items) ? data.items : [],
       entries: Array.isArray(data.entries) ? data.entries : [],
+      scheduleType: data.scheduleType || null,
+      cycleStartDate: data.cycleStartDate || null,
+      cycleLength: data.cycleLength || null,
+      cycleLoop: data.cycleLoop !== undefined ? data.cycleLoop : null,
+      sessionDuration: data.sessionDuration || null,
       createdAt: nowISO(),
     },
   }).select().single()
@@ -1374,7 +1566,7 @@ export async function sendTicketReply(id, from, text) {
   return { ...ticket, messages, status }
 }
 
-/** Admin: koç/diyetisyen ataması ve seans yönetimi (süre salt okunur) */
+/** Admin: koç/diyetisyen ataması, paket değiştirme ve süre yönetimi */
 export async function adminUpdatePremiumMembership(memberId, options = {}) {
   const { data: memberRows } = await supabase.from('members').select('*').eq('id', memberId).limit(1)
   const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
@@ -1387,20 +1579,67 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   const prevCoachId = member.assignedCoachId
   const prevDietitianId = member.assignedDietitianId
+  const prevDoctorId = member.assignedDoctorId
+  const prevMembership = member.membership
   const schedule = options.supportSchedule ?? member.supportSchedule
 
-  const draft = {
+  let activePackages = migrateLegacyToPackages(member)
+
+  if (options.membership) {
+    const planId = options.membership
+    const months = Number(options.durationMonths) || getDurationMonths(member.packageConfig) || 1
+    const cfg = getDefaultPackageForPlan(planId, months)
+
+    if (!isPaidMembership(planId)) {
+      activePackages = activePackages.filter((p) => isOneTimePlan(p.planId) && isPackageEntryActive(p))
+    } else {
+      activePackages = resolvePackagePurchase(activePackages, planId, cfg, {}, { addPackage: options.addPackage })
+    }
+  }
+
+  if (options.extendDays != null && Number(options.extendDays) !== 0) {
+    activePackages = activePackages.map((p) => {
+      if (isOneTimePlan(p.planId)) return p
+      return { ...p, expiresAt: extendPremiumExpiry(p.expiresAt, options.extendDays) }
+    })
+  } else if (options.setRemainingDays != null && Number(options.setRemainingDays) >= 0) {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() + Number(options.setRemainingDays))
+    const newExpiry = d.toISOString().split('T')[0]
+    let touched = false
+    activePackages = activePackages.map((p) => {
+      if (isOneTimePlan(p.planId)) return p
+      if (!touched) {
+        touched = true
+        return { ...p, expiresAt: newExpiry }
+      }
+      return p
+    })
+  }
+
+  if (options.premiumExpiresAt) {
+    activePackages = activePackages.map((p, i) => (
+      isOneTimePlan(p.planId) ? p : (i === 0 ? { ...p, expiresAt: options.premiumExpiresAt } : p)
+    ))
+  }
+
+  let draft = {
     ...member,
-    membership: member.membership,
-    membershipStatus: member.membershipStatus || 'active',
-    packageConfig: member.packageConfig || DEFAULT_PACKAGE,
+    activePackages,
     supportSchedule: schedule,
-    premiumExpiresAt: member.premiumExpiresAt,
-    premiumStartedAt: member.premiumStartedAt || member.joinedAt || today(),
     assignedCoachId: options.assignedCoachId !== undefined ? options.assignedCoachId : member.assignedCoachId,
     assignedDietitianId: options.assignedDietitianId !== undefined ? options.assignedDietitianId : member.assignedDietitianId,
+    assignedDoctorId: options.assignedDoctorId !== undefined ? options.assignedDoctorId : member.assignedDoctorId,
     coachSessions: options.coachSessions !== undefined ? options.coachSessions : (member.coachSessions || []),
     dietitianSessions: options.dietitianSessions !== undefined ? options.dietitianSessions : (member.dietitianSessions || []),
+    doctorSessions: options.doctorSessions !== undefined ? options.doctorSessions : (member.doctorSessions || []),
+  }
+
+  draft = syncMemberPackages(draft)
+
+  if (options.membership && options.membership !== prevMembership) {
+    draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   }
 
   const assignments = applyStaffAssignments(draft, staffList, members, {
@@ -1444,12 +1683,35 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
       createdAt: nowISO(),
     })
   }
+  if (updated.assignedDoctorId && updated.assignedDoctorId !== prevDoctorId) {
+    const doctor = staffList.find((s) => s.id === updated.assignedDoctorId)
+    notifications.unshift({
+      id: `n-${Date.now()}-doc`,
+      type: 'assignment',
+      title: 'Doktorunuz atandı',
+      message: `${doctor?.name || 'Doktorunuz'} ile görüşme planlayabilirsiniz.`,
+      read: false,
+      createdAt: nowISO(),
+    })
+  }
   updated.notifications = notifications
 
   await upsertMember(updated)
+
+  const activityParts = []
+  if (options.membership && options.membership !== prevMembership) {
+    activityParts.push(`paket → ${getPlanLabel(options.membership)}`)
+  } else if (options.addPackage && options.membership) {
+    activityParts.push(`paket eklendi: ${getPlanLabel(options.membership)}`)
+  }
+  if (options.extendDays || options.setRemainingDays != null || options.premiumExpiresAt) {
+    activityParts.push('süre güncellendi')
+  }
+  const activityDetail = activityParts.length ? ` (${activityParts.join(', ')})` : ''
+
   await addActivity(
     'admin_premium',
-    `${updated.name} için koç/diyetisyen ataması güncellendi`,
+    `${updated.name} için premium yönetimi güncellendi${activityDetail}`,
     updated.id
   )
 

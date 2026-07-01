@@ -1,12 +1,14 @@
-import { Plus, Trash2, Dumbbell, Apple } from 'lucide-react'
+import { Plus, Trash2, Dumbbell, Apple, Stethoscope } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import AvailabilityView from '../package/AvailabilityView'
 import {
   packageIncludesCoach,
   packageIncludesDietitian,
+  packageIncludesDoctor,
   getCoachMeetingsPerMonth,
 } from '../../data/membershipPlans'
+import { doctorBookingLimit, doctorLimitIsOneTime } from '../../utils/memberPackages'
 
 function uid(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
@@ -21,8 +23,8 @@ function SessionList({ title, icon: Icon, color, sessions, staffName, onChange, 
       ...sessions,
       {
         id: uid('s'),
-        type: title.includes('Koç') ? 'coach' : 'dietitian',
-        title: title.includes('Koç') ? 'Koç Görüşmesi' : 'Diyetisyen Görüşmesi',
+        type: title.includes('Koç') ? 'coach' : title.includes('Doktor') ? 'doctor' : 'dietitian',
+        title: title.includes('Koç') ? 'Koç Görüşmesi' : title.includes('Doktor') ? 'Doktor Görüşmesi' : 'Diyetisyen Görüşmesi',
         date: d.toISOString(),
         duration: title.includes('Koç') ? 30 : 40,
         status: 'scheduled',
@@ -87,18 +89,24 @@ function SessionList({ title, icon: Icon, color, sessions, staffName, onChange, 
   )
 }
 
-export default function ManualSessionEditor({ member, coachName, dietitianName, coachSessions, dietitianSessions, onCoachChange, onDietitianChange }) {
+export default function ManualSessionEditor({
+  member, coachName, dietitianName, doctorName,
+  coachSessions, dietitianSessions, doctorSessions = [],
+  onCoachChange, onDietitianChange, onDoctorChange,
+}) {
   const pkg = member?.packageConfig || {}
   const showCoach = packageIncludesCoach(pkg)
   const showDiet = packageIncludesDietitian(pkg)
+  const showDoctor = packageIncludesDoctor(pkg)
   const coachPerWeek = Number(pkg.coachMeetingsPerWeek) || 0
   const coachPerMonth = getCoachMeetingsPerMonth(pkg)
   const dietLimit = Number(pkg.dietitianMeetingsPerMonth) || 0
+  const doctorLimit = doctorBookingLimit(pkg, member)
 
-  if (!showCoach && !showDiet) {
+  if (!showCoach && !showDiet && !showDoctor) {
     return (
       <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
-        <p className="text-sm text-cream-800/60">Bu pakette birebir koç veya diyetisyen görüşmesi bulunmuyor.</p>
+        <p className="text-sm text-cream-800/60">Bu pakette birebir koç, diyetisyen veya doktor görüşmesi bulunmuyor.</p>
       </section>
     )
   }
@@ -111,6 +119,7 @@ export default function ManualSessionEditor({ member, coachName, dietitianName, 
           Müşterinin müsaitlik saatlerine ve paket limitlerine göre randevuları elle girin.
           {showCoach && (coachPerWeek > 0 ? ` · Koç: haftada ${coachPerWeek}` : ` · Koç: ayda ${coachPerMonth}`)}
           {showDiet && ` · Diyetisyen: ayda ${dietLimit}`}
+          {showDoctor && (doctorLimitIsOneTime(pkg) ? ` · Doktor: ${doctorLimit} hak` : ` · Doktor: ayda ${doctorLimit}`)}
         </p>
       </div>
 
@@ -142,6 +151,18 @@ export default function ManualSessionEditor({ member, coachName, dietitianName, 
           staffName={dietitianName}
           onChange={onDietitianChange}
           maxHint={`Paket: ayda ${dietLimit} görüşme`}
+        />
+      )}
+
+      {showDoctor && onDoctorChange && (
+        <SessionList
+          title="Doktor Randevuları"
+          icon={Stethoscope}
+          color={{ border: 'border-teal-200', bg: 'bg-teal-50/40', icon: 'text-teal-600', btn: 'bg-teal-100 text-teal-700 hover:bg-teal-200' }}
+          sessions={doctorSessions}
+          staffName={doctorName}
+          onChange={onDoctorChange}
+          maxHint={doctorLimitIsOneTime(pkg) ? `Paket: ${doctorLimit} görüşme hakkı` : `Paket: ayda ${doctorLimit} görüşme`}
         />
       )}
     </section>

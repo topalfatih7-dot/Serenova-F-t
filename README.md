@@ -18,7 +18,7 @@ Verileri gerçek bir veritabanından (Supabase) çekmek için adım adım rehber
 
 Özetle:
 1. Supabase projesi aç, `.env` dosyasına `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` gir.
-2. `supabase/schema.sql` ve ardından `supabase/seed.sql` dosyalarını SQL Editor'da çalıştır.
+2. `supabase/setup.sql` dosyasını SQL Editor'da çalıştır (isteğe bağlı: ardından `supabase/seed.sql` ile içerik tablolarını temizle).
 3. `admin@serenova.fit` ile kayıt olup admin paneline gir.
 
 `.env` dolu olduğunda uygulama Supabase üzerinden çalışır. Vercel'de aynı değişkenleri Environment Variables bölümüne ekleyin.

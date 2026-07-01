@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle } from 'lucide-react'
+import { LayoutDashboard, Users, Users2, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -20,8 +20,11 @@ function staffNavForRole(role) {
     { to: '/staff/profile', icon: UserCircle, label: 'Profilim' },
     { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
     { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-    { to: '/staff/admin-messages', icon: Shield, label: 'Admin Mesajları', adminChatBadge: true },
   ]
+  if (role === 'coach' || role === 'dietitian') {
+    base.push({ to: '/staff/collab-messages', icon: Users2, label: 'Ekip Mesajları', collabChatBadge: true })
+  }
+  base.push({ to: '/staff/admin-messages', icon: Shield, label: 'Admin Mesajları', adminChatBadge: true })
   if (role === 'dietitian') {
     return [
       ...base,
@@ -38,7 +41,7 @@ function staffNavForRole(role) {
 }
 
 export default function StaffShell() {
-  const { staffUser, logout, chatUnreadCount, staffAdminUnreadCount, refresh } = useApp()
+  const { staffUser, logout, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount, refresh } = useApp()
 
   // İlk giriş kontrolü: geçici şifreyle giriş yapan personel için şifre değiştirme zorunluluğu
   const mustChangePassword = Boolean(staffUser?.data?.tempPasswordIssued)
@@ -72,8 +75,10 @@ export default function StaffShell() {
       ? chatUnreadCount
       : item.adminChatBadge
         ? staffAdminUnreadCount
-        : 0,
-  })), [staffUser.role, chatUnreadCount, staffAdminUnreadCount])
+        : item.collabChatBadge
+          ? staffCollabUnreadCount
+          : 0,
+  })), [staffUser.role, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount])
 
   return (
     <div className="staff-panel-bg relative flex min-h-screen overflow-hidden">

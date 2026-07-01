@@ -73,7 +73,7 @@ export const PLAN_PRICING = {
   eko: { 1: 1299, 3: 2999, 6: 3999 },
   diyet: { 1: 2499, 3: 6499, 6: 9999 },
   spor: { 1: 2499, 3: 6499, 6: 9999 },
-  doktor: { 1: 2500, 3: 6499, 6: 9999 },
+  doktor: { 1: 1500 },
   vip: { 1: 4999, 3: 12999, 6: 19999 },
 }
 
@@ -185,15 +185,16 @@ export const SPOR_PLAN = {
 export const DOKTOR_PLAN = {
   id: 'doktor',
   name: 'Doktor Paketi',
-  price: 2500,
-  period: 'Aylık',
+  price: 1500,
+  period: 'Tek Seferlik',
   color: 'teal',
   badge: null,
-  pricingTiers: buildPricingTiers('doktor'),
+  pricingTiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   features: [
-    { text: 'Online Doktor Seansı', included: true },
+    { text: '1 Online Doktor Görüşmesi', included: true },
+    { text: 'Görüntülü Görüşme', included: true },
   ],
-  limits: ['Online doktor görüşmesi'],
+  limits: ['Tek seferlik doktor görüşmesi'],
 }
 
 export const VIP_PLAN = {
@@ -252,7 +253,7 @@ const PACKAGE_BY_PLAN = {
   eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
   diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 2 },
+  doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, billingType: 'one_time' },
   vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   // legacy
@@ -264,6 +265,15 @@ const PACKAGE_BY_PLAN = {
 
 /** Plan ID + süre (ay) için varsayılan paket konfigürasyonu */
 export function getDefaultPackageForPlan(planId, durationMonths = 1) {
+  if (planId === 'doktor') {
+    return {
+      ...DEFAULT_PACKAGE,
+      ...PACKAGE_BY_PLAN.doktor,
+      durationMonths: 0,
+      durationWeeks: 0,
+      addOns: [],
+    }
+  }
   const months = Number(durationMonths) || 1
   const base = PACKAGE_BY_PLAN[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 }
   return {
@@ -305,8 +315,14 @@ export function packageIncludesDietitian(packageConfig = {}) {
   return (Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0
 }
 
-/** Pakette doktor görüşmesi var mı */
+/** Pakette doktor görüşmesi var mı (tek seferlik veya aylık) */
 export function packageIncludesDoctor(packageConfig = {}) {
+  const total = Number(packageConfig.doctorSessionsTotal) || 0
+  if (total > 0) {
+    const remaining = packageConfig.doctorSessionsRemaining
+    if (remaining != null && !Number.isNaN(Number(remaining))) return Number(remaining) > 0
+    return true
+  }
   return (Number(packageConfig.doctorMeetingsPerMonth) || 0) > 0
 }
 

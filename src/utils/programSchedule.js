@@ -1,4 +1,6 @@
-import { format, getDay, parseISO, isValid } from 'date-fns'
+import { format, getDay, parseISO, isValid, differenceInCalendarDays, startOfDay } from 'date-fns'
+
+export const CYCLE_PLAN_LENGTH = 14
 
 export const MEAL_TYPES = [
   { id: 'breakfast', label: 'Kahvaltı', short: 'Kahvaltı' },
@@ -6,6 +8,7 @@ export const MEAL_TYPES = [
   { id: 'lunch', label: 'Öğle Yemeği', short: 'Öğle' },
   { id: 'snack_afternoon', label: 'Öğle–Akşam Arası Ara Öğün', short: 'Öğle Ara' },
   { id: 'dinner', label: 'Akşam Yemeği', short: 'Akşam' },
+  { id: 'snack_evening', label: 'Akşam Sonrası Ara Öğün', short: 'Gece Ara' },
   { id: 'note', label: 'Dikkat / Not', short: 'Not' },
 ]
 
@@ -27,11 +30,31 @@ export function mealContentText(entries = []) {
   return parts.join(', ')
 }
 
-/** Girdi belirli bir takvim gününe mi ait? (date veya haftalık day) */
-export function entryMatchesDate(entry, date) {
+/** 14 günlük döngü planında takvim gününün indeksi (0–13). */
+export function resolveCycleDayIndex(date, program) {
+  if (!date || !program) return null
+  const startRaw = program.cycleStartDate || program.createdAt?.slice?.(0, 10)
+  if (!startRaw) return null
+  const start = startOfDay(parseISO(startRaw))
+  const target = startOfDay(date)
+  if (!isValid(start) || !isValid(target)) return null
+  const diff = differenceInCalendarDays(target, start)
+  if (diff < 0) return null
+  const len = Number(program.cycleLength) || CYCLE_PLAN_LENGTH
+  if (program.cycleLoop === false && diff >= len) return null
+  return diff % len
+}
+
+/** Girdi belirli bir takvim gününe mi ait? (date, haftalık day veya 14 günlük cycleDay) */
+export function entryMatchesDate(entry, date, program = null) {
   if (!entry || !date) return false
   const dateStr = format(date, 'yyyy-MM-dd')
   if (entry.date) return entry.date === dateStr
+  if (entry.cycleDay != null && entry.cycleDay !== '' && (program?.scheduleType === 'cycle14' || program?.cycleStartDate)) {
+    const idx = resolveCycleDayIndex(date, program)
+    if (idx == null) return false
+    return Number(entry.cycleDay) === idx
+  }
   if (entry.day != null && entry.day !== '') {
     return Number(entry.day) === getDay(date)
   }
@@ -43,7 +66,7 @@ export function getProgramEntriesForDate(programs, date) {
   ;(programs || []).forEach((prog) => {
     if (!prog.entries?.length) return
     prog.entries.forEach((entry) => {
-      if (entryMatchesDate(entry, date)) {
+      if (entryMatchesDate(entry, date, prog)) {
         result.push({
           ...entry,
           programId: prog.id,
@@ -111,7 +134,11 @@ export function splitEntriesByType(entries) {
   }
 }
 
-export function formatEntrySchedule(entry) {
+export function formatEntrySchedule(entry, program = null) {
+  if (entry.cycleDay != null && entry.cycleDay !== '') {
+    const len = Number(program?.cycleLength) || CYCLE_PLAN_LENGTH
+    return `Gün ${Number(entry.cycleDay) + 1}/${len}`
+  }
   if (entry.date) {
     try {
       const d = parseISO(entry.date)

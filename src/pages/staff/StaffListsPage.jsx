@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
-import { mealLabel, mealContentText } from '../../utils/programSchedule'
+import { mealLabel, mealContentText, formatEntrySchedule } from '../../utils/programSchedule'
 
 export default function StaffListsPage() {
   const { staffUser, programs } = useApp()
@@ -32,7 +32,9 @@ export default function StaffListsPage() {
         <div className="space-y-3">
           {mine.map((p) => {
             const open = expanded === p.id
-            const mealCount = new Set((p.entries || []).map((e) => `${e.date}_${e.mealType}`)).size
+            const mealCount = new Set(
+              (p.entries || []).map((e) => `${e.cycleDay ?? e.date ?? e.day}_${e.mealType}`)
+            ).size
             return (
               <div key={p.id} className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
                 <button
@@ -45,6 +47,9 @@ export default function StaffListsPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-cream-900">{p.title}</p>
+                    {p.scheduleType === 'cycle14' && (
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">14 günlük plan</p>
+                    )}
                     <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
                       <User className="h-3 w-3" /> {p.memberName} · {format(new Date(p.createdAt), 'd MMM yyyy', { locale: tr })}
                     </p>
@@ -60,6 +65,9 @@ export default function StaffListsPage() {
                       <ul className="space-y-2">
                         {p.entries.map((entry) => (
                           <li key={entry.id} className="rounded-lg bg-sage-50/60 px-3 py-2.5 text-sm text-cream-800">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/80">
+                              {formatEntrySchedule(entry, p)}
+                            </p>
                             <p className="text-sm font-bold text-sage-800">{mealLabel(entry.mealType)}</p>
                             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">Öğün içeriği</p>
                             <p className="text-sm leading-relaxed">{entry.name || mealContentText([entry])}</p>

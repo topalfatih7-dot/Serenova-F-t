@@ -4,6 +4,7 @@ import { fetchActiveUsers } from '../services/presenceService'
 import { rowToTicket, rowToMember } from '../services/supabaseDb'
 import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
 import { rowToAdminStaffThread, rowToAdminStaffMessage } from '../services/adminChatDb'
+import { rowToStaffCollabThread, rowToStaffCollabMessage } from '../services/staffCollabChatDb'
 
 export function useActiveUsers(isAdmin) {
   const [activeUsers, setActiveUsers] = useState([])
@@ -35,12 +36,17 @@ export function subscribeRealtimeSync({
   session,
   memberId,
   staffId,
+  isChatMessageRelevant,
+  isAdminStaffMessageRelevant,
+  isStaffCollabMessageRelevant,
   onTicketsChange,
   onMemberChange,
   onChatThreadChange,
   onChatMessageChange,
   onAdminStaffThreadChange,
   onAdminStaffMessageChange,
+  onStaffCollabThreadChange,
+  onStaffCollabMessageChange,
   onApplicationsChange,
 }) {
   if (!supabase || !session) return () => {}
@@ -78,9 +84,10 @@ export function subscribeRealtimeSync({
   const chatMessageChannel = supabase
     .channel('chat-messages-sync')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-      if (payload.new) {
-        onChatMessageChange?.(rowToChatMessage(payload.new))
-      }
+      if (!payload.new) return
+      const threadId = payload.new.thread_id
+      if (isChatMessageRelevant && !isChatMessageRelevant(threadId)) return
+      onChatMessageChange?.(rowToChatMessage(payload.new))
     })
     .subscribe()
   channels.push(chatMessageChannel)
@@ -101,12 +108,40 @@ export function subscribeRealtimeSync({
   const adminStaffMessageChannel = supabase
     .channel('admin-staff-messages-sync')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_staff_messages' }, (payload) => {
-      if (payload.new) {
-        onAdminStaffMessageChange?.(rowToAdminStaffMessage(payload.new))
-      }
+      if (!payload.new) return
+      const threadId = payload.new.thread_id
+      if (isAdminStaffMessageRelevant && !isAdminStaffMessageRelevant(threadId)) return
+      onAdminStaffMessageChange?.(rowToAdminStaffMessage(payload.new))
     })
     .subscribe()
   channels.push(adminStaffMessageChannel)
+
+  const staffCollabThreadChannel = supabase
+    .channel('staff-collab-threads-sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_collab_threads' }, (payload) => {
+      if (!payload.new && payload.eventType === 'DELETE') return
+      if (payload.new) {
+        const thread = rowToStaffCollabThread(payload.new)
+        if (session.type === 'staff') {
+          const sid = String(staffId)
+          if (String(thread.coachId) !== sid && String(thread.dietitianId) !== sid) return
+        }
+        onStaffCollabThreadChange?.(thread)
+      }
+    })
+    .subscribe()
+  channels.push(staffCollabThreadChannel)
+
+  const staffCollabMessageChannel = supabase
+    .channel('staff-collab-messages-sync')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_collab_messages' }, (payload) => {
+      if (!payload.new) return
+      const threadId = payload.new.thread_id
+      if (isStaffCollabMessageRelevant && !isStaffCollabMessageRelevant(threadId)) return
+      onStaffCollabMessageChange?.(rowToStaffCollabMessage(payload.new))
+    })
+    .subscribe()
+  channels.push(staffCollabMessageChannel)
 
   if (session.type === 'admin') {
     for (const table of ['staff_applications', 'corporate_applications', 'contact_inquiries']) {

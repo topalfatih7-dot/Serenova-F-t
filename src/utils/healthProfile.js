@@ -1,10 +1,12 @@
 /** Sağlık testi cevaplarından profil alanlarını türetir. */
 
 import { ageFromBirthDate } from './birthDate'
+import { normalizeHealthTestForAnalysis } from '../data/healthTest'
 
 export function inferGoalsFromHealthTest(healthTest = {}) {
+  const ht = normalizeHealthTestForAnalysis(healthTest)
   const goals = new Set()
-  const habits = healthTest.eatingHabits || []
+  const habits = ht.eatingHabits || []
 
   if (habits.includes('fast_food') || habits.includes('night_snack') || habits.includes('skip_meals')) {
     goals.add('weight')
@@ -14,34 +16,34 @@ export function inferGoalsFromHealthTest(healthTest = {}) {
     goals.add('habit')
     goals.add('confidence')
   }
-  if (healthTest.stressLevel === 'high' || healthTest.sleepQuality === 'poor') {
+  if (ht.stressLevel === 'high' || ht.sleepQuality === 'poor') {
     goals.add('sleep')
   }
-  if (healthTest.activityFrequency === 'sedentary' || healthTest.sittingHours === '8+') {
+  if (ht.activityFrequency === 'sedentary' || ht.sittingHours === '8+') {
     goals.add('habit')
     goals.add('heart')
   }
-  if (healthTest.activityFrequency === 'active' || healthTest.activityFrequency === 'moderate') {
+  if (ht.activityFrequency === 'active' || ht.activityFrequency === 'moderate') {
     goals.add('endurance')
   }
-  if ((healthTest.chronicConditions || []).includes('heart') || (healthTest.chronicConditions || []).includes('hypertension')) {
+  if ((ht.chronicConditions || []).includes('heart') || (ht.chronicConditions || []).includes('hypertension')) {
     goals.add('heart')
   }
-  if ((healthTest.chronicConditions || []).includes('diabetes')) {
+  if ((ht.chronicConditions || []).includes('diabetes')) {
     goals.add('weight')
   }
-  if (healthTest.wellbeing === '1' || healthTest.wellbeing === '2') {
+  if (ht.wellbeing === '1' || ht.wellbeing === '2') {
     goals.add('confidence')
     goals.add('habit')
   }
-  if (healthTest.teaCoffee === 'high') {
+  if (ht.teaCoffee === 'high') {
     goals.add('sleep')
     goals.add('habit')
   }
-  if (healthTest.travelFrequency === 'weekly' || healthTest.travelFrequency === 'monthly') {
+  if (ht.travelFrequency === 'weekly' || ht.travelFrequency === 'monthly') {
     goals.add('habit')
   }
-  if (healthTest.substanceUse === 'regular' || healthTest.substanceUse === 'occasional') {
+  if (ht.substanceUse === 'regular' || ht.substanceUse === 'occasional') {
     goals.add('habit')
     goals.add('sleep')
   }
@@ -51,21 +53,23 @@ export function inferGoalsFromHealthTest(healthTest = {}) {
 }
 
 export function inferFitnessLevelFromHealthTest(healthTest = {}) {
+  const ht = normalizeHealthTestForAnalysis(healthTest)
   const map = {
     sedentary: 'beginner',
     light: 'beginner',
     moderate: 'intermediate',
     active: 'advanced',
   }
-  return map[healthTest.activityFrequency] || 'beginner'
+  return map[ht.activityFrequency] || 'beginner'
 }
 
 export function inferNutritionPrefsFromHealthTest(healthTest = {}) {
+  const ht = normalizeHealthTestForAnalysis(healthTest)
   const prefs = []
-  const allergies = String(healthTest.foodAllergies || '').toLowerCase()
+  const allergies = String(ht.foodAllergies || '').toLowerCase()
   if (allergies.includes('gluten')) prefs.push('gluten-free')
   if (allergies.includes('laktoz') || allergies.includes('süt')) prefs.push('balanced')
-  if ((healthTest.eatingHabits || []).includes('regular')) prefs.push('balanced')
+  if ((ht.eatingHabits || []).includes('regular')) prefs.push('balanced')
   if (prefs.length === 0) prefs.push('balanced')
   return prefs
 }

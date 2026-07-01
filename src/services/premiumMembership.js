@@ -25,35 +25,13 @@ export function getRemainingDays(expiresAt) {
   return Math.ceil((exp - now) / (1000 * 60 * 60 * 24))
 }
 
-import { isPaidMembership } from '../data/membershipPlans'
+import { syncMemberPackages } from '../utils/memberPackages'
 
 /**
- * Süresi dolan üyeleri free plana düşürür; premium erişimi kaldırılır.
+ * Süresi dolan paketleri günceller; birleşik üyelik durumunu senkronlar.
  */
 export function syncMembershipExpiryStatus(member) {
-  if (!isPaidMembership(member.membership)) return member
-
-  const remaining = getRemainingDays(member.premiumExpiresAt)
-  if (remaining === null) return member
-
-  if (remaining <= 0) {
-    return {
-      ...member,
-      membership: 'free',
-      membershipStatus: 'active',
-      previousMembership: member.membership,
-      packageConfig: null,
-      premiumExpiresAt: member.premiumExpiresAt,
-      premiumStartedAt: member.premiumStartedAt,
-    }
-  }
-  if (remaining <= 7) {
-    return { ...member, membershipStatus: 'expiring' }
-  }
-  if (member.membershipStatus === 'expiring') {
-    return { ...member, membershipStatus: 'active' }
-  }
-  return member
+  return syncMemberPackages(member)
 }
 
 export function extendPremiumExpiry(currentExpiresAt, extraDays) {

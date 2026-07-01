@@ -31,6 +31,7 @@ export const EMPTY_STAFF_FORM = {
   workDays: [1, 3, 5],
   workStart: '09:00',
   workEnd: '17:00',
+  availability: {},
 }
 
 export function parseLines(text) {
@@ -76,6 +77,7 @@ export function normalizeStaffProfile(raw = {}) {
     workDays: Array.isArray(raw.workDays) ? raw.workDays : [],
     workStart: raw.workStart || '09:00',
     workEnd: raw.workEnd || '17:00',
+    availability: raw.availability && typeof raw.availability === 'object' ? raw.availability : {},
   }
 }
 
@@ -104,6 +106,7 @@ export function staffProfileDataPayload(data) {
     workDays: n.workDays || [],
     workStart: n.workStart || '09:00',
     workEnd: n.workEnd || '17:00',
+    availability: n.availability && typeof n.availability === 'object' ? n.availability : {},
   }
 }
 

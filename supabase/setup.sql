@@ -78,11 +78,13 @@ create table if not exists public.members (
   membership_status text not null default 'active',
   assigned_coach_id uuid,
   assigned_dietitian_id uuid,
+  assigned_doctor_id uuid,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 alter table public.members add column if not exists phone text not null default '';
+alter table public.members add column if not exists assigned_doctor_id uuid;
 
 -- Kadro / uzman ekibi (koç, diyetisyen, doktor)
 create table if not exists public.staff (
@@ -241,7 +243,11 @@ security definer
 set search_path = public, pg_temp as $$
   select exists (
     select 1 from public.members m
-    join public.staff s on (s.id = m.assigned_coach_id or s.id = m.assigned_dietitian_id)
+    join public.staff s on (
+      s.id = m.assigned_coach_id
+      or s.id = m.assigned_dietitian_id
+      or s.id = m.assigned_doctor_id
+    )
     where m.id = p_member_id and lower(s.email) = lower(public.current_email())
   );
 $$;
@@ -305,8 +311,12 @@ drop policy if exists members_select on public.members;
 create policy members_select on public.members for select using (
   public.is_admin() or id = auth.uid()
   or exists (select 1 from public.staff s
-    where (s.id = members.assigned_coach_id or s.id = members.assigned_dietitian_id)
-      and s.email = public.current_email())
+    where (
+      s.id = members.assigned_coach_id
+      or s.id = members.assigned_dietitian_id
+      or s.id = members.assigned_doctor_id
+    )
+      and lower(s.email) = lower(public.current_email()))
 );
 drop policy if exists members_insert on public.members;
 create policy members_insert on public.members for insert with check (id = auth.uid() or public.is_admin());
@@ -314,8 +324,12 @@ drop policy if exists members_update on public.members;
 create policy members_update on public.members for update using (
   public.is_admin() or id = auth.uid()
   or exists (select 1 from public.staff s
-    where (s.id = members.assigned_coach_id or s.id = members.assigned_dietitian_id)
-      and s.email = public.current_email())
+    where (
+      s.id = members.assigned_coach_id
+      or s.id = members.assigned_dietitian_id
+      or s.id = members.assigned_doctor_id
+    )
+      and lower(s.email) = lower(public.current_email()))
 );
 
 -- staff
@@ -792,10 +806,10 @@ insert into public.plans (id, name, price, period, is_active, badge, features, l
  '["Ayda 2 koç görüşmesi","Kişisel spor programı"]'::jsonb,
  '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
  'blue', 3),
-('doktor', 'Doktor Paketi', 2500, 'Aylık', true, null,
- '[{"text":"Online Doktor Seansı","included":true}]'::jsonb,
- '["Online doktor görüşmesi"]'::jsonb,
- '[{"months":1,"label":"Aylık","price":2500},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
+('doktor', 'Doktor Paketi', 1500, 'Tek Seferlik', true, null,
+ '[{"text":"1 Online Doktor Görüşmesi","included":true},{"text":"Görüntülü Görüşme","included":true}]'::jsonb,
+ '["Tek seferlik doktor görüşmesi"]'::jsonb,
+ '[{"months":1,"label":"Tek Seferlik","price":1500}]'::jsonb,
  'teal', 4),
 ('vip', 'Vip Paket', 4999, 'Aylık', true, 'VIP',
  '[{"text":"Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Vip Üye Rozeti","included":true}]'::jsonb,

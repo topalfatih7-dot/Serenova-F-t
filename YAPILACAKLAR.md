@@ -173,7 +173,7 @@ npm run dev
 | Personel hakediş modülü | `staff_earning_lines` + `sessionAttendance` + `/api/session-attendance` |
 | Stripe Customer Portal | Kayıtlı kart yönetimi |
 | `phone_in_use` rate limit | Telefon enumeration riski |
-| `schema.sql` senkron | Yeni kurulumda yalnızca `setup.sql` kullan |
+| `schema.sql` senkron | ✅ Yeni kurulumda yalnızca `setup.sql`; `schema.sql` deprecation stub |
 | `AI_PROJE_REHBERI.md` güncelle | Kaldırılan özellikler, guard sistemi |
 
 ---

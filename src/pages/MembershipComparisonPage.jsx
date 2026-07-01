@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, HelpCircle, UserPlus, CreditCard, LayoutDashboard } from 'lucide-react'
+import { Check, X, HelpCircle, UserPlus, CreditCard, LayoutDashboard, RefreshCw } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { ALL_PLANS, formatMonthlyPrice, sortPlansForDisplay } from '../data/membershipPlans'
 import MembershipHero from '../components/membership/MembershipHero'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipReassurance from '../components/membership/MembershipReassurance'
 import { getPlanTheme, planIcon } from '../components/membership/planTheme'
+import { getPlanCtaLabel } from '../utils/planCta'
 
 const comparisonRows = [
   { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, eko: false, diyet: true, spor: true, vip: true, doktor: false },
@@ -22,10 +23,16 @@ const comparisonRows = [
   { feature: 'Destek', free: 'Standart', eko: 'Standart', diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
 ]
 
-const HOW_IT_WORKS = [
+const HOW_IT_WORKS_SIGNUP = [
   { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Ücretsiz başlayın veya size uygun paketi seçin — taahhüt baskısı yok.' },
   { icon: CreditCard, title: '2. Güvenle kayıt olun', desc: 'Birkaç bilgi, şifre oluşturun. Ücretli planda güvenli ödeme ekranına geçersiniz.' },
   { icon: LayoutDashboard, title: '3. Hemen başlayın', desc: 'Dashboard\'ınız açılır; programlarınız ve uzman desteğiniz hazır.' },
+]
+
+const HOW_IT_WORKS_MEMBER = [
+  { icon: RefreshCw, title: '1. Yeni planı seçin', desc: 'Mevcut planınız korunur; istediğiniz paketi listeden seçin.' },
+  { icon: CreditCard, title: '2. Güvenle ödeyin', desc: 'Yeni hesap açılmaz — mevcut girişinizle ödeme yapıp planı güncellersiniz.' },
+  { icon: LayoutDashboard, title: '3. Hemen kullanın', desc: 'Ek paketler mevcut üyeliğinize eklenir; haklarınız birleştirilir.' },
 ]
 
 function CellValue({ value }) {
@@ -35,18 +42,25 @@ function CellValue({ value }) {
 }
 
 export default function MembershipComparisonPage() {
-  const { plans, isAuthenticated, isAdmin, isStaff, membership } = useApp()
+  const { plans, isAuthenticated, isAdmin, isStaff, membership, user } = useApp()
   const allPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const isMember = isAuthenticated && !isAdmin && !isStaff
   const displayPlans = isMember ? allPlans.filter((p) => p.id !== membership) : allPlans
+  const howItWorks = isMember ? HOW_IT_WORKS_MEMBER : HOW_IT_WORKS_SIGNUP
+
+  const ctaForPlan = (plan) => getPlanCtaLabel(plan, {
+    forMember: isMember,
+    member: user,
+    currentMembership: membership,
+  })
 
   return (
     <div className="overflow-x-hidden bg-gradient-to-b from-cream-50/50 via-white to-sage-50/30">
       <MembershipHero
-        title="Size en uygun planı seçin"
+        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Size en uygun planı seçin'}
         subtitle={
           isMember
-            ? 'Mevcut planınız hariç tüm seçenekleri karşılaştırın. Her adımda ne alacağınızı net şekilde görürsünüz.'
+            ? 'Giriş yapmış hesabınızla plan değiştirebilir veya ek paket (ör. Doktor) satın alabilirsiniz. Yeni kayıt gerekmez.'
             : 'Ücretsiz başlayın veya uzman destekli paketlerden birini seçin. Gizli ücret yok, süre seçimi sizde.'
         }
       />
@@ -64,12 +78,16 @@ export default function MembershipComparisonPage() {
               <HelpCircle className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="font-display text-xl font-bold text-cream-900">Nasıl üye olursunuz?</h2>
-              <p className="mt-1 text-sm text-cream-800/65">Üç basit adım — kafanızda soru işareti kalmadan.</p>
+              <h2 className="font-display text-xl font-bold text-cream-900">
+                {isMember ? 'Plan nasıl değiştirilir?' : 'Nasıl üye olursunuz?'}
+              </h2>
+              <p className="mt-1 text-sm text-cream-800/65">
+                {isMember ? 'Üç basit adım — hesabınız aynı kalır.' : 'Üç basit adım — kafanızda soru işareti kalmadan.'}
+              </p>
             </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {HOW_IT_WORKS.map((step, i) => {
+            {howItWorks.map((step, i) => {
               const Icon = step.icon
               return (
                 <motion.div
@@ -99,8 +117,8 @@ export default function MembershipComparisonPage() {
               plan={plan}
               index={i}
               mode="link"
-              ctaTo={isMember ? `/onboarding?plan=${plan.id}` : `/onboarding?plan=${plan.id}`}
-              ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+              ctaTo={`/onboarding?plan=${plan.id}`}
+              ctaLabel={ctaForPlan(plan)}
             />
           ))}
         </div>
@@ -128,15 +146,18 @@ export default function MembershipComparisonPage() {
                     const theme = getPlanTheme(plan.id)
                     return (
                       <th key={plan.id} className="px-3 py-4 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <span className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ${theme.iconIdle}`}>
+                        <Link
+                          to={`/onboarding?plan=${plan.id}`}
+                          className="group flex flex-col items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-brand-50/60"
+                        >
+                          <span className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-sm transition group-hover:scale-105 ${theme.iconIdle}`}>
                             {planIcon(plan.id, 'h-4 w-4')}
                           </span>
                           <span className={`font-display text-sm font-bold ${theme.label}`}>{plan.name}</span>
                           <span className="text-xs font-medium text-cream-800/50">
                             {plan.price === 0 ? 'Ücretsiz' : formatMonthlyPrice(plan.price)}
                           </span>
-                        </div>
+                        </Link>
                       </th>
                     )
                   })}
@@ -167,12 +188,14 @@ export default function MembershipComparisonPage() {
           viewport={{ once: true }}
           className="mt-10 text-center"
         >
-          <p className="text-sm text-cream-800/60">Hâlâ emin değil misiniz?</p>
+          <p className="text-sm text-cream-800/60">
+            {isMember ? 'Mevcut planınıza dönmek veya detayları görmek için profilinize gidin.' : 'Hâlâ emin değil misiniz?'}
+          </p>
           <Link
-            to="/onboarding?plan=free"
+            to={isMember ? '/profile' : '/onboarding?plan=free'}
             className="btn-wellness mt-4 inline-flex !px-8 !py-3.5"
           >
-            Ücretsiz başlayın — risk yok
+            {isMember ? 'Profilime dön' : 'Ücretsiz başlayın — risk yok'}
           </Link>
         </motion.div>
 

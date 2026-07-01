@@ -38,7 +38,7 @@ const memberNav = [
 export default function AppShell() {
   const {
     isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings,
-    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
+    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig,
   } = useApp()
   // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
   // yüzen ikon (FAB) tüm üye sayfalarında kalıcı olsun diye orkestrasyon AppShell'de.
@@ -48,7 +48,7 @@ export default function AppShell() {
     if (user?.id && !settings?.tutorialSeen) {
       updateSettings?.({ tutorialSeen: true })
     }
-    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender)) {
+    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender, packageConfig)) {
       setHealthPromptOpen(true)
     }
   }

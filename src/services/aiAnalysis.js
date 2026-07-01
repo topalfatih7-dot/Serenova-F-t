@@ -1,11 +1,11 @@
 // Kural Tabanlı Analiz Servisi — Kişiselleştirilmiş sağlık analizi
 // Basic paket üyelerine kayıt sonrası otomatik olarak uygulanır.
 
-import { describeHealthTest } from '../data/healthTest'
+import { describeHealthTest, normalizeHealthTestForAnalysis } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 5
+export const HEALTH_ANALYSIS_VERSION = 6
 
 const GENERIC_WEEKLY_FOCUS =
   /\(\d+\s*dk\)|HIIT|Full Body|Üst Vücut|Alt Vücut|Vücut Ağırlığı|Esneklik\s*&\s*Yoga|Kardiyo\s*&|İtme Hareketi|Çekme Hareketi|Olimpik/i
@@ -39,7 +39,7 @@ export function generateHealthAnalysis(profile, exercises = []) {
   const bmi = calculateBmi(enriched.weight, enriched.height)
   const bmiCategory = getBmiCategory(bmi)
   const goalCategories = mapGoalsToCategories(enriched.goals || [])
-  const healthTestInsights = buildHealthTestInsights(enriched.healthTest, enriched.gender)
+  const healthTestInsights = buildHealthTestInsights(enriched.healthTest, enriched.gender, enriched.packageConfig)
   const coachRecommendations = generateCoachList(enriched, exercises, goalCategories, healthTestInsights)
   const dietitianRecommendations = { tips: [], focus: '', aiGenerated: false }
 
@@ -59,9 +59,9 @@ export function generateHealthAnalysis(profile, exercises = []) {
   }
 }
 
-function buildHealthTestInsights(healthTest = {}, gender) {
+function buildHealthTestInsights(healthTest = {}, gender, packageConfig = null) {
   if (!healthTest || typeof healthTest !== 'object') return []
-  return describeHealthTest(healthTest, gender)
+  return describeHealthTest(healthTest, gender, packageConfig)
     .flatMap((section) => section.items.map((item) => `${item.label}: ${item.value}`))
     .filter((line) => !/su\s*tüketim|günlük\s*su|water\s*intake/i.test(line))
     .slice(0, 12)
@@ -133,8 +133,8 @@ function calculateFitnessScore(profile) {
   if ((profile.goals || []).length >= 2) score += 10
   if ((profile.nutritionPrefs || []).length >= 1) score += 10
 
-  const ht = profile.healthTest || {}
-  if (ht.wellbeing >= 4) score += 5
+  const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
+  if (Number(ht.wellbeing) >= 4) score += 5
   if (ht.energy === 'high') score += 5
   if (ht.sleepQuality === 'good') score += 5
   if (ht.stressLevel === 'low') score += 5
@@ -193,7 +193,7 @@ function normalizeLibraryExercise(ex) {
 
 function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
   const library = pickLibraryExercises(exercises)
-  const ht = profile.healthTest || {}
+  const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
   const lowImpactOnly = ht.injuries === 'yes' || (ht.painAreas || []).length > 0
 
   const scored = library.map((ex) => {

@@ -1,11 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
-  Sunrise, Sunset, UtensilsCrossed, BedDouble,
+  Sunrise, Sunset, UtensilsCrossed, BedDouble, Dumbbell, Clock3, MoonStar, Venus, Mars,
 } from 'lucide-react'
-import { isDetailVisible } from '../../data/healthTest'
+import { isDetailVisible, HEALTH_AUDIENCE_META } from '../../data/healthTest'
 
-const ICONS = { HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock }
+const ICONS = {
+  HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock,
+  Dumbbell, Clock3, MoonStar, Venus, Mars,
+}
 
 const THEME = {
   general:   { grad: 'from-brand-500 to-brand-600',    soft: 'bg-brand-50',    ring: 'ring-brand-300',    solid: 'bg-brand-500 border-brand-400 shadow-brand-500/25',    chip: 'border-brand-400 bg-brand-50 text-brand-800 ring-brand-200',    bar: 'bg-brand-500', text: 'text-brand-700' },
@@ -16,6 +19,7 @@ const THEME = {
   nutrition: { grad: 'from-sage-500 to-emerald-600',      soft: 'bg-sage-50',     ring: 'ring-sage-300',     solid: 'bg-sage-500 border-sage-400 shadow-sage-500/25',       chip: 'border-sage-400 bg-sage-50 text-sage-800 ring-sage-200',         bar: 'bg-sage-500', text: 'text-sage-700' },
   routine:   { grad: 'from-teal-500 to-cyan-600',        soft: 'bg-teal-50',     ring: 'ring-teal-300',     solid: 'bg-teal-500 border-teal-400 shadow-teal-500/25',       chip: 'border-teal-400 bg-teal-50 text-teal-800 ring-teal-200',         bar: 'bg-teal-500', text: 'text-teal-700' },
   women:     { grad: 'from-pink-500 to-fuchsia-600',      soft: 'bg-pink-50',     ring: 'ring-pink-300',     solid: 'bg-pink-500 border-pink-400 shadow-pink-500/25',       chip: 'border-pink-400 bg-pink-50 text-pink-800 ring-pink-200',         bar: 'bg-pink-500', text: 'text-pink-700' },
+  men:       { grad: 'from-slate-600 to-slate-800',       soft: 'bg-slate-50',    ring: 'ring-slate-300',    solid: 'bg-slate-600 border-slate-500 shadow-slate-600/25',    chip: 'border-slate-400 bg-slate-50 text-slate-800 ring-slate-200',     bar: 'bg-slate-600', text: 'text-slate-700' },
 }
 
 function themeFor(sectionId) {
@@ -34,6 +38,7 @@ export default function HealthTestStep({
 
   const theme = themeFor(question.sectionId)
   const SectionIcon = ICONS[question.sectionIcon] || HeartPulse
+  const audienceMeta = HEALTH_AUDIENCE_META[question.audience] || HEALTH_AUDIENCE_META.shared
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
   const q = question
 
@@ -101,7 +106,12 @@ export default function HealthTestStep({
                 <SectionIcon className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/75">{question.sectionTitle}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/75">{question.sectionTitle}</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${audienceMeta.chip}`}>
+                    {audienceMeta.label}
+                  </span>
+                </div>
                 <p className="text-sm font-medium text-white/90">Soru {questionIndex + 1}</p>
               </div>
             </div>

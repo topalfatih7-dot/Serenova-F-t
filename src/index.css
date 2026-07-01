@@ -1083,6 +1083,17 @@ body {
   background: linear-gradient(135deg, var(--color-warm-500), #f59e0b);
 }
 
+.panel-chip-teal.panel-chip-active {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: #fff;
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, #0d9488 45%, transparent);
+}
+
+.panel-chip-violet.panel-chip-active {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+}
+
 .panel-back-btn {
   display: inline-flex;
   align-items: center;

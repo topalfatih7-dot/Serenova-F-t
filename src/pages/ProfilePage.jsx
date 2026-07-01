@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
@@ -10,15 +10,17 @@ import { useToast } from '../context/ToastContext'
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Scale, Ruler, Heart, Shield, Activity, Stethoscope, Clock,
+  Flame, Shield, Stethoscope, Clock,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
+import HealthSummarySection from '../components/profile/HealthSummarySection'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
-import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
 import { getPlanLabel } from '../data/membershipPlans'
+import { isOneTimePlan, isPackageEntryActive } from '../utils/memberPackages'
 import { getRemainingDays } from '../services/premiumMembership'
+import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }),
@@ -28,7 +30,7 @@ export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, myPrograms, staff,
     updateProfile, updateSettings, logout,
-    createProgram, exercises, refresh,
+    refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
     premiumExpiresAt,
@@ -38,27 +40,11 @@ export default function ProfilePage() {
   const assignedDoctor = (staff || []).find((s) => s.id === user.assignedDoctorId)
   const { toast } = useToast()
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Stripe plan değişikliği dönüşü
-  useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      toast('Ödeme alındı! Planınız birkaç saniye içinde güncellenecek.', 'success')
-      refresh?.()
-      const t = setTimeout(() => refresh?.(), 4000)
-      const next = new URLSearchParams(searchParams)
-      next.delete('payment'); next.delete('session_id')
-      setSearchParams(next, { replace: true })
-      return () => clearTimeout(t)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const [healthEditOpen, setHealthEditOpen] = useState(false)
-  const [healthForm, setHealthForm] = useState({
-    weight: user.weight || '',
-    height: user.height || '',
-    waist: user.waist || '',
+  useStripePaymentReturn(refresh, {
+    successMessage: 'Ödeme alındı! Planınız birkaç saniye içinde güncellenecek.',
   })
+
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState({
     name: user.name, email: user.email, phone: user.phone || '', city: user.city, district: user.district || '',
@@ -77,33 +63,6 @@ export default function ProfilePage() {
     toast('Profil güncellendi', 'success')
   }
 
-  const handleHealthSave = async () => {
-    const patch = { ...healthForm }
-    await updateProfile(patch)
-    setHealthEditOpen(false)
-    const merged = { ...user, ...patch }
-    const result = await syncMemberHealthAssets({
-      user: merged,
-      exercises,
-      updateProfile,
-      createProgram,
-      myPrograms,
-    })
-    toast(
-      result.synced ? 'Sağlık özeti güncellendi ve programlarınız yenilendi.' : 'Sağlık özeti güncellendi.',
-      'success',
-    )
-  }
-
-  const openHealthEdit = () => {
-    setHealthForm({
-      weight: user.weight || '',
-      height: user.height || '',
-      waist: user.waist || '',
-    })
-    setHealthEditOpen(true)
-  }
-
   const remainingDays = getRemainingDays(premiumExpiresAt)
 
   const handleLogout = () => {
@@ -117,20 +76,6 @@ export default function ProfilePage() {
     { to: '/calendar', icon: CalendarDays, label: 'Takvim', sub: 'Müsaitlik', color: 'from-sage-500 to-emerald-600' },
     { to: '/calorie', icon: Flame, label: 'Kalori', sub: 'Tahmini hesap', color: 'from-amber-500 to-orange-600' },
     { to: '/support', icon: Shield, label: 'Destek', sub: 'Yardım & talepler', color: 'from-violet-500 to-purple-600' },
-  ]
-
-  const bmiValue = (() => {
-    const w = parseFloat(user.weight)
-    const h = parseFloat(user.height)
-    if (!w || !h) return '—'
-    return (w / ((h / 100) ** 2)).toFixed(1)
-  })()
-
-  const bodyMetrics = [
-    { icon: Scale, label: 'Kilo', value: user.weight ? `${user.weight} kg` : '—' },
-    { icon: Ruler, label: 'Boy', value: user.height ? `${user.height} cm` : '—' },
-    { icon: Activity, label: 'Bel', value: user.waist ? `${user.waist} cm` : '—' },
-    { icon: Heart, label: 'VKİ', value: bmiValue },
   ]
 
   return (
@@ -219,39 +164,7 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
-      {/* Vücut metrikleri — tam genişlik */}
-      <ProfileSectionCard
-        icon={Activity}
-        title="Sağlık Özeti"
-        subtitle="Vücut ölçülerinizi takip edin"
-        accent="amber"
-        delay={0.1}
-        action={(
-          <button
-            type="button"
-            onClick={openHealthEdit}
-            className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-amber-500/25 transition hover:brightness-105 sm:text-sm"
-          >
-            Ölçüleri Güncelle
-          </button>
-        )}
-      >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {bodyMetrics.map((m, i) => (
-            <motion.div
-              key={m.label}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 + i * 0.05 }}
-              className="rounded-2xl border border-amber-100/80 bg-white/80 p-3 text-center shadow-sm"
-            >
-              <m.icon className="mx-auto h-4 w-4 text-amber-600" />
-              <p className="mt-2 font-display text-lg font-bold text-cream-900">{m.value}</p>
-              <p className="text-[11px] font-medium text-cream-800/50">{m.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </ProfileSectionCard>
+      <HealthSummarySection user={user} />
 
       <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
         {/* Sol: hızlı erişim + kişisel */}
@@ -290,6 +203,16 @@ export default function ProfilePage() {
             delay={0.15}
           >
             <p className="font-display text-3xl font-bold text-cream-900">{getPlanLabel(membership)}</p>
+            {(user.activePackages || []).filter((p) => isPackageEntryActive(p)).length > 1 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(user.activePackages || []).filter((p) => isPackageEntryActive(p)).map((p) => (
+                  <span key={p.id} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-800 ring-1 ring-violet-200">
+                    {getPlanLabel(p.planId)}
+                    {isOneTimePlan(p.planId) ? ' · tek görüşme' : p.expiresAt ? ` · ${new Date(p.expiresAt).toLocaleDateString('tr-TR')}` : ''}
+                  </span>
+                ))}
+              </div>
+            )}
             {membership !== 'free' && premiumExpiresAt && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
@@ -324,8 +247,17 @@ export default function ProfilePage() {
               </motion.div>
             )}
             {membership === 'free' && (
-              <p className="mt-4 text-sm text-cream-800/60">Ücretsiz plandasınız. Premium özellikler için plan yükseltin.</p>
+              <p className="mt-4 text-sm text-cream-800/60">
+                Ücretsiz plandasınız.{' '}
+                <Link to="/membership" className="font-semibold text-brand-600 hover:text-brand-700">Premium özellikler için plan yükseltin</Link>
+              </p>
             )}
+            <Link
+              to="/membership"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 transition hover:bg-violet-100"
+            >
+              Planları karşılaştır / değiştir
+            </Link>
           </ProfileSectionCard>
 
           <ProfileSectionCard
@@ -386,18 +318,6 @@ export default function ProfilePage() {
           <FormField label="Şehir" icon={MapPin} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
           <FormField label="İlçe" icon={MapPin} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="İlçe" />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
-        </div>
-      </Modal>
-
-      <Modal open={healthEditOpen} onClose={() => setHealthEditOpen(false)} title="Sağlık Özeti Güncelle">
-        <div className="space-y-4">
-          <p className="text-sm text-cream-800/65">Yalnızca vücut ölçülerinizi güncelleyin. Diğer bilgiler Kişisel Bilgiler bölümünden düzenlenir.</p>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Kilo (kg)" icon={Scale} type="number" value={healthForm.weight} onChange={(e) => setHealthForm({ ...healthForm, weight: e.target.value })} placeholder="Kilo" />
-            <FormField label="Boy (cm)" icon={Ruler} type="number" value={healthForm.height} onChange={(e) => setHealthForm({ ...healthForm, height: e.target.value })} placeholder="Boy" />
-            <FormField label="Bel (cm)" icon={Activity} type="number" value={healthForm.waist} onChange={(e) => setHealthForm({ ...healthForm, waist: e.target.value })} placeholder="Bel" />
-          </div>
-          <button type="button" onClick={handleHealthSave} className="w-full rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 py-3 text-sm font-bold text-white shadow-md hover:brightness-105">Kaydet</button>
         </div>
       </Modal>
     </div>

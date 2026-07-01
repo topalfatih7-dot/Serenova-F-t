@@ -10,7 +10,7 @@ import PhoneField from '../ui/PhoneField'
 import ProfileSectionCard from '../profile/ProfileSectionCard'
 import { GENDERS } from '../../data/staffApplication'
 import { CITY_NAMES, getDistricts } from '../../data/turkeyCities'
-import { WEEKDAYS } from '../package/SupportScheduler'
+import WeeklyAvailability from '../package/WeeklyAvailability'
 import { normalizeStaffProfile } from '../../data/staffProfile'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { staffProfilePath } from '../../config/seo'
@@ -20,7 +20,7 @@ import { useToast } from '../../context/ToastContext'
 
 const TABS = [
   { id: 'profile', label: 'Profil', icon: User, hint: 'Fotoğraf, iletişim ve tanıtım' },
-  { id: 'schedule', label: 'Çalışma', icon: Clock, hint: 'Günler ve sosyal medya' },
+  { id: 'schedule', label: 'Çalışma', icon: Clock, hint: 'Müsaitlik ve sosyal medya' },
   { id: 'security', label: 'Güvenlik', icon: Lock, hint: 'Şifre değiştirme' },
 ]
 
@@ -70,20 +70,12 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
     !form.bio && 'Biyografi',
   ].filter(Boolean)
 
-  const toggleDay = (d) => {
-    const workDays = form.workDays.includes(d)
-      ? form.workDays.filter((x) => x !== d)
-      : [...form.workDays, d].sort((a, b) => a - b)
-    update({ workDays })
-  }
-
   const validate = () => {
     if (!form.name?.trim()) return 'Ad soyad gerekli.'
     if (!form.phone?.trim()) return 'Telefon gerekli.'
     if (!form.city?.trim() || !form.district?.trim()) return 'İl ve ilçe seçin.'
     if (!form.gender) return 'Cinsiyet seçin.'
     if (!form.photo) return 'Profil fotoğrafı gerekli.'
-    if (form.workDays.length === 0) return 'En az bir çalışma günü seçin.'
     return ''
   }
 
@@ -105,9 +97,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
         district: form.district,
         bio: form.bio,
         photo: form.photo,
-        workDays: form.workDays,
-        workStart: form.workStart,
-        workEnd: form.workEnd,
+        availability: form.availability || {},
         linkedin: form.linkedin,
         instagram: form.instagram,
         youtube: form.youtube,
@@ -323,39 +313,11 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
 
           {tab === 'schedule' && (
             <div className="space-y-5">
-              <ProfileSectionCard icon={Clock} title="Çalışma Günleri & Saatleri" subtitle="Randevu planlaması için kullanılır" accent="rose">
-                <div className="space-y-4">
-                  <div>
-                    <FieldLabel required>Çalışma günleri</FieldLabel>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {WEEKDAYS.map((d) => {
-                        const sel = form.workDays.includes(d.value)
-                        return (
-                          <button
-                            key={d.value}
-                            type="button"
-                            onClick={() => toggleDay(d.value)}
-                            className={`rounded-full px-4 py-2 text-xs font-bold transition ${
-                              sel ? 'bg-rose-500 text-white shadow-md' : 'bg-cream-100 text-cream-800/70 hover:bg-cream-200'
-                            }`}
-                          >
-                            {d.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
-                    <label className="block">
-                      <FieldLabel>Başlangıç</FieldLabel>
-                      <input type="time" value={form.workStart} onChange={(e) => update({ workStart: e.target.value })} className={inputCls} />
-                    </label>
-                    <label className="block">
-                      <FieldLabel>Bitiş</FieldLabel>
-                      <input type="time" value={form.workEnd} onChange={(e) => update({ workEnd: e.target.value })} className={inputCls} />
-                    </label>
-                  </div>
-                </div>
+              <ProfileSectionCard icon={Clock} title="Randevu Müsaitliği" subtitle="Danışanlar yalnızca burada seçtiğiniz gün ve saatlerden randevu alabilir" accent="sage">
+                <WeeklyAvailability
+                  value={form.availability || {}}
+                  onChange={(availability) => update({ availability })}
+                />
               </ProfileSectionCard>
               <ProfileSectionCard icon={Globe} title="Sosyal Medya & Web" subtitle="Opsiyonel — profilinizde link olarak görünür" accent="violet">
                 <div className="grid gap-3 sm:grid-cols-2">

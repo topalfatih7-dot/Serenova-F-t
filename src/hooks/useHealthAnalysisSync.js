@@ -10,7 +10,7 @@ export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfi
 
   useEffect(() => {
     if (!user?.id || syncing.current) return
-    if (!isHealthTestComplete(user.healthTest, user.gender)) return
+    if (!isHealthTestComplete(user.healthTest, user.gender, user.packageConfig)) return
 
     const hasSummary =
       user.healthAnalysis?.generatedAt &&

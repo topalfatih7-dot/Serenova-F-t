@@ -4,7 +4,7 @@ import { enrichProfileForAnalysis } from '../utils/healthProfile'
 import { fetchAiNutritionTips } from './aiNutritionTips'
 
 export function profileReadyForAnalysis(profile) {
-  return isHealthTestComplete(profile?.healthTest, profile?.gender)
+  return isHealthTestComplete(profile?.healthTest, profile?.gender, profile?.packageConfig)
 }
 
 function buildHealthTestSummary(insights = []) {
@@ -54,7 +54,7 @@ export async function syncMemberHealthAssets({
   myPrograms = [],
 }) {
   if (!user?.id) return { synced: false }
-  if (!isHealthTestComplete(user.healthTest, user.gender)) return { synced: false, reason: 'test' }
+  if (!isHealthTestComplete(user.healthTest, user.gender, user.packageConfig)) return { synced: false, reason: 'test' }
   if (!profileReadyForAnalysis(user)) return { synced: false, reason: 'profile' }
 
   const enriched = enrichProfileForAnalysis(user)

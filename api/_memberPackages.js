@@ -1,0 +1,237 @@
+/**
+ * Sunucu tarafı çoklu paket yardımcıları (stripe-webhook vb.)
+ * src/utils/memberPackages.js ile uyumlu tutulmalı.
+ */
+
+const ONE_TIME_PLANS = new Set(['doktor'])
+const PAID_PLANS = new Set([
+  'eko', 'diyet', 'spor', 'doktor', 'vip',
+  'gumus', 'altin', 'platinum', 'premium', 'kurucu',
+])
+
+const PLAN_RANK = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
+
+const today = () => new Date().toISOString().split('T')[0]
+
+export function isOneTimePlan(planId) {
+  return ONE_TIME_PLANS.has(planId)
+}
+
+export function isPaidMembership(planId) {
+  return PAID_PLANS.has(planId)
+}
+
+export function countUsedDoctorSessions(member) {
+  return (member?.doctorSessions || []).filter((s) =>
+    ['scheduled', 'rescheduled', 'completed'].includes(s?.status || 'scheduled')
+  ).length
+}
+
+export function isPackageEntryActive(pkg, now = today()) {
+  if (!pkg || pkg.status !== 'active') return false
+  if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') return true
+  if (!pkg.expiresAt) return true
+  return pkg.expiresAt >= now
+}
+
+export function migrateLegacyToPackages(member) {
+  if (Array.isArray(member?.activePackages) && member.activePackages.length > 0) {
+    return member.activePackages
+  }
+  if (!member || !isPaidMembership(member.membership)) return []
+  const planId = member.membership
+  const packageConfig = member.packageConfig || {}
+  return [{
+    id: `legacy-${member.id || 'x'}-${planId}`,
+    planId,
+    packageConfig,
+    startedAt: member.premiumStartedAt || member.joinedAt || today(),
+    expiresAt: isOneTimePlan(planId) ? null : (member.premiumExpiresAt || null),
+    status: 'active',
+    purchasedAt: member.premiumStartedAt || member.joinedAt || today(),
+  }]
+}
+
+export function createPackageEntry(planId, packageConfig, meta = {}) {
+  const startedAt = meta.startedAt || today()
+  const oneTime = isOneTimePlan(planId) || packageConfig?.billingType === 'one_time'
+  const months = Number(packageConfig?.durationMonths) || 1
+  let expiresAt = null
+  if (!oneTime) {
+    const d = new Date(startedAt)
+    d.setMonth(d.getMonth() + months)
+    expiresAt = d.toISOString().split('T')[0]
+  }
+  return {
+    id: meta.id || `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    planId,
+    packageConfig,
+    startedAt,
+    expiresAt,
+    status: 'active',
+    purchasedAt: meta.purchasedAt || new Date().toISOString(),
+    price: meta.price || 0,
+  }
+}
+
+export function addMemberPackage(activePackages = [], planId, packageConfig, meta = {}) {
+  return [...(activePackages || []), createPackageEntry(planId, packageConfig, meta)]
+}
+
+export function memberHasActivePaidPackages(member) {
+  return migrateLegacyToPackages(member).some((p) => isPackageEntryActive(p))
+}
+
+export function shouldStackNewPackage(member, planId) {
+  if (planId === 'free' || !isPaidMembership(planId)) return false
+  return memberHasActivePaidPackages(member)
+}
+
+/**
+ * Ücretli plan satın alma / değiştirme:
+ * - Tek seferlik (doktor) veya addPackage → mevcut paketlere ekler
+ * - Abonelik planı → aktif abonelikleri değiştirir, tek seferlik paketleri korur
+ */
+export function resolvePackagePurchase(activePackages = [], planId, packageConfig, meta = {}, options = {}) {
+  const { addPackage = false } = options
+  const packages = activePackages || []
+
+  if (addPackage || isOneTimePlan(planId)) {
+    return addMemberPackage(packages, planId, packageConfig, meta)
+  }
+
+  const keepOneTime = packages.filter((p) => isOneTimePlan(p.planId) && isPackageEntryActive(p))
+  return [...keepOneTime, createPackageEntry(planId, packageConfig, meta)]
+}
+
+export function mergePackageConfigs(packages = [], member = null) {
+  const active = packages.filter((p) => isPackageEntryActive(p))
+  const merged = {
+    coachMeetingsPerMonth: 0,
+    dietitianMeetingsPerMonth: 0,
+    doctorMeetingsPerMonth: 0,
+    coachMeetingsPerWeek: 0,
+    durationMonths: 1,
+    durationWeeks: 4,
+    addOns: [],
+  }
+
+  active.forEach((pkg) => {
+    const c = pkg.packageConfig || {}
+    merged.coachMeetingsPerMonth = Math.max(merged.coachMeetingsPerMonth, Number(c.coachMeetingsPerMonth) || 0)
+    merged.dietitianMeetingsPerMonth = Math.max(merged.dietitianMeetingsPerMonth, Number(c.dietitianMeetingsPerMonth) || 0)
+    merged.doctorMeetingsPerMonth = Math.max(merged.doctorMeetingsPerMonth, Number(c.doctorMeetingsPerMonth) || 0)
+    merged.coachMeetingsPerWeek = Math.max(merged.coachMeetingsPerWeek, Number(c.coachMeetingsPerWeek) || 0)
+    merged.doctorSessionsTotal = (Number(merged.doctorSessionsTotal) || 0) + (Number(c.doctorSessionsTotal) || 0)
+    if (c.billingType === 'one_time') merged.billingType = 'one_time'
+    merged.durationMonths = Math.max(merged.durationMonths || 0, Number(c.durationMonths) || 0)
+  })
+
+  const usedDoctor = member ? countUsedDoctorSessions(member) : 0
+  if (merged.doctorSessionsTotal > 0) {
+    merged.doctorSessionsRemaining = Math.max(0, merged.doctorSessionsTotal - usedDoctor)
+  }
+
+  return merged
+}
+
+export function resolvePrimaryMembership(activePackages = [], fallback = 'free') {
+  const active = activePackages.filter((p) => isPackageEntryActive(p))
+  if (!active.length) return fallback === 'free' ? 'free' : fallback
+  const subs = active.filter((p) => !isOneTimePlan(p.planId))
+  const pool = subs.length ? subs : active
+  return pool.reduce((best, p) => {
+    const rank = PLAN_RANK[p.planId] ?? 0
+    const bestRank = PLAN_RANK[best] ?? 0
+    return rank >= bestRank ? p.planId : best
+  }, pool[0].planId)
+}
+
+export function syncMemberPackages(member) {
+  if (!member) return member
+
+  let packages = migrateLegacyToPackages(member)
+  const now = today()
+  const usedDoctor = countUsedDoctorSessions(member)
+
+  packages = packages.map((pkg) => {
+    if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') {
+      const total = Number(pkg.packageConfig?.doctorSessionsTotal) || 1
+      if (usedDoctor >= total) return { ...pkg, status: 'consumed' }
+      return { ...pkg, status: 'active' }
+    }
+    if (pkg.expiresAt && pkg.expiresAt < now) return { ...pkg, status: 'expired' }
+    return { ...pkg, status: pkg.status === 'consumed' ? 'consumed' : 'active' }
+  })
+
+  const active = packages.filter((p) => isPackageEntryActive(p))
+  const merged = mergePackageConfigs(active, member)
+  const primary = resolvePrimaryMembership(active, member.membership)
+
+  const subExpiries = active
+    .filter((p) => !isOneTimePlan(p.planId) && p.expiresAt)
+    .map((p) => p.expiresAt)
+    .sort()
+  const latestExpiry = subExpiries.length ? subExpiries[subExpiries.length - 1] : null
+
+  let membership = active.length ? primary : 'free'
+  let membershipStatus = member.membershipStatus || 'active'
+
+  if (!active.length && isPaidMembership(member.membership)) {
+    membership = 'free'
+    membershipStatus = 'active'
+  } else if (latestExpiry) {
+    const remaining = Math.ceil((new Date(latestExpiry) - new Date(now)) / (1000 * 60 * 60 * 24))
+    if (remaining <= 0) {
+      membership = active.length ? primary : 'free'
+    } else if (remaining <= 7) {
+      membershipStatus = 'expiring'
+    } else if (membershipStatus === 'expiring') {
+      membershipStatus = 'active'
+    }
+  }
+
+  const synced = {
+    ...member,
+    activePackages: packages,
+    packageConfig: merged,
+    membership,
+    membershipStatus,
+    premiumExpiresAt: latestExpiry ?? (active.length ? member.premiumExpiresAt : null),
+    premiumStartedAt: member.premiumStartedAt || packages[0]?.startedAt || null,
+  }
+  return sanitizeStaffForPackage(merged, synced)
+}
+
+export function packageIncludesDoctor(pkg = {}) {
+  const total = Number(pkg.doctorSessionsTotal) || 0
+  if (total > 0) {
+    const remaining = pkg.doctorSessionsRemaining
+    if (remaining != null && !Number.isNaN(Number(remaining))) return Number(remaining) > 0
+    return true
+  }
+  return (Number(pkg.doctorMeetingsPerMonth) || 0) > 0
+}
+
+export function packageIncludesCoach(pkg = {}) {
+  return (Number(pkg.coachMeetingsPerMonth) || Number(pkg.coachMeetingsPerWeek) || 0) > 0
+}
+
+export function packageIncludesDietitian(pkg = {}) {
+  return (Number(pkg.dietitianMeetingsPerMonth) || 0) > 0
+}
+
+export function sanitizeStaffForPackage(packageConfig, data = {}) {
+  const includeCoach = packageIncludesCoach(packageConfig)
+  const includeDiet = packageIncludesDietitian(packageConfig)
+  const includeDoctor = packageIncludesDoctor(packageConfig)
+  return {
+    ...data,
+    assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
+    assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
+    assignedDoctorId: includeDoctor ? (data.assignedDoctorId ?? null) : null,
+    coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
+    dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
+    doctorSessions: includeDoctor ? (data.doctorSessions ?? []) : [],
+  }
+}

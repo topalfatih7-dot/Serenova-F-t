@@ -33,9 +33,11 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
     const planId = String(body.planId || '')
     const flow = body.flow === 'change' ? 'change' : 'register'
-    const durationMonths = [1, 3, 6].includes(Number(body.durationMonths))
-      ? Number(body.durationMonths)
-      : 1
+    const durationMonths = planId === 'doktor'
+      ? 1
+      : ([1, 3, 6].includes(Number(body.durationMonths))
+        ? Number(body.durationMonths)
+        : 1)
 
     if (!isPaidPlanId(planId)) {
       return res.status(400).json({ ok: false, error: 'Geçersiz plan.' })
@@ -80,7 +82,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Plan fiyatı bulunamadı.' })
     }
 
-    const durationLabel = durationMonths === 1 ? '1 ay' : `${durationMonths} ay`
+    const durationLabel = planId === 'doktor'
+      ? 'Tek Seferlik'
+      : (durationMonths === 1 ? '1 ay' : `${durationMonths} ay`)
     const origin = getOrigin(req)
     const successPath = flow === 'change' ? '/profile' : '/dashboard'
     const cancelPath = flow === 'change' ? '/onboarding' : '/onboarding'
@@ -97,8 +101,10 @@ export default async function handler(req, res) {
             currency: CURRENCY,
             unit_amount: toMinorUnits(planPrice),
             product_data: {
-              name: `${planName} (${durationLabel})`,
-              description: `${planName} — ${durationLabel} üyelik`,
+              name: planId === 'doktor' ? planName : `${planName} (${durationLabel})`,
+              description: planId === 'doktor'
+                ? `${planName} — 1 online doktor görüşmesi`
+                : `${planName} — ${durationLabel} üyelik`,
             },
           },
         },

@@ -48,6 +48,7 @@ const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
 const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
 const StaffMessagesPage = lazy(() => import('./pages/staff/StaffMessagesPage'))
 const StaffAdminMessagesPage = lazy(() => import('./pages/staff/StaffAdminMessagesPage'))
+const StaffCollabMessagesPage = lazy(() => import('./pages/staff/StaffCollabMessagesPage'))
 const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const StaffLibraryGate = lazy(() => import('./components/staff/StaffLibraryGate'))
 const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagementPage'))
@@ -146,6 +147,8 @@ export default function App() {
                 <Route path="staff/messages" element={<StaffMessagesPage />} />
                 <Route path="staff/messages/:memberId" element={<StaffMessagesPage />} />
                 <Route path="staff/admin-messages" element={<StaffAdminMessagesPage />} />
+                <Route path="staff/collab-messages" element={<StaffCollabMessagesPage />} />
+                <Route path="staff/collab-messages/:memberId" element={<StaffCollabMessagesPage />} />
                 <Route path="staff/programs" element={<StaffProgramsPage />} />
                 <Route path="staff/lists" element={<StaffListsPage />} />
                 <Route path="staff/library" element={<StaffLibraryGate />} />
@@ -173,6 +176,8 @@ export default function App() {
                 <Route path="admin/messages/staff/:staffId" element={<AdminMessagesPage />} />
                 <Route path="admin/messages/audit" element={<AdminMessagesPage />} />
                 <Route path="admin/messages/audit/:threadId" element={<AdminMessagesPage />} />
+                <Route path="admin/messages/collab" element={<AdminMessagesPage />} />
+                <Route path="admin/messages/collab/:threadId" element={<AdminMessagesPage />} />
                 <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
                 <Route path="admin/activity" element={<AdminActivityPage />} />
               </Route>

@@ -32,7 +32,21 @@ loadEnv()
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const DB_URL = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL
+
+function resolveDatabaseUrl() {
+  const direct = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL
+  if (direct) return direct
+
+  const pwd = process.env.SUPABASE_DB_PASSWORD
+  if (!pwd || !SUPABASE_URL) return null
+
+  const ref = new URL(SUPABASE_URL).hostname.split('.')[0]
+  const region = process.env.SUPABASE_DB_REGION || 'ap-south-1'
+  const enc = encodeURIComponent(pwd)
+  return `postgresql://postgres.${ref}:${enc}@aws-0-${region}.pooler.supabase.com:6543/postgres`
+}
+
+const DB_URL = resolveDatabaseUrl()
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error('SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli (.env.local)')
@@ -49,10 +63,12 @@ const LEGACY_INACTIVE = ['kurucu', 'gumus', 'altin', 'platinum', 'premium']
 const DOKTOR_PACKAGE_CONFIG = {
   coachMeetingsPerMonth: 0,
   dietitianMeetingsPerMonth: 0,
-  doctorMeetingsPerMonth: 2,
+  doctorMeetingsPerMonth: 0,
+  doctorSessionsTotal: 1,
+  billingType: 'one_time',
   coachMeetingsPerWeek: 0,
-  durationMonths: 1,
-  durationWeeks: 4,
+  durationMonths: 0,
+  durationWeeks: 0,
   addOns: [],
 }
 
@@ -129,14 +145,13 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'doktor', name: 'Doktor Paketi', price: 2500, period: 'Aylık', badge: null, color: 'teal',
-    features: [{ text: 'Online Doktor Seansı', included: true }],
-    limits: ['Online doktor görüşmesi'],
-    pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 2500 },
-      { months: 3, label: '3 Aylık', price: 6499 },
-      { months: 6, label: '6 Aylık', price: 9999 },
+    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: null, color: 'teal',
+    features: [
+      { text: '1 Online Doktor Görüşmesi', included: true },
+      { text: 'Görüntülü Görüşme', included: true },
     ],
+    limits: ['Tek seferlik doktor görüşmesi'],
+    pricing_tiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   },
   {
     id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'brand',
@@ -211,6 +226,8 @@ async function migrateKurucuMembers() {
 
 async function runSqlFile(path) {
   const sql = readFileSync(path, 'utf8')
+  if (await runSqlViaManagementApi(sql, path)) return
+
   const { default: pg } = await import('pg')
   const client = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } })
   await client.connect()
@@ -222,9 +239,30 @@ async function runSqlFile(path) {
   }
 }
 
+async function runSqlViaManagementApi(sql, path) {
+  const token = process.env.SUPABASE_ACCESS_TOKEN
+  if (!token || !SUPABASE_URL) return false
+  const ref = new URL(SUPABASE_URL).hostname.split('.')[0]
+  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query: sql }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Management API SQL (${path.split('/').pop()}): ${res.status} ${text.slice(0, 200)}`)
+  }
+  console.log(`  ✓ SQL (API): ${path.split('/').pop()}`)
+  return true
+}
+
 async function runPendingSqlMigrations() {
-  if (!DB_URL) {
-    console.log('DATABASE_URL yok — ham SQL atlandı (plan senkronu uygulandı)')
+  const hasDb = Boolean(DB_URL || process.env.SUPABASE_ACCESS_TOKEN)
+  if (!hasDb) {
+    console.log('DATABASE_URL / SUPABASE_DB_PASSWORD / SUPABASE_ACCESS_TOKEN yok — ham SQL atlandı (plan senkronu uygulandı)')
     return
   }
   const dir = join(root, 'supabase/migrations')

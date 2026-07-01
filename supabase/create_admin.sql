@@ -1,7 +1,7 @@
 -- =====================================================================
 --  Yeni Form — Admin kullanıcısını hazır oluştur
 --  Supabase Dashboard > SQL Editor'a yapıştırıp ÇALIŞTIRIN.
---  (Önce schema.sql çalıştırılmış olmalı.)
+--  (Önce supabase/setup.sql çalıştırılmış olmalı.)
 --
 --  Bu script:
 --   1) auth.users içine ONAYLI (email_confirmed) bir admin kullanıcı ekler,
@@ -14,7 +14,7 @@
 --     Şifre   : Serenova2026!
 --
 --  Not: E-posta/şifreyi değiştirmek istersen aşağıdaki iki değişkeni güncelle.
---       E-postayı değiştirirsen schema.sql'deki is_admin() ve handle_new_user()
+--       E-postayı değiştirirsen setup.sql'deki is_admin() ve handle_new_user()
 --       fonksiyonlarındaki adresi de aynı yapmalısın.
 -- =====================================================================
 

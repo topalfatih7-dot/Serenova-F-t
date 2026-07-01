@@ -113,3 +113,14 @@ export function mapAdminStaffMessagesForExport(messages, { staffName }) {
     senderLabel: m.senderType === 'admin' ? 'Admin' : staffName || 'Personel',
   }))
 }
+
+export function mapStaffCollabMessagesForExport(messages, { coachName, dietitianName }) {
+  return (messages || []).map((m) => ({
+    ...m,
+    senderLabel: m.senderType === 'coach'
+      ? (coachName || 'Koç')
+      : m.senderType === 'dietitian'
+        ? (dietitianName || 'Diyetisyen')
+        : 'Sistem',
+  }))
+}

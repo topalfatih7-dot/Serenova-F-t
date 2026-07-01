@@ -1,5 +1,6 @@
-import { packageIncludesCoach, packageIncludesDietitian, isPaidMembership } from '../data/membershipPlans'
+import { packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor, isPaidMembership } from '../data/membershipPlans'
 import { normalizeStaffRole } from './staffRoles'
+import { staffCollabMembersSignature } from '../services/staffCollabChatDb'
 
 export const CHAT_CONSENT_KEY = 'yeniform-chat-consent-v1'
 
@@ -47,7 +48,11 @@ export function getStaffClients(members, role, staffId) {
   const sid = String(staffId || '')
   if (!sid) return []
   const normalizedRole = normalizeStaffRole(role)
-  const assignmentKey = normalizedRole === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
+  const assignmentKey = normalizedRole === 'coach'
+    ? 'assignedCoachId'
+    : normalizedRole === 'doctor'
+      ? 'assignedDoctorId'
+      : 'assignedDietitianId'
 
   return (members || []).filter((m) => {
     if (!isPaidMembership(m.membership)) return false
@@ -56,6 +61,9 @@ export function getStaffClients(members, role, staffId) {
     if (String(m[assignmentKey] || '') !== sid) return false
     if (normalizedRole === 'coach') {
       return packageIncludesCoach(m.packageConfig) || Boolean(m.assignedCoachId)
+    }
+    if (normalizedRole === 'doctor') {
+      return packageIncludesDoctor(m.packageConfig) || Boolean(m.assignedDoctorId)
     }
     return packageIncludesDietitian(m.packageConfig) || Boolean(m.assignedDietitianId)
   })
@@ -93,6 +101,48 @@ export function staffClientsSignature(members, role, staffId) {
     .map((m) => m.id)
     .sort()
     .join(',')
+}
+
+/** Üye sohbeti: yalnızca atama + paket değişince yeniden hydrate gerekir */
+export function memberChatHydrationSignature(member) {
+  if (!member?.id) return ''
+  const pkg = member.packageConfig || {}
+  const parts = [member.id, member.membership || 'free', member.membershipStatus || 'active']
+  if (packageIncludesCoach(pkg) && member.assignedCoachId) {
+    parts.push(`coach:${member.assignedCoachId}`)
+  }
+  if (packageIncludesDietitian(pkg) && member.assignedDietitianId) {
+    parts.push(`diet:${member.assignedDietitianId}`)
+  }
+  return parts.join('|')
+}
+
+function staffListSignature(staffList = []) {
+  return staffList.map((s) => s.id).filter(Boolean).sort().join(',')
+}
+
+/**
+ * Sohbet thread hydrate anahtarı — kilo/progress vb. güncellemelerinde değişmez.
+ */
+export function chatHydrationKey(session, member, staffUser, members = [], staffList = []) {
+  const type = session?.type || ''
+  const sessionId = session?.memberId || session?.staffId || staffUser?.id || ''
+  const staffKey = staffListSignature(staffList)
+
+  if (type === 'admin') return `admin|${staffKey}`
+  if (type === 'member') {
+    return `member|${sessionId}|${memberChatHydrationSignature(member)}|staff:${staffKey}`
+  }
+  if (type === 'staff' && staffUser?.id) {
+    return [
+      'staff',
+      staffUser.id,
+      staffClientsSignature(members, staffUser.role, staffUser.id),
+      staffCollabMembersSignature(members, staffUser),
+      `staff:${staffKey}`,
+    ].join('|')
+  }
+  return `${type}|${sessionId}`
 }
 
 export function memberHasChatAccess(member) {
@@ -147,4 +197,46 @@ export function staffRoleLabel(role) {
   if (role === 'dietitian') return 'Diyetisyen'
   if (role === 'coach') return 'Koç'
   return 'Personel'
+}
+
+export function staffCollabThreadUnreadCount(thread, perspective = 'coach') {
+  if (!thread) return 0
+  const key = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
+  return Number(thread[key] ?? thread.data?.[key] ?? 0)
+}
+
+export function sortStaffCollabThreads(threads, perspective = 'coach') {
+  const unreadKey = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
+  return [...threads].sort((a, b) => {
+    const aUnread = Number(a[unreadKey] || a.data?.[unreadKey] || 0) > 0 ? 1 : 0
+    const bUnread = Number(b[unreadKey] || b.data?.[unreadKey] || 0) > 0 ? 1 : 0
+    if (bUnread !== aUnread) return bUnread - aUnread
+    const aTime = new Date(a.lastMessageAt || a.createdAt || 0).getTime()
+    const bTime = new Date(b.lastMessageAt || b.createdAt || 0).getTime()
+    return bTime - aTime
+  })
+}
+
+export function buildStaffCollabInbox(members, threads, staffUser) {
+  const role = normalizeStaffRole(staffUser?.role)
+  const threadByMember = new Map((threads || []).map((t) => [String(t.memberId), t]))
+  return (members || []).map((member) => ({
+    member,
+    thread: threadByMember.get(String(member.id)) || null,
+    peerName: role === 'coach'
+      ? (threadByMember.get(String(member.id))?.dietitianName || '')
+      : (threadByMember.get(String(member.id))?.coachName || ''),
+  }))
+}
+
+export function sortStaffCollabInbox(items, perspective = 'coach') {
+  return [...items].sort((a, b) => {
+    const aUnread = staffCollabThreadUnreadCount(a.thread, perspective) > 0 ? 1 : 0
+    const bUnread = staffCollabThreadUnreadCount(b.thread, perspective) > 0 ? 1 : 0
+    if (bUnread !== aUnread) return bUnread - aUnread
+    const aTime = new Date(a.thread?.lastMessageAt || 0).getTime()
+    const bTime = new Date(b.thread?.lastMessageAt || 0).getTime()
+    if (bTime !== aTime) return bTime - aTime
+    return (a.member?.name || '').localeCompare(b.member?.name || '', 'tr')
+  })
 }

@@ -1,6 +1,6 @@
 -- =====================================================================
 --  Yeni Form — Temiz Başlangıç (seed)
---  schema.sql çalıştırıldıktan SONRA bunu SQL Editor'da çalıştırın.
+--  setup.sql çalıştırıldıktan SONRA bunu SQL Editor'da çalıştırın.
 --  Bu betik ÖRNEK/DEMO verisi EKLEMEZ; yalnızca tüm içerik tablolarını
 --  boşaltarak temiz bir başlangıç sağlar. Tekrar çalıştırmak güvenlidir.
 --

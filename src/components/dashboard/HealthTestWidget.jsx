@@ -11,13 +11,13 @@ import { useToast } from '../../context/ToastContext'
 const DISMISS_KEY = (userId) => `health_test_dismissed_${userId}`
 
 export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) {
-  const { updateProfile, createProgram, exercises, myPrograms } = useApp()
+  const { updateProfile, createProgram, exercises, myPrograms, packageConfig } = useApp()
   const { toast } = useToast()
   const [flowOpen, setFlowOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showFab, setShowFab] = useState(() => {
     if (!user?.id) return false
-    if (isHealthTestComplete(user.healthTest, user.gender)) return false
+    if (isHealthTestComplete(user.healthTest, user.gender, packageConfig)) return false
     try {
       return localStorage.getItem(DISMISS_KEY(user.id)) === '1'
     } catch {
@@ -26,7 +26,7 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   })
   const [morphing, setMorphing] = useState(false)
 
-  const testComplete = isHealthTestComplete(user?.healthTest, user?.gender)
+  const testComplete = isHealthTestComplete(user?.healthTest, user?.gender, packageConfig)
 
   const handleComplete = useCallback(async ({ healthTest, healthAck, disclaimer }) => {
     setSaving(true)
@@ -99,6 +99,7 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
         open={flowOpen}
         onClose={handleFlowClose}
         gender={user.gender || ''}
+        packageConfig={packageConfig}
         initialHealthTest={user.healthTest}
         onComplete={handleComplete}
         saving={saving}

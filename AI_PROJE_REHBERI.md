@@ -115,7 +115,7 @@ Tarayıcı
 
 Admin e-postası üç yerde senkron olmalı:
 - `src/config/brand.js` → `ADMIN_CREDENTIALS.email`
-- `supabase/schema.sql` → `is_admin()` fonksiyonu
+- `supabase/setup.sql` → `is_admin()` fonksiyonu
 - `supabase/create_admin.sql` → admin kullanıcı oluşturma
 
 ---
@@ -125,7 +125,7 @@ Admin e-postası üç yerde senkron olmalı:
 ### SQL dosyaları (`supabase/`)
 
 **Artık TEK dosya var:** `setup.sql` — idempotent, kendi kendine yeten tertemiz kurulum.
-Eski `schema.sql` + `migrate_*.sql` + `seed.sql` + `create_admin.sql` dosyaları silindi
+Eski monolitik `schema.sql` kaldırıldı; şema kaynağı `setup.sql` + `migrations/`
 (hepsi `setup.sql` içinde birleştirildi).
 
 | Dosya | Ne yapar | Ne zaman çalıştırılır |
@@ -927,14 +927,14 @@ Kaynak: `.env.example`
 | Menü linki (staff) | `src/components/layout/StaffShell.jsx` |
 | Marka adı/logo | `src/config/brand.js`, `src/components/ui/BrandLogo.jsx` |
 | Sosyal medya (SEO sameAs) | `src/config/brand.js` → `socialUrls` |
-| Admin e-postası | `src/config/brand.js` + `supabase/schema.sql` is_admin() |
+| Admin e-postası | `src/config/brand.js` + `supabase/setup.sql` is_admin() |
 | Üyelik planları (fallback) | `src/data/membershipPlans.js` — `FREE_PLAN` (Basic), `GUMUS_PLAN`, `ALTIN_PLAN`, `PLATINUM_PLAN` |
 | Üyelik planları (canlı) | Admin panel `/admin/plans` veya `plans` tablosu |
 | Paket yapısı (Basic→Platinum) | `src/data/membershipPlans.js` satırlar 10–90 |
 | Kalori hesaplayıcı erişim kontrolü | `src/pages/CalorieCalculatorPage.jsx` satırlar 137–142, 225–253 |
 | Video görüşme ayarları | `src/config/videoCall.js` + `.env` |
 | Telegram bildirim metni | `api/telegram-notify.js` |
-| Veritabanı şeması | `supabase/schema.sql` + migrate dosyaları |
+| Veritabanı şeması | `supabase/setup.sql` + `supabase/migrations/*.sql` |
 | Yeni API endpoint | `api/` klasörü + `vercel.json` |
 | Renk/stil tema | `src/index.css` @theme bloğu |
 | Toast mesajları | Sayfa içinde `useToast()` |
@@ -1213,7 +1213,7 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 ## 17. Son Güncelleme Özeti (2026-06-19 — UI/UX + Plan + Temizlik)
 
 ### 1. Tek Dosya Supabase Kurulumu
-- `supabase/setup.sql` tek, idempotent dosya. Eski `schema.sql`, `migrate_*.sql` (4 adet), `seed.sql`, `create_admin.sql` **silindi**.
+- `supabase/setup.sql` tek, idempotent dosya. Eski `schema.sql` (537 satır, `membership_requests` dahil) kaldırıldı; yerine deprecation stub bırakıldı. Artımlı güncellemeler `supabase/migrations/` + `npm run db:migrate`.
 - Çalıştırma: SQL Editor'a yapıştır → Run. Admin: `admin@serenova.fit` / `Serenova2026!`.
 
 ### 2. Mevcut Üyenin Planını Değiştirme (yeni kayıt sorunu çözüldü)

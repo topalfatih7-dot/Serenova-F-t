@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ClipboardList, Dumbbell, Apple, UserCheck, PlayCircle, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
@@ -8,7 +8,7 @@ import VideoPlayer from '../components/ui/VideoPlayer'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
-import { mealLabel } from '../utils/programSchedule'
+import { mealLabel, CYCLE_PLAN_LENGTH } from '../utils/programSchedule'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
@@ -20,12 +20,18 @@ const dayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?
 const amountText = (e) => (e.amountType === 'duration' ? `${e.amount} ${e.durationUnit || 'sn'}` : `${e.amount} tekrar`)
 
 function groupKey(e) {
+  if (e.cycleDay != null && e.cycleDay !== '') return `cycle:${e.cycleDay}`
   if (e.date) return `date:${e.date}`
   if (e.day != null && e.day !== '') return `day:${e.day}`
   return 'other'
 }
 
-function groupLabel(key) {
+function groupLabel(key, program = null) {
+  if (key.startsWith('cycle:')) {
+    const n = Number(key.slice(6))
+    const len = program?.cycleLength || CYCLE_PLAN_LENGTH
+    return `Gün ${n + 1} / ${len}`
+  }
   if (key.startsWith('date:')) {
     const d = key.slice(5)
     try {
@@ -38,7 +44,7 @@ function groupLabel(key) {
   return 'Diğer'
 }
 
-function groupBySchedule(entries = []) {
+function groupBySchedule(entries = [], program = null) {
   const groups = {}
   entries.forEach((e) => {
     const key = groupKey(e)
@@ -48,13 +54,14 @@ function groupBySchedule(entries = []) {
 
   return Object.keys(groups)
     .sort((a, b) => {
+      if (a.startsWith('cycle:') && b.startsWith('cycle:')) return Number(a.slice(6)) - Number(b.slice(6))
       if (a.startsWith('date:') && b.startsWith('date:')) return a.slice(5).localeCompare(b.slice(5))
       if (a.startsWith('day:') && b.startsWith('day:')) return Number(a.slice(4)) - Number(b.slice(4))
       return a.localeCompare(b)
     })
     .map((key) => ({
       key,
-      label: groupLabel(key),
+      label: groupLabel(key, program),
       items: [...groups[key]].sort((a, b) => (a.start || '').localeCompare(b.start || '')),
     }))
 }
@@ -103,7 +110,25 @@ export default function ProgramsPage() {
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isWorkout ? 'bg-brand-50 text-brand-700' : 'bg-sage-50 text-sage-700'}`}>
                         {isWorkout ? 'Antrenman' : 'Beslenme'}
                       </span>
+                      {p.scheduleType === 'cycle14' && (
+                        <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
+                          14 Günlük Plan
+                        </span>
+                      )}
+                      {isWorkout && p.sessionDuration && (
+                        <span className="flex items-center gap-0.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                          <Clock className="h-3 w-3" /> {p.sessionDuration} dk
+                        </span>
+                      )}
                     </div>
+                    {p.scheduleType === 'cycle14' && p.cycleStartDate && (
+                      <p className="mt-1 text-xs text-teal-700/80">
+                        {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
+                        {' — '}
+                        {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
+                        {' · 14 gün sonra biter'}
+                      </p>
+                    )}
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-cream-800/50">
                       <UserCheck className="h-3.5 w-3.5" /> {p.staffName} · {format(new Date(p.createdAt), 'd MMMM yyyy', { locale: tr })}
                     </p>
@@ -115,9 +140,17 @@ export default function ProgramsPage() {
                 {/* Kütüphane tabanlı program: gün gün, hareketler tıklanabilir */}
                 {p.entries?.length > 0 ? (
                   <div className="mt-4 space-y-4">
-                    {groupBySchedule(p.entries).map((g) => (
+                    {groupBySchedule(p.entries, p).map((g) => (
                       <div key={g.key}>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">{g.label}</p>
+                        <div className="mb-2 flex items-center gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">{g.label}</p>
+                          {/* Seans saati: antrenman programlarında gün başlığında göster */}
+                          {p.type !== 'nutrition' && g.items[0]?.start && (
+                            <span className="flex items-center gap-0.5 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">
+                              <Clock className="h-2.5 w-2.5" />{g.items[0].start}{g.items[0].end ? `–${g.items[0].end}` : ''}
+                            </span>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           {g.items.map((e) => {
                             const isNutrition = p.type === 'nutrition' || e.mealType
@@ -143,11 +176,15 @@ export default function ProgramsPage() {
                                 <p className="font-medium text-cream-900">
                                   {title}{!isNutrition && e.amount ? ` · ${amountText(e)}` : ''}
                                 </p>
-                                {(e.start || e.note) && (
+                                {/* Beslenme: saat göster; antrenman: sadece not */}
+                                {isNutrition && (e.start || e.note) && (
                                   <p className="flex items-center gap-1 text-xs text-cream-800/55">
                                     {e.start && <><Clock className="h-3 w-3" /> {e.start}{e.end ? `–${e.end}` : ''}</>}
                                     {e.note ? `${e.start ? ' · ' : ''}${e.note}` : ''}
                                   </p>
+                                )}
+                                {!isNutrition && e.note && (
+                                  <p className="text-xs italic text-cream-800/45">{e.note}</p>
                                 )}
                               </div>
                             </button>

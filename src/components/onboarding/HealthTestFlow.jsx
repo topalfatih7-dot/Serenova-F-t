@@ -9,8 +9,8 @@ import {
   isQuestionAnswered,
 } from '../../data/healthTest'
 
-function isLastHealthQuestion(index, gender) {
-  const questions = getApplicableQuestions(gender)
+function isLastHealthQuestion(index, gender, packageConfig) {
+  const questions = getApplicableQuestions(gender, packageConfig)
   return index >= questions.length - 1
 }
 
@@ -18,6 +18,7 @@ export default function HealthTestFlow({
   open,
   onClose,
   gender = '',
+  packageConfig = null,
   initialHealthTest,
   onComplete,
   saving = false,
@@ -29,9 +30,9 @@ export default function HealthTestFlow({
   const [disclaimer, setDisclaimer] = useState(false)
   const [phase, setPhase] = useState('questions')
 
-  const questions = getApplicableQuestions(gender)
+  const questions = getApplicableQuestions(gender, packageConfig)
   const currentQuestion = questions[questionIndex]
-  const lastQuestion = isLastHealthQuestion(questionIndex, gender)
+  const lastQuestion = isLastHealthQuestion(questionIndex, gender, packageConfig)
 
   const updateHealthTest = (patch) => setHealthTest((prev) => ({ ...prev, ...patch }))
 

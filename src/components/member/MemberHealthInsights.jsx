@@ -1,5 +1,5 @@
 import { Activity, HeartPulse, MapPin, Salad, Sparkles, Target, Flame, TrendingUp } from 'lucide-react'
-import { describeHealthTest } from '../../data/healthTest'
+import { describeHealthTest, HEALTH_AUDIENCE_META } from '../../data/healthTest'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 
 function Chips({ values, map }) {
@@ -78,7 +78,7 @@ function AnalysisBlock({ analysis }) {
 
 export default function MemberHealthInsights({ member, showLocation = true, compact = false }) {
   if (!member) return null
-  const sections = describeHealthTest(member.healthTest, member.gender)
+  const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
 
   return (
     <div className="space-y-4">
@@ -153,14 +153,20 @@ export default function MemberHealthInsights({ member, showLocation = true, comp
       )}
 
       {sections.length > 0 && (
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
-          <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-cream-900">
-            <HeartPulse className="h-4 w-4 text-amber-600" /> Sağlık Testi
+        <div className="space-y-3">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-cream-900">
+            <HeartPulse className="h-4 w-4 text-amber-600" /> Sağlık Profili
           </p>
-          <div className="space-y-4">
-            {sections.map((sec) => (
-              <div key={sec.id}>
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700/80">{sec.title}</p>
+          {sections.map((sec) => {
+            const aud = HEALTH_AUDIENCE_META[sec.audience] || HEALTH_AUDIENCE_META.shared
+            return (
+              <div key={sec.id} className={`rounded-2xl border p-4 ${aud.border}`}>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-cream-900">{sec.title}</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${aud.chip}`}>
+                    {aud.label}
+                  </span>
+                </div>
                 <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
                   {sec.items.map((it, i) => (
                     <div key={i} className="flex justify-between gap-3 py-1 text-sm">
@@ -170,8 +176,8 @@ export default function MemberHealthInsights({ member, showLocation = true, comp
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
+            )
+          })}
         </div>
       )}
     </div>

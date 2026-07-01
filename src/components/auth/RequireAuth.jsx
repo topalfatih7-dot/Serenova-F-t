@@ -26,12 +26,12 @@ export default function RequireAuth({ role = null }) {
 
   if (role === 'admin' && !isAdmin) {
     if (isStaff) return <Navigate to="/staff" replace />
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/profile" replace />
   }
 
   if (role === 'staff' && !isStaff) {
     if (isAdmin) return <Navigate to="/admin" replace />
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/profile" replace />
   }
 
   if (role === 'member' && (isAdmin || isStaff)) {

@@ -8,7 +8,7 @@ function normalize(ticket) {
   return [{ id: 'm0', from: 'member', text: ticket.message, createdAt: ticket.createdAt }]
 }
 
-export default function TicketThread({ ticket, perspective = 'admin', onReply, disabled, live = false }) {
+export default function TicketThread({ ticket, perspective = 'admin', memberName, onReply, disabled, live = false }) {
   const [text, setText] = useState('')
   const messages = normalize(ticket)
   const scrollRef = useRef(null)
@@ -49,7 +49,7 @@ export default function TicketThread({ ticket, perspective = 'admin', onReply, d
               <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${own ? 'bg-brand-500 text-white' : 'bg-cream-100 text-cream-900'}`}>
                 <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide ${own ? 'text-white/70' : 'text-cream-800/50'}`}>
                   {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
-                  {isAdmin ? 'Destek Ekibi' : 'Üye'}
+                  {isAdmin ? 'Destek Ekibi' : (memberName || ticket.memberName || 'Üye')}
                 </div>
                 <p className="whitespace-pre-line">{m.text}</p>
                 <p className={`mt-1 text-[10px] ${own ? 'text-white/60' : 'text-cream-800/40'}`}>
