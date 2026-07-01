@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-06-28 (§49: AuthRedirectHandler sonsuz döngü düzeltmesi — reset-password ve auth sayfaları artık atlanıyor)
+> **Son güncelleme:** 2026-07-01 (§22: Stripe canlı bağlandı — başarılı/başarısız **Telegram ödeme bildirimi** (`TELEGRAM_PAYMENT_CHAT_ID`), checkout metadata `payment_intent_data`'ya da yazılıyor, admin ödeme plan etiketi düzeltmesi)
 
 ---
 
@@ -852,6 +852,9 @@ Kaynak: `.env.example`
 | `TELEGRAM_BOT_TOKEN` | Sunucu | Telegram Bot |
 | `TELEGRAM_CHAT_ID` | Sunucu | Giriş/kayıt bildirimleri |
 | `TELEGRAM_CONTACT_CHAT_ID` | Sunucu | İletişim formu |
+| `TELEGRAM_PAYMENT_CHAT_ID` | Sunucu | **Stripe ödeme (başarılı/başarısız) bildirimleri**; boşsa `TELEGRAM_CHAT_ID`'ye düşer |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Sunucu (GİZLİ) | Stripe Checkout + webhook |
+| `VITE_STRIPE_ENABLED` / `VITE_STRIPE_PUBLISHABLE_KEY` | İstemci | Stripe akışı on/off + (ops.) publishable key |
 | `TELEGRAM_NOTIFY_SECRET` / `VITE_TELEGRAM_NOTIFY_SECRET` | Sunucu + istemci | API spam koruması |
 | `VITE_DAILY_DOMAIN` | İstemci | Daily.co subdomain |
 | `VITE_DAILY_ROOM_PREFIX` | İstemci | Oda adı öneki (varsayılan: donusum) |
@@ -1440,17 +1443,32 @@ Plan seç → (kayıt akışında önce ücretsiz hesap oluştur, oturum aç)
    → Stripe → POST /api/stripe-webhook (checkout.session.completed)
         → service-role ile: members.membership + premium tarihleri AKTİF,
           payments + activities kaydı (idempotent: stripeSessionId tekrarına kapalı)
+          → Telegram ✅ "Ödeme başarılı" (TELEGRAM_PAYMENT_CHAT_ID)
    → success: /dashboard?payment=success (kayıt) | /profile?payment=success (değişim)
    → cancel:  /onboarding?payment=cancelled
 ```
+
+### Telegram ödeme bildirimleri (2026-07-01)
+Webhook, `TELEGRAM_PAYMENT_CHAT_ID` (yoksa `TELEGRAM_CHAT_ID`) tanımlıysa şu olaylarda
+mesaj atar (`api/_telegramSend.js` → `notifyPaymentTelegram`):
+| Olay | Mesaj |
+|------|-------|
+| `checkout.session.completed` (paid) | ✅ Ödeme başarılı (üye, e-posta, plan, tutar, session) — sadece **yeni** ödemede; duplicate'te atlanır |
+| `checkout.session.expired` | ❌ Oturum tamamlanmadan doldu |
+| `checkout.session.async_payment_failed` | ❌ Gecikmeli ödeme başarısız |
+| `payment_intent.payment_failed` | ❌ Kart reddi (`last_payment_error.message`) |
+
+Bunun için Stripe webhook'una bu 4 event eklenmeli. `stripe-checkout.js` metadata'yı
+hem session'a hem `payment_intent_data.metadata`'ya yazar (başarısız olayda da plan/isim
+bilgisi taşınır). Telegram hatası ödeme akışını **etkilemez** (try/catch içinde).
 
 ### Dosyalar
 | Dosya | Görev |
 |-------|-------|
 | `api/_stripe.js` | Stripe istemcisi, `CURRENCY=try`, `PLAN_FALLBACK` yedek fiyatlar, `toMinorUnits` |
 | `api/_supabaseAdmin.js` | Service-role Supabase istemcisi (RLS atlar) |
-| `api/stripe-checkout.js` | POST: token doğrula → fiyatı `plans` tablosundan/yedekten al → Checkout oturumu (metadata: memberId, planId, planPrice, durationWeeks, flow) |
-| `api/stripe-webhook.js` | Ham gövde + imza doğrulama (`bodyParser:false`), üyelik aktifleştirme, idempotent |
+| `api/stripe-checkout.js` | POST: token doğrula → fiyatı `plans` tablosundan/yedekten al → Checkout oturumu (metadata: memberId, memberName, planId, planName, planPrice, durationMonths, durationLabel, flow, email; ayrıca `payment_intent_data.metadata`) |
+| `api/stripe-webhook.js` | Ham gövde + imza doğrulama (`bodyParser:false`), üyelik aktifleştirme, idempotent + başarılı/başarısız **Telegram bildirimi** |
 | `src/config/stripe.js` | `isStripeEnabled()`, `STRIPE_PUBLISHABLE_KEY` |
 | `src/services/stripePayment.js` | `startStripeCheckout(planId, flow)` — token alır, endpoint'i çağırır, URL'e yönlendirir |
 
@@ -1474,6 +1492,7 @@ Plan seç → (kayıt akışında önce ücretsiz hesap oluştur, oturum aç)
 | `APP_URL` | Sunucu (opsiyonel) |
 | `VITE_STRIPE_ENABLED` | İstemci (on/off) |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | İstemci (opsiyonel) |
+| `TELEGRAM_PAYMENT_CHAT_ID` | Sunucu (ödeme bildirimi; yedek `TELEGRAM_CHAT_ID`) |
 
 ### Bağımlılık
 - `stripe` (npm) sunucu tarafı eklendi. İstemci redirect akışı ek paket gerektirmez.

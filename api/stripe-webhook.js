@@ -3,6 +3,7 @@
  */
 import { getStripe, isStripeConfigured } from './_stripe.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+import { sendTelegramMessage } from './_telegramSend.js'
 import {
   resolvePackagePurchase,
   isOneTimePlan,
@@ -55,6 +56,52 @@ function defaultPackageForPlan(planId, durationMonths = 1) {
     ...base,
     durationMonths: months,
     durationWeeks: months * 4,
+  }
+}
+
+const TG_TIME = () => new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
+
+function formatTry(amount) {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return `${n.toLocaleString('tr-TR')}₺`
+}
+
+/** Ödeme bildirimini (başarılı/başarısız) Telegram'a gönderir. Hata sessizce yutulur. */
+async function notifyPaymentTelegram({ ok, meta = {}, amount, email, reason, sessionId }) {
+  const chatId = process.env.TELEGRAM_PAYMENT_CHAT_ID || process.env.TELEGRAM_CHAT_ID
+  if (!chatId) return
+
+  const name = meta.memberName || 'Üye'
+  const planName = meta.planName || meta.planId || '—'
+  const durationLabel = meta.durationLabel || (meta.durationMonths ? `${meta.durationMonths} ay` : '')
+  const planLine = durationLabel ? `${planName} (${durationLabel})` : planName
+  const mail = email || meta.email || '—'
+
+  const lines = ok
+    ? [
+        '✅ <b>Ödeme başarılı</b>',
+        `👤 ${name}`,
+        `📧 ${mail}`,
+        `📦 ${planLine}`,
+        `💰 ${formatTry(amount)}`,
+        sessionId ? `🧾 <code>${sessionId}</code>` : null,
+        `🕐 ${TG_TIME()}`,
+      ]
+    : [
+        '❌ <b>Ödeme başarısız</b>',
+        `👤 ${name}`,
+        `📧 ${mail}`,
+        `📦 ${planLine}`,
+        `💰 ${formatTry(amount)}`,
+        reason ? `⚠️ ${reason}` : null,
+        `🕐 ${TG_TIME()}`,
+      ]
+
+  try {
+    await sendTelegramMessage({ chatId, text: lines.filter(Boolean).join('\n') })
+  } catch {
+    /* Telegram hatası ödeme akışını etkilemesin */
   }
 }
 
@@ -220,13 +267,65 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object
-      if (session.payment_status === 'paid' || session.status === 'complete') {
-        const admin = getSupabaseAdmin()
-        const result = await activateMembership(admin, session.metadata || {}, session)
-        if (!result.ok) return res.status(500).json({ ok: false, error: result.error })
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object
+        if (session.payment_status === 'paid' || session.status === 'complete') {
+          const admin = getSupabaseAdmin()
+          const meta = session.metadata || {}
+          const result = await activateMembership(admin, meta, session)
+          if (!result.ok) return res.status(500).json({ ok: false, error: result.error })
+          // Aynı ödeme daha önce işlenmişse tekrar bildirim gönderme.
+          if (!result.duplicate) {
+            await notifyPaymentTelegram({
+              ok: true,
+              meta,
+              amount: Number(meta.planPrice) || (session.amount_total ? session.amount_total / 100 : 0),
+              email: session.customer_details?.email || session.customer_email,
+              sessionId: session.id,
+            })
+          }
+        }
+        break
       }
+      case 'checkout.session.expired': {
+        const session = event.data.object
+        await notifyPaymentTelegram({
+          ok: false,
+          meta: session.metadata || {},
+          amount: session.amount_total ? session.amount_total / 100 : Number(session.metadata?.planPrice) || 0,
+          email: session.customer_details?.email || session.customer_email,
+          reason: 'Ödeme oturumu tamamlanmadan süresi doldu.',
+          sessionId: session.id,
+        })
+        break
+      }
+      case 'checkout.session.async_payment_failed': {
+        const session = event.data.object
+        await notifyPaymentTelegram({
+          ok: false,
+          meta: session.metadata || {},
+          amount: session.amount_total ? session.amount_total / 100 : Number(session.metadata?.planPrice) || 0,
+          email: session.customer_details?.email || session.customer_email,
+          reason: 'Gecikmeli ödeme yöntemi başarısız oldu.',
+          sessionId: session.id,
+        })
+        break
+      }
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object
+        const meta = pi.metadata || {}
+        await notifyPaymentTelegram({
+          ok: false,
+          meta,
+          amount: pi.amount ? pi.amount / 100 : Number(meta.planPrice) || 0,
+          email: meta.email || pi.receipt_email,
+          reason: pi.last_payment_error?.message || 'Kart reddedildi veya ödeme tamamlanamadı.',
+        })
+        break
+      }
+      default:
+        break
     }
     return res.status(200).json({ received: true })
   } catch (e) {

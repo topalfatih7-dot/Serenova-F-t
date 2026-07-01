@@ -84,12 +84,14 @@ Vercel → Proje → **Settings → Environment Variables**. Aşağıdakileri ek
 
 | Değişken | Değer | Açıklama |
 |----------|-------|----------|
-| `STRIPE_SECRET_KEY` | `sk_test_...` | Stripe gizli anahtarı |
+| `STRIPE_SECRET_KEY` | `sk_test_...` / `sk_live_...` | Stripe gizli anahtarı |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Adım 5'te webhook oluşturunca alınır |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | Supabase service-role (gizli) |
 | `SUPABASE_URL` | `https://xxxx.supabase.co` | (VITE_SUPABASE_URL zaten varsa bu opsiyonel) |
 | `APP_URL` | `https://siteniz.com` | Başarı/iptal yönlendirmesi (opsiyonel; yoksa istek origin'i kullanılır) |
 | `VITE_STRIPE_ENABLED` | `true` | Arayüzde Stripe akışını açar |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | `pk_test_...` / `pk_live_...` | (Opsiyonel; redirect akışında zorunlu değil) |
+| `TELEGRAM_PAYMENT_CHAT_ID` | `-100…` / `12345…` | Ödeme (başarılı/başarısız) bildirimlerinin gideceği Telegram chat. Boşsa `TELEGRAM_CHAT_ID`'ye düşer. |
 
 > `VITE_` ile başlayanlar tarayıcıya gömülür (gizli olmayan). Diğerleri **gizli**dir.
 
@@ -103,10 +105,17 @@ Stripe, ödeme tamamlanınca senin `/api/stripe-webhook` adresine olay gönderir
 
 1. Stripe Dashboard → **Developers → Webhooks → Add endpoint**.
 2. **Endpoint URL:** `https://SITENIZ.com/api/stripe-webhook`
-3. **Events to send:** en az şunu seç → `checkout.session.completed`
-   (istersen `checkout.session.async_payment_succeeded` da eklenebilir.)
+3. **Events to send:** aşağıdakileri seç (başarılı **ve** başarısız Telegram bildirimi için):
+   - `checkout.session.completed` — **ödeme başarılı** → üyelik aktif + Telegram ✅
+   - `checkout.session.expired` — oturum süresi doldu/terk edildi → Telegram ❌
+   - `checkout.session.async_payment_failed` — gecikmeli ödeme başarısız → Telegram ❌
+   - `payment_intent.payment_failed` — kart reddi/başarısız deneme → Telegram ❌
 4. Kaydet → açılan sayfada **Signing secret** (`whsec_...`) değerini kopyala.
 5. Bunu Vercel'de `STRIPE_WEBHOOK_SECRET` olarak gir ve **yeniden deploy et**.
+
+> **Telegram ödeme bildirimi:** `TELEGRAM_PAYMENT_CHAT_ID` (veya boşsa `TELEGRAM_CHAT_ID`)
+> tanımlıysa webhook her başarılı/başarısız ödeme için o chat'e mesaj atar. Bot
+> (`TELEGRAM_BOT_TOKEN`) o gruba/kişiye ekli olmalıdır.
 
 ---
 
@@ -122,24 +131,39 @@ Stripe, ödeme tamamlanınca senin `/api/stripe-webhook` adresine olay gönderir
 
 ## 7. Test etme
 
-### A) En kolay: canlı (deploy edilmiş) ortamda
-1. Yukarıdaki env'leri Vercel'e gir, deploy et.
-2. Webhook'u ekle (Adım 5).
-3. Siteye gir → kayıt ol → ücretli plan seç → Stripe sayfasında **test kartı** kullan:
+> **KRİTİK — Test modu vs Canlı mod:** Test kartları (`4242…`) **yalnızca TEST modunda**
+> çalışır. **Canlı anahtarlarla (`sk_live_`/`pk_live_`) test kartı KABUL EDİLMEZ**;
+> canlı modda girilen gerçek kart **gerçekten para çeker**. Bu yüzden geliştirme/test
+> sırasında Stripe'da **"Test mode"** aç, oradan **`sk_test_…` / `pk_test_…`** anahtarlarını
+> ve **test modunda ayrı bir webhook** (`whsec_…`) al; bunları env'e koy. Canlıya
+> geçişte (Adım 8) live anahtarlarla değiştir.
+
+### A) En kolay: canlı (deploy edilmiş) ortamda — TEST modu anahtarlarıyla
+1. Stripe'da **Test mode** aç → `sk_test_…`, (ops.) `pk_test_…` al.
+2. Bu test anahtarlarını + test webhook `whsec_…`'ini Vercel'e gir, deploy et.
+3. Webhook'u **test modunda** ekle (Adım 5, aynı 4 event).
+4. Siteye gir → kayıt ol → ücretli plan seç → Stripe sayfasında **test kartı** kullan:
    - Kart: `4242 4242 4242 4242`
    - Tarih: gelecekte herhangi bir ay/yıl (ör. `12/34`)
    - CVC: herhangi 3 hane · ZIP: herhangi
-4. Ödeme sonrası `/dashboard?payment=success`'e döner; birkaç saniye içinde
+5. Ödeme sonrası `/dashboard?payment=success`'e döner; birkaç saniye içinde
    üyelik **aktif** olur (webhook çalışınca). `payments` ve `activities`
-   tablolarında kayıt görünür.
+   tablolarında kayıt görünür, admin **Ödeme Yönetimi** ekranında listelenir ve
+   Telegram'a **✅ Ödeme başarılı** mesajı düşer.
+6. **Başarısız senaryo:** reddedilen kartla (`4000 0000 0000 0002`) dene →
+   Telegram'a **❌ Ödeme başarısız** mesajı gelir (`payment_intent.payment_failed`).
+   Ödeme sayfasını kapat/bekle → süre dolunca `checkout.session.expired` ile de ❌ gelir.
 
 ### B) Yerelde webhook testi (Stripe CLI)
 ```bash
 # Stripe CLI kur: https://stripe.com/docs/stripe-cli
 stripe login
-# Yerel sunucuyu çalıştır (npm run dev → http://localhost:5173)
-stripe listen --forward-to localhost:5173/api/stripe-webhook
+# Yerel sunucuyu çalıştır (vercel dev → http://localhost:3000 önerilir)
+stripe listen \
+  --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_failed,payment_intent.payment_failed \
+  --forward-to localhost:3000/api/stripe-webhook
 # CLI ekranda whsec_... verir → .env.local içine STRIPE_WEBHOOK_SECRET olarak koy
+# Başarısız ödemeyi tetiklemek için:  stripe trigger payment_intent.payment_failed
 ```
 > Not: Yerel `npm run dev` (Vite) webhook'a **ham gövde** veremediği için imza
 > doğrulaması yereldede sınırlıdır. Gerçekçi test için `vercel dev` veya
@@ -185,8 +209,9 @@ stripe listen --forward-to localhost:5173/api/stripe-webhook
 |-------|-------|
 | `api/_stripe.js` | Stripe istemcisi + yedek fiyat tablosu |
 | `api/_supabaseAdmin.js` | Service-role Supabase istemcisi (RLS atlar) |
-| `api/stripe-checkout.js` | Checkout oturumu oluşturur (kimlik + fiyat sunucuda) |
-| `api/stripe-webhook.js` | Ödeme onayını işler, üyeliği aktifleştirir (idempotent) |
+| `api/stripe-checkout.js` | Checkout oturumu oluşturur (kimlik + fiyat sunucuda; metadata + `payment_intent_data.metadata`) |
+| `api/stripe-webhook.js` | Ödeme onayını işler, üyeliği aktifleştirir (idempotent) + **başarılı/başarısız Telegram bildirimi** |
+| `api/_telegramSend.js` | Ödeme bildirimlerini gönderen ortak Telegram yardımcısı |
 | `src/config/stripe.js` | `isStripeEnabled()` bayrağı |
 | `src/services/stripePayment.js` | `startStripeCheckout(planId, flow)` |
 | `src/pages/OnboardingPage.jsx` | Kayıt + plan değiştirmede Stripe yönlendirmesi |

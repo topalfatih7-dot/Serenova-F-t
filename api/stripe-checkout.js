@@ -58,9 +58,11 @@ export default async function handler(req, res) {
       || normalizeEmailAddress(user.email)
       || normalizeEmailAddress(user.user_metadata?.email)
 
-    if (!checkoutEmail) {
-      const { data: memberRow } = await admin.from('members').select('email').eq('id', user.id).maybeSingle()
-      checkoutEmail = normalizeEmailAddress(memberRow?.email)
+    let memberName = user.user_metadata?.name || user.user_metadata?.full_name || ''
+    if (!checkoutEmail || !memberName) {
+      const { data: memberRow } = await admin.from('members').select('email, name').eq('id', user.id).maybeSingle()
+      if (!checkoutEmail) checkoutEmail = normalizeEmailAddress(memberRow?.email)
+      if (!memberName) memberName = memberRow?.name || ''
     }
 
     let planName = PLAN_FALLBACK[planId]?.name || planId
@@ -90,6 +92,17 @@ export default async function handler(req, res) {
     const cancelPath = flow === 'change' ? '/onboarding' : '/onboarding'
 
     const stripe = getStripe()
+    const metadata = {
+      memberId: user.id,
+      memberName: memberName || '',
+      planId,
+      planName,
+      planPrice: String(planPrice),
+      durationMonths: String(durationMonths),
+      durationLabel,
+      flow,
+    }
+    if (checkoutEmail) metadata.email = checkoutEmail
     const sessionParams = {
       mode: 'payment',
       payment_method_types: ['card'],
@@ -109,13 +122,10 @@ export default async function handler(req, res) {
           },
         },
       ],
-      metadata: {
-        memberId: user.id,
-        planId,
-        planPrice: String(planPrice),
-        durationMonths: String(durationMonths),
-        flow,
-      },
+      metadata,
+      // Başarısız/iptal olaylarında (payment_intent.payment_failed) plan bilgisi
+      // taşınabilsin diye aynı metadata PaymentIntent'e de yazılır.
+      payment_intent_data: { metadata },
       success_url: `${origin}${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${cancelPath}?payment=cancelled`,
     }

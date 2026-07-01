@@ -20,7 +20,7 @@ function formatTry(amount) {
 }
 
 function paymentPlanLabel(p) {
-  const planId = p.packageConfig?.planId || p.packageConfig?.membership || p.plan
+  const planId = p.packageConfig?.planId || p.packageConfig?.membership || p.planId || p.plan
   return getPlanLabel(planId) || p.plan || 'Üyelik ödemesi'
 }
 
