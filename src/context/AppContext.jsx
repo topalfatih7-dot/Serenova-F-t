@@ -123,6 +123,11 @@ export function AppProvider({ children }) {
   const sessionStats = useMemo(() => getSessionStats(db), [db])
   const remoteDbRef = useRef(remoteDb)
   remoteDbRef.current = remoteDb
+  const memberRef = useRef(currentMember)
+  memberRef.current = currentMember
+  const notificationsDirtyRef = useRef(false)
+  const notificationFlushTimerRef = useRef(null)
+  const notificationFlushInFlightRef = useRef(null)
 
   const chatHydrationKeyString = useMemo(() => {
     if (!remoteDb?.session) return ''
@@ -552,6 +557,76 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [currentMember, reloadRemote])
 
+  const applyNotificationsOptimistic = useCallback((notifications) => {
+    notificationsDirtyRef.current = true
+    if (memberRef.current) {
+      memberRef.current = { ...memberRef.current, notifications }
+    }
+    setRemoteDb((prev) => {
+      const memberId = memberRef.current?.id
+      if (!prev || !memberId) return prev
+      return {
+        ...prev,
+        members: prev.members.map((m) => (m.id === memberId ? { ...m, notifications } : m)),
+      }
+    })
+  }, [])
+
+  const flushNotificationReads = useCallback(async () => {
+    if (notificationFlushTimerRef.current) {
+      clearTimeout(notificationFlushTimerRef.current)
+      notificationFlushTimerRef.current = null
+    }
+    if (!notificationsDirtyRef.current) return
+
+    const member = memberRef.current
+    if (!member) return
+
+    const latest = remoteDbRef.current?.members?.find((m) => m.id === member.id)
+    const notifications = latest?.notifications ?? member.notifications ?? []
+    notificationsDirtyRef.current = false
+
+    const persist = sb.saveMemberPatch(member, { notifications }).catch(() => {
+      notificationsDirtyRef.current = true
+    })
+
+    if (notificationFlushInFlightRef.current) {
+      await notificationFlushInFlightRef.current.catch(() => {})
+    }
+    notificationFlushInFlightRef.current = persist
+    try {
+      await persist
+    } finally {
+      if (notificationFlushInFlightRef.current === persist) {
+        notificationFlushInFlightRef.current = null
+      }
+    }
+  }, [])
+
+  const scheduleNotificationFlush = useCallback(() => {
+    if (notificationFlushTimerRef.current) {
+      clearTimeout(notificationFlushTimerRef.current)
+    }
+    notificationFlushTimerRef.current = setTimeout(() => {
+      notificationFlushTimerRef.current = null
+      flushNotificationReads()
+    }, 1500)
+  }, [flushNotificationReads])
+
+  useEffect(() => {
+    const onPageHide = () => { flushNotificationReads() }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushNotificationReads()
+    }
+    window.addEventListener('pagehide', onPageHide)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', onPageHide)
+      document.removeEventListener('visibilitychange', onVisibility)
+      flushNotificationReads()
+    }
+  }, [flushNotificationReads])
+
   const login = useCallback(async (email, password, remember = false) => {
     const r = await sb.login(email, password, remember)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
@@ -560,9 +635,10 @@ export function AppProvider({ children }) {
   }, [reloadRemote])
 
   const logout = useCallback(async () => {
+    await flushNotificationReads()
     await sb.logout()
     await reloadRemote()
-  }, [reloadRemote])
+  }, [flushNotificationReads, reloadRemote])
 
   const register = useCallback(async (profile, membership, packageConfig) => {
     const r = await sb.register(profile, membership, packageConfig)
@@ -788,17 +864,25 @@ export function AppProvider({ children }) {
     return t
   }, [])
 
-  const markNotificationRead = useCallback(async (id) => {
-    if (!currentMember) return
-    const notifications = (currentMember.notifications || []).map((n) => (n.id === id ? { ...n, read: true } : n))
-    await patchCurrentRemote({ notifications })
-  }, [currentMember, patchCurrentRemote])
+  const markNotificationRead = useCallback((id) => {
+    const member = memberRef.current
+    if (!member) return
+    const prev = member.notifications || []
+    if (prev.find((n) => n.id === id)?.read) return
+    const notifications = prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    applyNotificationsOptimistic(notifications)
+    scheduleNotificationFlush()
+  }, [applyNotificationsOptimistic, scheduleNotificationFlush])
 
-  const markAllNotificationsRead = useCallback(async () => {
-    if (!currentMember) return
-    const notifications = (currentMember.notifications || []).map((n) => ({ ...n, read: true }))
-    await patchCurrentRemote({ notifications })
-  }, [currentMember, patchCurrentRemote])
+  const markAllNotificationsRead = useCallback(() => {
+    const member = memberRef.current
+    if (!member) return
+    const prev = member.notifications || []
+    if (prev.length > 0 && prev.every((n) => n.read)) return
+    const notifications = prev.map((n) => ({ ...n, read: true }))
+    applyNotificationsOptimistic(notifications)
+    flushNotificationReads()
+  }, [applyNotificationsOptimistic, flushNotificationReads])
 
   const sessionKey = (type) => {
     if (type === 'coach') return 'coachSessions'
@@ -1052,6 +1136,7 @@ export function AppProvider({ children }) {
     submitSuccessStory,
     markNotificationRead,
     markAllNotificationsRead,
+    flushNotificationReads,
     rescheduleSession,
     cancelSession,
     bookSession,
@@ -1166,6 +1251,7 @@ export function AppProvider({ children }) {
     submitSuccessStory,
     markNotificationRead,
     markAllNotificationsRead,
+    flushNotificationReads,
     rescheduleSession,
     cancelSession,
     bookSession,

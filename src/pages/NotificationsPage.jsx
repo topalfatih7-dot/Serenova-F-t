@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import NotificationItem from '../components/notifications/NotificationItem'
 import EmptyState from '../components/ui/EmptyState'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
@@ -13,9 +13,11 @@ const FILTERS = [
 ]
 
 export default function NotificationsPage() {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useApp()
+  const { notifications, markNotificationRead, markAllNotificationsRead, flushNotificationReads } = useApp()
   const { toast } = useToast()
   const [filter, setFilter] = useState('all')
+
+  useEffect(() => () => { flushNotificationReads() }, [flushNotificationReads])
 
   const filtered = filter === 'all'
     ? notifications
