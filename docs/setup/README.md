@@ -17,7 +17,8 @@
 | [TELEGRAM_SETUP.md](./TELEGRAM_SETUP.md) | Bot, chat ID, bildirimler | Kısmen |
 | [AI_SETUP.md](./AI_SETUP.md) | Gemini API, kalori AI | ✅ |
 | [VIDEO_SETUP.md](./VIDEO_SETUP.md) | Daily.co video görüşme | ✅ |
-| [HIGGSFIELD_SETUP.md](./HIGGSFIELD_SETUP.md) | AI görsel/video (Cursor MCP — deneme) | 🧪 Opsiyonel |
+| [HEYGEN_SETUP.md](./HEYGEN_SETUP.md) | Hareket kütüphanesi AI video (Cursor MCP) | 🧪 Opsiyonel |
+| [HIGGSFIELD_SETUP.md](./HIGGSFIELD_SETUP.md) | AI görsel/video alternatif (Cursor MCP) | 🧪 Opsiyonel |
 | [SEO_SETUP.md](./SEO_SETUP.md) | Search Console, sitemap, OG | ✅ |
 
 **SQL şema (tek dosya):** [`supabase/setup.sql`](../../supabase/setup.sql)  
@@ -71,6 +72,7 @@ docs/
     ├── TELEGRAM_SETUP.md
     ├── AI_SETUP.md
     ├── VIDEO_SETUP.md
-    ├── HIGGSFIELD_SETUP.md   ← AI görsel/video (deneme, opsiyonel)
+    ├── HEYGEN_SETUP.md       ← Hareket kütüphanesi AI video (HeyGen MCP)
+    ├── HIGGSFIELD_SETUP.md   ← AI görsel/video alternatif (deneme)
     └── SEO_SETUP.md
 ```

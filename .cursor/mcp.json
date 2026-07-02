@@ -3,6 +3,9 @@
     "supabase": {
       "url": "https://mcp.supabase.com/mcp?project_ref=rvzksmyhsgxgrxgeabmi"
     },
+    "heygen": {
+      "url": "https://mcp.heygen.com/mcp/v1/"
+    },
     "higgsfield": {
       "url": "https://mcp.higgsfield.ai/mcp"
     }
