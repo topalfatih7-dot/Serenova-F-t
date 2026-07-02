@@ -20,7 +20,7 @@
 8. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 9. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
 10. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
-11. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Apple, Stripe, Telegram, AI, Video, SEO).
+11. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Apple, Stripe, Telegram, AI, Video, Higgsfield, SEO).
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -620,6 +620,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `docs/setup/TELEGRAM_SETUP.md` | Bot, chat ID, bildirim kanalları | Kısmen |
 | `docs/setup/AI_SETUP.md` | Gemini API, kalori AI | ✅ |
 | `docs/setup/VIDEO_SETUP.md` | Daily.co video görüşme | ✅ |
+| `docs/setup/HIGGSFIELD_SETUP.md` | Higgsfield AI görsel/video (Cursor MCP — deneme) | 🧪 Opsiyonel |
 | `docs/setup/SEO_SETUP.md` | Search Console, sitemap, OG | ✅ |
 
 **İlgili (setup dışı):**
@@ -630,8 +631,6 @@ Kaynak: `src/App.jsx` satır 56–117
 | `supabase/migrations/*.sql` | Artımlı migration'lar → `npm run db:migrate` |
 | `supabase/email-templates/README.md` | Auth e-posta şablonları |
 | `YAPILACAKLAR.md` | Satışa hazırlık checklist (kök) |
-
-Kök dizindeki `*_SETUP.md` dosyaları yalnızca `docs/setup/` yönlendirmesidir.
 
 ### 7.1 Kök dizin
 

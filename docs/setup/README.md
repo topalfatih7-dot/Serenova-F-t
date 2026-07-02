@@ -17,6 +17,7 @@
 | [TELEGRAM_SETUP.md](./TELEGRAM_SETUP.md) | Bot, chat ID, bildirimler | Kısmen |
 | [AI_SETUP.md](./AI_SETUP.md) | Gemini API, kalori AI | ✅ |
 | [VIDEO_SETUP.md](./VIDEO_SETUP.md) | Daily.co video görüşme | ✅ |
+| [HIGGSFIELD_SETUP.md](./HIGGSFIELD_SETUP.md) | AI görsel/video (Cursor MCP — deneme) | 🧪 Opsiyonel |
 | [SEO_SETUP.md](./SEO_SETUP.md) | Search Console, sitemap, OG | ✅ |
 
 **SQL şema (tek dosya):** [`supabase/setup.sql`](../../supabase/setup.sql)  
@@ -70,7 +71,6 @@ docs/
     ├── TELEGRAM_SETUP.md
     ├── AI_SETUP.md
     ├── VIDEO_SETUP.md
+    ├── HIGGSFIELD_SETUP.md   ← AI görsel/video (deneme, opsiyonel)
     └── SEO_SETUP.md
 ```
-
-Kök dizindeki eski `*_SETUP.md` dosyaları yalnızca yönlendirme stub'ıdır; asıl içerik burada.
