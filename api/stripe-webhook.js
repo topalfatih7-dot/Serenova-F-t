@@ -11,6 +11,7 @@ import {
   sanitizeStaffForPackage,
   syncMemberPackages,
 } from './_memberPackages.js'
+import { createMemberFromPendingRegistration } from './_createMemberFromPending.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -168,10 +169,20 @@ async function activateMembership(admin, meta, session) {
   if (existing) return { ok: true, duplicate: true }
 
   const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
-  if (fetchErr || !row) return { ok: false, error: 'Üye bulunamadı' }
+  if (fetchErr) return { ok: false, error: fetchErr.message }
 
-  const data = row.data || {}
-  const member = memberFromRow(row)
+  let memberRow = row
+  if (!memberRow) {
+    if (meta.flow !== 'register') return { ok: false, error: 'Üye bulunamadı' }
+    const created = await createMemberFromPendingRegistration(admin, memberId)
+    if (!created.ok) return { ok: false, error: created.error }
+    const { data: refetched } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
+    memberRow = refetched
+    if (!memberRow) return { ok: false, error: 'Üye oluşturulamadı' }
+  }
+
+  const data = memberRow.data || {}
+  const member = memberFromRow(memberRow)
   const packageConfig = defaultPackageForPlan(planId, durationMonths)
   const started = today()
 
@@ -212,7 +223,7 @@ async function activateMembership(admin, meta, session) {
   await admin.from('payments').insert({
     member_id: memberId,
     data: {
-      memberName: row.name || '',
+      memberName: memberRow.name || '',
       amount,
       packageConfig,
       planId,
@@ -229,7 +240,7 @@ async function activateMembership(admin, meta, session) {
     member_id: memberId,
     data: {
       type: 'payment',
-      text: `${row.name || 'Üye'} ${planId} planı (${durationLabel}) için ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`,
+      text: `${memberRow.name || 'Üye'} ${planId} planı (${durationLabel}) için ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`,
       createdAt: nowISO(),
     },
   })

@@ -17,7 +17,8 @@ export const supabase = isSupabaseEnabled
         storage: authStorage,
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        // Oturum kurulumu authSessionFromUrl + AuthCallbackPage üzerinden yapılır (çift PKCE exchange önlenir).
+        detectSessionInUrl: false,
         flowType: 'pkce',
       },
     })

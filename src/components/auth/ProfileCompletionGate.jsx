@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { memberNeedsProfileCompletion, isSocialAuthUser } from '../../utils/memberProfile'
+import { hasRegisteredMember, isSocialAuthUser } from '../../utils/memberProfile'
 
-/** OAuth ile giriş yapan ancak telefon vb. eksik üyeleri kayıt tamamlamaya yönlendirir. */
+/** Kayıt tamamlanmamış üyeleri onboarding'e yönlendirir. */
 export default function ProfileCompletionGate() {
   const { isAdmin, isStaff, user, authUser, loading } = useApp()
   const location = useLocation()
@@ -10,12 +10,13 @@ export default function ProfileCompletionGate() {
   if (loading) return null
   if (isAdmin || isStaff) return <Outlet />
 
-  const needsCompletion = memberNeedsProfileCompletion(user, authUser)
   const onOnboarding = location.pathname === '/onboarding'
+  const needsRegistration = !hasRegisteredMember(user)
 
-  if (needsCompletion && isSocialAuthUser(authUser) && !onOnboarding) {
+  if (needsRegistration && !onOnboarding) {
     const plan = new URLSearchParams(location.search).get('plan') || 'free'
-    return <Navigate to={`/onboarding?oauth=1&plan=${plan}`} replace />
+    const oauth = isSocialAuthUser(authUser) ? 'oauth=1&' : ''
+    return <Navigate to={`/onboarding?${oauth}plan=${encodeURIComponent(plan)}`} replace />
   }
 
   return <Outlet />

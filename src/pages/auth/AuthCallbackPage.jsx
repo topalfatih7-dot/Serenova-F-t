@@ -11,6 +11,25 @@ import { recordSocialLogin, resolveQuickPostLoginPath } from '../../services/sup
 import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
+const REFRESH_TIMEOUT_MS = 4000
+const OAUTH_SAFETY_TIMEOUT_MS = 12000
+
+function readCallbackParams() {
+  const params = new URLSearchParams(window.location.search)
+  const hashRaw = (window.location.hash || '').replace(/^#/, '')
+  const hashParams = new URLSearchParams(hashRaw)
+  hashParams.forEach((value, key) => {
+    if (!params.has(key)) params.set(key, value)
+  })
+  return params
+}
+
+function refreshWithTimeout(refresh, ms = REFRESH_TIMEOUT_MS) {
+  return Promise.race([
+    Promise.resolve(refresh()).catch(() => null),
+    new Promise((resolve) => { setTimeout(() => resolve(null), ms) }),
+  ])
+}
 
 // Orb animasyonu CSS sınıflarına taşındı — JS RAF döngüsü ortadan kalktı
 function FloatingOrb({ className, variant = 'a' }) {
@@ -31,6 +50,26 @@ export default function AuthCallbackPage() {
   const [countdown, setCountdown] = useState(AUTO_REDIRECT_SECONDS)
   const countdownRef = useRef(null)
   const dbRef = useRef(null)
+  const navigatingRef = useRef(false)
+  const refreshRef = useRef(refresh)
+  refreshRef.current = refresh
+
+  const isOAuthCallback = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
+
+  const completeOAuthSignIn = useCallback(async (session) => {
+    if (navigatingRef.current) return
+    navigatingRef.current = true
+    const params = readCallbackParams()
+    const plan = params.get('plan') || 'free'
+    const dest = await resolveQuickPostLoginPath(session, { plan })
+      .catch(() => `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`)
+    if (!dest.includes('/onboarding')) {
+      recordSocialLogin().catch(() => {})
+    }
+    const db = await refreshWithTimeout(refreshRef.current)
+    dbRef.current = db
+    navigate(dest, { replace: true })
+  }, [navigate])
 
   useEffect(() => {
     if (!isSupabaseEnabled || !supabase) {
@@ -40,40 +79,34 @@ export default function AuthCallbackPage() {
 
     let active = true
 
-    const isOAuthFlow = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
-
-    async function establishSession() {
-      return establishAuthSessionFromUrl(supabase, { waitMs: isOAuthFlow ? 6000 : 2500 })
+    async function establishSession(isOAuthFlow) {
+      return establishAuthSessionFromUrl(supabase, { waitMs: isOAuthFlow ? 4000 : 2500 })
     }
 
-    // Doğrulama başarıya ulaştığında UI'ı hemen günceller; oturum yenileme arka planda
-    // yapılır ki refresh yavaşlasa/hata verse bile ekran "doğrulanıyor"da takılmaz.
     function markSuccess(session) {
       if (!active) return
       setHasSession(Boolean(session?.user))
       setPhase('success')
-      Promise.resolve(refresh()).then((db) => { dbRef.current = db }).catch(() => { /* arka plan; UI'ı bloklama */ })
+      refreshWithTimeout(refreshRef.current).then((db) => { dbRef.current = db })
     }
 
     async function finish() {
-      const hash = window.location.hash || ''
-      const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
-      const authError = searchParams.get('error') || hashParams.get('error')
-      const errorCode = searchParams.get('error_code') || hashParams.get('error_code')
-      const evt = searchParams.get('evt') || hashParams.get('evt')
+      const params = readCallbackParams()
+      const authError = params.get('error')
+      const errorCode = params.get('error_code')
+      const evt = params.get('evt')
+      const verify = params.get('verify')
+      const flow = params.get('flow')
+      const isOAuthFlow = flow === 'login' || flow === 'signup'
 
       const isRecovery =
-        hash.includes('type=recovery') ||
-        searchParams.get('type') === 'recovery' ||
-        searchParams.get('next') === 'reset-password' ||
-        hashParams.get('type') === 'recovery'
+        (window.location.hash || '').includes('type=recovery') ||
+        params.get('type') === 'recovery' ||
+        params.get('next') === 'reset-password'
 
       if (isRecovery) {
-        // token_hash parametresini ResetPasswordPage'e taşı — oturum kurma orada yapılır.
-        // AuthCallbackPage burada verifyOtp çağırırsa token tek kullanımlık olduğundan
-        // ResetPasswordPage tekrar çağırınca "already used" hatası alır.
-        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash')
-        const recoveryType = searchParams.get('type') || hashParams.get('type') || 'recovery'
+        const tokenHash = params.get('token_hash')
+        const recoveryType = params.get('type') || 'recovery'
         if (active) {
           const dest = tokenHash
             ? `/reset-password?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(recoveryType)}`
@@ -83,17 +116,13 @@ export default function AuthCallbackPage() {
         return
       }
 
-      const verify = searchParams.get('verify')
-
-      // evt jetonu varsa (e-posta bağlantısı) öncelikli ve en güvenilir yol.
       if (evt) {
         const evtResult = await confirmEmailVerificationByEvt(evt)
         if (evtResult?.success) {
-          const session = await establishSession().catch(() => null)
+          const session = await establishSession(false).catch(() => null)
           markSuccess(session)
           return
         }
-        // evt başarısız oldu (süresi dolmuş/kullanılmış). Hata kodu varsa hata göster.
         if (authError || errorCode) {
           if (active) setPhase('error')
           return
@@ -105,16 +134,11 @@ export default function AuthCallbackPage() {
         return
       }
 
-      const session = await establishSession().catch(() => null)
+      const session = await establishSession(isOAuthFlow).catch(() => null)
 
       if (verify === 'email') {
         if (session?.user) {
-          const marked = await markEmailVerified({ id: session.user.id, email: session.user.email })
-          if (marked?.success === false && active) {
-            // Profil kaydı güncellenemese bile oturum açık; yine de başarı göster.
-            markSuccess(session)
-            return
-          }
+          await markEmailVerified({ id: session.user.id, email: session.user.email })
           markSuccess(session)
           return
         }
@@ -125,23 +149,15 @@ export default function AuthCallbackPage() {
         return
       }
 
+      if (session?.user && isOAuthFlow) {
+        await completeOAuthSignIn(session)
+        return
+      }
+
       if (session?.user) {
-        const flow = searchParams.get('flow')
-        const plan = searchParams.get('plan') || 'free'
-
-        if (flow === 'login' || flow === 'signup') {
-          recordSocialLogin().catch(() => {})
-          const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
-          if (!active) return
-          await refresh().catch(() => null)
-          if (!active) return
-          navigate(dest, { replace: true })
-          return
-        }
-
+        const plan = params.get('plan') || 'free'
         const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
-        if (!active) return
-        await refresh().catch(() => null)
+        await refreshWithTimeout(refreshRef.current)
         if (!active) return
         navigate(dest, { replace: true })
         return
@@ -151,23 +167,41 @@ export default function AuthCallbackPage() {
     }
 
     finish().catch(() => {
-      // Beklenmeyen hata: ekranı asla "doğrulanıyor"da bırakma.
       if (active) setPhase('error')
     })
 
     return () => { active = false }
-  }, [navigate, searchParams, refresh])
+  }, [navigate, completeOAuthSignIn])
 
-  // 10 saniyelik geri sayım — yalnızca başarı ekranında çalışır
+  // OAuth: uzun süre loading'de kalırsa oturumu kontrol et ve zorla tamamla
+  useEffect(() => {
+    if (!isOAuthCallback || phase !== 'loading' || !supabase) return undefined
+
+    const timer = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        try {
+          await completeOAuthSignIn(session)
+        } catch {
+          setPhase('error')
+        }
+        return
+      }
+      setPhase('error')
+    }, OAUTH_SAFETY_TIMEOUT_MS)
+
+    return () => clearTimeout(timer)
+  }, [isOAuthCallback, phase, completeOAuthSignIn])
+
   const goPanel = useCallback(async () => {
     if (countdownRef.current) clearInterval(countdownRef.current)
     if (hasSession) {
-      const db = dbRef.current || await refresh().catch(() => null)
+      const db = dbRef.current || await refreshWithTimeout(refreshRef.current)
       navigate(getPostLoginPath(db), { replace: true })
       return
     }
     navigate('/login', { replace: true })
-  }, [hasSession, navigate, refresh])
+  }, [hasSession, navigate])
 
   useEffect(() => {
     if (phase !== 'success') return undefined
@@ -184,9 +218,6 @@ export default function AuthCallbackPage() {
     }, 1000)
     return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
   }, [phase, goPanel])
-
-
-  const isOAuthCallback = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
 
   const copy = {
     loading: isOAuthCallback ? {
@@ -205,7 +236,10 @@ export default function AuthCallbackPage() {
       description:
         'Oturum bu cihazda açılamadı. Giriş yapıp profilinizden tekrar “Doğrulama Bağlantısı Gönder” ile deneyin.',
     },
-    error: {
+    error: isOAuthCallback ? {
+      title: 'Giriş tamamlanamadı',
+      description: 'Google oturumu kurulamadı. Lütfen tekrar deneyin veya e-posta ile giriş yapın.',
+    } : {
       title: 'Bağlantı doğrulanamadı',
       description: 'Bağlantının süresi dolmuş veya zaten kullanılmış olabilir. Tekrar giriş yapıp yeni bağlantı isteyin.',
     },
@@ -312,12 +346,14 @@ export default function AuthCallbackPage() {
                 )}
                 {phase === 'error' && (
                   <>
-                    <Link
-                      to="/profile"
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-105"
-                    >
-                      Profilden Yeni Bağlantı İste
-                    </Link>
+                    {!isOAuthCallback && (
+                      <Link
+                        to="/profile"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-105"
+                      >
+                        Profilden Yeni Bağlantı İste
+                      </Link>
+                    )}
                     <Link
                       to="/login"
                       className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"

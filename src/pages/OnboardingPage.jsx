@@ -29,8 +29,9 @@ import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
-import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser } from '../utils/memberProfile'
+import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import { supabase } from '../services/supabaseClient'
+import { ensureAuthForRegistration, savePendingRegistrationMetadata } from '../services/supabaseDb'
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 const BENEFITS = [
@@ -189,10 +190,8 @@ export default function OnboardingPage() {
   const { register, registerWithPlan, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
-  const isExistingMember = isAuthenticated && !isAdmin && !isStaff
-  const isOAuthFlow = isSocialAuthUser(authUser) && (
-    searchParams.get('oauth') === '1' || (isExistingMember && memberNeedsProfileCompletion(user, authUser))
-  )
+  const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
+  const isOAuthFlow = isAuthenticated && isSocialAuthUser(authUser) && !hasRegisteredMember(user)
   const oauthPrefilledRef = useRef(false)
 
   useEffect(() => {
@@ -385,25 +384,38 @@ export default function OnboardingPage() {
     }, 1200)
   }
 
-  // Stripe akışı: önce hesabı (ücretsiz) oluştur → Stripe Checkout'a yönlendir.
-  // Üyelik, ödeme onaylanınca webhook ile aktifleşir.
+  // Stripe: önce yalnızca auth + bekleyen kayıt metadata; üye satırı ödeme webhook'unda oluşur.
   const startStripeRegister = async () => {
     if (submitting) return
+    if (!canNext()) {
+      setShowErrors(true)
+      showFormError(getValidationError())
+      return
+    }
     setSubmitting(true)
-    const reg = isOAuthFlow
-      ? await completeOAuthMember(buildProfile(), 'free')
-      : await register(buildProfile(), 'free')
-    if (!reg.success) {
-      showFormError(reg.error || 'Kayıt tamamlanamadı.')
+    const profile = buildProfile()
+
+    if (!isOAuthFlow) {
+      const auth = await ensureAuthForRegistration(profile)
+      if (!auth.success) {
+        showFormError(auth.error || 'Hesap oluşturulamadı.')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    const pending = await savePendingRegistrationMetadata(profile, data.membership, durationMonths)
+    if (!pending.success) {
+      showFormError(pending.error || 'Kayıt bilgileri kaydedilemedi.')
       setSubmitting(false)
       return
     }
+
     const checkoutEmail = sanitizeEmailInput(user?.email || authUser?.email || data.email)
     const r = await startStripeCheckout(data.membership, 'register', durationMonths, checkoutEmail)
     if (!r.success) {
       setSubmitting(false)
-      toast(`${r.error} Ücretsiz üye olarak kaydınız tamamlandı; planı profilinizden yükseltebilirsiniz.`, 'warning')
-      navigate('/profile')
+      toast(r.error || 'Ödeme başlatılamadı.', 'error')
     }
     // başarılıysa tarayıcı Stripe'a yönlendirilir
   }

@@ -273,13 +273,7 @@ grant execute on function public.current_staff_id() to authenticated;
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.members (id, email, name, role)
-  values (
-    new.id, new.email,
-    coalesce(new.raw_user_meta_data ->> 'name', ''),
-    case when new.email = 'admin@serenova.fit' then 'admin' else 'member' end
-  )
-  on conflict (id) do nothing;
+  -- Üye kaydı yalnızca onboarding tamamlandığında uygulama tarafından oluşturulur.
   return new;
 end;
 $$;

@@ -80,14 +80,15 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = 
     return preExchange
   }
 
-  // 3) PKCE code — detectSessionInUrl ile yarışı önlemek için önce bekle, sonra manuel dene
+  // 3) PKCE code — aynı sekmede code_verifier varken önce manuel exchange (en hızlı yol)
   const code = params.get('code')
   if (code) {
-    const autoSession = await waitForDetectedSession(supabase, waitMs)
-    if (autoSession?.user) { stripAuthCodeFromUrl(); return autoSession }
-
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data?.session) { stripAuthCodeFromUrl(); return data.session }
+
+    // Kod tüketilmiş olabilir (detectSessionInUrl); kısa süre oturum bekle
+    const autoSession = await waitForDetectedSession(supabase, Math.min(waitMs, 3000))
+    if (autoSession?.user) { stripAuthCodeFromUrl(); return autoSession }
   }
 
   // 4) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)

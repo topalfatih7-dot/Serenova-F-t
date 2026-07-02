@@ -1,5 +1,13 @@
 const SOCIAL_PROVIDERS = ['google', 'apple', 'facebook']
 
+/** Tamamlanmış üye kaydı (profil + paket onboarding'i bitti). */
+export function hasRegisteredMember(member) {
+  if (!member?.id) return false
+  if (member.profileComplete === true) return true
+  if (member.phone?.trim() && member.name?.trim() && member.joinedAt) return true
+  return false
+}
+
 /** Supabase oturumunun yalnızca sosyal sağlayıcı (Google/Apple/Facebook) ile açılıp açılmadığını döner. */
 export function isSocialAuthUser(authUser) {
   if (!authUser) return false
@@ -21,8 +29,10 @@ export function isSocialAuthUser(authUser) {
  * E-posta/şifre ile tam kayıt olmuş üyeler asla bu kontrole takılmaz.
  */
 export function memberNeedsProfileCompletion(member, authUser = null) {
-  if (!member?.id) return false
-  if (member.profileComplete === true) return false
+  if (hasRegisteredMember(member)) return false
+  if (!member?.id) {
+    return Boolean(authUser && isSocialAuthUser(authUser))
+  }
 
   // E-posta/şifre hesabı — kayıt akışından geçmiş kabul et (eski üyeler dahil)
   if (authUser && !isSocialAuthUser(authUser)) return false

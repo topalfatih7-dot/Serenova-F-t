@@ -23,7 +23,7 @@ import { ageFromBirthDate } from '../utils/birthDate'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
 import { shouldSkipExpiryPersistDuringPayment } from '../utils/stripePaymentGrace'
-import { displayNameFromAuthUser, memberNeedsProfileCompletion } from '../utils/memberProfile'
+import { displayNameFromAuthUser, memberNeedsProfileCompletion, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import {
   syncMemberPackages,
   addMemberPackage,
@@ -677,6 +677,8 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     await addActivity('payment', `${member.name} ödeme tamamladı (${opts.payment.toLocaleString('tr-TR')}₺)`, member.id)
   }
 
+  await clearPendingRegistrationMetadata()
+
   return { success: true, member }
 }
 
@@ -721,10 +723,8 @@ async function signInAfterSignup(email, password) {
   return { success: false, error: signInError.message }
 }
 
-// Kayıt için auth kullanıcısını hazırlar ve oturumu açar.
-// E-posta doğrulaması kayıtta zorunlu değildir; profilden isteğe bağlı yapılır.
-// İdempotent: yarım kalmış (auth var ama profil yok) kayıtları kurtarır.
-async function ensureAuthForSignup(profile) {
+// Kayıt için auth kullanıcısını hazırlar ve oturumu açar (members kaydı oluşturmaz).
+export async function ensureAuthForRegistration(profile) {
   const email = normalizeEmailAddress(profile.email)
   if (!email) {
     return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
@@ -770,8 +770,38 @@ async function ensureAuthForSignup(profile) {
   return { success: true }
 }
 
+/** Stripe öncesi profil + plan bilgisini auth metadata'da saklar (webhook üye oluşturur). */
+export async function savePendingRegistrationMetadata(profile, membership, durationMonths = 1) {
+  const user = await getUser()
+  if (!user) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      pending_registration: {
+        name: (profile.name || '').trim(),
+        phone: profile.phone || '',
+        phoneCountry: profile.phoneCountry || '',
+        membership: membership || 'free',
+        durationMonths: Number(durationMonths) || 1,
+        fitnessLevel: profile.fitnessLevel || 'beginner',
+        savedAt: new Date().toISOString(),
+      },
+    },
+  })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+async function clearPendingRegistrationMetadata() {
+  try {
+    await supabase.auth.updateUser({ data: { pending_registration: null } })
+  } catch {
+    /* yoksay */
+  }
+}
+
 export async function register(profile, membership = 'free', packageConfig = null) {
-  const auth = await ensureAuthForSignup(profile)
+  const auth = await ensureAuthForRegistration(profile)
   if (!auth.success) return auth
   return buildAndPersistMember(profile, membership, packageConfig)
 }
@@ -834,6 +864,12 @@ export async function resolveQuickPostLoginPath(session, { plan = 'free' } = {})
     identities: user.identities || [],
     app_metadata: user.app_metadata || {},
   }
+  if (!member && isSocialAuthUser(authUser)) {
+    return `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`
+  }
+  if (!hasRegisteredMember(member) && isSocialAuthUser(authUser)) {
+    return `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`
+  }
   if (memberNeedsProfileCompletion(member, authUser)) {
     return `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`
   }
@@ -881,7 +917,7 @@ export async function recordSocialLogin() {
 
 export async function registerWithPayment(profile, packageConfig) {
   const pricing = calculatePackagePrice(packageConfig)
-  const auth = await ensureAuthForSignup(profile)
+  const auth = await ensureAuthForRegistration(profile)
   if (!auth.success) return auth
   const res = await buildAndPersistMember(profile, 'premium', packageConfig, { payment: pricing.total })
   return res.success ? { success: true, member: res.member, pricing } : res
@@ -889,7 +925,7 @@ export async function registerWithPayment(profile, packageConfig) {
 
 // Sabit fiyatlı plan ile kayıt (süre ay cinsinden)
 export async function registerWithPlan(profile, planId, planPrice, durationMonths = 1) {
-  const auth = await ensureAuthForSignup(profile)
+  const auth = await ensureAuthForRegistration(profile)
   if (!auth.success) return auth
   const months = Number(durationMonths) || 1
   const packageConfig = getDefaultPackageForPlan(planId, months)
