@@ -1,7 +1,8 @@
 # Yapılacaklar — Yeni Form
 
-> **Son güncelleme:** 2026-06-25  
-> Agent tarafından tamamlananlar ✅ · Senin devam ettireceklerin ⬜
+> **Son güncelleme:** 2026-07-02  
+> Agent tarafından tamamlananlar ✅ · Senin devam ettireceklerin ⬜  
+> **Kurulum rehberleri:** [`docs/setup/README.md`](./docs/setup/README.md)
 
 ---
 
@@ -20,7 +21,8 @@
 | P2 | ⬜ | Personel hakediş modülü — 500₺/görüşme, video katılım zorunlu, Cuma ödeme (§40) |
 | P2 | ⬜ | Stripe Customer Portal |
 | P2 | ⬜ | `phone_in_use` rate limit |
-| P2 | ⬜ | `AI_PROJE_REHBERI.md` güncelle |
+| P2 | ⬜ | **Apple Sign In** — [docs/setup/APPLE_SETUP.md](./docs/setup/APPLE_SETUP.md) (ertelendi) |
+| P2 | ⬜ | **Google OAuth** — [docs/setup/OAUTH_SETUP.md](./docs/setup/OAUTH_SETUP.md) |
 
 ---
 
@@ -230,4 +232,4 @@ npx vercel --prod
 | Stripe bayrağı | `src/config/stripe.js` |
 | Env şablonu | `.env.example` |
 | API guard'ları | `api/_guards.js` |
-| Supabase kurulum | `SUPABASE_SETUP.md` |
+| Supabase kurulum | `docs/setup/SUPABASE_SETUP.md` |

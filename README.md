@@ -14,7 +14,9 @@ Uygulama **Supabase** ile çalışır. `.env` dosyasında `VITE_SUPABASE_URL` ve
 ## Supabase'e bağlama
 
 Verileri gerçek bir veritabanından (Supabase) çekmek için adım adım rehber:
-**[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
+**[docs/setup/SUPABASE_SETUP.md](./docs/setup/SUPABASE_SETUP.md)**
+
+Tüm kurulum rehberleri: **[docs/setup/README.md](./docs/setup/README.md)**
 
 Özetle:
 1. Supabase projesi aç, `.env` dosyasına `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` gir.

@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-01 (§22: Stripe canlı bağlandı — başarılı/başarısız **Telegram ödeme bildirimi** (`TELEGRAM_PAYMENT_CHAT_ID`), checkout metadata `payment_intent_data`'ya da yazılıyor, admin ödeme plan etiketi düzeltmesi)
+> **Son güncelleme:** 2026-07-02 (§7.0: kurulum rehberleri `docs/setup/` altında toplandı; Apple Sign In `APPLE_SETUP.md` — ertelendi)
 
 ---
 
@@ -20,6 +20,7 @@
 8. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 9. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
 10. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
+11. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Apple, Stripe, Telegram, AI, Video, SEO).
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -279,7 +280,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` | BMI, kalori, beslenme ve antrenman önerileri — kural tabanlı hesaplama |
 | Sağlık hesapları | `src/services/health.js` | `calculateBMI`, `bmiCategory`, etiket sabitleri |
 | Test ödeme (fallback) | `src/config/testPayment.js` + `src/components/payment/PaymentForm.jsx` | Sahte kart (4242…) doğrulama — Stripe kapalıyken kullanılır |
-| **Stripe ödeme (gerçek)** | `api/stripe-checkout.js`, `api/stripe-webhook.js`, `src/services/stripePayment.js` | `VITE_STRIPE_ENABLED=true` → Stripe Checkout. Bkz. §22 + `STRIPE_SETUP.md` |
+| **Stripe ödeme (gerçek)** | `api/stripe-checkout.js`, `api/stripe-webhook.js`, `src/services/stripePayment.js` | `VITE_STRIPE_ENABLED=true` → Stripe Checkout. Bkz. §22 + `docs/setup/STRIPE_SETUP.md` |
 | Kayıt akışları | `supabaseDb.js` L460–535 | `register`, `registerWithPayment`, `registerWithPlan`, `processPremiumPayment` |
 | Türkiye illeri | `src/data/turkeyCities.js` | 81 il/ilçe listesi |
 
@@ -377,7 +378,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Kadro başvurusu | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_STAFF_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
 | Kurumsal başvuru | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
 | Landing form UI | `src/components/landing/ContactSection.jsx` |
-| Kurulum rehberi | `TELEGRAM_SETUP.md` |
+| Kurulum rehberi | `docs/setup/TELEGRAM_SETUP.md` |
 
 **Kaldırıldı (2026-06-27):** Kalori chat Telegram bildirimi (`api/calorie-chat-notify.js` — deprecated, çağrılmıyor).
 
@@ -605,6 +606,33 @@ Kaynak: `src/App.jsx` satır 56–117
 
 ## 7. Tam Dosya Envanteri
 
+### 7.0 Kurulum rehberleri (`docs/setup/`)
+
+> **Ana indeks:** [`docs/setup/README.md`](docs/setup/README.md) — öncelik sırası, Supabase proje linkleri, yapılacaklar özeti.
+
+| Dosya | Konu | Durum |
+|-------|------|-------|
+| `docs/setup/README.md` | Tüm kurulum rehberlerinin indeksi | — |
+| `docs/setup/SUPABASE_SETUP.md` | Supabase proje, SQL, admin, migration | ✅ |
+| `docs/setup/OAUTH_SETUP.md` | Google, Facebook, Apple (özet) | ⬜ Dashboard |
+| `docs/setup/APPLE_SETUP.md` | Sign in with Apple (detaylı adımlar) | ⬜ **Ertelendi** |
+| `docs/setup/STRIPE_SETUP.md` | Stripe Checkout, webhook, Vercel env | ⬜ Canlı anahtarlar |
+| `docs/setup/TELEGRAM_SETUP.md` | Bot, chat ID, bildirim kanalları | Kısmen |
+| `docs/setup/AI_SETUP.md` | Gemini API, kalori AI | ✅ |
+| `docs/setup/VIDEO_SETUP.md` | Daily.co video görüşme | ✅ |
+| `docs/setup/SEO_SETUP.md` | Search Console, sitemap, OG | ✅ |
+
+**İlgili (setup dışı):**
+
+| Dosya | Amaç |
+|-------|------|
+| `supabase/setup.sql` | Tek dosya şema + RLS + RPC + planlar |
+| `supabase/migrations/*.sql` | Artımlı migration'lar → `npm run db:migrate` |
+| `supabase/email-templates/README.md` | Auth e-posta şablonları |
+| `YAPILACAKLAR.md` | Satışa hazırlık checklist (kök) |
+
+Kök dizindeki `*_SETUP.md` dosyaları yalnızca `docs/setup/` yönlendirmesidir.
+
 ### 7.1 Kök dizin
 
 | Dosya | Amaç |
@@ -617,8 +645,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `.env.example` | Ortam değişkeni şablonu |
 | `.gitignore` | Git ignore kuralları |
 | `README.md` | Kurulum özeti |
-| `SUPABASE_SETUP.md` | Supabase kurulum rehberi |
-| `TELEGRAM_SETUP.md` | Telegram bot kurulum rehberi |
+| `YAPILACAKLAR.md` | Yapılacaklar checklist |
+| `AI_PROJE_REHBERI.md` | Bu dosya — AI/geliştirici proje rehberi |
+| `docs/setup/` | **Tüm kurulum rehberleri** (bkz. §7.0) |
 
 ### 7.2 API (`api/`)
 
@@ -968,7 +997,7 @@ Kaynak: `.env.example`
 
 ## 11. Bilinen Sınırlamalar ve Tuzaklar
 
-1. **Ödeme: Stripe altyapısı eklendi (opsiyonel)** — `VITE_STRIPE_ENABLED=true` ise gerçek Stripe Checkout akışı çalışır (`api/stripe-checkout.js` + `api/stripe-webhook.js`). Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır. Kurulum: `STRIPE_SETUP.md`.
+1. **Ödeme: Stripe altyapısı eklendi (opsiyonel)** — `VITE_STRIPE_ENABLED=true` ise gerçek Stripe Checkout akışı çalışır (`api/stripe-checkout.js` + `api/stripe-webhook.js`). Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır. Kurulum: `docs/setup/STRIPE_SETUP.md`.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
 3. **localDb.js silindi** (2026-06-24) — diskten kaldırıldı; tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
@@ -1031,7 +1060,7 @@ Kaynak: `.env.example`
 | API | 2 |
 | Supabase SQL | 6 |
 | Kök config | 6 |
-| Dokümantasyon | 4 (README, SUPABASE_SETUP, TELEGRAM_SETUP, bu dosya) |
+| Dokümantasyon | 10+ (`docs/setup/*`, README, YAPILACAKLAR, AI_PROJE_REHBERI) |
 
 **Toplam kaynak (`src/`):** 113 dosya
 
@@ -1167,7 +1196,7 @@ entegrasyonuyla birebir aynıdır: API anahtarı **yalnızca sunucuda** (Vercel
 Environment Variables) tutulur, tarayıcıya asla sızmaz. Anahtar yoksa uygulama
 eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 
-**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `AI_SETUP.md`.
+**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `docs/setup/AI_SETUP.md`.
 
 ### AI Entegrasyon Noktaları
 
@@ -1294,7 +1323,7 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 
 ### 4. Dokümantasyon
 - **`YAPILACAKLAR.md`** — tüm setup adımları, Vercel env checklist, Supabase test sonuçları.
-- Setup detayları hâlâ: `SUPABASE_SETUP.md`, `TELEGRAM_SETUP.md`, `AI_SETUP.md`, `VIDEO_SETUP.md`.
+- Setup detayları hâlâ: `docs/setup/SUPABASE_SETUP.md`, `docs/setup/TELEGRAM_SETUP.md`, `docs/setup/AI_SETUP.md`, `docs/setup/VIDEO_SETUP.md`.
 
 ### 5. Supabase
 - Migration `20260620_revoke_anon_rpc` **uygulandı** (admin RPC anon erişimi kapatıldı).
@@ -1482,7 +1511,7 @@ bilgisi taşınır). Telegram hatası ödeme akışını **etkilemez** (try/catc
 - Webhook **imzayla** doğrulanır ve **idempotent**'tir.
 - `SUPABASE_SERVICE_ROLE_KEY` yalnızca webhook'ta; RLS'yi yalnızca sunucuda atlar.
 
-### Gerekli env (özet — detay `STRIPE_SETUP.md`)
+### Gerekli env (özet — detay `docs/setup/STRIPE_SETUP.md`)
 | Değişken | Kapsam |
 |----------|--------|
 | `STRIPE_SECRET_KEY` | Sunucu (gizli) |
@@ -1522,7 +1551,7 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 | `public/brand-mark.png` | İkon karesi — favicon, manifest, JSON-LD |
 | `public/brand-logo-alt.png` | Logo kaynağı — değiştir → `npm run og:image` |
 | `scripts/generate-og-image.mjs` | Tüm marka PNG'lerini üretir |
-| `SEO_SETUP.md` | Search Console + sitemap + OG kurulum rehberi |
+| `docs/setup/SEO_SETUP.md` | Search Console + sitemap + OG kurulum rehberi |
 | `public/site.webmanifest` | PWA-lite manifest |
 | `api/sitemap.js` | Dinamik XML sitemap (blog + kadro profilleri Supabase'den) |
 
@@ -1634,9 +1663,9 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 
 - `public/og-image.png` — canlı siteden repoya eklendi (deploy kaybı riski giderildi)
 - `scripts/generate-og-image.mjs` — `brand-logo.png` yoksa `favicon.svg` yedek
-- `SEO_SETUP.md`, `YAPILACAKLAR.md` — canlı denetim sonuçları
+- `docs/setup/SEO_SETUP.md`, `YAPILACAKLAR.md` — canlı denetim sonuçları
 
-Detaylı kurulum: `SEO_SETUP.md`
+Detaylı kurulum: `docs/setup/SEO_SETUP.md`
 
 ---
 
@@ -1835,7 +1864,7 @@ Diğer değişkenler (Supabase, Telegram, Gemini, Daily) SEO dışı — mevcut 
 
 - `public/og-image.png` repoya eklendi (önceden yalnızca canlıda vardı)
 - `scripts/generate-og-image.mjs` — `favicon.svg` yedek logo kaynağı
-- `SEO_SETUP.md`, `YAPILACAKLAR.md`, §24 güncellendi
+- `docs/setup/SEO_SETUP.md`, `YAPILACAKLAR.md`, §24 güncellendi
 
 ### Kullanıcıdan beklenen
 
@@ -1887,7 +1916,7 @@ Kaynak: `public/brand-logo-alt.png` → çıktılar: `brand-logo.png`, `brand-ma
 - Kart içinde yalnızca yatay logo (alt slogan yok)
 - Paylaşım başlığı/açıklaması HTML meta etiketlerinden gelir
 
-### Kullanıcıdan beklenen (detay: `SEO_SETUP.md` §9)
+### Kullanıcıdan beklenen (detay: `docs/setup/SEO_SETUP.md` §9)
 
 1. GA4 Measurement ID (`G-…`)
 2. Sosyal medya URL'leri → `brand.js` → `socialUrls`
