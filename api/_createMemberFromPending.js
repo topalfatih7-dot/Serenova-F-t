@@ -63,14 +63,25 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     coachSessions: [],
     dietitianSessions: [],
     doctorSessions: [],
-    notifications: [{
-      id: `n-${Date.now()}`,
-      type: 'reminder',
-      title: 'Yeni Form’a hoş geldiniz!',
-      message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
-      read: false,
-      createdAt: nowISO(),
-    }],
+    notifications: [
+      {
+        id: `n-welcome-${Date.now()}`,
+        type: 'reminder',
+        title: 'Yeni Form’a hoş geldiniz!',
+        message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
+        read: false,
+        createdAt: nowISO(),
+      },
+      {
+        id: `n-avail-${Date.now() + 1}`,
+        type: 'availability',
+        title: 'Antrenman günlerinizi paylaşın',
+        message: 'Koçunuz size doğru antrenman programı hazırlayabilsin diye antrenman yapabileceğiniz gün ve saatleri lütfen doldurun.',
+        action: 'availability',
+        read: false,
+        createdAt: nowISO(),
+      },
+    ],
     tasks: [
       { id: `t1-${Date.now()}`, type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
       { id: `t2-${Date.now()}`, type: 'workout', title: 'Program takviminden bugünkü hareketi tamamla', done: false, due: 'Bugün' },

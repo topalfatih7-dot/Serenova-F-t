@@ -1,5 +1,6 @@
 import { format, getDay, parseISO, isValid, differenceInCalendarDays, startOfDay } from 'date-fns'
 import { isStaffProgramVisibleOnDate } from './programPackageScope'
+import { isWorkoutAllowedOnDate } from './memberAvailability'
 
 export const CYCLE_PLAN_LENGTH = 14
 
@@ -35,6 +36,7 @@ export function mealContentText(entries = []) {
 export function isFixedDurationPlan(program) {
   if (!program) return false
   return program.scheduleType === 'cycle14'
+    || program.scheduleType === 'dateRange'
     || Boolean(program.cycleStartDate && program.cycleLength)
 }
 
@@ -142,14 +144,23 @@ export function getProgramEntriesForDate(programs, date, member = null) {
   ;(programs || []).forEach((prog) => {
     if (!prog.entries?.length) return
     if (member && !isStaffProgramVisibleOnDate(prog, date, member)) return
+    const programType = prog.type || (prog.entries.some((e) => e.mealType) ? 'nutrition' : 'workout')
+    if (
+      member
+      && programType === 'workout'
+      && prog.staffId
+      && !isWorkoutAllowedOnDate(date, member.availability)
+    ) {
+      return
+    }
     prog.entries.forEach((entry) => {
       if (entryMatchesDate(entry, date, prog)) {
-        const programType = prog.type || (entry.mealType ? 'nutrition' : 'workout')
+        const entryType = prog.type || (entry.mealType ? 'nutrition' : 'workout')
         result.push({
           ...entry,
           programId: prog.id,
           programTitle: prog.title,
-          programType,
+          programType: entryType,
         })
       }
     })

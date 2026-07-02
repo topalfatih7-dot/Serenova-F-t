@@ -136,7 +136,7 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
 
       <div className="flex items-center gap-2 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/60">
         <CalendarRange className="h-4 w-4 shrink-0 text-brand-400" />
-        Belirttiğiniz müsait aralıklar koçunuz ve diyetisyeniniz tarafından görüntülenir; görüşmeleriniz bu saatlere göre planlanır.
+        Antrenman yapabileceğiniz gün ve saatleri seçin; koçunuz programı yalnızca bu günlere yazar.
         {total > 0 && <span className="ml-auto font-semibold text-brand-600">{total} saat seçildi</span>}
       </div>
     </div>

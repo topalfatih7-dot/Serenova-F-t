@@ -45,11 +45,13 @@ function groupLabel(key, program = null) {
 }
 
 function groupBySchedule(entries = [], program = null) {
-  if (program?.scheduleType === 'cycle14' && !usesLegacyCycleDayRotation(program)) {
+  const sameDailyFixed = (program?.scheduleType === 'cycle14' || program?.scheduleType === 'dateRange')
+    && !usesLegacyCycleDayRotation(program)
+  if (sameDailyFixed) {
     return [{
       key: 'daily',
-      label: 'Günlük menü (her gün aynı)',
-      items: dedupeDailyNutritionEntries(entries),
+      label: program.type === 'nutrition' ? 'Günlük menü (her gün aynı)' : 'Günlük antrenman (her gün aynı)',
+      items: program.type === 'nutrition' ? dedupeDailyNutritionEntries(entries) : [...entries].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     }]
   }
 
@@ -123,18 +125,23 @@ export default function ProgramsPage() {
                           14 Gün · Her Gün Aynı
                         </span>
                       )}
+                      {p.scheduleType === 'dateRange' && p.cycleStartDate && (
+                        <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
+                          {p.cycleLength || 0} Gün · Her Gün Aynı
+                        </span>
+                      )}
                       {isWorkout && p.sessionDuration && (
                         <span className="flex items-center gap-0.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                           <Clock className="h-3 w-3" /> {p.sessionDuration} dk
                         </span>
                       )}
                     </div>
-                    {p.scheduleType === 'cycle14' && p.cycleStartDate && (
+                    {(p.scheduleType === 'cycle14' || p.scheduleType === 'dateRange') && p.cycleStartDate && (
                       <p className="mt-1 text-xs text-teal-700/80">
                         {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
                         {' — '}
                         {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
-                        {' · her gün aynı menü'}
+                        {' · her gün aynı program'}
                       </p>
                     )}
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-cream-800/50">

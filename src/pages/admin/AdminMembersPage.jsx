@@ -221,7 +221,7 @@ export default function AdminMembersPage() {
 
             {selected.availability && Object.keys(selected.availability).length > 0 && (
               <div>
-                <p className="mb-2 text-sm font-semibold text-cream-900">Haftalık Müsaitlik</p>
+                <p className="mb-2 text-sm font-semibold text-cream-900">Antrenman Müsaitliği</p>
                 <AvailabilityView value={selected.availability} emptyText="—" />
               </div>
             )}

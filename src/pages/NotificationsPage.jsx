@@ -37,6 +37,10 @@ export default function NotificationsPage() {
       navigate('/programs')
       return
     }
+    if (n.type === 'availability' || n.action === 'availability') {
+      navigate('/calendar?avail=1')
+      return
+    }
     if (n.type === 'support-reply' || n.type === 'support') {
       navigate('/support')
     }

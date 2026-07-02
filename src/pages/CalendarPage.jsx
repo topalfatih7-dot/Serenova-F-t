@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -39,6 +39,7 @@ export default function CalendarPage() {
   const { myPrograms, user, updateProfile, toggleActivityCompletion, toggleMealCompletion } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [current, setCurrent] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(isToday(new Date()) ? new Date() : null)
   const [expandedEntryId, setExpandedEntryId] = useState(null)
@@ -46,6 +47,18 @@ export default function CalendarPage() {
   const [availOpen, setAvailOpen] = useState(false)
   const [availForm, setAvailForm] = useState(user?.availability || {})
   const [availSaving, setAvailSaving] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('avail') !== '1') return
+    setAvailOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('avail')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (availOpen) setAvailForm(user?.availability || {})
+  }, [availOpen, user?.availability])
 
   const completedActivities = user?.completedActivities || {}
 
@@ -205,7 +218,7 @@ export default function CalendarPage() {
         ) : null}
       />
 
-      {/* HAFTALIK MÜSAİTLİK */}
+      {/* ANTRENMAN MÜSAİTLİĞİ */}
       <div className="overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white shadow-sm">
         <button
           type="button"
@@ -217,17 +230,17 @@ export default function CalendarPage() {
               <CalendarRange className="h-4 w-4" />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-cream-900">Haftalık Müsaitliğim</p>
+              <p className="font-semibold text-cream-900">Antrenman Müsaitliğim</p>
               <p className="text-xs text-cream-800/55">
                 {Object.values(user?.availability || {}).filter((v) => v?.length > 0).length > 0
-                  ? `${Object.values(user?.availability || {}).filter((v) => v?.length > 0).length} gün seçili`
-                  : 'Müsait olduğunuz günleri ve saatleri belirleyin'}
+                  ? `${Object.values(user?.availability || {}).filter((v) => v?.length > 0).length} antrenman günü seçili`
+                  : 'Antrenman yapabileceğiniz gün ve saatleri belirleyin'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700 sm:block">
-              Koç & Diyetisyen Randevuları İçin
+              Koç programı için
             </span>
             {availOpen ? <ChevronUp className="h-4 w-4 text-cream-400" /> : <ChevronDown className="h-4 w-4 text-cream-400" />}
           </div>

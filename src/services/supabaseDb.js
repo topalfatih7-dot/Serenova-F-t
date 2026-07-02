@@ -13,6 +13,7 @@ import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths, extendPremiumExpiry } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
+import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
 import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
@@ -116,7 +117,7 @@ function rowToPost(row) {
 function rowToTicket(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id, status: row.status }
 }
-export { rowToMember, rowToTicket }
+export { rowToMember, rowToTicket, rowToProgram }
 function rowToActivity(row) {
   const data = row.data || {}
   return {
@@ -639,11 +640,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     coachSessions,
     dietitianSessions,
     doctorSessions,
-    notifications: [{
-      id: `n-${Date.now()}`, type: 'reminder', title: 'Yeni Form’a hoş geldiniz!',
-      message: 'Profiliniz hazır. Günlük görevlerinizi tamamlayarak serinizi büyütmeye başlayın.',
-      read: false, createdAt: nowISO(),
-    }],
+    notifications: buildInitialMemberNotifications(),
     tasks: [
       { id: `t1-${Date.now()}`, type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
       { id: `t2-${Date.now()}`, type: 'workout', title: 'Program takviminden bugünkü hareketi tamamla', done: false, due: 'Bugün' },

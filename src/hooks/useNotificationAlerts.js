@@ -17,6 +17,7 @@ const TOAST_BY_TYPE = {
   'support-reply': 'info',
   chat: 'info',
   reminder: 'info',
+  availability: 'info',
   appointment: 'info',
 }
 

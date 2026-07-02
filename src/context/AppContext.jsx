@@ -546,6 +546,19 @@ export function AppProvider({ children }) {
       onApplicationsChange: () => {
         reloadRemote()
       },
+      onProgramsChange: ({ type, id, program }) => {
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          if (type === 'delete') {
+            return { ...prev, programs: prev.programs.filter((p) => p.id !== id) }
+          }
+          const idx = prev.programs.findIndex((p) => p.id === program.id)
+          const programs = idx >= 0
+            ? prev.programs.map((p, i) => (i === idx ? program : p))
+            : [program, ...prev.programs]
+          return { ...prev, programs }
+        })
+      },
     })
   }, [isSupabaseEnabled, sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
 
@@ -745,7 +758,18 @@ export function AppProvider({ children }) {
 
   const createProgram = useCallback(async (data) => {
     const p = await sb.createProgram(data)
-    await reloadRemote()
+    if (p) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const idx = prev.programs.findIndex((x) => x.id === p.id)
+        const programs = idx >= 0
+          ? prev.programs.map((x, i) => (i === idx ? p : x))
+          : [p, ...prev.programs]
+        return { ...prev, programs }
+      })
+    } else {
+      await reloadRemote()
+    }
     return p
   }, [reloadRemote])
 

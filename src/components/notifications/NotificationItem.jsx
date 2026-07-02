@@ -1,11 +1,12 @@
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 import {
-  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList, UserCheck,
+  Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList, UserCheck, CalendarRange,
 } from 'lucide-react'
 
 const TYPE_CONFIG = {
   reminder: { icon: Bell, color: 'text-brand-500 bg-brand-50' },
+  availability: { icon: CalendarRange, color: 'text-brand-600 bg-brand-50' },
   motivation: { icon: Heart, color: 'text-pink-500 bg-pink-50' },
   'no-response': { icon: MessageCircle, color: 'text-amber-600 bg-amber-50' },
   renewal: { icon: TrendingUp, color: 'text-orange-500 bg-orange-50' },

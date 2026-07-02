@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../services/supabaseClient'
 import { fetchActiveUsers } from '../services/presenceService'
-import { rowToTicket, rowToMember } from '../services/supabaseDb'
+import { rowToTicket, rowToMember, rowToProgram } from '../services/supabaseDb'
 import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
 import { rowToAdminStaffThread, rowToAdminStaffMessage } from '../services/adminChatDb'
 import { rowToStaffCollabThread, rowToStaffCollabMessage } from '../services/staffCollabChatDb'
@@ -48,6 +48,7 @@ export function subscribeRealtimeSync({
   onStaffCollabThreadChange,
   onStaffCollabMessageChange,
   onApplicationsChange,
+  onProgramsChange,
 }) {
   if (!supabase || !session) return () => {}
 
@@ -167,6 +168,44 @@ export function subscribeRealtimeSync({
       )
       .subscribe()
     channels.push(memberChannel)
+
+    const programsChannel = supabase
+      .channel(`programs-member-${memberId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'programs', filter: `member_id=eq.${memberId}` },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            onProgramsChange?.({ type: 'delete', id: payload.old?.id })
+            return
+          }
+          if (payload.new) {
+            onProgramsChange?.({ type: 'upsert', program: rowToProgram(payload.new) })
+          }
+        },
+      )
+      .subscribe()
+    channels.push(programsChannel)
+  }
+
+  if (session.type === 'staff' && staffId) {
+    const staffProgramsChannel = supabase
+      .channel(`programs-staff-${staffId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'programs', filter: `staff_id=eq.${staffId}` },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            onProgramsChange?.({ type: 'delete', id: payload.old?.id })
+            return
+          }
+          if (payload.new) {
+            onProgramsChange?.({ type: 'upsert', program: rowToProgram(payload.new) })
+          }
+        },
+      )
+      .subscribe()
+    channels.push(staffProgramsChannel)
   }
 
   return () => channels.forEach((ch) => supabase.removeChannel(ch))
