@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { MessageCircle, Search, Shield, Users } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import StaffCollabChatView from '../../components/chat/StaffCollabChatView'
-import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace } from '../../components/chat/ChatWorkspace'
+import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace, CHAT_PAGE_SHELL_CLASS } from '../../components/chat/ChatWorkspace'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -192,7 +192,7 @@ export default function StaffCollabMessagesPage() {
   )
 
   return (
-    <PanelPageShell maxWidth="max-w-6xl" className="w-full max-w-none space-y-3 md:max-w-6xl md:space-y-4">
+    <PanelPageShell maxWidth="max-w-6xl" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
         title="Ekip Mesajları"
         subtitle={showThread && !isWide ? undefined : 'Ortak danışanlarınız için koç–diyetisyen koordinasyonu'}
@@ -217,7 +217,7 @@ export default function StaffCollabMessagesPage() {
           description="Hem koç hem diyetisyen ataması olan danışanlarınız burada görünür."
         />
       ) : (
-        <ChatPageFrame className="min-h-[calc(100dvh-10rem)] md:min-h-[calc(100dvh-12rem)]">
+        <ChatPageFrame>
           <ChatWorkspace
             showThread={showThread}
             onBack={() => navigate('/staff/collab-messages')}

@@ -12,6 +12,7 @@ import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths, extendPremiumExpiry } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
+import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
 import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
@@ -653,7 +654,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     assignedCoachId,
     assignedDietitianId,
     assignedDoctorId,
-    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
+    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
     streak: 0,
@@ -781,6 +782,7 @@ export async function savePendingRegistrationMetadata(profile, membership, durat
         name: (profile.name || '').trim(),
         phone: profile.phone || '',
         phoneCountry: profile.phoneCountry || '',
+        gender: profile.gender || '',
         membership: membership || 'free',
         durationMonths: Number(durationMonths) || 1,
         fitnessLevel: profile.fitnessLevel || 'beginner',
@@ -835,6 +837,10 @@ export async function completeOAuthMember(profile, membership = 'free', packageC
     }
   } else {
     return { success: false, error: 'Telefon numarası gerekli — randevu hatırlatmaları için kullanılır.' }
+  }
+
+  if (!profile.gender || !['female', 'male'].includes(profile.gender)) {
+    return { success: false, error: 'Cinsiyet seçimi zorunludur — Kadın veya Erkek seçin.' }
   }
 
   if (name !== displayNameFromAuthUser(user)) {
@@ -1528,28 +1534,19 @@ export async function createProgram(data) {
   }).select().single()
   if (error) return null
 
-  // Danışana bildirim gönder
+  const program = rowToProgram(row)
+
   if (data.memberId) {
-    const { data: memberRows } = await supabase.from('members').select('*').eq('id', data.memberId).limit(1)
-    const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
-    if (member) {
-      const typeLabel = data.type === 'nutrition' ? 'Beslenme' : 'Antrenman'
-      const notifications = [
-        {
-          id: `n-${Date.now()}-prog`,
-          type: 'program',
-          title: `Yeni ${typeLabel} Programı`,
-          message: `${data.staffName || 'Uzmanınız'} size "${data.title}" programını hazırladı. Programlarım bölümünden inceleyebilirsiniz.`,
-          read: false,
-          createdAt: nowISO(),
-        },
-        ...(member.notifications || []),
-      ]
-      await upsertMember({ ...member, notifications })
-    }
+    await notifyMemberProgram({
+      memberId: data.memberId,
+      staffName: data.staffName,
+      title: data.title,
+      programType: data.type,
+      programId: program.id,
+    })
   }
 
-  return rowToProgram(row)
+  return program
 }
 
 // --------------------------- tickets ---------------------------
@@ -1583,26 +1580,12 @@ export async function sendTicketReply(id, from, text) {
   await supabase.from('tickets').update({ status, data: { ...current.data, messages } }).eq('id', id)
 
   if (from === 'admin' && current.member_id) {
-    const { data: memberRow } = await supabase.from('members').select('*').eq('id', current.member_id).maybeSingle()
-    if (memberRow) {
-      const data = memberRow.data || {}
-      const notifications = [
-        {
-          id: `n-${Date.now()}`,
-          type: 'support-reply',
-          title: 'Destek yanıtı',
-          message: `"${ticket.subject}" talebinize yanıt geldi.`,
-          read: false,
-          createdAt: nowISO(),
-          ticketId: id,
-        },
-        ...(data.notifications || []),
-      ]
-      await supabase.from('members').update({
-        data: { ...data, notifications },
-        updated_at: nowISO(),
-      }).eq('id', current.member_id)
-    }
+    await pushMemberNotification(current.member_id, buildMemberNotification({
+      type: 'support-reply',
+      title: 'Destek yanıtı',
+      message: `"${ticket.subject}" talebinize yanıt geldi.`,
+      ticketId: id,
+    }))
   }
 
   return { ...ticket, messages, status }

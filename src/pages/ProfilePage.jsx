@@ -7,6 +7,7 @@ import FormField from '../components/ui/FormField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { requestNotificationPermission, unlockNotificationAudio } from '../utils/browserNotifications'
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
@@ -69,6 +70,21 @@ export default function ProfilePage() {
     logout()
     navigate('/')
     toast('Çıkış yapıldı', 'info')
+  }
+
+  const handleNotifToggle = async (key, checked) => {
+    if ((key === 'pushNotifs' || key === 'soundNotifs') && checked) {
+      await unlockNotificationAudio().catch(() => {})
+    }
+    if (key === 'pushNotifs' && checked) {
+      const permission = await requestNotificationPermission()
+      if (permission === 'denied') {
+        toast('Tarayıcı bildirimleri engellenmiş. Tarayıcı ayarlarından Yeni Form için izin verin.', 'warning', 6000)
+      } else if (permission === 'granted') {
+        toast('Tarayıcı bildirimleri açıldı.', 'success')
+      }
+    }
+    updateSettings({ [key]: checked })
   }
 
   const quickLinks = [
@@ -270,7 +286,8 @@ export default function ProfilePage() {
             <div className="space-y-2.5">
               {[
                 { key: 'emailNotifs', label: 'E-posta bildirimleri', color: 'bg-brand-50' },
-                { key: 'pushNotifs', label: 'Push bildirimleri', color: 'bg-sage-50' },
+                { key: 'pushNotifs', label: 'Tarayıcı bildirimleri', color: 'bg-sage-50' },
+                { key: 'soundNotifs', label: 'Bildirim sesleri', color: 'bg-violet-50' },
                 { key: 'reminderNotifs', label: 'Hatırlatıcılar', color: 'bg-amber-50' },
               ].map((t) => (
                 <label key={t.key} className={`flex cursor-pointer items-center justify-between rounded-2xl border border-white/80 px-4 py-3 shadow-sm transition hover:shadow-md ${t.color}`}>
@@ -278,7 +295,7 @@ export default function ProfilePage() {
                   <input
                     type="checkbox"
                     checked={!!settings[t.key]}
-                    onChange={(e) => updateSettings({ [t.key]: e.target.checked })}
+                    onChange={(e) => handleNotifToggle(t.key, e.target.checked)}
                     className="h-5 w-5 accent-brand-500"
                   />
                 </label>

@@ -6,7 +6,7 @@ import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPa
 import AdminStaffChatView from '../../components/chat/AdminStaffChatView'
 import StaffCollabChatView from '../../components/chat/StaffCollabChatView'
 import ChatThreadView from '../../components/chat/ChatThreadView'
-import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace } from '../../components/chat/ChatWorkspace'
+import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace, CHAT_PAGE_SHELL_CLASS } from '../../components/chat/ChatWorkspace'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -487,7 +487,7 @@ export default function AdminMessagesPage() {
   const listEmpty = isCollab ? filteredCollab.length === 0 : isAudit ? filteredAudit.length === 0 : filteredStaff.length === 0
 
   return (
-    <PanelPageShell maxWidth="max-w-6xl" className="w-full max-w-none space-y-3 md:max-w-6xl md:space-y-4">
+    <PanelPageShell maxWidth="max-w-6xl" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
         title="Mesajlar"
         subtitle={showThread && !isWide ? undefined : 'Personel ile iletişim ve danışan sohbet denetimi'}
@@ -522,7 +522,7 @@ export default function AdminMessagesPage() {
           description={emptyDescription}
         />
       ) : (
-        <ChatPageFrame className="min-h-[calc(100dvh-11rem)] md:min-h-[calc(100dvh-13rem)]">
+        <ChatPageFrame>
           <ChatWorkspace
             showThread={showThread}
             onBack={() => navigate(backPath)}

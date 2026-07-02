@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { unlockNotificationAudio } from '../../utils/browserNotifications'
 import { motion } from 'framer-motion'
 import { Send, Dumbbell, Apple, UserRound, Info, Radio } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -41,6 +42,7 @@ export default function ChatThreadView({
   const send = () => {
     const value = text.trim()
     if (!value) return
+    unlockNotificationAudio().catch(() => {})
     onSend?.(value)
     setText('')
   }

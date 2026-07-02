@@ -5,7 +5,7 @@ import { MessageCircle, Search, Shield } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import ChatThreadView from '../../components/chat/ChatThreadView'
 import ChatCollapsiblePrograms from '../../components/chat/ChatCollapsiblePrograms'
-import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace } from '../../components/chat/ChatWorkspace'
+import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatWorkspace, CHAT_PAGE_SHELL_CLASS } from '../../components/chat/ChatWorkspace'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -206,7 +206,7 @@ export default function StaffMessagesPage() {
   )
 
   return (
-    <PanelPageShell maxWidth="max-w-6xl" className="w-full max-w-none space-y-3 md:max-w-6xl md:space-y-4">
+    <PanelPageShell maxWidth="max-w-6xl" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
         title="Mesajlar"
         subtitle={showThread && !isWide ? undefined : 'Tüm danışanlarınız — okunmamış sohbetler üstte'}
@@ -216,7 +216,7 @@ export default function StaffMessagesPage() {
       />
 
       {(!showThread || isWide) && (
-        <div className="flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
+        <div className="shrink-0 flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
           <Shield className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
           <p className="text-[11px] leading-relaxed text-brand-900/75 sm:text-xs">
             Mesajlar kayıt altındadır. Sohbet sırasında ilgili birimin programını açıp kapatabilirsiniz.
@@ -227,7 +227,7 @@ export default function StaffMessagesPage() {
       {clients.length === 0 ? (
         <EmptyState icon={MessageCircle} title="Henüz danışan yok" description="Size atanan aktif danışanlar burada listelenir." />
       ) : (
-        <ChatPageFrame className="min-h-[calc(100dvh-10rem)] md:min-h-[calc(100dvh-12rem)]">
+        <ChatPageFrame>
           <ChatWorkspace
             showThread={showThread}
             onBack={() => navigate('/staff/messages')}

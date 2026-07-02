@@ -17,6 +17,8 @@ import AuthFormShell, { AuthFormCard } from '../components/auth/AuthFormShell'
 import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import SocialAuthButtons from '../components/auth/SocialAuthButtons'
 import FormErrorModal from '../components/ui/FormErrorModal'
+import GenderSelect from '../components/ui/GenderSelect'
+import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
@@ -182,6 +184,7 @@ export default function OnboardingPage() {
     email: '',
     phone: '',
     phoneCountry: DEFAULT_COUNTRY_ISO,
+    gender: '',
     password: '',
     confirmPassword: '',
     membership: preselectedPlan,
@@ -266,6 +269,9 @@ export default function OnboardingPage() {
       if (!data.phone?.trim() || !isValidNationalNumber(data.phoneCountry, data.phone)) {
         return 'Geçerli bir cep telefonu numarası girin.'
       }
+      if (!isValidMemberGender(data.gender)) {
+        return 'Cinsiyet seçimi zorunludur — Kadın veya Erkek seçin.'
+      }
       if (!isOAuthFlow && !isPasswordValid(data.password)) {
         return 'Şifre en az 8 karakter, bir büyük harf ve bir rakam içermelidir.'
       }
@@ -301,6 +307,7 @@ export default function OnboardingPage() {
   const errors = {
     email: data.email && !isValidEmailAddress(data.email) ? 'Geçerli bir e-posta adresi girin (ör. ad@site.com)' : '',
     phone: data.phone && !isValidNationalNumber(data.phoneCountry, data.phone) ? 'Geçerli bir cep telefonu numarası girin' : '',
+    gender: showErrors && !isValidMemberGender(data.gender) ? 'Kadın veya Erkek seçin' : '',
     password: data.password && !isPasswordValid(data.password) ? 'Şifre gereksinimleri karşılanmıyor' : '',
     confirmPassword: data.password && data.confirmPassword && data.password !== data.confirmPassword ? 'Şifreler eşleşmiyor' : '',
   }
@@ -310,6 +317,7 @@ export default function OnboardingPage() {
       const baseOk = (
         data.name.trim() &&
         isValidNationalNumber(data.phoneCountry, data.phone) &&
+        isValidMemberGender(data.gender) &&
         termsAccepted
       )
       if (isOAuthFlow) {
@@ -331,6 +339,7 @@ export default function OnboardingPage() {
     email: sanitizeEmailInput(isOAuthFlow ? (user?.email || authUser?.email || data.email) : data.email),
     phone: toE164(data.phoneCountry, data.phone),
     phoneCountry: data.phoneCountry,
+    gender: data.gender,
     password: isOAuthFlow ? undefined : data.password,
     fitnessLevel: 'beginner',
     goals: [],
@@ -585,6 +594,13 @@ export default function OnboardingPage() {
                         onValueChange={(phone) => update({ phone })}
                         error={errors.phone}
                         hint="Randevu ve hatırlatma mesajları bu numaraya gönderilir."
+                      />
+
+                      <GenderSelect
+                        large
+                        value={data.gender}
+                        onChange={(gender) => update({ gender })}
+                        error={errors.gender}
                       />
 
                       {!isOAuthFlow && (

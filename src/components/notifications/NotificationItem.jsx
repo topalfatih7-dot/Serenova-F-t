@@ -13,9 +13,11 @@ const TYPE_CONFIG = {
   'health-warning': { icon: AlertTriangle, color: 'text-red-500 bg-red-50' },
   missed: { icon: Activity, color: 'text-cream-800 bg-cream-100' },
   program: { icon: ClipboardList, color: 'text-brand-600 bg-brand-50' },
+  chat: { icon: MessageCircle, color: 'text-violet-600 bg-violet-50' },
   support: { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
   assignment: { icon: UserCheck, color: 'text-sage-600 bg-sage-50' },
   'support-reply': { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
+  appointment: { icon: Activity, color: 'text-teal-600 bg-teal-50' },
 }
 
 export default function NotificationItem({ notification, onRead }) {
@@ -27,7 +29,7 @@ export default function NotificationItem({ notification, onRead }) {
   return (
     <button
       type="button"
-      onClick={() => onRead?.(notification.id)}
+      onClick={() => onRead?.(notification)}
       className={`flex w-full gap-4 rounded-2xl p-4 text-left transition glass-card-solid ${
         notification.read ? 'opacity-70' : 'ring-1 ring-brand-100'
       }`}

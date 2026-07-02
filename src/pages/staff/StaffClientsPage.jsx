@@ -693,7 +693,7 @@ export default function StaffClientsPage() {
     return getMemberPackageDateRange(programClient, programType)
   }, [programClient, programType])
 
-  const handleCreate = (data) => {
+  const handleCreate = async (data) => {
     if (!programClient) return
     if (!memberHasProgramTypePackage(programClient, programType)) {
       toast('Üyenin bu program türü için aktif paketi yok', 'error')
@@ -717,7 +717,7 @@ export default function StaffClientsPage() {
         return
       }
     }
-    createProgram({
+    const created = await createProgram({
       type: isCoach ? 'workout' : 'nutrition',
       memberId: programClient.id,
       memberName: programClient.name,
@@ -725,7 +725,11 @@ export default function StaffClientsPage() {
       staffName: staffUser.name,
       ...data,
     })
-    toast(`${programClient.name} için program oluşturuldu ve bildirildi`, 'success')
+    if (!created) {
+      toast('Program kaydedilemedi. Lütfen tekrar deneyin.', 'error')
+      return
+    }
+    toast(`${programClient.name} için program oluşturuldu — danışana bildirim gönderildi`, 'success')
     setProgramClient(null)
   }
 

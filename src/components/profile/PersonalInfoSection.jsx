@@ -14,12 +14,9 @@ import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import ProfileSectionCard from './ProfileSectionCard'
+import GenderSelect from '../ui/GenderSelect'
+import { MEMBER_GENDERS, isValidMemberGender } from '../../data/genders'
 import { ageFromBirthDate, birthDateError, formatBirthDate } from '../../utils/birthDate'
-
-const GENDERS = [
-  { value: 'female', label: 'Kadın' },
-  { value: 'male', label: 'Erkek' },
-]
 
 const GOALS = [
   { value: 'weight', label: 'Kilo Yönetimi' },
@@ -120,6 +117,10 @@ export default function PersonalInfoSection({ user }) {
   }
 
   const handleSave = async () => {
+    if (!isValidMemberGender(form.gender)) {
+      toast('Cinsiyet seçimi zorunludur — Kadın veya Erkek seçin.', 'warning')
+      return
+    }
     if (errors.birthDate || errors.weight || errors.height || errors.waist) {
       toast('Lütfen geçerli bilgiler girin', 'warning')
       return
@@ -209,7 +210,7 @@ export default function PersonalInfoSection({ user }) {
             ['E-posta', user.email || '—'],
             ['Telefon', user.phone ? formatE164(user.phone) : '—'],
             ['Doğum Tarihi', formatBirthDate(user.birthDate)],
-            ['Cinsiyet', GENDERS.find((g) => g.value === user.gender)?.label || '—'],
+            ['Cinsiyet', MEMBER_GENDERS.find((g) => g.value === user.gender)?.label || '—'],
             ['Şehir / İlçe', user.city ? `${user.city}${user.district ? ` / ${user.district}` : ''}` : '—'],
             ['Kilo', user.weight ? `${user.weight} kg` : '—'],
             ['Boy', user.height ? `${user.height} cm` : '—'],
@@ -250,10 +251,10 @@ export default function PersonalInfoSection({ user }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <FormField label="Doğum Tarihi" icon={CalendarDays} type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} error={errors.birthDate} />
-            <FormField label="Cinsiyet" as="select" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={form.gender ? '' : 'text-cream-800/40'}>
-              <option value="">Seçin</option>
-              {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-            </FormField>
+            <GenderSelect
+              value={form.gender}
+              onChange={(gender) => setForm({ ...form, gender })}
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

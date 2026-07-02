@@ -1,5 +1,11 @@
 import { ArrowLeft } from 'lucide-react'
 
+/** Mesaj sayfalarında PanelPageShell — viewport yüksekliğini doldurur, içerik kaydırılır. */
+export const CHAT_PAGE_SHELL_CLASS = 'flex min-h-0 flex-1 flex-col gap-3 space-y-0 overflow-hidden md:gap-4'
+
+/** ChatWorkspace sarmalayıcısı — kalan yüksekliği mesaj listesine bırakır. */
+export const CHAT_PAGE_FRAME_CLASS = 'flex min-h-0 flex-1 flex-col overflow-hidden'
+
 /**
  * Mobil: liste VEYA sohbet (tam ekran). md+ (768px): yan yana split.
  * showThread — mobilde sohbet paneli açık mı
@@ -9,16 +15,16 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
         <aside
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
-            showThread ? 'hidden md:flex' : 'flex min-h-[calc(100dvh-11rem)] md:min-h-0'
+          className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
+            showThread ? 'hidden md:flex' : 'flex'
           }`}
         >
           {inbox}
         </aside>
 
         <section
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl ${
-            showThread ? 'flex min-h-[calc(100dvh-11rem)] md:min-h-0' : 'hidden md:flex'
+          className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl ${
+            showThread ? 'flex' : 'hidden md:flex'
           }`}
         >
           {showThread && onBack && (
@@ -40,7 +46,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
 
 export function ChatPageFrame({ children, className = '' }) {
   return (
-    <div className={`-mx-1 flex min-h-0 flex-col sm:-mx-2 ${className}`}>
+    <div className={`-mx-1 sm:-mx-2 ${CHAT_PAGE_FRAME_CLASS} ${className}`}>
       {children}
     </div>
   )

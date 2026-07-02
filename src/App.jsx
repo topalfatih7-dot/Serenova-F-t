@@ -9,6 +9,7 @@ import StaffShell from './components/layout/StaffShell'
 import RequireAuth from './components/auth/RequireAuth'
 import ProfileCompletionGate from './components/auth/ProfileCompletionGate'
 import NotificationToastBridge from './components/notifications/NotificationToastBridge'
+import NotificationAudioUnlock from './components/notifications/NotificationAudioUnlock'
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
 import AuthRedirectHandler from './components/auth/AuthRedirectHandler'
@@ -84,6 +85,7 @@ export default function App() {
     <BrowserRouter>
       <AppProvider>
         <ToastProvider>
+          <NotificationAudioUnlock />
           <NotificationToastBridge />
           <GoogleAnalytics />
           <AuthRedirectHandler />

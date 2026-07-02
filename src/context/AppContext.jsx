@@ -959,10 +959,24 @@ export function AppProvider({ children }) {
     await patchCurrentRemote(profile)
   }, [currentMember, patchCurrentRemote])
 
-  const updateSettings = useCallback(async (settings) => {
+  const updateSettings = useCallback(async (settingsPatch) => {
     if (!currentMember) return
-    await patchCurrentRemote({ settings: { ...currentMember.settings, ...settings } })
-  }, [currentMember, patchCurrentRemote])
+    const nextSettings = { ...currentMember.settings, ...settingsPatch }
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        members: prev.members.map((m) => (
+          m.id === currentMember.id ? { ...m, settings: nextSettings } : m
+        )),
+      }
+    })
+    try {
+      await sb.saveMemberPatch(currentMember, { settings: nextSettings })
+    } catch {
+      await reloadRemote()
+    }
+  }, [currentMember, reloadRemote])
 
   const verificationStatus = useMemo(() => {
     if (!currentMember) return null
@@ -1276,11 +1290,11 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={value}>
       {loading && !authFastPath ? (
-        <LoadingScreen message="Veriler hazırlanıyor…" />
+        <LoadingScreen />
       ) : (
         <>
           {children}
-          {syncing && !authFastPath && <LoadingScreen message="İşleniyor…" overlay />}
+          {syncing && !authFastPath && <LoadingScreen overlay />}
         </>
       )}
     </AppContext.Provider>

@@ -103,10 +103,12 @@ export default function AdminShell() {
           logout={logout}
           headerRight={<span className="text-xs font-medium text-cream-800/50">Admin</span>}
         />
-        <main className="flex-1 p-4 sm:p-6">
-          <Outlet />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <Outlet />
+          </div>
         </main>
-        <footer className="border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm">
+        <footer className="shrink-0 border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm">
           {BRAND.name} · Yönetim Paneli
         </footer>
       </div>

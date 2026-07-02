@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import NotificationItem from '../components/notifications/NotificationItem'
 import EmptyState from '../components/ui/EmptyState'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { unlockNotificationAudio } from '../utils/browserNotifications'
 import { Bell } from 'lucide-react'
 
 const FILTERS = [
@@ -15,9 +17,30 @@ const FILTERS = [
 export default function NotificationsPage() {
   const { notifications, markNotificationRead, markAllNotificationsRead, flushNotificationReads } = useApp()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
 
   useEffect(() => () => { flushNotificationReads() }, [flushNotificationReads])
+
+  const handleFilter = (id) => {
+    unlockNotificationAudio().catch(() => {})
+    setFilter(id)
+  }
+
+  const handleNotificationOpen = (n) => {
+    markNotificationRead(n.id)
+    if (n.type === 'chat' && n.staffRole) {
+      navigate(`/messages/${n.staffRole}`)
+      return
+    }
+    if (n.type === 'program') {
+      navigate('/programs')
+      return
+    }
+    if (n.type === 'support-reply' || n.type === 'support') {
+      navigate('/support')
+    }
+  }
 
   const filtered = filter === 'all'
     ? notifications
@@ -28,7 +51,7 @@ export default function NotificationsPage() {
   const unread = notifications.filter((n) => !n.read).length
 
   return (
-    <PanelPageShell maxWidth="max-w-2xl">
+    <PanelPageShell maxWidth="max-w-2xl" onPointerDown={() => { unlockNotificationAudio().catch(() => {}) }}>
       <PanelPageHeader
         title="Bildirimler"
         subtitle={unread > 0 ? `${unread} okunmamış mesajınız var` : 'Her şey güncel görünüyor'}
@@ -47,7 +70,7 @@ export default function NotificationsPage() {
 
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <PanelChip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)} accent="brand">
+          <PanelChip key={f.id} active={filter === f.id} onClick={() => handleFilter(f.id)} accent="brand">
             {f.label}
           </PanelChip>
         ))}
@@ -58,7 +81,7 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((n) => (
-            <NotificationItem key={n.id} notification={n} onRead={markNotificationRead} />
+            <NotificationItem key={n.id} notification={n} onRead={handleNotificationOpen} />
           ))}
         </div>
       )}

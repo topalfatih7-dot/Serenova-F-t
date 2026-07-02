@@ -1388,9 +1388,9 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 ## 20. Son Değişiklikler (2026-06-22 — Kayıt Akışı)
 
 ### 1. Kayıt formu sadeleştirildi (`OnboardingPage.jsx`)
-- **Adım 1 — Hesap:** Yalnızca ad soyad, e-posta, telefon, şifre (+ tekrar). Mobile-first, tek ekrana sığacak kompakt düzen (`min-h-[100dvh]`, `max-w-lg`).
+- **Adım 1 — Hesap:** Ad soyad, e-posta, telefon, **cinsiyet (Kadın/Erkek — zorunlu, "belirtmek istemiyorum" yok)**, şifre (+ tekrar). Mobile-first, tek ekrana sığacak kompakt düzen (`min-h-[100dvh]`, `max-w-lg`).
 - **Adım 2 — Üyelik:** Plan seçimi (+ ücretli planlarda ödeme modalı).
-- Kaldırıldı (kayıttan): yaş, cinsiyet, şehir, ölçüler, fotoğraf, hedefler, spor/beslenme tercihleri, sağlık testi, sağlık onayı.
+- Kaldırıldı (kayıttan): yaş, şehir, ölçüler, fotoğraf, hedefler, spor/beslenme tercihleri, sağlık testi, sağlık onayı.
 - Kayıt sonrası otomatik program/analiz **sağlık testi tamamlanınca** `memberHealthSync.js` devreye girer (boy/kilo yoksa testten türetilir).
 
 ### 2. Sağlık testi — panel sonrası akış
@@ -3660,4 +3660,51 @@ Manuel DB silmelerinden kalan ödeme, abonelik ve destek kayıtları artık gör
 ### Uzak Supabase
 
 Migration MCP `apply_migration` ile **Yeni Form** (`rvzksmyhsgxgrxgeabmi`) projesine **uygulandı** (2026-07-01).
+
+---
+
+## Son Değişiklikler (2026-07-02 — Kayıt, Loading, Bildirimler, OAuth)
+
+### 1. Kayıt — zorunlu cinsiyet
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/data/genders.js` | `MEMBER_GENDERS` — yalnızca `female` / `male` |
+| `src/components/ui/GenderSelect.jsx` | İki butonlu seçim (opt-out yok) |
+| `src/pages/OnboardingPage.jsx` | Adım 1'de zorunlu cinsiyet; Stripe pending metadata'ya `gender` |
+| `src/components/profile/PersonalInfoSection.jsx` | Aynı bileşen; profilde de zorunlu |
+| `src/services/supabaseDb.js` | `savePendingRegistrationMetadata`, `completeOAuthMember` cinsiyet doğrulaması |
+| `api/_createMemberFromPending.js` | Webhook üye oluştururken `gender` zorunlu |
+
+### 2. Loading ekranı
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/components/ui/LoadingScreen.jsx` | Yalnızca logo (mark + spinner); metin / bounce noktaları kaldırıldı |
+| `src/context/AppContext.jsx` | `updateSettings` artık tam `reloadRemote` yapmıyor → rehber turu kapanınca overlay çıkmaz |
+
+### 3. Tarayıcı bildirimi + ses
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/utils/browserNotifications.js` | `requestNotificationPermission`, `showBrowserNotification`, `playNotificationSound` |
+| `src/components/notifications/NotificationToastBridge.jsx` | Toast + ses + arka planda tarayıcı bildirimi |
+| `src/pages/ProfilePage.jsx` | `soundNotifs` toggle; push açılınca izin isteği |
+| `members.settings` varsayılan | `soundNotifs: true` eklendi |
+
+### 4. Google OAuth markalama
+
+- Kurulum: `docs/setup/OAUTH_SETUP.md` — Google OAuth consent screen **Yeni Form**, logo, `yeniform.com` domain.
+- Alt satırdaki `supabase.co` metni için opsiyonel: Supabase **Custom Auth Domain** (`auth.yeniform.com`).
+
+### 5. Program + mesaj bildirimleri (2026-07-02)
+
+| Dosya | Görev |
+|-------|-------|
+| `supabase/migrations/20260712_append_member_notification.sql` | RPC `append_member_notification` — personel program/mesaj sonrası atomik bildirim |
+| `src/services/memberNotifications.js` | `pushMemberNotification`, `notifyMemberProgram`, `notifyMemberChatMessage` |
+| `src/services/chatDb.js` | Koç/diyetisyen mesajı → üye bildirimi |
+| `src/services/supabaseDb.js` | `createProgram` → program bildirimi |
+| `src/pages/NotificationsPage.jsx` | Tıklanınca `/programs`, `/messages/{role}`, `/support` |
+| `src/components/notifications/NotificationItem.jsx` | `chat` tipi ikonu |
 

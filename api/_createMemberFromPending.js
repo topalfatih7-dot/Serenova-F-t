@@ -30,9 +30,10 @@ export async function createMemberFromPendingRegistration(admin, userId) {
   const pending = user.user_metadata?.pending_registration
   const name = (pending?.name || user.user_metadata?.full_name || user.user_metadata?.name || '').trim()
   const phone = pending?.phone || ''
+  const gender = pending?.gender || ''
   const email = (user.email || '').toLowerCase()
 
-  if (!name || !phone) {
+  if (!name || !phone || !gender) {
     return { ok: false, error: 'Bekleyen kayıt bilgisi eksik' }
   }
 
@@ -42,6 +43,7 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     email,
     name,
     phone,
+    gender,
     membership: 'free',
     membershipStatus: 'active',
     fitnessLevel: pending?.fitnessLevel || 'beginner',
@@ -74,7 +76,7 @@ export async function createMemberFromPendingRegistration(admin, userId) {
       { id: `t2-${Date.now()}`, type: 'workout', title: 'Program takviminden bugünkü hareketi tamamla', done: false, due: 'Bugün' },
     ],
     progress: { weight: [], workouts: [], mood: [] },
-    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, reminderNotifs: true },
+    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
     profileComplete: true,
     streak: 0,
     freeTrialExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),

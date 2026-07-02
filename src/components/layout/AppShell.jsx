@@ -101,13 +101,13 @@ export default function AppShell() {
         <div className="hidden md:block">
           <TopBar />
         </div>
-        <main className="member-panel-bg relative flex-1 overflow-y-auto">
+        <main className="member-panel-bg relative flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="pointer-events-none sticky top-0 h-0">
             <div className="relative h-screen w-full overflow-hidden">
               <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />
             </div>
           </div>
-          <div className="relative p-4 sm:p-6">
+          <div className="relative flex min-h-0 flex-1 flex-col p-4 sm:p-6">
             <Outlet />
           </div>
         </main>

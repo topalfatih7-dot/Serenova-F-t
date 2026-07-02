@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
+import { notifyMemberChatMessage } from './memberNotifications'
 
 const nowISO = () => new Date().toISOString()
 
@@ -35,30 +36,6 @@ function rowToChatMessage(row) {
 }
 
 export { rowToChatThread, rowToChatMessage }
-
-async function pushMemberChatNotification(memberId, { title, message, threadId, role }) {
-  if (!memberId) return
-  const { data: memberRow } = await supabase.from('members').select('*').eq('id', memberId).maybeSingle()
-  if (!memberRow) return
-  const data = memberRow.data || {}
-  const notifications = [
-    {
-      id: `n-chat-${Date.now()}`,
-      type: 'chat',
-      title,
-      message,
-      read: false,
-      createdAt: nowISO(),
-      threadId,
-      staffRole: role,
-    },
-    ...(data.notifications || []),
-  ]
-  await supabase.from('members').update({
-    data: { ...data, notifications },
-    updated_at: nowISO(),
-  }).eq('id', memberId)
-}
 
 export async function fetchChatThreadsForMember(memberId) {
   const { data, error } = await supabase
@@ -172,12 +149,11 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
   }).eq('id', thread.id)
 
   if (senderType === 'staff') {
-    const roleLabel = thread.staffRole === 'dietitian' ? 'Diyetisyeniniz' : 'Koçunuz'
-    await pushMemberChatNotification(thread.memberId, {
-      title: `${roleLabel}den yeni mesaj`,
-      message: preview,
+    await notifyMemberChatMessage({
+      memberId: thread.memberId,
+      preview,
       threadId: thread.id,
-      role: thread.staffRole,
+      staffRole: thread.staffRole,
     })
   }
 
