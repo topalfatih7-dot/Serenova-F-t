@@ -1,10 +1,19 @@
 import { ArrowLeft } from 'lucide-react'
 
 /** Mesaj sayfalarında PanelPageShell — viewport yüksekliğini doldurur, içerik kaydırılır. */
-export const CHAT_PAGE_SHELL_CLASS = 'flex min-h-0 flex-1 flex-col gap-3 space-y-0 overflow-hidden md:gap-4'
+export const CHAT_PAGE_SHELL_CLASS = 'flex h-0 min-h-0 flex-1 flex-col gap-3 space-y-0 overflow-hidden md:gap-4'
 
 /** ChatWorkspace sarmalayıcısı — kalan yüksekliği mesaj listesine bırakır. */
-export const CHAT_PAGE_FRAME_CLASS = 'flex min-h-0 flex-1 flex-col overflow-hidden'
+export const CHAT_PAGE_FRAME_CLASS = 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden'
+
+/** Sohbet sütunu — başlık + programlar sabit, mesaj gövdesi kalan yüksekliği alır. */
+export function ChatThreadPanel({ children, className = '' }) {
+  return (
+    <div className={`flex h-0 min-h-0 flex-1 flex-col overflow-hidden ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 /**
  * Mobil: liste VEYA sohbet (tam ekran). md+ (768px): yan yana split.
@@ -12,10 +21,10 @@ export const CHAT_PAGE_FRAME_CLASS = 'flex min-h-0 flex-1 flex-col overflow-hidd
  */
 export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = 'Sohbetler' }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
+    <div className="flex h-0 min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="grid h-full min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
         <aside
-          className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
             showThread ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -23,7 +32,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
         </aside>
 
         <section
-          className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl ${
             showThread ? 'flex' : 'hidden md:flex'
           }`}
         >
@@ -37,7 +46,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
               {backLabel}
             </button>
           )}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{thread}</div>
+          <ChatThreadPanel>{thread}</ChatThreadPanel>
         </section>
       </div>
     </div>
@@ -71,7 +80,7 @@ export function ChatThreadHeader({ title, subtitle, actions, presence }) {
 
 export function ChatThreadBody({ children }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 md:px-5">
+    <div className="flex h-0 min-h-0 flex-1 flex-col overflow-hidden px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 md:px-5">
       {children}
     </div>
   )

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Shield, MessageCircle } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import AdminStaffChatView from '../../components/chat/AdminStaffChatView'
-import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, CHAT_PAGE_SHELL_CLASS } from '../../components/chat/ChatWorkspace'
+import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatThreadPanel, CHAT_PAGE_SHELL_CLASS } from '../../components/chat/ChatWorkspace'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useChatPresence } from '../../hooks/useChatPresence'
@@ -47,6 +47,7 @@ export default function StaffAdminMessagesPage() {
   return (
     <PanelPageShell maxWidth="max-w-3xl" className={`w-full max-w-none md:max-w-4xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
+        className="shrink-0"
         title="Admin Mesajları"
         subtitle="Yönetim ekibi ile doğrudan iletişim"
         icon={MessageCircle}
@@ -61,7 +62,7 @@ export default function StaffAdminMessagesPage() {
       </div>
 
       <ChatPageFrame>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl">
+        <ChatThreadPanel className="overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl">
           <ChatThreadHeader
             title="Admin"
             subtitle="Yönetim ekibi"
@@ -77,7 +78,7 @@ export default function StaffAdminMessagesPage() {
               remoteName="Admin"
             />
           </ChatThreadBody>
-        </div>
+        </ChatThreadPanel>
       </ChatPageFrame>
     </PanelPageShell>
   )

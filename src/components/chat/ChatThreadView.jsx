@@ -54,7 +54,7 @@ export default function ChatThreadView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {live && !readOnly && (
         <div className="mb-2 hidden shrink-0 items-center gap-2 rounded-full bg-sage-50 px-3 py-1 sm:flex sm:text-xs font-semibold text-sage-700">
           <Radio className="h-3.5 w-3.5 animate-pulse" />
@@ -107,7 +107,7 @@ export default function ChatThreadView({
       </div>
 
       {!readOnly && !disabled && (
-        <div className="mt-2 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-2 sm:mt-3 sm:pt-3">
+        <div className="relative z-10 mt-2 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-2 sm:mt-3 sm:pt-3">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

@@ -489,6 +489,7 @@ export default function AdminMessagesPage() {
   return (
     <PanelPageShell maxWidth="max-w-6xl" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
+        className="shrink-0"
         title="Mesajlar"
         subtitle={showThread && !isWide ? undefined : 'Personel ile iletişim ve danışan sohbet denetimi'}
         icon={MessageCircle}
@@ -496,7 +497,7 @@ export default function AdminMessagesPage() {
         compact={showThread && !isWide}
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap gap-2">
         <TabLink to="/admin/messages" active={!isAudit && !isCollab}>Personel Sohbetleri</TabLink>
         <TabLink to="/admin/messages/audit" active={isAudit}>Danışan Denetimi</TabLink>
         <TabLink to="/admin/messages/collab" active={isCollab}>Koç–Diyetisyen</TabLink>

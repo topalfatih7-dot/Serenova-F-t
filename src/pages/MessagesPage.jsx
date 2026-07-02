@@ -187,6 +187,7 @@ export default function MessagesPage() {
   return (
     <PanelPageShell maxWidth="max-w-6xl" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
+        className="shrink-0"
         title="Mesajlar"
         subtitle={showThread && !isWide ? undefined : 'Yalnızca size atanmış koç ve diyetisyeninizle — mesajlar kayıt altındadır'}
         icon={MessageCircle}
