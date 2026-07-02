@@ -1,10 +1,13 @@
 import { ArrowLeft } from 'lucide-react'
 
-/** Mesaj sayfalarında PanelPageShell — viewport yüksekliğini doldurur, içerik kaydırılır. */
-export const CHAT_PAGE_SHELL_CLASS = 'flex h-0 min-h-0 flex-1 flex-col gap-3 space-y-0 overflow-hidden md:gap-4'
+/** Mesaj sayfalarında PanelPageShell — viewport yüksekliğini doldurur, içerik kaydırılır. PanelPageShell'e spacing="" ile birlikte kullanılır. */
+export const CHAT_PAGE_SHELL_CLASS = 'flex h-0 min-h-0 flex-1 flex-col gap-3 overflow-hidden md:gap-4'
 
-/** ChatWorkspace sarmalayıcısı — kalan yüksekliği mesaj listesine bırakır. */
-export const CHAT_PAGE_FRAME_CLASS = 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden'
+/**
+ * ChatWorkspace sarmalayıcısı — kalan yüksekliği mesaj listesine bırakır.
+ * max-h tavanı: üst zincirde bir kısıt kırılsa bile sohbet asla viewport'u aşamaz.
+ */
+export const CHAT_PAGE_FRAME_CLASS = 'flex h-0 min-h-0 max-h-[calc(100dvh-8rem)] flex-1 flex-col overflow-hidden'
 
 /** Sohbet sütunu — başlık + programlar sabit, mesaj gövdesi kalan yüksekliği alır. */
 export function ChatThreadPanel({ children, className = '' }) {

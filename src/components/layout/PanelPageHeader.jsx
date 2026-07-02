@@ -57,13 +57,13 @@ export function PanelChip({ active, onClick, children, accent = 'brand' }) {
   )
 }
 
-export function PanelPageShell({ children, className = '', maxWidth = 'max-w-5xl', ...rest }) {
+export function PanelPageShell({ children, className = '', maxWidth = 'max-w-5xl', spacing = 'space-y-6', ...rest }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className={`mx-auto ${maxWidth} space-y-6 ${className}`}
+      className={`mx-auto ${maxWidth} ${spacing} ${className}`}
       {...rest}
     >
       {children}

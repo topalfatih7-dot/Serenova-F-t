@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
@@ -35,11 +36,17 @@ function notificationBody(n) {
 
 /**
  * Yeni bildirimleri algılar; toast, ses ve tarayıcı bildirimi tetikler.
- * Tüm üye panelinde (NotificationsPage dahil) App seviyesinde çalışır.
+ *
+ * Kurallar:
+ * - Girişteki mevcut bildirimler (okunmuş/okunmamış) hiçbir zaman uyarı üretmez;
+ *   yalnızca oturum sırasında GELEN bildirimler uyarır (rozetler ayrıca çalışır).
+ * - Kullanıcı ilgili sohbeti o an görüntülüyorsa chat bildirimi gösterilmez.
+ * - Chat tipinde ses useIncomingChatSound tarafından yönetilir (çift ses olmaz).
  */
 export default function useNotificationAlerts({ enabled = true } = {}) {
   const { notifications, isAuthenticated, settings, user } = useApp()
   const { toast } = useToast()
+  const location = useLocation()
   const permissionRequestedRef = useRef(false)
   const userId = user?.id
 
@@ -59,23 +66,29 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
   }, [enabled, isAuthenticated, settings])
 
   useEffect(() => {
-    if (!enabled || !isAuthenticated || !userId || !notifications?.length) return
+    if (!enabled || !isAuthenticated || !userId) return
 
     const seen = getSeenSet(userId)
+    const list = notifications || []
 
+    // İlk yükleme: mevcut bildirimler geçmiştir — boş liste de bootstrap sayılır,
+    // aksi halde ilk gelen bildirim sessizce yutulur.
     if (!bootstrappedUsers.has(userId)) {
-      notifications.forEach((n) => seen.add(n.id))
       bootstrappedUsers.add(userId)
+      list.forEach((n) => seen.add(n.id))
       return
     }
 
     const pushEnabled = isPushNotificationEnabled(settings)
     const soundEnabled = isNotificationSoundEnabled(settings)
 
-    notifications.forEach((n) => {
+    list.forEach((n) => {
       if (seen.has(n.id)) return
       seen.add(n.id)
       if (n.read) return
+
+      // Kullanıcı o sohbeti zaten açık görüntülüyorsa uyarıya gerek yok.
+      if (n.type === 'chat' && n.staffRole && location.pathname === `/messages/${n.staffRole}`) return
 
       const body = notificationBody(n)
       const variant = TOAST_BY_TYPE[n.type] || 'info'
@@ -89,5 +102,5 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
         showBrowserNotification(n.title, { body })
       }
     })
-  }, [enabled, notifications, isAuthenticated, toast, settings, userId])
+  }, [enabled, notifications, isAuthenticated, toast, settings, userId, location.pathname])
 }

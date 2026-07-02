@@ -77,7 +77,7 @@ export default function AppShell() {
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-dvh overflow-hidden">
       <NoIndexHead />
       <Sidebar />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

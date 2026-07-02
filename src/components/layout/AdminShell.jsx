@@ -55,7 +55,7 @@ export default function AdminShell() {
   }))
 
   return (
-    <div className="admin-panel-bg relative flex min-h-screen overflow-hidden">
+    <div className="admin-panel-bg relative flex h-dvh overflow-hidden">
       <NoIndexHead />
       <AnimatedBackground emojis={ADMIN_EMOJIS} accent="admin" />
       <aside className="relative hidden w-56 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm md:flex lg:w-64">
@@ -65,7 +65,7 @@ export default function AdminShell() {
             Admin Panel
           </span>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
           {navWithBadges.map((item) => (
             <NavLink
               key={item.to}

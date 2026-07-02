@@ -81,7 +81,7 @@ export default function StaffShell() {
   })), [staffUser.role, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount])
 
   return (
-    <div className="staff-panel-bg relative flex min-h-screen overflow-hidden">
+    <div className="staff-panel-bg relative flex h-dvh overflow-hidden">
       <NoIndexHead />
       <AnimatedBackground emojis={STAFF_EMOJIS} accent="staff" />
 
@@ -102,7 +102,7 @@ export default function StaffShell() {
             {resolveFirstName({ name: staffUser.name, email: staffUser.email, fallback: roleLabel })}
           </p>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
           {staffNav.map((item) => (
             <NavLink
               key={item.to}

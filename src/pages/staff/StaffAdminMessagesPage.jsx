@@ -45,7 +45,7 @@ export default function StaffAdminMessagesPage() {
   }
 
   return (
-    <PanelPageShell maxWidth="max-w-3xl" className={`w-full max-w-none md:max-w-4xl ${CHAT_PAGE_SHELL_CLASS}`}>
+    <PanelPageShell maxWidth="max-w-3xl" spacing="" className={`w-full max-w-none md:max-w-4xl ${CHAT_PAGE_SHELL_CLASS}`}>
       <PanelPageHeader
         className="shrink-0"
         title="Admin Mesajları"
