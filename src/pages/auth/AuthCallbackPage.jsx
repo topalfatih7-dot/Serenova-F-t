@@ -40,8 +40,10 @@ export default function AuthCallbackPage() {
 
     let active = true
 
+    const isOAuthFlow = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
+
     async function establishSession() {
-      return establishAuthSessionFromUrl(supabase)
+      return establishAuthSessionFromUrl(supabase, { waitMs: isOAuthFlow ? 6000 : 2500 })
     }
 
     // Doğrulama başarıya ulaştığında UI'ı hemen günceller; oturum yenileme arka planda
@@ -129,12 +131,19 @@ export default function AuthCallbackPage() {
 
         if (flow === 'login' || flow === 'signup') {
           recordSocialLogin().catch(() => {})
+          const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
+          if (!active) return
+          await refresh().catch(() => null)
+          if (!active) return
+          navigate(dest, { replace: true })
+          return
         }
 
         const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
         if (!active) return
+        await refresh().catch(() => null)
+        if (!active) return
         navigate(dest, { replace: true })
-        refresh().catch(() => {})
         return
       }
 
@@ -177,8 +186,13 @@ export default function AuthCallbackPage() {
   }, [phase, goPanel])
 
 
+  const isOAuthCallback = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
+
   const copy = {
-    loading: {
+    loading: isOAuthCallback ? {
+      title: 'Giriş tamamlanıyor…',
+      description: 'Google hesabınız doğrulandı, oturumunuz açılıyor.',
+    } : {
       title: 'E-postanız doğrulanıyor…',
       description: 'Lütfen bekleyin, işleminiz güvenli bir şekilde tamamlanıyor.',
     },

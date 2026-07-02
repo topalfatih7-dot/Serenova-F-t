@@ -56,8 +56,7 @@ export async function signInWithSocial(provider, opts = {}) {
 
   const options = { redirectTo }
   if (provider === 'google') {
-    options.queryParams = { access_type: 'offline' }
-    if (flow === 'signup') options.queryParams.prompt = 'select_account'
+    options.queryParams = { access_type: 'offline', prompt: 'select_account' }
   }
   if (provider === 'apple') {
     options.scopes = 'name email'

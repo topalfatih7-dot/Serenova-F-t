@@ -30,6 +30,7 @@ import MembershipDurationPicker from '../components/membership/MembershipDuratio
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser } from '../utils/memberProfile'
+import { supabase } from '../services/supabaseClient'
 const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
 
 const BENEFITS = [
@@ -195,12 +196,24 @@ export default function OnboardingPage() {
   const oauthPrefilledRef = useRef(false)
 
   useEffect(() => {
-    if (searchParams.get('oauth') === '1' && !isAuthenticated && !loading) {
-      navigate('/login', {
-        replace: true,
-        state: { message: 'Sosyal hesap bağlantısı için önce giriş yapın.' },
-      })
-    }
+    if (searchParams.get('oauth') !== '1' || isAuthenticated || loading) return
+    let cancelled = false
+    ;(async () => {
+      if (!supabase) return
+      for (let i = 0; i < 20; i += 1) {
+        if (cancelled) return
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) return
+        await new Promise((r) => setTimeout(r, 250))
+      }
+      if (!cancelled) {
+        navigate('/login', {
+          replace: true,
+          state: { message: 'Sosyal hesap bağlantısı için önce giriş yapın.' },
+        })
+      }
+    })()
+    return () => { cancelled = true }
   }, [searchParams, isAuthenticated, loading, navigate])
 
   useEffect(() => {

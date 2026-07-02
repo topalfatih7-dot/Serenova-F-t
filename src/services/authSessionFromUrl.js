@@ -16,6 +16,41 @@ function stripQueryKeys(keys) {
 export function stripAuthCodeFromUrl() { stripQueryKeys(['code']) }
 export function stripTokenHashFromUrl() { stripQueryKeys(['token_hash', 'type']) }
 
+/** detectSessionInUrl PKCE değişimini tamamlaması için kısa süre bekler (çift exchange yarışını önler). */
+function waitForDetectedSession(supabase, waitMs = 5000) {
+  return new Promise((resolve) => {
+    let settled = false
+    let subscription = null
+
+    const finish = (session) => {
+      if (settled) return
+      settled = true
+      subscription?.unsubscribe()
+      resolve(session?.user ? session : null)
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        finish(session)
+      }
+    })
+    subscription = data?.subscription
+
+    ;(async () => {
+      const started = Date.now()
+      while (!settled && Date.now() - started < waitMs) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) { finish(session); return }
+        await new Promise((r) => setTimeout(r, 150))
+      }
+      if (!settled) {
+        const { data: { session } } = await supabase.auth.getSession()
+        finish(session)
+      }
+    })()
+  })
+}
+
 /**
  * URL'deki her türlü Supabase auth parametresinden oturum kurar:
  *   1. token_hash + type  → verifyOtp  (özel şablon / magic-link)
@@ -45,9 +80,12 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = 
     return preExchange
   }
 
-  // 3) PKCE code (client-side resetPasswordForEmail ile oluşturulan code_verifier gerekli)
+  // 3) PKCE code — detectSessionInUrl ile yarışı önlemek için önce bekle, sonra manuel dene
   const code = params.get('code')
   if (code) {
+    const autoSession = await waitForDetectedSession(supabase, waitMs)
+    if (autoSession?.user) { stripAuthCodeFromUrl(); return autoSession }
+
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data?.session) { stripAuthCodeFromUrl(); return data.session }
   }
