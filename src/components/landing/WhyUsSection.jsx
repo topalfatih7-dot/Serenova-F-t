@@ -61,7 +61,7 @@ const WHY_ITEMS = [
     title: 'KVKK uyumlu güvenli platform',
     accent: 'from-cream-300 to-brand-400',
     description: 'Sağlık verileriniz uçtan uca şifreli, KVKK tam uyumlu altyapıda saklanır. Verileriniz üçüncü taraflarla asla paylaşılmaz.',
-    cta: { label: 'Gizlilik politikamız', to: '/kvkk' },
+    cta: { label: 'Gizlilik politikamız', to: '/legal/gizlilik-politikasi' },
   },
 ]
 

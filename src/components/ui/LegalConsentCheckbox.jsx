@@ -26,11 +26,11 @@ export default function LegalConsentCheckbox({ accepted, onChange, error, errorM
             : <Square className="h-8 w-8 text-cream-400" strokeWidth={2.25} />}
         </span>
         <span className="text-base leading-relaxed text-cream-800/85">
-          <Link to="/terms" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>
-            Kullanım Şartları
+          <Link to="/legal/uyelik-ve-abonelik-sozlesmesi" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>
+            Üyelik ve Abonelik Sözleşmesi
           </Link>
           {' '}ve{' '}
-          <Link to="/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>
+          <Link to="/legal/kvkk" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>
             KVKK Aydınlatma Metni
           </Link>
           {' '}kapsamında kişisel verilerimin işlenmesini kabul ediyorum.

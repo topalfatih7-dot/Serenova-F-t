@@ -114,9 +114,10 @@ export default function App() {
               <Route path="corporate" element={<CorporatePage />} />
               <Route path="corporate/apply" element={<CorporateApplicationPage />} />
               <Route path="team/:id" element={<StaffProfilePage />} />
-              <Route path="kvkk" element={<LegalDocumentPage slug="kvkk" />} />
-              <Route path="privacy" element={<LegalDocumentPage slug="privacy" />} />
-              <Route path="terms" element={<LegalDocumentPage slug="terms" />} />
+              <Route path="legal/:slug" element={<LegalDocumentPage />} />
+              <Route path="kvkk" element={<Navigate to="/legal/kvkk" replace />} />
+              <Route path="privacy" element={<Navigate to="/legal/gizlilik-politikasi" replace />} />
+              <Route path="terms" element={<Navigate to="/legal/uyelik-ve-abonelik-sozlesmesi" replace />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 

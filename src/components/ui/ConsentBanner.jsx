@@ -20,9 +20,9 @@ export default function ConsentBanner() {
           <p className="text-sm font-medium text-cream-900">Gizlilik ve KVKK</p>
           <p className="mt-1 text-xs text-cream-800/60">
             Deneyiminizi iyileştirmek için çerezler kullanıyoruz. Devam ederek{' '}
-            <Link to="/kvkk" className="font-medium text-brand-600 underline hover:text-brand-700">KVKK aydınlatma metnini</Link>
+            <Link to="/legal/kvkk" className="font-medium text-brand-600 underline hover:text-brand-700">KVKK aydınlatma metnini</Link>
             {' '}ve{' '}
-            <Link to="/privacy" className="font-medium text-brand-600 underline hover:text-brand-700">gizlilik politikasını</Link>
+            <Link to="/legal/gizlilik-politikasi" className="font-medium text-brand-600 underline hover:text-brand-700">gizlilik politikasını</Link>
             {' '}kabul etmiş olursunuz.
           </p>
           <button

@@ -13,30 +13,30 @@ const fadeIn = {
 
 const LEGAL_TRUST_ITEMS = [
   {
-    to: '/kvkk',
+    to: '/legal/kvkk',
     icon: Shield,
     label: 'KVKK Uyumlu',
     sub: 'Aydınlatma metni',
     accent: 'from-brand-100 to-brand-50 text-brand-600 group-hover:from-brand-500 group-hover:to-brand-600 group-hover:text-white',
   },
   {
-    to: '/privacy',
+    to: '/legal/gizlilik-politikasi',
     icon: Lock,
     label: 'Gizlilik Politikası',
     sub: '256-bit SSL güvenliği',
     accent: 'from-sage-100 to-sage-50 text-sage-700 group-hover:from-sage-500 group-hover:to-sage-600 group-hover:text-white',
   },
   {
-    to: '/terms',
+    to: '/legal/uyelik-ve-abonelik-sozlesmesi',
     icon: FileText,
-    label: 'Kullanım Koşulları',
+    label: 'Üyelik Sözleşmesi',
     sub: 'Üyelik ve hizmet şartları',
     accent: 'from-amber-100 to-amber-50 text-amber-700 group-hover:from-amber-500 group-hover:to-amber-600 group-hover:text-white',
   },
   {
-    to: '/terms',
+    to: '/legal/mesafeli-hizmet-sozlesmesi',
     icon: Scale,
-    label: 'Yasal Bilgilendirme',
+    label: 'Mesafeli Hizmet',
     sub: 'Mesafeli satış ve cayma',
     accent: 'from-cream-200 to-cream-100 text-cream-800 group-hover:from-cream-800 group-hover:to-cream-900 group-hover:text-white',
   },

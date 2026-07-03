@@ -1,4 +1,17 @@
 import { BRAND } from './brand'
+
+const LEGAL_SEO_SLUGS = [
+  'kvkk', 'kvkk-acik-riza-metni', 'gizlilik-politikasi', 'cerez-politikasi',
+  'saglik-verisi-isleme-bilgilendirmesi', 'veri-saklama-ve-imha-politikasi', 'yapay-zeka-kullanim-politikasi',
+  'uyelik-ve-abonelik-sozlesmesi', 'mesafeli-hizmet-sozlesmesi', 'iptal-ve-iade-politikasi',
+  'topluluk-kurallari', 'saglik-sorumluluk-reddi', 'antrenor-hizmet-standartlari', 'diyetisyen-hizmet-standartlari',
+]
+
+const LEGAL_ROUTE_ENTRIES = LEGAL_SEO_SLUGS.map((slug) => ({
+  path: `/legal/${slug}`,
+  changefreq: 'yearly',
+  priority: '0.4',
+}))
 export function getSiteUrl() {
   const fromEnv = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
   if (fromEnv) return fromEnv
@@ -124,9 +137,7 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/corporate', changefreq: 'monthly', priority: '0.7' },
   { path: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
   { path: '/team/apply', changefreq: 'monthly', priority: '0.6' },
-  { path: '/kvkk', changefreq: 'yearly', priority: '0.4' },
-  { path: '/privacy', changefreq: 'yearly', priority: '0.4' },
-  { path: '/terms', changefreq: 'yearly', priority: '0.4' },
+  ...LEGAL_ROUTE_ENTRIES,
 ]
 
 export const PAGE_SEO = {
@@ -211,7 +222,17 @@ export const PAGE_SEO = {
     description: `${BRAND.name} kişisel verilerin korunması ve KVKK aydınlatma metni.`,
     keywords: 'KVKK, kişisel veriler, aydınlatma metni, gizlilik',
   },
+  '/legal/kvkk': {
+    title: 'KVKK Aydınlatma Metni',
+    description: `${BRAND.name} kişisel verilerin korunması ve KVKK aydınlatma metni.`,
+    keywords: 'KVKK, kişisel veriler, aydınlatma metni, gizlilik',
+  },
   '/privacy': {
+    title: 'Gizlilik Politikası',
+    description: `${BRAND.name} gizlilik politikası ve çerez kullanımı hakkında bilgi.`,
+    keywords: 'gizlilik politikası, çerezler, veri güvenliği',
+  },
+  '/legal/gizlilik-politikasi': {
     title: 'Gizlilik Politikası',
     description: `${BRAND.name} gizlilik politikası ve çerez kullanımı hakkında bilgi.`,
     keywords: 'gizlilik politikası, çerezler, veri güvenliği',
@@ -220,6 +241,11 @@ export const PAGE_SEO = {
     title: 'Kullanım Koşulları',
     description: `${BRAND.name} platform kullanım koşulları ve üyelik sözleşmesi.`,
     keywords: 'kullanım koşulları, üyelik sözleşmesi, şartlar',
+  },
+  '/legal/uyelik-ve-abonelik-sozlesmesi': {
+    title: 'Üyelik ve Abonelik Sözleşmesi',
+    description: `${BRAND.name} üyelik ve abonelik sözleşmesi.`,
+    keywords: 'üyelik sözleşmesi, abonelik, kullanım koşulları',
   },
   '/reset-password': {
     title: 'Yeni Şifre Belirle',

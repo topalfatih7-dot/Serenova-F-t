@@ -8,6 +8,7 @@ const TEAM_LIST = new Set(['/team/coaches', '/team/dietitians', '/team/doctors']
 function isDynamicPublicRoute(pathname) {
   if (pathname.startsWith('/blog/') && pathname !== '/blog') return true
   if (pathname.startsWith('/team/') && !TEAM_LIST.has(pathname)) return true
+  if (pathname.startsWith('/legal/')) return true
   return false
 }
 

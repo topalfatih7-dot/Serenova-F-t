@@ -816,6 +816,12 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [reloadRemote])
 
+  const reassignExerciseCategory = useCallback(async (fromCategory, toCategory) => {
+    const r = await sb.reassignExerciseCategory(fromCategory, toCategory)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const resolveStaffApplication = useCallback(async (application, approve, adminNote = '') => {
     const r = await sb.resolveStaffApplication(application, approve, adminNote)
     if (r.success) await reloadRemote()
@@ -1164,6 +1170,7 @@ export function AppProvider({ children }) {
     addExercise,
     editExercise,
     removeExercise,
+    reassignExerciseCategory,
     resolveStaffApplication,
     resolveCorporateApplication,
     updateContactInquiryStatus,
@@ -1279,6 +1286,7 @@ export function AppProvider({ children }) {
     addExercise,
     editExercise,
     removeExercise,
+    reassignExerciseCategory,
     resolveStaffApplication,
     resolveCorporateApplication,
     updateContactInquiryStatus,

@@ -1373,6 +1373,16 @@ export async function removeExercise(id) {
   await supabase.from('exercises').delete().eq('id', id)
 }
 
+export async function reassignExerciseCategory(fromCategory, toCategory) {
+  const payload = { category: toCategory, body_part: toCategory }
+  let { error } = await supabase.from('exercises').update(payload).eq('category', fromCategory)
+  if (isMissingExerciseColumnError(error)) {
+    ;({ error } = await supabase.from('exercises').update({ category: toCategory }).eq('category', fromCategory))
+  }
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 // --------------------------- staff applications ---------------------------
 export async function uploadStaffApplicationDoc(file) {
   if (!file) return { success: false, error: 'Dosya seçilmedi' }

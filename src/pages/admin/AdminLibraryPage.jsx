@@ -3,17 +3,18 @@ import { Plus, Search, Edit, Trash2, Dumbbell, Upload, Loader2 } from 'lucide-re
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import VideoPlayer from '../../components/ui/VideoPlayer'
-import ExerciseCategoryChips from '../../components/library/ExerciseCategoryChips'
-import { EXERCISE_CATEGORIES, EXERCISE_CATEGORY_ALL } from '../../data/exerciseCategories'
+import ExerciseCategorySelect from '../../components/library/ExerciseCategorySelect'
+import ExerciseCategoryManager from '../../components/library/ExerciseCategoryManager'
+import { EXERCISE_CATEGORY_ALL } from '../../data/exerciseCategories'
+import { useExerciseCategories } from '../../hooks/useExerciseCategories'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 
-const EMPTY = { name: '', category: 'Tüm Vücut', description: '', videoUrl: '' }
-
-function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
+function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categories }) {
   const { uploadExerciseVideo } = useApp()
   const { toast } = useToast()
-  const [form, setForm] = useState(initial || EMPTY)
+  const defaultCategory = categories[0] || 'Tüm Vücut'
+  const [form, setForm] = useState(initial || { name: '', category: defaultCategory, description: '', videoUrl: '' })
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
@@ -34,6 +35,7 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
 
   const submit = () => {
     if (!form.name.trim()) { setError('Hareket adı gerekli.'); return }
+    if (!form.category) { setError('Hareket tipi seçin.'); return }
     setError('')
     onSubmit(form)
   }
@@ -42,9 +44,12 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
     <Modal open={open} onClose={onClose} title={isEdit ? 'Hareketi Düzenle' : 'Yeni Hareket Ekle'} size="lg">
       <div className="space-y-4">
         <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Hareket adı (ör. Squat)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-        <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm">
-          {EXERCISE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-cream-800/55">Hareket tipi</label>
+          <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm">
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
         <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Hareketin nasıl yapılacağına dair açıklama..." rows={4} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
         <div className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-2 text-sm font-semibold text-cream-900">Video</p>
@@ -66,6 +71,7 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
 
 export default function AdminLibraryPage() {
   const { exercises, addExercise, editExercise, removeExercise } = useApp()
+  const { categories } = useExerciseCategories()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
@@ -75,9 +81,7 @@ export default function AdminLibraryPage() {
 
   const filtered = useMemo(() => (exercises || []).filter((e) => {
     const q = search.trim().toLowerCase()
-    const matchesSearch = !q
-      || e.name.toLowerCase().includes(q)
-      || (e.category || '').toLowerCase().includes(q)
+    const matchesSearch = !q || e.name.toLowerCase().includes(q)
     const matchesCategory = category === EXERCISE_CATEGORY_ALL || e.category === category
     return matchesSearch && matchesCategory
   }), [exercises, search, category])
@@ -108,12 +112,18 @@ export default function AdminLibraryPage() {
         </button>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
-        <input type="text" placeholder="Hareket veya kategori ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300" />
-      </div>
+      <ExerciseCategoryManager exercises={exercises} />
 
-      <ExerciseCategoryChips value={category} onChange={setCategory} />
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="relative min-w-[200px] flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
+          <input type="text" placeholder="Hareket adı ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300" />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-cream-800/55">Hareket tipi</label>
+          <ExerciseCategorySelect value={category} onChange={setCategory} />
+        </div>
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -140,8 +150,8 @@ export default function AdminLibraryPage() {
         </div>
       )}
 
-      {addOpen && <ExerciseFormModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />}
-      {editTarget && <ExerciseFormModal key={editTarget.id} open={!!editTarget} onClose={() => setEditTarget(null)} onSubmit={handleEdit} initial={editTarget} isEdit />}
+      {addOpen && <ExerciseFormModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} categories={categories} />}
+      {editTarget && <ExerciseFormModal key={editTarget.id} open={!!editTarget} onClose={() => setEditTarget(null)} onSubmit={handleEdit} initial={editTarget} isEdit categories={categories} />}
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Hareketi Sil">
         <p className="text-sm text-cream-800/70"><strong>{deleteTarget?.name}</strong> hareketini silmek istediğinize emin misiniz?</p>

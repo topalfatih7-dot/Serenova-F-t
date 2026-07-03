@@ -1,0 +1,23 @@
+export default {
+  slug: 'gizlilik-politikasi',
+  path: '/legal/gizlilik-politikasi',
+  title: 'Gizlilik Politikası',
+  seoTitle: 'Gizlilik Politikası',
+  seoDescription: 'Yeni Form gizlilik politikası — resmi metin ve bilgilendirme.',
+  updatedAt: '2026-07-03',
+  sections: [
+    { heading: '1. Amaç', body: 'Bu Gizlilik Politikası, YeniForm tarafından sunulan internet sitesi, mobil uygulama ve bağlantılı dijital hizmetleri kullanan kullanıcıların kişisel bilgilerinin gizliliğinin korunmasına ilişkin temel ilkeleri açıklamak amacıyla hazırlanmıştır.\nYeniForm, kullanıcılarının güvenini esas alır ve kişisel bilgilerin güvenliğinin sağlanması için uygun teknik ve idari tedbirleri uygulamayı hedefler.' },
+    { heading: '2. Kapsam', body: 'Bu politika;\nİnternet sitesi\nMobil uygulama\nPremium üyelik hizmetleri\nOnline danışmanlık hizmetleri\nYapay zekâ destekli analiz özellikleri\nMüşteri destek hizmetleri\nkapsamında gerçekleştirilen veri işleme faaliyetlerine ilişkin genel gizlilik yaklaşımını açıklar.' },
+    { heading: '3. Toplanan Bilgiler', body: 'Hizmetlerin sunulması sırasında aşağıdaki bilgi kategorileri işlenebilir:\nKimlik Bilgileri\nAd\nSoyad\nDoğum tarihi\nİletişim Bilgileri\nTelefon\nE-posta\nHesap Bilgileri\nKullanıcı adı\nŞifre (şifrelenmiş olarak)\nOturum kayıtları\nKullanım Bilgileri\nUygulama kullanım hareketleri\nTercihler\nGünlük kayıtlar\nHedefler\nİlerleme verileri\nSağlık Bilgileri\nKullanıcının hizmet kapsamında paylaşmayı tercih ettiği bilgiler.' },
+    { heading: '4. Bilgiler Hangi Amaçlarla Kullanılır?', body: 'Bilgiler aşağıdaki amaçlarla kullanılabilir:\nKullanıcı hesabının oluşturulması\nPremium üyeliklerin yönetilmesi\nBeslenme ve egzersiz planlarının kişiselleştirilmesi\nKullanıcı desteği sağlanması\nSistem güvenliğinin sağlanması\nHata tespiti\nHizmet kalitesinin geliştirilmesi\nİstatistiksel analizler\nYasal yükümlülüklerin yerine getirilmesi' },
+    { heading: '5. Gizlilik İlkeleri', body: 'YeniForm aşağıdaki temel ilkelere bağlı kalmayı amaçlar:\nGereğinden fazla veri toplamamaya özen gösterir.\nVerileri yalnızca belirlenen amaçlar için kullanır.\nYetkisiz erişimi önlemeye yönelik güvenlik tedbirleri uygular.\nGerektiğinde verileri anonimleştirir veya siler.\nKullanıcıların gizliliğine saygı gösterir.' },
+    { heading: '6. Hesap Güvenliği', body: 'Kullanıcı;\nŞifresini gizli tutmalıdır.\nHesabını üçüncü kişilerle paylaşmamalıdır.\nYetkisiz erişim şüphesinde şifresini değiştirmelidir.\nGüçlü parola kullanmalıdır.' },
+    { heading: '7. Teknik Güvenlik Önlemleri', body: 'YeniForm’un güvenlik yaklaşımı kapsamında aşağıdaki önlemler uygulanabilir:\nSSL/TLS ile veri iletiminin korunması\nErişim yetkilendirme mekanizmaları\nKimlik doğrulama süreçleri\nYedekleme sistemleri\nGünlük (log) kayıtlarının tutulması\nYazılım güncellemeleri\nGüvenlik izleme süreçleri' },
+    { heading: '8. Üçüncü Taraf Hizmet Sağlayıcıları', body: 'YeniForm;\nBarındırma (hosting)\nBulut altyapısı\nÖdeme hizmetleri\nAnalitik hizmetleri\nE-posta gönderim hizmetleri\ngibi alanlarda üçüncü taraf hizmet sağlayıcılarından yararlanabilir.\nBu hizmet sağlayıcılarıyla paylaşılan bilgiler, ilgili hizmetin sunulması için gerekli olduğu ölçüyle sınırlı tutulur.' },
+    { heading: '9. Yapay Zekâ Destekli Özellikler', body: 'YeniForm, kullanıcı deneyimini geliştirmek amacıyla yapay zekâ destekli analiz ve öneri araçlarından yararlanabilir.\nBu araçlar tarafından oluşturulan öneriler destekleyici niteliktedir ve sağlık profesyoneli değerlendirmesinin yerine geçmez.' },
+    { heading: '10. Kullanıcının Sorumlulukları', body: 'Kullanıcı;\nDoğru bilgi vermekten,\nHesap güvenliğini sağlamaktan,\nKendi cihaz güvenliğini korumaktan,\nGüncel iletişim bilgileri kullanmaktan\nsorumludur.' },
+    { heading: '11. Saklama Süreleri', body: 'Bilgiler;\nHizmet süresi boyunca,\nYasal yükümlülüklerin gerektirdiği süre boyunca,\nOlası hukuki süreçler dikkate alınarak gerekli olduğu ölçüde\nsaklanabilir.' },
+    { heading: '12. Politika Güncellemeleri', body: 'YeniForm, mevzuat değişiklikleri veya hizmet modelindeki değişiklikler doğrultusunda bu politikayı güncelleyebilir.\nGüncel sürüm internet sitesi ve mobil uygulamada yayımlandığı tarihte yürürlüğe girer.' },
+    { heading: '13. İletişim', body: 'Gizlilik Politikası ile ilgili sorularınız için:\nE-posta: destek@yeniform.com\nAdres: …………………………………………….\nTelefon: …………………………………………….' },
+  ],
+}

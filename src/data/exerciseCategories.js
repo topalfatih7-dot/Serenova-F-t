@@ -1,5 +1,5 @@
-/** Hareket kütüphanesi kategori listesi — admin ekleme ve üye filtreleme. */
-export const EXERCISE_CATEGORIES = [
+/** Varsayılan hareket tipleri — veritabanında taxonomy yoksa kullanılır. */
+export const DEFAULT_EXERCISE_CATEGORIES = [
   'Tüm Vücut',
   'Üst Vücut',
   'Alt Vücut',
@@ -15,3 +15,6 @@ export const EXERCISE_CATEGORIES = [
 ]
 
 export const EXERCISE_CATEGORY_ALL = 'Tümü'
+
+/** @deprecated use useExerciseCategories() */
+export const EXERCISE_CATEGORIES = DEFAULT_EXERCISE_CATEGORIES

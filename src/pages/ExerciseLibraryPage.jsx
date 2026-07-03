@@ -3,7 +3,7 @@ import { Search, PlayCircle, Dumbbell } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
-import ExerciseCategoryChips from '../components/library/ExerciseCategoryChips'
+import ExerciseCategorySelect from '../components/library/ExerciseCategorySelect'
 import { EXERCISE_CATEGORY_ALL } from '../data/exerciseCategories'
 import { useApp } from '../context/AppContext'
 
@@ -15,9 +15,7 @@ export default function ExerciseLibraryPage() {
 
   const filtered = useMemo(() => (exercises || []).filter((e) => {
     const q = search.trim().toLowerCase()
-    const matchesSearch = !q
-      || e.name.toLowerCase().includes(q)
-      || (e.category || '').toLowerCase().includes(q)
+    const matchesSearch = !q || e.name.toLowerCase().includes(q)
     const matchesCategory = category === EXERCISE_CATEGORY_ALL || e.category === category
     return matchesSearch && matchesCategory
   }), [exercises, search, category])
@@ -29,21 +27,25 @@ export default function ExerciseLibraryPage() {
         <p className="mt-1 text-sm text-cream-800/60">Doğru formla çalışmak için hareket videolarını izleyin.</p>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
-        <input
-          type="text"
-          placeholder="Hareket ara..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
-        />
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="relative min-w-[200px] flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
+          <input
+            type="text"
+            placeholder="Hareket adı ara..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-cream-800/55">Hareket tipi</label>
+          <ExerciseCategorySelect value={category} onChange={setCategory} />
+        </div>
       </div>
 
-      <ExerciseCategoryChips value={category} onChange={setCategory} />
-
       {filtered.length === 0 ? (
-        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama veya kategori filtresini değiştirin." />
+        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama veya tip filtresini değiştirin." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((ex) => (

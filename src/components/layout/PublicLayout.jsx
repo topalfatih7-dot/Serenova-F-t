@@ -11,6 +11,8 @@ import PublicRouteSeo from '../seo/PublicRouteSeo'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 import { scrollToContactSection } from '../../utils/scrollToContact'
+import { LEGAL_FOOTER_PARAGRAPHS } from '../../data/legalDocuments'
+import { LegalFooterParagraph } from '../legal/LegalFooterParagraph'
 
 const guestLinks = [
   { to: '/', label: 'Ana Sayfa', icon: Home },
@@ -285,11 +287,11 @@ export default function PublicLayout() {
         <div aria-hidden className="wellness-orb -left-20 top-0 h-64 w-64 bg-brand-500/20" />
         <div aria-hidden className="wellness-orb -right-16 bottom-0 h-72 w-72 bg-sage-500/15" />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2">
             <div>
               <p className="font-display text-xl font-bold text-white">{BRAND.name}</p>
               <p className="mt-3 text-sm leading-relaxed text-white/65">{BRAND.tagline}</p>
-              <p className="mt-4 text-xs text-white/40">Güvenli, destekleyici ve sürdürülebilir dönüşüm.</p>
+              <p className="mt-4 text-xs leading-relaxed text-white/40">Güvenli, destekleyici ve sürdürülebilir dönüşüm.</p>
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Platform</p>
@@ -307,20 +309,27 @@ export default function PublicLayout() {
                 )}
               </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white">Yasal Bilgilendirme</p>
-              <div className="mt-3 space-y-2 text-sm text-cream-100/60">
-                <Link to="/kvkk" className="block hover:text-white">KVKK Aydınlatma Metni</Link>
-                <Link to="/privacy" className="block hover:text-white">Gizlilik Politikası</Link>
-                <Link to="/terms" className="block hover:text-white">Kullanım Koşulları</Link>
-              </div>
-              <p className="mt-4 text-xs leading-relaxed text-cream-100/40">
-                Bu platform koçluk ve wellness hizmetidir; tıbbi teşhis veya tedavi sunmaz.
-                Beslenme önerileri genel rehberlik amaçlıdır. Sağlık sorunlarınız için doktorunuza danışın.
-              </p>
+          </div>
+          <div className="mt-10 border-t border-white/10 pt-8">
+            <p className="text-sm font-semibold text-white">Yasal Bilgilendirme</p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-3 lg:gap-6">
+              {LEGAL_FOOTER_PARAGRAPHS.map((block) => (
+                <LegalFooterParagraph
+                  key={block.intro}
+                  intro={block.intro}
+                  outro={block.outro}
+                  links={block.links}
+                  className="text-cream-100/60"
+                  linkClassName="text-cream-100/85 underline decoration-cream-100/25 underline-offset-2 transition hover:text-white hover:decoration-white/40"
+                />
+              ))}
             </div>
           </div>
-          <p className="mt-8 text-center text-xs text-cream-100/30">© 2026 {BRAND.name} · KVKK uyumlu</p>
+          <p className="mt-8 text-center text-xs text-cream-100/40">
+            Bu platform koçluk ve wellness hizmetidir; tıbbi teşhis veya tedavi sunmaz.
+            Beslenme önerileri genel rehberlik amaçlıdır. Sağlık sorunlarınız için doktorunuza danışın.
+          </p>
+          <p className="mt-4 text-center text-xs text-cream-100/30">© 2026 {BRAND.name} · KVKK uyumlu</p>
         </div>
       </footer>
       <ConsentBanner />

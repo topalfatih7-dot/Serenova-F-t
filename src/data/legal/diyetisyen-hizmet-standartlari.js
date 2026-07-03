@@ -1,0 +1,21 @@
+export default {
+  slug: 'diyetisyen-hizmet-standartlari',
+  path: '/legal/diyetisyen-hizmet-standartlari',
+  title: 'Diyetisyen Hizmet Standartları',
+  seoTitle: 'Diyetisyen Hizmet Standartları',
+  seoDescription: 'Yeni Form diyetisyen hizmet standartları — resmi metin ve bilgilendirme.',
+  updatedAt: '2026-07-03',
+  sections: [
+    { heading: '1. AMAÇ', body: 'Bu dokümanın amacı, YeniForm platformunda hizmet veren diyetisyenlerin kullanıcı deneyimini iyileştirmek, hizmet kalitesinde tutarlılığı desteklemek ve platform içerisinde uygulanması hedeflenen mesleki standartları tanımlamaktır.' },
+    { heading: '2. KAPSAM', body: 'Bu standartlar;\nTam zamanlı diyetisyenleri,\nSerbest çalışan diyetisyenleri,\nDanışmanlık hizmeti veren uzmanları,\nPlatform üzerinden çevrim içi hizmet sunan tüm beslenme uzmanlarını\nkapsamayı amaçlar.' },
+    { heading: '3. TEMEL İLKELER', body: 'Diyetisyenlerin aşağıdaki ilkelere uygun hareket etmesi beklenir:\nBilimsel temelli yaklaşımları esas almak,\nKullanıcılara saygılı ve tarafsız yaklaşmak,\nGizliliğe önem vermek,\nGüncel mesleki gelişmeleri takip etmeye özen göstermek,\nPlatform kurallarına uymak.' },
+    { heading: '4. KULLANICI İLETİŞİMİ', body: 'Hizmet sunumu sırasında;\nAçık ve anlaşılır iletişim kurulması,\nSaygılı bir dil kullanılması,\nAyrımcı veya aşağılayıcı ifadelerden kaçınılması,\nKullanıcı sorularının makul sürelerde yanıtlanması\nhedeflenir.' },
+    { heading: '5. BESLENME PLANLARI', body: 'Beslenme planlarının;\nKullanıcının beyan ettiği bilgiler dikkate alınarak hazırlanması,\nKişiselleştirilmeye çalışılması,\nGüncellenebilir olması,\nUygulanabilir öneriler içermesi\namaçlanır.' },
+    { heading: '6. SAĞLIK BİLGİLERİNİN KULLANIMI', body: 'Diyetisyenler;\nKullanıcının paylaştığı bilgileri yalnızca hizmet sunumu amacıyla değerlendirmeye,\nGerektiği ölçüde erişmeye,\nGizliliğe uygun hareket etmeye\nözen göstermelidir.' },
+    { heading: '7. ETİK İLKELER', body: 'Beklenen etik yaklaşım:\nÇıkar çatışmasından kaçınmak,\nBilimsel dayanağı olmayan iddialarda bulunmamak,\nKullanıcıyı yanıltabilecek vaatlerde bulunmamak,\nTicari baskı oluşturmamak.' },
+    { heading: '8. İLETİŞİM KAYITLARI', body: 'Platform üzerinden yapılan iletişimlerin, hizmet kalitesinin geliştirilmesi ve güvenliğin sağlanması amacıyla kayıt altına alınabileceği kullanıcıya bildirilebilir.' },
+    { heading: '9. ACİL SAĞLIK DURUMLARI', body: 'Diyetisyenler;\nAcil sağlık müdahalesi gerektirebilecek durumlarda kullanıcıyı uygun sağlık kuruluşuna yönlendirmeyi,\nPlatformun acil sağlık hizmeti sunmadığını hatırlatmayı\nesas almalıdır.' },
+    { heading: '10. KALİTE DEĞERLENDİRMESİ', body: 'YeniForm;\nKullanıcı geri bildirimlerini,\nHizmet performansını,\nKalite göstergelerini\nizleyerek platform hizmetlerini geliştirmeyi hedefleyebilir.' },
+    { heading: '11. GÜNCELLEME', body: 'Bu standartlar, hizmet modeli ve bilimsel gelişmeler doğrultusunda güncellenebilir.' },
+  ],
+}
