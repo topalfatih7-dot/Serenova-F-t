@@ -3,13 +3,10 @@ import { Plus, Search, Edit, Trash2, Dumbbell, Upload, Loader2 } from 'lucide-re
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import VideoPlayer from '../../components/ui/VideoPlayer'
+import ExerciseCategoryChips from '../../components/library/ExerciseCategoryChips'
+import { EXERCISE_CATEGORIES, EXERCISE_CATEGORY_ALL } from '../../data/exerciseCategories'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
-
-const CATEGORIES = [
-  'Tüm Vücut', 'Üst Vücut', 'Alt Vücut', 'Göğüs', 'Sırt',
-  'Omuz', 'Kol', 'Karın', 'Kalça', 'Bacak', 'Kardiyo', 'Esneme',
-]
 
 const EMPTY = { name: '', category: 'Tüm Vücut', description: '', videoUrl: '' }
 
@@ -46,7 +43,7 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit }) {
       <div className="space-y-4">
         <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Hareket adı (ör. Squat)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
         <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm">
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {EXERCISE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Hareketin nasıl yapılacağına dair açıklama..." rows={4} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
         <div className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
@@ -71,14 +68,19 @@ export default function AdminLibraryPage() {
   const { exercises, addExercise, editExercise, removeExercise } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  const filtered = useMemo(() => (exercises || []).filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    (e.category || '').toLowerCase().includes(search.toLowerCase()),
-  ), [exercises, search])
+  const filtered = useMemo(() => (exercises || []).filter((e) => {
+    const q = search.trim().toLowerCase()
+    const matchesSearch = !q
+      || e.name.toLowerCase().includes(q)
+      || (e.category || '').toLowerCase().includes(q)
+    const matchesCategory = category === EXERCISE_CATEGORY_ALL || e.category === category
+    return matchesSearch && matchesCategory
+  }), [exercises, search, category])
 
   const handleAdd = async (form) => {
     const r = await addExercise(form)
@@ -110,6 +112,8 @@ export default function AdminLibraryPage() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
         <input type="text" placeholder="Hareket veya kategori ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300" />
       </div>
+
+      <ExerciseCategoryChips value={category} onChange={setCategory} />
 
       {filtered.length === 0 ? (
         <EmptyState

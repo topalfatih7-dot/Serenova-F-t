@@ -66,9 +66,13 @@ export function inferFitnessLevelFromHealthTest(healthTest = {}) {
 export function inferNutritionPrefsFromHealthTest(healthTest = {}) {
   const ht = normalizeHealthTestForAnalysis(healthTest)
   const prefs = []
-  const allergies = String(ht.foodAllergies || '').toLowerCase()
-  if (allergies.includes('gluten')) prefs.push('gluten-free')
-  if (allergies.includes('laktoz') || allergies.includes('süt')) prefs.push('balanced')
+  const allergyText = [
+    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : ht.foodAllergies,
+    ht.foodAllergiesDetail,
+    ht.dietFoodAllergiesDetail,
+  ].filter(Boolean).join(' ').toLowerCase()
+  if (allergyText.includes('gluten')) prefs.push('gluten-free')
+  if (allergyText.includes('laktoz') || allergyText.includes('süt')) prefs.push('balanced')
   if ((ht.eatingHabits || []).includes('regular')) prefs.push('balanced')
   if (prefs.length === 0) prefs.push('balanced')
   return prefs

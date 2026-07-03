@@ -3,41 +3,47 @@ import { Search, PlayCircle, Dumbbell } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
-import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import ExerciseCategoryChips from '../components/library/ExerciseCategoryChips'
+import { EXERCISE_CATEGORY_ALL } from '../data/exerciseCategories'
 import { useApp } from '../context/AppContext'
 
 export default function ExerciseLibraryPage() {
   const { exercises } = useApp()
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
   const [active, setActive] = useState(null)
 
-  const filtered = useMemo(() => (exercises || []).filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    (e.category || '').toLowerCase().includes(search.toLowerCase()),
-  ), [exercises, search])
+  const filtered = useMemo(() => (exercises || []).filter((e) => {
+    const q = search.trim().toLowerCase()
+    const matchesSearch = !q
+      || e.name.toLowerCase().includes(q)
+      || (e.category || '').toLowerCase().includes(q)
+    const matchesCategory = category === EXERCISE_CATEGORY_ALL || e.category === category
+    return matchesSearch && matchesCategory
+  }), [exercises, search, category])
 
   return (
-    <PanelPageShell>
-      <PanelPageHeader
-        title="Hareket Kütüphanesi"
-        subtitle="Doğru formla çalışmak için hareket videolarını izleyin."
-        icon={Dumbbell}
-        accent="sage"
-      />
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-cream-900">Hareket Kütüphanesi</h1>
+        <p className="mt-1 text-sm text-cream-800/60">Doğru formla çalışmak için hareket videolarını izleyin.</p>
+      </div>
 
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500/60" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
         <input
           type="text"
           placeholder="Hareket ara..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-brand-200/60 bg-white/90 py-3 pl-10 pr-4 text-sm shadow-sm outline-none backdrop-blur transition focus:border-brand-400 focus:ring-2 focus:ring-brand-200/50"
+          className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
         />
       </div>
 
+      <ExerciseCategoryChips value={category} onChange={setCategory} />
+
       {filtered.length === 0 ? (
-        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama terimini değiştirin." />
+        <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama veya kategori filtresini değiştirin." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((ex) => (
@@ -45,7 +51,7 @@ export default function ExerciseLibraryPage() {
               key={ex.id}
               type="button"
               onClick={() => setActive(ex)}
-              className="group flex flex-col glass-card-solid p-5 text-left transition hover:scale-[1.02]"
+              className="group flex flex-col rounded-2xl border border-cream-200 bg-white p-5 text-left shadow-sm transition hover:border-brand-300 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">{ex.category}</span>
@@ -67,6 +73,6 @@ export default function ExerciseLibraryPage() {
           </div>
         )}
       </Modal>
-    </PanelPageShell>
+    </div>
   )
 }
