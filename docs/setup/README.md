@@ -12,6 +12,7 @@
 |--------|------|-------|
 | [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) | Veritabanı, Auth, RLS, admin | ✅ Temel kurulum |
 | [OAUTH_SETUP.md](./OAUTH_SETUP.md) | Google, Facebook, Apple (özet) | ⬜ Sağlayıcılar Dashboard'da |
+| [FACEBOOK_SETUP.md](./FACEBOOK_SETUP.md) | Facebook Login (detaylı) | ⬜ **Sırada** |
 | [APPLE_SETUP.md](./APPLE_SETUP.md) | Sign in with Apple (detaylı) | ⬜ **Ertelendi** |
 | [STRIPE_SETUP.md](./STRIPE_SETUP.md) | Ödeme, webhook, Vercel env | ⬜ Canlı anahtarlar |
 | [TELEGRAM_SETUP.md](./TELEGRAM_SETUP.md) | Bot, chat ID, bildirimler | Kısmen |
@@ -33,7 +34,7 @@
 |---------|--------|---------|
 | P0 | [STRIPE_SETUP.md](./STRIPE_SETUP.md) | Vercel'de `STRIPE_*` + `VITE_STRIPE_ENABLED=true` |
 | P0 | [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) | Admin şifresi değiştir, Leaked Password Protection |
-| P1 | [OAUTH_SETUP.md](./OAUTH_SETUP.md) | Google provider (Apple: [APPLE_SETUP.md](./APPLE_SETUP.md)) |
+| P1 | [OAUTH_SETUP.md](./OAUTH_SETUP.md) | Google + Facebook ([FACEBOOK_SETUP.md](./FACEBOOK_SETUP.md); Apple: [APPLE_SETUP.md](./APPLE_SETUP.md)) |
 | P1 | [TELEGRAM_SETUP.md](./TELEGRAM_SETUP.md) | Eksik chat ID / kanal ayarları |
 | P2 | [APPLE_SETUP.md](./APPLE_SETUP.md) | Apple Developer hesabı hazır olunca |
 | P2 | [SEO_SETUP.md](./SEO_SETUP.md) | Periyodik Search Console kontrolü |
@@ -67,6 +68,7 @@ docs/
     ├── README.md           ← bu dosya (indeks)
     ├── SUPABASE_SETUP.md
     ├── OAUTH_SETUP.md
+    ├── FACEBOOK_SETUP.md   ← Facebook detay
     ├── APPLE_SETUP.md      ← Apple detay (ertelendi)
     ├── STRIPE_SETUP.md
     ├── TELEGRAM_SETUP.md

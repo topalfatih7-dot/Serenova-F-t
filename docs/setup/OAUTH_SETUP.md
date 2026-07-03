@@ -68,24 +68,33 @@ Kısa özet:
 
 ## 4) Facebook
 
-1. [Meta for Developers](https://developers.facebook.com/) → Uygulama → Facebook Login
-2. Valid OAuth Redirect URIs = Supabase callback URL
-3. App ID ve App Secret → Supabase Facebook provider
-4. **Enable Facebook provider**
+Detaylı adımlar: **[FACEBOOK_SETUP.md](./FACEBOOK_SETUP.md)**
+
+Kısa özet:
+1. [Meta for Developers](https://developers.facebook.com/) → Uygulama oluştur → Facebook Login ekle
+2. **Valid OAuth Redirect URIs** = `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
+3. **Use cases** → `public_profile` + **`email`** (zorunlu)
+4. App ID ve App Secret → Supabase → Auth → Providers → Facebook
+5. **Enable Facebook provider**
+
+> Development modunda yalnızca uygulama rolü olan hesaplar giriş yapabilir. Canlı için Live moda geçin.
 
 ## 5) Uygulama akışı (eksik bilgi koruması)
 
 | Adım | Ne olur |
 |------|---------|
 | Google ile kayıt | OAuth → `/auth/callback` → telefon + **cinsiyet** eksikse `/onboarding?oauth=1` |
+| Facebook ile kayıt | Aynı akış (kurulum: `FACEBOOK_SETUP.md`) |
 | Apple ile kayıt | Aynı akış (Dashboard kurulumu: `APPLE_SETUP.md`) |
 | Profil tamamlama | Ad, telefon, **cinsiyet (Kadın/Erkek)**, KVKK onayı → plan seçimi → panel |
-| Google ile giriş (mevcut üye) | Doğrudan panele yönlendirme |
+| Sosyal giriş (mevcut üye) | Doğrudan panele yönlendirme |
 | E-posta kaydı | Mevcut 2 adımlı akış (değişmedi) |
 
 **OAuth ile gelmeyen zorunlu alanlar:** telefon, **cinsiyet**, KVKK onayı, üyelik planı.
 
 **Google'dan gelen:** e-posta, ad soyad (çoğu zaman), profil fotoğrafı URL (isteğe bağlı kullanılabilir).
+
+**Facebook'dan gelen:** e-posta (izin gerekir), ad soyad, profil fotoğrafı URL (çoğu zaman).
 
 ## 6) Test
 
@@ -93,7 +102,7 @@ Kısa özet:
 npm run dev
 ```
 
-1. `/onboarding` → **Google ile devam et**
+1. `/onboarding` → **Google** veya **Facebook ile devam et**
 2. Dönüşten sonra telefon + cinsiyet ekranını görün
 3. Tamamlayınca dashboard'a gidin
 4. Çıkış → `/login` → aynı hesapla tekrar giriş (tek tık)

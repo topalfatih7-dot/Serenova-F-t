@@ -61,6 +61,9 @@ export async function signInWithSocial(provider, opts = {}) {
   if (provider === 'apple') {
     options.scopes = 'name email'
   }
+  if (provider === 'facebook') {
+    options.scopes = 'email public_profile'
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({ provider, options })
   if (error) {
