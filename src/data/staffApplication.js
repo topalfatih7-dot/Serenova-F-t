@@ -100,15 +100,99 @@ export const COMPETENT_GROUPS = {
   },
 }
 
-export const OFFICIAL_COACHING_CERTIFICATES = [
-  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 1',
-  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 2',
-  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 3',
-  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 4',
-  'Gençlik ve Spor Bakanlığı Antrenörlük Belgesi — Kademe 5',
-  'Federasyon Antrenör Belgesi',
-  'Yok',
+export const OFFICIAL_COACHING_CERT_NONE = 'Yok'
+
+/** GSB Antrenör Eğitimi Yönetmeliği (RG 14.12.2019) — 5 kademe unvanları */
+export const COACHING_LICENSE_LEVELS = [
+  {
+    value: '1',
+    label: '1. Kademe — Yardımcı Antrenör',
+    short: 'Yardımcı Antrenör',
+    hint: 'Üst kademe antrenör nezaretinde spor faaliyetine yardımcı olma',
+  },
+  {
+    value: '2',
+    label: '2. Kademe — Temel Antrenör',
+    short: 'Temel Antrenör',
+    hint: 'Minikler ve yıldızlar kategorisinde antrenman planlama ve uygulama',
+  },
+  {
+    value: '3',
+    label: '3. Kademe — Kıdemli Antrenör',
+    short: 'Kıdemli Antrenör',
+    hint: 'Tüm yaş kategorileri ve milli takımlarda antrenman yönetimi',
+  },
+  {
+    value: '4',
+    label: '4. Kademe — Başantrenör',
+    short: 'Başantrenör',
+    hint: 'Orta vadeli program planlama, analiz ve sporcu kariyer planlaması',
+  },
+  {
+    value: '5',
+    label: '5. Kademe — Teknik Direktör',
+    short: 'Teknik Direktör',
+    hint: 'Koordinatörlük, uzun vadeli strateji ve federasyon düzeyi yönetim',
+  },
 ]
+
+/** GSB lisanslı federasyonlar — fitness/wellness koç başvuruları için öncelikli liste */
+export const COACHING_FEDERATIONS = [
+  { value: 'tvgfbf', label: 'Türkiye Vücut Geliştirme, Fitness ve Bilek Güreşi Federasyonu (TVGFBF)', short: 'TVGFBF' },
+  { value: 'jimnastik', label: 'Türkiye Jimnastik Federasyonu', short: 'TJF' },
+  { value: 'atletizm', label: 'Türkiye Atletizm Federasyonu', short: 'TAF' },
+  { value: 'yuzme', label: 'Türkiye Yüzme Federasyonu', short: 'TYF' },
+  { value: 'tenis', label: 'Türkiye Tenis Federasyonu', short: 'TTF' },
+  { value: 'basketbol', label: 'Türkiye Basketbol Federasyonu', short: 'TBF' },
+  { value: 'futbol', label: 'Türkiye Futbol Federasyonu', short: 'TFF' },
+  { value: 'voleybol', label: 'Türkiye Voleybol Federasyonu', short: 'TVF' },
+  { value: 'hentbol', label: 'Türkiye Hentbol Federasyonu', short: 'THF' },
+  { value: 'boks', label: 'Türkiye Boks Federasyonu', short: 'TBF (Boks)' },
+  { value: 'gures', label: 'Türkiye Güreş Federasyonu', short: 'TGF' },
+  { value: 'diger', label: 'Diğer GSB lisanslı federasyon', short: 'Diğer' },
+]
+
+/** @deprecated Eski chip listesi — yeni başvurularda federationCerts kullanılır */
+export const OFFICIAL_COACHING_CERTIFICATES = [
+  ...COACHING_LICENSE_LEVELS.map((l) => `GSB Antrenörlük Belgesi — ${l.label}`),
+  OFFICIAL_COACHING_CERT_NONE,
+]
+
+export function federationLabel(value, other = '') {
+  if (!value) return ''
+  if (value === 'diger') return other?.trim() || 'Diğer federasyon'
+  return COACHING_FEDERATIONS.find((f) => f.value === value)?.short
+    || COACHING_FEDERATIONS.find((f) => f.value === value)?.label
+    || value
+}
+
+export function coachingLevelLabel(value) {
+  const level = COACHING_LICENSE_LEVELS.find((l) => l.value === value)
+  return level ? level.label : `${value}. Kademe`
+}
+
+export function formatFederationCertEntry(entry) {
+  if (!entry?.federation || !(entry.levels || []).length) return ''
+  const fed = federationLabel(entry.federation, entry.federationOther)
+  const levels = [...entry.levels]
+    .sort((a, b) => Number(a) - Number(b))
+    .map((l) => coachingLevelLabel(l))
+    .join(', ')
+  return `${fed}: ${levels}`
+}
+
+export function federationCertsToLabels(federationCerts) {
+  return (federationCerts || []).map(formatFederationCertEntry).filter(Boolean)
+}
+
+export function getOfficialCoachingCertLabels(form) {
+  if (form?.noOfficialCoachingCert) return []
+  const fromFederation = federationCertsToLabels(form?.federationCerts)
+  if (fromFederation.length) return fromFederation
+  return (form?.officialCoachingCerts || []).filter((c) => c && c !== OFFICIAL_COACHING_CERT_NONE)
+}
+
+export const EMPTY_FEDERATION_CERT = { federation: '', federationOther: '', levels: [] }
 
 export const INTERNATIONAL_CERTIFICATES = [
   'NASM CPT', 'ACE CPT', 'ACSM CPT', 'NSCA CPT', 'NSCA CSCS',
@@ -170,6 +254,8 @@ export const EMPTY_STAFF_APPLICATION = {
   educationLevel: '',
   educationDepartment: '',
   educationGpa: '',
+  noOfficialCoachingCert: false,
+  federationCerts: [{ federation: 'tvgfbf', federationOther: '', levels: [] }],
   officialCoachingCerts: [],
   internationalCerts: [],
   branchCerts: [],
@@ -211,7 +297,8 @@ export function applicationToStaffPayload(app, tempPassword) {
       })
     }
     certificates = [
-      ...(d.officialCoachingCerts || []).filter((c) => c && c !== 'Yok').map((name) => ({ name, issuer: 'Resmi Antrenörlük', year: '' })),
+      ...federationCertsToLabels(d.federationCerts).map((name) => ({ name, issuer: 'GSB Federasyon Antrenörlük', year: '' })),
+      ...(d.officialCoachingCerts || []).filter((c) => c && c !== OFFICIAL_COACHING_CERT_NONE).map((name) => ({ name, issuer: 'Resmi Antrenörlük', year: '' })),
       ...(d.internationalCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Uluslararası', year: '' })),
       ...(d.branchCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Branş Sertifikası', year: '' })),
       ...certificates,
@@ -300,7 +387,19 @@ function coachStep3Errors(form) {
   const errors = []
   if (!form.educationLevel) errors.push('Eğitim düzeyi seçin')
   if (!form.educationDepartment?.trim()) errors.push('Bölüm bilgisi gerekli')
-  const hasOfficial = (form.officialCoachingCerts || []).some((c) => c !== 'Yok')
+  const hasOfficial = !form.noOfficialCoachingCert && (
+    (form.federationCerts || []).some((fc) => fc.federation && (fc.levels || []).length)
+    || (form.officialCoachingCerts || []).some((c) => c && c !== OFFICIAL_COACHING_CERT_NONE)
+  )
+  if (!form.noOfficialCoachingCert) {
+    const entries = form.federationCerts || []
+    if (!entries.length) errors.push('Federasyon antrenörlük bilgisi ekleyin veya “belgem yok” seçeneğini işaretleyin')
+    entries.forEach((fc, i) => {
+      if (!fc.federation) errors.push(`${i + 1}. federasyon kaydı için federasyon seçin`)
+      else if (fc.federation === 'diger' && !fc.federationOther?.trim()) errors.push(`${i + 1}. federasyon için federasyon adını yazın`)
+      else if (!(fc.levels || []).length) errors.push(`${i + 1}. federasyon kaydı için en az bir kademe seçin`)
+    })
+  }
   const hasIntl = (form.internationalCerts || []).some((c) => c !== OTHER_OPTION) || ((form.internationalCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.international?.trim())
   const hasBranch = (form.branchCerts || []).some((c) => c !== OTHER_OPTION) || ((form.branchCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.branch?.trim())
   if (!hasOfficial && !hasIntl && !hasBranch) errors.push('En az bir sertifika türü seçin')
@@ -385,6 +484,12 @@ export function buildStaffApplicationPayload(form) {
     educationLevel: form.educationLevel || '',
     educationDepartment: form.educationDepartment || '',
     educationGpa: form.educationGpa || '',
+    noOfficialCoachingCert: !!form.noOfficialCoachingCert,
+    federationCerts: (form.federationCerts || []).map((fc) => ({
+      federation: fc.federation || '',
+      federationOther: fc.federationOther || '',
+      levels: fc.levels || [],
+    })),
     officialCoachingCerts: form.officialCoachingCerts || [],
     internationalCerts: form.internationalCerts || [],
     branchCerts: form.branchCerts || [],

@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { BRAND } from '../config/brand'
 import { staffRoleLabel } from '../utils/staffRoles'
-import { EDUCATION_LEVELS } from '../data/staffApplication'
+import { EDUCATION_LEVELS, getOfficialCoachingCertLabels } from '../data/staffApplication'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
 
@@ -62,7 +62,7 @@ function buildCoachSections(d) {
       ${d.chronicDiseaseExamples ? `<p class="note">Kronik hastalık örnekleri: ${escapeHtml(d.chronicDiseaseExamples)}</p>` : ''}
     `),
     section('Eğitim', eduLine ? `<p>${escapeHtml(eduLine)}</p>` : ''),
-    section('Resmi Antrenörlük', tagList(d.officialCoachingCerts)),
+    section('GSB Federasyon Antrenörlük', tagList(getOfficialCoachingCertLabels(d))),
     section('Uluslararası Sertifikalar', `
       ${tagList(d.internationalCerts)}
       ${d.certOtherNotes?.international ? `<p class="note">Diğer: ${escapeHtml(d.certOtherNotes.international)}</p>` : ''}

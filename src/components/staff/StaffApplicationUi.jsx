@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, ChevronDown, Upload, Loader2, X, FileText, UserPlus } from 'lucide-react'
+import { Check, ChevronDown, Upload, Loader2, X, FileText, UserPlus, Plus, Trash2 } from 'lucide-react'
 import Modal from '../ui/Modal'
-import { toggleInList, OTHER_OPTION } from '../../data/staffApplication'
+import { toggleInList, OTHER_OPTION, COACHING_FEDERATIONS, COACHING_LICENSE_LEVELS, EMPTY_FEDERATION_CERT, getOfficialCoachingCertLabels } from '../../data/staffApplication'
 import { staffRoleLabel } from '../../utils/staffRoles'
 
 export const TONE_STYLES = {
@@ -252,6 +252,127 @@ export function BulkCertUpload({ files, uploading, onUpload, onRemove }) {
   )
 }
 
+const selectCls = 'w-full rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'
+
+export function FederationCertEditor({ federationCerts, noOfficialCoachingCert, onChange, onToggleNone }) {
+  const entries = federationCerts?.length ? federationCerts : [EMPTY_FEDERATION_CERT]
+
+  const updateEntry = (index, patch) => {
+    const next = entries.map((entry, i) => (i === index ? { ...entry, ...patch } : entry))
+    onChange(next)
+  }
+
+  const addEntry = () => onChange([...entries, { ...EMPTY_FEDERATION_CERT }])
+
+  const removeEntry = (index) => {
+    if (entries.length <= 1) {
+      onChange([{ ...EMPTY_FEDERATION_CERT }])
+      return
+    }
+    onChange(entries.filter((_, i) => i !== index))
+  }
+
+  const toggleLevel = (index, levelValue) => {
+    const current = entries[index]?.levels || []
+    const levels = current.includes(levelValue)
+      ? current.filter((l) => l !== levelValue)
+      : [...current, levelValue]
+    updateEntry(index, { levels })
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs leading-relaxed text-cream-800/60">
+        GSB Antrenör Eğitimi Yönetmeliği kapsamında ilgili federasyondan alınan antrenörlük belgesi ve kademe bilgilerini girin.
+        Fitness branşında belgeler genellikle TVGFBF üzerinden düzenlenir.
+      </p>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-cream-200 bg-cream-50/60 px-4 py-3 text-sm">
+        <input
+          type="checkbox"
+          checked={!!noOfficialCoachingCert}
+          onChange={(e) => onToggleNone(e.target.checked)}
+          className="mt-0.5 accent-brand-500"
+        />
+        <span>
+          <span className="font-medium text-cream-900">GSB federasyon antrenörlük belgem yok</span>
+          <span className="mt-0.5 block text-xs text-cream-800/55">Uluslararası veya branş sertifikalarınız varsa aşağıdaki bölümlerden ekleyebilirsiniz.</span>
+        </span>
+      </label>
+
+      {!noOfficialCoachingCert && entries.map((entry, index) => (
+        <div key={index} className="space-y-3 rounded-xl border border-amber-100 bg-amber-50/30 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-amber-800/70">
+              Federasyon {entries.length > 1 ? index + 1 : ''}
+            </p>
+            {entries.length > 1 && (
+              <button type="button" onClick={() => removeEntry(index)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Kaydı sil">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <select
+            value={entry.federation}
+            onChange={(e) => updateEntry(index, { federation: e.target.value, federationOther: e.target.value === 'diger' ? entry.federationOther : '' })}
+            className={`${selectCls} ${entry.federation ? '' : 'text-cream-800/40'}`}
+          >
+            <option value="">Federasyon seçin *</option>
+            {COACHING_FEDERATIONS.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+
+          {entry.federation === 'diger' && (
+            <input
+              value={entry.federationOther}
+              onChange={(e) => updateEntry(index, { federationOther: e.target.value })}
+              placeholder="Federasyon adını yazın *"
+              className={selectCls}
+            />
+          )}
+
+          <div>
+            <p className="mb-2 text-xs font-semibold text-cream-800/70">Belge kademesi *</p>
+            <div className="space-y-2">
+              {COACHING_LICENSE_LEVELS.map((level) => {
+                const active = (entry.levels || []).includes(level.value)
+                return (
+                  <button
+                    key={level.value}
+                    type="button"
+                    onClick={() => toggleLevel(index, level.value)}
+                    className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                      active
+                        ? 'border-amber-400 bg-white shadow-sm ring-1 ring-amber-200'
+                        : 'border-cream-200 bg-white hover:border-amber-200'
+                    }`}
+                  >
+                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${active ? 'border-amber-500 bg-amber-500 text-white' : 'border-cream-300'}`}>
+                      {active && <Check className="h-3 w-3" />}
+                    </span>
+                    <span>
+                      <span className="font-medium text-cream-900">{level.label}</span>
+                      <span className="mt-0.5 block text-xs text-cream-800/55">{level.hint}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {!noOfficialCoachingCert && (
+        <button type="button" onClick={addEntry} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700">
+          <Plus className="h-3.5 w-3.5" /> Başka federasyon belgesi ekle
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function ApplicationSummaryModal({ open, onClose, form, submitting, onSubmit }) {
   const isCoach = form.role === 'coach'
   const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
@@ -294,7 +415,7 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
         {isCoach && (
           <SummarySection title="Eğitim & Sertifika">
             <SummaryRow label="Eğitim" value={[EDU[form.educationLevel], form.educationDepartment, form.educationGpa && `GPA ${form.educationGpa}`].filter(Boolean).join(' · ')} />
-            <SummaryRow label="Resmi antrenörlük" value={(form.officialCoachingCerts || []).join(', ')} />
+            <SummaryRow label="Resmi antrenörlük" value={getOfficialCoachingCertLabels(form).join(' · ') || (form.noOfficialCoachingCert ? 'Belge yok' : '')} />
             <SummaryRow label="Uluslararası" value={[...(form.internationalCerts || []), form.certOtherNotes?.international].filter(Boolean).join(', ')} />
             <SummaryRow label="Branş" value={[...(form.branchCerts || []), form.certOtherNotes?.branch].filter(Boolean).join(', ')} />
             <SummaryRow label="Belgeler" value={`${(form.certificateFiles || []).length} dosya yüklendi`} />

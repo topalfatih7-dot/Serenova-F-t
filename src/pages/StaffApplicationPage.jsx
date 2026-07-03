@@ -21,13 +21,13 @@ import {
   ServiceAreaGrid,
   BulkCertUpload,
   ApplicationSummaryModal,
+  FederationCertEditor,
 } from '../components/staff/StaffApplicationUi'
 import {
   EMPTY_STAFF_APPLICATION,
   COACH_SPECIALTY_GROUPS,
   DIETITIAN_SPECIALTIES,
   COMPETENT_GROUPS,
-  OFFICIAL_COACHING_CERTIFICATES,
   INTERNATIONAL_CERTIFICATES,
   BRANCH_CERTIFICATES,
   WORK_APPROACHES,
@@ -37,6 +37,8 @@ import {
   EDUCATION_LEVELS,
   OTHER_OPTION,
   validateStaffApplicationStep,
+  getOfficialCoachingCertLabels,
+  EMPTY_FEDERATION_CERT,
 } from '../data/staffApplication'
 import { staffRoleLabel } from '../utils/staffRoles'
 
@@ -301,8 +303,16 @@ export default function StaffApplicationPage() {
                       <input type="number" step="0.01" min={0} max={4} value={form.educationGpa} onChange={(e) => update({ educationGpa: e.target.value })} placeholder="GPA" className={inputCls} />
                     </div>
                   </AccordionSection>
-                  <AccordionSection id="official-cert" title="Resmi Antrenörlük Belgesi" subtitle="Çoklu seçim — Diğer yok" icon={Award} tone="amber" open={openSection === 'official-cert'} onToggle={toggleSection} count={form.officialCoachingCerts.length}>
-                    <FlatChipSelect items={OFFICIAL_COACHING_CERTIFICATES} selected={form.officialCoachingCerts} onChange={(officialCoachingCerts) => update({ officialCoachingCerts })} tone="amber" showOther={false} columns={1} />
+                  <AccordionSection id="official-cert" title="GSB Federasyon Antrenörlük Belgesi" subtitle="Federasyon ve kademe seçimi" icon={Award} tone="amber" open={openSection === 'official-cert'} onToggle={toggleSection} count={getOfficialCoachingCertLabels(form).length}>
+                    <FederationCertEditor
+                      federationCerts={form.federationCerts}
+                      noOfficialCoachingCert={form.noOfficialCoachingCert}
+                      onChange={(federationCerts) => update({ federationCerts })}
+                      onToggleNone={(checked) => update({
+                        noOfficialCoachingCert: checked,
+                        federationCerts: checked ? [] : (form.federationCerts?.length ? form.federationCerts : [{ ...EMPTY_FEDERATION_CERT }]),
+                      })}
+                    />
                   </AccordionSection>
                   <AccordionSection id="intl-cert" title="Uluslararası Sertifikalar" icon={Award} tone="sky" open={openSection === 'intl-cert'} onToggle={toggleSection} count={form.internationalCerts.length}>
                     <FlatChipSelect items={INTERNATIONAL_CERTIFICATES} selected={form.internationalCerts} onChange={(internationalCerts) => update({ internationalCerts })} tone="sky" otherValue={form.certOtherNotes?.international} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, international: v } })} otherPlaceholder="Diğer uluslararası sertifika" />

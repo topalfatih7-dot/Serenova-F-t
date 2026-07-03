@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-02 (§7.0: kurulum rehberleri `docs/setup/` altında toplandı; Apple Sign In `APPLE_SETUP.md` — ertelendi)
+> **Son güncelleme:** 2026-07-03 (§47: kadro başvurusu GSB federasyon kademeleri; §46 öncesi yasal/kütüphane commit `bb88669d`)
 
 ---
 
@@ -2018,7 +2018,7 @@ Yardımcılar (`programSchedule.js`):
 |------|-----|------------|
 | **1 — Kişisel Bilgiler** | Ad, e-posta, telefon, cinsiyet, il/ilçe (dropdown), salon bilgisi, LinkedIn/Instagram/YouTube/web | Aynı |
 | **2 — Uzmanlık** | 26 uzmanlık alanı, deneyim yılı, yetkin danışan grupları (5 kategori) | Uzmanlık, deneyim, mezuniyet bölümü, diploma/oda no |
-| **3 — Eğitim & Sertifika** | Lise/önlisans/lisans + bölüm + GPA; resmi antrenörlük; uluslararası/branş sertifikaları + belge yükleme | Eğitim listesi + sertifika listesi |
+| **3 — Eğitim & Sertifika** | Lise/önlisans/lisans + bölüm + GPA; **GSB federasyon antrenörlük belgesi** (federasyon + 1–5. kademe); uluslararası/branş sertifikaları + belge yükleme | Eğitim listesi + sertifika listesi |
 | **4 — Çalışma Tercihleri** | Günler, saat dilimi (:00/:30), çalışma yaklaşımları, hizmet alanları, özet | Günler, saat dilimi, özet |
 
 **Kaldırılan (koç):** ünvan, bio, birincil sertifika türü, adım 3 müsaitlik (4. adıma taşındı).
@@ -3707,4 +3707,28 @@ Migration MCP `apply_migration` ile **Yeni Form** (`rvzksmyhsgxgrxgeabmi`) proje
 | `src/services/supabaseDb.js` | `createProgram` → program bildirimi |
 | `src/pages/NotificationsPage.jsx` | Tıklanınca `/programs`, `/messages/{role}`, `/support` |
 | `src/components/notifications/NotificationItem.jsx` | `chat` tipi ikonu |
+
+---
+
+## 47. Kadro Başvurusu — GSB Federasyon Kademeleri (2026-07-03)
+
+Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönetmeliği (RG 14.12.2019) kademelerine göre yenilendi.
+
+| Kademe | Unvan |
+|--------|-------|
+| 1 | Yardımcı Antrenör |
+| 2 | Temel Antrenör |
+| 3 | Kıdemli Antrenör |
+| 4 | Başantrenör |
+| 5 | Teknik Direktör |
+
+**Form alanları (`federationCerts` JSONB):**
+- Federasyon seçimi (`COACHING_FEDERATIONS` — TVGFBF öncelikli, 12 federasyon + Diğer)
+- Çoklu kademe seçimi (`COACHING_LICENSE_LEVELS`)
+- Birden fazla federasyon kaydı eklenebilir
+- “GSB federasyon antrenörlük belgem yok” seçeneği
+
+**Dosyalar:** `src/data/staffApplication.js` (`FederationCertEditor` veri sabitleri, `getOfficialCoachingCertLabels`), `src/components/staff/StaffApplicationUi.jsx` (`FederationCertEditor`), `src/pages/StaffApplicationPage.jsx`, `src/pages/admin/AdminApplicationsPage.jsx`, `src/utils/exportStaffApplicationCv.js`
+
+**Geriye uyumluluk:** Eski başvurulardaki `officialCoachingCerts` dizisi admin/CV görünümünde hâlâ okunur.
 

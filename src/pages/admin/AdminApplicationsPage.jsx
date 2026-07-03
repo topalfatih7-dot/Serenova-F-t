@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { downloadStaffApplicationCvPdf } from '../../utils/exportStaffApplicationCv'
+import { getOfficialCoachingCertLabels } from '../../data/staffApplication'
 
 const SECTIONS = [
   { id: 'staff', label: 'Kadro', icon: UserPlus },
@@ -405,8 +406,11 @@ function StaffApplicationDetail({ app, d }) {
               {d.educationGpa ? ` · GPA ${d.educationGpa}` : ''}
             </p>
           </DetailBlock>
-          <DetailBlock title="Resmi Antrenörlük">
-            <TagList items={d.officialCoachingCerts} />
+          <DetailBlock title="GSB Federasyon Antrenörlük">
+            <TagList items={getOfficialCoachingCertLabels(d)} />
+            {d.noOfficialCoachingCert && !getOfficialCoachingCertLabels(d).length && (
+              <p className="text-xs text-cream-800/55">Aday resmi federasyon belgesi olmadığını belirtti.</p>
+            )}
           </DetailBlock>
           <DetailBlock title="Uluslararası Sertifikalar">
             <TagList items={d.internationalCerts} />
