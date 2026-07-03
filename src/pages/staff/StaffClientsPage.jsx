@@ -15,7 +15,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
 import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
-import VideoJoinLink from '../../components/video/VideoJoinLink'
+import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import {
   findEntriesOutsidePackage,
   getMemberPackageDateRange,
@@ -80,18 +80,17 @@ function ClientInfo({ member, role, isCoach }) {
         {appts.length === 0 ? (
           <p className="text-sm text-cream-800/40">Yaklaşan randevu yok</p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             {appts.slice(0, 4).map((a) => (
-              <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-cream-50 px-3 py-2 text-sm">
-                <span className="min-w-0 flex-1 truncate text-cream-800/70">{a.title}</span>
-                <span className="shrink-0 font-medium text-cream-900">{format(new Date(a.date), 'd MMM, HH:mm', { locale: tr })}</span>
-                <VideoJoinLink
-                  session={a}
-                  sessionType={isCoach ? 'coach' : 'dietitian'}
-                  audience="staff"
-                  size="sm"
-                />
-              </div>
+              <StaffAppointmentRow
+                key={a.id}
+                memberName={member.name}
+                subtitle={a.title}
+                dateISO={a.date}
+                session={a}
+                sessionType={isCoach ? 'coach' : 'dietitian'}
+                isCoach={isCoach}
+              />
             ))}
           </div>
         )}

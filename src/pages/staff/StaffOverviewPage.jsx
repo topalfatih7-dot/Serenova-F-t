@@ -1,13 +1,11 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, CalendarClock, ClipboardList, ArrowRight, Dumbbell, Apple } from 'lucide-react'
-import { format } from 'date-fns'
-import { tr } from 'date-fns/locale'
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/SupportScheduler'
-import VideoJoinLink from '../../components/video/VideoJoinLink'
 import StaffVideoPanel from '../../components/video/StaffVideoPanel'
+import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import { useApp } from '../../context/AppContext'
 import { getStaffClients } from '../../utils/chatAccess'
 import { resolveFirstName } from '../../utils/displayName'
@@ -82,8 +80,8 @@ export default function StaffOverviewPage() {
       {/* Görüntülü görüşme alanı */}
       <StaffVideoPanel clients={clients} role={staffUser.role} />
 
-      <div className="rounded-2xl border border-cream-200 bg-white p-6">
-        <div className="flex items-center justify-between">
+      <div className="rounded-2xl border border-cream-200 bg-white p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-semibold text-cream-900">Yaklaşan Randevular</h3>
           <Link to="/staff/clients" className="flex items-center gap-1 text-sm text-brand-600 hover:underline">
             Danışanlar <ArrowRight className="h-3.5 w-3.5" />
@@ -92,29 +90,17 @@ export default function StaffOverviewPage() {
         {appointments.length === 0 ? (
           <p className="mt-6 text-center text-sm text-cream-800/50">Yaklaşan randevu yok</p>
         ) : (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2.5">
             {appointments.slice(0, 8).map((a) => (
-              <div key={a.id} className="flex items-center gap-3 rounded-xl bg-cream-50 px-4 py-3">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${isCoach ? 'bg-brand-100 text-brand-600' : 'bg-sage-100 text-sage-600'}`}>
-                  <RoleIcon className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-cream-900">{a.memberName}</p>
-                  <p className="text-xs text-cream-800/50">{a.title}</p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <span className="text-right text-sm font-medium text-cream-900">
-                    {format(new Date(a.date), 'd MMM', { locale: tr })}
-                    <span className="block text-xs font-normal text-cream-800/50">{format(new Date(a.date), 'HH:mm')}</span>
-                  </span>
-                  <VideoJoinLink
-                    session={a}
-                    sessionType={isCoach ? 'coach' : 'dietitian'}
-                    audience="staff"
-                    size="sm"
-                  />
-                </div>
-              </div>
+              <StaffAppointmentRow
+                key={a.id}
+                memberName={a.memberName}
+                subtitle={a.title}
+                dateISO={a.date}
+                session={a}
+                sessionType={isCoach ? 'coach' : 'dietitian'}
+                isCoach={isCoach}
+              />
             ))}
           </div>
         )}

@@ -55,7 +55,7 @@ export default function NotificationsPage() {
   const unread = notifications.filter((n) => !n.read).length
 
   return (
-    <PanelPageShell maxWidth="max-w-2xl" onPointerDown={() => { unlockNotificationAudio().catch(() => {}) }}>
+    <PanelPageShell onPointerDown={() => { unlockNotificationAudio().catch(() => {}) }}>
       <PanelPageHeader
         title="Bildirimler"
         subtitle={unread > 0 ? `${unread} okunmamış mesajınız var` : 'Her şey güncel görünüyor'}

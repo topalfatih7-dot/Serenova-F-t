@@ -35,7 +35,7 @@ export default function SupportPage() {
   }
 
   return (
-    <PanelPageShell maxWidth="max-w-3xl" className="space-y-10">
+    <PanelPageShell className="space-y-10">
       <PanelPageHeader
         title="Destek Merkezi"
         subtitle="Talepleriniz anlık olarak destek ekibine iletilir"

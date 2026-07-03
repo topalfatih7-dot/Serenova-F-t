@@ -5,7 +5,7 @@ export default function StaffSelfProfilePage() {
   const { staffUser, updateStaffProfile } = useApp()
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="w-full">
       <StaffProfileEditor
         staffUser={staffUser}
         onSave={(payload) => updateStaffProfile(staffUser.id, payload)}

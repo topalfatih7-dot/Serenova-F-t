@@ -984,14 +984,39 @@ body {
 .panel-page-header {
   position: relative;
   overflow: hidden;
-  border-radius: 1.5rem;
-  padding: 1.25rem 1.5rem;
+  border-radius: 1.25rem;
+  padding: 1rem 1.125rem;
   color: white;
   box-shadow: 0 16px 40px -12px color-mix(in srgb, var(--color-brand-600) 40%, transparent);
 }
 
+@media (min-width: 640px) {
+  .panel-page-header {
+    border-radius: 1.5rem;
+    padding: 1.25rem 1.5rem;
+  }
+}
+
 .panel-page-header-compact {
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .panel-page-header-compact {
+    padding: 1rem 1.25rem;
+  }
+}
+
+.panel-page-header-actions > .panel-chip {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .panel-page-header-actions > .panel-chip {
+    flex: 0 1 auto;
+  }
 }
 
 .panel-page-header-shimmer {
@@ -1042,6 +1067,12 @@ body {
 
 .panel-header-violet {
   background: linear-gradient(125deg, #6d28d9 0%, #8b5cf6 45%, var(--color-brand-500) 100%);
+  background-size: 200% 200%;
+  animation: welcomeGradientShift 10s ease infinite;
+}
+
+.panel-header-teal {
+  background: linear-gradient(125deg, #0f766e 0%, #0d9488 40%, #14b8a6 100%);
   background-size: 200% 200%;
   animation: welcomeGradientShift 10s ease infinite;
 }
@@ -1126,6 +1157,7 @@ body {
   .panel-header-warm,
   .panel-header-flame,
   .panel-header-violet,
+  .panel-header-teal,
   .section-blog-vivid-mesh,
   .section-blog-orb,
   .section-badge-vivid,

@@ -170,7 +170,7 @@ export default function CalorieCalculatorPage() {
 
   if (!isPaid) {
     return (
-      <PanelPageShell maxWidth="max-w-4xl">
+      <PanelPageShell>
         <button type="button" onClick={() => navigate(-1)} className="panel-back-btn">
           <ArrowLeft className="h-4 w-4" /> Geri Dön
         </button>
@@ -189,7 +189,7 @@ export default function CalorieCalculatorPage() {
   }
 
   return (
-    <PanelPageShell maxWidth="max-w-4xl">
+    <PanelPageShell>
       <button type="button" onClick={() => navigate(-1)} className="panel-back-btn">
         <ArrowLeft className="h-4 w-4" /> Geri Dön
       </button>

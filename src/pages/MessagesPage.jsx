@@ -93,7 +93,7 @@ export default function MessagesPage() {
 
   if (!contacts.length) {
     return (
-      <PanelPageShell maxWidth="max-w-3xl">
+      <PanelPageShell>
         <PanelPageHeader title="Mesajlar" subtitle="Paketinize atanmış uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" />
         <EmptyState
           icon={MessageCircle}

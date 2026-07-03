@@ -6,6 +6,7 @@ const ACCENTS = {
   warm: 'panel-header-warm',
   flame: 'panel-header-flame',
   violet: 'panel-header-violet',
+  teal: 'panel-header-teal',
 }
 
 export default function PanelPageHeader({
@@ -26,19 +27,27 @@ export default function PanelPageHeader({
       className={`panel-page-header ${ACCENTS[accent] || ACCENTS.brand} ${compact ? 'panel-page-header-compact' : ''} ${className}`}
     >
       <div className="panel-page-header-shimmer" aria-hidden />
-      <div className="relative flex flex-wrap items-start justify-between gap-4">
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
           {Icon && (
-            <div className="panel-page-header-icon">
+            <div className="panel-page-header-icon shrink-0">
               <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           )}
-          <div className="min-w-0">
-            <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm opacity-90">{subtitle}</p>}
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-lg font-bold leading-tight tracking-tight sm:text-2xl">{title}</h1>
+            {subtitle && (
+              <p className="mt-1.5 max-w-prose text-xs leading-relaxed text-white/90 sm:mt-1 sm:text-sm">
+                {subtitle}
+              </p>
+            )}
           </div>
         </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="panel-page-header-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+            {actions}
+          </div>
+        )}
       </div>
       {children}
     </motion.header>
@@ -57,7 +66,10 @@ export function PanelChip({ active, onClick, children, accent = 'brand' }) {
   )
 }
 
-export function PanelPageShell({ children, className = '', maxWidth = 'max-w-5xl', spacing = 'space-y-6', ...rest }) {
+/** Panel içerik genişliği — shell kenar boşluğu dışında tam genişlik */
+export const PANEL_CONTENT_WIDTH = 'w-full max-w-none'
+
+export function PanelPageShell({ children, className = '', maxWidth = PANEL_CONTENT_WIDTH, spacing = 'space-y-6', ...rest }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}

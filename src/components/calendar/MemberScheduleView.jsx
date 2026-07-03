@@ -68,7 +68,7 @@ export default function MemberScheduleView({
   const rescheduleDays = type === 'coach' ? 3 : 5
 
   return (
-    <PanelPageShell maxWidth="max-w-4xl">
+    <PanelPageShell>
       <PanelPageHeader
         title={title}
         subtitle={subtitle}
@@ -78,8 +78,8 @@ export default function MemberScheduleView({
           <button
             type="button"
             onClick={() => setBookOpen(true)}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-105 ${
-              accent === 'sage' ? 'bg-sage-500 hover:bg-sage-600' : accent === 'teal' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-brand-500 hover:bg-brand-600'
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-105 sm:w-auto ${
+              accent === 'sage' ? 'bg-white/20 hover:bg-white/30' : accent === 'teal' ? 'bg-white/20 hover:bg-white/30' : 'bg-white/20 hover:bg-white/30'
             }`}
           >
             <CalendarPlus className="h-4 w-4" />

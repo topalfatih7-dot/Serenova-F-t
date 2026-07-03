@@ -146,7 +146,7 @@ export default function StaffShell() {
           headerRight={<span className="text-xs font-medium text-cream-800/50">{roleLabel}</span>}
         />
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
           <div className="flex min-h-0 flex-1 flex-col">
             <Outlet />
           </div>

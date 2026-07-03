@@ -194,13 +194,15 @@ export default function CalendarPage() {
         icon={Calendar}
         accent="brand"
         actions={monthStats.total > 0 ? (
-          <div className="flex items-center gap-3 rounded-2xl bg-white/20 px-4 py-2.5 backdrop-blur-sm">
-            <Trophy className="h-4 w-4 text-amber-300" />
-            <div>
-              <p className="text-xs text-white/70">Bu Ay</p>
-              <p className="text-sm font-bold">{monthStats.done}/{monthStats.total} tamamlandı</p>
+          <div className="flex w-full items-center justify-between gap-3 rounded-xl bg-white/15 px-3 py-2.5 backdrop-blur-sm sm:w-auto sm:justify-start sm:rounded-2xl sm:px-4 sm:py-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Trophy className="h-4 w-4 shrink-0 text-amber-300" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-white/70 sm:text-xs sm:normal-case sm:tracking-normal">Bu Ay</p>
+                <p className="truncate text-sm font-bold">{monthStats.done}/{monthStats.total} tamamlandı</p>
+              </div>
             </div>
-            <div className="relative h-8 w-8">
+            <div className="relative h-9 w-9 shrink-0 sm:h-8 sm:w-8">
               <svg className="h-8 w-8 -rotate-90" viewBox="0 0 32 32">
                 <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="4" />
                 <circle

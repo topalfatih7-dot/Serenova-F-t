@@ -84,18 +84,21 @@ export default function ProgramsPage() {
   const filtered = filter === 'all' ? myPrograms : myPrograms.filter((p) => p.type === filter)
 
   return (
-    <PanelPageShell maxWidth="max-w-3xl">
+    <PanelPageShell>
       <PanelPageHeader
         title="Programlarım"
         subtitle="Koçunuz ve diyetisyeniniz tarafından hazırlanan programlar"
         icon={ClipboardList}
         accent="brand"
-        actions={FILTERS.map((f) => (
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
           <PanelChip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)} accent="brand">
             {f.label}
           </PanelChip>
         ))}
-      />
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -104,64 +107,89 @@ export default function ProgramsPage() {
           description="Koçunuz veya diyetisyeniniz size bir program oluşturduğunda burada görünecek ve bildirim alacaksınız."
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {filtered.map((p) => {
             const isWorkout = p.type === 'workout'
             const Icon = isWorkout ? Dumbbell : Apple
             return (
-              <div key={p.id} className="glass-card-solid p-6">
-                <div className="flex items-start gap-4">
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${isWorkout ? 'bg-brand-100 text-brand-600' : 'bg-sage-100 text-sage-600'}`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-lg font-bold text-cream-900">{p.title}</h3>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isWorkout ? 'bg-brand-50 text-brand-700' : 'bg-sage-50 text-sage-700'}`}>
-                        {isWorkout ? 'Antrenman' : 'Beslenme'}
-                      </span>
-                      {p.scheduleType === 'cycle14' && (
-                        <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
-                          14 Gün · Her Gün Aynı
+              <article
+                key={p.id}
+                className={`overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-lg ${
+                  isWorkout
+                    ? 'border-brand-200/70 hover:border-brand-300'
+                    : 'border-sage-200/70 hover:border-sage-300'
+                }`}
+              >
+                <div
+                  className={`relative overflow-hidden px-4 py-4 sm:px-5 sm:py-5 ${
+                    isWorkout
+                      ? 'bg-gradient-to-br from-brand-600 via-brand-500 to-blue-500'
+                      : 'bg-gradient-to-br from-sage-600 via-emerald-500 to-teal-500'
+                  }`}
+                >
+                  <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" aria-hidden />
+                  <div className="relative flex items-start gap-3 sm:gap-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-inner backdrop-blur-sm sm:h-12 sm:w-12 sm:rounded-2xl">
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <h3 className="font-display text-base font-bold leading-tight text-white sm:text-lg">{p.title}</h3>
+                        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm sm:text-xs">
+                          {isWorkout ? 'Antrenman' : 'Beslenme'}
                         </span>
+                        {p.scheduleType === 'cycle14' && (
+                          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
+                            14 Gün · Her Gün Aynı
+                          </span>
+                        )}
+                        {p.scheduleType === 'dateRange' && p.cycleStartDate && (
+                          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
+                            {p.cycleLength || 0} Gün · Her Gün Aynı
+                          </span>
+                        )}
+                        {isWorkout && p.sessionDuration && (
+                          <span className="flex items-center gap-0.5 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
+                            <Clock className="h-3 w-3" /> {p.sessionDuration} dk
+                          </span>
+                        )}
+                      </div>
+                      {(p.scheduleType === 'cycle14' || p.scheduleType === 'dateRange') && p.cycleStartDate && (
+                        <p className="mt-1.5 text-xs leading-relaxed text-white/80">
+                          {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
+                          {' — '}
+                          {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
+                          {' · her gün aynı program'}
+                        </p>
                       )}
-                      {p.scheduleType === 'dateRange' && p.cycleStartDate && (
-                        <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
-                          {p.cycleLength || 0} Gün · Her Gün Aynı
-                        </span>
-                      )}
-                      {isWorkout && p.sessionDuration && (
-                        <span className="flex items-center gap-0.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                          <Clock className="h-3 w-3" /> {p.sessionDuration} dk
-                        </span>
-                      )}
-                    </div>
-                    {(p.scheduleType === 'cycle14' || p.scheduleType === 'dateRange') && p.cycleStartDate && (
-                      <p className="mt-1 text-xs text-teal-700/80">
-                        {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
-                        {' — '}
-                        {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
-                        {' · her gün aynı program'}
+                      <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-white/75">
+                        <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                        <span>{p.staffName}</span>
+                        <span className="text-white/40">·</span>
+                        <span>{format(new Date(p.createdAt), 'd MMMM yyyy', { locale: tr })}</span>
                       </p>
-                    )}
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-cream-800/50">
-                      <UserCheck className="h-3.5 w-3.5" /> {p.staffName} · {format(new Date(p.createdAt), 'd MMMM yyyy', { locale: tr })}
-                    </p>
+                    </div>
                   </div>
                 </div>
 
-                {p.description && <p className="mt-4 text-sm text-cream-800/70">{p.description}</p>}
+                <div className="bg-white p-4 sm:p-5">
+                {p.description && <p className="text-sm leading-relaxed text-cream-800/70">{p.description}</p>}
 
                 {/* Kütüphane tabanlı program: gün gün, hareketler tıklanabilir */}
                 {p.entries?.length > 0 ? (
-                  <div className="mt-4 space-y-4">
+                  <div className={`space-y-4 ${p.description ? 'mt-4' : ''}`}>
                     {groupBySchedule(p.entries, p).map((g) => (
                       <div key={g.key}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">{g.label}</p>
-                          {/* Seans saati: antrenman programlarında gün başlığında göster */}
+                        <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                          <p className={`text-xs font-bold uppercase tracking-wide ${
+                            isWorkout ? 'text-brand-600' : 'text-sage-600'
+                          }`}>
+                            {g.label}
+                          </p>
                           {p.type !== 'nutrition' && g.items[0]?.start && (
-                            <span className="flex items-center gap-0.5 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">
+                            <span className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              isWorkout ? 'bg-brand-50 text-brand-600' : 'bg-sage-50 text-sage-600'
+                            }`}>
                               <Clock className="h-2.5 w-2.5" />{g.items[0].start}{g.items[0].end ? `–${g.items[0].end}` : ''}
                             </span>
                           )}
@@ -170,19 +198,26 @@ export default function ProgramsPage() {
                           {g.items.map((e) => {
                             const isNutrition = p.type === 'nutrition' || e.mealType
                             const title = e.exerciseName || e.name || 'Öğün'
+                            const hasVideo = !isNutrition && e.videoUrl
                             return (
                             <button
                               key={e.id}
                               type="button"
-                              onClick={() => !isNutrition && e.videoUrl && setActiveExercise(e)}
-                              className={`flex w-full items-center gap-3 rounded-xl border border-cream-200 bg-cream-50 px-4 py-3 text-left transition ${
-                                !isNutrition && e.videoUrl ? 'hover:border-brand-300 hover:bg-white' : ''
+                              onClick={() => hasVideo && setActiveExercise(e)}
+                              className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:px-4 ${
+                                isNutrition
+                                  ? 'border-sage-100 bg-gradient-to-r from-sage-50/80 to-emerald-50/40 hover:border-sage-200 hover:shadow-sm'
+                                  : hasVideo
+                                    ? 'border-brand-100 bg-gradient-to-r from-brand-50/80 to-blue-50/40 hover:border-brand-200 hover:shadow-sm'
+                                    : 'border-cream-200 bg-cream-50/80'
                               }`}
                             >
-                              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                isNutrition ? 'bg-sage-100 text-sage-600' : 'bg-brand-100 text-brand-600'
+                              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-sm ${
+                                isNutrition
+                                  ? 'bg-gradient-to-br from-sage-400 to-emerald-500 text-white'
+                                  : 'bg-gradient-to-br from-brand-400 to-blue-500 text-white'
                               }`}>
-                                {isNutrition ? <Apple className="h-5 w-5" /> : <PlayCircle className="h-5 w-5" />}
+                                {isNutrition ? <Apple className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
                               </span>
                               <div className="min-w-0 flex-1">
                                 {e.mealType && (
@@ -191,9 +226,8 @@ export default function ProgramsPage() {
                                 <p className="font-medium text-cream-900">
                                   {title}{!isNutrition && e.amount ? ` · ${amountText(e)}` : ''}
                                 </p>
-                                {/* Beslenme: saat göster; antrenman: sadece not */}
                                 {isNutrition && (e.start || e.note) && (
-                                  <p className="flex items-center gap-1 text-xs text-cream-800/55">
+                                  <p className="flex flex-wrap items-center gap-1 text-xs text-cream-800/55">
                                     {e.start && <><Clock className="h-3 w-3" /> {e.start}{e.end ? `–${e.end}` : ''}</>}
                                     {e.note ? `${e.start ? ' · ' : ''}${e.note}` : ''}
                                   </p>
@@ -202,6 +236,9 @@ export default function ProgramsPage() {
                                   <p className="text-xs italic text-cream-800/45">{e.note}</p>
                                 )}
                               </div>
+                              {hasVideo && (
+                                <PlayCircle className="h-5 w-5 shrink-0 text-brand-400" />
+                              )}
                             </button>
                             )
                           })}
@@ -211,17 +248,23 @@ export default function ProgramsPage() {
                   </div>
                 ) : (
                   p.items?.length > 0 && (
-                    <ul className="mt-4 space-y-2">
+                    <ul className={`space-y-2 ${p.description ? 'mt-4' : ''}`}>
                       {p.items.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5 rounded-xl bg-cream-50 px-4 py-2.5 text-sm text-cream-800">
-                          <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${isWorkout ? 'bg-brand-400' : 'bg-sage-400'}`} />
+                        <li
+                          key={i}
+                          className={`flex items-start gap-2.5 rounded-xl px-4 py-2.5 text-sm text-cream-800 ${
+                            isWorkout ? 'bg-brand-50/60' : 'bg-sage-50/60'
+                          }`}
+                        >
+                          <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${isWorkout ? 'bg-brand-400' : 'bg-sage-400'}`} />
                           {item}
                         </li>
                       ))}
                     </ul>
                   )
                 )}
-              </div>
+                </div>
+              </article>
             )
           })}
         </div>

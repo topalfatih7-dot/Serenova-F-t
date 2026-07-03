@@ -95,7 +95,7 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="relative mx-auto max-w-4xl space-y-5 pb-10 sm:space-y-6">
+    <div className="relative w-full space-y-5 pb-10 sm:space-y-6">
       <div aria-hidden className="pointer-events-none absolute -left-6 -right-6 -top-6 -z-10 h-64 rounded-[2rem] bg-gradient-to-br from-brand-100/50 via-cream-50 to-sage-100/40 blur-2xl sm:-left-10 sm:-right-10" />
 
       {/* Hero */}

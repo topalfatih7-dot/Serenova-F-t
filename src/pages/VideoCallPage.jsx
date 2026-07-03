@@ -148,20 +148,33 @@ export default function VideoCallPage({ audience = 'member' }) {
     <>
       <NoIndexHead />
     <div className="flex h-dvh flex-col overflow-hidden bg-gray-950 text-white">
-      <header className={`shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r ${meta.gradient} px-3 py-2.5 sm:px-6 sm:py-3`}>
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <button type="button" onClick={handleExit} className="shrink-0 rounded-lg p-1.5 hover:bg-white/10" title="Geri dön">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <RoleIcon className="h-5 w-5 shrink-0" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold">{meta.label}</p>
-            <p className="truncate text-[11px] text-white/60 sm:text-xs">{format(sessionDate, 'd MMM yyyy · HH:mm', { locale: tr })}</p>
+      <header className={`shrink-0 border-b border-white/10 bg-gradient-to-r ${meta.gradient} px-3 py-3 sm:px-6 sm:py-3`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-2.5 sm:items-center sm:gap-3">
+            <button type="button" onClick={handleExit} className="mt-0.5 shrink-0 rounded-lg p-1.5 hover:bg-white/10 sm:mt-0" title="Geri dön">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <RoleIcon className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold leading-snug break-words sm:text-base">{meta.label}</p>
+              {audience === 'staff' && (
+                <p className="mt-0.5 text-sm font-semibold leading-snug text-white/95 break-words">
+                  {context.remoteLabel}
+                </p>
+              )}
+              <p className="mt-0.5 text-xs leading-relaxed text-white/70 sm:text-sm">
+                {format(sessionDate, 'd MMMM yyyy', { locale: tr })}
+                <span className="mx-1.5 text-white/40">·</span>
+                {format(sessionDate, 'HH:mm')}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] sm:px-3 sm:text-xs">
-          <span className={`h-2 w-2 rounded-full ${statusBadge.dot}`} />
-          {call.isLoading ? 'Bağlanıyor…' : joinCheck.statusLabel || statusBadge.text}
+          <div className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs sm:w-auto sm:justify-start sm:py-1">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${statusBadge.dot}`} />
+            <span className="min-w-0 text-center leading-snug sm:text-left">
+              {call.isLoading ? 'Bağlanıyor…' : joinCheck.statusLabel || statusBadge.text}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -185,7 +198,7 @@ export default function VideoCallPage({ audience = 'member' }) {
               />
             )}
 
-            <div className="pointer-events-none absolute bottom-3 right-3 z-10 lg:hidden">
+            <div className="pointer-events-none absolute bottom-3 right-3 z-10 max-w-[38%] sm:max-w-[42%] lg:hidden">
               <div className="pointer-events-auto">
                 {local ? (
                   <ParticipantTile participant={local} label="Siz" pip meta={meta} />

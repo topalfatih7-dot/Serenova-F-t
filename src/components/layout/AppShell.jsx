@@ -107,7 +107,7 @@ export default function AppShell() {
               <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />
             </div>
           </div>
-          <div className="relative flex min-h-0 flex-1 flex-col p-4 sm:p-6">
+          <div className="relative flex min-h-0 flex-1 flex-col px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
             <Outlet />
           </div>
         </main>
