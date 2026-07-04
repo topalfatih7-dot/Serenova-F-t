@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-03 (§47: kadro başvurusu GSB federasyon kademeleri; §46 öncesi yasal/kütüphane commit `bb88669d`)
+> **Son güncelleme:** 2026-07-04 (§48: hareket kütüphanesi video güvenliği — private bucket + imzalı URL; §47 öncesi yasal/kütüphane commit `bb88669d`)
 
 ---
 
@@ -190,8 +190,11 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 
 ### Storage
 
-- Bucket: **`exercise-videos`** — herkese açık okuma; admin yükleme
-- Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage`
+- Bucket: **`exercise-videos`** — **private** (2026-07-04 §48'den itibaren); admin yükleme
+- Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage` — artık kalıcı public URL değil, sadece storage **path** döner
+- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → `api/exercise-video-url.js` (service role, `requireAuth`) → **1 saatlik imzalı URL**. Gerçek dosya adresi tarayıcıya kalıcı olarak hiç verilmez.
+- Eski kayıtlardaki tam public URL'ler de `VideoPlayer` içinde otomatik path'e çevrilip imzalanır (geriye dönük veri migrasyonu gerekmedi).
+- YouTube linkleri bu akışın dışında, aynen `iframe embed` ile oynatılıyor.
 
 ### RPC fonksiyonları
 
@@ -3731,4 +3734,24 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 **Dosyalar:** `src/data/staffApplication.js` (`FederationCertEditor` veri sabitleri, `getOfficialCoachingCertLabels`), `src/components/staff/StaffApplicationUi.jsx` (`FederationCertEditor`), `src/pages/StaffApplicationPage.jsx`, `src/pages/admin/AdminApplicationsPage.jsx`, `src/utils/exportStaffApplicationCv.js`
 
 **Geriye uyumluluk:** Eski başvurulardaki `officialCoachingCerts` dizisi admin/CV görünümünde hâlâ okunur.
+
+---
+
+## 48. Hareket Kütüphanesi — Video Güvenliği: Private Bucket + İmzalı URL (2026-07-04)
+
+Önceden `exercise-videos` bucket'ı `public: true` idi; `uploadExerciseVideo()` kalıcı `getPublicUrl()` döndürüyordu ve bu URL `exercises.video_url` alanında client state'e kadar taşınıyordu — gerçek dosya adresi tarayıcıda süresiz açık kalıyordu.
+
+**Yeni akış:** bucket private → yükleme sadece storage **path** döner → oynatma anında `api/exercise-video-url.js` (service role, `requireAuth` guard) **1 saatlik imzalı URL** üretir. Erişim kapsamı değişmedi (paket bazlı kısıtlama eklenmedi — giriş yapan her üye/koç/admin tüm kütüphaneyi görebiliyor, öncekiyle aynı).
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `supabase/migrations/20260704_private_exercise_videos.sql` | `exercise-videos` bucket'ı `public = false` |
+| `api/exercise-video-url.js` | Yeni — `requireAuth` + service role `createSignedUrl(path, 3600)` |
+| `src/services/supabaseDb.js` | `uploadExerciseVideo()` artık path döner; yeni `getExerciseVideoUrl(path)` |
+| `src/context/AppContext.jsx` | `getExerciseVideoUrl` action eklendi |
+| `src/components/ui/VideoPlayer.jsx` | Path/tam public URL algılar → imzalı URL çekip oynatır; YouTube linkleri değişmedi |
+
+**Geriye uyumluluk:** Eski kayıtlardaki tam public URL'ler `VideoPlayer` içinde `/object/public/exercise-videos/` işaretinden path'e çevrilip imzalanıyor — ayrı bir veri migrasyon script'i gerekmedi. `ExerciseLibraryPage`, `AdminLibraryPage`, `CalendarPage`, `ProgramsPage` aynı `VideoPlayer` bileşenini kullandığı için tüm ekranlar otomatik korunuyor.
+
+**Bilinen sınır:** 1600 video ölçeğinde Supabase ücretsiz depolama/bant genişliği limitleri yetersiz kalabilir (ayrı konu — gerekirse Cloudflare R2'ye taşıma değerlendirilecek).
 

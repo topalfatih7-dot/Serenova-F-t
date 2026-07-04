@@ -798,6 +798,7 @@ export function AppProvider({ children }) {
   }, [currentMember])
 
   const uploadExerciseVideo = useCallback((file) => sb.uploadExerciseVideo(file), [])
+  const getExerciseVideoUrl = useCallback((path) => sb.getExerciseVideoUrl(path), [])
 
   const addExercise = useCallback(async (data) => {
     const r = await sb.addExercise(data)
@@ -1167,6 +1168,7 @@ export function AppProvider({ children }) {
     setTicketStatus,
     sendTicketReply,
     uploadExerciseVideo,
+    getExerciseVideoUrl,
     addExercise,
     editExercise,
     removeExercise,
@@ -1283,6 +1285,7 @@ export function AppProvider({ children }) {
     setTicketStatus,
     sendTicketReply,
     uploadExerciseVideo,
+    getExerciseVideoUrl,
     addExercise,
     editExercise,
     removeExercise,

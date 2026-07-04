@@ -18,6 +18,7 @@ import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } fr
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
+import { getApiAuthHeaders } from './apiAuth'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { normalizeE164 } from '../data/countryCodes'
@@ -1300,6 +1301,9 @@ export async function submitSuccessStory(member, data) {
 }
 
 // --------------------------- exercises (library) ---------------------------
+// exercise-videos bucket'i private: yukleme sadece storage path'i doner,
+// gercek dosya asla kalici public URL olarak saklanmaz. Oynatma anlik
+// imzali URL uzerinden yapilir (bkz. getExerciseVideoUrl).
 export async function uploadExerciseVideo(file) {
   const ext = (file.name?.split('.').pop() || 'mp4').toLowerCase()
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
@@ -1307,8 +1311,22 @@ export async function uploadExerciseVideo(file) {
     cacheControl: '3600', upsert: false, contentType: file.type || 'video/mp4',
   })
   if (error) return { success: false, error: error.message }
-  const { data } = supabase.storage.from('exercise-videos').getPublicUrl(path)
-  return { success: true, url: data.publicUrl }
+  return { success: true, url: path }
+}
+
+/** 1 saat gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
+export async function getExerciseVideoUrl(path) {
+  try {
+    const res = await fetch('/api/exercise-video-url', {
+      method: 'POST',
+      headers: await getApiAuthHeaders(),
+      body: JSON.stringify({ path }),
+    })
+    const data = await res.json().catch(() => ({}))
+    return data.ok ? data.url : null
+  } catch {
+    return null
+  }
 }
 
 export async function upsertExerciseTaxonomy(taxonomy) {
