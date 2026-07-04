@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Loader2, VideoOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../services/supabaseDb'
+import { BRAND } from '../../config/brand'
 
 function youTubeId(url) {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
@@ -15,6 +16,24 @@ function resolveStoragePath(url) {
     return normalizeExerciseVideoRef(url)
   }
   return null
+}
+
+/** Oynatıcı üzerinde sabit marka logosu — ekran kayıtlarında görünür kalır. */
+function VideoWatermarkFrame({ children, className = '' }) {
+  return (
+    <div className={`relative aspect-video w-full overflow-hidden rounded-xl bg-black ${className}`}>
+      <div className="absolute inset-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain">
+        {children}
+      </div>
+      <img
+        src={BRAND.assets.logo}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="pointer-events-none absolute right-3 bottom-11 z-10 h-7 w-auto max-w-[42%] select-none object-contain opacity-80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] sm:h-8"
+      />
+    </div>
+  )
 }
 
 export default function VideoPlayer({ url, className = '' }) {
@@ -55,13 +74,15 @@ export default function VideoPlayer({ url, className = '' }) {
 
   if (yt) {
     return (
-      <iframe
-        title="Egzersiz videosu"
-        src={`https://www.youtube.com/embed/${yt}`}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className={`aspect-video w-full rounded-xl border-0 bg-black ${className}`}
-      />
+      <VideoWatermarkFrame className={className}>
+        <iframe
+          title="Egzersiz videosu"
+          src={`https://www.youtube.com/embed/${yt}`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="border-0"
+        />
+      </VideoWatermarkFrame>
     )
   }
 
@@ -82,7 +103,9 @@ export default function VideoPlayer({ url, className = '' }) {
       )
     }
     return (
-      <video src={playUrl} controls playsInline controlsList="nodownload" className={`aspect-video w-full rounded-xl bg-black ${className}`} />
+      <VideoWatermarkFrame className={className}>
+        <video src={playUrl} controls playsInline controlsList="nodownload" />
+      </VideoWatermarkFrame>
     )
   }
 
@@ -96,6 +119,8 @@ export default function VideoPlayer({ url, className = '' }) {
   }
 
   return (
-    <video src={url} controls playsInline className={`aspect-video w-full rounded-xl bg-black ${className}`} />
+    <VideoWatermarkFrame className={className}>
+      <video src={url} controls playsInline controlsList="nodownload" />
+    </VideoWatermarkFrame>
   )
 }
