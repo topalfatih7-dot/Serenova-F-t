@@ -401,7 +401,7 @@ function rowToExercise(row) {
     category: row.body_part || row.category || 'Tüm Vücut',
     sportType: row.sport_type || 'Fitness',
     bodyPart: row.body_part || row.category || 'Tüm Vücut',
-    videoUrl: row.video_url,
+    videoUrl: normalizeExerciseVideoRef(row.video_url),
     createdAt: row.created_at,
   }
 }
@@ -1353,26 +1353,32 @@ export async function getExerciseVideoUrl(path) {
     return retry.data?.session ?? null
   }
 
-  const session = await refreshSession()
+  const tryApiSign = async () => {
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: await getApiAuthHeaders(),
+        body: JSON.stringify({ action: 'exercise-video-url', path: storagePath }),
+      })
+      const json = await res.json().catch(() => ({}))
+      return json.ok ? json.url : null
+    } catch {
+      return null
+    }
+  }
 
-  if (session) {
+  const tryClientSign = async () => {
+    const session = await refreshSession()
+    if (!session) return null
     const { data, error } = await supabase.storage
       .from('exercise-videos')
       .createSignedUrl(storagePath, 3600)
     if (!error && data?.signedUrl) return data.signedUrl
-  }
-
-  try {
-    const res = await fetch('/api/exercise-video-url', {
-      method: 'POST',
-      headers: await getApiAuthHeaders(),
-      body: JSON.stringify({ path: storagePath }),
-    })
-    const json = await res.json().catch(() => ({}))
-    return json.ok ? json.url : null
-  } catch {
     return null
   }
+
+  // API (service role) daha guvenilir; client imzasi yedek.
+  return (await tryApiSign()) || (await tryClientSign())
 }
 
 export async function upsertExerciseTaxonomy(taxonomy) {

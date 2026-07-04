@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset | book-session
+ * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -267,6 +267,42 @@ async function handleBookSession(req, res, body) {
   return res.status(200).json(result)
 }
 
+const EXERCISE_VIDEO_BUCKET = 'exercise-videos'
+const EXERCISE_VIDEO_EXPIRES = 60 * 60
+
+function isExerciseVideoPath(path) {
+  return typeof path === 'string' && /^[\w.-]+$/.test(path) && !path.includes('..')
+}
+
+async function handleExerciseVideoUrl(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum bulunamadı.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const { path } = body
+  if (!isExerciseVideoPath(path)) {
+    return res.status(400).json({ ok: false, error: 'Geçersiz video yolu' })
+  }
+
+  const { data, error } = await admin.storage
+    .from(EXERCISE_VIDEO_BUCKET)
+    .createSignedUrl(path, EXERCISE_VIDEO_EXPIRES)
+  if (error || !data?.signedUrl) {
+    return res.status(404).json({ ok: false, error: error?.message || 'Video bulunamadı' })
+  }
+
+  return res.status(200).json({
+    ok: true,
+    url: data.signedUrl,
+    expiresAt: Date.now() + EXERCISE_VIDEO_EXPIRES * 1000,
+  })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -291,6 +327,7 @@ export default async function handler(req, res) {
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
+    if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

@@ -10,6 +10,8 @@ export async function getUserFromRequest(req) {
   if (!token) return { user: null, error: 'Oturum bulunamadı.' }
 
   const admin = getSupabaseAdmin()
+  if (!admin) return { user: null, error: 'Sunucu yapılandırması eksik (SUPABASE_SERVICE_ROLE_KEY).' }
+
   const { data, error } = await admin.auth.getUser(token)
   if (error || !data?.user) {
     return { user: null, error: 'Oturum doğrulanamadı.' }
