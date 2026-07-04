@@ -1318,26 +1318,49 @@ export async function uploadExerciseVideo(file) {
 export function normalizeExerciseVideoRef(value) {
   if (!value) return ''
   const trimmed = String(value).trim()
-  if (!/^https?:\/\//.test(trimmed)) return trimmed
-  for (const marker of ['/object/public/exercise-videos/', '/object/sign/exercise-videos/']) {
+  if (!/^https?:\/\//.test(trimmed)) return trimmed.split('?')[0]
+  const markers = [
+    '/object/public/exercise-videos/',
+    '/object/sign/exercise-videos/',
+    '/object/authenticated/exercise-videos/',
+  ]
+  for (const marker of markers) {
     const idx = trimmed.indexOf(marker)
     if (idx !== -1) return trimmed.slice(idx + marker.length).split('?')[0]
   }
+  if (trimmed.includes('/exercise-videos/')) {
+    return trimmed.split('/exercise-videos/').pop().split('?')[0]
+  }
   return trimmed
+}
+
+/** exercise-videos bucket'indaki gecerli dosya adi mi? */
+export function isExerciseVideoStoragePath(value) {
+  const path = normalizeExerciseVideoRef(value)
+  return Boolean(path && /^[\w.-]+$/.test(path) && !path.includes('..'))
 }
 
 /** 1 saat gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
 export async function getExerciseVideoUrl(path) {
   const storagePath = normalizeExerciseVideoRef(path)
-  if (!storagePath || !supabase) return null
+  if (!storagePath || !supabase || !isExerciseVideoStoragePath(storagePath)) return null
 
-  const { data: sessionData } = await supabase.auth.getSession()
-  if (!sessionData?.session) return null
+  const refreshSession = async () => {
+    const { data } = await supabase.auth.getSession()
+    if (data?.session) return data.session
+    await supabase.auth.getUser()
+    const retry = await supabase.auth.getSession()
+    return retry.data?.session ?? null
+  }
 
-  const { data, error } = await supabase.storage
-    .from('exercise-videos')
-    .createSignedUrl(storagePath, 3600)
-  if (!error && data?.signedUrl) return data.signedUrl
+  const session = await refreshSession()
+
+  if (session) {
+    const { data, error } = await supabase.storage
+      .from('exercise-videos')
+      .createSignedUrl(storagePath, 3600)
+    if (!error && data?.signedUrl) return data.signedUrl
+  }
 
   try {
     const res = await fetch('/api/exercise-video-url', {

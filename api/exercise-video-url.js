@@ -11,7 +11,7 @@ const BUCKET = 'exercise-videos'
 const EXPIRES_IN_SECONDS = 60 * 60 // 1 saat
 
 function isValidPath(path) {
-  return typeof path === 'string' && /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/.test(path)
+  return typeof path === 'string' && /^[\w.-]+$/.test(path) && !path.includes('..')
 }
 
 export default async function handler(req, res) {

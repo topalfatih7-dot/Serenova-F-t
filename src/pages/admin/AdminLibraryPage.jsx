@@ -59,7 +59,12 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categorie
         <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} placeholder="Hareketin nasıl yapılacağına dair açıklama..." rows={4} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
         <div className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-2 text-sm font-semibold text-cream-900">Video</p>
-          <input value={form.videoUrl} onChange={(e) => update({ videoUrl: e.target.value })} placeholder="Video URL" className="w-full rounded-xl border border-cream-200 px-4 py-2.5 text-sm" />
+          {form.videoUrl ? (
+            <p className="mb-2 text-xs text-sage-700">✓ Video yüklendi — kaydettiğinizde kütüphanede görünür</p>
+          ) : (
+            <p className="mb-2 text-xs text-cream-800/50">MP4 önerilir (H.264). MOV, WebM de desteklenir. YouTube linki de yapıştırabilirsiniz.</p>
+          )}
+          <input value={form.videoUrl} onChange={(e) => update({ videoUrl: e.target.value })} placeholder="Storage yolu, YouTube veya harici video URL" className="w-full rounded-xl border border-cream-200 px-4 py-2.5 text-xs font-mono" />
           <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-300 bg-white py-3 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50">
             {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
           </button>

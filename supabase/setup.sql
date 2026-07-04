@@ -749,11 +749,11 @@ grant execute on function public.admin_delete_member(uuid) to authenticated;
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------
--- 7) DEPOLAMA — egzersiz videoları için herkese açık bucket
+-- 7) DEPOLAMA — egzersiz videoları (private bucket, imzalı URL ile oynatılır)
 -- ---------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
-values ('exercise-videos', 'exercise-videos', true)
-on conflict (id) do nothing;
+values ('exercise-videos', 'exercise-videos', false)
+on conflict (id) do update set public = false;
 
 drop policy if exists "exercise videos public read" on storage.objects;
 create policy "exercise videos authenticated read" on storage.objects for select using (
