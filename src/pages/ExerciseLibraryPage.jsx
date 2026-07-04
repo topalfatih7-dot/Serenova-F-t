@@ -100,7 +100,7 @@ export default function ExerciseLibraryPage() {
                 <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed text-cream-800/60">
                   {ex.description || 'Açıklama eklenmemiş.'}
                 </p>
-                <p className="mt-3 text-xs font-semibold text-violet-600 opacity-0 transition group-hover:opacity-100">
+                <p className="mt-3 text-xs font-semibold text-violet-600">
                   Videoyu izle →
                 </p>
               </div>
