@@ -756,8 +756,8 @@ values ('exercise-videos', 'exercise-videos', true)
 on conflict (id) do nothing;
 
 drop policy if exists "exercise videos public read" on storage.objects;
-create policy "exercise videos public read" on storage.objects for select using (
-  bucket_id = 'exercise-videos' and (public.is_admin() or owner = auth.uid())
+create policy "exercise videos authenticated read" on storage.objects for select using (
+  bucket_id = 'exercise-videos' and auth.role() = 'authenticated'
 );
 drop policy if exists "exercise videos admin insert" on storage.objects;
 create policy "exercise videos admin insert" on storage.objects for insert with check (bucket_id = 'exercise-videos' and public.is_admin());

@@ -1314,16 +1314,39 @@ export async function uploadExerciseVideo(file) {
   return { success: true, url: path }
 }
 
+/** Storage path veya eski tam URL'den exercise-videos dosya adini cikarir. */
+export function normalizeExerciseVideoRef(value) {
+  if (!value) return ''
+  const trimmed = String(value).trim()
+  if (!/^https?:\/\//.test(trimmed)) return trimmed
+  for (const marker of ['/object/public/exercise-videos/', '/object/sign/exercise-videos/']) {
+    const idx = trimmed.indexOf(marker)
+    if (idx !== -1) return trimmed.slice(idx + marker.length).split('?')[0]
+  }
+  return trimmed
+}
+
 /** 1 saat gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
 export async function getExerciseVideoUrl(path) {
+  const storagePath = normalizeExerciseVideoRef(path)
+  if (!storagePath || !supabase) return null
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  if (!sessionData?.session) return null
+
+  const { data, error } = await supabase.storage
+    .from('exercise-videos')
+    .createSignedUrl(storagePath, 3600)
+  if (!error && data?.signedUrl) return data.signedUrl
+
   try {
     const res = await fetch('/api/exercise-video-url', {
       method: 'POST',
       headers: await getApiAuthHeaders(),
-      body: JSON.stringify({ path }),
+      body: JSON.stringify({ path: storagePath }),
     })
-    const data = await res.json().catch(() => ({}))
-    return data.ok ? data.url : null
+    const json = await res.json().catch(() => ({}))
+    return json.ok ? json.url : null
   } catch {
     return null
   }
@@ -1360,7 +1383,7 @@ export async function addExercise(data) {
     category: data.bodyPart || data.category || 'Tüm Vücut',
     sport_type: data.sportType || 'Fitness',
     body_part: data.bodyPart || data.category || 'Tüm Vücut',
-    video_url: data.videoUrl || '',
+    video_url: normalizeExerciseVideoRef(data.videoUrl) || '',
   }
   let { error } = await supabase.from('exercises').insert(payload)
   if (isMissingExerciseColumnError(error)) {
@@ -1377,7 +1400,7 @@ export async function editExercise(id, patch) {
     category: patch.bodyPart || patch.category || 'Tüm Vücut',
     sport_type: patch.sportType || 'Fitness',
     body_part: patch.bodyPart || patch.category || 'Tüm Vücut',
-    video_url: patch.videoUrl || '',
+    video_url: normalizeExerciseVideoRef(patch.videoUrl) || '',
   }
   let { error } = await supabase.from('exercises').update(payload).eq('id', id)
   if (isMissingExerciseColumnError(error)) {

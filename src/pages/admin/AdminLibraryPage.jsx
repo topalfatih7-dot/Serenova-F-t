@@ -21,9 +21,15 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categorie
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
 
+  const isVideoFile = (file) => {
+    if (!file) return false
+    if (file.type?.startsWith('video/')) return true
+    return /\.(mp4|webm|mov|m4v|avi|mkv|mpeg|mpg)$/i.test(file.name || '')
+  }
+
   const handleFile = async (file) => {
     if (!file) return
-    if (!file.type.startsWith('video/')) { setError('Lütfen bir video dosyası seçin.'); return }
+    if (!isVideoFile(file)) { setError('Lütfen bir video dosyası seçin (MP4, MOV, WebM vb.).'); return }
     setUploading(true)
     setError('')
     const res = await uploadExerciseVideo(file)
