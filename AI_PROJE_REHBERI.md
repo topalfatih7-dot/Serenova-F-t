@@ -4,7 +4,29 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-05 (§52: Premium Yönetimi'nde artık tüm üyelerin — ücretsiz dahil — paketi değiştirilebiliyor; §51: kayıt sırasında sahte "giriş yapılmış" header'ı düzeltildi, çıkış loading'i eklendi, paket süre/gün gösterimi eklendi; §50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
+> **Son güncelleme:** 2026-07-05 · commit `f8959c32`  
+> **Son oturum özeti:** §58 Admin premium — tüm üyelerin paketi değiştirilebilir · §57 kayıt header / çıkış loading / paket gün gösterimi · §56 RLS performans bakımı · §55 Stripe webhook + sosyal giriş sadeleştirme · §54 hareket videosu imzalı URL · §53 kadro GSB kademeleri
+
+---
+
+## Son Durum Özeti (2026-07-05)
+
+**Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
+
+| Alan | Durum | Doğrulama / Not |
+|------|-------|-----------------|
+| Stripe Checkout + webhook | ✅ Canlı | `STRIPE_WEBHOOK_SECRET` Vercel production'da; `npm run test:stripe`, `npm run test:stripe:checkout` |
+| Sosyal giriş | Google only | Apple/Facebook UI kaldırıldı — `src/services/oauthAuth.js` |
+| RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
+| Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` private + imzalı URL |
+| Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
+| Çıkış UX | ✅ | `loggingOut` — Sidebar, Profile, Staff/Admin shell, mobil menü |
+| Paket süre gösterimi | ✅ | `getPlanDurationLabel()` — landing, onboarding, süre seçici |
+| Admin → Premium Yönetimi | ✅ | **Tüm üyeler** (Basic dahil) listelenir; paket/süre/atama değiştirilebilir |
+| Veritabanı migrasyon | Otomatik | `npm run db:migrate` — `.cursor/rules/supabase-auto-migrate.mdc` |
+| Bilinçli bekleyen | ⚠️ Manuel | `auth_leaked_password_protection` → Supabase Dashboard → Auth → Policies |
+
+**Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. Kayıt sırasında auth session Stripe öncesinde açılır (`ensureAuthForRegistration`); `members` satırı webhook ile oluşur — bu yüzden header'da `hasRegisteredMember()` kontrolü vardır.
 
 ---
 
@@ -15,12 +37,13 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§30–42 Değişiklik Günlüğü** bölümlerine bak.
-7. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
-8. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
-9. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
-10. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
-11. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Apple, Stripe, Telegram, AI, Video, Higgsfield, SEO).
+6. Son değişiklikler için **§53–58 Değişiklik Günlüğü** (2026-07-03 — 2026-07-05); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
+8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
+9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
+10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
+11. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
+12. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Stripe, Telegram, AI, Video, SEO).
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -48,6 +71,12 @@
 | `npm run preview` | Build önizleme |
 | `npm run lint` | ESLint |
 | `npm run test:ai` | AI endpoint testleri (`scripts/test-ai.mjs`) |
+| `npm run test:stripe` | Stripe webhook imza + olay işleme testi (`scripts/test-stripe-webhook.mjs`) |
+| `npm run test:stripe:checkout` | Canlı Stripe Checkout session oluşturma testi (ödeme almaz) |
+| `npm run test:rls` | RLS politika davranış testi (`scripts/test-rls-policies.mjs`) |
+| `npm run db:migrate` | Supabase migration'ları uygular (`scripts/db-migrate.mjs`) |
+| `npm run import:exercises` | Hareket kütüphanesi import pipeline |
+| `npm run og:image` | Open Graph görseli üretir |
 
 ---
 
@@ -264,7 +293,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 **Dosya:** `src/context/AppContext.jsx`
 
 **State (useApp() ile erişilir):**
-- Kullanıcı: `user`, `membership`, `membershipStatus`, `isAuthenticated`, `isAdmin`, `isStaff`
+- Kullanıcı: `user`, `membership`, `membershipStatus`, `isAuthenticated`, `isAdmin`, `isStaff`, `loggingOut` (çıkış sırasında spinner — §57)
 - Seanslar: `coachSessions`, `dietitianSessions`
 - İçerik: `testimonials`, `faqs`, `successStories`, `posts`, `exercises`, `plans`
 - Admin: `platform`, `adminStats`, `membershipBreakdown`, `monthlyGrowth`, `sessionStats`
@@ -297,6 +326,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 | Plan karşılaştırma sayfası | `src/pages/MembershipComparisonPage.jsx` |
 | Admin plan düzenleme | `src/pages/admin/AdminPlansPage.jsx` |
 | Premium üyelik mantığı | `src/services/premiumMembership.js` — **ay bazlı** süre hesabı, süre dolunca `free` plana düşürme |
+| Paket süre etiketi (UI) | `membershipPlans.js` → `DURATION_OPTIONS[].days`, `getPlanDurationLabel()` — landing/onboarding kartları (§57) |
 | Paket → personel ihtiyacı | `membershipPlans.js` → `packageIncludesCoach`, `packageIncludesDietitian`, `memberNeedsStaffAssignment`, `sanitizeStaffForPackage` (§36.1) |
 | Üyelik dondurma/iptal talepleri | **Kaldırıldı** — `membership_requests` tablosu drop (`20260625_audit_rls_plans_cleanup.sql`); eski `AdminRequestsPage.jsx` silindi |
 | Stripe ödeme + süre | `api/stripe-checkout.js` (`durationMonths`), `api/stripe-webhook.js` |
@@ -328,7 +358,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 | Koç/diyetisyen atama mantığı | `src/services/staffAssignment.js` — `assignStaffOnly`, `applyStaffAssignments` — **paket dışı rol atamasını null yapar** |
 | Paket → personel yardımcıları | `src/data/membershipPlans.js` — `packageIncludesCoach`, `packageIncludesDietitian`, `sanitizeStaffForPackage` |
 | Admin manuel randevu UI | `src/components/admin/ManualSessionEditor.jsx` — pakete göre koç/diyetisyen bölümleri |
-| Admin premium atama UI | `src/pages/admin/AdminPremiumPage.jsx` — pakete göre koç/diyetisyen dropdown'ları |
+| Admin premium atama UI | `src/pages/admin/AdminPremiumPage.jsx` — tüm üyeler, paket/süre değiştirme, koç/diyetisyen/doktor dropdown'ları (§58) |
 | Randevu planlama UI (kayıt) | `src/components/package/SupportScheduler.jsx`, `WeeklyAvailability.jsx` |
 | Otomatik randevu üretimi | **Kaldırıldı** — admin panelinden elle girilir (`supportSessions.js` silindi) |
 | Kaldırıldı | `PackageBuilder.jsx`, `PackageBuilderPage.jsx`, `PackageSummaryCard.jsx`, `NumberSelector.jsx` silindi (`/builder` → `/membership` redirect korunuyor) |
@@ -437,7 +467,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Genel bakış | `/admin` | `AdminOverviewPage.jsx` | activities, tickets, members, platformStats |
 | Üyeler | `/admin/members` | `AdminMembersPage.jsx` | members — detay modal, `MemberHealthInsights`, pakete göre koç/diyetisyen satırları |
 | Paketler | `/admin/plans` | `AdminPlansPage.jsx` | plans |
-| Premium Yönetimi | `/admin/premium` | `AdminPremiumPage.jsx` | members — **paket bazlı** koç/diyetisyen atama + `ManualSessionEditor` |
+| Premium Yönetimi | `/admin/premium` | `AdminPremiumPage.jsx` | **Tüm üyeler** (Basic dahil) — paket/süre değiştirme, koç/diyetisyen/doktor atama, `ManualSessionEditor` (§58) |
 | Başvurular | `/admin/applications` | `AdminApplicationsPage.jsx` | staff_applications, corporate_applications, contact_inquiries |
 | Kütüphane | `/admin/library` | `AdminLibraryPage.jsx` | exercises, storage |
 | Kadromuz | `/admin/staff` | `AdminStaffPage.jsx` | staff, RPC |
@@ -588,7 +618,7 @@ Kaynak: `src/App.jsx` satır 56–117
 /admin               → AdminOverviewPage
 /admin/members       → AdminMembersPage
 /admin/plans         → AdminPlansPage
-/admin/premium       → AdminPremiumPage (paket bazlı koç/diyetisyen)
+/admin/premium       → AdminPremiumPage (tüm üyeler — paket/süre/atama yönetimi)
 /admin/applications  → AdminApplicationsPage (kadro + kurumsal + iletişim)
 /admin/library       → AdminLibraryPage
 /admin/staff         → AdminStaffPage
@@ -811,7 +841,7 @@ payments/PaymentManagementPage.jsx  ← üye/staff/admin ödeme UI (mock)
 admin/AdminOverviewPage.jsx
 admin/AdminMembersPage.jsx
 admin/AdminPlansPage.jsx
-admin/AdminPremiumPage.jsx      ← paket bazlı koç/diyetisyen atama
+admin/AdminPremiumPage.jsx      ← tüm üyeler — paket/süre/atama yönetimi (§58)
 admin/AdminApplicationsPage.jsx ← kadro + kurumsal + iletişim
 admin/AdminLibraryPage.jsx
 admin/AdminStaffPage.jsx
@@ -973,7 +1003,10 @@ Kaynak: `.env.example`
 | Renk/stil tema | `src/index.css` @theme bloğu |
 | Toast mesajları | Sayfa içinde `useToast()` |
 | Seans / randevu yönetimi | `src/components/admin/ManualSessionEditor.jsx` + `AdminPremiumPage.jsx` |
-| Koç/diyetisyen atama (paket bazlı) | `membershipPlans.js` yardımcıları + `AdminPremiumPage.jsx` + `staffAssignment.js` |
+| Koç/diyetisyen atama + paket değiştirme (admin) | `AdminPremiumPage.jsx` + `adminUpdatePremium` + `staffAssignment.js` + `membershipPlans.js` |
+| Public header "giriş yapılmış" gösterimi | `PublicLayout.jsx` → `isFullyRegistered` + `hasRegisteredMember()` (§57) |
+| Çıkış loading | `AppContext.jsx` → `loggingOut` + panel shell çıkış butonları (§57) |
+| Paket gün/süre etiketi (UI) | `membershipPlans.js` → `getPlanDurationLabel()` + `PricingCard`, `MembershipPlanCard`, `MembershipDurationPicker` |
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` — `generateHealthAnalysis()` |
 | Landing üye/çevrimiçi gösterim eşikleri | `src/utils/displayPlatformStats.js`, `src/hooks/usePlatformDisplayStats.js`, `LiveActiveCounter.jsx`, `LandingPage.jsx` |
 | Kayıt akışı (2 adım) | `src/pages/OnboardingPage.jsx` |
@@ -999,7 +1032,7 @@ Kaynak: `.env.example`
 
 ## 11. Bilinen Sınırlamalar ve Tuzaklar
 
-1. **Ödeme: Stripe altyapısı eklendi (opsiyonel)** — `VITE_STRIPE_ENABLED=true` ise gerçek Stripe Checkout akışı çalışır (`api/stripe-checkout.js` + `api/stripe-webhook.js`). Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır. Kurulum: `docs/setup/STRIPE_SETUP.md`.
+1. **Ödeme: Stripe canlıda çalışıyor** — `VITE_STRIPE_ENABLED=true` + Vercel'de `STRIPE_WEBHOOK_SECRET` zorunlu. Webhook kopuksa ödeme alınır ama üyelik açılmaz (§55). Test: `npm run test:stripe`, `npm run test:stripe:checkout`. Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
 3. **localDb.js silindi** (2026-06-24) — diskten kaldırıldı; tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
@@ -1011,6 +1044,9 @@ Kaynak: `.env.example`
 10. **Doctor rolü** — frontend + DB destekler.
 11. **RLS koç erişimi** — `assigned_coach_id` / `assigned_dietitian_id` sütunlarına bağlı.
 12. **Sistem programları** — `staffId` mutlaka `null` olmalı (`'system'` UUID FK hatası verir); `createProgram` filtreler.
+13. **Kayıt sırasında auth session erken açılır** — Stripe öncesi `ensureAuthForRegistration` session oluşturur; header bunu `isFullyRegistered` ile ayırır (§57).
+14. **RLS performans lint'leri (§56)** — `auth_rls_initplan`, unindexed FK ve çoğu `multiple_permissive_policies` düzeltildi; kalan tek bilinen uyarı: `site_content` insert policy çakışması (bilinçli).
+15. **Leaked password protection** — Supabase Dashboard'dan manuel açılmalı (`auth_leaked_password_protection` WARN).
 
 ### Paket Sistemi Yapısı (2026-06-24 Güncellemesi)
 
@@ -2645,7 +2681,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/admin` | `AdminOverviewPage.jsx` | KPI kartları, grafikler, açık ticket, atama eksik sayısı | `computeAdminStats`, Recharts |
 | `/admin/members` | `AdminMembersPage.jsx` | Üye arama/liste, detay modal (profil, paket, sağlık) | `MemberHealthInsights`, `AdminActiveUsersPanel` |
 | `/admin/plans` | `AdminPlansPage.jsx` | DB plan CRUD, fiyat kademeleri, özellik listesi | `upsertPlan` |
-| `/admin/premium` | `AdminPremiumPage.jsx` | **Paket bazlı koç/diyetisyen atama**, manuel randevu | `EditPremiumModal`, `ManualSessionEditor`, `adminUpdatePremium` |
+| `/admin/premium` | `AdminPremiumPage.jsx` | **Tüm üyeler** — paket/süre değiştirme, koç/diyetisyen/doktor atama, manuel randevu | `EditPremiumModal`, `ManualSessionEditor`, `adminUpdatePremium` (§58) |
 | `/admin/applications` | `AdminApplicationsPage.jsx` | Kadro + kurumsal + iletişim başvuruları (onay/red, **CV PDF**) | 3 tab |
 | `/admin/library` | `AdminLibraryPage.jsx` | Egzersiz CRUD, video yükleme (Storage) | `uploadExerciseVideo` |
 | `/admin/staff` | `AdminStaffPage.jsx` | Kadro ekle/düzenle/sil | RPC `admin_upsert_staff` |
@@ -2662,7 +2698,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 | Dosya | Kullanıldığı yer | İçerik |
 |-------|------------------|--------|
-| `PublicLayout.jsx` | Public rotalar | Navbar (`NavDropdown`), footer, `ConsentBanner`, `PromoBanner`, `ScrollToTop` |
+| `PublicLayout.jsx` | Public rotalar | Navbar (`NavDropdown`), footer, `ConsentBanner`, `PromoBanner`, `ScrollToTop`; header `isFullyRegistered` (§57) |
 | `AppShell.jsx` | Üye paneli | `Sidebar`, `TopBar`, `PanelMobileMenu` |
 | `StaffShell.jsx` | Personel paneli | Personel nav, çıkış |
 | `AdminShell.jsx` | Admin paneli | 15 maddelik `adminNav`, `AnimatedBackground`, `NoIndexHead` |
@@ -3713,7 +3749,7 @@ Migration MCP `apply_migration` ile **Yeni Form** (`rvzksmyhsgxgrxgeabmi`) proje
 
 ---
 
-## 47. Kadro Başvurusu — GSB Federasyon Kademeleri (2026-07-03)
+## 53. Kadro Başvurusu — GSB Federasyon Kademeleri (2026-07-03)
 
 Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönetmeliği (RG 14.12.2019) kademelerine göre yenilendi.
 
@@ -3737,7 +3773,7 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 
 ---
 
-## 48. Hareket Kütüphanesi — Video Güvenliği: Private Bucket + İmzalı URL (2026-07-04)
+## 54. Hareket Kütüphanesi — Video Güvenliği: Private Bucket + İmzalı URL (2026-07-04)
 
 Önceden `exercise-videos` bucket'ı `public: true` idi; `uploadExerciseVideo()` kalıcı `getPublicUrl()` döndürüyordu ve bu URL `exercises.video_url` alanında client state'e kadar taşınıyordu — gerçek dosya adresi tarayıcıda süresiz açık kalıyordu.
 
@@ -3757,7 +3793,7 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 
 ---
 
-## 49. Genel Proje Taraması — Stripe Webhook Kopukluğu, Sosyal Giriş Sadeleştirme, Güvenlik (2026-07-05)
+## 55. Genel Proje Taraması — Stripe Webhook Kopukluğu, Sosyal Giriş Sadeleştirme, Güvenlik (2026-07-05)
 
 Uçtan uca proje taraması: veri akışları, Supabase bağlantıları, Stripe entegrasyonu, RLS/storage güvenliği ve React hook kuralları kontrol edildi.
 
@@ -3778,7 +3814,7 @@ Düzeltme:
 **Kontrol edilip değiştirilmeyenler (bilinçli):**
 - `get_advisors` → çok sayıda `SECURITY DEFINER` RPC uyarısı (`is_admin`, `current_staff_id`, `staff_manages_member`, `submit_*` formları vb.): bunlar RLS policy'lerinin içinden çağrıldığı için `EXECUTE` yetkisi kaldırılamaz (kaldırılırsa RLS kırılır); tasarım gereği.
 - `auth_leaked_password_protection` (WARN): Supabase Dashboard → Authentication → Policies üzerinden manuel açılmalı (MCP'de bu ayar için tool yok).
-- Performans lint'leri (`auth_rls_initplan`, `multiple_permissive_policies`, unindexed FK'ler): fonksiyonel hata değil, ölçek performans önerisi — ayrı bir bakım turu olarak planlanmalı (çok sayıda policy'yi tek seferde değiştirmek risk taşıyor).
+- Performans lint'leri (`auth_rls_initplan`, `multiple_permissive_policies`, unindexed FK'ler): → **§56'da düzeltildi** (`npm run test:rls`).
 - `npm run lint` çıktısındaki ~103 hata/23 uyarı (çoğu `no-unused-vars` ve `react-hooks/set-state-in-effect` stil uyarıları) oturum öncesinden mevcuttu (HEAD'de de aynı sayı); gerçek çökme riski taşıyan tek hook hatası (yukarıdaki) düzeltildi, geri kalanı ayrı bir temizlik turu gerektiriyor.
 
 | Dosya | Değişiklik |
@@ -3789,9 +3825,9 @@ Düzeltme:
 | Vercel `STRIPE_WEBHOOK_SECRET` (production) | Yeni eklendi + redeploy |
 | Stripe (canlı hesap) | Yeni webhook endpoint (`we_1TpnprGm0Qpi2P1JsFF8FAV3`) |
 
-## 50. RLS Performans Bakımı — auth_rls_initplan, Unindexed FK, Multiple Permissive Policies (2026-07-05)
+## 56. RLS Performans Bakımı — auth_rls_initplan, Unindexed FK, Multiple Permissive Policies (2026-07-05)
 
-§49'da ertelenen performans lint'leri (fonksiyonel hata değil, ölçek optimizasyonu) tek bir bakım turunda düzeltildi. Migration: `supabase/migrations/20260705_rls_performance_tuning.sql`. Davranış değişikliği **yok** — yalnızca sorgu planı/erişim politikası konsolidasyonu; `scripts/test-rls-policies.mjs` (`npm run test:rls`) ile 19/19 ✅ doğrulandı (anon/authenticated rolüyle gerçek Supabase sorguları: üye kendi verisini görebiliyor/başkasınınkini göremiyor, staff kendi profilini güncelleyebiliyor/başkasınınkini güncelleyemiyor, admin-only tablolara admin olmayan yazamıyor, public-read tablolar hâlâ herkese açık).
+§55'te ertelenen performans lint'leri (fonksiyonel hata değil, ölçek optimizasyonu) tek bir bakım turunda düzeltildi. Migration: `supabase/migrations/20260705_rls_performance_tuning.sql`. Davranış değişikliği **yok** — yalnızca sorgu planı/erişim politikası konsolidasyonu; `scripts/test-rls-policies.mjs` (`npm run test:rls`) ile 19/19 ✅ doğrulandı (anon/authenticated rolüyle gerçek Supabase sorguları: üye kendi verisini görebiliyor/başkasınınkini göremiyor, staff kendi profilini güncelleyebiliyor/başkasınınkini güncelleyemiyor, admin-only tablolara admin olmayan yazamıyor, public-read tablolar hâlâ herkese açık).
 
 1. **`auth_rls_initplan` (22 policy):** RLS policy'lerinde doğrudan `auth.uid()` çağrıları Postgres tarafından **her satır için yeniden değerlendiriliyordu**. `(select auth.uid())` sarmalaması ile planlayıcı bunu tek seferlik `InitPlan` olarak önbelleğe alıyor (Supabase'in resmi önerisi). Etkilenen tablolar: `members`, `tickets`, `payments`, `programs`, `activities`, `chat_threads`, `chat_messages`, `staff_collab_threads`, `staff_collab_messages`, `user_presence`.
 2. **Unindexed foreign keys (5 sütun):** `activities.member_id`, `payments.member_id`, `programs.member_id`, `programs.staff_id`, `tickets.member_id` için btree index eklendi — FK join/cascade delete performansı için.
@@ -3807,7 +3843,7 @@ Düzeltme:
 | `scripts/test-rls-policies.mjs` | Yeni — anon/authenticated rolüyle RLS davranış regresyon testi (`npm run test:rls`) |
 | `package.json` | `test:rls` script'i eklendi |
 
-## 51. Kayıt Sırasında Sahte "Giriş Yapılmış" Header'ı, Çıkış Loading'i, Paket Süre Gösterimi (2026-07-05)
+## 57. Kayıt Sırasında Sahte "Giriş Yapılmış" Header'ı, Çıkış Loading'i, Paket Süre Gösterimi (2026-07-05)
 
 Kullanıcı üç ayrı hata/eksiklik bildirdi: (1) paket seçip Stripe'a yönlendirilirken header sağ üstte sanki kayıt tamamlanmış gibi "Profil · İsim" görünüyordu, (2) çıkış (logout) sırasında loading göstergesi çalışmıyordu, (3) paketlerin süre/gün bilgisi hiçbir yerde görünmüyordu (yalnızca Basic'in 48 saatlik deneme banner'ı vardı).
 
@@ -3828,13 +3864,21 @@ Kullanıcı üç ayrı hata/eksiklik bildirdi: (1) paket seçip Stripe'a yönlen
 | `src/components/landing/PricingCard.jsx` | Süre etiketi eklendi; Doktor için "3/6 aylık" metni düzeltildi |
 | `src/components/membership/MembershipPlanCard.jsx` | Fiyatın altında süre etiketi eklendi |
 
-## 52. Premium Yönetimi — Tüm Üyelerin Paketi Değiştirilebilir (2026-07-05)
+## 58. Premium Yönetimi — Tüm Üyelerin Paketi Değiştirilebilir (2026-07-05)
 
 `AdminPremiumPage` (Admin → Premium Yönetimi) yalnızca zaten ücretli pakete sahip üyeleri (`isPaidMembership`) listeliyordu — ücretsiz (Basic) üyeler listede hiç görünmüyordu, dolayısıyla admin panelinden bir üyeyi ücretsizden ücretli pakete yükseltmek bu sayfadan mümkün değildi (backend fonksiyonu `adminUpdatePremiumMembership` zaten `membership: 'free'` dahil her planı destekliyordu, eksik olan yalnızca UI'daki filtreydi).
 
-Değişiklik: Üye listesi artık **tüm üyeleri** gösteriyor. Ücretsiz üyeler kartta "Ücretsiz" rozetiyle ve sadeleştirilmiş bir görünümle ("Henüz paket yok — yükseltmek için tıklayın") listeleniyor; tıklanınca aynı `EditPremiumModal` açılıyor ve admin doğrudan paket/süre/koç-diyetisyen ataması yapıp üyeyi ücretli bir plana geçirebiliyor. Filtre dropdown'ına "Ücretsiz (Basic)" ve "Premium (ücretli)" seçenekleri eklendi, üst istatistik şeridine "Ücretsiz" sayacı eklendi (`grid-cols-3` → `grid-cols-2 sm:grid-cols-4`).
+Değişiklik: Üye listesi artık **tüm üyeleri** gösteriyor. Ücretsiz üyeler kartta "Ücretsiz" rozetiyle ve sadeleştirilmiş bir görünümle ("Henüz paket yok — yükseltmek için tıklayın") listeleniyor; tıklanınca aynı `EditPremiumModal` açılıyor ve admin doğrudan paket/süre/koç-diyetisyen ataması yapıp üyeyi ücretli bir plana geçirebiliyor.
+
+**Filtreler:** Tüm üyeler · Premium (ücretli) · Ücretsiz (Basic) · Aktif · Atama eksik · 7 gün içinde biten.
+
+**İstatistik şeridi:** Premium · Ücretsiz · Atama Eksik · Sona Eriyor (`grid-cols-2 sm:grid-cols-4`).
+
+**Backend değişmedi:** `adminUpdatePremiumMembership(memberId, options)` — `options.membership`, `durationMonths`, `addPackage`, `extendDays`, `setRemainingDays`, staff atamaları ve manuel seanslar aynı API ile kaydediliyor.
 
 | Dosya | Değişiklik |
 |-------|------------|
 | `src/pages/admin/AdminPremiumPage.jsx` | Üye listesi filtresi `isPaidMembership` zorunluluğu kaldırıldı (tüm üyeler); `PremiumMemberCard`'a ücretsiz üye için sadeleştirilmiş görünüm eklendi; filtre seçenekleri ve istatistik şeridi güncellendi |
+
+**Commit:** `f8959c32`
 
