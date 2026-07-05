@@ -323,9 +323,11 @@ alter table public.corporate_applications enable row level security;
 alter table public.contact_inquiries   enable row level security;
 
 -- members
+-- Not: auth.uid() (select ...) ile sarmalanır — RLS initPlan optimizasyonu (2026-07-05),
+-- bkz. migrations/20260705_rls_performance_tuning.sql. Davranış aynı, yalnızca sorgu planı.
 drop policy if exists members_select on public.members;
 create policy members_select on public.members for select using (
-  public.is_admin() or id = auth.uid()
+  public.is_admin() or id = (select auth.uid())
   or exists (select 1 from public.staff s
     where (
       s.id = members.assigned_coach_id
@@ -335,10 +337,10 @@ create policy members_select on public.members for select using (
       and lower(s.email) = lower(public.current_email()))
 );
 drop policy if exists members_insert on public.members;
-create policy members_insert on public.members for insert with check (id = auth.uid() or public.is_admin());
+create policy members_insert on public.members for insert with check (id = (select auth.uid()) or public.is_admin());
 drop policy if exists members_update on public.members;
 create policy members_update on public.members for update using (
-  public.is_admin() or id = auth.uid()
+  public.is_admin() or id = (select auth.uid())
   or exists (select 1 from public.staff s
     where (
       s.id = members.assigned_coach_id
@@ -349,45 +351,74 @@ create policy members_update on public.members for update using (
 );
 
 -- staff
+-- staff_admin_write (FOR ALL) kaldırıldı — staff_select (SELECT) ile örtüşüyordu
+-- (multiple_permissive_policies). Admin insert/delete ayrı politikalarda; UPDATE tek
+-- politikada (admin OR kendi profili) birleştirildi (2026-07-05).
 drop policy if exists staff_select on public.staff;
 create policy staff_select on public.staff for select using (true);
 drop policy if exists staff_admin_write on public.staff;
-create policy staff_admin_write on public.staff for all using (public.is_admin()) with check (public.is_admin());
 drop policy if exists staff_self_update on public.staff;
-create policy staff_self_update on public.staff for update
-  using (lower(email) = lower(public.current_email()))
+drop policy if exists staff_admin_insert on public.staff;
+create policy staff_admin_insert on public.staff for insert with check (public.is_admin());
+drop policy if exists staff_admin_delete on public.staff;
+create policy staff_admin_delete on public.staff for delete using (public.is_admin());
+drop policy if exists staff_update on public.staff;
+create policy staff_update on public.staff for update
+  using (public.is_admin() or lower(email) = lower(public.current_email()))
   with check (
-    lower(email) = lower(public.current_email())
-    and id = public.current_staff_id()
+    public.is_admin() or (
+      lower(email) = lower(public.current_email())
+      and id = public.current_staff_id()
+    )
   );
 
 -- programs — personel yalnızca atanmış danışanların programlarını görür/düzenler
+-- programs_write (FOR ALL) kaldırıldı — SELECT kapsamı programs_select tarafından zaten
+-- karşılanıyordu (multiple_permissive_policies, 2026-07-05).
 drop policy if exists programs_select on public.programs;
 create policy programs_select on public.programs for select using (
   public.is_admin()
-  or member_id = auth.uid()
+  or member_id = (select auth.uid())
   or public.staff_manages_member(member_id)
 );
 drop policy if exists programs_write on public.programs;
-create policy programs_write on public.programs for all using (
+drop policy if exists programs_admin_insert on public.programs;
+create policy programs_admin_insert on public.programs for insert with check (
+  public.is_admin() or public.staff_manages_member(member_id)
+);
+drop policy if exists programs_admin_update on public.programs;
+create policy programs_admin_update on public.programs for update using (
   public.is_admin() or public.staff_manages_member(member_id)
 ) with check (
   public.is_admin() or public.staff_manages_member(member_id)
 );
+drop policy if exists programs_admin_delete on public.programs;
+create policy programs_admin_delete on public.programs for delete using (
+  public.is_admin() or public.staff_manages_member(member_id)
+);
+create index if not exists idx_programs_member_id on public.programs (member_id);
+create index if not exists idx_programs_staff_id on public.programs (staff_id);
 
--- posts
+-- posts — posts_admin_write (FOR ALL) kaldırıldı; posts_select zaten (published or is_admin())
+-- ile admin'in taslakları görmesini kapsıyor (multiple_permissive_policies, 2026-07-05).
 drop policy if exists posts_select on public.posts;
 create policy posts_select on public.posts for select using (published or public.is_admin());
 drop policy if exists posts_admin_write on public.posts;
-create policy posts_admin_write on public.posts for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists posts_admin_insert on public.posts;
+create policy posts_admin_insert on public.posts for insert with check (public.is_admin());
+drop policy if exists posts_admin_update on public.posts;
+create policy posts_admin_update on public.posts for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists posts_admin_delete on public.posts;
+create policy posts_admin_delete on public.posts for delete using (public.is_admin());
 
 -- tickets
 drop policy if exists tickets_select on public.tickets;
-create policy tickets_select on public.tickets for select using (public.is_admin() or member_id = auth.uid());
+create policy tickets_select on public.tickets for select using (public.is_admin() or member_id = (select auth.uid()));
 drop policy if exists tickets_insert on public.tickets;
-create policy tickets_insert on public.tickets for insert with check (public.is_admin() or member_id = auth.uid());
+create policy tickets_insert on public.tickets for insert with check (public.is_admin() or member_id = (select auth.uid()));
 drop policy if exists tickets_update on public.tickets;
-create policy tickets_update on public.tickets for update using (public.is_admin() or member_id = auth.uid());
+create policy tickets_update on public.tickets for update using (public.is_admin() or member_id = (select auth.uid()));
+create index if not exists idx_tickets_member_id on public.tickets (member_id);
 
 -- activities
 drop policy if exists activities_select on public.activities;
@@ -396,34 +427,55 @@ drop policy if exists activities_insert on public.activities;
 create policy activities_insert on public.activities for insert with check (
   public.is_admin()
   or public.is_staff()
-  or (member_id = auth.uid())
+  or (member_id = (select auth.uid()))
 );
+create index if not exists idx_activities_member_id on public.activities (member_id);
 
 -- payments
 drop policy if exists payments_select on public.payments;
-create policy payments_select on public.payments for select using (public.is_admin() or member_id = auth.uid());
+create policy payments_select on public.payments for select using (public.is_admin() or member_id = (select auth.uid()));
 drop policy if exists payments_insert on public.payments;
-create policy payments_insert on public.payments for insert with check (public.is_admin() or member_id = auth.uid());
+create policy payments_insert on public.payments for insert with check (public.is_admin() or member_id = (select auth.uid()));
+create index if not exists idx_payments_member_id on public.payments (member_id);
 
--- site_content
+-- site_content — site_content_admin_write (FOR ALL) kaldırıldı; SELECT kapsamı
+-- site_content_select (true) tarafından zaten karşılanıyor. INSERT için admin/üye
+-- ayrımı (site_content_member_story) kasıtlı olarak ayrı politika kalıyor.
 drop policy if exists site_content_select on public.site_content;
 create policy site_content_select on public.site_content for select using (true);
 drop policy if exists site_content_admin_write on public.site_content;
-create policy site_content_admin_write on public.site_content for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists site_content_admin_insert on public.site_content;
+create policy site_content_admin_insert on public.site_content for insert with check (public.is_admin());
+drop policy if exists site_content_admin_update on public.site_content;
+create policy site_content_admin_update on public.site_content for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists site_content_admin_delete on public.site_content;
+create policy site_content_admin_delete on public.site_content for delete using (public.is_admin());
 drop policy if exists site_content_member_story on public.site_content;
 create policy site_content_member_story on public.site_content for insert to authenticated with check (kind = 'success_story');
 
--- exercises
+-- exercises — exercises_admin_write (FOR ALL) kaldırıldı; SELECT kapsamı exercises_select
+-- (true) tarafından zaten karşılanıyor (multiple_permissive_policies, 2026-07-05).
 drop policy if exists exercises_select on public.exercises;
 create policy exercises_select on public.exercises for select using (true);
 drop policy if exists exercises_admin_write on public.exercises;
-create policy exercises_admin_write on public.exercises for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists exercises_admin_insert on public.exercises;
+create policy exercises_admin_insert on public.exercises for insert with check (public.is_admin());
+drop policy if exists exercises_admin_update on public.exercises;
+create policy exercises_admin_update on public.exercises for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists exercises_admin_delete on public.exercises;
+create policy exercises_admin_delete on public.exercises for delete using (public.is_admin());
 
--- plans
+-- plans — plans_admin_write (FOR ALL) kaldırıldı; SELECT kapsamı plans_select (true)
+-- tarafından zaten karşılanıyor (multiple_permissive_policies, 2026-07-05).
 drop policy if exists plans_select on public.plans;
 create policy plans_select on public.plans for select using (true);
 drop policy if exists plans_admin_write on public.plans;
-create policy plans_admin_write on public.plans for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists plans_admin_insert on public.plans;
+create policy plans_admin_insert on public.plans for insert with check (public.is_admin());
+drop policy if exists plans_admin_update on public.plans;
+create policy plans_admin_update on public.plans for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists plans_admin_delete on public.plans;
+create policy plans_admin_delete on public.plans for delete using (public.is_admin());
 
 -- staff_applications
 drop policy if exists staff_applications_insert on public.staff_applications;
@@ -794,7 +846,7 @@ values ('staff-application-docs', 'staff-application-docs', true)
 on conflict (id) do nothing;
 
 drop policy if exists "staff app docs public read" on storage.objects;
-create policy "staff app docs public read" on storage.objects for select using (bucket_id = 'staff-application-docs');
+create policy "staff app docs public read" on storage.objects for select using (bucket_id = 'staff-application-docs' and public.is_admin());
 drop policy if exists "staff app docs anon insert" on storage.objects;
 create policy "staff app docs anon insert" on storage.objects for insert with check (bucket_id = 'staff-application-docs');
 drop policy if exists "staff app docs admin delete" on storage.objects;
@@ -905,13 +957,23 @@ create index if not exists user_presence_last_seen_idx on public.user_presence(l
 
 alter table public.user_presence enable row level security;
 
+-- Not: Üretimde bu iki politika, chat_threads tabanlı "chat_peers" görünürlüğüyle birlikte
+-- tek bir user_presence_select politikasında birleştirildi (multiple_permissive_policies,
+-- bkz. migrations/20260705_rls_performance_tuning.sql). chat_threads bu temel setup.sql'de
+-- tanımlı olmadığından (bkz. migrations/20260627_member_staff_chat.sql) burada yalnızca
+-- auth.uid() initPlan optimizasyonu uygulanıyor; tam politika kümesi migration'larla gelir.
 drop policy if exists user_presence_self on public.user_presence;
-create policy user_presence_self on public.user_presence
-  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists user_presence_insert on public.user_presence;
+create policy user_presence_insert on public.user_presence for insert with check (user_id = (select auth.uid()));
+drop policy if exists user_presence_update on public.user_presence;
+create policy user_presence_update on public.user_presence for update using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists user_presence_delete on public.user_presence;
+create policy user_presence_delete on public.user_presence for delete using (user_id = (select auth.uid()));
 
 drop policy if exists user_presence_admin_select on public.user_presence;
-create policy user_presence_admin_select on public.user_presence
-  for select using (public.is_admin());
+drop policy if exists user_presence_select on public.user_presence;
+create policy user_presence_select on public.user_presence
+  for select using (public.is_admin() or user_id = (select auth.uid()));
 
 create or replace function public.get_online_stats()
 returns json

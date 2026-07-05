@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-04 (§48: hareket kütüphanesi video güvenliği — private bucket + imzalı URL; §47 öncesi yasal/kütüphane commit `bb88669d`)
+> **Son güncelleme:** 2026-07-05 (§50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
 
 ---
 
@@ -3754,4 +3754,56 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 **Geriye uyumluluk:** Eski kayıtlardaki tam public URL'ler `VideoPlayer` içinde `/object/public/exercise-videos/` işaretinden path'e çevrilip imzalanıyor — ayrı bir veri migrasyon script'i gerekmedi. `ExerciseLibraryPage`, `AdminLibraryPage`, `CalendarPage`, `ProgramsPage` aynı `VideoPlayer` bileşenini kullandığı için tüm ekranlar otomatik korunuyor.
 
 **Bilinen sınır:** 1600 video ölçeğinde Supabase ücretsiz depolama/bant genişliği limitleri yetersiz kalabilir (ayrı konu — gerekirse Cloudflare R2'ye taşıma değerlendirilecek).
+
+---
+
+## 49. Genel Proje Taraması — Stripe Webhook Kopukluğu, Sosyal Giriş Sadeleştirme, Güvenlik (2026-07-05)
+
+Uçtan uca proje taraması: veri akışları, Supabase bağlantıları, Stripe entegrasyonu, RLS/storage güvenliği ve React hook kuralları kontrol edildi.
+
+**Kritik bulgu — Stripe webhook hiç bağlı değildi:** Stripe hesabında `/api/stripe-webhook` için **hiçbir webhook endpoint'i tanımlı değildi** ve Vercel production'da `STRIPE_WEBHOOK_SECRET` **tamamen boştu**. Sonuç: Checkout ödemesi tamamlansa bile Stripe'ın gönderdiği `checkout.session.completed` olayı hiçbir yere ulaşmıyordu → **üyelik asla aktifleşmiyordu** (ödeme alınıp paket açılmıyor olabilirdi).
+
+Düzeltme:
+1. Stripe API ile canlı modda yeni webhook endpoint oluşturuldu (`https://www.yeniform.com/api/stripe-webhook`, events: `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_failed`, `payment_intent.payment_failed`).
+2. Dönen `whsec_...` → Vercel production `STRIPE_WEBHOOK_SECRET` olarak eklendi (`vercel env add`) + `.env.local` güncellendi.
+3. Production yeniden deploy edildi (env değişikliği için gerekli) → `POST /api/stripe-webhook` artık imza doğrulamasına düşüyor (önceden "yapılandırma eksik" veriyordu).
+4. Doğrulama: `scripts/test-stripe-webhook.mjs` (11/11 ✅, mevcut script) + yeni `scripts/test-stripe-checkout.mjs` (canlı anahtarla gerçek Checkout session oluşturup ücret almadan `expire` ediyor, 7/7 ✅) — `npm run test:stripe` / `npm run test:stripe:checkout`.
+
+**Sosyal giriş sadeleştirme:** Apple ve Facebook ile giriş/kayıt kaldırıldı, yalnızca Google kaldı — `SocialAuthButtons.jsx`, `oauthAuth.js` (`PROVIDERS = ['google']`), `OnboardingPage.jsx` ve `AuthCallbackPage.jsx` metinleri güncellendi. (Bu değişiklik oturumun başında zaten kısmen yapılmıştı, tarama ile tamamlandığı doğrulandı.) `docs/setup/APPLE_SETUP.md` / `FACEBOOK_SETUP.md` ileride tekrar açmak için repoda duruyor.
+
+**React hook kuralı ihlali (gerçek çökme riski):** `StaffCollabMessagesPage.jsx` içinde rol kontrolü (`if (role !== 'coach' && role !== 'dietitian') return <Navigate />`) tüm `useState/useMemo/useEffect` çağrılarından **önce** early-return yapıyordu → `staffUser.role` async yüklenince hook sırası değişip React "Rendered fewer hooks than expected" hatası verebilirdi. Guard, tüm hook'lardan sonraya taşındı.
+
+**Supabase güvenlik — herkese açık dosya listeleme:** `staff-application-docs` bucket'ında (kadro başvuru CV/sertifika belgeleri) `select` RLS policy'si herkese (anon dahil) bucket içeriğini **listeleme** izni veriyordu (`get_advisors` → `public_bucket_allows_listing`). Migration `20260705_restrict_staff_docs_listing.sql` ile `select` yalnızca `is_admin()` ile sınırlandı. (Bucket `public=true` kaldığı için tekil dosyaya doğrudan public URL ile erişim etkilenmedi — admin panelindeki mevcut linkler çalışmaya devam ediyor; yalnızca toplu enumerasyon kapatıldı.)
+
+**Kontrol edilip değiştirilmeyenler (bilinçli):**
+- `get_advisors` → çok sayıda `SECURITY DEFINER` RPC uyarısı (`is_admin`, `current_staff_id`, `staff_manages_member`, `submit_*` formları vb.): bunlar RLS policy'lerinin içinden çağrıldığı için `EXECUTE` yetkisi kaldırılamaz (kaldırılırsa RLS kırılır); tasarım gereği.
+- `auth_leaked_password_protection` (WARN): Supabase Dashboard → Authentication → Policies üzerinden manuel açılmalı (MCP'de bu ayar için tool yok).
+- Performans lint'leri (`auth_rls_initplan`, `multiple_permissive_policies`, unindexed FK'ler): fonksiyonel hata değil, ölçek performans önerisi — ayrı bir bakım turu olarak planlanmalı (çok sayıda policy'yi tek seferde değiştirmek risk taşıyor).
+- `npm run lint` çıktısındaki ~103 hata/23 uyarı (çoğu `no-unused-vars` ve `react-hooks/set-state-in-effect` stil uyarıları) oturum öncesinden mevcuttu (HEAD'de de aynı sayı); gerçek çökme riski taşıyan tek hook hatası (yukarıdaki) düzeltildi, geri kalanı ayrı bir temizlik turu gerektiriyor.
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `scripts/test-stripe-checkout.mjs` | Yeni — canlı Stripe anahtarıyla Checkout session oluşturup ücret almadan temizleyen test |
+| `supabase/migrations/20260705_restrict_staff_docs_listing.sql` | `staff-application-docs` select policy → admin-only |
+| `src/pages/staff/StaffCollabMessagesPage.jsx` | Hook kuralı ihlali düzeltmesi (early-return hook'lardan sonraya taşındı) |
+| Vercel `STRIPE_WEBHOOK_SECRET` (production) | Yeni eklendi + redeploy |
+| Stripe (canlı hesap) | Yeni webhook endpoint (`we_1TpnprGm0Qpi2P1JsFF8FAV3`) |
+
+## 50. RLS Performans Bakımı — auth_rls_initplan, Unindexed FK, Multiple Permissive Policies (2026-07-05)
+
+§49'da ertelenen performans lint'leri (fonksiyonel hata değil, ölçek optimizasyonu) tek bir bakım turunda düzeltildi. Migration: `supabase/migrations/20260705_rls_performance_tuning.sql`. Davranış değişikliği **yok** — yalnızca sorgu planı/erişim politikası konsolidasyonu; `scripts/test-rls-policies.mjs` (`npm run test:rls`) ile 19/19 ✅ doğrulandı (anon/authenticated rolüyle gerçek Supabase sorguları: üye kendi verisini görebiliyor/başkasınınkini göremiyor, staff kendi profilini güncelleyebiliyor/başkasınınkini güncelleyemiyor, admin-only tablolara admin olmayan yazamıyor, public-read tablolar hâlâ herkese açık).
+
+1. **`auth_rls_initplan` (22 policy):** RLS policy'lerinde doğrudan `auth.uid()` çağrıları Postgres tarafından **her satır için yeniden değerlendiriliyordu**. `(select auth.uid())` sarmalaması ile planlayıcı bunu tek seferlik `InitPlan` olarak önbelleğe alıyor (Supabase'in resmi önerisi). Etkilenen tablolar: `members`, `tickets`, `payments`, `programs`, `activities`, `chat_threads`, `chat_messages`, `staff_collab_threads`, `staff_collab_messages`, `user_presence`.
+2. **Unindexed foreign keys (5 sütun):** `activities.member_id`, `payments.member_id`, `programs.member_id`, `programs.staff_id`, `tickets.member_id` için btree index eklendi — FK join/cascade delete performansı için.
+3. **`multiple_permissive_policies`:** `exercises`, `plans`, `posts`, `programs`, `site_content` tablolarında `"_admin_write"` (`FOR ALL`) politikaları, aynı SELECT erişimini zaten sağlayan ayrı bir politikayla çakışıyordu (her sorguda 2 politika birden değerlendiriliyordu). `FOR ALL` politikaları `INSERT`/`UPDATE`/`DELETE`'e daraltıldı (davranış aynı — SELECT kapsamı zaten var olan politika tarafından karşılanıyordu, doğrulandı). `staff` tablosunda admin-update + self-update tek `staff_update` politikasında OR mantığıyla birleştirildi. `user_presence`'ta 3 ayrı SELECT-veren politika (`admin_select`, `chat_peers`, `self`) tek `user_presence_select` politikasında birleştirildi, yazma işlemleri `insert`/`update`/`delete` olarak ayrıldı. `site_content`'te admin-insert vs. üye-başarı-hikayesi-insert çakışması **bilinçli olarak korundu** (iki farklı rol/koşul, güvenli birleştirme karmaşıklığa değmiyor — kalan tek `multiple_permissive_policies` uyarısı budur).
+4. `supabase/setup.sql` yeni kurulumların da aynı optimize edilmiş politikalarla başlaması için güncellendi (not: `chat_threads`/`staff_collab_*` tabloları zaten `setup.sql`'de tanımlı değildi — bu tablolar yalnızca migration'larda var, önceden beri var olan bir senkron farkı, bu turun kapsamı dışında).
+
+**Kontrol edilip değiştirilmeyen:** `auth_leaked_password_protection` — kullanıcı ayrı olarak Dashboard üzerinden hallediyor.
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `supabase/migrations/20260705_rls_performance_tuning.sql` | Yeni — 22 policy `auth.uid()` initPlan sarmalaması, 5 index, 6 tabloda multiple-permissive-policy konsolidasyonu |
+| `supabase/setup.sql` | Aynı politika/index setiyle senkronize edildi |
+| `scripts/test-rls-policies.mjs` | Yeni — anon/authenticated rolüyle RLS davranış regresyon testi (`npm run test:rls`) |
+| `package.json` | `test:rls` script'i eklendi |
 

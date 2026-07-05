@@ -31,9 +31,7 @@ export default function StaffCollabMessagesPage() {
   } = useApp()
 
   const role = normalizeStaffRole(staffUser?.role)
-  if (role !== 'coach' && role !== 'dietitian') {
-    return <Navigate to="/staff" replace />
-  }
+  const isAllowedRole = role === 'coach' || role === 'dietitian'
 
   const [query, setQuery] = useState('')
   const [sending, setSending] = useState(false)
@@ -98,6 +96,10 @@ export default function StaffCollabMessagesPage() {
       if (poll) clearInterval(poll)
     }
   }, [active?.member?.id, active?.thread?.id, ensureStaffCollabThread, loadStaffCollabMessages, markStaffCollabThreadRead, role])
+
+  if (!isAllowedRole) {
+    return <Navigate to="/staff" replace />
+  }
 
   const handleSend = async (text) => {
     if (!active?.member) return

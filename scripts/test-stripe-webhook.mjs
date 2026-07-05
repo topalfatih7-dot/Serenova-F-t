@@ -108,15 +108,36 @@ async function main() {
     userId = created.user.id
     pass(`Test kullanıcısı oluşturuldu (${email})`)
 
-    // 2) Trigger ile members kaydını bekle
-    let memberRow = null
-    for (let i = 0; i < 20; i++) {
-      const { data } = await admin.from('members').select('*').eq('id', userId).maybeSingle()
-      if (data) { memberRow = data; break }
-      await sleep(300)
-    }
-    if (!memberRow) throw new Error('members kaydı (trigger) oluşmadı')
-    pass(`members kaydı oluştu (membership=${memberRow.membership}, status=${memberRow.membership_status})`)
+    // 2) Üye kaydı (handle_new_user artık otomatik members oluşturmaz — plan değişimi testi için manuel)
+    const joined = new Date().toISOString().split('T')[0]
+    const { error: mErr } = await admin.from('members').insert({
+      id: userId,
+      email,
+      name,
+      phone: '5550000000',
+      role: 'member',
+      membership: 'free',
+      membership_status: 'active',
+      data: {
+        phone: '5550000000',
+        gender: 'female',
+        joinedAt: joined,
+        lastActiveAt: joined,
+        packageConfig: {
+          coachMeetingsPerMonth: 0,
+          dietitianMeetingsPerMonth: 0,
+          doctorMeetingsPerMonth: 0,
+          coachMeetingsPerWeek: 0,
+          durationMonths: 0,
+          durationWeeks: 0,
+          addOns: [],
+        },
+        profileComplete: true,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    if (mErr) throw new Error('members kaydı oluşturulamadı: ' + mErr.message)
+    pass(`members kaydı oluşturuldu (membership=free, status=active)`)
 
     // 3) Handler'ı yükle
     const mod = await import('../api/stripe-webhook.js')

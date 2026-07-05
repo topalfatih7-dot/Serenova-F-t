@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test:ai": "node scripts/test-ai.mjs",
     "test:stripe": "node scripts/test-stripe-webhook.mjs",
+    "test:stripe:checkout": "node scripts/test-stripe-checkout.mjs",
+    "test:rls": "node scripts/test-rls-policies.mjs",
     "og:image": "node scripts/generate-og-image.mjs",
     "preview": "vite preview",
     "db:migrate": "node scripts/db-migrate.mjs",

@@ -3,12 +3,10 @@ import { getSiteUrl } from '../config/seo'
 import { setRememberMe } from './authStorage'
 import { syncAutoRefresh } from './supabaseClient'
 
-const PROVIDERS = ['google', 'apple', 'facebook']
+const PROVIDERS = ['google']
 
 const PROVIDER_LABELS = {
   google: 'Google',
-  apple: 'Apple',
-  facebook: 'Facebook',
 }
 
 export function getSupabaseAuthProvidersUrl() {
@@ -35,7 +33,7 @@ export function providerNotEnabledMessage(provider) {
 }
 
 /**
- * @param {'google'|'apple'|'facebook'} provider
+ * @param {'google'} provider
  * @param {{ flow?: 'login'|'signup', plan?: string, remember?: boolean }} opts
  */
 export async function signInWithSocial(provider, opts = {}) {
@@ -57,12 +55,6 @@ export async function signInWithSocial(provider, opts = {}) {
   const options = { redirectTo }
   if (provider === 'google') {
     options.queryParams = { access_type: 'offline', prompt: 'select_account' }
-  }
-  if (provider === 'apple') {
-    options.scopes = 'name email'
-  }
-  if (provider === 'facebook') {
-    options.scopes = 'email public_profile'
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({ provider, options })

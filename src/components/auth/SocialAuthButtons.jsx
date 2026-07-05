@@ -15,49 +15,12 @@ function GoogleIcon() {
   )
 }
 
-/** Apple Sign In — resmi silüete yakın, beyaz logo */
-function AppleIcon() {
-  return (
-    <svg
-      className="h-[24px] w-[20px] shrink-0"
-      viewBox="0 0 384 512"
-      fill="#FFFFFF"
-      aria-hidden
-    >
-      <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 25 184.8 25 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.5 107.2 125.2 25-.3 42.9-18.1 75.8-18.1s46.1 18.1 73.9 17.4c31.2-.7 50.3-36.3 82.3-73.1 25.1-36.8 35.4-72.3 36-74.1-.8-.3-68.8-26.4-69.5-104.5zM246.6 96.7c27.3-33 45.8-79 39.9-124.6-38.6 1.6-85.2 25.8-112.8 58.6-25.6 30.8-47.9 80.1-41.9 127.3 44.2 3.4 89.5-20.6 114.8-61.3z" />
-    </svg>
-  )
-}
-
-/** Facebook — beyaz "f", mavi buton üzerinde (daire olmadan) */
-function FacebookIcon() {
-  return (
-    <svg className="h-[22px] w-[22px] shrink-0" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden>
-      <path d="M13.5 22v-8.2h2.75l.42-3.2H13.5V8.88c0-.93.26-1.56 1.59-1.56h1.7V4.14c-.29-.04-1.3-.13-2.48-.13-2.45 0-4.13 1.5-4.13 4.24v2.35H7.5v3.2h2.68V22h3.32z" />
-    </svg>
-  )
-}
-
 const BUTTONS = [
   {
     id: 'google',
     label: 'Google ile devam et',
     Icon: GoogleIcon,
     className: 'border-cream-300 bg-white text-cream-900 hover:bg-cream-50',
-    iconWrap: 'bg-transparent',
-  },
-  {
-    id: 'apple',
-    label: 'Apple ile devam et',
-    Icon: AppleIcon,
-    className: 'border-black bg-black text-white hover:bg-neutral-900',
-    iconWrap: 'bg-transparent',
-  },
-  {
-    id: 'facebook',
-    label: 'Facebook ile devam et',
-    Icon: FacebookIcon,
-    className: 'border-[#1877F2] bg-[#1877F2] text-white hover:bg-[#166FE5]',
     iconWrap: 'bg-transparent',
   },
 ]
@@ -150,7 +113,7 @@ export default function SocialAuthButtons({
       {buttons}
       {isBottom && !compact && (
         <p className="text-center text-xs leading-relaxed text-cream-800/50">
-          Google, Apple veya Facebook ile şifresiz devam edin.
+          Google hesabınızla şifresiz devam edin.
         </p>
       )}
     </div>

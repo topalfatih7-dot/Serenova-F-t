@@ -546,7 +546,7 @@ export default function OnboardingPage() {
             <p className="mt-2 text-base leading-relaxed text-cream-800/65">
               {step === 0
                 ? (isOAuthFlow
-                  ? 'Google, Apple veya Facebook ile bağlandınız. Randevu hatırlatmaları için telefon numaranızı girin.'
+                  ? 'Google hesabınızla bağlandınız. Randevu hatırlatmaları için telefon numaranızı girin.'
                   : 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.')
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
