@@ -5,7 +5,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useExerciseCategories } from '../../hooks/useExerciseCategories'
 
-export default function ExerciseCategoryManager({ exercises }) {
+export default function ExerciseCategoryManager({ categoryCounts = {} }) {
   const { saveExerciseTaxonomy, reassignExerciseCategory } = useApp()
   const { toast } = useToast()
   const { categories, taxonomyId } = useExerciseCategories()
@@ -14,7 +14,7 @@ export default function ExerciseCategoryManager({ exercises }) {
   const [reassignTo, setReassignTo] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const countInCategory = (cat) => (exercises || []).filter((e) => e.category === cat).length
+  const countInCategory = (cat) => categoryCounts[cat] || 0
 
   const persistCategories = async (nextCategories) => {
     const r = await saveExerciseTaxonomy({

@@ -30,7 +30,7 @@ const AppContext = createContext(null)
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], plans: ALL_PLANS, session: null,
+  tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, plans: ALL_PLANS, session: null,
   content: { testimonials: [], faqs: [], successStories: [] },
 }
 
@@ -1082,6 +1082,7 @@ export function AppProvider({ children }) {
     myPrograms,
     myTickets,
     exercises: db.exercises || [],
+    exerciseCount: db.exerciseCount ?? 0,
     plans: db.plans || ALL_PLANS,
     staffApplications: db.staffApplications || [],
     corporateApplications: db.corporateApplications || [],

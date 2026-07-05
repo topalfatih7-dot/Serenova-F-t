@@ -273,13 +273,14 @@ async function hydrateOnce() {
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
-    supabase.from('exercises').select('*').order('name', { ascending: true }),
+    supabase.from('exercises').select('id', { count: 'exact', head: true }),
     supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
   ])
 
   const staff = (staffRes.data || []).map(rowToStaff)
   const posts = (postsRes.data || []).map(rowToPost)
-  const exercises = (exercisesRes.data || []).map(rowToExercise)
+  const exerciseCount = exercisesRes.count ?? 0
+  const exercises = []
   const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
   const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
   ;(contentRes.data || []).forEach((r) => {
@@ -291,7 +292,7 @@ async function hydrateOnce() {
   })
 
   if (!user) {
-    return { ...EMPTY_DB, staff, posts, content, exercises, plans, authUser: null }
+    return { ...EMPTY_DB, staff, posts, content, exercises, exerciseCount, plans, authUser: null }
   }
 
   const authUser = {
@@ -343,6 +344,7 @@ async function hydrateOnce() {
     activities,
     payments,
     exercises,
+    exerciseCount,
     plans,
     staffApplications: (staffAppsRes.data || []).map(rowToStaffApplication),
     corporateApplications: (corporateAppsRes.data || []).map(rowToCorporateApplication),
@@ -389,11 +391,11 @@ export async function fetchAdminSessionSummaries() {
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
-  tickets: [], activities: [], payments: [], exercises: [], staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
+  tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
   content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
 }
 
-function rowToExercise(row) {
+export function rowToExercise(row) {
   return {
     id: row.id,
     name: row.name,
@@ -402,6 +404,16 @@ function rowToExercise(row) {
     sportType: row.sport_type || 'Fitness',
     bodyPart: row.body_part || row.category || 'Tüm Vücut',
     videoUrl: normalizeExerciseVideoRef(row.video_url),
+    videoPending: row.video_pending === true,
+    sourcePack: row.source_pack || '',
+    sourceId: row.source_id || '',
+    equipment: row.equipment || '',
+    targetMuscle: row.target_muscle || '',
+    secondaryMuscles: row.secondary_muscles || [],
+    difficulty: row.difficulty || 'beginner',
+    movementCategory: row.movement_category || '',
+    instructions: Array.isArray(row.instructions) ? row.instructions : [],
+    metadata: row.metadata || {},
     createdAt: row.created_at,
   }
 }
@@ -1401,19 +1413,37 @@ export async function upsertExerciseTaxonomy(taxonomy) {
 // payload'ı opsiyonel sütunlar olmadan tekrar deneriz (category değeri korunur).
 const isMissingExerciseColumnError = (error) =>
   !!error && (error.code === 'PGRST204' || error.code === '42703' ||
-    /body_part|sport_type/.test(error.message || ''))
+    /body_part|sport_type|source_pack|source_id|equipment|target_muscle|secondary_muscles|difficulty|movement_category|instructions|metadata|video_pending/.test(error.message || ''))
 
-const stripOptionalExerciseColumns = ({ sport_type, body_part, ...rest }) => rest
+const stripOptionalExerciseColumns = ({
+  sport_type, body_part, source_pack, source_id, equipment, target_muscle,
+  secondary_muscles, difficulty, movement_category, instructions, metadata, video_pending,
+  ...rest
+}) => rest
 
-export async function addExercise(data) {
-  const payload = {
+function buildExercisePayload(data) {
+  return {
     name: data.name,
     description: data.description || '',
     category: data.bodyPart || data.category || 'Tüm Vücut',
     sport_type: data.sportType || 'Fitness',
     body_part: data.bodyPart || data.category || 'Tüm Vücut',
     video_url: normalizeExerciseVideoRef(data.videoUrl) || '',
+    source_pack: data.sourcePack || null,
+    source_id: data.sourceId || null,
+    equipment: data.equipment || '',
+    target_muscle: data.targetMuscle || '',
+    secondary_muscles: data.secondaryMuscles || [],
+    difficulty: data.difficulty || 'beginner',
+    movement_category: data.movementCategory || 'strength',
+    instructions: data.instructions || [],
+    metadata: data.metadata || {},
+    video_pending: data.videoPending === true,
   }
+}
+
+export async function addExercise(data) {
+  const payload = buildExercisePayload(data)
   let { error } = await supabase.from('exercises').insert(payload)
   if (isMissingExerciseColumnError(error)) {
     ;({ error } = await supabase.from('exercises').insert(stripOptionalExerciseColumns(payload)))
@@ -1423,14 +1453,7 @@ export async function addExercise(data) {
 }
 
 export async function editExercise(id, patch) {
-  const payload = {
-    name: patch.name,
-    description: patch.description || '',
-    category: patch.bodyPart || patch.category || 'Tüm Vücut',
-    sport_type: patch.sportType || 'Fitness',
-    body_part: patch.bodyPart || patch.category || 'Tüm Vücut',
-    video_url: normalizeExerciseVideoRef(patch.videoUrl) || '',
-  }
+  const payload = buildExercisePayload(patch)
   let { error } = await supabase.from('exercises').update(payload).eq('id', id)
   if (isMissingExerciseColumnError(error)) {
     ;({ error } = await supabase.from('exercises').update(stripOptionalExerciseColumns(payload)).eq('id', id))

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag,
+  ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
+import { useExerciseLibrary } from '../../hooks/useExerciseLibrary'
+import ExercisePagination from '../../components/library/ExercisePagination'
 import { getStaffClients } from '../../utils/chatAccess'
 import CoachProgramSendModal from '../../components/staff/CoachProgramSendModal'
 import {
@@ -39,12 +41,22 @@ function createCartEntry(ex) {
 export default function StaffClientProgramPage() {
   const { memberId } = useParams()
   const navigate = useNavigate()
-  const { staffUser, platform, createProgram, exercises } = useApp()
+  const { staffUser, platform, createProgram } = useApp()
   const { toast } = useToast()
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [cart, setCart] = useState([])
   const [sendOpen, setSendOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const {
+    items: filteredExercises,
+    total,
+    page,
+    totalPages,
+    loading,
+    setSearch,
+    setPage,
+  } = useExerciseLibrary({ pageSize: 20 })
 
   const isCoach = staffUser?.role === 'coach'
 
@@ -58,14 +70,7 @@ export default function StaffClientProgramPage() {
     [member],
   )
 
-  const filteredExercises = useMemo(
-    () => (exercises || []).filter((ex) =>
-      !search
-      || ex.name.toLowerCase().includes(search.toLowerCase())
-      || (ex.category || '').toLowerCase().includes(search.toLowerCase()),
-    ),
-    [exercises, search],
-  )
+  const filteredExercisesList = filteredExercises
 
   const cartExerciseIds = useMemo(() => new Set(cart.map((e) => e.exerciseId)), [cart])
 
@@ -199,17 +204,20 @@ export default function StaffClientProgramPage() {
             <input
               type="text"
               placeholder="Hareket ara…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setSearch(e.target.value) }}
               className="w-full rounded-xl border border-cream-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
             />
           </div>
 
-          {filteredExercises.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 animate-spin text-brand-400" /></div>
+          ) : filteredExercisesList.length === 0 ? (
             <p className="py-12 text-center text-sm text-cream-800/50">Hareket bulunamadı</p>
           ) : (
+            <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredExercises.map((ex) => {
+              {filteredExercisesList.map((ex) => {
                 const inCart = cartExerciseIds.has(ex.id)
                 return (
                   <div
@@ -244,6 +252,8 @@ export default function StaffClientProgramPage() {
                 )
               })}
             </div>
+            <ExercisePagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} className="mt-4" />
+            </>
           )}
         </div>
 

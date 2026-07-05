@@ -12,7 +12,16 @@
     "test:stripe": "node scripts/test-stripe-webhook.mjs",
     "og:image": "node scripts/generate-og-image.mjs",
     "preview": "vite preview",
-    "db:migrate": "node scripts/db-migrate.mjs"
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "import:exercises": "node scripts/import-exercises.mjs",
+    "import:exercises:dry": "node scripts/import-exercises.mjs --dry-run --upsert-taxonomy",
+    "import:pack:gym100": "node scripts/import-exercises.mjs --pack=gym100 --upload-videos",
+    "import:pack:w100": "node scripts/import-exercises.mjs --pack=w100 --upload-videos",
+    "import:pack:w200": "node scripts/import-exercises.mjs --pack=w200 --upload-videos",
+    "import:pack:women400": "node scripts/import-exercises.mjs --pack=women400 --upload-videos",
+    "import:pack:gf100": "node scripts/import-exercises.mjs --pack=gf100 --upload-videos",
+    "import:pack:gf130": "node scripts/import-exercises.mjs --pack=gf130 --upload-videos",
+    "import:pack:gf200": "node scripts/import-exercises.mjs --pack=gf200 --upload-videos"
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.91.0",

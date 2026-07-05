@@ -186,37 +186,65 @@ function normalizeLibraryExercise(ex) {
     name: String(ex.name).trim(),
     category: ex.category || ex.bodyPart || '',
     videoUrl: ex.videoUrl || '',
+    videoPending: ex.videoPending === true,
     description: ex.description || '',
     sportType: ex.sportType || '',
+    equipment: ex.equipment || '',
+    targetMuscle: ex.targetMuscle || '',
+    difficulty: ex.difficulty || '',
+    movementCategory: ex.movementCategory || '',
   }
+}
+
+const DIFFICULTY_RANK = { beginner: 1, intermediate: 2, advanced: 3 }
+const FITNESS_LEVEL_RANK = { beginner: 1, intermediate: 2, advanced: 3 }
+
+function difficultyFitScore(exDifficulty, profileLevel) {
+  const exRank = DIFFICULTY_RANK[exDifficulty] || 2
+  const profRank = FITNESS_LEVEL_RANK[profileLevel] || 1
+  if (exRank === profRank) return 10
+  if (Math.abs(exRank - profRank) === 1) return 5
+  return exRank > profRank ? -8 : 2
 }
 
 function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
   const library = pickLibraryExercises(exercises)
   const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
   const lowImpactOnly = ht.injuries === 'yes' || (ht.painAreas || []).length > 0
+  const profileLevel = profile.fitnessLevel || 'beginner'
 
   const scored = library.map((ex) => {
     let score = 0
     const cat = String(ex.category || ex.bodyPart || '').toLowerCase()
     const sport = String(ex.sportType || '').toLowerCase()
     const name = String(ex.name || '').toLowerCase()
+    const equipment = String(ex.equipment || '').toLowerCase()
+    const target = String(ex.targetMuscle || '').toLowerCase()
+    const movement = String(ex.movementCategory || '').toLowerCase()
 
     goalCategories.forEach((goalCat) => {
       const g = goalCat.toLowerCase()
       if (cat.includes(g) || g.includes(cat) || sport.includes(g) || name.includes(g)) score += 12
+      if (equipment.includes(g) || target.includes(g) || movement.includes(g)) score += 6
     })
 
-    if (ht.activityFrequency === 'sedentary' && (cat.includes('yoga') || cat.includes('esneklik') || sport.includes('yoga'))) score += 8
-    if (ht.stressLevel === 'high' && (name.includes('nefes') || cat.includes('yoga'))) score += 6
-    if (ht.sleepQuality === 'poor' && cat.includes('esneklik')) score += 5
+    score += difficultyFitScore(ex.difficulty, profileLevel)
+
+    if (profileLevel === 'beginner' && ex.difficulty === 'beginner') score += 6
+    if (profileLevel === 'advanced' && ex.difficulty === 'advanced') score += 6
+
+    if (ht.activityFrequency === 'sedentary' && (cat.includes('yoga') || cat.includes('esneklik') || sport.includes('yoga') || movement === 'stretching')) score += 8
+    if (ht.stressLevel === 'high' && (name.includes('nefes') || cat.includes('yoga') || movement === 'balance')) score += 6
+    if (ht.sleepQuality === 'poor' && (cat.includes('esneklik') || movement === 'stretching')) score += 5
     if (ht.teaCoffee === 'high' && (cat.includes('esneklik') || name.includes('nefes') || cat.includes('yoga'))) score += 4
-    if (ht.travelFrequency === 'weekly' && (sport.includes('ev') || name.includes('vücut') || cat.includes('tüm vücut'))) score += 6
-    if (ht.travelFrequency === 'monthly' && sport.includes('ev')) score += 3
+    if (ht.travelFrequency === 'weekly' && (sport.includes('ev') || name.includes('vücut') || cat.includes('tüm vücut') || equipment.includes('vücut'))) score += 6
+    if (ht.travelFrequency === 'monthly' && (sport.includes('ev') || equipment.includes('vücut'))) score += 3
     if ((ht.substanceUse === 'regular' || ht.substanceUse === 'occasional') && (cat.includes('esneklik') || cat.includes('kardiyo'))) score += 3
 
-    if (lowImpactOnly && (name.includes('hiit') || name.includes('sprint') || sport.includes('hiit'))) score -= 15
+    if (lowImpactOnly && (name.includes('hiit') || name.includes('sprint') || sport.includes('hiit') || movement === 'plyometrics')) score -= 15
     if (lowImpactOnly && (cat.includes('kardiyo') || sport.includes('koşu'))) score -= 4
+
+    if (ex.videoPending) score -= 3
 
     return { ex, score }
   })

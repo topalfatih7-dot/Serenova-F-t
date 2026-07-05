@@ -152,6 +152,8 @@ create table if not exists public.site_content (
 );
 
 -- Hareket / egzersiz kütüphanesi
+-- video_url: yalnizca exercise-videos bucket storage PATH (ornek: gym100-0001.mp4)
+-- Kalici public URL saklanmaz; oynatma api/auth exercise-video-url ile imzali URL.
 create table if not exists public.exercises (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -160,11 +162,31 @@ create table if not exists public.exercises (
   sport_type text default 'Fitness',
   body_part text default 'Tüm Vücut',
   video_url text default '',
+  source_pack text,
+  source_id text,
+  equipment text default '',
+  target_muscle text default '',
+  secondary_muscles text[] default '{}',
+  difficulty text default 'beginner',
+  movement_category text default 'strength',
+  instructions jsonb default '[]'::jsonb,
+  metadata jsonb default '{}'::jsonb,
+  video_pending boolean default false,
   created_at timestamptz not null default now()
 );
 
 alter table public.exercises add column if not exists sport_type text default 'Fitness';
 alter table public.exercises add column if not exists body_part text default 'Tüm Vücut';
+alter table public.exercises add column if not exists source_pack text;
+alter table public.exercises add column if not exists source_id text;
+alter table public.exercises add column if not exists equipment text default '';
+alter table public.exercises add column if not exists target_muscle text default '';
+alter table public.exercises add column if not exists secondary_muscles text[] default '{}';
+alter table public.exercises add column if not exists difficulty text default 'beginner';
+alter table public.exercises add column if not exists movement_category text default 'strength';
+alter table public.exercises add column if not exists instructions jsonb default '[]'::jsonb;
+alter table public.exercises add column if not exists metadata jsonb default '{}'::jsonb;
+alter table public.exercises add column if not exists video_pending boolean default false;
 
 -- Paketler (admin panelinden düzenlenebilir)
 create table if not exists public.plans (

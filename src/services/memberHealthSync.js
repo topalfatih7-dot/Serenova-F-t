@@ -2,6 +2,7 @@ import { generateHealthAnalysis, isHealthAnalysisStale } from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 import { fetchAiNutritionTips } from './aiNutritionTips'
+import { fetchExercisesForAi } from './exerciseLibrary'
 
 export function profileReadyForAnalysis(profile) {
   return isHealthTestComplete(profile?.healthTest, profile?.gender, profile?.packageConfig)
@@ -58,7 +59,8 @@ export async function syncMemberHealthAssets({
   if (!profileReadyForAnalysis(user)) return { synced: false, reason: 'profile' }
 
   const enriched = enrichProfileForAnalysis(user)
-  const healthAnalysis = generateHealthAnalysis(enriched, exercises || [])
+  const exList = exercises?.length ? exercises : await fetchExercisesForAi()
+  const healthAnalysis = generateHealthAnalysis(enriched, exList)
 
   const aiNutrition = await fetchAiNutritionTips({
     profile: {
@@ -93,5 +95,5 @@ export async function syncMemberHealthAssets({
     })
   }
 
-  return { synced: true, refreshed: isHealthAnalysisStale(user.healthAnalysis, (exercises || []).length) }
+  return { synced: true, refreshed: isHealthAnalysisStale(user.healthAnalysis, (exList || []).length) }
 }

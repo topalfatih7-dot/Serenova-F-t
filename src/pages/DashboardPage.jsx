@@ -31,11 +31,11 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
-    exercises, updateProfile, createProgram,
+    exerciseCount, updateProfile, createProgram,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
 
-  useHealthAnalysisSync({ user, exercises, myPrograms, updateProfile, createProgram })
+  useHealthAnalysisSync({ user, exerciseCount, myPrograms, updateProfile, createProgram })
   useStripePaymentReturn(refresh)
 
   if (isFreeTrialExpired) {

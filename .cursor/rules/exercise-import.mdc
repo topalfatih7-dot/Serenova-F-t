@@ -1,0 +1,32 @@
+---
+description: Hareket kütüphanesi import ve video güvenlik kuralları
+globs: scripts/import-exercises.mjs, scripts/dedupe-exercise-db-ids.mjs, src/services/supabaseDb.js, src/components/ui/VideoPlayer.jsx, api/auth.js
+alwaysApply: false
+---
+
+# Hareket import & video güvenliği
+
+## Video güvenlik modeli (değiştirme)
+
+1. `exercise-videos` bucket **private** kalır.
+2. `exercises.video_url` yalnızca **storage path** tutar (`gym100-0001.mp4`). Kalıcı public URL **asla** yazılmaz.
+3. Oynatma: `VideoPlayer` → `getExerciseVideoUrl()` → `POST /api/auth` (`exercise-video-url`) → service role ile **1 saatlik** signed URL.
+4. `video_pending=true` iken signed URL isteği yapılmaz.
+5. Path doğrulama: `^[\w.-]+$`, `..` yasak (`api/auth.js`, `isExerciseVideoStoragePath`).
+
+## Import sırası
+
+1. `node scripts/dedupe-exercise-db-ids.mjs` (ID çakışmaları)
+2. `npm run db:migrate` (şema)
+3. `npm run import:exercises:dry` (kontrol)
+4. `node scripts/import-exercises.mjs --upsert-taxonomy` (metadata, video yok)
+5. Video yükleme (ayrı): `node scripts/import-exercises.mjs --upload-videos`
+6. `node scripts/import-exercises.mjs --sync-video-status`
+
+## Ertelenen paketler (şimdilik import edilmez)
+
+`face`, `office` — manifest: `scripts/data/deferred-exercise-packs.json`
+
+## Türkçe
+
+Import sırasında `exerciseTurkish.js` ile isim, açıklama ve talimatlar Türkçeleştirilir.

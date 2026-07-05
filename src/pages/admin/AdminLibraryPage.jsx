@@ -1,12 +1,15 @@
-import { useState, useRef, useMemo } from 'react'
-import { Plus, Search, Edit, Trash2, Dumbbell, Upload, Loader2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Search, Edit, Trash2, Dumbbell, Upload, Loader2, ArrowUpDown } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import VideoPlayer from '../../components/ui/VideoPlayer'
 import ExerciseCategorySelect from '../../components/library/ExerciseCategorySelect'
-import ExerciseCategoryManager from '../../components/library/ExerciseCategoryManager'
+import ExercisePagination from '../../components/library/ExercisePagination'
 import { EXERCISE_CATEGORY_ALL } from '../../data/exerciseCategories'
+import { DIFFICULTY_LABELS } from '../../data/exerciseTurkish'
 import { useExerciseCategories } from '../../hooks/useExerciseCategories'
+import { useExerciseLibrary } from '../../hooks/useExerciseLibrary'
+import { EXERCISE_PAGE_SIZE_ADMIN } from '../../services/exerciseLibrary'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 
@@ -69,7 +72,7 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categorie
             {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
           </button>
           <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-          {form.videoUrl && <div className="mt-3"><VideoPlayer url={form.videoUrl} /></div>}
+          {form.videoUrl && <div className="mt-3"><VideoPlayer url={form.videoUrl} videoPending={form.videoPending} /></div>}
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         <button type="button" onClick={submit} disabled={uploading} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
@@ -81,27 +84,36 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categorie
 }
 
 export default function AdminLibraryPage() {
-  const { exercises, addExercise, editExercise, removeExercise } = useApp()
+  const { addExercise, editExercise, removeExercise } = useApp()
   const { categories } = useExerciseCategories()
   const { toast } = useToast()
-  const [search, setSearch] = useState('')
   const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
+  const [searchInput, setSearchInput] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
-  const filtered = useMemo(() => (exercises || []).filter((e) => {
-    const q = search.trim().toLowerCase()
-    const matchesSearch = !q || e.name.toLowerCase().includes(q)
-    const matchesCategory = category === EXERCISE_CATEGORY_ALL || e.category === category
-    return matchesSearch && matchesCategory
-  }), [exercises, search, category])
+  const {
+    items, total, page, totalPages, loading, sort, setSort, sortOptions,
+    setSearch, setCategory: setLibCategory, setPage, refresh,
+  } = useExerciseLibrary({ pageSize: EXERCISE_PAGE_SIZE_ADMIN, includeDeferred: true, adminMode: true })
+
+  const handleSearch = (v) => {
+    setSearchInput(v)
+    setSearch(v)
+  }
+
+  const handleCategory = (v) => {
+    setCategory(v)
+    setLibCategory(v)
+  }
 
   const handleAdd = async (form) => {
     const r = await addExercise(form)
     if (r && !r.success) { toast(r.error, 'error'); return }
     setAddOpen(false)
     toast('Hareket eklendi', 'success')
+    refresh()
   }
 
   const handleEdit = async (form) => {
@@ -109,6 +121,14 @@ export default function AdminLibraryPage() {
     if (r && !r.success) { toast(r.error, 'error'); return }
     setEditTarget(null)
     toast('Hareket güncellendi', 'success')
+    refresh()
+  }
+
+  const handleDelete = async () => {
+    await removeExercise(deleteTarget.id)
+    setDeleteTarget(null)
+    toast('Hareket silindi', 'info')
+    refresh()
   }
 
   return (
@@ -116,49 +136,62 @@ export default function AdminLibraryPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">Hareket Kütüphanesi</h1>
-          <p className="mt-1 text-sm text-cream-800/60">{exercises.length} hareket · koçlar program yazarken bu hareketleri kullanır</p>
+          <p className="mt-1 text-sm text-cream-800/60">{total} hareket · koçlar program yazarken bu hareketleri kullanır</p>
         </div>
         <button type="button" onClick={() => setAddOpen(true)} className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
           <Plus className="h-4 w-4" /> Yeni Hareket
         </button>
       </div>
 
-      <ExerciseCategoryManager exercises={exercises} />
-
       <div className="flex flex-wrap items-end gap-4">
         <div className="relative min-w-[200px] flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
-          <input type="text" placeholder="Hareket adı ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300" />
+          <input type="text" placeholder="Hareket adı ara..." value={searchInput} onChange={(e) => handleSearch(e.target.value)} className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300" />
         </div>
         <div className="space-y-1">
           <label className="block text-xs font-medium text-cream-800/55">Hareket tipi</label>
-          <ExerciseCategorySelect value={category} onChange={setCategory} />
+          <ExerciseCategorySelect value={category} onChange={handleCategory} />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-cream-800/55">Sıralama</label>
+          <div className="relative">
+            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
+            <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-xl border border-cream-200 py-2.5 pl-9 pr-3 text-sm">
+              {sortOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={Dumbbell}
-          title="Henüz hareket eklenmedi"
-          description="İlk hareketi ekleyerek kütüphaneyi oluşturmaya başlayın."
-          action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Hareket</button>}
-        />
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-brand-400" /></div>
+      ) : items.length === 0 ? (
+        <EmptyState icon={Dumbbell} title="Henüz hareket eklenmedi" description="İlk hareketi ekleyerek kütüphaneyi oluşturmaya başlayın." action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Hareket</button>} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((ex) => (
-            <div key={ex.id} className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between">
-                <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-medium text-sage-700">{ex.category}</span>
-                <div className="flex gap-1">
-                  <button type="button" onClick={() => setEditTarget(ex)} className="rounded-lg p-1.5 text-cream-800/50 hover:bg-cream-100" aria-label="Düzenle"><Edit className="h-4 w-4" /></button>
-                  <button type="button" onClick={() => setDeleteTarget(ex)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Sil"><Trash2 className="h-4 w-4" /></button>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((ex) => (
+              <div key={ex.id} className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-medium text-sage-700">{ex.category}</span>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => setEditTarget(ex)} className="rounded-lg p-1.5 text-cream-800/50 hover:bg-cream-100" aria-label="Düzenle"><Edit className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => setDeleteTarget(ex)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Sil"><Trash2 className="h-4 w-4" /></button>
+                  </div>
                 </div>
+                <p className="mt-3 font-semibold text-cream-900">{ex.name}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ex.equipment && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">{ex.equipment}</span>}
+                  {ex.difficulty && <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] text-cream-800/60">{DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}</span>}
+                  {ex.videoPending && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Video bekliyor</span>}
+                  {ex.metadata?.importStatus === 'deferred' && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">Sonra eklenecek</span>}
+                </div>
+                <p className="mt-2 line-clamp-2 text-sm text-cream-800/60">{ex.description || 'Açıklama eklenmemiş.'}</p>
               </div>
-              <p className="mt-3 font-semibold text-cream-900">{ex.name}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-cream-800/60">{ex.description || 'Açıklama eklenmemiş.'}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <ExercisePagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
+        </>
       )}
 
       {addOpen && <ExerciseFormModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} categories={categories} />}
@@ -168,7 +201,7 @@ export default function AdminLibraryPage() {
         <p className="text-sm text-cream-800/70"><strong>{deleteTarget?.name}</strong> hareketini silmek istediğinize emin misiniz?</p>
         <div className="mt-4 flex gap-3">
           <button type="button" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl border border-cream-200 py-2.5 text-sm">Vazgeç</button>
-          <button type="button" onClick={() => { removeExercise(deleteTarget.id); setDeleteTarget(null); toast('Hareket silindi', 'info') }} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white">Sil</button>
+          <button type="button" onClick={handleDelete} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white">Sil</button>
         </div>
       </Modal>
     </div>

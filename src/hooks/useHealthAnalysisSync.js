@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { isHealthTestComplete } from '../data/healthTest'
 import { isHealthAnalysisStale } from '../services/aiAnalysis'
+import { fetchExercisesForAi } from '../services/exerciseLibrary'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
 /** Sağlık testi tamam ama özet yoksa veya eski şemadaysa otomatik üretir. */
-export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfile, createProgram }) {
+export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, updateProfile, createProgram }) {
   const syncing = useRef(false)
-  const libraryCount = exercises?.length ?? 0
+  const libraryCount = exerciseCount
 
   useEffect(() => {
     if (!user?.id || syncing.current) return
@@ -23,24 +24,26 @@ export function useHealthAnalysisSync({ user, exercises, myPrograms, updateProfi
     if (hasSummary && !stale) return
 
     syncing.current = true
-    syncMemberHealthAssets({
-      user,
-      exercises,
-      updateProfile,
-      createProgram,
-      myPrograms,
-    })
-      .catch(() => {})
-      .finally(() => {
-        syncing.current = false
+    ;(async () => {
+      const exercises = await fetchExercisesForAi()
+      await syncMemberHealthAssets({
+        user,
+        exercises,
+        updateProfile,
+        createProgram,
+        myPrograms,
       })
+    })().finally(() => {
+      syncing.current = false
+    })
   }, [
     user?.id,
     user?.healthTest,
     user?.healthAnalysis,
-    user?.healthAnalysis?.version,
+    user?.gender,
+    user?.packageConfig,
     libraryCount,
-    myPrograms?.length,
+    myPrograms,
     updateProfile,
     createProgram,
   ])

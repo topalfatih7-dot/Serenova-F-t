@@ -1,18 +1,16 @@
-import { useMemo } from 'react'
-import { useApp } from '../context/AppContext'
-import { DEFAULT_EXERCISE_CATEGORIES } from '../data/exerciseCategories'
+import { useState, useEffect } from 'react'
+import { fetchDistinctCategories } from '../services/exerciseLibrary'
+import { IMPORT_TAXONOMY_BODY_PARTS } from '../data/exerciseImportMaps'
 
-/** Admin panelinden yönetilen hareket tipleri (site_content.exercise_taxonomy.bodyParts). */
+/** Hareket tipleri — veritabanındaki import kayıtlarından (admin paneli yönetimi kaldırıldı). */
 export function useExerciseCategories() {
-  const { exerciseTaxonomy } = useApp()
+  const [categories, setCategories] = useState(IMPORT_TAXONOMY_BODY_PARTS)
 
-  const categories = useMemo(() => {
-    const fromDb = (exerciseTaxonomy?.bodyParts || []).map((c) => c?.trim()).filter(Boolean)
-    if (fromDb.length) return fromDb
-    return [...DEFAULT_EXERCISE_CATEGORIES]
-  }, [exerciseTaxonomy])
+  useEffect(() => {
+    fetchDistinctCategories().then((fromDb) => {
+      if (fromDb.length) setCategories(fromDb)
+    })
+  }, [])
 
-  const taxonomyId = exerciseTaxonomy?.id || null
-
-  return { categories, taxonomyId, exerciseTaxonomy }
+  return { categories, taxonomyId: null, exerciseTaxonomy: null }
 }

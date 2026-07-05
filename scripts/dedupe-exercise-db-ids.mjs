@@ -21,7 +21,7 @@ import {
 import { join, relative, basename, dirname } from 'node:path'
 import { homedir } from 'node:os'
 
-const DEFAULT_ROOT = join(homedir(), 'OneDrive', 'Desktop', '1600exercisedbpro')
+const DEFAULT_ROOT = join(homedir(), 'Desktop', '1600exercisedbpro')
 const dryRun = process.argv.includes('--dry-run')
 const root = process.argv.find((a) => !a.startsWith('-') && a.endsWith('1600exercisedbpro')) || DEFAULT_ROOT
 

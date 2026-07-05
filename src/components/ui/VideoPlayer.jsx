@@ -36,7 +36,7 @@ function VideoWatermarkFrame({ children, className = '' }) {
   )
 }
 
-export default function VideoPlayer({ url, className = '' }) {
+export default function VideoPlayer({ url, videoPending = false, className = '' }) {
   const { getExerciseVideoUrl } = useApp()
   const [playUrl, setPlayUrl] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -46,9 +46,10 @@ export default function VideoPlayer({ url, className = '' }) {
   const storagePath = url && !yt ? resolveStoragePath(url) : null
 
   useEffect(() => {
-    if (!storagePath) {
+    if (!storagePath || videoPending) {
       setPlayUrl(null)
       setLoadError(false)
+      setLoading(false)
       return undefined
     }
     let cancelled = false
@@ -61,7 +62,7 @@ export default function VideoPlayer({ url, className = '' }) {
       setLoadError(!signedUrl)
     })
     return () => { cancelled = true }
-  }, [storagePath, getExerciseVideoUrl])
+  }, [storagePath, getExerciseVideoUrl, videoPending])
 
   if (!url) {
     return (
@@ -87,6 +88,14 @@ export default function VideoPlayer({ url, className = '' }) {
   }
 
   if (storagePath) {
+    if (videoPending) {
+      return (
+        <div className={`flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl bg-cream-100 text-cream-800/50 ${className}`}>
+          <VideoOff className="h-8 w-8" />
+          <span className="text-xs">Video henüz yüklenmedi — metadata hazır, dosya bekleniyor</span>
+        </div>
+      )
+    }
     if (loading) {
       return (
         <div className={`flex aspect-video w-full items-center justify-center rounded-xl bg-black ${className}`}>
