@@ -242,10 +242,40 @@ async function main() {
     const r3 = await callWebhook(handler, expiredEvent)
     if (r3.statusCode === 200) pass(`Süresi dolmuş oturum işlendi (HTTP 200) → Telegram ❌`)
     else fail(`Expired event HTTP ${r3.statusCode}`)
+
+    // 7) Yeni Form dışı ödeme → sessizce atlanmalı (500 veya Telegram yok)
+    const externalCompleted = {
+      type: 'checkout.session.completed',
+      data: { object: {
+        id: `cs_test_external_${stamp}`,
+        payment_status: 'paid',
+        status: 'complete',
+        amount_total: 160000,
+        payment_intent: `pi_test_external_${stamp}`,
+        customer_details: { email: 'external@example.com', name: 'Dış Müşteri' },
+        metadata: { pending_id: '14' },
+      } },
+    }
+    const r4 = await callWebhook(handler, externalCompleted)
+    if (r4.statusCode === 200) pass(`Yeni Form dışı checkout.session.completed atlandı (HTTP 200, işlem yok)`)
+    else fail(`Dış checkout HTTP ${r4.statusCode}: ${JSON.stringify(r4.body)}`)
+
+    const externalFailed = {
+      type: 'payment_intent.payment_failed',
+      data: { object: {
+        id: `pi_test_external_fail_${stamp}`,
+        amount: 160000,
+        last_payment_error: { message: 'The provided PaymentMethod has failed authentication.' },
+        metadata: {},
+      } },
+    }
+    const r5 = await callWebhook(handler, externalFailed)
+    if (r5.statusCode === 200) pass(`Yeni Form dışı payment_intent.payment_failed atlandı (HTTP 200, Telegram yok)`)
+    else fail(`Dış failed event HTTP ${r5.statusCode}`)
   } catch (e) {
     fail(`İSTİSNA: ${e.message}`)
   } finally {
-    // 7) Temizlik
+    // 8) Temizlik
     if (userId) {
       try {
         await admin.from('payments').delete().eq('member_id', userId)

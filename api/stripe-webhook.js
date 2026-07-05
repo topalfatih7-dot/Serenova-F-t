@@ -62,6 +62,11 @@ function defaultPackageForPlan(planId, durationMonths = 1) {
 
 const TG_TIME = () => new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
 
+/** Yeni Form checkout metadata imzası — `api/stripe-checkout.js` ile uyumlu. */
+function isYeniFormCheckoutMetadata(meta = {}) {
+  return Boolean(meta.memberId && meta.planId)
+}
+
 function formatTry(amount) {
   const n = Number(amount)
   if (!Number.isFinite(n) || n <= 0) return '—'
@@ -281,9 +286,10 @@ export default async function handler(req, res) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object
+        const meta = session.metadata || {}
+        if (!isYeniFormCheckoutMetadata(meta)) break
         if (session.payment_status === 'paid' || session.status === 'complete') {
           const admin = getSupabaseAdmin()
-          const meta = session.metadata || {}
           const result = await activateMembership(admin, meta, session)
           if (!result.ok) return res.status(500).json({ ok: false, error: result.error })
           // Aynı ödeme daha önce işlenmişse tekrar bildirim gönderme.
@@ -301,10 +307,12 @@ export default async function handler(req, res) {
       }
       case 'checkout.session.expired': {
         const session = event.data.object
+        const meta = session.metadata || {}
+        if (!isYeniFormCheckoutMetadata(meta)) break
         await notifyPaymentTelegram({
           ok: false,
-          meta: session.metadata || {},
-          amount: session.amount_total ? session.amount_total / 100 : Number(session.metadata?.planPrice) || 0,
+          meta,
+          amount: session.amount_total ? session.amount_total / 100 : Number(meta.planPrice) || 0,
           email: session.customer_details?.email || session.customer_email,
           reason: 'Ödeme oturumu tamamlanmadan süresi doldu.',
           sessionId: session.id,
@@ -313,10 +321,12 @@ export default async function handler(req, res) {
       }
       case 'checkout.session.async_payment_failed': {
         const session = event.data.object
+        const meta = session.metadata || {}
+        if (!isYeniFormCheckoutMetadata(meta)) break
         await notifyPaymentTelegram({
           ok: false,
-          meta: session.metadata || {},
-          amount: session.amount_total ? session.amount_total / 100 : Number(session.metadata?.planPrice) || 0,
+          meta,
+          amount: session.amount_total ? session.amount_total / 100 : Number(meta.planPrice) || 0,
           email: session.customer_details?.email || session.customer_email,
           reason: 'Gecikmeli ödeme yöntemi başarısız oldu.',
           sessionId: session.id,
@@ -326,6 +336,7 @@ export default async function handler(req, res) {
       case 'payment_intent.payment_failed': {
         const pi = event.data.object
         const meta = pi.metadata || {}
+        if (!isYeniFormCheckoutMetadata(meta)) break
         await notifyPaymentTelegram({
           ok: false,
           meta,
