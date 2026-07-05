@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-05 (§50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
+> **Son güncelleme:** 2026-07-05 (§51: kayıt sırasında sahte "giriş yapılmış" header'ı düzeltildi, çıkış loading'i eklendi, paket süre/gün gösterimi eklendi; §50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
 
 ---
 
@@ -3806,4 +3806,25 @@ Düzeltme:
 | `supabase/setup.sql` | Aynı politika/index setiyle senkronize edildi |
 | `scripts/test-rls-policies.mjs` | Yeni — anon/authenticated rolüyle RLS davranış regresyon testi (`npm run test:rls`) |
 | `package.json` | `test:rls` script'i eklendi |
+
+## 51. Kayıt Sırasında Sahte "Giriş Yapılmış" Header'ı, Çıkış Loading'i, Paket Süre Gösterimi (2026-07-05)
+
+Kullanıcı üç ayrı hata/eksiklik bildirdi: (1) paket seçip Stripe'a yönlendirilirken header sağ üstte sanki kayıt tamamlanmış gibi "Profil · İsim" görünüyordu, (2) çıkış (logout) sırasında loading göstergesi çalışmıyordu, (3) paketlerin süre/gün bilgisi hiçbir yerde görünmüyordu (yalnızca Basic'in 48 saatlik deneme banner'ı vardı).
+
+**1. Header sahte "giriş yapılmış" görünümü:** Kök neden gerçek bir bug değil, bilinçli bir tasarım kararının yan etkisiyle ortaya çıkan kafa karıştırıcı bir ara durumdu — "Ödemeye Geç" tıklanınca `ensureAuthForRegistration` (`supabaseDb.js`) Stripe'a gitmeden **önce** gerçek bir Supabase auth session açıyor (webhook'un ödeme sonrası paketi doğru kullanıcıya bağlayabilmesi için), ama `members` satırı yalnızca webhook'ta oluşuyor. `PublicLayout` header'ı ise yalnızca session varlığına (`isAuthenticated`) bakıp "Profil · İsim" gösteriyordu — ödeme/kayıt tamamlanmadan. Çözüm: `PublicLayout.jsx`'te `isFullyRegistered = isAuthenticated && (isAdmin || isStaff || hasRegisteredMember(user))` türetildi ve header'daki tüm "giriş yapılmış" gösterimleri (masaüstü/mobil menü + footer "Destek" linki) bu değere bağlandı. Admin/staff etkilenmez (onlar `members` tablosunu kullanmaz); gerçek kayıtlı üyeler de etkilenmez (`hasRegisteredMember` zaten true). Yalnızca "session var ama üye satırı henüz yok" ara durumunda header artık misafir gibi davranıyor (ödeme/kayıt tamamlanınca otomatik "Profil"e döner).
+
+**2. Çıkış (logout) loading eksikliği:** `handleLogout` (`ProfilePage.jsx`) `logout()`'u `await` etmeden çağırıp hemen yönlendirme yapıyordu; ayrıca arka planda sessiz çalışan bir auth-listener aynı anda `hydrate()` tetikleyip `syncing` state'ine hiç dokunmadan durumu güncelliyordu — var olan global `syncing` overlay'i bu akışta neredeyse hiç görünmüyordu. Çözüm: `AppContext.jsx`'e özel bir `loggingOut` state eklendi (`logout()` fonksiyonu artık bunu `true`/`false` yapıyor), ve tüm çıkış butonları (`ProfilePage`, `Sidebar`, `StaffShell`, `AdminShell`, `PanelMobileMenu`) bu state'i kullanarak buton üzerinde spinner gösterip butonu devre dışı bırakıyor, `logout()` tamamlanana kadar bekliyor.
+
+**3. Paket süre/gün gösterimi:** `membershipPlans.js`'e `DURATION_OPTIONS` içine `days` alanı (Aylık=30, 3 Aylık=90, 6 Aylık=180 — sabit yaklaşık değerler, yalnızca UI gösterimi içindir; gerçek bitiş tarihi hesaplaması `premiumMembership.js`'te takvim ayına göre değişmeden kalır) ve `getPlanDurationLabel(plan)` yardımcı fonksiyonu eklendi (ücretsiz → "Süresiz", Doktor → "Tek seferlik", diğerleri → "30 gün"). Bu, `MembershipDurationPicker` (onboarding süre seçici — her seçenek altında "X gün" etiketi), `PricingCard` (landing fiyat kartları) ve `MembershipPlanCard` (onboarding/karşılaştırma sayfası plan kartları) bileşenlerine eklendi. Yan bulgu: `PricingCard`'da Doktor paketi için de yanlışlıkla "3 ve 6 aylık seçenekler de mevcut" yazıyordu (Doktor'un böyle bir seçeneği yok) — bu da düzeltildi.
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/components/layout/PublicLayout.jsx` | `isFullyRegistered` türetildi, header/footer "giriş yapılmış" gösterimleri buna bağlandı |
+| `src/context/AppContext.jsx` | `loggingOut` state eklendi, `logout()` bunu yönetiyor |
+| `src/pages/ProfilePage.jsx` | `handleLogout` artık `await` ediyor; çıkış butonunda spinner |
+| `src/components/layout/Sidebar.jsx`, `StaffShell.jsx`, `AdminShell.jsx`, `AppShell.jsx`, `PanelMobileMenu.jsx` | `loggingOut` prop'u iletildi, çıkış butonlarında spinner + disabled |
+| `src/data/membershipPlans.js` | `DURATION_OPTIONS[].days`, `getDurationDays()`, `getPlanDurationLabel()` eklendi |
+| `src/components/membership/MembershipDurationPicker.jsx` | Her süre seçeneğinin altında gün sayısı gösteriliyor |
+| `src/components/landing/PricingCard.jsx` | Süre etiketi eklendi; Doktor için "3/6 aylık" metni düzeltildi |
+| `src/components/membership/MembershipPlanCard.jsx` | Fiyatın altında süre etiketi eklendi |
 

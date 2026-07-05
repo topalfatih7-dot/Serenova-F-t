@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Users2, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle } from 'lucide-react'
+import { LayoutDashboard, Users, Users2, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle, Loader2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -41,7 +41,7 @@ function staffNavForRole(role) {
 }
 
 export default function StaffShell() {
-  const { staffUser, logout, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount, refresh } = useApp()
+  const { staffUser, logout, loggingOut, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount, refresh } = useApp()
 
   // İlk giriş kontrolü: geçici şifreyle giriş yapan personel için şifre değiştirme zorunluluğu
   const mustChangePassword = Boolean(staffUser?.data?.tempPasswordIssued)
@@ -128,9 +128,11 @@ export default function StaffShell() {
           <button
             type="button"
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50"
+            disabled={loggingOut}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <LogOut className="h-4 w-4" /> Çıkış Yap
+            {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
           </button>
         </div>
       </aside>
@@ -143,6 +145,7 @@ export default function StaffShell() {
           userName={resolveFirstName({ name: staffUser.name, email: staffUser.email, fallback: roleLabel })}
           accent="staff"
           logout={logout}
+          loggingOut={loggingOut}
           headerRight={<span className="text-xs font-medium text-cream-800/50">{roleLabel}</span>}
         />
 

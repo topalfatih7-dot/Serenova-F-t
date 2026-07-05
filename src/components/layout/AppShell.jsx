@@ -37,7 +37,7 @@ const memberNav = [
 
 export default function AppShell() {
   const {
-    isAdmin, isStaff, membership, notifications, user, logout, settings, updateSettings,
+    isAdmin, isStaff, membership, notifications, user, logout, loggingOut, settings, updateSettings,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig,
   } = useApp()
   // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
@@ -91,6 +91,7 @@ export default function AppShell() {
           userName={user?.name}
           accent="member"
           logout={logout}
+          loggingOut={loggingOut}
           headerRight={(
             <Link to="/notifications" className="relative rounded-lg p-2 hover:bg-cream-50" aria-label="Bildirimler">
               <Bell className="h-5 w-5 text-cream-800" />

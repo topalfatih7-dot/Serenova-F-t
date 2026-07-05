@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, LogOut } from 'lucide-react'
+import { Menu, X, LogOut, Loader2 } from 'lucide-react'
 import BrandLogo from '../ui/BrandLogo'
 
 const ACCENTS = {
@@ -17,6 +17,7 @@ export default function PanelMobileMenu({
   userName = '',
   accent = 'member',
   logout,
+  loggingOut = false,
   headerRight = null,
 }) {
   const [open, setOpen] = useState(false)
@@ -112,10 +113,12 @@ export default function PanelMobileMenu({
                 <div className="border-t border-cream-100 p-3">
                   <button
                     type="button"
-                    onClick={() => { setOpen(false); logout() }}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/70 hover:bg-cream-50"
+                    onClick={() => { if (!loggingOut) { setOpen(false); logout() } }}
+                    disabled={loggingOut}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/70 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <LogOut className="h-4 w-4" /> Çıkış Yap
+                    {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                    {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
                   </button>
                 </div>
               )}

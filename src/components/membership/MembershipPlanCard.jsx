@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
-import { formatMonthlyPrice, getPlanBadge, RECOMMENDED_PLAN } from '../../data/membershipPlans'
+import { formatMonthlyPrice, getPlanBadge, getPlanDurationLabel, RECOMMENDED_PLAN } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
 
 const VISIBLE_FEATURES = 4
@@ -29,6 +29,7 @@ export default function MembershipPlanCard({
   const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_FEATURES)
   const hiddenCount = features.length - VISIBLE_FEATURES
   const daily = dailyPrice(plan.price)
+  const durationLabel = getPlanDurationLabel(plan)
   const Tag = mode === 'select' ? motion.button : motion(Link)
   const tagProps = mode === 'select'
     ? { type: 'button', onClick: () => onSelect?.(plan.id) }
@@ -99,6 +100,9 @@ export default function MembershipPlanCard({
           <p className="mt-1 font-display text-xl font-extrabold text-cream-900">
             {formatMonthlyPrice(plan.price)}
           </p>
+          {plan.price > 0 && (
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">{durationLabel}</p>
+          )}
           {plan.price > 0 && (
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
               <Sparkles className="h-3 w-3" />

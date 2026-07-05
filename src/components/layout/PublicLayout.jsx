@@ -10,6 +10,7 @@ import NavDropdown from './NavDropdown'
 import PublicRouteSeo from '../seo/PublicRouteSeo'
 import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
+import { hasRegisteredMember } from '../../utils/memberProfile'
 import { scrollToContactSection } from '../../utils/scrollToContact'
 import { LEGAL_FOOTER_PARAGRAPHS } from '../../data/legalDocuments'
 import { LegalFooterParagraph } from '../legal/LegalFooterParagraph'
@@ -59,7 +60,13 @@ export default function PublicLayout() {
   const navigate = useNavigate()
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
 
-  const publicLinks = isAuthenticated && !isAdmin && !isStaff
+  // Kayıt/ödeme akışı sırasında (Stripe'a yönlendirilmeden önce) gerçek bir üye satırı
+  // oluşmadan bir auth oturumu açılıyor (bkz. ensureAuthForRegistration). Header bu ara
+  // durumda "Profil · İsim" göstermemeli — ödeme tamamlanıp üyelik oluşana kadar misafir
+  // gibi davranmalı. Admin/staff bu duruma girmez (onlar members tablosunu kullanmaz).
+  const isFullyRegistered = isAuthenticated && (isAdmin || isStaff || hasRegisteredMember(user))
+
+  const publicLinks = isFullyRegistered && !isAdmin && !isStaff
     ? [...guestLinks.slice(0, 2), ...memberExtraLinks, ...guestLinks.slice(2)]
     : guestLinks
 
@@ -150,7 +157,7 @@ export default function PublicLayout() {
             />
           </nav>
           <div className="hidden items-center gap-2 lg:flex xl:gap-2.5">
-            {isAuthenticated ? (
+            {isFullyRegistered ? (
               isAdmin ? (
                 <Link to="/admin" className="flex items-center gap-2 rounded-full bg-cream-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cream-800 hover:shadow-md">
                   <LayoutDashboard className="h-4 w-4" />
@@ -245,7 +252,7 @@ export default function PublicLayout() {
                   </Link>
                 </div>
                 <div className="mt-2 border-t border-cream-200 pt-3">
-                  {isAuthenticated ? (
+                  {isFullyRegistered ? (
                     isAdmin ? (
                       <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-full bg-cream-900 py-3 text-center text-sm font-semibold text-white">
                         <LayoutDashboard className="h-4 w-4" />
@@ -304,7 +311,7 @@ export default function PublicLayout() {
                 <button type="button" onClick={() => goToContact()} className="block text-left hover:text-white">
                   Bize Ulaşın
                 </button>
-                {isAuthenticated && !isAdmin && !isStaff && (
+                {isFullyRegistered && !isAdmin && !isStaff && (
                   <Link to="/support" className="block hover:text-white">Destek</Link>
                 )}
               </div>

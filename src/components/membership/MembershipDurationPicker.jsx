@@ -16,7 +16,7 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
         Paket süresi — ne kadar süreyle devam etmek istersiniz?
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        {DURATION_OPTIONS.map(({ months, label }) => {
+        {DURATION_OPTIONS.map(({ months, label, days }) => {
           const price = getTierPrice(planId, months)
           const selected = value === months
           return (
@@ -32,6 +32,7 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
               }`}
             >
               <p className="text-[10px] font-semibold text-cream-800/60">{label}</p>
+              <p className="mt-0.5 text-[10px] font-medium text-sage-600">{days} gün</p>
               <p className="mt-1 text-sm font-bold text-cream-900">
                 {months === 1 ? formatMonthlyPrice(price) : `${price.toLocaleString('tr-TR')}₺`}
               </p>

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
   Dumbbell, Apple, Settings, LogOut, ClipboardList, Library,
-  CalendarDays, Flame, Wallet, MessageCircle, Stethoscope,
+  CalendarDays, Flame, Wallet, MessageCircle, Stethoscope, Loader2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
@@ -27,7 +27,7 @@ const navItems = [
 
 export default function Sidebar() {
   const {
-    user, membership, membershipStatus, logout,
+    user, membership, membershipStatus, logout, loggingOut,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
   } = useApp()
 
@@ -88,9 +88,11 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50 hover:text-cream-900"
+          disabled={loggingOut}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50 hover:text-cream-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <LogOut className="h-4 w-4" /> Çıkış Yap
+          {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+          {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
         </button>
       </div>
     </aside>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, X, ChevronDown } from 'lucide-react'
-import { formatMonthlyPrice, getPlanBadge } from '../../data/membershipPlans'
+import { formatMonthlyPrice, getPlanBadge, getPlanDurationLabel } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from '../membership/planTheme'
 
 const VISIBLE_COLLAPSED = 6
@@ -17,6 +17,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
   const hiddenCount = features.length - VISIBLE_COLLAPSED
   const daily = dailyPrice(plan.price)
   const isFeatured = featured || plan.id === 'vip'
+  const durationLabel = getPlanDurationLabel(plan)
 
   return (
     // Hover animasyonu CSS (.plans-pricing-card) — Framer spring kaldırıldı
@@ -59,7 +60,9 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
           <p className="mt-1 text-sm text-sage-600">Kredi kartı gerekmez</p>
         ) : (
           <>
-            <p className="mt-1 text-sm text-cream-800/60">3 ve 6 aylık seçenekler de mevcut</p>
+            <p className="mt-1 text-sm text-cream-800/60">
+              {plan.id === 'doktor' ? durationLabel : `${durationLabel} · 3 ve 6 aylık seçenekler de mevcut`}
+            </p>
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
               Günde ~{daily.toLocaleString('tr-TR')}₺
             </p>

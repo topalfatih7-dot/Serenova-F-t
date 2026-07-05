@@ -1,7 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard, Calendar, MessageSquare, MessageCircle,
-  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus,
+  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
@@ -41,7 +41,7 @@ function NavBadge({ count }) {
 }
 
 export default function AdminShell() {
-  const { logout, adminStaffUnreadCount, pendingApplicationsCount, openSupportTicketsCount } = useApp()
+  const { logout, loggingOut, adminStaffUnreadCount, pendingApplicationsCount, openSupportTicketsCount } = useApp()
 
   const navWithBadges = adminNav.map((item) => ({
     ...item,
@@ -87,9 +87,11 @@ export default function AdminShell() {
           <button
             type="button"
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50"
+            disabled={loggingOut}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/60 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <LogOut className="h-4 w-4" /> Çıkış Yap
+            {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
           </button>
         </div>
       </aside>
@@ -101,6 +103,7 @@ export default function AdminShell() {
           badge={{ label: 'Admin Panel', className: 'bg-cream-900 text-white' }}
           accent="admin"
           logout={logout}
+          loggingOut={loggingOut}
           headerRight={<span className="text-xs font-medium text-cream-800/50">Admin</span>}
         />
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-8 py-4 sm:px-10 sm:py-6 lg:px-12">

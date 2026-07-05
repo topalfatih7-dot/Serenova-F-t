@@ -40,6 +40,7 @@ export function AppProvider({ children }) {
   const [remoteDb, setRemoteDb] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const [chatThreads, setChatThreads] = useState([])
   const [chatMessages, setChatMessages] = useState({})
   const [adminStaffThreads, setAdminStaffThreads] = useState([])
@@ -648,9 +649,14 @@ export function AppProvider({ children }) {
   }, [reloadRemote])
 
   const logout = useCallback(async () => {
-    await flushNotificationReads()
-    await sb.logout()
-    await reloadRemote()
+    setLoggingOut(true)
+    try {
+      await flushNotificationReads()
+      await sb.logout()
+      await reloadRemote()
+    } finally {
+      setLoggingOut(false)
+    }
   }, [flushNotificationReads, reloadRemote])
 
   const register = useCallback(async (profile, membership, packageConfig) => {
@@ -1144,6 +1150,7 @@ export function AppProvider({ children }) {
     activeUsers,
     login,
     logout,
+    loggingOut,
     register,
     completeOAuthMember,
     registerWithPayment,
@@ -1261,6 +1268,7 @@ export function AppProvider({ children }) {
     ensureStaffCollabThread,
     login,
     logout,
+    loggingOut,
     register,
     completeOAuthMember,
     registerWithPayment,

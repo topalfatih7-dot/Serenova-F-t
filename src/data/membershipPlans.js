@@ -2,10 +2,25 @@
 // Admin panelinden güncellenen veriler DB'den gelir.
 
 export const DURATION_OPTIONS = [
-  { months: 1, label: 'Aylık' },
-  { months: 3, label: '3 Aylık' },
-  { months: 6, label: '6 Aylık' },
+  { months: 1, label: 'Aylık', days: 30 },
+  { months: 3, label: '3 Aylık', days: 90 },
+  { months: 6, label: '6 Aylık', days: 180 },
 ]
+
+/** Ay sayısını yaklaşık gün sayısına çevirir (sabit 30 gün/ay varsayımı — UI gösterimi için). */
+export function getDurationDays(months = 1) {
+  const found = DURATION_OPTIONS.find((o) => o.months === Number(months))
+  if (found) return found.days
+  return Math.round((Number(months) || 1) * 30)
+}
+
+/** Fiyat kartlarında gösterilecek kısa süre etiketi: "30 gün", "Tek seferlik", "Süresiz" */
+export function getPlanDurationLabel(plan) {
+  if (!plan) return ''
+  if (plan.price === 0) return 'Süresiz'
+  if (plan.period === 'Tek Seferlik') return 'Tek seferlik'
+  return `${getDurationDays(1)} gün`
+}
 
 export const PAID_MEMBERSHIPS = [
   'eko', 'diyet', 'spor', 'doktor', 'vip',

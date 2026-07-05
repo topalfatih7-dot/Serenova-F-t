@@ -11,7 +11,7 @@ import { requestNotificationPermission, unlockNotificationAudio } from '../utils
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Shield, Stethoscope, Clock,
+  Flame, Shield, Stethoscope, Clock, Loader2,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import HealthSummarySection from '../components/profile/HealthSummarySection'
@@ -30,7 +30,7 @@ const fadeUp = {
 export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, myPrograms, staff,
-    updateProfile, updateSettings, logout,
+    updateProfile, updateSettings, logout, loggingOut,
     refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
@@ -66,8 +66,9 @@ export default function ProfilePage() {
 
   const remainingDays = getRemainingDays(premiumExpiresAt)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    if (loggingOut) return
+    await logout()
     navigate('/')
     toast('Çıkış yapıldı', 'info')
   }
@@ -319,11 +320,13 @@ export default function ProfilePage() {
       <motion.button
         type="button"
         onClick={handleLogout}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-gradient-to-r from-white to-red-50/50 py-3.5 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-200 hover:shadow-md"
+        disabled={loggingOut}
+        whileHover={{ scale: loggingOut ? 1 : 1.01 }}
+        whileTap={{ scale: loggingOut ? 1 : 0.99 }}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-gradient-to-r from-white to-red-50/50 py-3.5 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <LogOut className="h-4 w-4" /> Çıkış Yap
+        {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+        {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
       </motion.button>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profil Fotoğrafı & İletişim">
