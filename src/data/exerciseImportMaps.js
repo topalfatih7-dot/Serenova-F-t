@@ -97,8 +97,6 @@ export function localizeExerciseFields(exercise, pack) {
   const tr = translateExerciseRecord(exercise, pack)
   return {
     name: tr.name,
-    description: tr.description,
-    instructions: tr.instructions,
     target_muscle: tr.targetMuscleTr,
     secondary_muscles: tr.secondaryMusclesTr,
     movement_category: exercise.category || 'strength',

@@ -22,6 +22,7 @@ import { homedir } from 'node:os'
 import { createClient } from '@supabase/supabase-js'
 import { fileURLToPath } from 'node:url'
 import { EXERCISE_PACKS, DEFAULT_EXERCISE_DB_ROOT, plannedVideoPath } from './lib/exercise-packs.mjs'
+import { translateExerciseContent } from './lib/exercise-translate-tr.mjs'
 import {
   mapBodyPart,
   mapEquipment,
@@ -98,17 +99,23 @@ function findLocalVideo(videoRootPath, sourceId) {
   return null
 }
 
-function mapRecord(ex, pack, { deferred = false } = {}) {
+async function mapRecord(ex, pack, { deferred = false, skipTranslate = false } = {}) {
   const sourceId = String(ex.id)
   const bodyPart = mapBodyPart(ex.bodyPart)
   const tr = localizeExerciseFields(ex, pack)
+  const content = skipTranslate || dryRun
+    ? { description: ex.description || '', instructions: ex.instructions || [] }
+    : await translateExerciseContent({
+      description: ex.description,
+      instructions: ex.instructions,
+    })
   const localVideo = findLocalVideo(join(sourceRoot, pack.videoRoot), sourceId)
   const ext = localVideo?.toLowerCase().endsWith('.mov') ? 'mov' : 'mp4'
   const videoPath = plannedVideoPath(pack.slug, sourceId, ext)
 
   return {
     name: tr.name,
-    description: tr.description,
+    description: content.description,
     category: bodyPart,
     body_part: bodyPart,
     sport_type: pack.sportType,
@@ -117,11 +124,11 @@ function mapRecord(ex, pack, { deferred = false } = {}) {
     source_pack: pack.slug,
     source_id: sourceId,
     equipment: mapEquipment(ex.equipment),
-    target_muscle: tr.targetMuscleTr,
-    secondary_muscles: tr.secondaryMusclesTr,
+    target_muscle: tr.target_muscle,
+    secondary_muscles: tr.secondary_muscles,
     difficulty: mapDifficulty(ex.difficulty),
     movement_category: tr.movement_category,
-    instructions: tr.instructions,
+    instructions: content.instructions,
     metadata: {
       legacyId: ex.legacyId || null,
       packSlug: ex.packSlug || pack.slug,
@@ -265,6 +272,11 @@ async function main() {
     return
   }
 
+  if (packFilter && DEFERRED_IMPORT_PACKS.includes(packFilter)) {
+    console.error('Bu paket import edilmiyor (ertelenmiş):', packFilter)
+    process.exit(1)
+  }
+
   const activePacks = (packFilter
     ? EXERCISE_PACKS.filter((p) => p.slug === packFilter)
     : EXERCISE_PACKS.filter((p) => !DEFERRED_IMPORT_PACKS.includes(p.slug)))
@@ -290,7 +302,7 @@ async function main() {
     const exercises = JSON.parse(readFileSync(jsonPath, 'utf8'))
     if (!Array.isArray(exercises)) continue
     for (const ex of exercises) {
-      allRecords.push(mapRecord(ex, pack))
+      allRecords.push(await mapRecord(ex, pack))
     }
   }
 
@@ -300,7 +312,7 @@ async function main() {
     const exercises = JSON.parse(readFileSync(jsonPath, 'utf8'))
     if (!Array.isArray(exercises)) continue
     for (const ex of exercises) {
-      const rec = mapRecord(ex, pack, { deferred: true })
+      const rec = await mapRecord(ex, pack, { deferred: true, skipTranslate: true })
       deferredManifest.push({
         source_pack: pack.slug,
         source_id: String(ex.id),

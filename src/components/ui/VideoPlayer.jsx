@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Loader2, VideoOff } from 'lucide-react'
+import { useEffect, useRef, useState, cloneElement, isValidElement } from 'react'
+import { Loader2, Maximize2, Minimize2, VideoOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../services/supabaseDb'
 import { BRAND } from '../../config/brand'
@@ -18,20 +18,95 @@ function resolveStoragePath(url) {
   return null
 }
 
-/** Oynatıcı üzerinde sabit marka logosu — ekran kayıtlarında görünür kalır. */
-function VideoWatermarkFrame({ children, className = '' }) {
+/** Oynatıcı üzerinde sabit marka logosu — tam ekranda da görünür kalır. */
+function VideoWatermarkFrame({ children, className = '', allowFullscreen = true }) {
+  const frameRef = useRef(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    const sync = () => {
+      const el = frameRef.current
+      const active = document.fullscreenElement === el
+        || document.webkitFullscreenElement === el
+      setIsFullscreen(active)
+    }
+    document.addEventListener('fullscreenchange', sync)
+    document.addEventListener('webkitfullscreenchange', sync)
+    return () => {
+      document.removeEventListener('fullscreenchange', sync)
+      document.removeEventListener('webkitfullscreenchange', sync)
+    }
+  }, [])
+
+  const toggleFullscreen = async () => {
+    const el = frameRef.current
+    if (!el) return
+    try {
+      if (document.fullscreenElement === el || document.webkitFullscreenElement === el) {
+        if (document.exitFullscreen) await document.exitFullscreen()
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+      } else if (el.requestFullscreen) {
+        await el.requestFullscreen()
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen()
+      }
+    } catch {
+      /* kullanıcı iptal etmiş olabilir */
+    }
+  }
+
+  const mediaChild = isValidElement(children) && children.type === 'video'
+    ? cloneElement(children, {
+      controlsList: 'nodownload nofullscreen',
+      className: [children.props.className, 'border-0'].filter(Boolean).join(' '),
+    })
+    : children
+
   return (
-    <div className={`relative aspect-video w-full overflow-hidden rounded-xl bg-black ${className}`}>
+    <div
+      ref={frameRef}
+      className={[
+        'group relative aspect-video w-full overflow-hidden rounded-xl bg-black',
+        '[&:fullscreen]:flex [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen',
+        '[&:fullscreen]:max-h-none [&:fullscreen]:max-w-none [&:fullscreen]:items-center [&:fullscreen]:justify-center',
+        '[&:fullscreen]:rounded-none',
+        '[-webkit-full-screen]:flex [-webkit-full-screen]:aspect-auto [-webkit-full-screen]:h-screen [-webkit-full-screen]:w-screen',
+        '[-webkit-full-screen]:max-h-none [-webkit-full-screen]:max-w-none [-webkit-full-screen]:items-center [-webkit-full-screen]:justify-center',
+        '[-webkit-full-screen]:rounded-none',
+        className,
+      ].join(' ')}
+    >
       <div className="absolute inset-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain">
-        {children}
+        {mediaChild}
       </div>
       <img
         src={BRAND.assets.logo}
         alt=""
         aria-hidden="true"
         draggable={false}
-        className="pointer-events-none absolute right-3 bottom-11 z-10 h-7 w-auto max-w-[42%] select-none object-contain opacity-80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] sm:h-8"
+        className={[
+          'pointer-events-none absolute z-10 w-auto select-none object-contain opacity-80',
+          'drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]',
+          isFullscreen
+            ? 'right-6 bottom-16 h-10 max-w-[36%] sm:h-12'
+            : 'right-3 bottom-11 h-7 max-w-[42%] sm:h-8',
+        ].join(' ')}
       />
+      {allowFullscreen && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className={[
+            'absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg',
+            'bg-black/55 text-white/90 opacity-80 backdrop-blur-sm transition hover:bg-black/75 hover:opacity-100',
+            'sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100',
+            isFullscreen && 'opacity-100',
+          ].join(' ')}
+          aria-label={isFullscreen ? 'Tam ekrandan çık' : 'Tam ekran'}
+        >
+          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </button>
+      )}
     </div>
   )
 }
@@ -80,7 +155,6 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
           title="Egzersiz videosu"
           src={`https://www.youtube.com/embed/${yt}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
           className="border-0"
         />
       </VideoWatermarkFrame>
@@ -113,7 +187,7 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
     }
     return (
       <VideoWatermarkFrame className={className}>
-        <video src={playUrl} controls playsInline controlsList="nodownload" />
+        <video src={playUrl} controls playsInline />
       </VideoWatermarkFrame>
     )
   }
@@ -129,7 +203,7 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
 
   return (
     <VideoWatermarkFrame className={className}>
-      <video src={url} controls playsInline controlsList="nodownload" />
+      <video src={url} controls playsInline />
     </VideoWatermarkFrame>
   )
 }
