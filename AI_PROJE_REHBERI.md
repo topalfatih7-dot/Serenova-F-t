@@ -4,7 +4,7 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-05 (§51: kayıt sırasında sahte "giriş yapılmış" header'ı düzeltildi, çıkış loading'i eklendi, paket süre/gün gösterimi eklendi; §50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
+> **Son güncelleme:** 2026-07-05 (§52: Premium Yönetimi'nde artık tüm üyelerin — ücretsiz dahil — paketi değiştirilebiliyor; §51: kayıt sırasında sahte "giriş yapılmış" header'ı düzeltildi, çıkış loading'i eklendi, paket süre/gün gösterimi eklendi; §50: RLS performans bakımı — auth_rls_initplan/unindexed FK/multiple permissive policies düzeltildi, `npm run test:rls` ile doğrulandı; §49: genel proje taraması — Stripe webhook kopukluğu düzeltildi, sosyal giriş Google'a sadeleştirildi, staff-docs bucket listeleme güvenliği; §48 öncesi hareket kütüphanesi video güvenliği commit `bb88669d`)
 
 ---
 
@@ -3827,4 +3827,14 @@ Kullanıcı üç ayrı hata/eksiklik bildirdi: (1) paket seçip Stripe'a yönlen
 | `src/components/membership/MembershipDurationPicker.jsx` | Her süre seçeneğinin altında gün sayısı gösteriliyor |
 | `src/components/landing/PricingCard.jsx` | Süre etiketi eklendi; Doktor için "3/6 aylık" metni düzeltildi |
 | `src/components/membership/MembershipPlanCard.jsx` | Fiyatın altında süre etiketi eklendi |
+
+## 52. Premium Yönetimi — Tüm Üyelerin Paketi Değiştirilebilir (2026-07-05)
+
+`AdminPremiumPage` (Admin → Premium Yönetimi) yalnızca zaten ücretli pakete sahip üyeleri (`isPaidMembership`) listeliyordu — ücretsiz (Basic) üyeler listede hiç görünmüyordu, dolayısıyla admin panelinden bir üyeyi ücretsizden ücretli pakete yükseltmek bu sayfadan mümkün değildi (backend fonksiyonu `adminUpdatePremiumMembership` zaten `membership: 'free'` dahil her planı destekliyordu, eksik olan yalnızca UI'daki filtreydi).
+
+Değişiklik: Üye listesi artık **tüm üyeleri** gösteriyor. Ücretsiz üyeler kartta "Ücretsiz" rozetiyle ve sadeleştirilmiş bir görünümle ("Henüz paket yok — yükseltmek için tıklayın") listeleniyor; tıklanınca aynı `EditPremiumModal` açılıyor ve admin doğrudan paket/süre/koç-diyetisyen ataması yapıp üyeyi ücretli bir plana geçirebiliyor. Filtre dropdown'ına "Ücretsiz (Basic)" ve "Premium (ücretli)" seçenekleri eklendi, üst istatistik şeridine "Ücretsiz" sayacı eklendi (`grid-cols-3` → `grid-cols-2 sm:grid-cols-4`).
+
+| Dosya | Değişiklik |
+|-------|------------|
+| `src/pages/admin/AdminPremiumPage.jsx` | Üye listesi filtresi `isPaidMembership` zorunluluğu kaldırıldı (tüm üyeler); `PremiumMemberCard`'a ücretsiz üye için sadeleştirilmiş görünüm eklendi; filtre seçenekleri ve istatistik şeridi güncellendi |
 

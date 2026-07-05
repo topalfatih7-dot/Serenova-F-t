@@ -29,6 +29,7 @@ const STATUS_LABELS = {
 
 function PremiumMemberCard({ member, staffName, onEdit }) {
   const info = enrichMemberPremium(member)
+  const isFree = !isPaidMembership(member.membership)
   const showCoach = packageIncludesCoach(member.packageConfig)
   const showDiet = packageIncludesDietitian(member.packageConfig)
   const showDoctor = packageIncludesDoctor(member.packageConfig)
@@ -50,6 +51,15 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate font-semibold text-cream-900">{member.name}</p>
+            {isFree ? (
+              <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-semibold text-cream-700 ring-1 ring-cream-200">
+                Ücretsiz
+              </span>
+            ) : (
+              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 ring-1 ring-brand-100">
+                {PLAN_LABELS[member.membership] || member.membership}
+              </span>
+            )}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${STATUS_STYLES[member.membershipStatus] || STATUS_STYLES.active}`}>
               {STATUS_LABELS[member.membershipStatus] || member.membershipStatus}
             </span>
@@ -59,6 +69,11 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-cream-300 group-hover:text-brand-400" />
       </div>
 
+      {isFree ? (
+        <p className="mt-4 rounded-xl bg-cream-50 px-3 py-2.5 text-xs font-medium text-cream-800/60">
+          Henüz paket yok — yükseltmek için tıklayın
+        </p>
+      ) : (
       <div className={`mt-4 grid gap-2 ${staffCols === 0 ? 'grid-cols-2' : staffCols === 1 ? 'grid-cols-3' : staffCols === 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-5'}`}>
         <div className="rounded-xl bg-cream-50 px-3 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Kalan</p>
@@ -99,6 +114,7 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
           </div>
         )}
       </div>
+      )}
 
       {(missingCoach || missingDiet || missingDoctor || info.premiumExpiringSoon) && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -426,11 +442,11 @@ export default function AdminPremiumPage() {
 
   const premiumMembers = useMemo(() => {
     return members
-      .filter((m) => isPaidMembership(m.membership))
       .filter((m) => {
         const q = search.toLowerCase()
         const matchSearch = !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
         if (!matchSearch) return false
+        if (filter === 'free') return !isPaidMembership(m.membership)
         if (filter === 'unassigned') {
           return memberNeedsStaffAssignment(m)
         }
@@ -439,6 +455,7 @@ export default function AdminPremiumPage() {
           return r != null && r > 0 && r <= 7
         }
         if (filter === 'active') return m.membershipStatus === 'active'
+        if (filter === 'premium') return isPaidMembership(m.membership)
         return true
       })
       .sort((a, b) => {
@@ -450,8 +467,10 @@ export default function AdminPremiumPage() {
 
   const stats = useMemo(() => {
     const paidPlans = PAID_MEMBERSHIPS
+    const paidCount = members.filter((m) => paidPlans.includes(m.membership)).length
     return {
-      total: members.filter((m) => paidPlans.includes(m.membership)).length,
+      total: paidCount,
+      free: members.length - paidCount,
       unassigned: members.filter((m) => paidPlans.includes(m.membership) && memberNeedsStaffAssignment(m)).length,
       expiring: members.filter((m) => {
         const r = getRemainingDays(m.premiumExpiresAt)
@@ -485,12 +504,13 @@ export default function AdminPremiumPage() {
           </span>
           <div>
             <h1 className="font-display text-2xl font-bold">Premium Yönetimi</h1>
-            <p className="mt-1 text-sm text-white/70">Paket, süre ve koç/diyetisyen atamalarını yönetin</p>
+            <p className="mt-1 text-sm text-white/70">Tüm üyelerin paketini, süresini ve koç/diyetisyen atamalarını yönetin</p>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
             { label: 'Premium', value: stats.total },
+            { label: 'Ücretsiz', value: stats.free },
             { label: 'Atama Eksik', value: stats.unassigned },
             { label: 'Sona Eriyor', value: stats.expiring },
           ].map((s) => (
@@ -518,7 +538,9 @@ export default function AdminPremiumPage() {
           onChange={(e) => setFilter(e.target.value)}
           className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm"
         >
-          <option value="all">Tüm premium</option>
+          <option value="all">Tüm üyeler</option>
+          <option value="premium">Premium (ücretli)</option>
+          <option value="free">Ücretsiz (Basic)</option>
           <option value="active">Aktif</option>
           <option value="unassigned">Atama eksik</option>
           <option value="expiring">7 gün içinde biten</option>
@@ -527,8 +549,8 @@ export default function AdminPremiumPage() {
 
       {premiumMembers.length === 0 ? (
         <EmptyState
-          title="Premium üye yok"
-          description="Premium üyelik satın alan veya atanan üyeler burada listelenir."
+          title="Üye bulunamadı"
+          description="Arama veya filtre kriterlerinize uyan üye yok."
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
