@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MessageCircle, Dumbbell, Apple, Shield } from 'lucide-react'
+import { MessageCircle, Shield } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import ChatThreadView from '../components/chat/ChatThreadView'
 import ChatConsentModal from '../components/chat/ChatConsentModal'
@@ -21,7 +21,13 @@ import {
 } from '../utils/chatAccess'
 import { staffRoleMeta } from '../utils/staffRoles'
 
-const ROLE_ICON = { coach: Dumbbell, dietitian: Apple }
+const CHAT_ROLES = ['coach', 'dietitian', 'doctor']
+
+const AVATAR_IDLE = {
+  coach: 'bg-brand-100 text-brand-700',
+  dietitian: 'bg-sage-100 text-sage-700',
+  doctor: 'bg-amber-100 text-amber-700',
+}
 
 export default function MessagesPage() {
   const { role: roleParam } = useParams()
@@ -42,7 +48,7 @@ export default function MessagesPage() {
   const peerIds = useMemo(() => contacts.map((c) => c.staffId).filter(Boolean), [contacts])
   const { isOnline, lastSeenAt } = useChatPresence(peerIds)
 
-  const activeRole = roleParam === 'dietitian' ? 'dietitian' : roleParam === 'coach' ? 'coach' : null
+  const activeRole = CHAT_ROLES.includes(roleParam) ? roleParam : null
   const activeContact = contacts.find((c) => c.role === activeRole)
   const activeThread = activeRole
     ? sortedThreads.find((t) => t.staffRole === activeRole)
@@ -98,7 +104,7 @@ export default function MessagesPage() {
         <EmptyState
           icon={MessageCircle}
           title="Mesajlaşma henüz aktif değil"
-          description="Premium paketinizde koç veya diyetisyen atandığında buradan mesajlaşabilirsiniz."
+          description="Premium paketinizde koç, diyetisyen veya doktor atandığında buradan mesajlaşabilirsiniz."
         />
       </PanelPageShell>
     )
@@ -111,8 +117,9 @@ export default function MessagesPage() {
         {contacts.map((c) => {
           const thread = sortedThreads.find((t) => t.staffRole === c.role)
           const unread = threadUnreadCount(thread, 'member')
-          const RoleIcon = ROLE_ICON[c.role]
+          const RoleIcon = staffRoleMeta(c.role).icon
           const isActive = activeRole === c.role
+          const idleAvatar = AVATAR_IDLE[c.role] || AVATAR_IDLE.coach
           return (
             <motion.button
               key={c.role}
@@ -127,8 +134,8 @@ export default function MessagesPage() {
                 lastSeenAt={lastSeenAt(c.staffId)}
                 online={isOnline(c.staffId)}
               >
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : c.role === 'dietitian' ? 'bg-sage-100 text-sage-700' : 'bg-brand-100 text-brand-700'}`}>
-                  <RoleIcon className="h-5 w-5" />
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : idleAvatar}`}>
+                  {RoleIcon ? <RoleIcon className="h-5 w-5" /> : null}
                 </span>
               </AvatarWithPresence>
               <div className="min-w-0 flex-1">
@@ -151,7 +158,7 @@ export default function MessagesPage() {
     <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
       <MessageCircle className="h-12 w-12 text-cream-200" />
       <p className="mt-3 font-medium text-cream-800/70">Bir sohbet seçin</p>
-      <p className="mt-1 text-xs text-cream-800/45">Listeden koç veya diyetisyeninize tıklayın</p>
+      <p className="mt-1 text-xs text-cream-800/45">Listeden uzmanınızı seçin</p>
     </div>
   ) : (
     <>
@@ -188,7 +195,7 @@ export default function MessagesPage() {
       <PanelPageHeader
         className="shrink-0"
         title="Mesajlar"
-        subtitle={showThread && !isWide ? undefined : 'Yalnızca size atanmış koç ve diyetisyeninizle — mesajlar kayıt altındadır'}
+        subtitle={showThread && !isWide ? undefined : 'Yalnızca size atanmış uzmanlarınızla — mesajlar kayıt altındadır'}
         icon={MessageCircle}
         accent="brand"
         compact={showThread && !isWide}

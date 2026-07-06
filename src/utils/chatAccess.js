@@ -127,6 +127,9 @@ export function memberChatHydrationSignature(member) {
   if (packageIncludesDietitian(pkg) && member.assignedDietitianId) {
     parts.push(`diet:${member.assignedDietitianId}`)
   }
+  if (packageIncludesDoctor(pkg) && member.assignedDoctorId) {
+    parts.push(`doctor:${member.assignedDoctorId}`)
+  }
   return parts.join('|')
 }
 
@@ -162,7 +165,8 @@ export function memberHasChatAccess(member) {
   const pkg = member?.packageConfig || {}
   return Boolean(
     (packageIncludesCoach(pkg) && member?.assignedCoachId)
-    || (packageIncludesDietitian(pkg) && member?.assignedDietitianId),
+    || (packageIncludesDietitian(pkg) && member?.assignedDietitianId)
+    || (packageIncludesDoctor(pkg) && member?.assignedDoctorId),
   )
 }
 
@@ -209,6 +213,7 @@ export function sortAdminStaffThreads(threads, perspective = 'admin') {
 export function staffRoleLabel(role) {
   if (role === 'dietitian') return 'Diyetisyen'
   if (role === 'coach') return 'Koç'
+  if (role === 'doctor') return 'Doktor'
   return 'Personel'
 }
 

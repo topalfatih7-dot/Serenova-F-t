@@ -62,12 +62,20 @@ export default function SessionBooker({
   }, [availability])
 
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [pendingTime, setPendingTime] = useState(null)
   const [takenSet, setTakenSet] = useState(() => new Set())
   const [booking, setBooking] = useState(false)
 
   useEffect(() => {
-    if (open) setSelectedIdx(0)
+    if (open) {
+      setSelectedIdx(0)
+      setPendingTime(null)
+    }
   }, [open])
+
+  useEffect(() => {
+    setPendingTime(null)
+  }, [selectedIdx])
 
   // Pencere boyunca dolu slotları çek
   useEffect(() => {
@@ -104,6 +112,22 @@ export default function SessionBooker({
 
   const limitReached = monthlyLimit > 0 && usedThisMonth >= monthlyLimit
 
+  const pendingDateTime = pendingTime && selectedDay ? slotDateTime(selectedDay, pendingTime) : null
+
+  const selectTime = (time) => {
+    if (booking || !selectedDay || limitReached) return
+    const dt = slotDateTime(selectedDay, time)
+    if (dt.getTime() <= Date.now()) {
+      toast('Geçmiş bir saat seçilemez.', 'warning')
+      return
+    }
+    setPendingTime(time)
+  }
+
+  const confirmBook = () => {
+    if (pendingTime) handleBook(pendingTime)
+  }
+
   const handleBook = async (time) => {
     if (booking || !selectedDay) return
     const dt = slotDateTime(selectedDay, time)
@@ -119,6 +143,7 @@ export default function SessionBooker({
         return
       }
       toast('Randevunuz oluşturuldu.', 'success')
+      setPendingTime(null)
       onClose?.()
     } finally {
       setBooking(false)
@@ -142,7 +167,7 @@ export default function SessionBooker({
           <div className="flex items-start gap-2 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/70">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
             <span>
-              <span className="font-semibold">{staff.name}</span> ile müsait gün ve saati seçin.
+              <span className="font-semibold">{staff.name}</span> ile gün ve saati seçin, ardından randevuyu onaylayın.
               {monthlyLimit > 0 && ` Bu ay kalan hakkınız: ${Math.max(monthlyLimit - usedThisMonth, 0)}/${monthlyLimit}.`}
             </span>
           </div>
@@ -182,16 +207,19 @@ export default function SessionBooker({
                 const taken = takenSet.has(ts)
                 const own = ownActive.has(ts)
                 const disabled = past || taken || own || booking
+                const selected = pendingTime === t
                 return (
                   <button
                     key={t}
                     type="button"
                     disabled={disabled}
-                    onClick={() => handleBook(t)}
+                    onClick={() => selectTime(t)}
                     className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
                       disabled
                         ? 'cursor-not-allowed border-cream-100 bg-cream-50 text-cream-400 line-through'
-                        : `bg-white ${tone.ring} hover:bg-cream-50`
+                        : selected
+                          ? tone.sel
+                          : `bg-white ${tone.ring} hover:bg-cream-50`
                     }`}
                     title={own ? 'Bu saatte zaten randevunuz var' : taken ? 'Bu saat dolu' : ''}
                   >
@@ -205,9 +233,46 @@ export default function SessionBooker({
             </div>
           )}
 
-          {booking && (
-            <div className="flex items-center justify-center gap-2 text-sm text-cream-800/60">
-              <Loader2 className="h-4 w-4 animate-spin" /> Randevu oluşturuluyor…
+          {pendingDateTime && !limitReached && (
+            <div className="rounded-2xl border border-cream-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-cream-900">Randevuyu onaylayın</p>
+              <dl className="mt-3 space-y-2 text-sm text-cream-800/75">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-cream-800/50">Uzman</dt>
+                  <dd className="font-medium text-cream-900">{staff.name}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-cream-800/50">Tarih</dt>
+                  <dd className="font-medium text-cream-900">
+                    {format(pendingDateTime, 'd MMMM yyyy EEEE', { locale: tr })}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-cream-800/50">Saat</dt>
+                  <dd className="font-medium text-cream-900">
+                    {format(pendingDateTime, 'HH:mm', { locale: tr })} · {duration} dk
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  disabled={booking}
+                  onClick={() => setPendingTime(null)}
+                  className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm font-semibold text-cream-800 hover:bg-cream-50 disabled:opacity-50"
+                >
+                  Saati değiştir
+                </button>
+                <button
+                  type="button"
+                  disabled={booking}
+                  onClick={confirmBook}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${tone.btn}`}
+                >
+                  {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {booking ? 'Oluşturuluyor…' : 'Randevuyu Onayla'}
+                </button>
+              </div>
             </div>
           )}
         </div>
