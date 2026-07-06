@@ -2,13 +2,15 @@ import { Video, Settings, Radio } from 'lucide-react'
 import StaffAppointmentRow from './StaffAppointmentRow'
 import { isVideoCallConfigured } from '../../config/videoCall'
 import { getSessionTiming, canJoinSession } from '../../services/videoCallSession'
+import { isCoachRole, sessionTypeForRole, sessionsKeyForRole } from '../../utils/staffRoles'
 
 /**
- * Koç / diyetisyen paneli için özel "Görüntülü Görüşme" alanı.
+ * Koç / diyetisyen / doktor paneli için "Görüntülü Görüşme" alanı.
  */
 export default function StaffVideoPanel({ clients, role }) {
-  const isCoach = role === 'coach'
-  const key = isCoach ? 'coachSessions' : 'dietitianSessions'
+  const sessionType = sessionTypeForRole(role)
+  const key = sessionsKeyForRole(role)
+  const isCoach = isCoachRole(role)
   const now = new Date()
   const configured = isVideoCallConfigured()
 
@@ -60,7 +62,7 @@ export default function StaffVideoPanel({ clients, role }) {
 
       {sessions.length === 0 ? (
         <p className="mt-5 rounded-xl bg-white/70 px-4 py-6 text-center text-sm leading-relaxed text-cream-800/55">
-          Planlı görüntülü görüşme yok. Randevular admin panelinden eklendiğinde burada belirir.
+          Planlı görüntülü görüşme yok. Randevular admin panelinden veya üye self-servis ile eklendiğinde burada belirir.
         </p>
       ) : (
         <div className="mt-4 space-y-2.5">
@@ -75,8 +77,9 @@ export default function StaffVideoPanel({ clients, role }) {
                 subtitle={statusParts.join(' · ') || undefined}
                 dateISO={s.date}
                 session={s}
-                sessionType={isCoach ? 'coach' : 'dietitian'}
+                sessionType={sessionType}
                 isCoach={isCoach}
+                accentRole={role}
                 live={live}
               />
             )

@@ -1,5 +1,11 @@
 import { VIDEO_CALL_CONFIG } from '../config/videoCall'
 import { formatDurationTr } from '../utils/formatDuration'
+import {
+  assignedKeyForRole,
+  normalizeSessionType,
+  normalizeStaffRole,
+  sessionsKeyForRole,
+} from '../utils/staffRoles'
 
 export function getSessionTiming(session, now = new Date()) {
   const start = new Date(session?.date)
@@ -93,26 +99,50 @@ export function canJoinSession(session, now = new Date()) {
   }
 }
 
-/** Üye için oturum bilgisi */
-export function findMemberSession({ coachSessions, dietitianSessions }, sessionType, sessionId) {
-  const key = sessionType === 'coach' ? 'coachSessions' : 'dietitianSessions'
-  const list = sessionType === 'coach' ? coachSessions : dietitianSessions
-  const session = (list || []).find((s) => s.id === sessionId)
-  if (!session) return null
-  return { session, sessionType, key }
+const SESSION_LIST_KEYS = {
+  coach: 'coachSessions',
+  dietitian: 'dietitianSessions',
+  doctor: 'doctorSessions',
 }
 
-/** Koç / diyetisyen için danışan oturumu */
+function remoteStaffLabel(sessionType) {
+  if (sessionType === 'dietitian') return 'Diyetisyeniniz'
+  if (sessionType === 'doctor') return 'Doktorunuz'
+  return 'Koçunuz'
+}
+
+/** Üye için oturum bilgisi */
+export function findMemberSession(
+  { coachSessions, dietitianSessions, doctorSessions },
+  sessionType,
+  sessionId,
+) {
+  const type = normalizeSessionType(sessionType)
+  const key = SESSION_LIST_KEYS[type]
+  const list = type === 'coach'
+    ? coachSessions
+    : type === 'dietitian'
+      ? dietitianSessions
+      : doctorSessions
+  const session = (list || []).find((s) => s.id === sessionId)
+  if (!session) return null
+  return { session, sessionType: type, key }
+}
+
+/** Koç / diyetisyen / doktor için danışan oturumu */
 export function findStaffSession(members, staffId, staffRole, sessionType, sessionId) {
-  if (staffRole !== sessionType) return null
-  const assignKey = sessionType === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
-  const sessionKey = sessionType === 'coach' ? 'coachSessions' : 'dietitianSessions'
+  const role = normalizeStaffRole(staffRole)
+  const type = normalizeSessionType(sessionType)
+  if (role !== type) return null
+
+  const assignKey = assignedKeyForRole(type)
+  const sessionKey = sessionsKeyForRole(type)
 
   for (const member of members || []) {
     if (String(member[assignKey]) !== String(staffId)) continue
     const session = (member[sessionKey] || []).find((s) => s.id === sessionId)
     if (session) {
-      return { session, sessionType, member }
+      return { session, sessionType: type, member }
     }
   }
   return null
@@ -128,11 +158,13 @@ export function resolveCallContext({
   platformMembers,
   coachSessions,
   dietitianSessions,
+  doctorSessions,
 }) {
-  const type = sessionType === 'dietitian' ? 'dietitian' : 'coach'
+  const type = normalizeSessionType(sessionType)
 
   if (audience === 'staff' || isStaff) {
-    const found = findStaffSession(platformMembers, staffUser?.id, staffUser?.role, type, sessionId)
+    const staffRole = normalizeStaffRole(staffUser?.role)
+    const found = findStaffSession(platformMembers, staffUser?.id, staffRole, type, sessionId)
     if (!found) return { error: 'Randevu bulunamadı veya bu görüşmeye erişiminiz yok.' }
     const joinCheck = canJoinSession(found.session)
     const roomAccess = canAccessCallRoom(found.session)
@@ -141,7 +173,7 @@ export function resolveCallContext({
       sessionType: type,
       displayName: staffUser?.name || 'Uzman',
       remoteLabel: found.member?.name || 'Danışan',
-      participantRole: type,
+      participantRole: staffRole,
       side: 'staff',
       member: found.member,
       joinCheck,
@@ -149,7 +181,11 @@ export function resolveCallContext({
     }
   }
 
-  const found = findMemberSession({ coachSessions, dietitianSessions }, type, sessionId)
+  const found = findMemberSession(
+    { coachSessions, dietitianSessions, doctorSessions },
+    type,
+    sessionId,
+  )
   if (!found) return { error: 'Randevu bulunamadı.' }
   const joinCheck = canJoinSession(found.session)
   const roomAccess = canAccessCallRoom(found.session)
@@ -157,7 +193,7 @@ export function resolveCallContext({
     session: found.session,
     sessionType: type,
     displayName: user?.name || 'Danışan',
-    remoteLabel: found.session.coach || (type === 'coach' ? 'Koçunuz' : 'Diyetisyeniniz'),
+    remoteLabel: found.session.coach || remoteStaffLabel(type),
     participantRole: 'member',
     side: 'member',
     joinCheck,

@@ -34,7 +34,21 @@ import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import { supabase } from '../services/supabaseClient'
 import { ensureAuthForRegistration, savePendingRegistrationMetadata } from '../services/supabaseDb'
-const VALID_PLANS = [...PLAN_IDS, 'gumus', 'altin', 'platinum', 'premium']
+
+/** Eski URL plan parametrelerini güncel plan id'lerine eşler */
+const LEGACY_PLAN_MAP = {
+  gumus: 'eko',
+  altin: 'doktor',
+  platinum: 'vip',
+  premium: 'vip',
+  kurucu: 'doktor',
+}
+
+function resolvePlanFromQuery(raw) {
+  if (!raw) return 'free'
+  const mapped = LEGACY_PLAN_MAP[raw] || raw
+  return PLAN_IDS.includes(mapped) ? mapped : 'free'
+}
 
 const BENEFITS = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman & beslenme programları' },
@@ -65,6 +79,10 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   }, [])
 
   const applyChange = async (price = 0) => {
+    if (isPaid && price <= 0) {
+      toast('Geçersiz plan fiyatı. Lütfen geçerli bir paket seçin.', 'error')
+      return false
+    }
     setSaving(true)
     const r = await changePlan(selected, price, durationMonths)
     setSaving(false)
@@ -162,7 +180,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const rawPlan = searchParams.get('plan') || 'free'
-  const preselectedPlan = VALID_PLANS.includes(rawPlan) ? rawPlan : 'free'
+  const preselectedPlan = resolvePlanFromQuery(rawPlan)
 
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)

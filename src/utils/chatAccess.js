@@ -4,7 +4,7 @@ import { staffCollabMembersSignature } from '../services/staffCollabChatDb'
 
 export const CHAT_CONSENT_KEY = 'yeniform-chat-consent-v1'
 
-export const CHAT_CONSENT_TEXT = `Bu mesajlaşma alanı, atanmış koçunuz ve/veya diyetisyeninizle paketiniz kapsamında iletişim kurmanız içindir.
+export const CHAT_CONSENT_TEXT = `Bu mesajlaşma alanı, atanmış koçunuz, diyetisyeniniz ve/veya doktorunuzla paketiniz kapsamında iletişim kurmanız içindir.
 
 Gönderdiğiniz ve aldığınız tüm mesajlar güvenli şekilde kaydedilir; hizmet kalitesi, uyumluluk ve olası süreç takipleri için saklanabilir.
 
@@ -37,6 +37,19 @@ export function getMemberChatContacts(member, staffList = []) {
         name: dietitian.name,
         title: dietitian.title || 'Diyetisyeniniz',
         photo: dietitian.photo,
+      })
+    }
+  }
+
+  if (packageIncludesDoctor(pkg) && member.assignedDoctorId) {
+    const doctor = staffList.find((s) => String(s.id) === String(member.assignedDoctorId))
+    if (doctor) {
+      contacts.push({
+        role: 'doctor',
+        staffId: doctor.id,
+        name: doctor.name,
+        title: doctor.title || 'Doktorunuz',
+        photo: doctor.photo,
       })
     }
   }

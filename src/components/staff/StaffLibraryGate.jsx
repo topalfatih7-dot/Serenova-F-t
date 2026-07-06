@@ -13,7 +13,7 @@ export default function StaffLibraryGate() {
   }
 
   if (role === 'coach' || role === 'doctor') {
-    return <ExerciseLibraryPage />
+    return <ExerciseLibraryPage staffMode />
   }
 
   return <Navigate to="/staff" replace />

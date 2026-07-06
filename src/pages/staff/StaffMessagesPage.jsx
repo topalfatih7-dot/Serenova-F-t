@@ -17,7 +17,7 @@ import {
   sortStaffInboxItems,
   threadUnreadCount,
 } from '../../utils/chatAccess'
-import { staffRoleMeta } from '../../utils/staffRoles'
+import { staffRoleMeta, normalizeStaffRole } from '../../utils/staffRoles'
 import { getPlanLabel } from '../../data/membershipPlans'
 import PresenceIndicator, { AvatarWithPresence } from '../../components/ui/PresenceIndicator'
 
@@ -115,7 +115,7 @@ export default function StaffMessagesPage() {
   }
 
   const meta = staffRoleMeta(staffUser?.role)
-  const programRole = staffUser?.role === 'dietitian' ? 'dietitian' : 'coach'
+  const programRole = normalizeStaffRole(staffUser?.role)
 
   const inbox = (
     <>

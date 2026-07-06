@@ -4,12 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-05 · commit `f8959c32`  
-> **Son oturum özeti:** §58 Admin premium — tüm üyelerin paketi değiştirilebilir · §57 kayıt header / çıkış loading / paket gün gösterimi · §56 RLS performans bakımı · §55 Stripe webhook + sosyal giriş sadeleştirme · §54 hareket videosu imzalı URL · §53 kadro GSB kademeleri
+> **Son güncelleme:** 2026-07-06 · commit `db3ff786` (audit düzeltmeleri bu oturumda commit edilmedi)  
+> **Son oturum özeti:** §59 tam proje audit düzeltmeleri · §58 Admin premium · §57 kayıt UX · §56 RLS · §55 Stripe webhook
 
 ---
 
-## Son Durum Özeti (2026-07-05)
+## Son Durum Özeti (2026-07-06)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -135,13 +135,15 @@ Tarayıcı
   └─► Daily.co WebRTC (VideoCallPage → useDailyCall)
 ```
 
-### Rol çözümleme (`supabaseDb.js` → `roleForEmail`)
+### Rol çözümleme (`supabaseDb.js` → `roleForUser`)
 
 | Rol | Koşul | Yönlendirme (LoginPage) |
 |-----|-------|-------------------------|
 | **admin** | E-posta = `admin@serenova.fit` | `/admin` |
 | **staff** | E-posta `staff` tablosunda kayıtlı | `/staff` |
-| **member** | Diğer tüm auth kullanıcıları | `/dashboard` |
+| **member** | Diğer tüm auth kullanıcıları | **`/profile`** |
+
+> `roleForEmail()` tanımlı ama kullanılmaz. Aktif: `roleForUser(user, staffList)`.
 
 Admin e-postası üç yerde senkron olmalı:
 - `src/config/brand.js` → `ADMIN_CREDENTIALS.email`
@@ -221,7 +223,8 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 
 - Bucket: **`exercise-videos`** — **private** (2026-07-04 §48'den itibaren); admin yükleme
 - Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage` — artık kalıcı public URL değil, sadece storage **path** döner
-- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → `api/exercise-video-url.js` (service role, `requireAuth`) → **1 saatlik imzalı URL**. Gerçek dosya adresi tarayıcıya kalıcı olarak hiç verilmez.
+- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → **`POST /api/auth`** (`action: 'exercise-video-url'`, service role) → **1 saatlik imzalı URL**. Vercel Hobby 12 fonksiyon limiti nedeniyle ayrı `api/exercise-video-url.js` kaldırıldı.
+- Üye kütüphanesi: **Spor/VIP** (veya çoklu paket union) → tam video; diğer paketler liste görür, oynatma kilitli (`memberHasFullVideoAccess`).
 - Eski kayıtlardaki tam public URL'ler de `VideoPlayer` içinde otomatik path'e çevrilip imzalanır (geriye dönük veri migrasyonu gerekmedi).
 - YouTube linkleri bu akışın dışında, aynen `iframe embed` ile oynatılıyor.
 
@@ -3881,4 +3884,29 @@ Değişiklik: Üye listesi artık **tüm üyeleri** gösteriyor. Ücretsiz üyel
 | `src/pages/admin/AdminPremiumPage.jsx` | Üye listesi filtresi `isPaidMembership` zorunluluğu kaldırıldı (tüm üyeler); `PremiumMemberCard`'a ücretsiz üye için sadeleştirilmiş görünüm eklendi; filtre seçenekleri ve istatistik şeridi güncellendi |
 
 **Commit:** `f8959c32`
+
+---
+
+## §59 Tam Proje Audit Düzeltmeleri (2026-07-06)
+
+Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
+
+| Paket | Konu | Dosyalar / Not |
+|-------|------|----------------|
+| **C** | Doktor personel paneli + video call | `staffRoles.js` (3-yollu helper'lar), `videoCallSession.js`, `StaffOverviewPage`, `StaffClientsPage`, `StaffVideoPanel`, `StaffAppointmentRow`, `VideoCallPage`, `ChatThreadView`, `StaffMessagesPage` |
+| **B2** | Kan tahlili entitlement | `membershipPlans.js` `PACKAGE_BY_PLAN`: diyet/spor/vip → `doctorMeetingsPerMonth: 1`; senkron: `api/stripe-webhook.js`, `api/_memberPackages.js` |
+| **H** | Doktor mesajı | `chatAccess.js` `getMemberChatContacts` → `assignedDoctorId` |
+| **L** | Legacy `?plan=` güvenliği | `OnboardingPage.jsx` `LEGACY_PLAN_MAP` + fiyat 0 reddi |
+| **D** | Çoklu paket union | `memberPackages.js`: `resolveMemberEntitlements`, `memberHas*Access`, `LEGACY_PLAN_RANK` |
+| **A** | Ödeme UI | `PaymentManagementPage.jsx`: sahte kart kaldırıldı; Stripe Checkout mesajı |
+| **G** | Admin finans birleşimi | `/admin/payments` = grafik + ücretli üyeler; `/admin/subscriptions` → redirect |
+| **B** | Video gate | `ExerciseLibraryPage` + `ExerciseCardMedia`: `memberHasFullVideoAccess`; koç/staff `staffMode` |
+
+**Personel rol yardımcıları:** `normalizeStaffRole`, `sessionsKeyForRole`, `sessionTypeForRole`, `panelTitleForRole` — ikili `coach ? X : Y` yerine kullanılmalı.
+
+**Self-service randevu:** Migration `20260704_staff_availability_booking.sql` + `SessionBooker` — §11 "randevu kaldırıldı" ifadesi artık geçersiz.
+
+**Dosya envanteri (yaklaşık):** 55 sayfa · 112+ component · 43 migration · 25 `api/` dosyası (12 endpoint + 13 `_` helper).
+
+**Entitlement API (üye):** `memberHasPhotoCalorieAccess(member)`, `memberHasManualCalorieAccess(member)`, `memberHasFullVideoAccess(member)` — tek `membership` string yerine `activePackages` union.
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, Users, Activity, Target, CalendarClock,
-  Dumbbell, Apple, Mail, CalendarRange, UserRound, FileText,
+  Mail, CalendarRange, UserRound, FileText,
 } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -23,8 +23,16 @@ import {
   isDateInPackageWindows,
   memberHasProgramTypePackage,
 } from '../../utils/programPackageScope'
+import {
+  isCoachRole,
+  isDietitianRole,
+  sessionTypeForRole,
+  staffRoleMeta,
+} from '../../utils/staffRoles'
 
-function ClientInfo({ member, role, isCoach }) {
+function ClientInfo({ member, role }) {
+  const isCoach = isCoachRole(role)
+  const sessionType = sessionTypeForRole(role)
   const bmi = calculateBMI(member.weight, member.height)
   const cat = bmiCategory(bmi)
   const appts = getStaffAppointments([member], role)
@@ -88,8 +96,9 @@ function ClientInfo({ member, role, isCoach }) {
                 subtitle={a.title}
                 dateISO={a.date}
                 session={a}
-                sessionType={isCoach ? 'coach' : 'dietitian'}
+                sessionType={sessionType}
                 isCoach={isCoach}
+                accentRole={role}
               />
             ))}
           </div>
@@ -119,8 +128,10 @@ export default function StaffClientsPage() {
   const [search, setSearch] = useState('')
   const [infoClient, setInfoClient] = useState(null)
   const [programClient, setProgramClient] = useState(null)
-  const isCoach = staffUser.role === 'coach'
-  const RoleIcon = isCoach ? Dumbbell : Apple
+  const role = staffUser.role
+  const isCoach = isCoachRole(role)
+  const isDietitian = isDietitianRole(role)
+  const RoleIcon = staffRoleMeta(role).icon
 
   const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
   const filtered = clients.filter((m) =>
@@ -178,7 +189,9 @@ export default function StaffClientsPage() {
       navigate(`/staff/clients/${member.id}/program`)
       return
     }
-    setProgramClient(member)
+    if (isDietitian) {
+      setProgramClient(member)
+    }
   }
 
   return (
@@ -239,9 +252,14 @@ export default function StaffClientsPage() {
                   <button
                     type="button"
                     onClick={() => openProgramFlow(m)}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                    disabled={!isCoach && !isDietitian}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition ${
+                      isCoach || isDietitian
+                        ? 'bg-brand-500 text-white hover:bg-brand-600'
+                        : 'cursor-not-allowed border border-cream-200 bg-cream-50 text-cream-800/40'
+                    }`}
                   >
-                    <FileText className="h-3.5 w-3.5" /> {isCoach ? 'Program Oluştur' : 'Liste Oluştur'}
+                    <FileText className="h-3.5 w-3.5" /> {isCoach ? 'Program Oluştur' : isDietitian ? 'Liste Oluştur' : 'Randevu'}
                   </button>
                 </div>
               </div>
@@ -251,10 +269,10 @@ export default function StaffClientsPage() {
       )}
 
       <Modal open={!!infoClient} onClose={() => setInfoClient(null)} title={infoClient?.name} size="lg">
-        {infoClient && <ClientInfo member={infoClient} role={staffUser.role} isCoach={isCoach} />}
+        {infoClient && <ClientInfo member={infoClient} role={role} />}
       </Modal>
 
-      {!isCoach && (
+      {isDietitian && (
         <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Beslenme Listesi`} size="xl">
           {programClient && (
             <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreateNutrition} />

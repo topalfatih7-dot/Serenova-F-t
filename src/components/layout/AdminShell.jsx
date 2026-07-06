@@ -1,6 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, CreditCard, Calendar, MessageSquare, MessageCircle,
+  LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle,
   BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
@@ -20,8 +20,7 @@ const adminNav = [
   { to: '/admin/applications', icon: UserPlus, label: 'Başvurular', applicationsBadge: true },
   { to: '/admin/library', icon: Library, label: 'Kütüphane' },
   { to: '/admin/staff', icon: Stethoscope, label: 'Kadromuz' },
-  { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonelikler' },
-  { to: '/admin/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
+  { to: '/admin/payments', icon: Wallet, label: 'Finans & Ödemeler' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri', supportBadge: true },

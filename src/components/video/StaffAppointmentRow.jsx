@@ -2,10 +2,16 @@ import { format, isToday } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { Calendar, Clock } from 'lucide-react'
 import VideoJoinLink from './VideoJoinLink'
+import { normalizeStaffRole } from '../../utils/staffRoles'
+
+const AVATAR_STYLES = {
+  coach: { live: 'bg-red-100 text-red-600', idle: 'bg-brand-100 text-brand-600' },
+  dietitian: { live: 'bg-red-100 text-red-600', idle: 'bg-sage-100 text-sage-600' },
+  doctor: { live: 'bg-red-100 text-red-600', idle: 'bg-amber-100 text-amber-700' },
+}
 
 /**
- * Koç / diyetisyen panelinde randevu + görüntülü görüşme satırı.
- * Mobilde dikey düzen: isim → tarih/saat → tam genişlik buton.
+ * Koç / diyetisyen / doktor panelinde randevu + görüntülü görüşme satırı.
  */
 export default function StaffAppointmentRow({
   memberName,
@@ -14,9 +20,12 @@ export default function StaffAppointmentRow({
   session,
   sessionType,
   isCoach = true,
+  accentRole,
   live = false,
   showJoin = true,
 }) {
+  const role = normalizeStaffRole(accentRole || (isCoach ? 'coach' : sessionType === 'doctor' ? 'doctor' : 'dietitian'))
+  const styles = AVATAR_STYLES[role] || AVATAR_STYLES.coach
   const date = new Date(dateISO)
   const dateLabel = isToday(date) ? 'Bugün' : format(date, 'd MMMM yyyy', { locale: tr })
   const timeLabel = format(date, 'HH:mm')
@@ -32,11 +41,7 @@ export default function StaffAppointmentRow({
       <div className="flex items-start gap-3">
         <span
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-            live
-              ? 'bg-red-100 text-red-600'
-              : isCoach
-                ? 'bg-brand-100 text-brand-600'
-                : 'bg-sage-100 text-sage-600'
+            live ? styles.live : styles.idle
           }`}
         >
           {(memberName || '?').charAt(0).toUpperCase()}

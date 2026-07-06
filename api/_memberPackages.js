@@ -11,6 +11,13 @@ const PAID_PLANS = new Set([
 
 const PLAN_RANK = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
 
+const LEGACY_PLAN_RANK = { gumus: 1, altin: 4, kurucu: 4, platinum: 5, premium: 5 }
+
+function planRank(planId) {
+  if (PLAN_RANK[planId] != null) return PLAN_RANK[planId]
+  return LEGACY_PLAN_RANK[planId] ?? 0
+}
+
 const today = () => new Date().toISOString().split('T')[0]
 
 export function isOneTimePlan(planId) {
@@ -141,8 +148,8 @@ export function resolvePrimaryMembership(activePackages = [], fallback = 'free')
   const subs = active.filter((p) => !isOneTimePlan(p.planId))
   const pool = subs.length ? subs : active
   return pool.reduce((best, p) => {
-    const rank = PLAN_RANK[p.planId] ?? 0
-    const bestRank = PLAN_RANK[best] ?? 0
+    const rank = planRank(p.planId)
+    const bestRank = planRank(best)
     return rank >= bestRank ? p.planId : best
   }, pool[0].planId)
 }

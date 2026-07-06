@@ -85,6 +85,20 @@ export function mergePackageConfigs(packages = [], member = null) {
 
 const PLAN_RANK = Object.fromEntries(PLAN_IDS.map((id, i) => [id, i]))
 
+/** Geriye dönük plan id → sıra (resolvePrimaryMembership) */
+export const LEGACY_PLAN_RANK = {
+  gumus: 1,
+  altin: 4,
+  kurucu: 4,
+  platinum: 5,
+  premium: 5,
+}
+
+export function planRank(planId) {
+  if (PLAN_RANK[planId] != null) return PLAN_RANK[planId]
+  return LEGACY_PLAN_RANK[planId] ?? 0
+}
+
 /** Görüntüleme için birincil plan (en yüksek abonelik; yalnız doktor varsa doktor) */
 export function resolvePrimaryMembership(activePackages = [], fallback = 'free') {
   const active = activePackages.filter((p) => isPackageEntryActive(p))
@@ -93,8 +107,8 @@ export function resolvePrimaryMembership(activePackages = [], fallback = 'free')
   const subs = active.filter((p) => !isOneTimePlan(p.planId))
   const pool = subs.length ? subs : active
   return pool.reduce((best, p) => {
-    const rank = PLAN_RANK[p.planId] ?? 0
-    const bestRank = PLAN_RANK[best] ?? 0
+    const rank = planRank(p.planId)
+    const bestRank = planRank(best)
     return rank >= bestRank ? p.planId : best
   }, pool[0].planId)
 }
@@ -226,4 +240,40 @@ export function doctorBookingLimit(packageConfig = {}, member = null) {
 
 export function doctorLimitIsOneTime(packageConfig = {}) {
   return (Number(packageConfig.doctorSessionsTotal) || 0) > 0
+}
+
+const PHOTO_CALORIE_PLANS = new Set(['diyet', 'spor', 'vip', 'platinum', 'premium'])
+const FULL_VIDEO_PLANS = new Set(['spor', 'vip', 'platinum', 'premium'])
+const MANUAL_CALORIE_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
+
+/** Aktif paketler + birleşik config */
+export function resolveMemberEntitlements(member) {
+  if (!member) {
+    return { membership: 'free', packageConfig: { ...DEFAULT_PACKAGE }, activePackages: [] }
+  }
+  const activePackages = migrateLegacyToPackages(member)
+  const active = activePackages.filter((p) => isPackageEntryActive(p))
+  const packageConfig = active.length
+    ? mergePackageConfigs(active, member)
+    : (member.packageConfig || { ...DEFAULT_PACKAGE })
+  const membership = resolvePrimaryMembership(active, member.membership || 'free')
+  return { membership, packageConfig, activePackages: active }
+}
+
+function activePlanIds(member) {
+  const { activePackages, membership } = resolveMemberEntitlements(member)
+  const ids = activePackages.map((p) => p.planId)
+  return ids.length ? ids : [membership]
+}
+
+export function memberHasPhotoCalorieAccess(member) {
+  return activePlanIds(member).some((id) => PHOTO_CALORIE_PLANS.has(id))
+}
+
+export function memberHasManualCalorieAccess(member) {
+  return activePlanIds(member).some((id) => !MANUAL_CALORIE_EXCLUDE.has(id))
+}
+
+export function memberHasFullVideoAccess(member) {
+  return activePlanIds(member).some((id) => FULL_VIDEO_PLANS.has(id))
 }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, CalendarClock, ClipboardList, ArrowRight, Dumbbell, Apple } from 'lucide-react'
+import { Users, CalendarClock, ClipboardList, ArrowRight } from 'lucide-react'
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/SupportScheduler'
@@ -9,12 +9,20 @@ import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import { useApp } from '../../context/AppContext'
 import { getStaffClients } from '../../utils/chatAccess'
 import { resolveFirstName } from '../../utils/displayName'
+import {
+  fallbackNameForRole,
+  panelTitleForRole,
+  sessionTypeForRole,
+  sessionsKeyForRole,
+  staffRoleMeta,
+  isCoachRole,
+} from '../../utils/staffRoles'
 
 export { getStaffClients }
 
 export function getStaffAppointments(clients, role) {
   const now = new Date()
-  const key = role === 'coach' ? 'coachSessions' : 'dietitianSessions'
+  const key = sessionsKeyForRole(role)
   const list = []
   clients.forEach((m) => {
     (m[key] || []).forEach((s) => {
@@ -28,22 +36,24 @@ export function getStaffAppointments(clients, role) {
 
 export default function StaffOverviewPage() {
   const { staffUser, platform } = useApp()
-  const isCoach = staffUser.role === 'coach'
-  const RoleIcon = isCoach ? Dumbbell : Apple
+  const role = staffUser.role
+  const isCoach = isCoachRole(role)
+  const RoleIcon = staffRoleMeta(role).icon
+  const sessionType = sessionTypeForRole(role)
 
-  const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
+  const clients = useMemo(() => getStaffClients(platform.members, role, staffUser.id), [platform.members, role, staffUser.id])
   const firstName = resolveFirstName({
     name: staffUser.name,
     email: staffUser.email,
-    fallback: isCoach ? 'Koç' : 'Diyetisyen',
+    fallback: fallbackNameForRole(role),
   })
-  const appointments = useMemo(() => getStaffAppointments(clients, staffUser.role), [clients, staffUser.role])
+  const appointments = useMemo(() => getStaffAppointments(clients, role), [clients, role])
   const myPrograms = useMemo(
     () => (platform.programs || []).filter((p) => p.staffId === staffUser.id),
     [platform.programs, staffUser.id]
   )
 
-  const weekKey = isCoach ? 'coachSessions' : 'dietitianSessions'
+  const weekKey = sessionsKeyForRole(role)
   const thisWeekCount = useMemo(() => {
     const now = new Date()
     const weekEnd = new Date(now)
@@ -62,19 +72,19 @@ export default function StaffOverviewPage() {
             Merhaba, {firstName}
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-cream-800/60">
-            <RoleIcon className="h-4 w-4" /> {isCoach ? 'Koç paneli' : 'Diyetisyen paneli'}
+            <RoleIcon className="h-4 w-4" /> {panelTitleForRole(role)}
             {staffUser.workDays?.length ? ` · ${staffUser.workDays.map(weekdayLabel).join(', ')} · ${staffUser.workStart}–${staffUser.workEnd}` : ''}
           </p>
         </div>
         <Link to="/staff/clients" className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
-          <ClipboardList className="h-4 w-4" /> Program Oluştur
+          <ClipboardList className="h-4 w-4" /> {isCoach ? 'Program Oluştur' : 'Danışanlarım'}
         </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatsCard label="Danışan" value={clients.length} sub="Aktif ücretli üye" icon={Users} accent="brand" />
         <StatsCard label="Bu Hafta Randevu" value={thisWeekCount} sub="Planlanan görüşme" icon={CalendarClock} accent="sage" />
-        <StatsCard label="Oluşturulan Program" value={myPrograms.length} sub="Toplam" icon={ClipboardList} accent="gold" />
+        <StatsCard label="Oluşturulan Program" value={myPrograms.length} sub={isCoach ? 'Antrenman programı' : 'Toplam'} icon={ClipboardList} accent="gold" />
       </div>
 
       {/* Görüntülü görüşme alanı */}
@@ -98,8 +108,9 @@ export default function StaffOverviewPage() {
                 subtitle={a.title}
                 dateISO={a.date}
                 session={a}
-                sessionType={isCoach ? 'coach' : 'dietitian'}
+                sessionType={sessionType}
                 isCoach={isCoach}
+                accentRole={role}
               />
             ))}
           </div>

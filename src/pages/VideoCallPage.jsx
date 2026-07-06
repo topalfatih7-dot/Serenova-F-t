@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   ArrowLeft, Clock, Calendar, AlertTriangle, Loader2,
-  Settings, Wifi, Dumbbell, Apple, UserRound, ChevronDown, ChevronUp,
+  Settings, Wifi, UserRound, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useDailyCall } from '../hooks/useDailyCall'
@@ -13,6 +13,7 @@ import {
 } from '../config/videoCall'
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
 import { formatMinutesTr } from '../utils/formatDuration'
+import { normalizeSessionType, staffRoleMeta } from '../utils/staffRoles'
 import ParticipantTile, { CallControls, DeviceSelectors, WaitingTile } from '../components/video/VideoCallUI'
 import NoIndexHead from '../components/seo/NoIndexHead'
 
@@ -43,7 +44,7 @@ export default function VideoCallPage({ audience = 'member' }) {
   const navigate = useNavigate()
   const {
     user, staffUser, isStaff, platform,
-    coachSessions, dietitianSessions,
+    coachSessions, dietitianSessions, doctorSessions,
   } = useApp()
 
   const [, tick] = useState(0)
@@ -52,8 +53,9 @@ export default function VideoCallPage({ audience = 'member' }) {
     return () => clearInterval(id)
   }, [])
 
-  const meta = SESSION_TYPE_META[sessionType === 'dietitian' ? 'dietitian' : 'coach']
-  const RoleIcon = sessionType === 'dietitian' ? Apple : Dumbbell
+  const normalizedType = normalizeSessionType(sessionType)
+  const meta = SESSION_TYPE_META[normalizedType] || SESSION_TYPE_META.coach
+  const RoleIcon = staffRoleMeta(normalizedType).icon
 
   const context = useMemo(() => resolveCallContext({
     audience,
@@ -65,7 +67,8 @@ export default function VideoCallPage({ audience = 'member' }) {
     platformMembers: platform?.members,
     coachSessions,
     dietitianSessions,
-  }), [audience, sessionType, sessionId, user, staffUser, isStaff, platform, coachSessions, dietitianSessions])
+    doctorSessions,
+  }), [audience, sessionType, sessionId, user, staffUser, isStaff, platform, coachSessions, dietitianSessions, doctorSessions])
 
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()

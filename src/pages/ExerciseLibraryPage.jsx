@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, ArrowUpDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, ArrowUpDown, Lock } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
@@ -9,6 +10,8 @@ import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageH
 import { EXERCISE_CATEGORY_ALL } from '../data/exerciseCategories'
 import { DIFFICULTY_LABELS } from '../data/exerciseTurkish'
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
+import { useApp } from '../context/AppContext'
+import { memberHasFullVideoAccess } from '../utils/memberPackages'
 
 const CATEGORY_COLORS = {
   default: 'from-violet-500 to-purple-600',
@@ -24,7 +27,9 @@ function categoryGradient(category) {
   return CATEGORY_COLORS[category] || CATEGORY_COLORS.default
 }
 
-export default function ExerciseLibraryPage() {
+export default function ExerciseLibraryPage({ staffMode = false }) {
+  const { user } = useApp()
+  const allowVideoPlayback = staffMode || memberHasFullVideoAccess(user)
   const {
     items,
     total,
@@ -48,6 +53,15 @@ export default function ExerciseLibraryPage() {
   const [difficulty, setDifficultyLocal] = useState(DIFFICULTY_ALL)
   const [equipment, setEquipmentLocal] = useState('')
   const [active, setActive] = useState(null)
+  const [upgradeHint, setUpgradeHint] = useState(false)
+
+  const openExercise = (ex) => {
+    if (!allowVideoPlayback && ex.videoUrl && !ex.videoPending) {
+      setUpgradeHint(true)
+      return
+    }
+    setActive(ex)
+  }
 
   const handleSearch = (value) => {
     setSearchInput(value)
@@ -88,6 +102,19 @@ export default function ExerciseLibraryPage() {
           </div>
         ) : null}
       />
+
+      {!allowVideoPlayback && (
+        <div className="flex items-start gap-3 rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-3">
+          <Lock className="mt-0.5 h-5 w-5 shrink-0 text-violet-600" />
+          <p className="text-sm text-violet-900/80">
+            Hareket listesini görebilirsiniz. Tam video oynatma için{' '}
+            <Link to="/onboarding?plan=spor" className="font-semibold underline">Spor</Link>
+            {' '}veya{' '}
+            <Link to="/onboarding?plan=vip" className="font-semibold underline">VIP</Link>
+            {' '}paket gerekir.
+          </p>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-violet-100/80 bg-gradient-to-br from-violet-50/50 via-white to-purple-50/30 p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4">
@@ -175,7 +202,7 @@ export default function ExerciseLibraryPage() {
               <button
                 key={ex.id}
                 type="button"
-                onClick={() => setActive(ex)}
+                onClick={() => openExercise(ex)}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
               >
                 <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>
@@ -203,7 +230,7 @@ export default function ExerciseLibraryPage() {
                     )}
                   </div>
                   <p className="mt-3 text-xs font-semibold text-violet-600">
-                    {ex.videoPending ? 'Video yakında →' : 'Videoyu izle →'}
+                    {ex.videoPending ? 'Video yakında →' : allowVideoPlayback ? 'Videoyu izle →' : 'Tam erişim için yükselt →'}
                   </p>
                 </div>
               </button>
@@ -233,6 +260,19 @@ export default function ExerciseLibraryPage() {
             <p className="whitespace-pre-line text-sm leading-relaxed text-cream-800/80">{active.description || 'Açıklama eklenmemiş.'}</p>
           </div>
         )}
+      </Modal>
+
+      <Modal open={upgradeHint} onClose={() => setUpgradeHint(false)} title="Tam video erişimi" size="sm">
+        <p className="text-sm text-cream-800/70">
+          Paketiniz hareket listesini içerir; videoları izlemek için Spor veya VIP pakete geçmeniz gerekir.
+        </p>
+        <Link
+          to="/onboarding?plan=spor"
+          className="mt-4 inline-flex rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"
+          onClick={() => setUpgradeHint(false)}
+        >
+          Paketleri incele
+        </Link>
       </Modal>
     </PanelPageShell>
   )

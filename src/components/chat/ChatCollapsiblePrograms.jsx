@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, Dumbbell, Apple } from 'lucide-react'
+import { ChevronDown, Dumbbell, Apple, Stethoscope } from 'lucide-react'
 import MemberProgramsPanel from './MemberProgramsPanel'
 
 const ROLE_CONFIG = {
@@ -20,11 +20,19 @@ const ROLE_CONFIG = {
     header: 'from-sage-500 to-emerald-600',
     chip: 'bg-sage-50 text-sage-800',
   },
+  doctor: {
+    label: 'Sağlık Notları',
+    empty: 'Program veya liste bulunmuyor',
+    icon: Stethoscope,
+    type: null,
+    header: 'from-amber-500 to-orange-600',
+    chip: 'bg-amber-50 text-amber-800',
+  },
 }
 
 export function filterProgramsByRole(programs = [], role) {
   const cfg = ROLE_CONFIG[role]
-  if (!cfg) return programs
+  if (!cfg || !cfg.type) return []
   return programs.filter((p) => p.type === cfg.type)
 }
 
@@ -38,6 +46,8 @@ export default function ChatCollapsiblePrograms({
   const cfg = ROLE_CONFIG[role] || ROLE_CONFIG.coach
   const Icon = cfg.icon
   const filtered = filterProgramsByRole(programs, role)
+
+  if (role === 'doctor') return null
 
   return (
     <div className="shrink-0 border-b border-cream-100">

@@ -18,3 +18,53 @@ export function staffRoleMeta(role) {
 export function staffRoleLabel(role) {
   return staffRoleMeta(role).label
 }
+
+export function isCoachRole(role) {
+  return normalizeStaffRole(role) === 'coach'
+}
+
+export function isDietitianRole(role) {
+  return normalizeStaffRole(role) === 'dietitian'
+}
+
+export function isDoctorRole(role) {
+  return normalizeStaffRole(role) === 'doctor'
+}
+
+/** coachSessions | dietitianSessions | doctorSessions */
+export function sessionsKeyForRole(role) {
+  const r = normalizeStaffRole(role)
+  if (r === 'dietitian') return 'dietitianSessions'
+  if (r === 'doctor') return 'doctorSessions'
+  return 'coachSessions'
+}
+
+/** assignedCoachId | assignedDietitianId | assignedDoctorId */
+export function assignedKeyForRole(role) {
+  const r = normalizeStaffRole(role)
+  if (r === 'dietitian') return 'assignedDietitianId'
+  if (r === 'doctor') return 'assignedDoctorId'
+  return 'assignedCoachId'
+}
+
+/** Video / randevu sessionType: coach | dietitian | doctor */
+export function sessionTypeForRole(role) {
+  return normalizeStaffRole(role)
+}
+
+export function panelTitleForRole(role) {
+  const r = normalizeStaffRole(role)
+  if (r === 'dietitian') return 'Diyetisyen paneli'
+  if (r === 'doctor') return 'Doktor paneli'
+  return 'Koç paneli'
+}
+
+export function fallbackNameForRole(role) {
+  return staffRoleLabel(role)
+}
+
+/** URL / route param → sessionType */
+export function normalizeSessionType(sessionType) {
+  if (sessionType === 'dietitian' || sessionType === 'doctor') return sessionType
+  return 'coach'
+}

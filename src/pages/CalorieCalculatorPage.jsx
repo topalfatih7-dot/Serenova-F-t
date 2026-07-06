@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
-import { hasPhotoCalorieAccess, hasManualCalorieAccess } from '../data/membershipPlans'
+import { memberHasPhotoCalorieAccess, memberHasManualCalorieAccess } from '../utils/memberPackages'
 import { analyzeFoodPhoto } from '../services/aiVision'
 import {
   analyzeFoodText,
@@ -56,8 +56,8 @@ export default function CalorieCalculatorPage() {
   const fileRef = useRef(null)
   const chatEndRef = useRef(null)
 
-  const isPaid = hasManualCalorieAccess(membership)
-  const isPlatinum = hasPhotoCalorieAccess(membership)
+  const isPaid = memberHasManualCalorieAccess(user)
+  const isPlatinum = memberHasPhotoCalorieAccess(user)
 
   const [mode, setMode] = useState('chat')
   const [chatMessages, setChatMessages] = useState([

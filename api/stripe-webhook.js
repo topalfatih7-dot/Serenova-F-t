@@ -40,15 +40,15 @@ function defaultPackageForPlan(planId, durationMonths = 1) {
   }
   const months = Number(durationMonths) || 1
   const configs = {
-    eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
-    diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
-    spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
+    eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
+    diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
+    spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 1 },
     kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-    vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
-    gumus: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
-    altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
-    platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
-    premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+    vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
+    gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
+    altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
+    platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 3 },
+    premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 2 },
   }
   const base = configs[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 }
   return {

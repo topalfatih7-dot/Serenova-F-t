@@ -1,19 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
-  CreditCard, History, Wallet, TrendingUp, Users, Plus, Trash2,
-  Clock, ArrowDownLeft, Building2,
+  CreditCard, History, Wallet, TrendingUp, Users,
+  Clock, ArrowDownLeft, Building2, Crown,
 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../../context/AppContext'
-import { useToast } from '../../context/ToastContext'
-import Modal from '../../components/ui/Modal'
-import PaymentForm from '../../components/payment/PaymentForm'
 import EmptyState from '../../components/ui/EmptyState'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { MOCK_STAFF_EARNINGS } from '../../data/mockPayments'
 import { STAFF_SESSION_RATE_TRY } from '../../data/staffPayouts'
-import { getPlanLabel } from '../../data/membershipPlans'
+import { getPlanLabel, isPaidMembership } from '../../data/membershipPlans'
 
 function formatTry(amount) {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount || 0)
@@ -26,15 +24,6 @@ function paymentPlanLabel(p) {
 
 function paymentDate(p) {
   return p.createdAt || p.date || null
-}
-
-function detectCardBrand(number) {
-  const n = String(number).replace(/\D/g, '')
-  if (/^4/.test(n)) return 'VISA'
-  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'Mastercard'
-  if (/^3[47]/.test(n)) return 'AMEX'
-  if (/^9792/.test(n) || /^65/.test(n)) return 'Troy'
-  return 'Kart'
 }
 
 function StatusBadge({ status }) {
@@ -53,10 +42,7 @@ function StatusBadge({ status }) {
 }
 
 function MemberPayments() {
-  const { toast } = useToast()
   const { user, platform } = useApp()
-  const [cards, setCards] = useState([])
-  const [addCardOpen, setAddCardOpen] = useState(false)
 
   const payments = useMemo(() => (
     (platform?.payments || [])
@@ -64,57 +50,17 @@ function MemberPayments() {
       .sort((a, b) => new Date(paymentDate(b) || 0) - new Date(paymentDate(a) || 0))
   ), [platform?.payments, user?.id])
 
-  const setDefault = (id) => {
-    setCards((list) => list.map((c) => ({ ...c, isDefault: c.id === id })))
-    toast('Varsayılan kart güncellendi', 'success')
-  }
-
-  const removeCard = (id) => {
-    setCards((list) => list.filter((c) => c.id !== id))
-    toast('Kart kaldırıldı', 'info')
-  }
-
   return (
     <div className="space-y-8">
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-cream-900">
-            <CreditCard className="h-5 w-5 text-brand-500" /> Kayıtlı Kartlarım
-          </h2>
-          <button type="button" onClick={() => setAddCardOpen(true)} className="flex items-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600">
-            <Plus className="h-3.5 w-3.5" /> Kart Ekle
-          </button>
-        </div>
-        {cards.length === 0 ? (
-          <EmptyState
-            icon={CreditCard}
-            title="Kayıtlı kart yok"
-            description="Stripe Customer Portal entegrasyonu sonraki aşamada eklenecek. Ödemeleriniz geçmiş tablosunda görünür."
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {cards.map((card) => (
-              <div key={card.id} className="rounded-2xl border border-cream-200 bg-gradient-to-br from-cream-900 to-brand-900 p-5 text-white shadow-md">
-                <div className="flex items-start justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/60">{card.brand}</p>
-                  {card.isDefault && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Varsayılan</span>}
-                </div>
-                <p className="mt-6 font-mono text-lg tracking-widest">•••• •••• •••• {card.last4}</p>
-                <p className="mt-2 text-xs text-white/70">{card.holder} · {String(card.expMonth).padStart(2, '0')}/{card.expYear}</p>
-                <div className="mt-4 flex gap-2">
-                  {!card.isDefault && (
-                    <button type="button" onClick={() => setDefault(card.id)} className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
-                      Varsayılan yap
-                    </button>
-                  )}
-                  <button type="button" onClick={() => removeCard(card.id)} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-red-200 hover:bg-white/20">
-                    <Trash2 className="inline h-3 w-3" /> Kaldır
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+          <CreditCard className="h-5 w-5 text-brand-500" /> Ödeme Yöntemi
+        </h2>
+        <EmptyState
+          icon={CreditCard}
+          title="Kart yönetimi Stripe üzerinden"
+          description="Ücretli paket satın alımları güvenli Stripe Checkout ile yapılır. Kayıtlı kart ekleme ve yönetim yakında Stripe Customer Portal ile açılacak."
+        />
       </section>
 
       <section>
@@ -150,37 +96,12 @@ function MemberPayments() {
           </div>
         )}
       </section>
-
-      <Modal open={addCardOpen} onClose={() => setAddCardOpen(false)} title="Yeni Kart Ekle">
-        <p className="mb-4 text-sm text-cream-800/60">Stripe kart kaydı yakında aktif olacak. Şimdilik ödeme Stripe Checkout üzerinden yapılır.</p>
-        <PaymentForm
-          submitLabel="Kartı Kaydet"
-          loadingLabel="Kaydediliyor…"
-          onCancel={() => setAddCardOpen(false)}
-          onSubmit={({ cardNumber, expiry, holder }) => {
-            const digits = String(cardNumber).replace(/\D/g, '')
-            const [mm, yy] = String(expiry).split('/')
-            const newCard = {
-              id: `card-${Date.now()}`,
-              brand: detectCardBrand(digits),
-              last4: digits.slice(-4),
-              holder: holder?.trim() || 'Kart Sahibi',
-              expMonth: Number(mm) || 1,
-              expYear: yy ? Number(`20${yy}`) : new Date().getFullYear(),
-              isDefault: true,
-            }
-            setCards((list) => [...list.map((c) => ({ ...c, isDefault: false })), newCard])
-            setAddCardOpen(false)
-            toast('Kart yerel oturuma eklendi (Stripe senkronu yakında)', 'info')
-          }}
-        />
-      </Modal>
     </div>
   )
 }
 
 function StaffPayments({ role }) {
-  const earnings = MOCK_STAFF_EARNINGS[role === 'dietitian' ? 'dietitian' : 'coach']
+  const earnings = MOCK_STAFF_EARNINGS[role] || MOCK_STAFF_EARNINGS.coach
 
   return (
     <div className="space-y-8">
@@ -239,13 +160,22 @@ function StaffPayments({ role }) {
 }
 
 function AdminPayments() {
-  const { platform, adminStats } = useApp()
+  const { platform, adminStats, monthlyGrowth } = useApp()
 
   const recent = useMemo(() => (
     [...(platform?.payments || [])]
       .sort((a, b) => new Date(paymentDate(b) || 0) - new Date(paymentDate(a) || 0))
       .slice(0, 25)
   ), [platform?.payments])
+
+  const premiumMembers = useMemo(
+    () => (platform?.members || []).filter((m) => isPaidMembership(m.membership)),
+    [platform?.members],
+  )
+
+  const conversionRate = adminStats?.totalMembers
+    ? Math.round((adminStats.premium / adminStats.totalMembers) * 100)
+    : 0
 
   const activePaid = adminStats?.premium ?? 0
 
@@ -259,6 +189,7 @@ function AdminPayments() {
         <div className="rounded-2xl border border-sage-100 bg-sage-50/50 p-5">
           <p className="text-xs text-sage-800/70">Ücretli Üye</p>
           <p className="mt-1 font-display text-2xl font-bold text-sage-900">{activePaid}</p>
+          <p className="mt-1 text-xs text-sage-700">%{conversionRate} dönüşüm</p>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
           <p className="text-xs text-amber-800/70">Toplam Gelir</p>
@@ -297,6 +228,53 @@ function AdminPayments() {
         )}
       </section>
 
+      {adminStats?.totalMembers > 0 && monthlyGrowth?.length > 0 && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+            <TrendingUp className="h-5 w-5 text-brand-500" /> Büyüme Grafiği
+          </h2>
+          <div className="rounded-2xl border border-cream-200 bg-white p-6">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyGrowth}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
+                  <XAxis dataKey="month" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v / 1000}K`} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="premium" name="Premium" fill="#4a8aad" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="right" dataKey="gelir" name="Gelir (₺)" fill="#b8924f" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+          <Crown className="h-5 w-5 text-brand-500" /> Ücretli Üyeler
+        </h2>
+        {premiumMembers.length === 0 ? (
+          <EmptyState icon={Crown} title="Ücretli üye yok" description="Premium kayıtlar burada listelenir." />
+        ) : (
+          <div className="space-y-2">
+            {premiumMembers.slice(0, 20).map((m) => (
+              <div key={m.id} className="flex items-center justify-between rounded-xl border border-cream-200 bg-white px-4 py-3">
+                <div>
+                  <p className="font-medium text-cream-900">{m.name}</p>
+                  <p className="text-xs text-cream-800/50">{m.email}</p>
+                </div>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${m.membershipStatus === 'active' ? 'bg-sage-50 text-sage-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {m.membershipStatus}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
@@ -313,15 +291,15 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   const { staffUser } = useApp()
 
   const title = useMemo(() => {
-    if (audience === 'admin') return 'Ödeme Yönetimi'
+    if (audience === 'admin') return 'Finans & Ödemeler'
     if (audience === 'staff') return 'Kazanç & Hakediş'
     return 'Ödeme Yönetimi'
   }, [audience])
 
   const subtitle = useMemo(() => {
-    if (audience === 'admin') return 'Canlı ödeme kayıtları ve abonelik özeti'
+    if (audience === 'admin') return 'Gelir, ödeme geçmişi, büyüme grafiği ve ücretli üyeler'
     if (audience === 'staff') return 'Video görüşme hakedişi — Cuma ödeme döngüsü (demo)'
-    return 'Ödeme geçmişiniz ve kart yönetimi'
+    return 'Ödeme geçmişiniz'
   }, [audience])
 
   return (

@@ -76,7 +76,8 @@ export function getPlanLabel(id) {
 /** Üyelik planı → görsel rozet seviyesi */
 export function getMembershipBadgeTier(membership) {
   if (membership === 'eko' || membership === 'gumus') return 'silver'
-  if (membership === 'diyet' || membership === 'spor' || membership === 'altin' || membership === 'doktor') return 'gold'
+  if (membership === 'doktor' || membership === 'kurucu') return 'silver'
+  if (membership === 'diyet' || membership === 'spor' || membership === 'altin') return 'gold'
   if (membership === 'vip' || membership === 'platinum' || membership === 'premium') {
     return 'platinum'
   }
@@ -266,16 +267,16 @@ export const DEFAULT_PACKAGE = {
 
 const PACKAGE_BY_PLAN = {
   eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
+  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
+  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 1 },
   doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, billingType: 'one_time' },
-  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
+  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
   kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   // legacy
   gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
   altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
-  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 3 },
-  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
+  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 3 },
+  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 2 },
 }
 
 /** Plan ID + süre (ay) için varsayılan paket konfigürasyonu */
@@ -300,19 +301,20 @@ export function getDefaultPackageForPlan(planId, durationMonths = 1) {
   }
 }
 
-/** Fotoğraflı kalori erişimi olan planlar */
+/** Fotoğraflı kalori erişimi olan planlar (tek plan id — çoklu paket için memberHasPhotoCalorieAccess kullanın) */
 export function hasPhotoCalorieAccess(membership) {
-  return ['diyet', 'spor', 'vip', 'platinum', 'kurucu'].includes(membership)
+  return ['diyet', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
 }
 
-/** Manuel kalori erişimi olan planlar */
+/** Manuel kalori erişimi (doktor tek seferlik paketi hariç) */
 export function hasManualCalorieAccess(membership) {
-  return membership !== 'free'
+  if (membership === 'free' || membership === 'doktor' || membership === 'kurucu') return false
+  return true
 }
 
 /** Tam video kütüphanesi erişimi */
 export function hasFullVideoAccess(membership) {
-  return ['spor', 'vip', 'altin', 'platinum', 'premium', 'kurucu'].includes(membership)
+  return ['spor', 'vip', 'platinum', 'premium'].includes(membership)
 }
 
 export const COACH_MAX_PER_MONTH = 6
