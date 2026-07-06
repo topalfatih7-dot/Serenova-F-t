@@ -69,6 +69,7 @@ const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplications
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
+const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
 const MemberHealthProfilePage = lazy(() => import('./pages/shared/MemberHealthProfilePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
