@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Search, Crown, Dumbbell, Apple, Target, Circle, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Search, Crown, Dumbbell, Apple, Target, Circle, Trash2, HeartPulse } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
@@ -227,6 +228,15 @@ export default function AdminMembersPage() {
             )}
 
             <MemberHealthInsights member={selected} showLocation={false} />
+
+            <Link
+              to={`/admin/members/${selected.id}/health`}
+              onClick={() => setSelectedId(null)}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+            >
+              <HeartPulse className="h-4 w-4" />
+              Sağlık Profili & Notlar
+            </Link>
 
             {(selected.healthAck || selected.disclaimer) && (
               <div className="rounded-xl border border-cream-100 bg-cream-50 px-4 py-3 text-xs text-cream-800/70">

@@ -69,7 +69,7 @@ const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplications
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
-const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
+const MemberHealthProfilePage = lazy(() => import('./pages/shared/MemberHealthProfilePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function RouteFallback() {
@@ -149,6 +149,7 @@ export default function App() {
               <Route element={<StaffShell />}>
                 <Route path="staff" element={<StaffOverviewPage />} />
                 <Route path="staff/clients" element={<StaffClientsPage />} />
+                <Route path="staff/clients/:memberId/health" element={<MemberHealthProfilePage audience="staff" />} />
                 <Route path="staff/clients/:memberId/program" element={<StaffClientProgramPage />} />
                 <Route path="staff/messages" element={<StaffMessagesPage />} />
                 <Route path="staff/messages/:memberId" element={<StaffMessagesPage />} />
@@ -167,6 +168,7 @@ export default function App() {
               <Route element={<AdminShell />}>
                 <Route path="admin" element={<AdminOverviewPage />} />
                 <Route path="admin/members" element={<AdminMembersPage />} />
+                <Route path="admin/members/:memberId/health" element={<MemberHealthProfilePage audience="admin" />} />
                 <Route path="admin/plans" element={<AdminPlansPage />} />
                 <Route path="admin/premium" element={<AdminPremiumPage />} />
                 <Route path="admin/applications" element={<AdminApplicationsPage />} />

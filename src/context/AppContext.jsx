@@ -730,6 +730,13 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [remoteDb, reloadRemote])
 
+  const staffPatchMember = useCallback(async (memberId, patch) => {
+    const member = (remoteDb?.members || []).find((m) => m.id === memberId)
+    if (!member) return
+    await sb.saveMemberPatch(member, patch)
+    await reloadRemote()
+  }, [remoteDb, reloadRemote])
+
   const adminUpdatePremium = useCallback(async (memberId, options) => {
     const r = await sb.adminUpdatePremiumMembership(memberId, options)
     if (r.success) await reloadRemote()
@@ -1193,6 +1200,7 @@ export function AppProvider({ children }) {
     removeStaff,
     removeMember,
     adminPatchMember,
+    staffPatchMember,
     adminUpdatePremium,
     createProgram,
     addPost,
@@ -1313,6 +1321,7 @@ export function AppProvider({ children }) {
     removeStaff,
     removeMember,
     adminPatchMember,
+    staffPatchMember,
     adminUpdatePremium,
     createProgram,
     addPost,
