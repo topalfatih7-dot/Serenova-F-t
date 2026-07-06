@@ -1,11 +1,13 @@
-/** Admin paneli — GA4 Data API özeti (api/ga4-report). */
+/** Admin paneli — GA4 Data API özeti (/api/auth action: ga4-report). */
 import { getApiAuthHeaders } from './apiAuth'
 
 export async function fetchGa4Report(days = 28) {
   const headers = await getApiAuthHeaders()
-  const res = await fetch(`/api/ga4-report?days=${days}`, {
-    headers,
+  const res = await fetch('/api/auth', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify({ action: 'ga4-report', days }),
   })
 
   const raw = await res.text()

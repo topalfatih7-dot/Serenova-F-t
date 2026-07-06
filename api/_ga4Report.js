@@ -78,9 +78,8 @@ function metricValue(report, index = 0) {
   return val ? Number(val) : 0
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
-
+/** Admin GA4 Data API özeti — /api/auth action: ga4-report */
+export async function handleGa4Report(req, res, body = {}) {
   const auth = await requireAdmin(req)
   if (!auth.ok) {
     return res.status(auth.status || 401).json({ error: auth.error || 'Yetkisiz' })
@@ -100,7 +99,7 @@ export default async function handler(req, res) {
     }
 
     const token = await getAccessToken(sa)
-    const daysAgo = Number(req.query?.days) || 28
+    const daysAgo = Number(body.days ?? req.query?.days) || 28
     const startDate = `${daysAgo}daysAgo`
 
     const [summary, funnel] = await Promise.all([

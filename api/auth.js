@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url
+ * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | ga4-report
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -11,6 +11,7 @@ import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_
 import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
+import { handleGa4Report } from './_ga4Report.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -328,6 +329,7 @@ export default async function handler(req, res) {
     if (action === 'password-reset') return handlePasswordReset(res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
+    if (action === 'ga4-report') return handleGa4Report(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {
