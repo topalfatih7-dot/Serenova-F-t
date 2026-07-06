@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -19,7 +19,12 @@ import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 
 import { getPlanLabel } from '../data/membershipPlans'
-import { isOneTimePlan, isPackageEntryActive } from '../utils/memberPackages'
+import {
+  countUsedDoctorSessions,
+  isOneTimePlan,
+  isPackageEntryActive,
+  migrateLegacyToPackages,
+} from '../utils/memberPackages'
 import { getRemainingDays } from '../services/premiumMembership'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 const fadeUp = {
@@ -34,7 +39,6 @@ export default function ProfilePage() {
     refresh,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
-    premiumExpiresAt,
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
@@ -64,7 +68,30 @@ export default function ProfilePage() {
     toast('Profil güncellendi', 'success')
   }
 
-  const remainingDays = getRemainingDays(premiumExpiresAt)
+  const activePackages = useMemo(
+    () => migrateLegacyToPackages(user).filter((p) => isPackageEntryActive(p)),
+    [user]
+  )
+  const [selectedPkgId, setSelectedPkgId] = useState(null)
+
+  useEffect(() => {
+    if (!activePackages.length) {
+      setSelectedPkgId(null)
+      return
+    }
+    if (!selectedPkgId || !activePackages.some((p) => p.id === selectedPkgId)) {
+      const preferred = activePackages.find((p) => p.planId === membership) || activePackages[0]
+      setSelectedPkgId(preferred.id)
+    }
+  }, [activePackages, membership, selectedPkgId])
+
+  const selectedPackage = activePackages.find((p) => p.id === selectedPkgId)
+  const selectedRemainingDays = selectedPackage?.expiresAt
+    ? getRemainingDays(selectedPackage.expiresAt)
+    : null
+  const selectedExpiringSoon = selectedRemainingDays != null
+    && selectedRemainingDays > 0
+    && selectedRemainingDays <= 7
 
   const handleLogout = async () => {
     if (loggingOut) return
@@ -220,17 +247,39 @@ export default function ProfilePage() {
             delay={0.15}
           >
             <p className="font-display text-3xl font-bold text-cream-900">{getPlanLabel(membership)}</p>
-            {(user.activePackages || []).filter((p) => isPackageEntryActive(p)).length > 1 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(user.activePackages || []).filter((p) => isPackageEntryActive(p)).map((p) => (
-                  <span key={p.id} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-800 ring-1 ring-violet-200">
-                    {getPlanLabel(p.planId)}
-                    {isOneTimePlan(p.planId) ? ' · tek görüşme' : p.expiresAt ? ` · ${new Date(p.expiresAt).toLocaleDateString('tr-TR')}` : ''}
-                  </span>
-                ))}
+            {activePackages.length > 1 && (
+              <div className="mt-4">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-violet-600/75">Aktif Paketler</p>
+                <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {activePackages.map((pkg) => {
+                    const isSelected = pkg.id === selectedPkgId
+                    const pkgDays = pkg.expiresAt ? getRemainingDays(pkg.expiresAt) : null
+                    return (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => setSelectedPkgId(pkg.id)}
+                        className={`snap-start shrink-0 rounded-full px-4 py-2 text-left transition ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-500/25'
+                            : 'bg-violet-50 text-violet-800 ring-1 ring-violet-200 hover:bg-violet-100'
+                        }`}
+                      >
+                        <span className="block text-xs font-semibold">{getPlanLabel(pkg.planId)}</span>
+                        <span className={`block text-[10px] font-medium ${isSelected ? 'text-white/85' : 'text-violet-600/70'}`}>
+                          {isOneTimePlan(pkg.planId)
+                            ? 'Tek seferlik'
+                            : pkgDays != null
+                              ? `${pkgDays} gün`
+                              : 'Aktif'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
-            {membership !== 'free' && premiumExpiresAt && (
+            {membership !== 'free' && selectedPackage && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -240,24 +289,53 @@ export default function ProfilePage() {
                 <div className="rounded-[calc(1rem-1px)] bg-gradient-to-br from-white/95 via-violet-50/40 to-fuchsia-50/30 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-violet-600/75">Kalan Süre</p>
-                      <p className="mt-1 font-display text-3xl font-bold">
-                        <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                          {remainingDays ?? '—'}
-                        </span>
-                        <span className="ml-1 text-base font-semibold text-violet-700/80">gün</span>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-violet-600/75">
+                        Kalan Süre
+                        {activePackages.length > 1 && (
+                          <span className="ml-1.5 normal-case tracking-normal text-violet-500/80">
+                            · {getPlanLabel(selectedPackage.planId)}
+                          </span>
+                        )}
                       </p>
-                      <p className="mt-1 text-xs text-cream-800/55">
-                        {new Date(premiumExpiresAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} tarihine kadar
-                      </p>
+                      {isOneTimePlan(selectedPackage.planId) ? (
+                        <>
+                          <p className="mt-1 font-display text-3xl font-bold">
+                            <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                              {Math.max(
+                                0,
+                                (Number(selectedPackage.packageConfig?.doctorSessionsTotal) || 1)
+                                  - countUsedDoctorSessions(user)
+                              )}
+                            </span>
+                            <span className="ml-1 text-base font-semibold text-violet-700/80">görüşme</span>
+                          </p>
+                          <p className="mt-1 text-xs text-cream-800/55">Tek seferlik paket — süre sınırı yok</p>
+                        </>
+                      ) : selectedPackage.expiresAt ? (
+                        <>
+                          <p className="mt-1 font-display text-3xl font-bold">
+                            <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                              {selectedRemainingDays ?? '—'}
+                            </span>
+                            <span className="ml-1 text-base font-semibold text-violet-700/80">gün</span>
+                          </p>
+                          <p className="mt-1 text-xs text-cream-800/55">
+                            {new Date(selectedPackage.expiresAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })} tarihine kadar
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-1 text-sm font-semibold text-violet-800">Süresiz aktif paket</p>
+                      )}
                     </div>
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30">
                       <Clock className="h-7 w-7" />
                     </div>
                   </div>
-                  {membershipStatus === 'expiring' && (
+                  {(selectedExpiringSoon || (selectedRemainingDays != null && selectedRemainingDays <= 0)) && (
                     <p className="mt-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 text-xs font-semibold text-orange-700">
-                      Süreniz yakında doluyor — yenilemek için destek ile iletişime geçin.
+                      {selectedRemainingDays != null && selectedRemainingDays <= 0
+                        ? 'Bu paketin süresi doldu — yenilemek için destek ile iletişime geçin.'
+                        : 'Bu paketin süresi yakında doluyor — yenilemek için destek ile iletişime geçin.'}
                     </p>
                   )}
                 </div>

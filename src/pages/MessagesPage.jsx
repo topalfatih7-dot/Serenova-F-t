@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MessageCircle, Dumbbell, Apple, Shield } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
@@ -99,7 +99,6 @@ export default function MessagesPage() {
           icon={MessageCircle}
           title="Mesajlaşma henüz aktif değil"
           description="Premium paketinizde koç veya diyetisyen atandığında buradan mesajlaşabilirsiniz."
-          action={<Link to="/membership" className="btn-wellness">Planları İncele</Link>}
         />
       </PanelPageShell>
     )
