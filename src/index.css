@@ -892,6 +892,15 @@ body {
   mask-image: radial-gradient(circle at center, black 30%, transparent 72%);
 }
 
+/* Egzersiz oynatıcı — yalnızca özel tam ekran butonu (native gizli) */
+.video-player-frame video::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+}
+
+.video-player-frame video::-webkit-media-controls-enclosure {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .corporate-video-showcase-glow,
   .corporate-video-showcase-ring {

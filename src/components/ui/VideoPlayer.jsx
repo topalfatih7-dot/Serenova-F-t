@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, cloneElement, isValidElement } from 'react'
+import { useCallback, useEffect, useRef, useState, cloneElement, isValidElement } from 'react'
 import { Loader2, Maximize2, Minimize2, VideoOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../services/supabaseDb'
@@ -7,6 +7,22 @@ import { BRAND } from '../../config/brand'
 function youTubeId(url) {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
   return m ? m[1] : null
+}
+
+function youTubeEmbedSrc(id, { autoPlay = true, loop = true } = {}) {
+  const params = new URLSearchParams({
+    autoplay: autoPlay ? '1' : '0',
+    fs: '0',
+    modestbranding: '1',
+    rel: '0',
+    playsinline: '1',
+    enablejsapi: '0',
+  })
+  if (loop) {
+    params.set('loop', '1')
+    params.set('playlist', id)
+  }
+  return `https://www.youtube.com/embed/${id}?${params}`
 }
 
 function resolveStoragePath(url) {
@@ -18,55 +34,149 @@ function resolveStoragePath(url) {
   return null
 }
 
-/** Oynatıcı üzerinde sabit marka logosu — tam ekranda da görünür kalır. */
-function VideoWatermarkFrame({ children, className = '', allowFullscreen = true }) {
+/** Oynatıcı üzerinde sabit marka logosu — yalnızca özel tam ekranda görünür kalır. */
+function VideoWatermarkFrame({
+  children,
+  className = '',
+  allowFullscreen = true,
+  autoPlay = true,
+  loop = true,
+}) {
   const frameRef = useRef(null)
+  const videoRef = useRef(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  useEffect(() => {
-    const sync = () => {
-      const el = frameRef.current
-      const active = document.fullscreenElement === el
-        || document.webkitFullscreenElement === el
-      setIsFullscreen(active)
-    }
-    document.addEventListener('fullscreenchange', sync)
-    document.addEventListener('webkitfullscreenchange', sync)
-    return () => {
-      document.removeEventListener('fullscreenchange', sync)
-      document.removeEventListener('webkitfullscreenchange', sync)
-    }
+  const syncFullscreen = useCallback(() => {
+    const el = frameRef.current
+    const active = document.fullscreenElement === el
+      || document.webkitFullscreenElement === el
+    setIsFullscreen(active)
   }, [])
 
-  const toggleFullscreen = async () => {
+  useEffect(() => {
+    document.addEventListener('fullscreenchange', syncFullscreen)
+    document.addEventListener('webkitfullscreenchange', syncFullscreen)
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreen)
+      document.removeEventListener('webkitfullscreenchange', syncFullscreen)
+    }
+  }, [syncFullscreen])
+
+  const enterFrameFullscreen = useCallback(async () => {
     const el = frameRef.current
     if (!el) return
     try {
-      if (document.fullscreenElement === el || document.webkitFullscreenElement === el) {
-        if (document.exitFullscreen) await document.exitFullscreen()
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
-      } else if (el.requestFullscreen) {
-        await el.requestFullscreen()
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen()
-      }
+      if (el.requestFullscreen) await el.requestFullscreen()
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
     } catch {
       /* kullanıcı iptal etmiş olabilir */
     }
-  }
+  }, [])
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen()
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+    } catch {
+      /* kullanıcı iptal etmiş olabilir */
+    }
+  }, [])
+
+  const toggleFullscreen = useCallback(async () => {
+    const el = frameRef.current
+    if (!el) return
+    const active = document.fullscreenElement === el
+      || document.webkitFullscreenElement === el
+    if (active) await exitFullscreen()
+    else await enterFrameFullscreen()
+  }, [enterFrameFullscreen, exitFullscreen])
+
+  /** Native video tam ekranı engelle — logo kaybolmasın, tek kontrol kalsın. */
+  useEffect(() => {
+    const frame = frameRef.current
+    const video = videoRef.current
+    if (!frame || !video) return undefined
+
+    const redirectNativeFullscreen = () => {
+      const videoIsFs = document.fullscreenElement === video
+        || document.webkitFullscreenElement === video
+      if (!videoIsFs) return
+      exitFullscreen().finally(() => enterFrameFullscreen())
+    }
+
+    const onWebkitBeginFullscreen = (event) => {
+      event.preventDefault?.()
+      event.stopPropagation?.()
+      enterFrameFullscreen()
+    }
+
+    const onDblClick = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      toggleFullscreen()
+    }
+
+    document.addEventListener('fullscreenchange', redirectNativeFullscreen)
+    document.addEventListener('webkitfullscreenchange', redirectNativeFullscreen)
+    video.addEventListener('webkitbeginfullscreen', onWebkitBeginFullscreen)
+    video.addEventListener('dblclick', onDblClick)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', redirectNativeFullscreen)
+      document.removeEventListener('webkitfullscreenchange', redirectNativeFullscreen)
+      video.removeEventListener('webkitbeginfullscreen', onWebkitBeginFullscreen)
+      video.removeEventListener('dblclick', onDblClick)
+    }
+  }, [enterFrameFullscreen, exitFullscreen, toggleFullscreen])
+
+  /** İzleme alanına girildiğinde otomatik başlat ve döngüye al. */
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !autoPlay) return undefined
+
+    const tryPlay = () => {
+      video.play().catch(() => {})
+    }
+
+    tryPlay()
+    video.addEventListener('canplay', tryPlay)
+
+    const onEnded = () => {
+      if (!loop) return
+      video.currentTime = 0
+      video.play().catch(() => {})
+    }
+    video.addEventListener('ended', onEnded)
+
+    return () => {
+      video.removeEventListener('canplay', tryPlay)
+      video.removeEventListener('ended', onEnded)
+    }
+  }, [autoPlay, loop])
 
   const mediaChild = isValidElement(children) && children.type === 'video'
     ? cloneElement(children, {
-      controlsList: 'nodownload nofullscreen',
+      ref: videoRef,
+      autoPlay,
+      loop,
+      playsInline: true,
+      controlsList: 'nodownload nofullscreen noremoteplayback',
+      disablePictureInPicture: true,
+      disableRemotePlayback: true,
       className: [children.props.className, 'border-0'].filter(Boolean).join(' '),
     })
-    : children
+    : isValidElement(children) && children.type === 'iframe'
+      ? cloneElement(children, {
+        allowFullScreen: false,
+        className: [children.props.className, 'border-0'].filter(Boolean).join(' '),
+      })
+      : children
 
   return (
     <div
       ref={frameRef}
       className={[
-        'group relative aspect-video w-full overflow-hidden rounded-xl bg-black',
+        'video-player-frame group relative aspect-video w-full overflow-hidden rounded-xl bg-black',
         '[&:fullscreen]:flex [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen',
         '[&:fullscreen]:max-h-none [&:fullscreen]:max-w-none [&:fullscreen]:items-center [&:fullscreen]:justify-center',
         '[&:fullscreen]:rounded-none',
@@ -76,7 +186,7 @@ function VideoWatermarkFrame({ children, className = '', allowFullscreen = true 
         className,
       ].join(' ')}
     >
-      <div className="absolute inset-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain">
+      <div className="absolute inset-0 z-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain">
         {mediaChild}
       </div>
       <img
@@ -85,7 +195,7 @@ function VideoWatermarkFrame({ children, className = '', allowFullscreen = true 
         aria-hidden="true"
         draggable={false}
         className={[
-          'pointer-events-none absolute z-10 w-auto select-none object-contain opacity-80',
+          'pointer-events-none absolute z-30 w-auto select-none object-contain opacity-80',
           'drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]',
           isFullscreen
             ? 'right-6 bottom-16 h-10 max-w-[36%] sm:h-12'
@@ -97,7 +207,7 @@ function VideoWatermarkFrame({ children, className = '', allowFullscreen = true 
           type="button"
           onClick={toggleFullscreen}
           className={[
-            'absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg',
+            'absolute top-3 right-3 z-40 flex h-9 w-9 items-center justify-center rounded-lg',
             'bg-black/55 text-white/90 opacity-80 backdrop-blur-sm transition hover:bg-black/75 hover:opacity-100',
             'sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100',
             isFullscreen && 'opacity-100',
@@ -111,7 +221,13 @@ function VideoWatermarkFrame({ children, className = '', allowFullscreen = true 
   )
 }
 
-export default function VideoPlayer({ url, videoPending = false, className = '' }) {
+export default function VideoPlayer({
+  url,
+  videoPending = false,
+  className = '',
+  autoPlay = true,
+  loop = true,
+}) {
   const { getExerciseVideoUrl } = useApp()
   const [playUrl, setPlayUrl] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -139,6 +255,8 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
     return () => { cancelled = true }
   }, [storagePath, getExerciseVideoUrl, videoPending])
 
+  const frameProps = { className, autoPlay, loop }
+
   if (!url) {
     return (
       <div className={`flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl bg-cream-100 text-cream-800/40 ${className}`}>
@@ -150,12 +268,11 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
 
   if (yt) {
     return (
-      <VideoWatermarkFrame className={className}>
+      <VideoWatermarkFrame {...frameProps}>
         <iframe
           title="Egzersiz videosu"
-          src={`https://www.youtube.com/embed/${yt}`}
+          src={youTubeEmbedSrc(yt, { autoPlay, loop })}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          className="border-0"
         />
       </VideoWatermarkFrame>
     )
@@ -186,8 +303,8 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
       )
     }
     return (
-      <VideoWatermarkFrame className={className}>
-        <video src={playUrl} controls playsInline />
+      <VideoWatermarkFrame {...frameProps}>
+        <video src={playUrl} controls />
       </VideoWatermarkFrame>
     )
   }
@@ -202,8 +319,8 @@ export default function VideoPlayer({ url, videoPending = false, className = '' 
   }
 
   return (
-    <VideoWatermarkFrame className={className}>
-      <video src={url} controls playsInline />
+    <VideoWatermarkFrame {...frameProps}>
+      <video src={url} controls />
     </VideoWatermarkFrame>
   )
 }
