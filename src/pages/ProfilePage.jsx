@@ -57,9 +57,9 @@ export default function ProfilePage() {
   })
 
   const expertCards = [
-    { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule/coach', iconClass: 'text-brand-500' },
-    { icon: Apple, label: 'Diyetisyen', name: assignedDietitian?.name, to: '/schedule/dietitian', iconClass: 'text-sage-500' },
-    { icon: Stethoscope, label: 'Doktor', name: assignedDoctor?.name, to: '/schedule/doctor', iconClass: 'text-teal-600' },
+    { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule?tab=coach', iconClass: 'text-brand-500' },
+    { icon: Apple, label: 'Diyetisyen', name: assignedDietitian?.name, to: '/schedule?tab=dietitian', iconClass: 'text-sage-500' },
+    { icon: Stethoscope, label: 'Doktor', name: assignedDoctor?.name, to: '/schedule?tab=doctor', iconClass: 'text-teal-600' },
   ]
 
   const handleSave = () => {

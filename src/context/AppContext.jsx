@@ -9,6 +9,7 @@ import {
   getCurrentStaff,
   computeAdminStats,
   computeMembershipBreakdown,
+  computeOnboardingFunnel,
   computeMonthlyGrowth,
   getSessionStats,
 } from '../services/platformStats'
@@ -119,6 +120,7 @@ export function AppProvider({ children }) {
   const isAuthenticated = !!db.session
 
   const adminStats = useMemo(() => computeAdminStats(db), [db])
+  const onboardingFunnel = useMemo(() => computeOnboardingFunnel(db), [db])
   const membershipBreakdown = useMemo(() => computeMembershipBreakdown(db), [db])
   const monthlyGrowth = useMemo(() => computeMonthlyGrowth(db), [db])
   const sessionStats = useMemo(() => getSessionStats(db), [db])
@@ -1144,6 +1146,7 @@ export function AppProvider({ children }) {
     exerciseTaxonomy: db.content?.exerciseTaxonomy || null,
     platform,
     adminStats,
+    onboardingFunnel,
     membershipBreakdown,
     monthlyGrowth,
     sessionStats,
@@ -1246,6 +1249,7 @@ export function AppProvider({ children }) {
     isFreeTrialExpired,
     platform,
     adminStats,
+    onboardingFunnel,
     membershipBreakdown,
     monthlyGrowth,
     sessionStats,

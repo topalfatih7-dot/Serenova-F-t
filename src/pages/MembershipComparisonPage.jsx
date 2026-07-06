@@ -6,8 +6,12 @@ import { ALL_PLANS, formatMonthlyPrice, sortPlansForDisplay } from '../data/memb
 import MembershipHero from '../components/membership/MembershipHero'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipReassurance from '../components/membership/MembershipReassurance'
+import MembershipComparisonAccordion from '../components/membership/MembershipComparisonAccordion'
+import JsonLd from '../components/seo/JsonLd'
 import { getPlanTheme, planIcon } from '../components/membership/planTheme'
 import { getPlanCtaLabel } from '../utils/planCta'
+import { RECOMMENDED_PLAN, getDurationSavingsPercent, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { buildFaqSchema } from '../config/seo'
 
 const comparisonRows = [
   { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, eko: false, diyet: true, spor: true, vip: true, doktor: false },
@@ -35,6 +39,12 @@ const HOW_IT_WORKS_MEMBER = [
   { icon: LayoutDashboard, title: '3. Hemen kullanın', desc: 'Ek paketler mevcut üyeliğinize eklenir; haklarınız birleştirilir.' },
 ]
 
+const MEMBERSHIP_FAQ = [
+  { q: 'Ücretsiz Basic paketle başlayabilir miyim?', a: 'Evet. Basic paket ücretsizdir; kişisel sağlık analizi ve otomatik programlarla hemen başlayabilirsiniz.' },
+  { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
+  { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket satın alabilirsiniz.' },
+]
+
 function CellValue({ value }) {
   if (value === false) return <X className="mx-auto h-4 w-4 text-cream-300" />
   if (value === true) return <Check className="mx-auto h-4 w-4 text-sage-500" />
@@ -56,6 +66,7 @@ export default function MembershipComparisonPage() {
 
   return (
     <div className="overflow-x-hidden bg-gradient-to-b from-cream-50/50 via-white to-sage-50/30">
+      <JsonLd data={buildFaqSchema(MEMBERSHIP_FAQ)} />
       <MembershipHero
         title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Size en uygun planı seçin'}
         subtitle={
@@ -117,14 +128,39 @@ export default function MembershipComparisonPage() {
               plan={plan}
               index={i}
               mode="link"
-              ctaTo={`/onboarding?plan=${plan.id}`}
+              recommended={plan.id === RECOMMENDED_PLAN}
+              ctaTo={`/onboarding?plan=${plan.id}${plan.id === RECOMMENDED_PLAN ? `&months=${RECOMMENDED_DURATION_MONTHS}` : ''}`}
               ctaLabel={ctaForPlan(plan)}
             />
           ))}
         </div>
 
-        {/* Karşılaştırma tablosu */}
-        <div className="mt-14 text-center">
+        {displayPlans.some((p) => p.id === RECOMMENDED_PLAN) && (
+          <p className="mt-6 text-center text-sm text-cream-800/65">
+            <span className="font-semibold text-amber-800">VIP 6 aylık paket</span>
+            {' '}— %{getDurationSavingsPercent(RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS)} tasarruf ile en avantajlı seçenek.
+          </p>
+        )}
+
+        {/* Karşılaştırma — mobil accordion */}
+        <div className="mt-14 md:hidden">
+          <div className="text-center">
+            <span className="section-badge">Detaylı Karşılaştırma</span>
+            <h2 className="section-title mt-4">Planları karşılaştırın</h2>
+          </div>
+          <div className="mt-6">
+            <MembershipComparisonAccordion
+              plans={displayPlans}
+              comparisonRows={comparisonRows}
+              isMember={isMember}
+              membership={membership}
+              user={user}
+            />
+          </div>
+        </div>
+
+        {/* Karşılaştırma tablosu — masaüstü */}
+        <div className="mt-14 hidden text-center md:block">
           <span className="section-badge">Detaylı Karşılaştırma</span>
           <h2 className="section-title mt-4">Özellik özellik yan yana</h2>
           <p className="section-subtitle">Tüm planlarda 1, 3 veya 6 aylık süre seçenekleri mevcuttur.</p>
@@ -134,7 +170,7 @@ export default function MembershipComparisonPage() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-8 overflow-hidden rounded-3xl border border-cream-200/80 bg-white shadow-lg shadow-cream-200/40"
+          className="mt-8 hidden overflow-hidden rounded-3xl border border-cream-200/80 bg-white shadow-lg shadow-cream-200/40 md:block"
         >
           <div className="h-1.5 bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
           <div className="overflow-x-auto">
@@ -144,8 +180,9 @@ export default function MembershipComparisonPage() {
                   <th className="w-48 py-4 pl-5 pr-4 text-left text-sm font-medium text-cream-800/50">Özellik</th>
                   {displayPlans.map((plan) => {
                     const theme = getPlanTheme(plan.id)
+                    const isVip = plan.id === RECOMMENDED_PLAN
                     return (
-                      <th key={plan.id} className="px-3 py-4 text-center">
+                      <th key={plan.id} className={`px-3 py-4 text-center ${isVip ? 'bg-amber-50/60' : ''}`}>
                         <Link
                           to={`/onboarding?plan=${plan.id}`}
                           className="group flex flex-col items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-brand-50/60"

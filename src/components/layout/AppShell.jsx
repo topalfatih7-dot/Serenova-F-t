@@ -1,9 +1,5 @@
-import { useState } from 'react'
 import { Outlet, Navigate, Link } from 'react-router-dom'
-import {
-  LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet, MessageCircle, Stethoscope,
-} from 'lucide-react'
+import { Bell } from 'lucide-react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -11,45 +7,23 @@ import ConsentBanner from '../ui/ConsentBanner'
 import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import OnboardingTutorial from '../ui/OnboardingTutorial'
-import HealthTestWidget from '../dashboard/HealthTestWidget'
 import { useApp } from '../../context/AppContext'
 import { getPlanLabel } from '../../data/membershipPlans'
 import { isHealthTestComplete } from '../../data/healthTest'
+import { buildMemberNavItems } from '../../config/memberNav'
 import { BRAND } from '../../config/brand'
 
 const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
-
-const memberNav = [
-  { to: '/profile', icon: Settings, label: 'Profil' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
-  { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
-  { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
-  { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları' },
-  { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen Randevuları' },
-  { to: '/schedule/doctor', icon: Stethoscope, label: 'Doktor Randevuları' },
-  { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
-  { to: '/library', icon: Library, label: 'Kütüphane' },
-  { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
-  { to: '/support', icon: HelpCircle, label: 'Destek', supportBadge: true },
-  { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
-]
 
 export default function AppShell() {
   const {
     isAdmin, isStaff, membership, notifications, user, logout, loggingOut, settings, updateSettings,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig,
   } = useApp()
-  // Sağlık testi prompt'u: tutorial bittikten sonra açılır. Test tamamlanana kadar
-  // yüzen ikon (FAB) tüm üye sayfalarında kalıcı olsun diye orkestrasyon AppShell'de.
-  const [healthPromptOpen, setHealthPromptOpen] = useState(false)
 
   const handleTutorialComplete = () => {
     if (user?.id && !settings?.tutorialSeen) {
       updateSettings?.({ tutorialSeen: true })
-    }
-    if (user?.id && !isHealthTestComplete(user.healthTest, user.gender, packageConfig)) {
-      setHealthPromptOpen(true)
     }
   }
 
@@ -62,24 +36,21 @@ export default function AppShell() {
   }
 
   const unread = (notifications || []).filter((n) => !n.read).length
-  const baseNav = membership === 'free'
-    ? [...memberNav, { to: '/membership', icon: Crown, label: 'Planları İncele' }]
-    : memberNav
-  const navItems = baseNav.map((item) => ({
-    ...item,
-    badgeCount: item.chatBadge
-      ? chatUnreadCount
-      : item.notificationsBadge
-        ? notificationUnreadCount
-        : item.supportBadge
-          ? openSupportTicketsCount
-          : 0,
-  }))
+  const healthTestIncomplete = user?.id
+    && !isHealthTestComplete(user.healthTest, user.gender, packageConfig)
+
+  const navItems = buildMemberNavItems({
+    membership,
+    chatUnreadCount,
+    notificationUnreadCount,
+    openSupportTicketsCount,
+    healthTestIncomplete,
+  })
 
   return (
     <div className="flex h-dvh overflow-hidden">
       <NoIndexHead />
-      <Sidebar />
+      <Sidebar healthTestIncomplete={healthTestIncomplete} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PanelMobileMenu
           navItems={navItems}
@@ -121,11 +92,6 @@ export default function AppShell() {
         userId={user?.id}
         seen={!!settings?.tutorialSeen}
         onComplete={handleTutorialComplete}
-      />
-      <HealthTestWidget
-        user={user}
-        promptOpen={healthPromptOpen}
-        onPromptHandled={() => setHealthPromptOpen(false)}
       />
 
       <ConsentBanner />

@@ -22,7 +22,7 @@ import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay, getDefaultPackageForPlan } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay, getDefaultPackageForPlan, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled } from '../config/stripe'
@@ -55,13 +55,20 @@ const BENEFITS = [
   { icon: HeartPulse, text: 'Uzman koç ve diyetisyen desteği' },
 ]
 
+function resolveDurationMonths(planId, searchParams) {
+  const fromQuery = Number(searchParams.get('months'))
+  if ([1, 3, 6].includes(fromQuery)) return fromQuery
+  if (planId === RECOMMENDED_PLAN) return RECOMMENDED_DURATION_MONTHS
+  return 1
+}
+
 function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan, userEmail }) {
   const { toast } = useToast()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initial = preselectedPlan && preselectedPlan !== currentMembership ? preselectedPlan : currentMembership
   const [selected, setSelected] = useState(initial)
-  const [durationMonths, setDurationMonths] = useState(1)
+  const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(initial, searchParams))
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -70,6 +77,10 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const selectedPrice = isPaidMembership(selected) ? getTierPrice(selected, durationMonths) : 0
   const isPaid = isPaidMembership(selected)
   const isCurrent = selected === currentMembership
+
+  useEffect(() => {
+    setDurationMonths(resolveDurationMonths(selected, searchParams))
+  }, [selected, searchParams])
 
   useEffect(() => {
     if (searchParams.get('payment') === 'cancelled') {
@@ -184,7 +195,7 @@ export default function OnboardingPage() {
 
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
-  const [durationMonths, setDurationMonths] = useState(1)
+  const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(resolvePlanFromQuery(rawPlan), searchParams))
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -197,6 +208,7 @@ export default function OnboardingPage() {
   const [errorModal, setErrorModal] = useState({ open: false, message: '' })
   const [submitHighlight, setSubmitHighlight] = useState(false)
   const submitBtnRef = useRef(null)
+
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -207,6 +219,10 @@ export default function OnboardingPage() {
     confirmPassword: '',
     membership: preselectedPlan,
   })
+
+  useEffect(() => {
+    setDurationMonths(resolveDurationMonths(data.membership, searchParams))
+  }, [data.membership, searchParams])
 
   const { register, registerWithPlan, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()

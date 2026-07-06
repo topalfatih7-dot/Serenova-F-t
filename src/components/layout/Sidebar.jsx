@@ -1,31 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import {
-  LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Apple, Settings, LogOut, ClipboardList, Library,
-  CalendarDays, Flame, Wallet, MessageCircle, Stethoscope, Loader2,
-} from 'lucide-react'
+import { LogOut, Loader2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 import BrandLogo from '../ui/BrandLogo'
 import { resolveFirstName } from '../../utils/displayName'
+import { buildMemberNavItems } from '../../config/memberNav'
 
-const navItems = [
-  { to: '/profile', icon: Settings, label: 'Profil' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
-  { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
-  { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
-  { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
-  { to: '/schedule/coach', icon: Dumbbell, label: 'Koç Randevuları', compact: true },
-  { to: '/schedule/dietitian', icon: Apple, label: 'Diyetisyen Randevuları', compact: true },
-  { to: '/schedule/doctor', icon: Stethoscope, label: 'Doktor Randevuları', compact: true },
-  { to: '/programs', icon: ClipboardList, label: 'Programlarım' },
-  { to: '/library', icon: Library, label: 'Kütüphane' },
-  { to: '/notifications', icon: Bell, label: 'Bildirimler', notificationsBadge: true },
-  { to: '/support', icon: HelpCircle, label: 'Destek', supportBadge: true },
-  { to: '/profile/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
-]
-
-export default function Sidebar() {
+export default function Sidebar({ healthTestIncomplete = false }) {
   const {
     user, membership, membershipStatus, logout, loggingOut,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
@@ -33,16 +14,13 @@ export default function Sidebar() {
 
   const displayName = resolveFirstName({ name: user?.name, email: user?.email })
 
-  const itemsWithBadges = navItems.map((item) => ({
-    ...item,
-    badgeCount: item.chatBadge
-      ? chatUnreadCount
-      : item.notificationsBadge
-        ? notificationUnreadCount
-        : item.supportBadge
-          ? openSupportTicketsCount
-          : 0,
-  }))
+  const itemsWithBadges = buildMemberNavItems({
+    membership,
+    chatUnreadCount,
+    notificationUnreadCount,
+    openSupportTicketsCount,
+    healthTestIncomplete,
+  })
 
   return (
     <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl md:flex lg:w-64">
@@ -66,22 +44,16 @@ export default function Sidebar() {
             }
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            <span className={`flex-1 whitespace-nowrap ${item.compact ? 'text-[13px]' : ''}`}>{item.label}</span>
+            <span className="flex-1 whitespace-nowrap">{item.label}</span>
             {item.badgeCount > 0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                {item.badgeCount > 9 ? '9+' : item.badgeCount}
+              <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white ${
+                item.healthTestBadge ? 'bg-amber-500' : 'bg-rose-500'
+              }`}>
+                {item.healthTestBadge ? '!' : item.badgeCount > 9 ? '9+' : item.badgeCount}
               </span>
             )}
           </NavLink>
         ))}
-        {membership === 'free' && (
-          <NavLink
-            to="/membership"
-            className="mt-4 flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 via-violet-500 to-brand-600 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:scale-[1.02] hover:shadow-xl"
-          >
-            <Crown className="h-4 w-4" /> Planları İncele
-          </NavLink>
-        )}
       </nav>
 
       <div className="shrink-0 border-t border-cream-100 p-3">

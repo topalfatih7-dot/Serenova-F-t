@@ -22,9 +22,8 @@ const AuthCallbackPage = lazy(() => import('./pages/auth/AuthCallbackPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparisonPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const CoachSchedulePage = lazy(() => import('./pages/CoachSchedulePage'))
-const DietitianSchedulePage = lazy(() => import('./pages/DietitianSchedulePage'))
-const DoctorSchedulePage = lazy(() => import('./pages/DoctorSchedulePage'))
+const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'))
+const HealthTestPage = lazy(() => import('./pages/HealthTestPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SupportPage = lazy(() => import('./pages/SupportPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -126,11 +125,13 @@ export default function App() {
               <Route path="call/:sessionType/:sessionId" element={<VideoCallPage audience="member" />} />
               <Route element={<AppShell />}>
                 <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="health-test" element={<HealthTestPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="calorie" element={<CalorieCalculatorPage />} />
-                <Route path="schedule/coach" element={<CoachSchedulePage />} />
-                <Route path="schedule/dietitian" element={<DietitianSchedulePage />} />
-                <Route path="schedule/doctor" element={<DoctorSchedulePage />} />
+                <Route path="schedule" element={<AppointmentsPage />} />
+                <Route path="schedule/coach" element={<Navigate to="/schedule?tab=coach" replace />} />
+                <Route path="schedule/dietitian" element={<Navigate to="/schedule?tab=dietitian" replace />} />
+                <Route path="schedule/doctor" element={<Navigate to="/schedule?tab=doctor" replace />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="messages" element={<MessagesPage />} />
                 <Route path="messages/:role" element={<MessagesPage />} />

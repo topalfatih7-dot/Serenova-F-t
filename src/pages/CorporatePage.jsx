@@ -14,6 +14,7 @@ import {
   BarChart3,
   Laptop,
 } from 'lucide-react'
+import HeroBackgroundVideo from '../components/ui/HeroBackgroundVideo'
 
 /**
  * Mixkit — Mixkit Video Free License (ticari kullanım, atıf gerekmez)
@@ -93,24 +94,6 @@ function RotatingCorporateText() {
   )
 }
 
-function SilentVideo({ src, poster, className = '', style, label }) {
-  return (
-    <video
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      aria-label={label}
-      poster={poster}
-      className={className}
-      style={style}
-    >
-      <source src={src} type="video/mp4" />
-    </video>
-  )
-}
-
 function CorporateWellnessVideo() {
   return (
     <div className="corporate-video-showcase">
@@ -122,12 +105,11 @@ function CorporateWellnessVideo() {
       <div aria-hidden className="corporate-video-showcase-shadow" />
 
       <div className="corporate-video-frame">
-        <div className="corporate-video-frame-inner relative">
-          <SilentVideo
+        <div className="corporate-video-frame-inner relative overflow-hidden">
+          <HeroBackgroundVideo
             src={CORPORATE_VIDEOS.wellness.src}
             poster={CORPORATE_VIDEOS.wellness.poster}
-            label={CORPORATE_VIDEOS.wellness.label}
-            className="corporate-video-media"
+            videoClassName="corporate-video-media"
           />
           <div className="corporate-video-vignette" />
           <div className="corporate-video-caption">
@@ -145,12 +127,10 @@ export default function CorporatePage() {
     <div className="overflow-x-hidden bg-cream-50/30">
       {/* ── HERO: iş insanları video + sağda cam kart ── */}
       <section className="relative flex min-h-[92svh] items-center overflow-hidden sm:min-h-[100svh]">
-        <SilentVideo
+        <HeroBackgroundVideo
           src={CORPORATE_VIDEOS.hero.src}
           poster={CORPORATE_VIDEOS.hero.poster}
-          label={CORPORATE_VIDEOS.hero.label}
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: 'blur(2px) brightness(0.5) saturate(1.15)' }}
+          videoStyle={{ filter: 'blur(2px) brightness(0.5) saturate(1.15)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/15" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />

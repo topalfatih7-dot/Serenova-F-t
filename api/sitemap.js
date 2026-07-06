@@ -103,12 +103,14 @@ async function fetchDynamicUrls() {
   try {
     const { data: posts } = await client
       .from('posts')
-      .select('id, created_at')
+      .select('id, data, created_at')
       .eq('published', true)
 
     for (const post of posts || []) {
+      const title = post.data?.title || ''
+      const slug = post.data?.slug || slugifyTurkish(title) || post.id
       urls.push({
-        path: `/blog/${post.id}`,
+        path: `/blog/${slug}`,
         changefreq: 'monthly',
         priority: '0.6',
         lastmod: (post.created_at || '').slice(0, 10),

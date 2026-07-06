@@ -15,6 +15,7 @@ import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackgrou
 import HowItWorksSection from '../components/landing/HowItWorksSection'
 import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import LatestBlogPosts from '../components/landing/LatestBlogPosts'
+import HeroBackgroundVideo from '../components/ui/HeroBackgroundVideo'
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS, sortPlansForDisplay } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
@@ -71,23 +72,12 @@ export default function LandingPage() {
           HERO — Video Arka Plan + Asimetrik Kart
       ═══════════════════════════════════════════ */}
       <section className="relative flex min-h-[100svh] items-center overflow-hidden">
-        {/* Video yüklenene kadar düz renk — poster/görsel fallback kaldırıldı (ekstra indirme yok) */}
         <div aria-hidden className="absolute inset-0 bg-cream-900" />
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: 'blur(3px) brightness(0.55) saturate(1.2)' }}
-        >
-          <source
-            src="https://assets.mixkit.co/active_storage/video_items/100526/1725383305/100526-video-720.mp4"
-            type="video/mp4"
-          />
-        </video>
+        <HeroBackgroundVideo
+          src="https://assets.mixkit.co/active_storage/video_items/100526/1725383305/100526-video-720.mp4"
+          poster="https://assets.mixkit.co/videos/100526/100526-thumb-720-0.jpg"
+          videoStyle={{ filter: 'blur(3px) brightness(0.55) saturate(1.2)' }}
+        />
 
         {/* Gradient overlay — sol koyu, sağ açık */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10" />

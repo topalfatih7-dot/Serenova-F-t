@@ -18,6 +18,7 @@ import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } fr
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
+import { ensureUniqueBlogSlug } from '../utils/blogSlug.js'
 import { getApiAuthHeaders } from './apiAuth'
 import {
   dedupeExerciseVideoUrlFetch,
@@ -1233,10 +1234,14 @@ export async function addPost(data) {
   const cover = data.coverImage
     ? { coverImage: data.coverImage, coverImageAlt: data.coverImageAlt || '' }
     : coverForCategory(category)
+  const { data: existingRows } = await supabase.from('posts').select('id, data')
+  const existingPosts = (existingRows || []).map(rowToPost)
+  const slug = data.slug || ensureUniqueBlogSlug(data.title, existingPosts)
   const { data: row, error } = await supabase.from('posts').insert({
     published: data.published !== false,
     data: {
       title: data.title,
+      slug,
       category,
       excerpt: data.excerpt || '',
       author: data.author || 'Yeni Form Ekibi',
@@ -1260,6 +1265,9 @@ export async function editPost(id, patch) {
   const merged = { ...rowToPost(current), ...patch }
   const content = merged.content || ''
   const category = merged.category || 'Yaşam'
+  const { data: existingRows } = await supabase.from('posts').select('id, data')
+  const existingPosts = (existingRows || []).map(rowToPost)
+  const slug = merged.slug || ensureUniqueBlogSlug(merged.title, existingPosts, id)
   const cover = merged.coverImage
     ? { coverImage: merged.coverImage, coverImageAlt: merged.coverImageAlt || merged.title || '' }
     : coverForCategory(category)
@@ -1267,6 +1275,7 @@ export async function editPost(id, patch) {
     published: merged.published !== false,
     data: {
       title: merged.title,
+      slug,
       category,
       excerpt: merged.excerpt,
       author: merged.author,

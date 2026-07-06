@@ -97,7 +97,7 @@ export default function VideoCallPage({ audience = 'member' }) {
 
   const backPath = audience === 'staff'
     ? '/staff'
-    : sessionType === 'dietitian' ? '/schedule/dietitian' : '/schedule/coach'
+    : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : sessionType === 'doctor' ? '/schedule?tab=doctor' : '/schedule?tab=coach'
 
   const handleExit = () => {
     call.destroy()

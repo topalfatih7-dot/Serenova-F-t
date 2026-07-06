@@ -1,4 +1,5 @@
 import { BRAND } from './brand'
+import { blogPostPath } from '../utils/blogSlug'
 
 const LEGAL_SEO_SLUGS = [
   'kvkk', 'kvkk-acik-riza-metni', 'gizlilik-politikasi', 'cerez-politikasi',
@@ -344,7 +345,7 @@ export function buildArticleSchema(post) {
       name: BRAND.name,
       logo: { '@type': 'ImageObject', url: absoluteUrl(BRAND.assets.logo) },
     },
-    mainEntityOfPage: absoluteUrl(`/blog/${post.id}`),
+    mainEntityOfPage: absoluteUrl(blogPostPath(post)),
   }
 }
 

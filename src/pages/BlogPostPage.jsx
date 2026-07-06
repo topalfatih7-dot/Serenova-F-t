@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
+import { blogPostPath, findBlogPost } from '../utils/blogSlug'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Clock, User, ArrowRight } from 'lucide-react'
 import { format } from 'date-fns'
@@ -13,10 +14,10 @@ export default function BlogPostPage() {
   const { id } = useParams()
   const { posts } = useApp()
 
-  const post = (posts || []).find((p) => p.id === id)
+  const post = findBlogPost(posts, id)
   const related = useMemo(
-    () => (posts || []).filter((p) => p.published && p.id !== id).slice(0, 3),
-    [posts, id]
+    () => (posts || []).filter((p) => p.published && p.id !== post?.id).slice(0, 3),
+    [posts, post?.id]
   )
 
   if (!post || !post.published) {
@@ -26,20 +27,22 @@ export default function BlogPostPage() {
   const paragraphs = post.content.split('\n\n')
   const cover = resolveBlogCover(post)
 
+  const postPath = blogPostPath(post)
+
   return (
     <>
       <SeoHead
         title={post.title}
         description={post.excerpt || truncateDescription(post.content)}
         keywords={[post.category, post.author, 'Yeni Form blog', 'sağlıklı yaşam', 'fitness'].filter(Boolean).join(', ')}
-        canonicalPath={`/blog/${post.id}`}
+        canonicalPath={postPath}
         ogType="article"
         jsonLd={[
           buildArticleSchema(post),
           buildBreadcrumbSchema([
             { name: 'Ana Sayfa', path: '/' },
             { name: 'Blog', path: '/blog' },
-            { name: post.title, path: `/blog/${post.id}` },
+            { name: post.title, path: postPath },
           ]),
         ]}
       />
@@ -75,7 +78,7 @@ export default function BlogPostPage() {
           <h2 className="font-display text-xl font-bold text-cream-900">Diğer yazılar</h2>
           <div className="mt-4 space-y-3">
             {related.map((p) => (
-              <Link key={p.id} to={`/blog/${p.id}`} className="flex items-center justify-between gap-4 rounded-2xl border border-cream-200 bg-white p-4 transition hover:border-brand-200 hover:shadow-sm">
+              <Link key={p.id} to={blogPostPath(p)} className="flex items-center justify-between gap-4 rounded-2xl border border-cream-200 bg-white p-4 transition hover:border-brand-200 hover:shadow-sm">
                 <div className="min-w-0">
                   <span className="text-xs font-medium text-brand-600">{p.category}</span>
                   <p className="truncate font-semibold text-cream-900">{p.title}</p>

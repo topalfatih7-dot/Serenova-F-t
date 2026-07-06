@@ -100,6 +100,20 @@ export function getTierPrice(planId, months = 1) {
   return tiers[m] || tiers[1] || 0
 }
 
+/** Uzun süre seçiminde aylık baz fiyata göre yüzde tasarruf (ör. 6 ay VIP). */
+export function getDurationSavingsPercent(planId, months = 1) {
+  const m = Number(months) || 1
+  if (m <= 1) return 0
+  const monthly = getTierPrice(planId, 1)
+  const bundle = getTierPrice(planId, m)
+  if (!monthly || !bundle) return 0
+  const full = monthly * m
+  if (full <= bundle) return 0
+  return Math.round(((full - bundle) / full) * 100)
+}
+
+export const RECOMMENDED_DURATION_MONTHS = 6
+
 export function getCompareAtPrice(planId, months = 1) {
   const m = Number(months) || 1
   return PLAN_PRICING[planId]?.compareAt?.[m] || null

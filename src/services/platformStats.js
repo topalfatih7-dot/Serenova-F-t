@@ -49,6 +49,23 @@ const PLAN_COLORS = {
   premium: '#4a8aad',
 }
 
+import { isHealthTestComplete } from '../data/healthTest'
+
+export function computeOnboardingFunnel(db) {
+  const members = db.members || []
+  const total = members.length
+  const withHealthTest = members.filter((m) => isHealthTestComplete(m.healthTest, m.gender, m.packageConfig)).length
+  const premium = members.filter((m) => isPaidMembership(m.membership)).length
+  const paidActive = members.filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active').length
+
+  return [
+    { step: 'Kayıtlı üye', count: total, pct: total ? 100 : 0 },
+    { step: 'Sağlık testi tamam', count: withHealthTest, pct: total ? Math.round((withHealthTest / total) * 100) : 0 },
+    { step: 'Ücretli üye', count: premium, pct: total ? Math.round((premium / total) * 100) : 0 },
+    { step: 'Aktif ücretli', count: paidActive, pct: total ? Math.round((paidActive / total) * 100) : 0 },
+  ]
+}
+
 export function computeAdminStats(db) {
   const members = db.members
   const memberIds = memberIdSet(members)

@@ -31,6 +31,21 @@ async function loadGemini() {
 
 const TZ = 'Europe/Istanbul'
 
+function slugifyTurkish(text) {
+  return String(text || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function todayIstanbul() {
   return new Date().toLocaleDateString('en-CA', { timeZone: TZ })
 }
@@ -58,8 +73,10 @@ function normalizePost(result) {
   const category = BLOG_CATEGORIES.includes(result.category) ? result.category : 'Yaşam'
   const accent = BLOG_ACCENTS.includes(result.accent) ? result.accent : 'brand'
   const cover = coverForCategory(category)
+  const title = String(result.title || 'Yeni Form Blog').slice(0, 120)
   return {
-    title: String(result.title || 'Yeni Form Blog').slice(0, 120),
+    title,
+    slug: slugifyTurkish(title),
     category,
     excerpt: String(result.excerpt || content.slice(0, 140)).slice(0, 200),
     author: String(result.author || 'Yeni Form Ekibi').slice(0, 60),

@@ -17,6 +17,7 @@ function isLastHealthQuestion(index, gender, packageConfig) {
 export default function HealthTestFlow({
   open,
   onClose,
+  layout = 'modal',
   gender = '',
   packageConfig = null,
   initialHealthTest,
@@ -72,28 +73,8 @@ export default function HealthTestFlow({
 
   if (!open) return null
 
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="fixed inset-x-0 bottom-0 z-[113] mx-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-cream-50 shadow-2xl sm:inset-x-4 sm:top-1/2 sm:bottom-auto sm:max-h-[88dvh] sm:-translate-y-1/2 sm:rounded-3xl"
-      >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
-          <p className="text-sm font-semibold text-cream-900">Sağlık Profili Testi</p>
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-cream-800/50 hover:bg-cream-100">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="p-4 sm:p-6">
+  const body = (
+        <div className={layout === 'page' ? '' : 'p-4 sm:p-6'}>
           <AnimatePresence mode="wait">
             {phase === 'questions' ? (
               <motion.div key={`q-${questionIndex}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
@@ -158,6 +139,39 @@ export default function HealthTestFlow({
             </button>
           </div>
         </div>
+  )
+
+  if (layout === 'page') {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-cream-200 bg-white p-4 shadow-sm sm:p-6">
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="fixed inset-x-0 bottom-0 z-[113] mx-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-cream-50 shadow-2xl sm:inset-x-4 sm:top-1/2 sm:bottom-auto sm:max-h-[88dvh] sm:-translate-y-1/2 sm:rounded-3xl"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+          <p className="text-sm font-semibold text-cream-900">Sağlık Profili Testi</p>
+          {onClose && (
+            <button type="button" onClick={onClose} className="rounded-full p-2 text-cream-800/50 hover:bg-cream-100">
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+        {body}
       </motion.div>
     </>
   )

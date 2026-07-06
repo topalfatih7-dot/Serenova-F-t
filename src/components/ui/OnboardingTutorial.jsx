@@ -14,7 +14,7 @@ const STEPS = [
     lightBg: 'bg-brand-50',
     textColor: 'text-brand-600',
     title: 'Hoş Geldiniz!',
-    subtitle: 'Dönüşüm Programı\'na başlıyorsunuz',
+    subtitle: 'Yeni Form\'a başlıyorsunuz',
     description: 'Bu kısa tur, programı nasıl kullanacağınızı gösterecek. Hazır mısınız?',
     icon: Sparkles,
   },

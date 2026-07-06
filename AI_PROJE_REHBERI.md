@@ -4,8 +4,8 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-06 · commit `db3ff786` (audit düzeltmeleri bu oturumda commit edilmedi)  
-> **Son oturum özeti:** §59 tam proje audit düzeltmeleri · §58 Admin premium · §57 kayıt UX · §56 RLS · §55 Stripe webhook
+> **Son güncelleme:** 2026-07-06 · §60 UX navigasyon + GA4 + SEO slug  
+> **Son oturum özeti:** §60 üye menüsü sadeleştirme · sağlık testi `/health-test` · randevular `/schedule` · §59 tam proje audit
 
 ---
 
@@ -20,6 +20,11 @@
 | RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
 | Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` private + imzalı URL |
 | Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
+| Üye navigasyon | ✅ | `memberNav.js` — Sağlık Testi `/health-test`, Randevular `/schedule?tab=` |
+| Sağlık testi akışı | ✅ | Kayıt sonrası zorunlu değil; menüden erişim + amber badge |
+| GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
+| Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
+| Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
 | Çıkış UX | ✅ | `loggingOut` — Sidebar, Profile, Staff/Admin shell, mobil menü |
 | Paket süre gösterimi | ✅ | `getPlanDurationLabel()` — landing, onboarding, süre seçici |
 | Admin → Premium Yönetimi | ✅ | **Tüm üyeler** (Basic dahil) listelenir; paket/süre/atama değiştirilebilir |
@@ -3909,4 +3914,20 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 **Dosya envanteri (yaklaşık):** 55 sayfa · 112+ component · 43 migration · 25 `api/` dosyası (12 endpoint + 13 `_` helper).
 
 **Entitlement API (üye):** `memberHasPhotoCalorieAccess(member)`, `memberHasManualCalorieAccess(member)`, `memberHasFullVideoAccess(member)` — tek `membership` string yerine `activePackages` union.
+
+---
+
+## §60 UX Navigasyon, GA4 ve SEO (2026-07-06)
+
+| Konu | Değişiklik |
+|------|------------|
+| **Üye menüsü** | `src/config/memberNav.js` — tek kaynak; Sidebar + `PanelMobileMenu` |
+| **Sağlık testi** | `/health-test` sayfası; kayıt/tutorial sonrası otomatik modal kaldırıldı; tamamlanmamışsa menüde `!` badge |
+| **Randevular** | `/schedule?tab=coach\|dietitian\|doctor` — `AppointmentsPage.jsx`; eski `/schedule/coach` → redirect |
+| **Üyelik mobil** | `MembershipComparisonAccordion.jsx` — accordion; VIP önerilen + 6 ay tasarruf rozeti |
+| **Hero video** | `HeroBackgroundVideo.jsx` — poster + `prefers-reduced-motion` / `prefers-reduced-data` |
+| **GA4** | `ga4Loader.js` Consent Mode; `api/ga4-report.js` admin Data API; `AdminAnalyticsPage` platform hunisi |
+| **Blog SEO** | `blogSlug.js` — slug URL; sitemap slug; UUID ile geriye dönük `findBlogPost` |
+
+**Üye rota güncellemesi (§6 / §36.8):** `/health-test`, `/schedule` (tab parametreli). Eski schedule sayfaları redirect için tutulur; rota `App.jsx` redirect kullanır.
 

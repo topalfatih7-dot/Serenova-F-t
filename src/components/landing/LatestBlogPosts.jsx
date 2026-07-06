@@ -4,6 +4,7 @@ import { ArrowRight, Clock, Sparkles } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { resolveBlogCover } from '../../utils/blogImages.js'
+import { blogPostPath } from '../../utils/blogSlug'
 
 export default function LatestBlogPosts({ posts = [], limit = 3 }) {
   const latest = [...posts]
@@ -63,7 +64,7 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="blog-card-vivid group flex min-h-0 flex-col md:h-full"
             >
-              <Link to={`/blog/${featured.id}`} className="flex h-full min-h-0 flex-col">
+              <Link to={blogPostPath(featured)} className="flex h-full min-h-0 flex-col">
                 <BlogCover
                   post={featured}
                   featured
@@ -101,7 +102,7 @@ export default function LatestBlogPosts({ posts = [], limit = 3 }) {
                 className="blog-card-vivid group flex min-h-0 flex-1 flex-col"
               >
                 <Link
-                  to={`/blog/${post.id}`}
+                  to={blogPostPath(post)}
                   className="flex h-full min-h-0 flex-col overflow-hidden md:flex-row md:items-stretch"
                 >
                   <BlogCover

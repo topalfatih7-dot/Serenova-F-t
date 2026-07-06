@@ -101,8 +101,10 @@ export default function PanelMobileMenu({
                     <item.icon className="h-4 w-4" />
                     <span className="flex-1">{item.label}</span>
                     {item.badgeCount > 0 && (
-                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                        {item.badgeCount > 9 ? '9+' : item.badgeCount}
+                      <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white ${
+                        item.healthTestBadge ? 'bg-amber-500' : 'bg-rose-500'
+                      }`}>
+                        {item.healthTestBadge ? '!' : item.badgeCount > 9 ? '9+' : item.badgeCount}
                       </span>
                     )}
                   </NavLink>

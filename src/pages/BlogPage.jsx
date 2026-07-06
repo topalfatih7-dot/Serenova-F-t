@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext'
 import { buildItemListSchema } from '../config/seo'
 import { BLOG_CATEGORIES } from '../data/blogPosts'
 import { resolveBlogCover } from '../utils/blogImages'
+import { blogPostPath } from '../utils/blogSlug'
 
 export default function BlogPage() {
   const { posts } = useApp()
@@ -29,7 +30,7 @@ export default function BlogPage() {
       buildItemListSchema({
         name: 'Yeni Form Blog',
         path: '/blog',
-        items: published.map((p) => ({ name: p.title, path: `/blog/${p.id}` })),
+        items: published.map((p) => ({ name: p.title, path: blogPostPath(p) })),
       }),
     [published],
   )
@@ -82,7 +83,7 @@ export default function BlogPage() {
         ) : (
           <div className="mt-10 space-y-8">
             {featured && (
-              <Link to={`/blog/${featured.id}`} className="group block overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
+              <Link to={blogPostPath(featured)} className="group block overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
                 <div className="grid md:grid-cols-2">
                   <BlogCover post={featured} className="min-h-[220px] md:min-h-full" />
                   <div className="flex flex-col justify-center p-6">
@@ -105,7 +106,7 @@ export default function BlogPage() {
             {rest.length > 0 && (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {rest.map((p) => (
-                  <Link key={p.id} to={`/blog/${p.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
+                  <Link key={p.id} to={blogPostPath(p)} className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm transition hover:shadow-md">
                     <BlogCover post={p} className="aspect-[16/10]" />
                     <div className="flex flex-1 flex-col p-5">
                       <span className="text-xs font-semibold text-brand-600">{p.category}</span>
