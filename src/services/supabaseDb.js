@@ -19,6 +19,11 @@ import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
 import { getApiAuthHeaders } from './apiAuth'
+import {
+  dedupeExerciseVideoUrlFetch,
+  readExerciseVideoUrlCache,
+  writeExerciseVideoUrlCache,
+} from './exerciseVideoUrlCache'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { normalizeE164 } from '../data/countryCodes'
@@ -1358,43 +1363,48 @@ export async function getExerciseVideoUrl(path) {
   const storagePath = normalizeExerciseVideoRef(path)
   if (!storagePath || !supabase || !isExerciseVideoStoragePath(storagePath)) return null
 
-  const refreshSession = async () => {
-    const { data } = await supabase.auth.getSession()
-    if (data?.session) return data.session
-    await supabase.auth.getUser()
-    const retry = await supabase.auth.getSession()
-    if (retry.data?.session) return retry.data.session
-    await supabase.auth.refreshSession().catch(() => {})
-    const refreshed = await supabase.auth.getSession()
-    return refreshed.data?.session ?? null
-  }
+  return dedupeExerciseVideoUrlFetch(storagePath, async () => {
+    const cached = readExerciseVideoUrlCache(storagePath)
+    if (cached) return cached
 
-  const tryApiSign = async () => {
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: await getApiAuthHeaders(),
-        body: JSON.stringify({ action: 'exercise-video-url', path: storagePath }),
-      })
-      const json = await res.json().catch(() => ({}))
-      return json.ok ? json.url : null
-    } catch {
+    const tryApiSign = async () => {
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: await getApiAuthHeaders(),
+          body: JSON.stringify({ action: 'exercise-video-url', path: storagePath }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (json.ok && json.url) {
+          writeExerciseVideoUrlCache(storagePath, json.url, json.expiresAt)
+          return json.url
+        }
+        return null
+      } catch {
+        return null
+      }
+    }
+
+    const tryClientSign = async () => {
+      let { data } = await supabase.auth.getSession()
+      if (!data?.session) {
+        await supabase.auth.getUser()
+        ;({ data } = await supabase.auth.getSession())
+      }
+      if (!data?.session) return null
+
+      const { data: signData, error } = await supabase.storage
+        .from('exercise-videos')
+        .createSignedUrl(storagePath, 3600)
+      if (!error && signData?.signedUrl) {
+        writeExerciseVideoUrlCache(storagePath, signData.signedUrl, Date.now() + 3600 * 1000)
+        return signData.signedUrl
+      }
       return null
     }
-  }
 
-  const tryClientSign = async () => {
-    const session = await refreshSession()
-    if (!session) return null
-    const { data, error } = await supabase.storage
-      .from('exercise-videos')
-      .createSignedUrl(storagePath, 3600)
-    if (!error && data?.signedUrl) return data.signedUrl
-    return null
-  }
-
-  // API (service role) daha guvenilir; client imzasi yedek.
-  return (await tryApiSign()) || (await tryClientSign())
+    return (await tryApiSign()) || (await tryClientSign())
+  })
 }
 
 export async function upsertExerciseTaxonomy(taxonomy) {

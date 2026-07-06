@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Loader2, Maximize2, Minimize2, Pause, Play, VideoOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../services/supabaseDb'
+import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { BRAND } from '../../config/brand'
 import { needsPseudoFullscreen } from '../../utils/videoPlayerPlatform'
 
@@ -376,13 +377,15 @@ export default function VideoPlayer({
   loop = true,
 }) {
   const { getExerciseVideoUrl } = useApp()
-  const [playUrl, setPlayUrl] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [loadError, setLoadError] = useState(false)
 
   const yt = url ? youTubeId(url) : null
   const storagePath = url && !yt ? resolveStoragePath(url) : null
   const useCustomControls = needsPseudoFullscreen() && !yt
+
+  const cachedUrl = storagePath && !videoPending ? readExerciseVideoUrlCache(storagePath) : null
+  const [playUrl, setPlayUrl] = useState(cachedUrl)
+  const [loading, setLoading] = useState(Boolean(storagePath && !videoPending && !cachedUrl))
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (!storagePath || videoPending) {
@@ -391,6 +394,15 @@ export default function VideoPlayer({
       setLoading(false)
       return undefined
     }
+
+    const fromCache = readExerciseVideoUrlCache(storagePath)
+    if (fromCache) {
+      setPlayUrl(fromCache)
+      setLoading(false)
+      setLoadError(false)
+      return undefined
+    }
+
     let cancelled = false
     setLoading(true)
     setLoadError(false)
@@ -452,7 +464,7 @@ export default function VideoPlayer({
     }
     return (
       <VideoWatermarkFrame {...frameProps}>
-        <video src={playUrl} />
+        <video src={playUrl} preload={autoPlay ? 'auto' : 'metadata'} />
       </VideoWatermarkFrame>
     )
   }

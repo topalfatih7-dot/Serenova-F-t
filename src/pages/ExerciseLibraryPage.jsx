@@ -12,6 +12,7 @@ import { DIFFICULTY_LABELS } from '../data/exerciseTurkish'
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
 import { useApp } from '../context/AppContext'
 import { memberHasFullVideoAccess } from '../utils/memberPackages'
+import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 
 const CATEGORY_COLORS = {
   default: 'from-violet-500 to-purple-600',
@@ -60,6 +61,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
       setUpgradeHint(true)
       return
     }
+    if (ex.videoUrl) prefetchExerciseVideo(ex.videoUrl)
     setActive(ex)
   }
 
@@ -203,6 +205,8 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
                 key={ex.id}
                 type="button"
                 onClick={() => openExercise(ex)}
+                onMouseEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                onFocus={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
               >
                 <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>

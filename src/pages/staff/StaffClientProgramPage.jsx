@@ -24,7 +24,7 @@ import {
   memberHasProgramTypePackage,
 } from '../../utils/programPackageScope'
 import { format, addDays } from 'date-fns'
-import { CYCLE_PLAN_LENGTH } from '../../utils/programSchedule'
+import { prefetchExerciseVideo } from '../../utils/exerciseVideoPrefetch'
 
 function createCartEntry(ex) {
   return {
@@ -237,6 +237,8 @@ export default function StaffClientProgramPage() {
                         <button
                           type="button"
                           onClick={() => setActiveExercise(ex)}
+                          onMouseEnter={() => prefetchExerciseVideo(ex.videoUrl)}
+                          onFocus={() => prefetchExerciseVideo(ex.videoUrl)}
                           className="shrink-0 rounded-lg p-1 text-brand-400 transition hover:bg-brand-50 hover:text-brand-600"
                           title="Videoyu izle"
                         >
@@ -252,6 +254,8 @@ export default function StaffClientProgramPage() {
                       <button
                         type="button"
                         onClick={() => setActiveExercise(ex)}
+                        onMouseEnter={() => prefetchExerciseVideo(ex.videoUrl)}
+                        onFocus={() => prefetchExerciseVideo(ex.videoUrl)}
                         className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
                       >
                         <Video className="h-3 w-3" />
@@ -302,6 +306,8 @@ export default function StaffClientProgramPage() {
                               videoUrl: e.videoUrl,
                               description: e.description,
                             })}
+                            onMouseEnter={() => prefetchExerciseVideo(e.videoUrl)}
+                            onFocus={() => prefetchExerciseVideo(e.videoUrl)}
                             className="rounded p-0.5 text-brand-400 hover:text-brand-600"
                             title="Videoyu izle"
                           >
