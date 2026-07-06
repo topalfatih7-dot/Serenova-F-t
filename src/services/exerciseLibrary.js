@@ -11,7 +11,7 @@ export const EXERCISE_PAGE_SIZE_ADMIN = 30
 export const EXERCISE_SORT_OPTIONS = [
   { id: 'name_asc', column: 'name', ascending: true, label: 'İsim (A → Z)' },
   { id: 'name_desc', column: 'name', ascending: false, label: 'İsim (Z → A)' },
-  { id: 'category_asc', column: 'category', ascending: true, label: 'Kategori' },
+  { id: 'category_asc', column: 'body_part', ascending: true, label: 'Hareket tipi' },
   { id: 'difficulty_asc', column: 'difficulty', ascending: true, label: 'Zorluk' },
   { id: 'newest', column: 'created_at', ascending: false, label: 'En yeni' },
 ]
@@ -34,9 +34,9 @@ function applyFilters(query, filters = {}) {
 
   if (search.trim()) {
     const q = `%${search.trim()}%`
-    query = query.or(`name.ilike.${q},description.ilike.${q},target_muscle.ilike.${q},equipment.ilike.${q}`)
+    query = query.or(`name.ilike.${q},equipment.ilike.${q}`)
   }
-  if (category && category !== 'Tümü') query = query.eq('category', category)
+  if (category && category !== 'Tümü') query = query.eq('body_part', category)
   if (difficulty && difficulty !== 'Tümü') query = query.eq('difficulty', difficulty)
   if (equipment) query = query.eq('equipment', equipment)
   if (videoReady === true) query = query.eq('video_pending', false)
@@ -129,18 +129,18 @@ export async function fetchCategoryCounts() {
   return counts
 }
 
-/** Kütüphanedeki benzersiz hareket tipleri (import kaynaklı) */
+/** Kütüphanedeki benzersiz hareket tipleri (kart rozeti = body_part) */
 export async function fetchDistinctCategories() {
   if (!supabase) return []
   const { data, error } = await supabase
     .from('exercises')
-    .select('category')
+    .select('body_part')
     .neq('metadata->>importStatus', 'deferred')
-    .not('category', 'is', null)
-    .neq('category', '')
+    .not('body_part', 'is', null)
+    .neq('body_part', '')
 
   if (error) return []
-  const set = new Set((data || []).map((r) => r.category).filter(Boolean))
+  const set = new Set((data || []).map((r) => r.body_part).filter(Boolean))
   return [...set].sort((a, b) => a.localeCompare(b, 'tr'))
 }
 

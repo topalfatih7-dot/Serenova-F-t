@@ -101,7 +101,7 @@ export default function ExerciseLibraryPage() {
                 <input
                   id="exercise-search"
                   type="search"
-                  placeholder="Hareket adı, kas veya ekipman ara..."
+                  placeholder="Hareket adı veya ekipman ara..."
                   value={searchInput}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="w-full rounded-xl border border-violet-100 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-300 focus:ring-2 focus:ring-violet-100"

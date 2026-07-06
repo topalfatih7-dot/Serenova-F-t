@@ -7,7 +7,7 @@ import PanelMobileMenu from './PanelMobileMenu'
 import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
-import { staffRoleMeta } from '../../utils/staffRoles'
+import { normalizeStaffRole, staffRoleMeta } from '../../utils/staffRoles'
 import { resolveFirstName } from '../../utils/displayName'
 import StaffForcePasswordChange from '../auth/StaffForcePasswordChange'
 import { supabase } from '../../services/supabaseClient'
@@ -21,11 +21,12 @@ function staffNavForRole(role) {
     { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
     { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   ]
-  if (role === 'coach' || role === 'dietitian') {
+  const normalizedRole = normalizeStaffRole(role)
+  if (normalizedRole === 'coach' || normalizedRole === 'dietitian') {
     base.push({ to: '/staff/collab-messages', icon: Users2, label: 'Ekip Mesajları', collabChatBadge: true })
   }
   base.push({ to: '/staff/admin-messages', icon: Shield, label: 'Admin Mesajları', adminChatBadge: true })
-  if (role === 'dietitian') {
+  if (normalizedRole === 'dietitian') {
     return [
       ...base,
       { to: '/staff/lists', icon: List, label: 'Listeler' },

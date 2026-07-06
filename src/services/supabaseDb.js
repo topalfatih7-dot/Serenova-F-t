@@ -100,12 +100,13 @@ function rowToMember(row) {
 }
 
 function rowToStaff(row) {
+  const data = row.data || {}
   return normalizeStaffProfile({
-    ...(row.data || {}),
+    ...data,
     id: row.id,
     email: row.email,
     name: row.name,
-    role: row.role,
+    role: row.role || data.role || 'coach',
     active: row.active,
   })
 }
@@ -1362,7 +1363,10 @@ export async function getExerciseVideoUrl(path) {
     if (data?.session) return data.session
     await supabase.auth.getUser()
     const retry = await supabase.auth.getSession()
-    return retry.data?.session ?? null
+    if (retry.data?.session) return retry.data.session
+    await supabase.auth.refreshSession().catch(() => {})
+    const refreshed = await supabase.auth.getSession()
+    return refreshed.data?.session ?? null
   }
 
   const tryApiSign = async () => {
