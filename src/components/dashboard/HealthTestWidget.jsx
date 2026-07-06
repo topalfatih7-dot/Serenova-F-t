@@ -28,6 +28,15 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
 
   const testComplete = isHealthTestComplete(user?.healthTest, user?.gender, packageConfig)
 
+  const handleProgressSave = useCallback(async ({ healthTest }) => {
+    if (saving) return
+    try {
+      await updateProfile({ healthTest })
+    } catch {
+      /* sessiz */
+    }
+  }, [updateProfile, saving])
+
   const handleComplete = useCallback(async ({ healthTest, healthAck, disclaimer }) => {
     setSaving(true)
     try {
@@ -101,6 +110,9 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
         gender={user.gender || ''}
         packageConfig={packageConfig}
         initialHealthTest={user.healthTest}
+        initialHealthAck={user.healthAck}
+        initialDisclaimer={user.disclaimer}
+        onProgressSave={handleProgressSave}
         onComplete={handleComplete}
         saving={saving}
       />

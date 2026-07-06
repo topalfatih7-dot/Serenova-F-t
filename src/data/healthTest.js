@@ -111,23 +111,54 @@ export function getApplicableQuestions(gender, packageConfig = null) {
   )
 }
 
-export function isQuestionAnswered(q, healthTest) {
+/** Soruda kayıtlı bir cevap var mı? (isteğe bağlı sorular dahil) */
+export function hasStoredAnswer(q, healthTest) {
   if (!q) return false
   const val = healthTest?.[q.key]
-  if (q.type === 'multi') {
-    if (!q.required) return true
-    return Array.isArray(val) && val.length > 0
-  }
-  if (q.type === 'text') {
-    if (!q.required) return true
-    return typeof val === 'string' && val.trim().length > 0
-  }
-  if (q.type === 'time') {
-    if (!q.required) return true
-    return typeof val === 'string' && val.trim().length > 0
-  }
-  if (!q.required) return true
+  if (q.type === 'multi') return Array.isArray(val) && val.length > 0
+  if (q.type === 'text' || q.type === 'time') return typeof val === 'string' && val.trim().length > 0
   return val !== '' && val != null
+}
+
+export function isQuestionAnswered(q, healthTest) {
+  if (!q) return false
+  if (!q.required) return true
+  return hasStoredAnswer(q, healthTest)
+}
+
+/** Yarım kalan testte soru indeksi ve onay fazını döndürür. */
+export function getHealthTestResumeState(healthTest, gender, packageConfig = null, opts = {}) {
+  const questions = getApplicableQuestions(gender, packageConfig)
+  if (!questions.length) return { questionIndex: 0, phase: 'questions' }
+
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+
+  let lastAnsweredIndex = -1
+  for (let i = 0; i < questions.length; i++) {
+    if (hasStoredAnswer(questions[i], ht)) lastAnsweredIndex = i
+  }
+
+  const firstRequiredGap = questions.findIndex((q) => q.required && !hasStoredAnswer(q, ht))
+  if (firstRequiredGap >= 0) {
+    return { questionIndex: firstRequiredGap, phase: 'questions' }
+  }
+
+  const allPass = questions.every((q) => isQuestionAnswered(q, ht))
+  if (allPass) {
+    if (!opts.healthAck || !opts.disclaimer) {
+      return { questionIndex: Math.max(0, questions.length - 1), phase: 'ack' }
+    }
+    return { questionIndex: 0, phase: 'questions' }
+  }
+
+  const nextIndex = Math.min(lastAnsweredIndex + 1, questions.length - 1)
+  return { questionIndex: Math.max(0, nextIndex), phase: 'questions' }
+}
+
+export function hasHealthTestProgress(healthTest, gender, packageConfig = null) {
+  const questions = getApplicableQuestions(gender, packageConfig)
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  return questions.some((q) => hasStoredAnswer(q, ht))
 }
 
 // Bir bölümün zorunlu soruları cevaplanmış mı?

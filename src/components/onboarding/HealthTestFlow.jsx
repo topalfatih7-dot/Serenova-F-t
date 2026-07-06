@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, Loader2 } from 'lucide-react'
 import HealthTestStep from './HealthTestStep'
@@ -6,6 +6,8 @@ import DisclaimerBox from '../ui/DisclaimerBox'
 import {
   EMPTY_HEALTH_TEST,
   getApplicableQuestions,
+  getHealthTestResumeState,
+  hasHealthTestProgress,
   isQuestionAnswered,
 } from '../../data/healthTest'
 
@@ -21,15 +23,56 @@ export default function HealthTestFlow({
   gender = '',
   packageConfig = null,
   initialHealthTest,
+  initialHealthAck = false,
+  initialDisclaimer = false,
+  onProgressSave,
   onComplete,
   saving = false,
 }) {
-  const [questionIndex, setQuestionIndex] = useState(0)
+  const resume = getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+    healthAck: initialHealthAck,
+    disclaimer: initialDisclaimer,
+  })
+  const [questionIndex, setQuestionIndex] = useState(resume.questionIndex)
   const [showErrors, setShowErrors] = useState(false)
   const [healthTest, setHealthTest] = useState(() => ({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
-  const [healthAck, setHealthAck] = useState(false)
-  const [disclaimer, setDisclaimer] = useState(false)
-  const [phase, setPhase] = useState('questions')
+  const [healthAck, setHealthAck] = useState(initialHealthAck)
+  const [disclaimer, setDisclaimer] = useState(initialDisclaimer)
+  const [phase, setPhase] = useState(resume.phase)
+  const healthTestRef = useRef(healthTest)
+  healthTestRef.current = healthTest
+  const prevOpenRef = useRef(open)
+
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      const next = getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+        healthAck: initialHealthAck,
+        disclaimer: initialDisclaimer,
+      })
+      setQuestionIndex(next.questionIndex)
+      setPhase(next.phase)
+      setHealthTest({ ...EMPTY_HEALTH_TEST, ...initialHealthTest })
+      setHealthAck(initialHealthAck)
+      setDisclaimer(initialDisclaimer)
+      setShowErrors(false)
+    }
+    prevOpenRef.current = open
+  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer])
+
+  const persistProgress = useCallback(() => {
+    if (!onProgressSave) return
+    const snapshot = healthTestRef.current
+    if (!hasHealthTestProgress(snapshot, gender, packageConfig)) return
+    onProgressSave({ healthTest: snapshot })
+  }, [onProgressSave, gender, packageConfig])
+
+  useEffect(() => {
+    if (!onProgressSave) return undefined
+    const timer = setTimeout(persistProgress, 700)
+    return () => clearTimeout(timer)
+  }, [healthTest, onProgressSave, persistProgress])
+
+  useEffect(() => () => persistProgress(), [persistProgress])
 
   const questions = getApplicableQuestions(gender, packageConfig)
   const currentQuestion = questions[questionIndex]
@@ -166,7 +209,11 @@ export default function HealthTestFlow({
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
           <p className="text-sm font-semibold text-cream-900">Sağlık Profili Testi</p>
           {onClose && (
-            <button type="button" onClick={onClose} className="rounded-full p-2 text-cream-800/50 hover:bg-cream-100">
+            <button
+              type="button"
+              onClick={() => { persistProgress(); onClose() }}
+              className="rounded-full p-2 text-cream-800/50 hover:bg-cream-100"
+            >
               <X className="h-5 w-5" />
             </button>
           )}
