@@ -9,7 +9,7 @@ import { isHealthTestComplete } from '../data/healthTest'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
 export default function HealthTestPage() {
-  const { user, packageConfig, updateProfile, createProgram, exercises, myPrograms } = useApp()
+  const { user, packageConfig, updateProfile, saveHealthTestProgress, createProgram, exercises, myPrograms } = useApp()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
@@ -18,11 +18,11 @@ export default function HealthTestPage() {
   const handleProgressSave = useCallback(async ({ healthTest }) => {
     if (saving) return
     try {
-      await updateProfile({ healthTest })
+      await saveHealthTestProgress(healthTest)
     } catch {
       /* sessiz — tamamlama sırasında tekrar kaydedilir */
     }
-  }, [updateProfile, saving])
+  }, [saveHealthTestProgress, saving])
 
   const handleComplete = useCallback(async ({ healthTest, healthAck, disclaimer }) => {
     setSaving(true)

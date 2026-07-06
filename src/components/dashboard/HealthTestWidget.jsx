@@ -11,7 +11,7 @@ import { useToast } from '../../context/ToastContext'
 const DISMISS_KEY = (userId) => `health_test_dismissed_${userId}`
 
 export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) {
-  const { updateProfile, createProgram, exercises, myPrograms, packageConfig } = useApp()
+  const { updateProfile, saveHealthTestProgress, createProgram, exercises, myPrograms, packageConfig } = useApp()
   const { toast } = useToast()
   const [flowOpen, setFlowOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -31,11 +31,11 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   const handleProgressSave = useCallback(async ({ healthTest }) => {
     if (saving) return
     try {
-      await updateProfile({ healthTest })
+      await saveHealthTestProgress(healthTest)
     } catch {
       /* sessiz */
     }
-  }, [updateProfile, saving])
+  }, [saveHealthTestProgress, saving])
 
   const handleComplete = useCallback(async ({ healthTest, healthAck, disclaimer }) => {
     setSaving(true)

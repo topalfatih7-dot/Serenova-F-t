@@ -42,6 +42,9 @@ export default function HealthTestFlow({
   const healthTestRef = useRef(healthTest)
   healthTestRef.current = healthTest
   const prevOpenRef = useRef(open)
+  const onProgressSaveRef = useRef(onProgressSave)
+  onProgressSaveRef.current = onProgressSave
+  const lastPersistedRef = useRef(JSON.stringify({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {
@@ -49,22 +52,28 @@ export default function HealthTestFlow({
         healthAck: initialHealthAck,
         disclaimer: initialDisclaimer,
       })
+      const merged = { ...EMPTY_HEALTH_TEST, ...initialHealthTest }
       setQuestionIndex(next.questionIndex)
       setPhase(next.phase)
-      setHealthTest({ ...EMPTY_HEALTH_TEST, ...initialHealthTest })
+      setHealthTest(merged)
       setHealthAck(initialHealthAck)
       setDisclaimer(initialDisclaimer)
       setShowErrors(false)
+      lastPersistedRef.current = JSON.stringify(merged)
     }
     prevOpenRef.current = open
   }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer])
 
   const persistProgress = useCallback(() => {
-    if (!onProgressSave) return
+    const save = onProgressSaveRef.current
+    if (!save) return
     const snapshot = healthTestRef.current
     if (!hasHealthTestProgress(snapshot, gender, packageConfig)) return
-    onProgressSave({ healthTest: snapshot })
-  }, [onProgressSave, gender, packageConfig])
+    const serialized = JSON.stringify(snapshot)
+    if (serialized === lastPersistedRef.current) return
+    lastPersistedRef.current = serialized
+    save({ healthTest: snapshot })
+  }, [gender, packageConfig])
 
   useEffect(() => {
     if (!onProgressSave) return undefined
@@ -72,7 +81,18 @@ export default function HealthTestFlow({
     return () => clearTimeout(timer)
   }, [healthTest, onProgressSave, persistProgress])
 
-  useEffect(() => () => persistProgress(), [persistProgress])
+  useEffect(() => {
+    return () => {
+      const save = onProgressSaveRef.current
+      if (!save) return
+      const snapshot = healthTestRef.current
+      if (!hasHealthTestProgress(snapshot, gender, packageConfig)) return
+      const serialized = JSON.stringify(snapshot)
+      if (serialized === lastPersistedRef.current) return
+      lastPersistedRef.current = serialized
+      save({ healthTest: snapshot })
+    }
+  }, [gender, packageConfig])
 
   const questions = getApplicableQuestions(gender, packageConfig)
   const currentQuestion = questions[questionIndex]

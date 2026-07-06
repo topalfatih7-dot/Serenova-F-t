@@ -998,6 +998,29 @@ export function AppProvider({ children }) {
     await patchCurrentRemote(profile)
   }, [currentMember, patchCurrentRemote])
 
+  /** Sağlık testi ara kaydı — tam reloadRemote yapmaz (loading döngüsünü önler). */
+  const saveHealthTestProgress = useCallback(async (healthTest) => {
+    const member = memberRef.current
+    if (!member) return
+
+    memberRef.current = { ...member, healthTest }
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        members: prev.members.map((m) => (
+          m.id === member.id ? { ...m, healthTest } : m
+        )),
+      }
+    })
+
+    try {
+      await sb.saveMemberPatch(member, { healthTest })
+    } catch {
+      await reloadRemote()
+    }
+  }, [reloadRemote])
+
   const updateSettings = useCallback(async (settingsPatch) => {
     if (!currentMember) return
     const nextSettings = { ...currentMember.settings, ...settingsPatch }
@@ -1203,6 +1226,7 @@ export function AppProvider({ children }) {
     toggleActivityCompletion,
     toggleMealCompletion,
     updateProfile,
+    saveHealthTestProgress,
     updateSettings,
     verificationStatus,
     sendEmailVerification,
@@ -1322,6 +1346,7 @@ export function AppProvider({ children }) {
     toggleActivityCompletion,
     toggleMealCompletion,
     updateProfile,
+    saveHealthTestProgress,
     updateSettings,
     sendEmailVerification,
     confirmEmailVerification,
