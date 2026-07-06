@@ -1,31 +1,47 @@
 /**
  * Vercel Serverless — Daily.co oda oluşturma + katılım tokeni.
- * Cloud recording etkin; personel (owner) katılınca otomatik kayıt başlar.
+ * Yalnızca oturum açmış kullanıcılar token alabilir.
  */
 
 import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
-import { dailyFetch, getDailyDomain } from './_dailyApi.js'
+
+const DAILY_API = 'https://api.daily.co/v1'
+
+function getDomain() {
+  return (process.env.VITE_DAILY_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
+}
+
+async function dailyFetch(path, body) {
+  const key = process.env.DAILY_API_KEY
+  if (!key) throw new Error('DAILY_API_KEY yok')
+  const res = await fetch(`${DAILY_API}${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
+  if (!res.ok) {
+    const err = await res.text().catch(() => '')
+    throw new Error(`Daily API ${res.status}: ${err.slice(0, 200)}`)
+  }
+  return res.json()
+}
 
 async function ensureRoom(roomName) {
   try {
-    const existing = await dailyFetch(`/rooms/${roomName}`)
-    if (existing?.config?.enable_recording) return existing
-    return dailyFetch(`/rooms/${roomName}`, {
-      properties: { enable_recording: 'cloud' },
-    }, 'POST')
+    // Oda zaten var mı?
+    return await dailyFetch(`/rooms/${roomName}`)
   } catch (e) {
     if (!String(e).includes('404')) throw e
   }
-
+  // Yoksa oluştur: private (token zorunlu), 2 saatlik otomatik silme
   return dailyFetch('/rooms', {
     name: roomName,
     privacy: 'private',
     properties: {
-      exp: Math.floor(Date.now() / 1000) + 7200,
+      exp: Math.floor(Date.now() / 1000) + 7200, // 2 saat sonra odayı kapat
       max_participants: 4,
       enable_screenshare: true,
       enable_chat: true,
-      enable_recording: 'cloud',
       start_video_off: false,
       start_audio_off: false,
     },
@@ -33,20 +49,15 @@ async function ensureRoom(roomName) {
 }
 
 async function createToken(roomName, userName, isOwner) {
-  const props = {
-    room_name: roomName,
-    user_name: userName || 'Katılımcı',
-    is_owner: Boolean(isOwner),
-    exp: Math.floor(Date.now() / 1000) + 3600,
-    nbf: Math.floor(Date.now() / 1000) - 60,
-  }
-
-  if (isOwner) {
-    props.start_cloud_recording = true
-    props.enable_recording = 'cloud'
-  }
-
-  return dailyFetch('/meeting-tokens', { properties: props })
+  return dailyFetch('/meeting-tokens', {
+    properties: {
+      room_name: roomName,
+      user_name: userName || 'Katılımcı',
+      is_owner: Boolean(isOwner),
+      exp: Math.floor(Date.now() / 1000) + 3600, // token 1 saat geçerli
+      nbf: Math.floor(Date.now() / 1000) - 60,
+    },
+  })
 }
 
 export default async function handler(req, res) {
@@ -70,13 +81,12 @@ export default async function handler(req, res) {
 
     await ensureRoom(roomName)
     const tokenData = await createToken(roomName, userName || 'Katılımcı', isOwner)
-    const domain = getDailyDomain()
+    const domain = getDomain()
 
     return res.status(200).json({
       ok: true,
       token: tokenData.token,
       roomUrl: domain ? `https://${domain}/${roomName}` : null,
-      recordingEnabled: true,
     })
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e.message || e) })

@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | ga4-report | session-attendance | session-recordings-list | session-recording-url
+ * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | ga4-report
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -12,9 +12,6 @@ import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
 import { handleGa4Report } from './_ga4Report.js'
-import { recordSessionAttendance } from './_sessionAttendance.js'
-import { listSessionRecordings, getSessionRecordingUrl } from './_sessionRecording.js'
-import { requireAdmin } from './_guards.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -307,50 +304,6 @@ async function handleExerciseVideoUrl(req, res, body) {
   })
 }
 
-async function handleSessionAttendance(req, res, body) {
-  const token = getBearerToken(req)
-  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
-
-  const admin = getSupabaseAdmin()
-  const { data: userData, error: userErr } = await admin.auth.getUser(token)
-  if (userErr || !userData?.user) {
-    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
-  }
-
-  const userId = userData.user.id
-  const { data: staffRow } = await admin.from('staff').select('id').eq('id', userId).maybeSingle()
-
-  const result = await recordSessionAttendance(admin, userId, {
-    sessionType: body.sessionType,
-    sessionId: body.sessionId,
-    event: body.event,
-  }, { isStaff: Boolean(staffRow) })
-
-  if (!result.ok) return res.status(400).json(result)
-  return res.status(200).json(result)
-}
-
-async function handleSessionRecordingsList(req, res, body) {
-  const auth = await requireAdmin(req)
-  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
-
-  const result = await listSessionRecordings({
-    sessionId: body.sessionId,
-    limit: body.limit,
-  })
-  if (!result.ok) return res.status(500).json(result)
-  return res.status(200).json(result)
-}
-
-async function handleSessionRecordingUrl(req, res, body) {
-  const auth = await requireAdmin(req)
-  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
-
-  const result = await getSessionRecordingUrl(body.recordingId)
-  if (!result.ok) return res.status(400).json(result)
-  return res.status(200).json(result)
-}
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -377,9 +330,6 @@ export default async function handler(req, res) {
     if (action === 'book-session') return handleBookSession(req, res, body)
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'ga4-report') return handleGa4Report(req, res, body)
-    if (action === 'session-attendance') return handleSessionAttendance(req, res, body)
-    if (action === 'session-recordings-list') return handleSessionRecordingsList(req, res, body)
-    if (action === 'session-recording-url') return handleSessionRecordingUrl(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

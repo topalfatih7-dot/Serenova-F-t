@@ -1,7 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle,
-  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2, Video,
+  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
@@ -22,7 +22,6 @@ const adminNav = [
   { to: '/admin/staff', icon: Stethoscope, label: 'Kadromuz' },
   { to: '/admin/payments', icon: Wallet, label: 'Finans & Ödemeler' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar' },
-  { to: '/admin/recordings', icon: Video, label: 'Görüşme Kayıtları' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri', supportBadge: true },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog' },

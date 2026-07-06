@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -12,7 +12,6 @@ import {
   buildRoomUrl, buildRoomName, isVideoCallConfigured, SESSION_TYPE_META, VIDEO_CALL_CONFIG, getDailyToken,
 } from '../config/videoCall'
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
-import { reportSessionAttendance } from '../services/sessionRecording'
 import { formatMinutesTr } from '../utils/formatDuration'
 import { normalizeSessionType, staffRoleMeta } from '../utils/staffRoles'
 import ParticipantTile, { CallControls, DeviceSelectors, WaitingTile } from '../components/video/VideoCallUI'
@@ -74,28 +73,18 @@ export default function VideoCallPage({ audience = 'member' }) {
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()
   const [meetingToken, setMeetingToken] = useState('')
-  const [tokenState, setTokenState] = useState('idle') // idle | loading | ready | failed
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const attendanceReported = useRef({ join: false, leave: false })
 
   useEffect(() => {
     if (!configured || context.error || !context.roomAccess?.ok) {
       setMeetingToken('')
-      setTokenState('idle')
       return
     }
     let cancelled = false
-    setTokenState('loading')
     const roomName = buildRoomName(context.sessionType, sessionId)
     getDailyToken(roomName, context.displayName, audience === 'staff')
-      .then((t) => {
-        if (cancelled) return
-        setMeetingToken(t || '')
-        setTokenState(t ? 'ready' : 'failed')
-      })
-      .catch(() => {
-        if (!cancelled) setTokenState('failed')
-      })
+      .then((t) => { if (!cancelled && t) setMeetingToken(t) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [configured, context.error, context.roomAccess?.ok, context.sessionType, sessionId, context.displayName, audience])
 
@@ -106,45 +95,11 @@ export default function VideoCallPage({ audience = 'member' }) {
     token: meetingToken,
   })
 
-  const session = context.session
-  const joinCheck = session ? canJoinSession(session) : { ok: false, reason: '' }
-  const canJoinLive = joinCheck.ok && tokenState !== 'loading'
-
-  useEffect(() => {
-    if (!call.isJoined || !session?.id || attendanceReported.current.join) return
-    attendanceReported.current.join = true
-    reportSessionAttendance({
-      sessionType: context.sessionType,
-      sessionId: session.id,
-      event: 'join',
-    })
-  }, [call.isJoined, context.sessionType, session?.id])
-
-  const handleLeaveMeeting = useCallback(async () => {
-    if (session?.id && !attendanceReported.current.leave) {
-      attendanceReported.current.leave = true
-      await reportSessionAttendance({
-        sessionType: context.sessionType,
-        sessionId: session.id,
-        event: 'leave',
-      })
-    }
-    await call.leaveMeeting()
-  }, [call, context.sessionType, session?.id])
-
   const backPath = audience === 'staff'
     ? '/staff'
     : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : sessionType === 'doctor' ? '/schedule?tab=doctor' : '/schedule?tab=coach'
 
-  const handleExit = async () => {
-    if (call.isJoined && session?.id && !attendanceReported.current.leave) {
-      attendanceReported.current.leave = true
-      await reportSessionAttendance({
-        sessionType: context.sessionType,
-        sessionId: session.id,
-        event: 'leave',
-      })
-    }
+  const handleExit = () => {
     call.destroy()
     navigate(backPath)
   }
@@ -179,9 +134,12 @@ export default function VideoCallPage({ audience = 'member' }) {
     )
   }
 
-  const sessionDate = session ? new Date(session.date) : new Date()
+  const { session } = context
+  const joinCheck = canJoinSession(session)
+  const sessionDate = new Date(session.date)
   const remote = call.participants.remote[0]
   const local = call.participants.local
+  const canJoinLive = context.roomAccess?.ok
 
   const statusBadge = call.isJoined
     ? { dot: 'bg-green-400 animate-pulse', text: 'Canlı' }
@@ -217,13 +175,8 @@ export default function VideoCallPage({ audience = 'member' }) {
           <div className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs sm:w-auto sm:justify-start sm:py-1">
             <span className={`h-2 w-2 shrink-0 rounded-full ${statusBadge.dot}`} />
             <span className="min-w-0 text-center leading-snug sm:text-left">
-              {call.isLoading ? 'Bağlanıyor…' : tokenState === 'loading' ? 'Oda hazırlanıyor…' : joinCheck.statusLabel || statusBadge.text}
+              {call.isLoading ? 'Bağlanıyor…' : joinCheck.statusLabel || statusBadge.text}
             </span>
-            {call.isJoined && audience === 'staff' && (
-              <span className="ml-1 rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                REC
-              </span>
-            )}
           </div>
         </div>
       </header>
@@ -306,17 +259,6 @@ export default function VideoCallPage({ audience = 'member' }) {
         {call.error && (
           <p className="mx-3 mb-2 shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-200 sm:mx-6 sm:text-sm">{call.error}</p>
         )}
-        {tokenState === 'failed' && (
-          <p className="mx-3 mb-2 shrink-0 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-200 sm:mx-6 sm:text-sm">
-            Güvenli oda tokeni alınamadı. DAILY_API_KEY tanımlıysa yeniden deneyin; aksi halde public modda devam edilir.
-          </p>
-        )}
-        {!joinCheck.ok && joinCheck.reason && (
-          <p className="mx-3 mb-2 shrink-0 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100 sm:mx-6 sm:text-sm">{joinCheck.reason}</p>
-        )}
-        <p className="mx-3 mb-2 shrink-0 text-center text-[10px] text-white/30 sm:mx-6">
-          Görüşmeler kalite ve güvenlik amacıyla kaydedilebilir.
-        </p>
       </div>
 
       <footer className="shrink-0 border-t border-white/10 bg-gray-900/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -329,7 +271,7 @@ export default function VideoCallPage({ audience = 'member' }) {
           onToggleCam={call.toggleCam}
           onToggleScreen={call.toggleScreenShare}
           onJoin={call.join}
-          onLeaveMeeting={handleLeaveMeeting}
+          onLeaveMeeting={call.leaveMeeting}
           showScreenShare
         />
       </footer>
