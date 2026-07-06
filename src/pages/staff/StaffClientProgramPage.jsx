@@ -245,9 +245,9 @@ export default function StaffClientProgramPage() {
                       )}
                     </div>
                     <p className="mt-2 font-semibold text-cream-900">{ex.name}</p>
-                    <p className="mt-1 line-clamp-2 flex-1 text-xs text-cream-800/55">
+                    <div className="mt-1 min-h-0 max-h-28 flex-1 overflow-y-auto overscroll-contain pr-0.5 text-xs leading-relaxed text-cream-800/55">
                       {ex.description || 'Açıklama yok'}
-                    </p>
+                    </div>
                     {(ex.videoUrl || ex.videoPending) && (
                       <button
                         type="button"
