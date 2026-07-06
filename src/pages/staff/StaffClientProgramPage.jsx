@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2,
+  ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2, PlayCircle,
 } from 'lucide-react'
+import Modal from '../../components/ui/Modal'
+import VideoPlayer from '../../components/ui/VideoPlayer'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useExerciseLibrary } from '../../hooks/useExerciseLibrary'
@@ -47,6 +49,7 @@ export default function StaffClientProgramPage() {
   const [cart, setCart] = useState([])
   const [sendOpen, setSendOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [activeExercise, setActiveExercise] = useState(null)
 
   const {
     items: filteredExercises,
@@ -230,12 +233,31 @@ export default function StaffClientProgramPage() {
                       <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">
                         {ex.category || 'Genel'}
                       </span>
-                      {ex.videoUrl && <Video className="h-4 w-4 shrink-0 text-brand-300" />}
+                      {(ex.videoUrl || ex.videoPending) && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveExercise(ex)}
+                          className="shrink-0 rounded-lg p-1 text-brand-400 transition hover:bg-brand-50 hover:text-brand-600"
+                          title="Videoyu izle"
+                        >
+                          <PlayCircle className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                     <p className="mt-2 font-semibold text-cream-900">{ex.name}</p>
                     <p className="mt-1 line-clamp-2 flex-1 text-xs text-cream-800/55">
                       {ex.description || 'Açıklama yok'}
                     </p>
+                    {(ex.videoUrl || ex.videoPending) && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveExercise(ex)}
+                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        <Video className="h-3 w-3" />
+                        {ex.videoPending ? 'Video yakında' : 'Videoyu izle'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => addToCart(ex)}
@@ -271,13 +293,29 @@ export default function StaffClientProgramPage() {
                   <div key={e.id} className="rounded-xl border border-cream-100 bg-cream-50 p-2.5">
                     <div className="flex items-start gap-2">
                       <p className="min-w-0 flex-1 truncate text-sm font-semibold text-cream-900">{e.exerciseName}</p>
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(e.id)}
-                        className="shrink-0 text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {e.videoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveExercise({
+                              name: e.exerciseName,
+                              videoUrl: e.videoUrl,
+                              description: e.description,
+                            })}
+                            className="rounded p-0.5 text-brand-400 hover:text-brand-600"
+                            title="Videoyu izle"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(e.id)}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <select
@@ -353,6 +391,22 @@ export default function StaffClientProgramPage() {
         onSubmit={handleSubmit}
         submitting={submitting}
       />
+
+      <Modal open={!!activeExercise} onClose={() => setActiveExercise(null)} title={activeExercise?.name} size="lg">
+        {activeExercise && (
+          <div className="space-y-4">
+            <VideoPlayer url={activeExercise.videoUrl} videoPending={activeExercise.videoPending} />
+            {activeExercise.category && (
+              <span className="inline-block rounded-full bg-sage-50 px-3 py-1 text-xs font-semibold text-sage-700">
+                {activeExercise.category}
+              </span>
+            )}
+            {activeExercise.description && (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-cream-800/80">{activeExercise.description}</p>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
