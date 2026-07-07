@@ -369,9 +369,11 @@ export default function AdminMessagesPage() {
                 <Eye className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{member?.name || thread.memberName || 'Danışan'}</p>
+                <p className="truncate text-sm font-bold">
+                  {thread.coachName || 'Koç'} · {thread.dietitianName || 'Diyetisyen'}
+                </p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
-                  {thread.coachName} ↔ {thread.dietitianName}
+                  Danışan adına: {member?.name || thread.memberName || '—'}
                 </p>
               </div>
             </motion.button>
@@ -444,8 +446,8 @@ export default function AdminMessagesPage() {
   const collabThreadPanel = activeCollab ? (
     <>
       <ChatThreadHeader
-        title={activeCollab.member?.name || activeCollab.thread.memberName || 'Danışan'}
-        subtitle={`${activeCollab.thread.coachName} ↔ ${activeCollab.thread.dietitianName} · Ekip koordinasyonu`}
+        title={`${activeCollab.thread.coachName || 'Koç'} · ${activeCollab.thread.dietitianName || 'Diyetisyen'}`}
+        subtitle={`Danışan adına: ${activeCollab.member?.name || activeCollab.thread.memberName || '—'} · Ekip koordinasyonu`}
         actions={(
           <button
             type="button"
@@ -464,6 +466,7 @@ export default function AdminMessagesPage() {
           messages={collabMessages}
           perspective="coach"
           readOnly
+          memberName={activeCollab.member?.name || activeCollab.thread.memberName}
           coachName={activeCollab.thread.coachName}
           dietitianName={activeCollab.thread.dietitianName}
         />

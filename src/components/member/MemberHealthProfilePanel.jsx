@@ -92,6 +92,7 @@ export default function MemberHealthProfilePanel({
   noteAuthor,
   onSaveNotes,
   notesSaving = false,
+  showHealthAnalysis = false,
 }) {
   if (!member) return null
 
@@ -144,7 +145,7 @@ export default function MemberHealthProfilePanel({
         </div>
       </div>
 
-      <AnalysisSummary analysis={member.healthAnalysis} />
+      {showHealthAnalysis && <AnalysisSummary analysis={member.healthAnalysis} />}
 
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">

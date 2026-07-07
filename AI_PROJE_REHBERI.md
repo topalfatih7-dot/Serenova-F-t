@@ -434,7 +434,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Koç randevuları | `/schedule/coach` | `CoachSchedulePage.jsx` | Liste, erteleme, iptal |
 | Diyetisyen randevuları | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Liste, erteleme, iptal |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Atanan programlar |
-| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Arama, filtre, video |
+| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Büyük dokunmatik filtre çubuğu (arama, tip, zorluk, ekipman, sıralama), video |
 | Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
@@ -452,6 +452,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |-------|------|-------|
 | Genel bakış | `/staff` | `staff/StaffOverviewPage.jsx` — danışan sayısı, haftalık randevular |
 | Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program/liste oluşturma, randevu yönetimi |
+| Danışan sağlık profili | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` (`audience="staff"`) — test cevapları + klinik notlar; **otomatik `healthAnalysis` gösterilmez** |
 | Mesajlar | `/staff/messages`, `/staff/messages/:memberId` | `staff/StaffMessagesPage.jsx` — danışan sohbetleri |
 | Admin mesajları | `/staff/admin-messages` | `staff/StaffAdminMessagesPage.jsx` — admin ↔ personel |
 | Programlar (koç) | `/staff/programs` | `staff/StaffProgramsPage.jsx` — diyetisyen `/staff/lists`'e yönlendirilir |
@@ -474,6 +475,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |-------|------|-------|-----------------|
 | Genel bakış | `/admin` | `AdminOverviewPage.jsx` | activities, tickets, members, platformStats |
 | Üyeler | `/admin/members` | `AdminMembersPage.jsx` | members — detay modal, `MemberHealthInsights`, pakete göre koç/diyetisyen satırları |
+| Üye sağlık profili | `/admin/members/:memberId/health` | `shared/MemberHealthProfilePage.jsx` (`audience="admin"`) — test cevapları + klinik notlar + **`healthAnalysis` özeti** |
 | Paketler | `/admin/plans` | `AdminPlansPage.jsx` | plans |
 | Premium Yönetimi | `/admin/premium` | `AdminPremiumPage.jsx` | **Tüm üyeler** (Basic dahil) — paket/süre değiştirme, koç/diyetisyen/doktor atama, `ManualSessionEditor` (§58) |
 | Başvurular | `/admin/applications` | `AdminApplicationsPage.jsx` | staff_applications, corporate_applications, contact_inquiries |
@@ -880,7 +882,7 @@ admin/AdminActivityPage.jsx
 
 **Admin:** `ManualSessionEditor`, `StaffFormModal`, `AdminActiveUsersPanel`
 
-**Member:** `MemberHealthInsights` — admin üye detayında sağlık analizi, hedefler, VKİ özeti
+**Member:** `MemberHealthInsights` — admin üye detayında sağlık analizi (`showHealthAnalysis`, varsayılan `true`); personel panelinde **`false`**. `MemberHealthProfilePanel` — tam sağlık sayfası; analiz yalnızca admin (`showHealthAnalysis={audience === 'admin'}`)
 
 **Calendar:** `SessionCard`, `CalendarView`
 
@@ -2596,9 +2598,21 @@ Legacy planlar (`gumus`, `altin`, `platinum`, `premium`) `coachMeetingsPerWeek` 
 ### 36.5 Yeni bileşen: MemberHealthInsights
 
 **Dosya:** `src/components/member/MemberHealthInsights.jsx`  
-**Kullanım:** `AdminMembersPage.jsx` üye detay modalında
+**Kullanım:** `AdminMembersPage.jsx` üye detay modalında; `StaffClientsPage.jsx` danışan özet modalında (`showHealthAnalysis={false}`)
 
-Gösterir: VKİ, form skoru, önerilen kalori, koç/diyetisyen öneri metinleri, sağlık testi bölümleri, hedefler, beslenme tercihleri, konum (opsiyonel).
+**Props:** `showLocation`, `compact`, **`showHealthAnalysis`** (varsayılan `true`)
+
+Gösterir: (opsiyonel) VKİ / form skoru / önerilen kalori / koç-diyetisyen öneri metinleri (`healthAnalysis` — **yalnızca `showHealthAnalysis=true` iken**), sağlık testi bölümleri, hedefler, beslenme tercihleri, konum.
+
+**Personel paneli kuralı:** Koç, diyetisyen ve doktor arayüzlerinde otomatik sağlık analizi (`members.data.healthAnalysis`) **gösterilmez**. Personel yalnızca ham test cevapları + kendi klinik notlarını (`healthStaffNotes`) görür. Analiz üretimi üye tarafında (`syncMemberHealthAssets`, dashboard) devam eder.
+
+**İlgili dosyalar:**
+| Dosya | Rol |
+|-------|-----|
+| `src/pages/shared/MemberHealthProfilePage.jsx` | Admin + personel ortak sayfa |
+| `src/components/member/MemberHealthProfilePanel.jsx` | Test cevapları, profil özeti, not paneli |
+| `src/components/member/HealthStaffNotesPanel.jsx` | Kalıcı klinik notlar (`members.data.healthStaffNotes[]`) |
+| `src/data/healthStaffNotes.js` | Not yardımcıları |
 
 ---
 
@@ -2659,7 +2673,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/schedule/coach` | `CoachSchedulePage.jsx` | Koç randevu listesi, ertele/iptal | `user.coachSessions` |
 | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Diyetisyen randevu listesi | `user.dietitianSessions` |
 | `/programs` | `ProgramsPage.jsx` | Atanan antrenman/beslenme programları | `programs` |
-| `/library` | `ExerciseLibraryPage.jsx` | Egzersiz arama, video oynatıcı | `exercises` |
+| `/library` | `ExerciseLibraryPage.jsx` | Egzersiz arama (büyük filtre çubuğu), video oynatıcı | `exercises` |
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
 | `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
 | `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
@@ -2674,6 +2688,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/staff` | `staff/StaffOverviewPage.jsx` | her ikisi | Danışan sayısı, yaklaşan randevular, `StaffVideoPanel` |
 | `/staff/profile` | `staff/StaffSelfProfilePage.jsx` | her ikisi | Personel profil düzenleme (`StaffProfileEditor`); şifre değişimi mevcut şifre ile |
 | `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
+| `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` | her ikisi | Sağlık testi cevapları + klinik notlar (**`healthAnalysis` yok**) |
 | `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
 | `/staff/lists` | `staff/StaffListsPage.jsx` | diyetisyen | Beslenme listeleri özeti |
 | `/staff/library` | `StaffLibraryGate.jsx` | koç→library, diyetisyen→lists | Rol bazlı yönlendirme |
@@ -2688,6 +2703,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 |------|-------|------------|-------------------|
 | `/admin` | `AdminOverviewPage.jsx` | KPI kartları, grafikler, açık ticket, atama eksik sayısı | `computeAdminStats`, Recharts |
 | `/admin/members` | `AdminMembersPage.jsx` | Üye arama/liste, detay modal (profil, paket, sağlık) | `MemberHealthInsights`, `AdminActiveUsersPanel` |
+| `/admin/members/:memberId/health` | `shared/MemberHealthProfilePage.jsx` | Tam sağlık profili + notlar + **`healthAnalysis` özeti** | `MemberHealthProfilePanel`, `HealthStaffNotesPanel` |
 | `/admin/plans` | `AdminPlansPage.jsx` | DB plan CRUD, fiyat kademeleri, özellik listesi | `upsertPlan` |
 | `/admin/premium` | `AdminPremiumPage.jsx` | **Tüm üyeler** — paket/süre değiştirme, koç/diyetisyen/doktor atama, manuel randevu | `EditPremiumModal`, `ManualSessionEditor`, `adminUpdatePremium` (§58) |
 | `/admin/applications` | `AdminApplicationsPage.jsx` | Kadro + kurumsal + iletişim başvuruları (onay/red, **CV PDF**) | 3 tab |
@@ -2847,6 +2863,18 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `src/pages/DashboardPage.jsx` | Genişletilmiş `HealthAnalysisPanel` |
 
 **Egzersiz kaynağı:** `exercises` tablosu → `supabaseDb.hydrate()` → `coachRecommendations.exercises[]`.
+
+### 38.3.1 Personel vs admin — sağlık profili görünümü
+
+| Alan | Üye (dashboard) | Admin | Koç / diyetisyen / doktor |
+|------|-----------------|-------|---------------------------|
+| `healthAnalysis` (VKİ, form skoru, kalori, AI özet) | ✅ Dashboard | ✅ Modal + `/admin/members/:id/health` | ❌ **Gösterilmez** |
+| Sağlık testi cevapları (`describeHealthTest`) | ✅ | ✅ | ✅ `/staff/clients/:id/health` |
+| Klinik notlar (`healthStaffNotes`) | ❌ | ✅ yaz/oku | ✅ yaz/oku |
+
+**Uygulama:** `MemberHealthInsights` → `showHealthAnalysis={false}` (`StaffClientsPage`). `MemberHealthProfilePanel` → `showHealthAnalysis={audience === 'admin'}`.
+
+**Yeni personel sağlık UI eklerken:** `healthAnalysis` bloğunu personel rotalarına **ekleme**; yalnızca admin ve üye dashboard'unda kalır.
 
 ### 38.4 Kalori AI (client güncellemesi)
 
@@ -3799,6 +3827,49 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 **Geriye uyumluluk:** Eski kayıtlardaki tam public URL'ler `VideoPlayer` içinde `/object/public/exercise-videos/` işaretinden path'e çevrilip imzalanıyor — ayrı bir veri migrasyon script'i gerekmedi. `ExerciseLibraryPage`, `AdminLibraryPage`, `CalendarPage`, `ProgramsPage` aynı `VideoPlayer` bileşenini kullandığı için tüm ekranlar otomatik korunuyor.
 
 **Bilinen sınır:** 1600 video ölçeğinde Supabase ücretsiz depolama/bant genişliği limitleri yetersiz kalabilir (ayrı konu — gerekirse Cloudflare R2'ye taşıma değerlendirilecek).
+
+### 54.1 Hareket kütüphanesi — filtre çubuğu UX (2026-07-07)
+
+**Dosyalar:** `src/pages/ExerciseLibraryPage.jsx`, `src/components/library/ExerciseCategorySelect.jsx`
+
+Üye (`/library`) ve koç (`/staff/library` → `staffMode`) aynı sayfayı kullanır. Filtre paneli mobil-first büyütüldü:
+
+| Öğe | Davranış |
+|-----|----------|
+| Etiketler (`Hareket Ara`, tip, zorluk…) | `text-sm` → `sm:text-base`, uppercase |
+| Arama / select | `min-h-[3rem]` (sm: `3.25rem`), `text-base` → `sm:text-lg` |
+| Renk | Her alan farklı tema (`FILTER_THEMES`): arama **violet**, tip **brand/mavi**, zorluk **amber**, ekipman **teal**, konum **rose**, makine **slate**, sıralama **indigo** |
+| Düzen | Arama **her zaman tam genişlik** (ayrı satır); filtreler alt satırda grid: `sm:` 2, `md:` 3, `xl:` 6 sütun |
+| `ExerciseCategorySelect` | `max-w-xs` kaldırıldı; tam genişlik, kütüphane ile aynı boy |
+
+Yeni filtre stili eklerken `ExerciseLibraryPage` içindeki `FILTER_THEMES` sabitlerini kullanın veya aynı ölçekleri koruyun.
+
+### 54.2 Hareket metadata — konum ve makine (`locations`, `requiresMachine`) (2026-07-07)
+
+**Kaynak:** `1600exercisedbpro/_metadata_enrichment/` (`CHANGELOG.md`, `classification_rules.md`, `summary.json`)
+
+1600exercisedbpro JSON kayıtlarına eklenen alanlar Supabase `exercises` tablosuna yansıtıldı:
+
+| Alan (JSON) | DB kolonu | Tip | Filtre UI |
+|-------------|-----------|-----|-----------|
+| `locations` | `locations` | `text[]` — `office`, `home`, `gym` | Konum → Ofis / Ev / Salon |
+| `requiresMachine` | `requires_machine` | `boolean` | Makine → Makinalı / Makinasız |
+
+**Dosyalar:** `supabase/migrations/20260707_exercises_location_machine.sql`, `scripts/import-exercises.mjs` (`normalizeLocations`), `src/services/exerciseLibrary.js` (`applyFilters`: `.contains('locations', …)`, `.eq('requires_machine', …)`), `src/data/exerciseTurkish.js` (Türkçe etiketler), `ExerciseLibraryPage.jsx`
+
+**Import:** Metadata upsert mevcut kayıtları günceller — video adımı gerekmez:
+```bash
+npm run db:migrate
+node scripts/import-exercises.mjs
+```
+
+**Hızlı backfill (yalnızca konum/makine, çeviri yok):**
+```bash
+npm run backfill:exercise-locations
+```
+Script: `scripts/backfill-exercise-locations.mjs` — tam import yerine `locations` + `requires_machine` alanlarını 1600exercisedbpro JSON'dan yazar.
+
+**Sınıflandırma kuralları (özet):** Makinalı = `machine`, `cable`, `smith machine`, `leverage machine`, `assisted`. Konum paket + ekipman kurallarıyla atanır (ofis paketi → ofis; kablo/makine → salon; dambıl/bant → ev+salon vb.). Detay: `1600exercisedbpro/_metadata_enrichment/classification_rules.md`.
 
 ---
 

@@ -28,6 +28,8 @@ function applyFilters(query, filters = {}) {
     category = '',
     difficulty = '',
     equipment = '',
+    location = '',
+    requiresMachine = '',
     videoReady = null,
     excludeDeferred = true,
   } = filters
@@ -39,6 +41,9 @@ function applyFilters(query, filters = {}) {
   if (category && category !== 'Tümü') query = query.eq('body_part', category)
   if (difficulty && difficulty !== 'Tümü') query = query.eq('difficulty', difficulty)
   if (equipment) query = query.eq('equipment', equipment)
+  if (location) query = query.contains('locations', [location])
+  if (requiresMachine === 'true') query = query.eq('requires_machine', true)
+  if (requiresMachine === 'false') query = query.eq('requires_machine', false)
   if (videoReady === true) query = query.eq('video_pending', false)
   if (videoReady === false) query = query.eq('video_pending', true)
   if (excludeDeferred) query = query.neq('metadata->>importStatus', 'deferred')
@@ -97,7 +102,7 @@ export async function fetchExercisesForAi(limit = 2000) {
   if (!supabase) return []
   const { data, error } = await supabase
     .from('exercises')
-    .select('id, name, description, category, body_part, sport_type, video_url, video_pending, equipment, target_muscle, difficulty, movement_category')
+    .select('id, name, description, category, body_part, sport_type, video_url, video_pending, equipment, target_muscle, difficulty, movement_category, locations, requires_machine')
     .neq('metadata->>importStatus', 'deferred')
     .order('name', { ascending: true })
     .limit(limit)

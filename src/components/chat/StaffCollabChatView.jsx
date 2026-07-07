@@ -27,6 +27,7 @@ export default function StaffCollabChatView({
   readOnly = false,
   live = false,
   remoteName = '',
+  memberName = '',
   coachName = '',
   dietitianName = '',
 }) {
@@ -64,7 +65,11 @@ export default function StaffCollabChatView({
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-cream-200 bg-cream-50/40 p-4 text-center">
             <Dumbbell className="h-10 w-10 text-cream-300" />
             <p className="mt-3 text-sm font-medium text-cream-800/70">
-              {remoteName ? `${remoteName} ile danışan koordinasyonuna başlayın` : 'İlk mesajınızı yazın'}
+              {remoteName && memberName
+                ? `${remoteName} ile ${memberName} adına koordinasyon`
+                : remoteName
+                  ? `${remoteName} ile danışan koordinasyonuna başlayın`
+                  : 'İlk mesajınızı yazın'}
             </p>
             <p className="mt-1 text-xs text-cream-800/45">Bu kanal yalnızca atanmış koç ve diyetisyen arasındadır.</p>
           </div>

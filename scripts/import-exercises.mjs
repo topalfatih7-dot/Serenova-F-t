@@ -99,6 +99,17 @@ function findLocalVideo(videoRootPath, sourceId) {
   return null
 }
 
+const VALID_LOCATIONS = new Set(['office', 'home', 'gym'])
+
+function normalizeLocations(locations) {
+  if (!Array.isArray(locations)) return []
+  return [...new Set(
+    locations
+      .map((loc) => String(loc || '').trim().toLowerCase())
+      .filter((loc) => VALID_LOCATIONS.has(loc)),
+  )]
+}
+
 async function mapRecord(ex, pack, { deferred = false, skipTranslate = false } = {}) {
   const sourceId = String(ex.id)
   const bodyPart = mapBodyPart(ex.bodyPart)
@@ -129,6 +140,8 @@ async function mapRecord(ex, pack, { deferred = false, skipTranslate = false } =
     difficulty: mapDifficulty(ex.difficulty),
     movement_category: tr.movement_category,
     instructions: content.instructions,
+    locations: normalizeLocations(ex.locations),
+    requires_machine: ex.requiresMachine === true,
     metadata: {
       legacyId: ex.legacyId || null,
       packSlug: ex.packSlug || pack.slug,

@@ -76,7 +76,7 @@ function AnalysisBlock({ analysis }) {
   )
 }
 
-export default function MemberHealthInsights({ member, showLocation = true, compact = false }) {
+export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = true }) {
   if (!member) return null
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
 
@@ -116,7 +116,7 @@ export default function MemberHealthInsights({ member, showLocation = true, comp
         </div>
       )}
 
-      <AnalysisBlock analysis={member.healthAnalysis} />
+      {showHealthAnalysis && <AnalysisBlock analysis={member.healthAnalysis} />}
 
       {member.progress?.weight?.length > 1 && (
         <div className="rounded-2xl border border-cream-100 bg-cream-50/80 p-4">

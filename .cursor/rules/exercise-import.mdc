@@ -30,3 +30,11 @@ alwaysApply: false
 ## Türkçe
 
 Import sırasında isimler `exerciseTurkish.js` ile Türkçeleştirilir; açıklama ve talimatlar `scripts/lib/exercise-translate-tr.mjs` ile İngilizce kaynaktan çevrilir.
+
+## Konum / makine metadata (1600exercisedbpro)
+
+- JSON: `locations` (`office`|`home`|`gym`), `requiresMachine` (`boolean`)
+- DB: `locations text[]`, `requires_machine boolean` — migration `20260707_exercises_location_machine.sql`
+- Import: `normalizeLocations()` + `requires_machine: ex.requiresMachine === true`
+- UI filtreleri: `ExerciseLibraryPage` + `exerciseLibrary.js` `applyFilters`
+- Kurallar: `1600exercisedbpro/_metadata_enrichment/classification_rules.md`

@@ -187,6 +187,8 @@ alter table public.exercises add column if not exists movement_category text def
 alter table public.exercises add column if not exists instructions jsonb default '[]'::jsonb;
 alter table public.exercises add column if not exists metadata jsonb default '{}'::jsonb;
 alter table public.exercises add column if not exists video_pending boolean default false;
+alter table public.exercises add column if not exists locations text[] default '{}';
+alter table public.exercises add column if not exists requires_machine boolean default false;
 
 -- Paketler (admin panelinden düzenlenebilir)
 create table if not exists public.plans (

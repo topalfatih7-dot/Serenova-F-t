@@ -17,6 +17,7 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "import:exercises": "node scripts/import-exercises.mjs",
     "import:exercises:dry": "node scripts/import-exercises.mjs --dry-run --upsert-taxonomy",
+    "backfill:exercise-locations": "node scripts/backfill-exercise-locations.mjs",
     "import:pack:gym100": "node scripts/import-exercises.mjs --pack=gym100 --upload-videos",
     "import:pack:w100": "node scripts/import-exercises.mjs --pack=w100 --upload-videos",
     "import:pack:w200": "node scripts/import-exercises.mjs --pack=w200 --upload-videos",

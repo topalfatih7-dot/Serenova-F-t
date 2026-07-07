@@ -51,6 +51,35 @@ export const DIFFICULTY_LABELS = {
   advanced: 'İleri',
 }
 
+/** Konum filtresi — 1600exercisedbpro `locations` alanı */
+export const EXERCISE_LOCATION_LABELS = {
+  office: 'Ofis',
+  home: 'Ev',
+  gym: 'Salon',
+}
+
+export const EXERCISE_LOCATION_OPTIONS = [
+  { id: 'office', label: 'Ofis' },
+  { id: 'home', label: 'Ev' },
+  { id: 'gym', label: 'Salon' },
+]
+
+/** Makine filtresi — `requiresMachine` */
+export const REQUIRES_MACHINE_LABELS = {
+  true: 'Makinalı',
+  false: 'Makinasız',
+}
+
+export const REQUIRES_MACHINE_OPTIONS = [
+  { id: 'true', label: 'Makinalı' },
+  { id: 'false', label: 'Makinasız' },
+]
+
+export function formatExerciseLocations(locations) {
+  if (!Array.isArray(locations) || !locations.length) return []
+  return locations.map((loc) => EXERCISE_LOCATION_LABELS[loc] || loc)
+}
+
 export const SORT_LABELS = {
   name_asc: 'İsim (A → Z)',
   name_desc: 'İsim (Z → A)',

@@ -11,6 +11,8 @@ const DEFAULT_FILTERS = {
   category: 'Tümü',
   difficulty: 'Tümü',
   equipment: '',
+  location: '',
+  requiresMachine: '',
   videoReady: null,
   excludeDeferred: true,
 }
@@ -63,6 +65,8 @@ export function useExerciseLibrary({
   const setCategory = useCallback((category) => patchFilters({ category }), [patchFilters])
   const setDifficulty = useCallback((difficulty) => patchFilters({ difficulty }), [patchFilters])
   const setEquipment = useCallback((equipment) => patchFilters({ equipment }), [patchFilters])
+  const setLocation = useCallback((location) => patchFilters({ location }), [patchFilters])
+  const setRequiresMachine = useCallback((requiresMachine) => patchFilters({ requiresMachine }), [patchFilters])
 
   const sortOptions = useMemo(() => EXERCISE_SORT_OPTIONS, [])
 
@@ -82,6 +86,8 @@ export function useExerciseLibrary({
     setCategory,
     setDifficulty,
     setEquipment,
+    setLocation,
+    setRequiresMachine,
     setPage,
     refresh: load,
     equipmentOptions,

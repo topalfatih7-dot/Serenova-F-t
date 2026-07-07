@@ -14,7 +14,7 @@ import {
   sortStaffCollabInbox,
   staffCollabThreadUnreadCount,
 } from '../../utils/chatAccess'
-import { normalizeStaffRole, staffRoleMeta } from '../../utils/staffRoles'
+import { normalizeStaffRole } from '../../utils/staffRoles'
 import { getStaffCollabMembers } from '../../services/staffCollabChatDb'
 import { getPlanLabel } from '../../data/membershipPlans'
 
@@ -119,8 +119,6 @@ export default function StaffCollabMessagesPage() {
     }
   }
 
-  const meta = staffRoleMeta(staffUser?.role)
-
   const inbox = (
     <>
       <div className="shrink-0 border-b border-cream-100 p-2.5 sm:p-3">
@@ -130,7 +128,7 @@ export default function StaffCollabMessagesPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Danışan veya ekip arkadaşı ara…"
+            placeholder="Personel veya danışan ara…"
             className="w-full rounded-xl border border-cream-200 py-2.5 pl-9 pr-3 text-base outline-none focus:border-brand-300 sm:text-sm"
           />
         </div>
@@ -153,9 +151,10 @@ export default function StaffCollabMessagesPage() {
                 <Users className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{member.name}</p>
+                <p className="truncate text-sm font-bold">{peer || peerLabel}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
-                  {peer || peerLabel} · {thread?.lastPreview || 'Henüz mesaj yok'}
+                  Danışan adına: {member.name}
+                  {thread?.lastPreview ? ` · ${thread.lastPreview}` : ''}
                 </p>
               </div>
               {unread > 0 && (
@@ -173,8 +172,8 @@ export default function StaffCollabMessagesPage() {
   const thread = active?.member ? (
     <>
       <ChatThreadHeader
-        title={active.member.name}
-        subtitle={`${meta.label} ↔ ${peerName} · ${getPlanLabel(active.member?.membership) || active.member?.membership}`}
+        title={peerName}
+        subtitle={`Danışan adına: ${active.member.name} · ${getPlanLabel(active.member?.membership) || active.member?.membership || '—'}`}
       />
       <ChatThreadBody>
         <StaffCollabChatView
@@ -184,6 +183,7 @@ export default function StaffCollabMessagesPage() {
           disabled={sending}
           live
           remoteName={peerName}
+          memberName={active.member.name}
           coachName={active.thread?.coachName}
           dietitianName={active.thread?.dietitianName}
         />
@@ -224,7 +224,7 @@ export default function StaffCollabMessagesPage() {
           <ChatWorkspace
             showThread={showThread}
             onBack={() => navigate('/staff/collab-messages')}
-            backLabel="Danışanlar"
+            backLabel="Ekip mesajları"
             inbox={inbox}
             thread={thread}
           />

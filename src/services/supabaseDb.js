@@ -420,6 +420,8 @@ export function rowToExercise(row) {
     difficulty: row.difficulty || 'beginner',
     movementCategory: row.movement_category || '',
     instructions: Array.isArray(row.instructions) ? row.instructions : [],
+    locations: Array.isArray(row.locations) ? row.locations : [],
+    requiresMachine: row.requires_machine === true,
     metadata: row.metadata || {},
     createdAt: row.created_at,
   }
@@ -1436,11 +1438,12 @@ export async function upsertExerciseTaxonomy(taxonomy) {
 // payload'ı opsiyonel sütunlar olmadan tekrar deneriz (category değeri korunur).
 const isMissingExerciseColumnError = (error) =>
   !!error && (error.code === 'PGRST204' || error.code === '42703' ||
-    /body_part|sport_type|source_pack|source_id|equipment|target_muscle|secondary_muscles|difficulty|movement_category|instructions|metadata|video_pending/.test(error.message || ''))
+    /body_part|sport_type|source_pack|source_id|equipment|target_muscle|secondary_muscles|difficulty|movement_category|instructions|metadata|video_pending|locations|requires_machine/.test(error.message || ''))
 
 const stripOptionalExerciseColumns = ({
   sport_type, body_part, source_pack, source_id, equipment, target_muscle,
   secondary_muscles, difficulty, movement_category, instructions, metadata, video_pending,
+  locations, requires_machine,
   ...rest
 }) => rest
 
@@ -1460,6 +1463,8 @@ function buildExercisePayload(data) {
     difficulty: data.difficulty || 'beginner',
     movement_category: data.movementCategory || 'strength',
     instructions: data.instructions || [],
+    locations: Array.isArray(data.locations) ? data.locations : [],
+    requires_machine: data.requiresMachine === true,
     metadata: data.metadata || {},
     video_pending: data.videoPending === true,
   }
