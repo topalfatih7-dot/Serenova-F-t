@@ -4,6 +4,7 @@ import { HeartPulse } from 'lucide-react'
 import HealthTestHub from '../components/onboarding/HealthTestHub'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestPage() {
   const { user, packageConfig } = useApp()
@@ -17,6 +18,7 @@ export default function HealthTestPage() {
         subtitle="Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz"
         icon={HeartPulse}
         accent="brand"
+        image={PANEL_IMAGES.healthTest}
       />
       <HealthTestHub
         gender={user.gender || ''}

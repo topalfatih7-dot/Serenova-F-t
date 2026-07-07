@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, Lock, ChevronDown } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
@@ -13,6 +13,7 @@ import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
 import { useApp } from '../context/AppContext'
 import { memberHasFullVideoAccess } from '../utils/memberPackages'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 const CATEGORY_COLORS = {
   default: 'from-violet-500 to-purple-600',
@@ -111,6 +112,18 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
   const [requiresMachine, setRequiresMachineLocal] = useState(FILTER_ALL)
   const [active, setActive] = useState(null)
   const [upgradeHint, setUpgradeHint] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (searchInput.trim()) count += 1
+    if (category !== EXERCISE_CATEGORY_ALL) count += 1
+    if (difficulty !== DIFFICULTY_ALL) count += 1
+    if (equipment) count += 1
+    if (location) count += 1
+    if (requiresMachine) count += 1
+    return count
+  }, [searchInput, category, difficulty, equipment, location, requiresMachine])
 
   const openExercise = (ex) => {
     if (!allowVideoPlayback && ex.videoUrl && !ex.videoPending) {
@@ -160,6 +173,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
         subtitle="Doğru formla çalışmak için hareket videolarını izleyin"
         icon={Library}
         accent="violet"
+        image={PANEL_IMAGES.library}
         actions={total > 0 ? (
           <div className="flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2 backdrop-blur-sm sm:w-auto">
             <Sparkles className="h-4 w-4 shrink-0 text-violet-200" />
@@ -182,7 +196,31 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
       )}
 
       <div className="rounded-2xl border-2 border-violet-200/60 bg-gradient-to-br from-violet-50/70 via-white to-purple-50/40 p-5 shadow-md shadow-violet-100/30 sm:rounded-3xl sm:p-6 lg:p-7">
-        <div className="flex flex-col gap-5 sm:gap-6">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          className="mb-0 flex w-full items-center justify-between gap-3 rounded-xl text-left transition active:scale-[0.99] sm:hidden"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm">
+              <Search className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold uppercase tracking-wide text-violet-800">Hareket Ara</p>
+              <p className="mt-0.5 truncate text-xs font-medium text-violet-700/65">
+                {filtersOpen
+                  ? 'Filtreleri gizle'
+                  : activeFilterCount > 0
+                    ? `${activeFilterCount} filtre aktif · dokunarak aç`
+                    : 'Arama ve filtreler · dokunarak aç'}
+              </p>
+            </div>
+          </div>
+          <ChevronDown className={`h-5 w-5 shrink-0 text-violet-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        <div className={`flex flex-col gap-5 sm:gap-6 ${filtersOpen ? 'mt-4' : 'hidden sm:flex'}`}>
           <div className="w-full min-w-0">
             <label htmlFor="exercise-search" className={FILTER_THEMES.search.label}>
               Hareket Ara

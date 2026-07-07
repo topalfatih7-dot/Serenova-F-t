@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { isHealthTestComplete } from '../data/healthTest'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestFinishPage() {
   const { user, packageConfig, updateProfile, createProgram, exercises, myPrograms } = useApp()
@@ -60,6 +61,7 @@ export default function HealthTestFinishPage() {
         subtitle="Tüm testleri tamamladınız — profilinizi kaydetmek için onayları işaretleyin"
         icon={HeartPulse}
         accent="brand"
+        image={PANEL_IMAGES.healthTest}
       />
       <div className="mx-auto max-w-lg space-y-4 rounded-3xl border border-cream-200 bg-white p-6 shadow-sm">
         <DisclaimerBox variant="prominent" />

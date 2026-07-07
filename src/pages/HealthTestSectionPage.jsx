@@ -10,6 +10,7 @@ import {
   isHealthTestComplete,
   isSectionComplete,
 } from '../data/healthTest'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestSectionPage() {
   const { sectionId } = useParams()
@@ -65,6 +66,7 @@ export default function HealthTestSectionPage() {
         subtitle={section.subtitle}
         icon={HeartPulse}
         accent="brand"
+        image={PANEL_IMAGES.healthTest}
       />
       {sectionDone && (
         <p className="mx-auto mb-4 max-w-2xl rounded-xl border border-sage-200 bg-sage-50/60 px-4 py-2.5 text-xs text-sage-800">

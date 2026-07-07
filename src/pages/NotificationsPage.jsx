@@ -6,6 +6,7 @@ import PanelPageHeader, { PanelFilterBar, PanelPageShell } from '../components/l
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { unlockNotificationAudio } from '../utils/browserNotifications'
+import { PANEL_IMAGES } from '../utils/panelImages'
 import { Bell, BellDot, Inbox, MailOpen } from 'lucide-react'
 
 const FILTERS = [
@@ -61,6 +62,7 @@ export default function NotificationsPage() {
         subtitle={unread > 0 ? `${unread} okunmamış mesajınız var` : 'Her şey güncel görünüyor'}
         icon={Bell}
         accent="violet"
+        image={PANEL_IMAGES.notifications}
         actions={unread > 0 ? (
           <button
             type="button"

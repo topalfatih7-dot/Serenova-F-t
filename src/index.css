@@ -278,6 +278,39 @@ body {
   pointer-events: none;
 }
 
+/* Panel karşılama fotoğrafı — sağdan sola gradyana karışır */
+.welcome-banner-photo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 55%;
+  pointer-events: none;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to left, black 42%, transparent 97%);
+  mask-image: linear-gradient(to left, black 42%, transparent 97%);
+}
+
+.welcome-banner-photo img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.welcome-banner-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.4), transparent 60%);
+}
+
+@media (max-width: 639px) {
+  .welcome-banner-photo {
+    width: 78%;
+    opacity: 0.35;
+  }
+}
+
 @keyframes welcomeGradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -1035,6 +1068,39 @@ body {
   background-size: 200% 100%;
   animation: promoShimmer 4.5s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* Başlık içi fotoğraf — sağdan sola gradyana karışır */
+.panel-page-header-photo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 52%;
+  pointer-events: none;
+  opacity: 0.85;
+  -webkit-mask-image: linear-gradient(to left, black 40%, transparent 97%);
+  mask-image: linear-gradient(to left, black 40%, transparent 97%);
+}
+
+.panel-page-header-photo img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.panel-page-header-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.35), transparent 65%);
+}
+
+@media (max-width: 639px) {
+  .panel-page-header-photo {
+    width: 72%;
+    opacity: 0.38;
+  }
 }
 
 .panel-page-header-icon {

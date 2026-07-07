@@ -20,6 +20,7 @@ import {
   CHAT_CONSENT_KEY,
 } from '../utils/chatAccess'
 import { staffRoleMeta } from '../utils/staffRoles'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 const CHAT_ROLES = ['coach', 'dietitian', 'doctor']
 
@@ -100,7 +101,7 @@ export default function MessagesPage() {
   if (!contacts.length) {
     return (
       <PanelPageShell>
-        <PanelPageHeader title="Mesajlar" subtitle="Paketinize atanmış uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" />
+        <PanelPageHeader title="Mesajlar" subtitle="Paketinize atanmış uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" image={PANEL_IMAGES.messages} />
         <EmptyState
           icon={MessageCircle}
           title="Mesajlaşma henüz aktif değil"
@@ -199,6 +200,7 @@ export default function MessagesPage() {
         icon={MessageCircle}
         accent="brand"
         compact={showThread && !isWide}
+        image={showThread && !isWide ? null : PANEL_IMAGES.messages}
       />
 
       {(!showThread || isWide) && (

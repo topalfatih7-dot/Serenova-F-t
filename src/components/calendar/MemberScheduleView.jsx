@@ -10,6 +10,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getCoachMeetingsPerMonth } from '../../data/membershipPlans'
 import { doctorBookingLimit, doctorLimitIsOneTime } from '../../utils/memberPackages'
+import { PANEL_IMAGES } from '../../utils/panelImages'
 import { Calendar, CalendarPlus, CalendarClock, History, LayoutGrid } from 'lucide-react'
 
 const SCHEDULE_FILTERS = [
@@ -80,6 +81,7 @@ export default function MemberScheduleView({
         subtitle={subtitle}
         icon={Icon}
         accent={accent}
+        image={type === 'coach' ? PANEL_IMAGES.scheduleCoach : type === 'doctor' ? PANEL_IMAGES.scheduleDoctor : PANEL_IMAGES.scheduleDietitian}
         actions={(
           <button
             type="button"

@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation } from '../utils/programSchedule'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
@@ -92,6 +93,7 @@ export default function ProgramsPage() {
         subtitle="Koçunuz ve diyetisyeniniz tarafından hazırlanan programlar"
         icon={ClipboardList}
         accent="brand"
+        image={PANEL_IMAGES.programs}
       />
 
       <div className="flex flex-wrap gap-2">
@@ -129,6 +131,13 @@ export default function ProgramsPage() {
                       : 'bg-gradient-to-br from-sage-600 via-emerald-500 to-teal-500'
                   }`}
                 >
+                  <img
+                    src={(isWorkout ? PANEL_IMAGES.programWorkout : PANEL_IMAGES.programNutrition).url}
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-overlay"
+                  />
                   <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" aria-hidden />
                   <div className="relative flex items-start gap-3 sm:gap-4">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-inner backdrop-blur-sm sm:h-12 sm:w-12 sm:rounded-2xl">

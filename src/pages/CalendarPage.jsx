@@ -21,6 +21,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { fetchExerciseById } from '../services/exerciseLibrary'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
+import { PANEL_IMAGES } from '../utils/panelImages'
 import {
   getProgramEntriesForDate,
   completionKey,
@@ -213,6 +214,7 @@ export default function CalendarPage() {
         subtitle="Koçunuz ve diyetisyeninizin hazırladığı günlük programlar"
         icon={Calendar}
         accent="brand"
+        image={PANEL_IMAGES.calendar}
         actions={monthStats.total > 0 ? (
           <div className="flex w-full items-center justify-between gap-3 rounded-xl bg-white/15 px-3 py-2.5 backdrop-blur-sm sm:w-auto sm:justify-start sm:rounded-2xl sm:px-4 sm:py-2.5">
             <div className="flex min-w-0 items-center gap-2.5">

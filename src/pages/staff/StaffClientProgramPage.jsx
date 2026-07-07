@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2, PlayCircle,
+  ChevronUp, ChevronDown, Minus, ListChecks,
 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import VideoPlayer from '../../components/ui/VideoPlayer'
@@ -25,6 +26,7 @@ import {
 } from '../../utils/programPackageScope'
 import { format, addDays } from 'date-fns'
 import { prefetchExerciseVideo } from '../../utils/exerciseVideoPrefetch'
+import { CYCLE_PLAN_LENGTH } from '../../utils/programSchedule'
 
 function createCartEntry(ex) {
   return {
@@ -40,6 +42,158 @@ function createCartEntry(ex) {
   }
 }
 
+/** Program Akışı — tek hareket satırı (mobile-first dokunmatik kontroller) */
+function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMove }) {
+  const iconBtn = 'flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 sm:h-8 sm:w-8'
+  return (
+    <div className="rounded-2xl border border-cream-100 bg-white p-3 shadow-sm">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-[11px] font-bold text-white shadow-sm">
+          {index + 1}
+        </span>
+        <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-cream-900">{entry.exerciseName}</p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => onMove(entry.id, -1)}
+            disabled={isFirst}
+            className={`${iconBtn} text-cream-800/45 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
+            aria-label="Yukarı taşı"
+          >
+            <ChevronUp className="h-4.5 w-4.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(entry.id, 1)}
+            disabled={isLast}
+            className={`${iconBtn} text-cream-800/45 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
+            aria-label="Aşağı taşı"
+          >
+            <ChevronDown className="h-4.5 w-4.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(entry.id)}
+            className={`${iconBtn} text-red-400 hover:bg-red-50 hover:text-red-600`}
+            aria-label="Hareketi çıkar"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="flex rounded-xl bg-cream-100 p-0.5" role="group" aria-label="Miktar tipi">
+          {[
+            { id: 'reps', label: 'Tekrar' },
+            { id: 'duration', label: 'Süre' },
+          ].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onPatch(entry.id, { amountType: m.id })}
+              className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition sm:py-1.5 ${
+                entry.amountType === m.id ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/55'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center overflow-hidden rounded-xl border border-cream-200 bg-white">
+          <button
+            type="button"
+            onClick={() => onPatch(entry.id, { amount: Math.max(1, (Number(entry.amount) || 1) - 1) })}
+            className="flex h-10 w-10 items-center justify-center text-cream-800/60 transition hover:bg-cream-50 active:scale-95 sm:h-8 sm:w-8"
+            aria-label="Azalt"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={entry.amount}
+            onChange={(ev) => onPatch(entry.id, { amount: Number(ev.target.value) || 1 })}
+            aria-label="Miktar"
+            className="h-10 w-12 border-x border-cream-100 bg-white text-center text-base font-bold text-cream-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:h-8 sm:text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => onPatch(entry.id, { amount: (Number(entry.amount) || 0) + 1 })}
+            className="flex h-10 w-10 items-center justify-center text-cream-800/60 transition hover:bg-cream-50 active:scale-95 sm:h-8 sm:w-8"
+            aria-label="Artır"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {entry.amountType === 'duration' ? (
+          <div className="flex rounded-xl bg-cream-100 p-0.5" role="group" aria-label="Süre birimi">
+            {['sn', 'dk'].map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => onPatch(entry.id, { durationUnit: u })}
+                className={`rounded-[10px] px-2.5 py-2 text-xs font-semibold transition sm:py-1.5 ${
+                  entry.durationUnit === u ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/55'
+                }`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className="text-xs font-medium text-cream-800/45">tekrar</span>
+        )}
+      </div>
+
+      <input
+        value={entry.note}
+        onChange={(ev) => onPatch(entry.id, { note: ev.target.value })}
+        placeholder="Not ekle (ör. 3 set, yavaş tempo)"
+        className="mt-2.5 w-full rounded-xl border border-cream-200 bg-cream-50/50 px-3 py-2.5 text-base outline-none transition placeholder:text-cream-800/35 focus:border-brand-300 focus:bg-white sm:py-2 sm:text-sm"
+      />
+    </div>
+  )
+}
+
+/** Program Akışı — hareket listesi + boş durum (masaüstü panel ve mobil sheet ortak) */
+function CartList({ cart, onPatch, onRemove, onMove, className = '' }) {
+  if (cart.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-10 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-400">
+          <Dumbbell className="h-6 w-6" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-cream-900">Henüz hareket yok</p>
+          <p className="mt-1 text-xs leading-relaxed text-cream-800/50">
+            Kütüphaneden hareket ekleyin —<br />seçtikleriniz burada sıralanır
+          </p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`space-y-2.5 ${className}`}>
+      {cart.map((e, idx) => (
+        <CartEntryCard
+          key={e.id}
+          entry={e}
+          index={idx}
+          isFirst={idx === 0}
+          isLast={idx === cart.length - 1}
+          onPatch={onPatch}
+          onRemove={onRemove}
+          onMove={onMove}
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function StaffClientProgramPage() {
   const { memberId } = useParams()
   const navigate = useNavigate()
@@ -47,6 +201,7 @@ export default function StaffClientProgramPage() {
   const { toast } = useToast()
   const [searchInput, setSearchInput] = useState('')
   const [cart, setCart] = useState([])
+  const [cartOpen, setCartOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [activeExercise, setActiveExercise] = useState(null)
@@ -106,6 +261,23 @@ export default function StaffClientProgramPage() {
 
   const removeFromCart = (id) => {
     setCart((list) => list.filter((e) => e.id !== id))
+  }
+
+  const moveCartItem = (id, dir) => {
+    setCart((list) => {
+      const i = list.findIndex((e) => e.id === id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= list.length) return list
+      const next = [...list]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+
+  const openSend = () => {
+    if (!cart.length) { toast('En az bir hareket ekleyin', 'error'); return }
+    setCartOpen(false)
+    setSendOpen(true)
   }
 
   const handleSubmit = async (data) => {
@@ -283,110 +455,93 @@ export default function StaffClientProgramPage() {
           )}
         </div>
 
-        <aside className="xl:sticky xl:top-4 xl:self-start">
-          <div className="rounded-2xl border border-cream-200 bg-white p-4 shadow-sm">
-            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-              <Dumbbell className="h-4 w-4 text-brand-500" />
-              Program Sepeti
-            </p>
-            {cart.length === 0 ? (
-              <p className="py-8 text-center text-xs text-cream-800/45">Kütüphaneden hareket ekleyin</p>
-            ) : (
-              <div className="max-h-[min(60vh,520px)] space-y-2 overflow-y-auto">
-                {cart.map((e) => (
-                  <div key={e.id} className="rounded-xl border border-cream-100 bg-cream-50 p-2.5">
-                    <div className="flex items-start gap-2">
-                      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-cream-900">{e.exerciseName}</p>
-                      <div className="flex shrink-0 items-center gap-1">
-                        {e.videoUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveExercise({
-                              name: e.exerciseName,
-                              videoUrl: e.videoUrl,
-                              description: e.description,
-                            })}
-                            onMouseEnter={() => prefetchExerciseVideo(e.videoUrl)}
-                            onFocus={() => prefetchExerciseVideo(e.videoUrl)}
-                            className="rounded p-0.5 text-brand-400 hover:text-brand-600"
-                            title="Videoyu izle"
-                          >
-                            <PlayCircle className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(e.id)}
-                          className="text-red-400 hover:text-red-600"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <select
-                        value={e.amountType}
-                        onChange={(ev) => updateCartItem(e.id, { amountType: ev.target.value })}
-                        className="rounded-md border border-cream-200 bg-white px-2 py-1 text-[11px]"
-                      >
-                        <option value="reps">Tekrar</option>
-                        <option value="duration">Süre</option>
-                      </select>
-                      <input
-                        type="number"
-                        min={1}
-                        value={e.amount}
-                        onChange={(ev) => updateCartItem(e.id, { amount: Number(ev.target.value) || 1 })}
-                        className="w-14 rounded-md border border-cream-200 bg-white px-2 py-1 text-center text-sm"
-                      />
-                      {e.amountType === 'duration' && (
-                        <select
-                          value={e.durationUnit}
-                          onChange={(ev) => updateCartItem(e.id, { durationUnit: ev.target.value })}
-                          className="rounded-md border border-cream-200 bg-white px-2 py-1 text-[11px]"
-                        >
-                          <option value="sn">sn</option>
-                          <option value="dk">dk</option>
-                        </select>
-                      )}
-                    </div>
-                    <input
-                      value={e.note}
-                      onChange={(ev) => updateCartItem(e.id, { note: ev.target.value })}
-                      placeholder="Not (ör. 3 set)"
-                      className="mt-2 w-full rounded-md border border-cream-200 bg-white px-2 py-1 text-xs"
-                    />
-                  </div>
-                ))}
+        {/* Program Akışı — masaüstü paneli (mobilde alttaki bar + sheet kullanılır) */}
+        <aside className="hidden xl:sticky xl:top-4 xl:block xl:self-start">
+          <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm">
+            <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-500 to-blue-500 px-4 py-3.5">
+              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/10 blur-xl" aria-hidden />
+              <div className="relative flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-sm">
+                  <ListChecks className="h-4.5 w-4.5" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-white">Program Akışı</p>
+                  <p className="text-[11px] text-white/75">
+                    {cart.length > 0 ? `${cart.length} hareket · oklarla sıralayın` : 'Hareket ekleyerek başlayın'}
+                  </p>
+                </div>
               </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!cart.length) { toast('En az bir hareket ekleyin', 'error'); return }
-                setSendOpen(true)
-              }}
-              className="mt-4 hidden w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 xl:flex"
-            >
-              <Send className="h-4 w-4" /> Gönder
-            </button>
+            </div>
+            <div className="p-3.5">
+              <CartList
+                cart={cart}
+                onPatch={updateCartItem}
+                onRemove={removeFromCart}
+                onMove={moveCartItem}
+                className="max-h-[min(58vh,500px)] overflow-y-auto pr-0.5"
+              />
+              <button
+                type="button"
+                onClick={openSend}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105 active:scale-[0.99]"
+              >
+                <Send className="h-4 w-4" /> Programı Gönder
+              </button>
+            </div>
           </div>
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-cream-200 bg-white/95 p-4 backdrop-blur xl:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            if (!cart.length) { toast('En az bir hareket ekleyin', 'error'); return }
-            setSendOpen(true)
-          }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-sm font-semibold text-white"
-        >
-          <Send className="h-4 w-4" /> Gönder ({cart.length} hareket)
-        </button>
+      {/* Mobil aksiyon barı — Program Akışı + Gönder */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-cream-200 bg-white/95 px-3 pt-3 backdrop-blur pb-[max(0.75rem,env(safe-area-inset-bottom))] xl:hidden">
+        <div className="mx-auto flex max-w-xl gap-2">
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="relative flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-brand-200 bg-white py-3 text-sm font-semibold text-brand-700 transition active:scale-[0.98]"
+          >
+            <ShoppingBag className="h-4 w-4" /> Program Akışı
+            {cart.length > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white shadow">
+                {cart.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={openSend}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
+          >
+            <Send className="h-4 w-4" /> Gönder
+          </button>
+        </div>
       </div>
+
+      {/* Program Akışı — mobil alt sayfa (bottom sheet) */}
+      <Modal
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        title={`Program Akışı${cart.length ? ` (${cart.length})` : ''}`}
+        size="md"
+      >
+        <div className="space-y-4">
+          <CartList
+            cart={cart}
+            onPatch={updateCartItem}
+            onRemove={removeFromCart}
+            onMove={moveCartItem}
+          />
+          {cart.length > 0 && (
+            <button
+              type="button"
+              onClick={openSend}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.99]"
+            >
+              <Send className="h-4 w-4" /> Programı Gönder ({cart.length} hareket)
+            </button>
+          )}
+        </div>
+      </Modal>
 
       <CoachProgramSendModal
         open={sendOpen}

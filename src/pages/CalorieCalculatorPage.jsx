@@ -15,6 +15,7 @@ import {
   formatAnalysisReply,
 } from '../services/calorieChat'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import { PANEL_IMAGES } from '../utils/panelImages'
 
 function estimateMacros(totalCal) {
   return {
@@ -199,6 +200,7 @@ export default function CalorieCalculatorPage() {
         subtitle={isPlatinum ? 'Yazarak veya fotoğrafla tahmini kalori hesabı' : 'Ne yediğinizi yazın, tahmini kalori değerlerini görün'}
         icon={Flame}
         accent="flame"
+        image={PANEL_IMAGES.calorie}
       />
 
       <div className="flex glass-card-solid p-1.5">

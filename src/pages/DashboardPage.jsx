@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
-  ClipboardList, Star, CalendarDays, Play,
+  ClipboardList, Star, CalendarDays, Play, BookOpen, Sparkles,
+  ArrowRight, Clock, HeartPulse,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -14,8 +15,24 @@ import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
-import { format } from 'date-fns'
+import { PANEL_IMAGES } from '../utils/panelImages'
+import { resolveBlogCover } from '../utils/blogImages'
+import { blogPostPath } from '../utils/blogSlug'
+import { format, getDayOfYear } from 'date-fns'
 import { tr } from 'date-fns/locale'
+
+const DAILY_TIPS = [
+  'Bugün 10 dakikalık bir yürüyüş bile metabolizmanızı canlandırır.',
+  'Su içmeyi unutmayın — güne 1 bardak suyla başlamak sindirimi destekler.',
+  'Kaliteli uyku, antrenman kadar önemlidir. Bu gece erken yatmayı deneyin.',
+  'Öğünlerinizi yavaş yemek tokluk hissini %20 artırır.',
+  'Küçük hedefler koyun: bugün sadece bir sağlıklı tercih yapın.',
+  'Esneme hareketleri gün içindeki gerginliği azaltır — 5 dakika ayırın.',
+  'Protein ağırlıklı kahvaltı gün boyu tatlı krizlerini azaltır.',
+  'Merdiveni tercih edin — günlük küçük hareketler birikir.',
+  'İlerlemenizi takip edin: bugünkü kilonuzu veya öğününüzü kaydedin.',
+  'Kendinize nazik olun — dönüşüm bir maraton, sprint değil.',
+]
 
 function ChartEmpty({ message = 'Henüz veri yok' }) {
   return (
@@ -31,7 +48,7 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
-    exerciseCount, updateProfile, createProgram,
+    exerciseCount, updateProfile, createProgram, posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
 
@@ -73,12 +90,48 @@ export default function DashboardPage() {
   const planLabel = getPlanLabel(membership)
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
 
+  const today = new Date()
+  const dailyTip = DAILY_TIPS[getDayOfYear(today) % DAILY_TIPS.length]
+  const latestPosts = (posts || [])
+    .filter((p) => p.published)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 3)
+
   return (
     <div className="space-y-6">
       <div className="welcome-banner">
-        <p className="text-sm font-medium text-white/80">Hoş geldiniz</p>
-        <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{firstName}, bugün harika bir gün olabilir</h1>
-        <p className="mt-2 text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
+        <div className="welcome-banner-photo" aria-hidden>
+          <img src={PANEL_IMAGES.dashboardHero.url} alt="" />
+        </div>
+        <div className="relative">
+          <p className="text-sm font-medium text-white/80">{format(today, 'd MMMM yyyy, EEEE', { locale: tr })}</p>
+          <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{firstName}, bugün harika bir gün olabilir</h1>
+          <p className="mt-2 max-w-xl text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to="/calendar"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-brand-700 shadow-md transition hover:scale-[1.03] sm:text-sm"
+            >
+              <CalendarDays className="h-4 w-4" /> Bugünkü Programım
+            </Link>
+            <Link
+              to="/health-test"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/25 sm:text-sm"
+            >
+              <HeartPulse className="h-4 w-4" /> Sağlık Testleri
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow">
+          <Sparkles className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-700/70">Günün ipucu</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-cream-900">{dailyTip}</p>
+        </div>
       </div>
 
       {membership === 'free' && freeTrialExpiresAt && !isFreeTrialExpired && (() => {
@@ -198,6 +251,51 @@ export default function DashboardPage() {
           </div>
         </button>
       </div>
+
+      {latestPosts.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 font-semibold text-cream-900">
+              <BookOpen className="h-5 w-5 text-brand-500" /> Sizin için okumalar
+            </h3>
+            <Link to="/blog" className="flex items-center gap-1 text-sm font-semibold text-brand-600 transition-all hover:gap-2 hover:text-brand-700">
+              Tümünü gör <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {latestPosts.map((p) => {
+              const cover = resolveBlogCover(p)
+              return (
+                <Link
+                  key={p.id}
+                  to={blogPostPath(p)}
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+                >
+                  <div className="relative aspect-[16/9] overflow-hidden bg-cream-100">
+                    <img
+                      src={cover.url}
+                      alt={cover.alt}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                    <span className="absolute bottom-2.5 left-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-bold text-brand-700 backdrop-blur">
+                      {p.category}
+                    </span>
+                  </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <h4 className="font-display text-sm font-bold leading-snug text-cream-900 group-hover:text-brand-700">{p.title}</h4>
+                    <p className="mt-1.5 line-clamp-2 flex-1 text-xs text-cream-800/60">{p.excerpt}</p>
+                    <span className="mt-3 flex items-center gap-1 text-[11px] text-cream-800/50">
+                      <Clock className="h-3 w-3" /> {p.readMinutes} dk okuma
+                    </span>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <SuccessStorySubmitModal open={storyOpen} onClose={() => setStoryOpen(false)} />
     </div>

@@ -6,6 +6,7 @@ import Modal from '../components/ui/Modal'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { PANEL_IMAGES } from '../utils/panelImages'
 import { AlertTriangle, MessageSquare, ChevronRight } from 'lucide-react'
 
 const TICKET_STATUS = {
@@ -41,6 +42,7 @@ export default function SupportPage() {
         subtitle="Talepleriniz anlık olarak destek ekibine iletilir"
         icon={MessageSquare}
         accent="violet"
+        image={PANEL_IMAGES.support}
       />
 
       {tickets.length > 0 && (

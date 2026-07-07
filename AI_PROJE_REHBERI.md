@@ -4,12 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-07 · §61 takvim hareket modalı · sağlık testi birleştirme · UX iyileştirmeleri  
-> **Son oturum özeti:** Takvim `ExerciseDetailModal` + xs thumbnail · diyetisyen test bölüm birleştirme · scroll/menü · kütüphane filtreleri
+> **Son güncelleme:** 2026-07-08 · üye paneli görselleri · koç Program Akışı mobile-first · kütüphane mobil filtre  
+> **Son oturum özeti:** `panelImages.js` + `PanelPageHeader image` · Dashboard foto-hero / günün ipucu / blog · `StaffClientProgramPage` sepet (mobil bar + sheet, sıralama, video yok) · profil kapak kadrajı · kütüphane filtre accordion (mobil)
 
 ---
 
-## Son Durum Özeti (2026-07-07)
+## Son Durum Özeti (2026-07-08)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -28,6 +28,9 @@
 | Personel sağlık görünümü | ✅ | `showHealthAnalysis={false}` personelde; admin'de tam analiz |
 | Ekip mesajları etiketleme | ✅ | Personel adı birincil; alt başlık `Danışan adına: …` |
 | Üye navigasyon | ✅ | `memberNav.js` — Sağlık Testi `/health-test`, Randevular `/schedule?tab=` |
+| Üye paneli görselleri | ✅ | `src/utils/panelImages.js` (Unsplash CDN); `PanelPageHeader` `image` prop + `.panel-page-header-photo` (`index.css`); Dashboard `.welcome-banner-photo`; takvim, sağlık, program, mesaj vb. sayfa başlıkları |
+| Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
+| Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -48,7 +51,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§53–61 Değişiklik Günlüğü** (2026-07-03 — 2026-07-07); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+6. Son değişiklikler için **§53–62 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
 7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
@@ -436,16 +439,16 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya | Ana işlev |
 |-------|------|-------|-----------|
-| Dashboard | `/dashboard` | `DashboardPage.jsx` | Sağlık analizi, kilo/antrenman/**öğün** grafikleri, görevler, yaklaşan seanslar |
+| Dashboard | `/dashboard` | `DashboardPage.jsx` | Foto-hero (`welcome-banner` + `PANEL_IMAGES.dashboardHero`), günün ipucu, blog önerileri; grafikler, görevler, yaklaşan seanslar |
 | Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi \| Koç Programı**; thumbnail → `ExerciseDetailModal`; **İzle** inline video |
 | Randevular | `/schedule?tab=` | `AppointmentsPage.jsx` | Koç / diyetisyen / doktor sekmeleri; eski `/schedule/coach` vb. → redirect |
 | Sağlık testleri | `/health-test` | `HealthTestPage.jsx` + `HealthTestHub.jsx` | Kategori hub; `/health-test/:sectionId`, `/health-test/finish` |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; hareket satırında `ExerciseVideoThumbnail` + video modal |
-| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Filtre: arama, tip, zorluk, ekipman, konum, makine (sıralama UI yok); video gate |
+| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Filtre: arama, tip, zorluk, ekipman, konum, makine; **mobilde accordion** (`filtersOpen`); video gate |
 | Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
-| Profil | `/profile` | `ProfilePage.jsx` | Profil, üyelik, atanan koç/diyetisyen |
+| Profil | `/profile` | `ProfilePage.jsx` | Hero kapak (`PANEL_IMAGES.profileCover`, `object-[50%_18%]`); profil, üyelik, atanan uzmanlar |
 | Ödeme (mock) | `/profile/payments` | `PaymentManagementPage.jsx` | Kayıtlı kartlar, ödeme geçmişi (demo) |
 | Video görüşme | `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co |
 
@@ -459,6 +462,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 |-------|------|-------|
 | Genel bakış | `/staff` | `staff/StaffOverviewPage.jsx` — danışan sayısı, haftalık randevular |
 | Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program/liste oluşturma, randevu yönetimi |
+| Danışan programı (koç) | `/staff/clients/:memberId/program` | `staff/StaffClientProgramPage.jsx` — hareket kütüphanesi + **Program Akışı** sepeti (mobile-first); `CoachProgramSendModal` |
 | Danışan sağlık profili | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` (`audience="staff"`) — test cevapları + klinik notlar; **otomatik `healthAnalysis` gösterilmez** |
 | Mesajlar | `/staff/messages`, `/staff/messages/:memberId` | `staff/StaffMessagesPage.jsx` — danışan sohbetleri |
 | Ekip mesajları | `/staff/collab-messages`, `…/:memberId` | `staff/StaffCollabMessagesPage.jsx` — koç↔diyetisyen; başlık: personel adı + `Danışan adına: …` |
@@ -811,6 +815,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `memberProgress.js` | `buildMealProgress`, streak, workout + öğün ilerleme |
 | `programSchedule.js` | `mealCompletionKey`, `groupEntriesByMeal`, `isMealCompleted`, `splitEntriesByType` |
 | `blogImages.js` | `resolveBlogCover`, `coverForCategory` — kategori bazlı Unsplash kapak |
+| `panelImages.js` | `PANEL_IMAGES` — üye paneli sayfa hero/başlık görselleri (Unsplash CDN) |
 | `healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` — sağlık testi → profil |
 | `aiErrors.js` | `formatAiError` — AI hata mesajları |
 | `presenceStatus.js` | `isUserOnline`, `formatLastSeen` — çevrimiçi eşik (90 sn) |
@@ -2713,18 +2718,18 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 | Rota | Dosya | Ana bölümler | Veri / aksiyonlar |
 |------|-------|--------------|-------------------|
-| `/dashboard` | `DashboardPage.jsx` | Sağlık özeti, kilo/antrenman/öğün grafikleri (`ProgressChart`), görevler, yaklaşan seanslar, sürüklenebilir sağlık FAB | `user`, `myPrograms`, `coachSessions`, `dietitianSessions` |
+| `/dashboard` | `DashboardPage.jsx` | Foto-hero, günün ipucu, blog kartları; grafikler, görevler, yaklaşan seanslar | `user`, `myPrograms`, `posts` |
 | `/calendar` | `CalendarPage.jsx` | Diyet \| Koç yan yana; xs thumbnail → detay modal; İzle inline video | `myPrograms`, `completedActivities` |
 | `/schedule` | `AppointmentsPage.jsx` | Birleşik randevular `?tab=coach\|dietitian\|doctor` | `user.*Sessions` |
 | `/health-test` | `HealthTestPage.jsx` | Sağlık testi hub — kategori kartları, toplam ilerleme | `healthTest.js`, `HealthTestHub` |
 | `/health-test/:sectionId` | `HealthTestSectionPage.jsx` | Tek test bölümü | `HealthTestFlow` |
 | `/health-test/finish` | `HealthTestFinishPage.jsx` | Onay + disclaimer | `healthAck`, `disclaimer` |
 | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; `entries[]` tıklanabilir video; `ExerciseVideoThumbnail` | `programs` |
-| `/library` | `ExerciseLibraryPage.jsx` | Filtre çubuğu (konum/makine); sıralama UI yok; video gate | `exercises` |
+| `/library` | `ExerciseLibraryPage.jsx` | Renkli filtre çubuğu; **mobilde katlanır**; video gate | `exercises`, `useExerciseLibrary` |
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
 | `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
 | `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
-| `/profile` | `ProfilePage.jsx` | Kişisel bilgi, üyelik rozeti, koç/diyetisyen (pakete göre), doğrulama, plan değiştirme | `PersonalInfoSection`, `VerificationSection`, `changePlan` |
+| `/profile` | `ProfilePage.jsx` | Kapak hero + profil kartı; üyelik, uzmanlar, doğrulama | `PANEL_IMAGES.profileCover`, `PersonalInfoSection` |
 | `/profile/payments` | `payments/PaymentManagementPage.jsx` | Mock ödeme geçmişi (demo banner) | `mockPayments.js` |
 | `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co görüşme odası | `videoCallSession.js`, `useDailyCall` |
 
@@ -2735,6 +2740,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/staff` | `staff/StaffOverviewPage.jsx` | her ikisi | Danışan sayısı, yaklaşan randevular, `StaffVideoPanel` |
 | `/staff/profile` | `staff/StaffSelfProfilePage.jsx` | her ikisi | Personel profil düzenleme (`StaffProfileEditor`); şifre değişimi mevcut şifre ile |
 | `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
+| `/staff/clients/:memberId/program` | `staff/StaffClientProgramPage.jsx` | koç | Hareket sepeti: `CartEntryCard` / `CartList`; xl aside; mobil alt bar + sheet; sepette video yok |
 | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` | her ikisi | Sağlık testi cevapları + klinik notlar (**`healthAnalysis` yok**) |
 | `/staff/collab-messages` | `staff/StaffCollabMessagesPage.jsx` | koç, diyetisyen | Ekip içi mesaj; inbox: peer adı büyük, `Danışan adına: …` alt satır |
 | `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
@@ -4097,3 +4103,23 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 - ⚠️ `CoachSchedulePage` / `DietitianSchedulePage` repoda var; üye UI birleşik `AppointmentsPage` — eski sayfalar legacy/redirect dışı kullanılmıyor
 
 **Commit referansları:** `1e264dfa` (sağlık hub + blog), `e2997bca` (kütüphane filtre + personel UI)
+
+---
+
+## §62 Üye Paneli Görselleri, Koç Program Akışı, Mobil Kütüphane Filtresi (2026-07-08)
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Panel görselleri** | Merkezi Unsplash CDN kaynağı; sayfa başlıklarına sağdan sola maskeli foto | `src/utils/panelImages.js`, `PanelPageHeader.jsx` (`image` prop), `index.css` (`.panel-page-header-photo`) |
+| **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; günün ipucu (`DAILY_TIPS`); son 3 blog kartı | `DashboardPage.jsx`, `index.css` (`.welcome-banner*`) |
+| **Sayfa başlık fotoğrafları** | Takvim, sağlık testi, programlar, kalori, mesaj, bildirim, destek, randevu sekmeleri | `CalendarPage.jsx`, `HealthTest*.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`, `MessagesPage.jsx`, `NotificationsPage.jsx`, `SupportPage.jsx`, `MemberScheduleView.jsx` |
+| **Profil kapak kadrajı** | Yoga/wellness kapak görseli — kafa/göz görünür (`object-[50%_18%]`) | `ProfilePage.jsx`, `PANEL_IMAGES.profileCover` |
+| **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; sepette **video thumbnail/oynatma yok**; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
+| **Kütüphane mobil UX** | `filtersOpen` state — `sm` altında arama+filtre paneli kapalı; başlık satırına dokunarak açılır; `activeFilterCount` özeti | `ExerciseLibraryPage.jsx` |
+
+**Teknik notlar (AI için):**
+- `PanelPageHeader` `image={{ url, alt? }}` — foto yalnızca `url` varsa render; mobilde daha geniş/soluk (CSS `@media max-width 639px`).
+- `StaffClientProgramPage` kütüphane kartlarında video izleme devam eder; yalnızca Program Akışı sepetinde kaldırıldı.
+- Kütüphane filtre accordion: `hidden sm:flex` + mobil toggle; tablet/desktop'ta her zaman açık.
+
+**Rota:** `/staff/clients/:memberId/program` → `StaffClientProgramPage` (koç only; diyetisyen redirect yok — sayfa içi `Navigate`).

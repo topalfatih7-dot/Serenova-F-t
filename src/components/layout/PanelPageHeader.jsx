@@ -20,6 +20,7 @@ export default function PanelPageHeader({
   children,
   className = '',
   compact = false,
+  image = null,
 }) {
   return (
     <motion.header
@@ -28,6 +29,11 @@ export default function PanelPageHeader({
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={`panel-page-header ${ACCENTS[accent] || ACCENTS.brand} ${compact ? 'panel-page-header-compact' : ''} ${className}`}
     >
+      {image?.url && (
+        <div className="panel-page-header-photo" aria-hidden>
+          <img src={image.url} alt="" loading="lazy" />
+        </div>
+      )}
       <div className="panel-page-header-shimmer" aria-hidden />
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">

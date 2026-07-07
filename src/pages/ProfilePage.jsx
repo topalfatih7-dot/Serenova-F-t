@@ -27,6 +27,7 @@ import {
 } from '../utils/memberPackages'
 import { getRemainingDays } from '../services/premiumMembership'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
+import { PANEL_IMAGES } from '../utils/panelImages'
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }),
@@ -129,6 +130,13 @@ export default function ProfilePage() {
       {/* Hero */}
       <motion.div variants={fadeUp} initial="hidden" animate="show" className="relative overflow-hidden rounded-3xl border border-white/80 bg-white shadow-lg shadow-brand-900/[0.06]">
         <div className="relative h-40 bg-gradient-to-br from-brand-600 via-brand-500 to-sage-500 sm:h-48">
+          <img
+            src={PANEL_IMAGES.profileCover.url}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_18%] opacity-50 mix-blend-overlay"
+          />
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_50%)]" />
           <motion.div
             aria-hidden
