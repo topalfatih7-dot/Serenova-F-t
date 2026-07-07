@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, HeartPulse } from 'lucide-react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { HeartPulse } from 'lucide-react'
 import HealthTestFlow from '../components/onboarding/HealthTestFlow'
-import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import PanelPageHeader, { PanelBackLink, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
@@ -57,14 +57,8 @@ export default function HealthTestSectionPage() {
 
   return (
     <PanelPageShell>
-      <div className="mb-4">
-        <Link
-          to="/health-test"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/70 transition hover:text-brand-600"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Tüm testlere dön
-        </Link>
+      <div className="mb-5">
+        <PanelBackLink to="/health-test">Tüm testlere dön</PanelBackLink>
       </div>
       <PanelPageHeader
         title={section.title}

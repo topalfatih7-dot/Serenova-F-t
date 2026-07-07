@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NotificationItem from '../components/notifications/NotificationItem'
 import EmptyState from '../components/ui/EmptyState'
-import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
+import PanelPageHeader, { PanelFilterBar, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { unlockNotificationAudio } from '../utils/browserNotifications'
-import { Bell } from 'lucide-react'
+import { Bell, BellDot, Inbox, MailOpen } from 'lucide-react'
 
 const FILTERS = [
-  { id: 'all', label: 'Tümü' },
-  { id: 'unread', label: 'Okunmamışlar' },
-  { id: 'read', label: 'Okunanlar' },
+  { id: 'unread', label: 'Okunmamışlar', icon: BellDot },
+  { id: 'all', label: 'Tümü', icon: Inbox },
+  { id: 'read', label: 'Okunanlar', icon: MailOpen },
 ]
 
 export default function NotificationsPage() {
@@ -72,13 +72,14 @@ export default function NotificationsPage() {
         ) : null}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <PanelChip key={f.id} active={filter === f.id} onClick={() => handleFilter(f.id)} accent="brand">
-            {f.label}
-          </PanelChip>
+      <PanelFilterBar
+        value={filter}
+        onChange={handleFilter}
+        accent="violet"
+        options={FILTERS.map((f) => (
+          f.id === 'unread' ? { ...f, badge: unread } : f
         ))}
-      </div>
+      />
 
       {filtered.length === 0 ? (
         <EmptyState icon={Bell} title="Bildirim yok" description="Yeni bildirimler burada görünecek." />

@@ -5,12 +5,18 @@ import SessionCard from './SessionCard'
 import SessionBooker from './SessionBooker'
 import Modal from '../ui/Modal'
 import EmptyState from '../ui/EmptyState'
-import PanelPageHeader, { PanelChip, PanelPageShell } from '../layout/PanelPageHeader'
+import PanelPageHeader, { PanelFilterBar, PanelPageShell } from '../layout/PanelPageHeader'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getCoachMeetingsPerMonth } from '../../data/membershipPlans'
 import { doctorBookingLimit, doctorLimitIsOneTime } from '../../utils/memberPackages'
-import { Calendar, CalendarPlus } from 'lucide-react'
+import { Calendar, CalendarPlus, CalendarClock, History, LayoutGrid } from 'lucide-react'
+
+const SCHEDULE_FILTERS = [
+  { id: 'upcoming', label: 'Yaklaşan', icon: CalendarClock },
+  { id: 'past', label: 'Geçmiş', icon: History },
+  { id: 'all', label: 'Tümü', icon: LayoutGrid },
+]
 
 export default function MemberScheduleView({
   type,
@@ -88,13 +94,12 @@ export default function MemberScheduleView({
         )}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {['upcoming', 'past', 'all'].map((f) => (
-          <PanelChip key={f} active={filter === f} onClick={() => setFilter(f)} accent={accent}>
-            {f === 'upcoming' ? 'Yaklaşan' : f === 'past' ? 'Geçmiş' : 'Tümü'}
-          </PanelChip>
-        ))}
-      </div>
+      <PanelFilterBar
+        value={filter}
+        onChange={setFilter}
+        options={SCHEDULE_FILTERS}
+        accent={accent}
+      />
 
       {filtered.length === 0 ? (
         <EmptyState

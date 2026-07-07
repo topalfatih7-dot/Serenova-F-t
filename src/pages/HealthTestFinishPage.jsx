@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
-import { ArrowLeft, Check, HeartPulse, Loader2 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
+import { Check, HeartPulse, Loader2 } from 'lucide-react'
 import DisclaimerBox from '../components/ui/DisclaimerBox'
-import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import PanelPageHeader, { PanelBackLink, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { isHealthTestComplete } from '../data/healthTest'
@@ -52,14 +52,8 @@ export default function HealthTestFinishPage() {
 
   return (
     <PanelPageShell>
-      <div className="mb-4">
-        <Link
-          to="/health-test"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/70 transition hover:text-brand-600"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Test listesine dön
-        </Link>
+      <div className="mb-5">
+        <PanelBackLink to="/health-test">Tüm testlere dön</PanelBackLink>
       </div>
       <PanelPageHeader
         title="Son Adım"

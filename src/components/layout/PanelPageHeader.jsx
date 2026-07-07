@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
 
 const ACCENTS = {
   brand: 'panel-header-brand',
@@ -63,6 +65,50 @@ export function PanelChip({ active, onClick, children, accent = 'brand' }) {
     >
       {children}
     </button>
+  )
+}
+
+/** Sağlık testi vb. — hub'a geri dönüş (belirgin pill buton) */
+export function PanelBackLink({ to, children }) {
+  return (
+    <Link to={to} className="panel-back-btn panel-back-btn-prominent">
+      <ArrowLeft className="h-5 w-5 shrink-0" strokeWidth={2.5} />
+      <span>{children}</span>
+    </Link>
+  )
+}
+
+/**
+ * Randevu / bildirim filtreleri — 3 sütunlu renkli segment bar
+ * @param {{ id: string, label: string, icon?: import('react').ComponentType, badge?: number|string }[]} options
+ */
+export function PanelFilterBar({ value, onChange, options, accent = 'brand' }) {
+  return (
+    <div
+      className={`panel-filter-bar panel-filter-bar-${accent}`}
+      role="tablist"
+      aria-label="Filtreler"
+    >
+      {options.map(({ id, label, icon: Icon, badge }) => {
+        const active = value === id
+        return (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(id)}
+            className={`panel-filter-tab ${active ? 'panel-filter-tab-active' : ''}`}
+          >
+            {Icon ? <Icon className="panel-filter-tab-icon" strokeWidth={2.25} /> : null}
+            <span className="panel-filter-tab-label">{label}</span>
+            {badge != null && Number(badge) > 0 ? (
+              <span className="panel-filter-tab-badge">{badge}</span>
+            ) : null}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 

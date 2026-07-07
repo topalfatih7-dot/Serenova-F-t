@@ -4077,7 +4077,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 
 | Konu | Değişiklik | Dosyalar |
 |------|------------|----------|
-| **Sağlık testi hub** | Kategori hub tam genişlik; grid **2 / 3 / 4** sütun; rotalar §1445 | `HealthTestHub.jsx`, `HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`, `healthTest.js` |
+| **Sağlık testi hub** | Kategori hub tam genişlik; grid **1 / 3 / 4** sütun (mobil tek sütun); `PanelBackLink` geri dönüş; rotalar §1445 | `HealthTestHub.jsx`, `HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`, `healthTest.js` |
 | **Kütüphane filtreleri** | Konum + makine metadata; renkli filtre çubuğu; **sıralama UI kaldırıldı** | §54.1–54.2, `ExerciseLibraryPage.jsx`, `exerciseLibrary.js`, migration `20260707_*` |
 | **Program thumbnail** | Antrenman satırında sol video ilk karesi | §54.3, `ExerciseVideoThumbnail.jsx`, `ProgramsPage.jsx` |
 | **Üye panel scroll** | Sayfa değişince `main[data-panel-scroll]` en üste (`ScrollToTop` + `AppShell`) | `ScrollToTop.jsx`, `AppShell.jsx` |
@@ -4088,6 +4088,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Sağlık testi birleştirme** | `diet_family` → `diet_health`; `diet_history` → `diet_extra`; `diet_activity` koç paketinde gizlenir (`skipWhenCoach`) | `healthTestDietitianSections.js`, `healthTest.js` |
 | **Takvim hareket UX** | Satırda açıklama yok; xs thumbnail → `ExerciseDetailModal` (`z-[70]`, `fetchExerciseById`); İzle satır içi video | `CalendarPage.jsx`, `ExerciseDetailModal.jsx`, `Modal.jsx` (`zClass`) |
 | **Kurumsal wellness video** | `CorporatePage` vitrininde `HeroBackgroundVideo layout="inline"` — `cover` modu kart içinde 0 yükseklik veriyordu (2026-07-07 düzeltme) | `CorporatePage.jsx`, `HeroBackgroundVideo.jsx`, `index.css` (`.corporate-video-*`) |
+| **Panel filtre UX** | `PanelFilterBar` — randevu (Yaklaşan/Geçmiş/Tümü) ve bildirim (Okunmamış/Tümü/Okunan) renkli segment bar; `PanelBackLink` belirgin geri dönüş | `PanelPageHeader.jsx`, `MemberScheduleView.jsx`, `NotificationsPage.jsx`, `index.css` |
 
 **Rehber–kod uyum kontrolü (2026-07-07):**
 - ✅ Rota haritası §6: `/health-test/*`, `/schedule`, `/staff/collab-messages`

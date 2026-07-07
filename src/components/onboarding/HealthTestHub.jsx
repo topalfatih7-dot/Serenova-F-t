@@ -103,8 +103,8 @@ export default function HealthTestHub({
         </div>
       )}
 
-      {/* Kategori kartları — mobil 2, tablet 3, masaüstü 4 sütun */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+      {/* Kategori kartları — mobil 1, tablet 3, masaüstü 4 sütun */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
         {sections.map(({ section, progress }) => {
           const Icon = ICONS[section.icon] || HeartPulse
           const audienceMeta = HEALTH_AUDIENCE_META[section.audience || 'shared']
