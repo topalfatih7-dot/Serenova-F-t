@@ -12,6 +12,11 @@ export const PANEL_IMAGES = {
     url: unsplash('photo-1506126613408-eca07ce68773', 1400),
     alt: 'Wellness ve denge',
   },
+  /** Profil hero — yalnızca sm+ (masaüstü/tablet yatay); mobilde profileCover kalır */
+  profileCoverDesktop: {
+    url: unsplash('photo-1534438327276-14e5300c3a48', 1600),
+    alt: 'Salon antrenmanı',
+  },
   healthTest: {
     url: unsplash('photo-1505751172876-fa1923c5c528'),
     alt: 'Sağlık kontrolü',

@@ -135,7 +135,14 @@ export default function ProfilePage() {
             alt=""
             aria-hidden
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover object-[50%_18%] opacity-50 mix-blend-overlay"
+            className="absolute inset-0 h-full w-full object-cover object-[50%_18%] opacity-50 mix-blend-overlay sm:hidden"
+          />
+          <img
+            src={PANEL_IMAGES.profileCoverDesktop.url}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            className="absolute inset-0 hidden h-full w-full object-cover object-[center_40%] opacity-80 sm:block"
           />
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_50%)]" />
           <motion.div
