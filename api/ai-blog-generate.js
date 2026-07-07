@@ -2,7 +2,7 @@
  * Günlük AI blog makalesi üretimi — Vercel Cron veya manuel tetikleme.
  *
  * Her gün belirlenen saatte (vercel.json cron) Gemini ile bilimsel makale üretir
- * ve Supabase posts tablosuna yayınlar. İçerik min. 900 karakter.
+ * ve Supabase posts tablosuna yayınlar. İçerik min. 1350 karakter (~1.5x uzun makale).
  *
  * Koruma: CRON_SECRET (Vercel cron otomatik Bearer gönderir)
  * Manuel test: POST + header X-Cron-Secret veya Authorization: Bearer <CRON_SECRET>

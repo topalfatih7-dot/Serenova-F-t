@@ -27,8 +27,37 @@ export const EMPTY_HEALTH_TEST = (() => {
 /** Koşullu detay alanı gösterilsin mi? */
 export function isDetailVisible(detail, parentValue) {
   if (!detail) return false
-  if (Array.isArray(detail.when)) return detail.when.includes(parentValue)
-  return parentValue === detail.when
+  const when = detail.when
+  if (Array.isArray(parentValue)) {
+    if (Array.isArray(when)) return when.some((w) => parentValue.includes(w))
+    return parentValue.includes(when)
+  }
+  if (Array.isArray(when)) return when.includes(parentValue)
+  return parentValue === when
+}
+
+/** Koşullu detay alanı doldurulmuş mu? */
+export function isDetailFilled(detail, healthTest) {
+  if (!detail) return true
+  const val = healthTest?.[detail.key]
+  return typeof val === 'string' && val.trim().length > 0
+}
+
+/** Soru (ve varsa koşullu detay) geçerli şekilde cevaplanmış mı? */
+export function isQuestionFullyAnswered(q, healthTest) {
+  if (!q) return false
+  const parentVal = healthTest?.[q.key]
+  const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
+
+  if (!q.required) {
+    if (!hasStoredAnswer(q, healthTest)) return true
+    if (detailVisible) return isDetailFilled(q.detail, healthTest)
+    return true
+  }
+
+  if (!hasStoredAnswer(q, healthTest)) return false
+  if (detailVisible) return isDetailFilled(q.detail, healthTest)
+  return true
 }
 
 /** AI analizi ve eski kayıtlar için yeni cevapları kanonik değerlere çevirir. */
@@ -121,9 +150,7 @@ export function hasStoredAnswer(q, healthTest) {
 }
 
 export function isQuestionAnswered(q, healthTest) {
-  if (!q) return false
-  if (!q.required) return true
-  return hasStoredAnswer(q, healthTest)
+  return isQuestionFullyAnswered(q, healthTest)
 }
 
 /** Yarım kalan testte soru indeksi ve onay fazını döndürür. */
@@ -138,7 +165,7 @@ export function getHealthTestResumeState(healthTest, gender, packageConfig = nul
     if (hasStoredAnswer(questions[i], ht)) lastAnsweredIndex = i
   }
 
-  const firstRequiredGap = questions.findIndex((q) => q.required && !hasStoredAnswer(q, ht))
+  const firstRequiredGap = questions.findIndex((q) => !isQuestionFullyAnswered(q, ht))
   if (firstRequiredGap >= 0) {
     return { questionIndex: firstRequiredGap, phase: 'questions' }
   }
@@ -161,14 +188,89 @@ export function hasHealthTestProgress(healthTest, gender, packageConfig = null) 
   return questions.some((q) => hasStoredAnswer(q, ht))
 }
 
-// Bir bölümün zorunlu soruları cevaplanmış mı?
+// Bir bölümün tüm soruları (koşullu detaylar dahil) geçerli mi?
 export function isSectionComplete(section, healthTest) {
-  return section.questions.every((q) => {
-    if (!q.required) return true
-    const val = healthTest?.[q.key]
-    if (q.type === 'multi') return Array.isArray(val) && val.length > 0
-    return val !== '' && val != null
-  })
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  return section.questions.every((q) => isQuestionFullyAnswered(q, ht))
+}
+
+/** Tek bölümün sorularını akış formatında döndürür. */
+export function getSectionQuestions(sectionId, gender, packageConfig = null) {
+  const section = getApplicableSections(gender, packageConfig).find((s) => s.id === sectionId)
+  if (!section) return []
+  return section.questions.map((q) => ({
+    ...q,
+    sectionId: section.id,
+    sectionTitle: section.title,
+    sectionIcon: section.icon,
+    audience: section.audience || 'shared',
+  }))
+}
+
+/** Bölüm tamamlanma ilerlemesi. */
+export function getSectionProgress(section, healthTest) {
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  const required = section.questions.filter((q) => q.required)
+  const requiredAnswered = required.filter((q) => isQuestionFullyAnswered(q, ht)).length
+  const started = section.questions.some((q) => hasStoredAnswer(q, ht)
+    || (q.detail && isDetailFilled(q.detail, ht)))
+  const complete = isSectionComplete(section, ht)
+  return {
+    requiredTotal: required.length,
+    requiredAnswered,
+    complete,
+    started,
+    percent: required.length
+      ? Math.round((requiredAnswered / required.length) * 100)
+      : (complete ? 100 : 0),
+  }
+}
+
+/** Bölüm içinde kaldığı yerden devam indeksi. */
+export function getSectionResumeState(section, healthTest) {
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  const mapped = section.questions.map((q) => ({
+    ...q,
+    sectionId: section.id,
+    sectionTitle: section.title,
+    sectionIcon: section.icon,
+    audience: section.audience || 'shared',
+  }))
+
+  const firstRequiredGap = mapped.findIndex((q) => !isQuestionFullyAnswered(q, ht))
+  if (firstRequiredGap >= 0) return { questionIndex: firstRequiredGap, phase: 'questions' }
+
+  const allPass = mapped.every((q) => isQuestionAnswered(q, ht))
+  if (allPass) return { questionIndex: Math.max(0, mapped.length - 1), phase: 'questions' }
+
+  let lastAnsweredIndex = -1
+  for (let i = 0; i < mapped.length; i++) {
+    if (hasStoredAnswer(mapped[i], ht)) lastAnsweredIndex = i
+  }
+  return { questionIndex: Math.max(0, lastAnsweredIndex + 1), phase: 'questions' }
+}
+
+/** Hub görünümü — uygulanabilir bölümler + ilerleme. */
+export function getHealthTestHubSections(gender, packageConfig = null, healthTest = {}) {
+  return getApplicableSections(gender, packageConfig).map((section) => ({
+    section,
+    progress: getSectionProgress(section, healthTest),
+  }))
+}
+
+export function countCompletedSections(healthTest, gender, packageConfig = null) {
+  return getApplicableSections(gender, packageConfig).filter((s) => isSectionComplete(s, healthTest)).length
+}
+
+export function getOverallHealthTestProgress(healthTest, gender, packageConfig = null) {
+  const sections = getApplicableSections(gender, packageConfig)
+  if (!sections.length) return { completed: 0, total: 0, percent: 0 }
+  const completed = countCompletedSections(healthTest, gender, packageConfig)
+  return {
+    completed,
+    total: sections.length,
+    percent: Math.round((completed / sections.length) * 100),
+  }
 }
 
 // Tüm zorunlu sorular cevaplanmış mı? (cinsiyet + paket)

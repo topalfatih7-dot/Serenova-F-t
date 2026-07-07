@@ -40,17 +40,17 @@ export default function HealthTestPrompt({ open, onStart, onLater, onClose }) {
             Sağlık profilinizi tanıyalım
           </h2>
           <p className="mt-2 text-center text-sm leading-relaxed text-white/85">
-            Kısa bir test ile ruh halinizi, enerjinizi ve sağlık geçmişinizi anlayarak size özel programlar hazırlayabiliriz.
+            Kategorilere ayrılmış kısa testlerle ruh halinizi, beslenmenizi ve sağlık geçmişinizi adım adım paylaşın.
           </p>
         </div>
 
         <div className="space-y-3 p-6">
           <div className="rounded-2xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-cream-800/75">
             <span className="flex items-center gap-2 font-semibold text-brand-700">
-              <Sparkles className="h-4 w-4" /> 2–3 dakika sürer
+              <Sparkles className="h-4 w-4" /> Kategorilere bölünmüş testler
             </span>
             <p className="mt-1 text-xs leading-relaxed">
-              Sorular kişisel wellness rehberliği içindir; tıbbi teşhis yerine geçmez.
+              İstediğiniz kategoriden başlayın; her biri birkaç dakika sürer.
             </p>
           </div>
 

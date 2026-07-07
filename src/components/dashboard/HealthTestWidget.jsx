@@ -1,20 +1,16 @@
 import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import HealthTestPrompt from '../onboarding/HealthTestPrompt'
-import HealthTestFlow from '../onboarding/HealthTestFlow'
 import DraggableHealthFab from './DraggableHealthFab'
 import { isHealthTestComplete } from '../../data/healthTest'
-import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 import { useApp } from '../../context/AppContext'
-import { useToast } from '../../context/ToastContext'
 
 const DISMISS_KEY = (userId) => `health_test_dismissed_${userId}`
 
 export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) {
-  const { updateProfile, saveHealthTestProgress, createProgram, exercises, myPrograms, packageConfig } = useApp()
-  const { toast } = useToast()
-  const [flowOpen, setFlowOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const { packageConfig } = useApp()
+  const navigate = useNavigate()
   const [showFab, setShowFab] = useState(() => {
     if (!user?.id) return false
     if (isHealthTestComplete(user.healthTest, user.gender, packageConfig)) return false
@@ -27,44 +23,12 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   const [morphing, setMorphing] = useState(false)
 
   const testComplete = isHealthTestComplete(user?.healthTest, user?.gender, packageConfig)
+    && user?.healthAck && user?.disclaimer
 
-  const handleProgressSave = useCallback(async ({ healthTest }) => {
-    if (saving) return
-    try {
-      await saveHealthTestProgress(healthTest)
-    } catch {
-      /* sessiz */
-    }
-  }, [saveHealthTestProgress, saving])
-
-  const handleComplete = useCallback(async ({ healthTest, healthAck, disclaimer }) => {
-    setSaving(true)
-    try {
-      await updateProfile({ healthTest, healthAck, disclaimer })
-      try {
-        if (user?.id) localStorage.removeItem(DISMISS_KEY(user.id))
-      } catch { /* ignore */ }
-      setShowFab(false)
-      setFlowOpen(false)
-      onPromptHandled?.()
-
-      const merged = { ...user, healthTest, healthAck, disclaimer }
-      const result = await syncMemberHealthAssets({
-        user: merged,
-        exercises,
-        updateProfile,
-        createProgram,
-        myPrograms,
-      })
-      if (result.synced) {
-        toast('Sağlık profiliniz kaydedildi ve kişisel programlarınız hazırlandı.', 'success')
-      } else {
-        toast('Sağlık testiniz kaydedildi. Kişisel programlar için profilinizdeki bilgileri tamamlayın.', 'success')
-      }
-    } finally {
-      setSaving(false)
-    }
-  }, [user, updateProfile, createProgram, exercises, myPrograms, toast, onPromptHandled])
+  const goToHub = useCallback(() => {
+    onPromptHandled?.()
+    navigate('/health-test')
+  }, [navigate, onPromptHandled])
 
   const parkToFab = useCallback(() => {
     try {
@@ -83,10 +47,12 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   }
 
   // Test yarıda kapatılırsa: bilgiler tamamlanana kadar ikon kaybolmasın.
-  const handleFlowClose = () => {
-    setFlowOpen(false)
-    parkToFab()
-    onPromptHandled?.()
+  const handleFabOpen = () => {
+    try {
+      if (user?.id) localStorage.removeItem(DISMISS_KEY(user.id))
+    } catch { /* ignore */ }
+    setShowFab(false)
+    goToHub()
   }
 
   if (!user?.id || testComplete) return null
@@ -94,32 +60,19 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   return (
     <>
       <AnimatePresence>
-        {promptOpen && !flowOpen && !showFab && !morphing && (
+        {promptOpen && !showFab && !morphing && (
           <HealthTestPrompt
             open
-            onStart={() => { setFlowOpen(true); onPromptHandled?.() }}
+            onStart={goToHub}
             onLater={handleLater}
             onClose={handleLater}
           />
         )}
       </AnimatePresence>
 
-      <HealthTestFlow
-        open={flowOpen}
-        onClose={handleFlowClose}
-        gender={user.gender || ''}
-        packageConfig={packageConfig}
-        initialHealthTest={user.healthTest}
-        initialHealthAck={user.healthAck}
-        initialDisclaimer={user.disclaimer}
-        onProgressSave={handleProgressSave}
-        onComplete={handleComplete}
-        saving={saving}
-      />
-
       <AnimatePresence>
-        {showFab && !flowOpen && (
-          <DraggableHealthFab userId={user.id} onOpen={() => setFlowOpen(true)} />
+        {showFab && (
+          <DraggableHealthFab userId={user.id} onOpen={handleFabOpen} />
         )}
       </AnimatePresence>
     </>

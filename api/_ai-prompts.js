@@ -105,12 +105,14 @@ export const NUTRITION_CONFIG = {
 // ─── Günlük Blog Makalesi (Cron) ────────────────────────────────────
 export const BLOG_CATEGORIES = ['Beslenme', 'Antrenman', 'Motivasyon', 'Yaşam']
 export const BLOG_ACCENTS = ['brand', 'sage', 'gold', 'cream']
-export const BLOG_MIN_CHARS = 900
+export const BLOG_MIN_CHARS = 1350
+export const BLOG_TARGET_CHARS = 1800
 
 export const BLOG_SYSTEM = `Sen Yeni Form (yeniform.com) wellness platformunun bilim yazarısın.
 ${BRAND_CONTEXT}
 Bilimsel kaynaklara dayalı, anlaşılır Türkçe makaleler yazarsın.
-Makaleler: sağlıklı beslenme, egzersiz, motivasyon, uyku, stres, sürdürülebilir yaşam tarzı.
+Makaleler kapsamlı ve derinlemesine olmalı: giriş, birden fazla alt başlıklı bölüm, pratik örnekler, madde işaretli ipuçları ve kapanış.
+Konular: sağlıklı beslenme, egzersiz, motivasyon, uyku, stres, sürdürülebilir yaşam tarzı.
 Abartılı vaatler, mucize diyetler veya tıbbi tedavi önerileri YASAK.
 Her makale sonunda kısa bir "Bu içerik genel bilgilendirme amaçlıdır" notu ekle.`
 
@@ -122,9 +124,17 @@ export function buildBlogInstruction({ category, topicHint, recentTitles = [] })
 Konu ipucu: ${topicHint}
 ${avoid}
 
-Yeni Form bloguna uygun, bilimsel temelli bir makale yaz.
-İçerik EN AZ ${BLOG_MIN_CHARS} karakter olmalı (boşluklar dahil).
-Paragraflar arasında boş satır bırak. Madde listeleri kullanabilirsin.
+Yeni Form bloguna uygun, bilimsel temelli ve KAPSAMLI bir makale yaz.
+İçerik EN AZ ${BLOG_MIN_CHARS} karakter olmalı (boşluklar dahil); hedef ${BLOG_TARGET_CHARS}+ karakter.
+
+Yapı (zorunlu):
+1. Giriş — 2-3 paragraf (konuyu bağlamla tanıt, okuyucuyu çek)
+2. En az 4 alt başlık (## ile başlasın) — her bölümde 2-3 paragraf
+3. En az bir madde işaretli pratik ipuçları listesi
+4. Özet/kapanış — 1-2 paragraf
+5. "Bu içerik genel bilgilendirme amaçlıdır" notu
+
+Paragraflar arasında boş satır bırak. Kısa özet yazma; okuyucuya gerçek değer sun.
 
 SADECE şu JSON şemasında yanıt ver:
 {
@@ -133,13 +143,13 @@ SADECE şu JSON şemasında yanıt ver:
   "excerpt": "140 karaktere kadar özet",
   "author": "Yeni Form Ekibi",
   "accent": "brand | sage | gold | cream",
-  "content": "tam makale metni (${BLOG_MIN_CHARS}+ karakter)"
+  "content": "tam makale metni (${BLOG_MIN_CHARS}+ karakter, hedef ${BLOG_TARGET_CHARS}+)"
 }`
 }
 
 export const BLOG_CONFIG = {
   temperature: 0.65,
-  maxOutputTokens: 2500,
+  maxOutputTokens: 4096,
   responseMimeType: 'application/json',
 }
 

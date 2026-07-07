@@ -3,7 +3,7 @@ import {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
   Sunrise, Sunset, UtensilsCrossed, BedDouble, Dumbbell, Clock3, MoonStar, Venus, Mars,
 } from 'lucide-react'
-import { isDetailVisible, HEALTH_AUDIENCE_META } from '../../data/healthTest'
+import { isDetailVisible, isDetailFilled, isQuestionFullyAnswered, HEALTH_AUDIENCE_META } from '../../data/healthTest'
 
 const ICONS = {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock,
@@ -39,6 +39,7 @@ export default function HealthTestStep({
   question,
   questionIndex,
   totalQuestions,
+  sectionTitle,
   healthTest,
   updateHealthTest,
   showErrors,
@@ -50,25 +51,28 @@ export default function HealthTestStep({
   const audienceMeta = HEALTH_AUDIENCE_META[question.audience] || HEALTH_AUDIENCE_META.shared
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
   const q = question
+  const parentVal = healthTest?.[q.key]
+  const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
 
-  const isAnswered = () => {
-    const val = healthTest?.[q.key]
-    if (q.type === 'multi') return Array.isArray(val) && val.length > 0
-    if (q.type === 'text' || q.type === 'time') return typeof val === 'string' && val.trim().length > 0
-    return val !== '' && val != null
-  }
-
-  const missing = showErrors && q.required && !isAnswered()
+  const missing = showErrors && !isQuestionFullyAnswered(q, healthTest)
+  const detailMissing = showErrors && detailVisible && !isDetailFilled(q.detail, healthTest)
 
   const toggleMulti = (value) => {
     const arr = Array.isArray(healthTest[q.key]) ? healthTest[q.key] : []
-    updateHealthTest({
-      [q.key]: arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value],
-    })
+    const next = arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]
+    const patch = { [q.key]: next }
+    if (q.detail && !isDetailVisible(q.detail, next)) {
+      patch[q.detail.key] = ''
+    }
+    updateHealthTest(patch)
   }
 
   const pickSingle = (value) => {
-    updateHealthTest({ [q.key]: value })
+    const patch = { [q.key]: value }
+    if (q.detail && !isDetailVisible(q.detail, value)) {
+      patch[q.detail.key] = ''
+    }
+    updateHealthTest(patch)
   }
 
   const optionCount = q.options?.length || 0
@@ -86,7 +90,7 @@ export default function HealthTestStep({
       {/* İlerleme */}
       <div className="mb-6">
         <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-cream-800/50">
-          <span>Sağlık Profili</span>
+          <span>{sectionTitle || question.sectionTitle || 'Sağlık Profili'}</span>
           <span>{questionIndex + 1} / {totalQuestions}</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-cream-100">
@@ -243,13 +247,17 @@ export default function HealthTestStep({
                 />
               )}
 
-              {q.detail && isDetailVisible(q.detail, healthTest[q.key]) && (
+              {q.detail && detailVisible && (
                 <input
                   type="text"
                   placeholder={q.detail.placeholder}
                   value={healthTest[q.detail.key] || ''}
                   onChange={(e) => updateHealthTest({ [q.detail.key]: e.target.value })}
-                  className="mt-4 w-full rounded-2xl border-2 border-cream-200 px-5 py-4 text-base focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
+                  className={`mt-4 w-full rounded-2xl border-2 px-5 py-4 text-base focus:outline-none focus:ring-4 ${
+                    detailMissing
+                      ? 'border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100'
+                      : 'border-cream-200 focus:border-brand-400 focus:ring-brand-100'
+                  }`}
                 />
               )}
             </div>
@@ -261,7 +269,9 @@ export default function HealthTestStep({
                 className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
               >
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                Lütfen bir seçenek belirleyin
+                {detailMissing
+                  ? 'Lütfen açıklama alanını doldurun'
+                  : (q.required ? 'Lütfen bir seçenek belirleyin' : 'Lütfen seçiminizi tamamlayın')}
               </motion.p>
             )}
           </div>

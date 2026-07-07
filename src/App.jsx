@@ -24,6 +24,8 @@ const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparison
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'))
 const HealthTestPage = lazy(() => import('./pages/HealthTestPage'))
+const HealthTestSectionPage = lazy(() => import('./pages/HealthTestSectionPage'))
+const HealthTestFinishPage = lazy(() => import('./pages/HealthTestFinishPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SupportPage = lazy(() => import('./pages/SupportPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -127,6 +129,8 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="health-test" element={<HealthTestPage />} />
+                <Route path="health-test/finish" element={<HealthTestFinishPage />} />
+                <Route path="health-test/:sectionId" element={<HealthTestSectionPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="calorie" element={<CalorieCalculatorPage />} />
                 <Route path="schedule" element={<AppointmentsPage />} />

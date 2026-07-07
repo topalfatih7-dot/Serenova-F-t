@@ -6,13 +6,16 @@ import DisclaimerBox from '../ui/DisclaimerBox'
 import {
   EMPTY_HEALTH_TEST,
   getApplicableQuestions,
+  getSectionQuestions,
+  getSectionResumeState,
+  getApplicableSections,
   getHealthTestResumeState,
   hasHealthTestProgress,
   isQuestionAnswered,
+  isQuestionFullyAnswered,
 } from '../../data/healthTest'
 
-function isLastHealthQuestion(index, gender, packageConfig) {
-  const questions = getApplicableQuestions(gender, packageConfig)
+function isLastHealthQuestion(index, questions) {
   return index >= questions.length - 1
 }
 
@@ -20,6 +23,7 @@ export default function HealthTestFlow({
   open,
   onClose,
   layout = 'modal',
+  sectionId = null,
   gender = '',
   packageConfig = null,
   initialHealthTest,
@@ -27,12 +31,20 @@ export default function HealthTestFlow({
   initialDisclaimer = false,
   onProgressSave,
   onComplete,
+  onSectionComplete,
   saving = false,
 }) {
-  const resume = getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
-    healthAck: initialHealthAck,
-    disclaimer: initialDisclaimer,
-  })
+  const section = sectionId
+    ? getApplicableSections(gender, packageConfig).find((s) => s.id === sectionId)
+    : null
+
+  const resume = sectionId && section
+    ? getSectionResumeState(section, initialHealthTest)
+    : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+        healthAck: initialHealthAck,
+        disclaimer: initialDisclaimer,
+      })
+
   const [questionIndex, setQuestionIndex] = useState(resume.questionIndex)
   const [showErrors, setShowErrors] = useState(false)
   const [healthTest, setHealthTest] = useState(() => ({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
@@ -48,10 +60,12 @@ export default function HealthTestFlow({
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      const next = getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
-        healthAck: initialHealthAck,
-        disclaimer: initialDisclaimer,
-      })
+      const next = sectionId && section
+        ? getSectionResumeState(section, initialHealthTest)
+        : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+            healthAck: initialHealthAck,
+            disclaimer: initialDisclaimer,
+          })
       const merged = { ...EMPTY_HEALTH_TEST, ...initialHealthTest }
       setQuestionIndex(next.questionIndex)
       setPhase(next.phase)
@@ -62,7 +76,7 @@ export default function HealthTestFlow({
       lastPersistedRef.current = JSON.stringify(merged)
     }
     prevOpenRef.current = open
-  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer])
+  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer, sectionId, section])
 
   const persistProgress = useCallback(() => {
     const save = onProgressSaveRef.current
@@ -94,9 +108,12 @@ export default function HealthTestFlow({
     }
   }, [gender, packageConfig])
 
-  const questions = getApplicableQuestions(gender, packageConfig)
+  const questions = sectionId
+    ? getSectionQuestions(sectionId, gender, packageConfig)
+    : getApplicableQuestions(gender, packageConfig)
   const currentQuestion = questions[questionIndex]
-  const lastQuestion = isLastHealthQuestion(questionIndex, gender, packageConfig)
+  const lastQuestion = isLastHealthQuestion(questionIndex, questions)
+  const sectionMode = Boolean(sectionId)
 
   const updateHealthTest = (patch) => setHealthTest((prev) => ({ ...prev, ...patch }))
 
@@ -122,6 +139,16 @@ export default function HealthTestFlow({
       setQuestionIndex((i) => i + 1)
       return
     }
+    if (sectionMode) {
+      const allSectionDone = questions.every((q) => isQuestionFullyAnswered(q, healthTest))
+      if (!allSectionDone) {
+        setShowErrors(true)
+        return
+      }
+      persistProgress()
+      onSectionComplete?.({ healthTest, sectionId })
+      return
+    }
     setPhase('ack')
   }
 
@@ -136,6 +163,12 @@ export default function HealthTestFlow({
 
   if (!open) return null
 
+  const nextLabel = phase === 'ack'
+    ? (saving ? 'Kaydediliyor…' : 'Tamamla')
+    : lastQuestion
+      ? (sectionMode ? (saving ? 'Kaydediliyor…' : 'Testi Bitir') : 'Onaya Geç')
+      : 'İleri'
+
   const body = (
         <div className={layout === 'page' ? '' : 'p-4 sm:p-6'}>
           <AnimatePresence mode="wait">
@@ -145,6 +178,7 @@ export default function HealthTestFlow({
                   question={currentQuestion}
                   questionIndex={questionIndex}
                   totalQuestions={questions.length}
+                  sectionTitle={section?.title}
                   healthTest={healthTest}
                   updateHealthTest={updateHealthTest}
                   showErrors={showErrors}
@@ -198,7 +232,7 @@ export default function HealthTestFlow({
               className="flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {phase === 'ack' ? (saving ? 'Kaydediliyor…' : 'Tamamla') : lastQuestion ? 'Onaya Geç' : 'İleri'}
+              {nextLabel}
             </button>
           </div>
         </div>

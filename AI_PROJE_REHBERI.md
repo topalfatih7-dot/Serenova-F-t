@@ -1261,7 +1261,7 @@ api/_ai-prompts.js      → Kalori + blog promptları (Yeni Form marka bağlamı
 api/_blog-images.js     → Blog kapak görselleri (kategori → Unsplash URL)
 api/ai-food-vision.js   → Fotoğraf → kalori
 api/ai-food-text.js     → Metin → kalori
-api/ai-blog-generate.js → Günlük blog → Supabase posts (min. 900 karakter)
+api/ai-blog-generate.js → Günlük blog → Supabase posts (min. 1350 karakter, hedef ~1800)
 scripts/test-ai.mjs     → npm run test:ai
 scripts/patch-blog-covers.mjs → Mevcut yazılara coverImage ekler
 vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generate
@@ -2809,7 +2809,8 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | Cron | `vercel.json` → `0 5 * * *` (08:00 Türkiye) |
 | Koruma | `CRON_SECRET` → `requireCronSecret()` |
 | Model | `gemini-2.5-flash-lite` (+ fallback zinciri) |
-| Min. içerik | 900 karakter |
+| Min. içerik | 1350 karakter (hedef ~1800; 4+ alt başlık, ipuçları listesi) |
+| Max token | 4096 (`BLOG_CONFIG.maxOutputTokens`) |
 | Kayıt | Supabase `posts` — `published: true`, `data.coverImage` |
 
 **Prompt:** `api/_ai-prompts.js` → `BLOG_SYSTEM`, `buildBlogInstruction()`, kategori rotasyonu (`BLOG_TOPIC_ROTATION`).
