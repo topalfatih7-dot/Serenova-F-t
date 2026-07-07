@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, ArrowUpDown, Lock, ChevronDown } from 'lucide-react'
+import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, Lock, ChevronDown } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
@@ -69,13 +69,6 @@ const FILTER_THEMES = {
       `${SELECT_BASE} border-slate-300 bg-gradient-to-br from-slate-50 via-zinc-50/70 to-white text-slate-950 shadow-sm shadow-slate-200/35 hover:border-slate-400 hover:from-slate-100/90 focus:border-slate-600 focus:bg-white focus:ring-4 focus:ring-slate-200/70`,
     chevron: 'text-slate-600',
   },
-  sort: {
-    label: `${FILTER_LABEL_BASE} text-indigo-800`,
-    select:
-      `${SELECT_BASE} border-indigo-300 bg-gradient-to-br from-indigo-50 via-violet-50/60 to-white text-indigo-950 shadow-sm shadow-indigo-200/35 hover:border-indigo-400 hover:from-indigo-100/90 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-200/70 pl-11 sm:pl-12`,
-    chevron: 'text-indigo-600',
-    icon: 'text-indigo-500',
-  },
 }
 
 function FilterSelect({ className, chevronClassName = 'text-violet-500', children, ...props }) {
@@ -100,9 +93,6 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     page,
     totalPages,
     loading,
-    sort,
-    setSort,
-    sortOptions,
     setSearch,
     setCategory,
     setDifficulty,
@@ -110,7 +100,6 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     setLocation,
     setRequiresMachine,
     setPage,
-    filters,
     equipmentOptions,
   } = useExerciseLibrary()
 
@@ -162,10 +151,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     setRequiresMachine(value)
   }
 
-  const sortLabel = useMemo(
-    () => sortOptions.find((o) => o.id === sort)?.label || 'Sıralama',
-    [sort, sortOptions],
-  )
+  const hasActiveFilters = Boolean(location || requiresMachine)
 
   return (
     <PanelPageShell>
@@ -216,7 +202,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
             </div>
           </div>
 
-          <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-6 xl:gap-4">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-4">
               <div className="space-y-2">
                 <label className={FILTER_THEMES.category.label}>Hareket Tipi</label>
                 <ExerciseCategorySelect
@@ -284,28 +270,10 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
                   ))}
                 </FilterSelect>
               </div>
-              <div className="space-y-2">
-                <label className={FILTER_THEMES.sort.label}>Sıralama</label>
-                <div className="relative">
-                  <ArrowUpDown className={`pointer-events-none absolute left-3.5 top-1/2 z-10 h-5 w-5 -translate-y-1/2 sm:left-4 sm:h-6 sm:w-6 ${FILTER_THEMES.sort.icon}`} />
-                  <FilterSelect
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    className={FILTER_THEMES.sort.select}
-                    chevronClassName={FILTER_THEMES.sort.chevron}
-                  >
-                    {sortOptions.map((o) => (
-                      <option key={o.id} value={o.id}>{o.label}</option>
-                    ))}
-                  </FilterSelect>
-                </div>
-              </div>
             </div>
+          {hasActiveFilters && (
           <p className="flex flex-wrap items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-purple-50/60 px-3 py-2.5 text-sm sm:text-base">
-            <span className="font-medium text-cream-800/60">Aktif sıralama:</span>
-            <span className="rounded-full bg-indigo-100 px-3 py-0.5 text-sm font-bold text-indigo-900 ring-1 ring-indigo-200">
-              {sortLabel}
-            </span>
+            <span className="font-medium text-cream-800/60">Aktif filtreler:</span>
             {location && (
               <span className="rounded-full bg-rose-100 px-3 py-0.5 text-sm font-bold text-rose-900 ring-1 ring-rose-200">
                 {EXERCISE_LOCATION_LABELS[location] || location}
@@ -317,6 +285,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
               </span>
             )}
           </p>
+          )}
         </div>
       </div>
 

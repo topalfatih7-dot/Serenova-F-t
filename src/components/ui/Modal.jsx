@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 
-export default function Modal({ open, onClose, title, children, size = 'md' }) {
+export default function Modal({ open, onClose, title, children, size = 'md', zClass = 'z-50' }) {
   const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-3xl' }
 
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4">
+        <div className={`fixed inset-0 ${zClass} flex items-end justify-center p-3 sm:items-center sm:p-4`}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

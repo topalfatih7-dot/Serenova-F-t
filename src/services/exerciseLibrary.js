@@ -97,6 +97,14 @@ export async function fetchExercisesPage({
   }
 }
 
+/** Tek hareket — program/takvim detay modalı için. */
+export async function fetchExerciseById(id) {
+  if (!supabase || !id) return null
+  const { data, error } = await supabase.from('exercises').select('*').eq('id', id).maybeSingle()
+  if (error || !data) return null
+  return rowToExercise(data)
+}
+
 /** AI / program önerisi için hafif tam liste (yalnızca gerekli alanlar) */
 export async function fetchExercisesForAi(limit = 2000) {
   if (!supabase) return []

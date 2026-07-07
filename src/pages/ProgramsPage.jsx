@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { ClipboardList, Dumbbell, Apple, UserCheck, PlayCircle, Clock } from 'lucide-react'
+import { ClipboardList, Dumbbell, Apple, UserCheck, Clock } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
+import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation } from '../utils/programSchedule'
+import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü' },
@@ -204,41 +206,45 @@ export default function ProgramsPage() {
                               key={e.id}
                               type="button"
                               onClick={() => hasVideo && setActiveExercise(e)}
-                              className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:px-4 ${
+                              onMouseEnter={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
+                              onFocus={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
+                              className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:gap-4 sm:px-4 ${
                                 isNutrition
                                   ? 'border-sage-100 bg-gradient-to-r from-sage-50/80 to-emerald-50/40 hover:border-sage-200 hover:shadow-sm'
                                   : hasVideo
                                     ? 'border-brand-100 bg-gradient-to-r from-brand-50/80 to-blue-50/40 hover:border-brand-200 hover:shadow-sm'
                                     : 'border-cream-200 bg-cream-50/80'
-                              }`}
+                              } ${hasVideo ? 'cursor-pointer' : 'cursor-default'}`}
                             >
-                              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-sm ${
-                                isNutrition
-                                  ? 'bg-gradient-to-br from-sage-400 to-emerald-500 text-white'
-                                  : 'bg-gradient-to-br from-brand-400 to-blue-500 text-white'
-                              }`}>
-                                {isNutrition ? <Apple className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
-                              </span>
+                              {isNutrition ? (
+                                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sage-400 to-emerald-500 text-white shadow-sm sm:h-16 sm:w-16">
+                                  <Apple className="h-5 w-5 sm:h-6 sm:w-6" />
+                                </span>
+                              ) : (
+                                <ExerciseVideoThumbnail
+                                  url={e.videoUrl}
+                                  videoPending={e.videoPending}
+                                  accent="brand"
+                                  fallbackIcon={Dumbbell}
+                                />
+                              )}
                               <div className="min-w-0 flex-1">
                                 {e.mealType && (
                                   <p className="text-[10px] font-bold uppercase tracking-wide text-sage-600">{mealLabel(e.mealType)}</p>
                                 )}
-                                <p className="font-medium text-cream-900">
+                                <p className="font-medium leading-snug text-cream-900">
                                   {title}{!isNutrition && e.amount ? ` · ${amountText(e)}` : ''}
                                 </p>
+                                {!isNutrition && e.note && (
+                                  <p className="mt-0.5 text-xs italic text-cream-800/45">{e.note}</p>
+                                )}
                                 {isNutrition && (e.start || e.note) && (
-                                  <p className="flex flex-wrap items-center gap-1 text-xs text-cream-800/55">
+                                  <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-cream-800/55">
                                     {e.start && <><Clock className="h-3 w-3" /> {e.start}{e.end ? `–${e.end}` : ''}</>}
                                     {e.note ? `${e.start ? ' · ' : ''}${e.note}` : ''}
                                   </p>
                                 )}
-                                {!isNutrition && e.note && (
-                                  <p className="text-xs italic text-cream-800/45">{e.note}</p>
-                                )}
                               </div>
-                              {hasVideo && (
-                                <PlayCircle className="h-5 w-5 shrink-0 text-brand-400" />
-                              )}
                             </button>
                             )
                           })}

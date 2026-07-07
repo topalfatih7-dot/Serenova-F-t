@@ -4,12 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-06 · §60 UX navigasyon + GA4 + SEO slug  
-> **Son oturum özeti:** §60 üye menüsü sadeleştirme · sağlık testi `/health-test` · randevular `/schedule` · §59 tam proje audit
+> **Son güncelleme:** 2026-07-07 · §61 takvim hareket modalı · sağlık testi birleştirme · UX iyileştirmeleri  
+> **Son oturum özeti:** Takvim `ExerciseDetailModal` + xs thumbnail · diyetisyen test bölüm birleştirme · scroll/menü · kütüphane filtreleri
 
 ---
 
-## Son Durum Özeti (2026-07-06)
+## Son Durum Özeti (2026-07-07)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -20,8 +20,14 @@
 | RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
 | Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` private + imzalı URL |
 | Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
+| Sağlık testi akışı | ✅ | Hub `/health-test` · kategori `/health-test/:sectionId` · onay `/health-test/finish`; grid 2/3/4 sütun |
+| Hareket kütüphanesi filtreleri | ✅ | Konum + makine (`locations`, `requires_machine`); sıralama UI kaldırıldı (varsayılan A→Z) |
+| Programlarım antrenman UI | ✅ | `ExerciseVideoThumbnail` — hareket satırında video ilk karesi (sol) |
+| Takvim antrenman detayı | ✅ | `ExerciseDetailModal` (thumbnail tık); `İzle` inline video; satırda açıklama yok |
+| Diyetisyen sağlık testi | ✅ | 3 bölüm birleştirildi; `diet_activity` koç paketinde gizli (`skipWhenCoach`) |
+| Personel sağlık görünümü | ✅ | `showHealthAnalysis={false}` personelde; admin'de tam analiz |
+| Ekip mesajları etiketleme | ✅ | Personel adı birincil; alt başlık `Danışan adına: …` |
 | Üye navigasyon | ✅ | `memberNav.js` — Sağlık Testi `/health-test`, Randevular `/schedule?tab=` |
-| Sağlık testi akışı | ✅ | Kayıt sonrası zorunlu değil; menüden erişim + amber badge |
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -42,7 +48,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§53–58 Değişiklik Günlüğü** (2026-07-03 — 2026-07-05); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+6. Son değişiklikler için **§53–61 Değişiklik Günlüğü** (2026-07-03 — 2026-07-07); tam arşiv **§14–52** (2026-06 — 2026-07-01).
 7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
@@ -81,6 +87,7 @@
 | `npm run test:rls` | RLS politika davranış testi (`scripts/test-rls-policies.mjs`) |
 | `npm run db:migrate` | Supabase migration'ları uygular (`scripts/db-migrate.mjs`) |
 | `npm run import:exercises` | Hareket kütüphanesi import pipeline |
+| `npm run backfill:exercise-locations` | Yalnızca `locations` + `requires_machine` backfill (çeviri yok) |
 | `npm run og:image` | Open Graph görseli üretir |
 
 ---
@@ -430,11 +437,11 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Sayfa | Rota | Dosya | Ana işlev |
 |-------|------|-------|-----------|
 | Dashboard | `/dashboard` | `DashboardPage.jsx` | Sağlık analizi, kilo/antrenman/**öğün** grafikleri, görevler, yaklaşan seanslar |
-| Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi | Koç Programı**; öğün bazlı onay (`toggleMealCompletion`) |
-| Koç randevuları | `/schedule/coach` | `CoachSchedulePage.jsx` | Liste, erteleme, iptal |
-| Diyetisyen randevuları | `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Liste, erteleme, iptal |
-| Programlar | `/programs` | `ProgramsPage.jsx` | Atanan programlar |
-| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Büyük dokunmatik filtre çubuğu (arama, tip, zorluk, ekipman, sıralama), video |
+| Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi \| Koç Programı**; thumbnail → `ExerciseDetailModal`; **İzle** inline video |
+| Randevular | `/schedule?tab=` | `AppointmentsPage.jsx` | Koç / diyetisyen / doktor sekmeleri; eski `/schedule/coach` vb. → redirect |
+| Sağlık testleri | `/health-test` | `HealthTestPage.jsx` + `HealthTestHub.jsx` | Kategori hub; `/health-test/:sectionId`, `/health-test/finish` |
+| Programlar | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; hareket satırında `ExerciseVideoThumbnail` + video modal |
+| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Filtre: arama, tip, zorluk, ekipman, konum, makine (sıralama UI yok); video gate |
 | Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
@@ -454,6 +461,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Danışanlar | `/staff/clients` | `staff/StaffClientsPage.jsx` — program/liste oluşturma, randevu yönetimi |
 | Danışan sağlık profili | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` (`audience="staff"`) — test cevapları + klinik notlar; **otomatik `healthAnalysis` gösterilmez** |
 | Mesajlar | `/staff/messages`, `/staff/messages/:memberId` | `staff/StaffMessagesPage.jsx` — danışan sohbetleri |
+| Ekip mesajları | `/staff/collab-messages`, `…/:memberId` | `staff/StaffCollabMessagesPage.jsx` — koç↔diyetisyen; başlık: personel adı + `Danışan adına: …` |
 | Admin mesajları | `/staff/admin-messages` | `staff/StaffAdminMessagesPage.jsx` — admin ↔ personel |
 | Programlar (koç) | `/staff/programs` | `staff/StaffProgramsPage.jsx` — diyetisyen `/staff/lists`'e yönlendirilir |
 | Listeler (diyetisyen) | `/staff/lists` | `staff/StaffListsPage.jsx` — beslenme listeleri özeti |
@@ -599,8 +607,13 @@ Kaynak: `src/App.jsx` satır 56–117
 /dashboard           → DashboardPage
 /calendar            → CalendarPage
 /calorie             → CalorieCalculatorPage
-/schedule/coach      → CoachSchedulePage
-/schedule/dietitian  → DietitianSchedulePage
+/health-test         → HealthTestPage (hub)
+/health-test/:sectionId → HealthTestSectionPage
+/health-test/finish  → HealthTestFinishPage
+/schedule            → AppointmentsPage (?tab=coach|dietitian|doctor)
+/schedule/coach      → redirect → /schedule?tab=coach
+/schedule/dietitian  → redirect → /schedule?tab=dietitian
+/schedule/doctor     → redirect → /schedule?tab=doctor
 /notifications       → NotificationsPage
 /support             → SupportPage
 /programs            → ProgramsPage
@@ -609,6 +622,8 @@ Kaynak: `src/App.jsx` satır 56–117
 /profile/payments    → PaymentManagementPage (member, mock)
 ```
 
+> **Not:** `CoachSchedulePage.jsx` / `DietitianSchedulePage.jsx` repoda duruyor; üye menüsü artık birleşik `AppointmentsPage` kullanır.
+
 ### Personel (RequireAuth staff)
 ```
 /staff/call/:sessionType/:sessionId  → VideoCallPage (staff)
@@ -616,6 +631,8 @@ Kaynak: `src/App.jsx` satır 56–117
 /staff/clients       → StaffClientsPage
 /staff/messages      → StaffMessagesPage
 /staff/messages/:memberId → StaffMessagesPage
+/staff/collab-messages → StaffCollabMessagesPage
+/staff/collab-messages/:memberId → StaffCollabMessagesPage
 /staff/admin-messages → StaffAdminMessagesPage
 /staff/programs      → StaffProgramsPage (koç; diyetisyen → /staff/lists)
 /staff/lists         → StaffListsPage (diyetisyen beslenme listeleri)
@@ -823,12 +840,16 @@ OnboardingPage.jsx
 MembershipComparisonPage.jsx
 DashboardPage.jsx
 CalendarPage.jsx
-CoachSchedulePage.jsx
-DietitianSchedulePage.jsx
+AppointmentsPage.jsx            ← /schedule birleşik randevular
+CoachSchedulePage.jsx           ← legacy (redirect dışı kullanılmıyor)
+DietitianSchedulePage.jsx       ← legacy
 NotificationsPage.jsx
 SupportPage.jsx
 ProfilePage.jsx
-ProgramsPage.jsx
+ProgramsPage.jsx              ← antrenman satırında ExerciseVideoThumbnail
+HealthTestPage.jsx
+HealthTestSectionPage.jsx
+HealthTestFinishPage.jsx
 CalorieCalculatorPage.jsx
 ExerciseLibraryPage.jsx
 SuccessStoriesPage.jsx
@@ -876,7 +897,9 @@ admin/AdminActivityPage.jsx
 
 **Video:** `VideoCallUI`, `VideoJoinLink`, `StaffVideoPanel` (personel için görüntülü görüşme alanı)
 
-**Onboarding:** `HealthTestStep` (soru-soru, çok adımlı sağlık testi)
+**Onboarding / sağlık testi:** `HealthTestStep`, `HealthTestPrompt`, `HealthTestHub` (kategori kartları), `HealthTestFlow` (bölüm veya tam akış)
+
+**Kütüphane:** `ExerciseCategorySelect`, `ExercisePagination`, `ExerciseVideoThumbnail` (program + takvim thumb `xs`), `ExerciseDetailModal` (kütüphane/takvim detay), `VideoPlayer` (imzalı URL)
 
 **Package:** `SupportScheduler`, `WeeklyAvailability`, `AvailabilityView`
 
@@ -1020,7 +1043,7 @@ Kaynak: `.env.example`
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` — `generateHealthAnalysis()` |
 | Landing üye/çevrimiçi gösterim eşikleri | `src/utils/displayPlatformStats.js`, `src/hooks/usePlatformDisplayStats.js`, `LiveActiveCounter.jsx`, `LandingPage.jsx` |
 | Kayıt akışı (2 adım) | `src/pages/OnboardingPage.jsx` |
-| Sağlık testi (panel sonrası) | `HealthTestWidget.jsx`, `HealthTestPrompt.jsx`, `HealthTestFlow.jsx` |
+| Sağlık testi (panel sonrası) | `HealthTestWidget.jsx`, `HealthTestPrompt.jsx`, `HealthTestHub.jsx`, `HealthTestFlow.jsx` (hub + bölüm modu) |
 | Kişisel bilgiler (profil) | `src/components/profile/PersonalInfoSection.jsx` |
 | Otomatik program/analiz senkronu | `src/services/memberHealthSync.js` |
 | Sayfa geçişinde scroll üste | `src/components/layout/ScrollToTop.jsx` → `PublicLayout.jsx` |
@@ -1443,11 +1466,28 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 - Kayıt sonrası otomatik program/analiz **sağlık testi tamamlanınca** `memberHealthSync.js` devreye girer (boy/kilo yoksa testten türetilir).
 
 ### 2. Sağlık testi — panel sonrası akış
-- Rehber turu (`OnboardingTutorial`) kapanınca `onComplete` → `HealthTestPrompt` açılır.
-- **Testi Şimdi Çöz** → `HealthTestFlow` (soru-soru + onay adımı) → `healthTest`, `healthAck`, `disclaimer` DB'ye kaydedilir.
-- **Sonra Hatırlat** → popup kapanır, animasyonlu **Sağlık Testini Tamamla** FAB butonu (`HealthTestWidget.jsx`).
-- Test tamamlanınca FAB gösterilmez.
-- Bileşenler: `HealthTestPrompt.jsx`, `HealthTestFlow.jsx`, `HealthTestWidget.jsx`.
+
+**Giriş noktaları:**
+- Rehber turu (`OnboardingTutorial`) kapanınca `onComplete` → `HealthTestPrompt` (FAB veya hemen çöz)
+- Üye menüsü → `/health-test` (`HealthTestPage` → `HealthTestHub`)
+- Tamamlanmamışsa menüde amber `!` badge (`memberNav.js`)
+
+**Hub modeli (2026-07):** Tek uzun akış yerine kategori bazlı tamamlama:
+| Rota | Dosya | İşlev |
+|------|-------|-------|
+| `/health-test` | `HealthTestPage.jsx` → `HealthTestHub.jsx` | Toplam ilerleme + kategori kartları |
+| `/health-test/:sectionId` | `HealthTestSectionPage.jsx` → `HealthTestFlow` (`sectionId` modu) | Tek bölüm soruları |
+| `/health-test/finish` | `HealthTestFinishPage.jsx` | Tüm bölümler bitince onay + disclaimer |
+
+**Hub grid (responsive):** mobil **2**, tablet (`md`) **3**, masaüstü (`lg`) **4** sütun — `max-w-3xl` kaldırıldı, tam genişlik.
+
+**Veri:** `src/data/healthTest.js` — `getHealthTestHubSections`, `getOverallHealthTestProgress`, `isSectionComplete`, `isQuestionFullyAnswered` (çoklu seçim + koşullu "Diğer" detay).
+
+**Eski akış (hâlâ geçerli):** Prompt → `HealthTestFlow` (tüm sorular) veya hub'dan bölüm bölüm → `healthTest`, `healthAck`, `disclaimer` DB'ye (`saveHealthTestProgress` / tamamlama).
+
+- **Testi Şimdi Çöz** → `/health-test` hub veya doğrudan flow
+- **Sonra Hatırlat** → FAB (`HealthTestWidget.jsx`)
+- Bileşenler: `HealthTestPrompt.jsx`, `HealthTestHub.jsx`, `HealthTestFlow.jsx`, `HealthTestWidget.jsx`
 
 ### 3. Kişisel bilgiler — profil sayfası
 - `PersonalInfoSection.jsx`: yaş, cinsiyet, şehir/ilçe, ölçüler, fotoğraf, hedefler, spor seviyesi, beslenme tercihleri.
@@ -1460,7 +1500,9 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 ### Değiştirilen/Eklenen Dosyalar (§20)
 - `src/pages/OnboardingPage.jsx` (yeniden yazıldı — 2 adım)
 - `src/components/onboarding/HealthTestPrompt.jsx` (yeni)
-- `src/components/onboarding/HealthTestFlow.jsx` (yeni)
+- `src/components/onboarding/HealthTestHub.jsx` (kategori hub)
+- `src/components/onboarding/HealthTestFlow.jsx` (bölüm veya tam akış)
+- `src/pages/HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`
 - `src/components/dashboard/HealthTestWidget.jsx` (yeni)
 - `src/components/profile/PersonalInfoSection.jsx` (yeni)
 - `src/services/memberHealthSync.js` (yeni)
@@ -1850,7 +1892,9 @@ Yardımcı: `src/utils/programSchedule.js` — `entryMatchesDate`, `getProgramEn
 
 - `CalendarPage` — tarih + haftalık girdi desteği; **tüm günler** açılır ve tamamlanabilir (§37).
 - Beslenme listesi: öğün adı + "Öğün içeriği" bloğu (`mealContentText`).
-- Hareket videosu **aynı sayfada** genişletilir (`İzle` / `Gizle`), ayrı modal yok.
+- Antrenman satırında yalnızca **hareket adı** + saat/set; açıklama listede gösterilmez.
+- Sol thumbnail tıklanınca kütüphane tarzı detay modalı (`ExerciseDetailModal`, `z-[70]`); gün paneli açık kalır.
+- Hareket videosu **aynı satırda** genişletilir (`İzle` / `Gizle`), ayrı modal yok.
 - Tamamlama → `toggleActivityCompletion` → `streak` + `progress.workouts` güncellenir.
 
 ### Streak & grafikler
@@ -1995,6 +2039,7 @@ Kaynak: `public/brand-logo-alt.png` → çıktılar: `brand-logo.png`, `brand-ma
 - Tamamlanma anahtarı: `mealCompletionKey(dateStr, mealType)` → `completedActivities[dateStr]` dizisinde
 - `toggleMealCompletion(dateStr, mealType, entryIds)` — öğün işaretlenince o öğündeki tüm entry ID’leri de işaretlenir
 - Antrenman: hareket bazlı onay (önceki davranış)
+- Antrenman satırında hareket açıklaması gösterilmez; **İzle** ile video aynı satırda açılır
 - Gün ilerleme sayacı: `workout sayısı + öğün sayısı` (beslenme maddesi sayısı değil)
 
 Yardımcılar (`programSchedule.js`):
@@ -2669,11 +2714,13 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | Rota | Dosya | Ana bölümler | Veri / aksiyonlar |
 |------|-------|--------------|-------------------|
 | `/dashboard` | `DashboardPage.jsx` | Sağlık özeti, kilo/antrenman/öğün grafikleri (`ProgressChart`), görevler, yaklaşan seanslar, sürüklenebilir sağlık FAB | `user`, `myPrograms`, `coachSessions`, `dietitianSessions` |
-| `/calendar` | `CalendarPage.jsx` | Diyet listesi \| Koç programı yan yana; öğün tamamlama toggle | `myPrograms`, `completedActivities` |
-| `/schedule/coach` | `CoachSchedulePage.jsx` | Koç randevu listesi, ertele/iptal | `user.coachSessions` |
-| `/schedule/dietitian` | `DietitianSchedulePage.jsx` | Diyetisyen randevu listesi | `user.dietitianSessions` |
-| `/programs` | `ProgramsPage.jsx` | Atanan antrenman/beslenme programları | `programs` |
-| `/library` | `ExerciseLibraryPage.jsx` | Egzersiz arama (büyük filtre çubuğu), video oynatıcı | `exercises` |
+| `/calendar` | `CalendarPage.jsx` | Diyet \| Koç yan yana; xs thumbnail → detay modal; İzle inline video | `myPrograms`, `completedActivities` |
+| `/schedule` | `AppointmentsPage.jsx` | Birleşik randevular `?tab=coach\|dietitian\|doctor` | `user.*Sessions` |
+| `/health-test` | `HealthTestPage.jsx` | Sağlık testi hub — kategori kartları, toplam ilerleme | `healthTest.js`, `HealthTestHub` |
+| `/health-test/:sectionId` | `HealthTestSectionPage.jsx` | Tek test bölümü | `HealthTestFlow` |
+| `/health-test/finish` | `HealthTestFinishPage.jsx` | Onay + disclaimer | `healthAck`, `disclaimer` |
+| `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; `entries[]` tıklanabilir video; `ExerciseVideoThumbnail` | `programs` |
+| `/library` | `ExerciseLibraryPage.jsx` | Filtre çubuğu (konum/makine); sıralama UI yok; video gate | `exercises` |
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
 | `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
 | `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
@@ -2689,6 +2736,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/staff/profile` | `staff/StaffSelfProfilePage.jsx` | her ikisi | Personel profil düzenleme (`StaffProfileEditor`); şifre değişimi mevcut şifre ile |
 | `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
 | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` | her ikisi | Sağlık testi cevapları + klinik notlar (**`healthAnalysis` yok**) |
+| `/staff/collab-messages` | `staff/StaffCollabMessagesPage.jsx` | koç, diyetisyen | Ekip içi mesaj; inbox: peer adı büyük, `Danışan adına: …` alt satır |
 | `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
 | `/staff/lists` | `staff/StaffListsPage.jsx` | diyetisyen | Beslenme listeleri özeti |
 | `/staff/library` | `StaffLibraryGate.jsx` | koç→library, diyetisyen→lists | Rol bazlı yönlendirme |
@@ -3838,8 +3886,8 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 |-----|----------|
 | Etiketler (`Hareket Ara`, tip, zorluk…) | `text-sm` → `sm:text-base`, uppercase |
 | Arama / select | `min-h-[3rem]` (sm: `3.25rem`), `text-base` → `sm:text-lg` |
-| Renk | Her alan farklı tema (`FILTER_THEMES`): arama **violet**, tip **brand/mavi**, zorluk **amber**, ekipman **teal**, konum **rose**, makine **slate**, sıralama **indigo** |
-| Düzen | Arama **her zaman tam genişlik** (ayrı satır); filtreler alt satırda grid: `sm:` 2, `md:` 3, `xl:` 6 sütun |
+| Renk | Her alan farklı tema (`FILTER_THEMES`): arama **violet**, tip **brand/mavi**, zorluk **amber**, ekipman **teal**, konum **rose**, makine **slate** |
+| Düzen | Arama **her zaman tam genişlik** (ayrı satır); filtreler alt satırda grid: `sm:` 2, `md:` 3, `lg:` 4, `xl:` 5 sütun. **Sıralama seçici kaldırıldı** (varsayılan: isim A→Z) |
 | `ExerciseCategorySelect` | `max-w-xs` kaldırıldı; tam genişlik, kütüphane ile aynı boy |
 
 Yeni filtre stili eklerken `ExerciseLibraryPage` içindeki `FILTER_THEMES` sabitlerini kullanın veya aynı ölçekleri koruyun.
@@ -3870,6 +3918,26 @@ npm run backfill:exercise-locations
 Script: `scripts/backfill-exercise-locations.mjs` — tam import yerine `locations` + `requires_machine` alanlarını 1600exercisedbpro JSON'dan yazar.
 
 **Sınıflandırma kuralları (özet):** Makinalı = `machine`, `cable`, `smith machine`, `leverage machine`, `assisted`. Konum paket + ekipman kurallarıyla atanır (ofis paketi → ofis; kablo/makine → salon; dambıl/bant → ev+salon vb.). Detay: `1600exercisedbpro/_metadata_enrichment/classification_rules.md`.
+
+### 54.3 Programlarım — hareket video thumbnail (2026-07-07)
+
+**Dosyalar:** `src/pages/ProgramsPage.jsx`, `src/components/library/ExerciseVideoThumbnail.jsx`
+
+Üye `/programs` antrenman satırları (`p.entries[]`, `videoUrl` varsa):
+- Sol tarafta **video ilk karesi** (56–64 px, responsive)
+- Supabase path → imzalı URL + `<video preload="metadata">`; YouTube → statik thumb
+- Tıklanınca mevcut `VideoPlayer` modal; hover'da `prefetchExerciseVideo`
+- Video yoksa Dambıl ikonlu gradient fallback; beslenme satırları elma ikonu (değişmedi)
+- Boyutlar: `xs` (36px, takvim), `sm`, `md` (varsayılan program)
+
+### 54.4 Takvim — hareket detay modalı (2026-07-07)
+
+**Dosyalar:** `src/pages/CalendarPage.jsx`, `src/components/library/ExerciseDetailModal.jsx`, `src/services/exerciseLibrary.js` (`fetchExerciseById`)
+
+Gün paneli (`z-[60]`) antrenman satırı:
+- Satırda yalnızca isim + saat/set; **açıklama listede yok**
+- Sol **xs thumbnail** tık → `ExerciseDetailModal` (`z-[70]`) — kütüphane ile aynı rozetler + açıklama; `exerciseId` varsa DB'den metadata tamamlanır
+- **İzle / Gizle** → video aynı satırda inline (`VideoPlayer`); modal açmaz
 
 ---
 
@@ -3977,7 +4045,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **D** | Çoklu paket union | `memberPackages.js`: `resolveMemberEntitlements`, `memberHas*Access`, `LEGACY_PLAN_RANK` |
 | **A** | Ödeme UI | `PaymentManagementPage.jsx`: sahte kart kaldırıldı; Stripe Checkout mesajı |
 | **G** | Admin finans birleşimi | `/admin/payments` = grafik + ücretli üyeler; `/admin/subscriptions` → redirect |
-| **B** | Video gate | `ExerciseLibraryPage` + `ExerciseCardMedia`: `memberHasFullVideoAccess`; koç/staff `staffMode` |
+| **B** | Video gate | `ExerciseLibraryPage`: `memberHasFullVideoAccess`; koç/staff `staffMode`. Program listesinde thumb: `ExerciseVideoThumbnail` (`ProgramsPage`) |
 
 **Personel rol yardımcıları:** `normalizeStaffRole`, `sessionsKeyForRole`, `sessionTypeForRole`, `panelTitleForRole` — ikili `coach ? X : Y` yerine kullanılmalı.
 
@@ -4001,5 +4069,29 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **GA4** | `ga4Loader.js` Consent Mode; `api/ga4-report.js` admin Data API; `AdminAnalyticsPage` platform hunisi |
 | **Blog SEO** | `blogSlug.js` — slug URL; sitemap slug; UUID ile geriye dönük `findBlogPost` |
 
-**Üye rota güncellemesi (§6 / §36.8):** `/health-test`, `/schedule` (tab parametreli). Eski schedule sayfaları redirect için tutulur; rota `App.jsx` redirect kullanır.
+**Üye rota güncellemesi (§6 / §36.8):** `/health-test` (+ `:sectionId`, `/finish`), `/schedule` (tab parametreli). Eski schedule sayfaları redirect için tutulur; rota `App.jsx` redirect kullanır.
 
+---
+
+## §61 Sağlık Hub, Kütüphane Filtreleri, Program Thumbnail, Personel UI (2026-07-07)
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Sağlık testi hub** | Kategori hub tam genişlik; grid **2 / 3 / 4** sütun; rotalar §1445 | `HealthTestHub.jsx`, `HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`, `healthTest.js` |
+| **Kütüphane filtreleri** | Konum + makine metadata; renkli filtre çubuğu; **sıralama UI kaldırıldı** | §54.1–54.2, `ExerciseLibraryPage.jsx`, `exerciseLibrary.js`, migration `20260707_*` |
+| **Program thumbnail** | Antrenman satırında sol video ilk karesi | §54.3, `ExerciseVideoThumbnail.jsx`, `ProgramsPage.jsx` |
+| **Üye panel scroll** | Sayfa değişince `main[data-panel-scroll]` en üste (`ScrollToTop` + `AppShell`) | `ScrollToTop.jsx`, `AppShell.jsx` |
+| **Üye menü tipografi** | Sidebar + mobil menü: `text-[15px]`→`text-base`, semibold, daha büyük ikon | `Sidebar.jsx`, `PanelMobileMenu.jsx` |
+| **Personel sağlık** | Otomatik `healthAnalysis` gizlendi (personel); admin'de açık | `MemberHealthProfilePanel.jsx`, `MemberHealthInsights.jsx`, `StaffClientsPage.jsx` — §38.3.1 |
+| **Ekip mesajları** | Inbox/thread: **personel adı** birincil; alt `Danışan adına: {üye}` | `StaffCollabMessagesPage.jsx`, `AdminMessagesPage.jsx` (collab sekmesi), `StaffCollabChatView.jsx` |
+| **Blog uzunluğu** | Min ~1350, hedef ~1800 karakter; token 4096 | `api/_ai-prompts.js`, `api/ai-blog-generate.js` — commit `1e264dfa` |
+| **Sağlık testi birleştirme** | `diet_family` → `diet_health`; `diet_history` → `diet_extra`; `diet_activity` koç paketinde gizlenir (`skipWhenCoach`) | `healthTestDietitianSections.js`, `healthTest.js` |
+| **Takvim hareket UX** | Satırda açıklama yok; xs thumbnail → `ExerciseDetailModal` (`z-[70]`, `fetchExerciseById`); İzle satır içi video | `CalendarPage.jsx`, `ExerciseDetailModal.jsx`, `Modal.jsx` (`zClass`) |
+
+**Rehber–kod uyum kontrolü (2026-07-07):**
+- ✅ Rota haritası §6: `/health-test/*`, `/schedule`, `/staff/collab-messages`
+- ✅ `ExerciseCardMedia` referansı kaldırıldı → `ExerciseVideoThumbnail` / `ExerciseLibraryPage` (§59)
+- ✅ Egzersiz import: `npm run backfill:exercise-locations` — `.cursor/rules/exercise-import.mdc`
+- ⚠️ `CoachSchedulePage` / `DietitianSchedulePage` repoda var; üye UI birleşik `AppointmentsPage` — eski sayfalar legacy/redirect dışı kullanılmıyor
+
+**Commit referansları:** `1e264dfa` (sağlık hub + blog), `e2997bca` (kütüphane filtre + personel UI)

@@ -114,6 +114,7 @@ export function getHealthPackageContext(packageConfig = {}) {
 
 function sectionApplies(section, gender, ctx) {
   if (section.genderOnly && section.genderOnly !== gender) return false
+  if (section.skipWhenCoach && ctx.hasCoach) return false
   const aud = section.audience || 'shared'
   if (aud === 'shared') return true
   if (aud === 'coach') return ctx.hasCoach

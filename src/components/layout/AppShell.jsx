@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'
+import ScrollToTop from './ScrollToTop'
 import ConsentBanner from '../ui/ConsentBanner'
 import AnimatedBackground from '../ui/AnimatedBackground'
 import NoIndexHead from '../seo/NoIndexHead'
@@ -50,6 +51,7 @@ export default function AppShell() {
   return (
     <div className="flex h-dvh overflow-hidden">
       <NoIndexHead />
+      <ScrollToTop />
       <Sidebar healthTestIncomplete={healthTestIncomplete} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PanelMobileMenu
@@ -73,7 +75,7 @@ export default function AppShell() {
         <div className="hidden md:block">
           <TopBar />
         </div>
-        <main className="member-panel-bg relative flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <main data-panel-scroll className="member-panel-bg relative flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="pointer-events-none sticky top-0 h-0">
             <div className="relative h-screen w-full overflow-hidden">
               <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />

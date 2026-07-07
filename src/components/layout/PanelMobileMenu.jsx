@@ -85,7 +85,7 @@ export default function PanelMobileMenu({
                 </div>
               )}
 
-              <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+              <nav className="flex-1 space-y-1.5 overflow-y-auto p-3">
                 {navItems.map((item) => (
                   <NavLink
                     key={item.to}
@@ -93,12 +93,12 @@ export default function PanelMobileMenu({
                     end={item.end}
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                        isActive ? activeClass : 'text-cream-800 hover:bg-cream-100'
+                      `flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-base font-semibold leading-snug transition ${
+                        isActive ? activeClass : 'text-cream-900/85 hover:bg-cream-100'
                       }`
                     }
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-5 w-5 shrink-0" />
                     <span className="flex-1">{item.label}</span>
                     {item.badgeCount > 0 && (
                       <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white ${

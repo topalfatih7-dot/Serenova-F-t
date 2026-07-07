@@ -43,7 +43,7 @@ export const DIETITIAN_HEALTH_SECTIONS = [
   {
     id: 'diet_health',
     title: 'Sağlık Durumu',
-    subtitle: 'Tanı, ilaç, alerji ve sindirim',
+    subtitle: 'Tanı, ilaç, alerji, sindirim ve aile öyküsü',
     icon: 'Stethoscope',
     audience: 'dietitian',
     questions: [
@@ -116,19 +116,10 @@ export const DIETITIAN_HEALTH_SECTIONS = [
           placeholder: 'Diğer şikâyetleri yazınız',
         },
       },
-    ],
-  },
-  {
-    id: 'diet_family',
-    title: 'Aile Öyküsü',
-    subtitle: 'Ailede görülen hastalıklar',
-    icon: 'HeartPulse',
-    audience: 'dietitian',
-    questions: [
       {
         type: 'multi',
         key: 'dietFamilyHistory',
-        label: 'Ailenizde aşağıdaki hastalıklardan bulunan var mı?',
+        label: 'Aile öyküsü — ailenizde aşağıdaki hastalıklardan bulunan var mı?',
         required: false,
         options: [
           { value: 'diabetes', label: 'Diyabet' },
@@ -231,9 +222,10 @@ export const DIETITIAN_HEALTH_SECTIONS = [
   {
     id: 'diet_activity',
     title: 'Fiziksel Aktivite',
-    subtitle: 'Egzersiz alışkanlıklarınız',
+    subtitle: 'Egzersiz alışkanlıklarınız (koç paketiniz varsa Fiziksel Kapasite bölümünde yanıtlanır)',
     icon: 'Activity',
     audience: 'dietitian',
+    skipWhenCoach: true,
     questions: [
       {
         type: 'single',
@@ -428,16 +420,16 @@ export const DIETITIAN_HEALTH_SECTIONS = [
     ],
   },
   {
-    id: 'diet_history',
-    title: 'Geçmiş Diyet Deneyimleri',
-    subtitle: 'Önceki diyet denemeleriniz ve sonuçları',
-    icon: 'Clock3',
+    id: 'diet_extra',
+    title: 'Ek Bilgiler',
+    subtitle: 'Geçmiş diyet deneyimi, tercihler ve koşullar',
+    icon: 'Flower2',
     audience: 'dietitian',
     questions: [
       {
         type: 'single',
         key: 'dietPastDiet',
-        label: 'Daha önce diyet yaptınız mı?',
+        label: 'Geçmiş diyet deneyimi — daha önce diyet yaptınız mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -466,15 +458,6 @@ export const DIETITIAN_HEALTH_SECTIONS = [
           { value: 'no', label: 'Hayır' },
         ],
       },
-    ],
-  },
-  {
-    id: 'diet_extra',
-    title: 'Ek Bilgiler',
-    subtitle: 'Beslenmenizi etkileyen tercih ve koşullar',
-    icon: 'Flower2',
-    audience: 'dietitian',
-    questions: [
       {
         type: 'text',
         key: 'dietDislikedFoods',

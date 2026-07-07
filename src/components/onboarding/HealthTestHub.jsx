@@ -24,12 +24,10 @@ const CARD_THEME = {
   men: 'from-slate-500/10 to-slate-700/5 border-slate-200 hover:border-slate-300',
   diet_reason: 'from-sage-500/10 to-emerald-600/5 border-sage-200 hover:border-sage-300',
   diet_health: 'from-rose-500/10 to-rose-600/5 border-rose-200 hover:border-rose-300',
-  diet_family: 'from-violet-500/10 to-indigo-600/5 border-violet-200 hover:border-violet-300',
   diet_lifestyle: 'from-sky-500/10 to-blue-600/5 border-sky-200 hover:border-sky-300',
   diet_activity: 'from-amber-500/10 to-orange-600/5 border-amber-200 hover:border-amber-300',
   diet_nutrition: 'from-sage-500/10 to-emerald-600/5 border-sage-200 hover:border-sage-300',
   diet_women: 'from-pink-500/10 to-fuchsia-600/5 border-pink-200 hover:border-pink-300',
-  diet_history: 'from-teal-500/10 to-cyan-600/5 border-teal-200 hover:border-teal-300',
   diet_extra: 'from-brand-500/10 to-brand-600/5 border-brand-200 hover:border-brand-300',
 }
 
@@ -52,7 +50,7 @@ export default function HealthTestHub({
     && healthAck && disclaimer
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Genel ilerleme */}
       <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -105,8 +103,8 @@ export default function HealthTestHub({
         </div>
       )}
 
-      {/* Kategori kartları */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Kategori kartları — mobil 2, tablet 3, masaüstü 4 sütun */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
         {sections.map(({ section, progress }) => {
           const Icon = ICONS[section.icon] || HeartPulse
           const audienceMeta = HEALTH_AUDIENCE_META[section.audience || 'shared']

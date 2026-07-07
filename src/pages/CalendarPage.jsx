@@ -13,10 +13,14 @@ import {
   ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save,
 } from 'lucide-react'
 import VideoPlayer from '../components/ui/VideoPlayer'
+import ExerciseDetailModal from '../components/library/ExerciseDetailModal'
+import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { fetchExerciseById } from '../services/exerciseLibrary'
+import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import {
   getProgramEntriesForDate,
   completionKey,
@@ -33,6 +37,22 @@ const amountText = (e) => {
   if (!e) return ''
   if (e.amountType === 'duration') return `${e.amount} ${e.durationUnit || 'sn'}`
   return `${e.amount} tekrar`
+}
+
+function entryToExerciseDetail(entry) {
+  return {
+    exerciseId: entry.exerciseId,
+    name: entry.exerciseName || entry.name,
+    exerciseName: entry.exerciseName || entry.name,
+    videoUrl: entry.videoUrl,
+    videoPending: entry.videoPending,
+    description: entry.description || '',
+    category: entry.category || entry.bodyPart,
+    equipment: entry.equipment,
+    difficulty: entry.difficulty,
+    locations: entry.locations,
+    requiresMachine: entry.requiresMachine,
+  }
 }
 
 export default function CalendarPage() {
@@ -445,9 +465,29 @@ export default function CalendarPage() {
 function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
   const { workout: workoutEntries, nutrition: nutritionEntries } = splitEntriesByType(entries)
   const mealGroups = groupEntriesByMeal(nutritionEntries)
+  const [detailExercise, setDetailExercise] = useState(null)
 
   const today = isToday(date)
   const progressPct = completion.total > 0 ? Math.round((completion.done / completion.total) * 100) : 0
+
+  const openExerciseDetail = useCallback((entry) => {
+    const base = entryToExerciseDetail(entry)
+    setDetailExercise(base)
+    if (entry.videoUrl) prefetchExerciseVideo(entry.videoUrl)
+    if (entry.exerciseId) {
+      fetchExerciseById(entry.exerciseId).then((ex) => {
+        if (!ex) return
+        setDetailExercise((prev) => (prev ? {
+          ...prev,
+          ...ex,
+          name: ex.name || prev.name,
+          exerciseName: ex.name || prev.exerciseName,
+          videoUrl: prev.videoUrl || ex.videoUrl,
+          videoPending: prev.videoPending ?? ex.videoPending,
+        } : ex))
+      })
+    }
+  }, [])
 
   return (
     <>
@@ -563,6 +603,7 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
                         onToggle={() => onToggle(entry.id)}
                         expanded={expandedEntryId === entry.id}
                         onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
+                        onOpenDetail={() => openExerciseDetail(entry)}
                         saving={saving}
                         canComplete={canComplete}
                       />
@@ -575,6 +616,13 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
         </div>
         </motion.div>
       </div>
+
+      <ExerciseDetailModal
+        open={!!detailExercise}
+        onClose={() => setDetailExercise(null)}
+        exercise={detailExercise}
+        zClass="z-[70]"
+      />
     </>
   )
 }
@@ -620,9 +668,10 @@ function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
 }
 
 // ── Aktivite Satırı ─────────────────────────────────────────────────
-function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canComplete }) {
+function ActivityRow({ entry, done, onToggle, expanded, onExpand, onOpenDetail, saving, canComplete }) {
   const displayName = entry.exerciseName || entry.name || 'Aktivite'
   const isNutrition = entry.programType === 'nutrition' || entry.mealType
+  const hasVideo = Boolean(entry.videoUrl)
 
   return (
     <motion.div
@@ -654,6 +703,24 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canCom
           <Circle className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
         )}
 
+        {hasVideo && !isNutrition && (
+          <button
+            type="button"
+            onClick={onOpenDetail}
+            onMouseEnter={() => prefetchExerciseVideo(entry.videoUrl)}
+            onFocus={() => prefetchExerciseVideo(entry.videoUrl)}
+            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            title="Hareket detayı"
+          >
+            <ExerciseVideoThumbnail
+              url={entry.videoUrl}
+              videoPending={entry.videoPending}
+              size="xs"
+              accent="brand"
+            />
+          </button>
+        )}
+
         <div className="min-w-0 flex-1">
           {isNutrition && entry.mealType && (
             <p className="text-[10px] font-bold uppercase tracking-wide text-sage-600">{mealLabel(entry.mealType)}</p>
@@ -679,10 +746,6 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canCom
             )}
           </div>
 
-          {entry.description && (
-            <p className="mt-1.5 text-xs leading-relaxed text-cream-800/60">{entry.description}</p>
-          )}
-
           <AnimatePresence>
             {expanded && entry.videoUrl && (
               <motion.div
@@ -697,7 +760,7 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, saving, canCom
           </AnimatePresence>
         </div>
 
-        {entry.videoUrl && (
+        {hasVideo && (
           <button
             type="button"
             onClick={onExpand}
