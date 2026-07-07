@@ -69,6 +69,7 @@ export default function SeoHead({
     upsertMeta('name', 'description', desc)
     upsertMeta('name', 'keywords', kw)
     upsertMeta('name', 'author', SEO.siteName)
+    upsertMeta('name', 'application-name', SEO.siteName)
     upsertMeta('name', 'robots', noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large')
     upsertMeta('name', 'theme-color', SEO.themeColor)
 

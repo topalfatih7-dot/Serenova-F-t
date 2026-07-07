@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { useApp } from '../context/AppContext'
 import SeoHead from '../components/seo/SeoHead'
-import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription } from '../config/seo'
+import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription, buildBrandKeywords } from '../config/seo'
 import { resolveBlogCover } from '../utils/blogImages'
 
 export default function BlogPostPage() {
@@ -34,7 +34,7 @@ export default function BlogPostPage() {
       <SeoHead
         title={post.title}
         description={post.excerpt || truncateDescription(post.content)}
-        keywords={[post.category, post.author, 'Yeni Form blog', 'sağlıklı yaşam', 'fitness'].filter(Boolean).join(', ')}
+        keywords={buildBrandKeywords([post.category, post.author, 'blog', 'sağlıklı yaşam', 'fitness'])}
         canonicalPath={postPath}
         ogType="article"
         jsonLd={[

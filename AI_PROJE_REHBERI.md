@@ -4065,7 +4065,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Sağlık testi** | `/health-test` sayfası; kayıt/tutorial sonrası otomatik modal kaldırıldı; tamamlanmamışsa menüde `!` badge |
 | **Randevular** | `/schedule?tab=coach\|dietitian\|doctor` — `AppointmentsPage.jsx`; eski `/schedule/coach` → redirect |
 | **Üyelik mobil** | `MembershipComparisonAccordion.jsx` — accordion; VIP önerilen + 6 ay tasarruf rozeti |
-| **Hero video** | `HeroBackgroundVideo.jsx` — poster + `prefers-reduced-motion` / `prefers-reduced-data` |
+| **Hero video** | `HeroBackgroundVideo.jsx` — `layout="cover"` (varsayılan, tam bölüm hero) veya `layout="inline"` (kart/vitrin); poster + `prefers-reduced-motion` / `prefers-reduced-data` |
 | **GA4** | `ga4Loader.js` Consent Mode; `api/ga4-report.js` admin Data API; `AdminAnalyticsPage` platform hunisi |
 | **Blog SEO** | `blogSlug.js` — slug URL; sitemap slug; UUID ile geriye dönük `findBlogPost` |
 
@@ -4087,6 +4087,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Blog uzunluğu** | Min ~1350, hedef ~1800 karakter; token 4096 | `api/_ai-prompts.js`, `api/ai-blog-generate.js` — commit `1e264dfa` |
 | **Sağlık testi birleştirme** | `diet_family` → `diet_health`; `diet_history` → `diet_extra`; `diet_activity` koç paketinde gizlenir (`skipWhenCoach`) | `healthTestDietitianSections.js`, `healthTest.js` |
 | **Takvim hareket UX** | Satırda açıklama yok; xs thumbnail → `ExerciseDetailModal` (`z-[70]`, `fetchExerciseById`); İzle satır içi video | `CalendarPage.jsx`, `ExerciseDetailModal.jsx`, `Modal.jsx` (`zClass`) |
+| **Kurumsal wellness video** | `CorporatePage` vitrininde `HeroBackgroundVideo layout="inline"` — `cover` modu kart içinde 0 yükseklik veriyordu (2026-07-07 düzeltme) | `CorporatePage.jsx`, `HeroBackgroundVideo.jsx`, `index.css` (`.corporate-video-*`) |
 
 **Rehber–kod uyum kontrolü (2026-07-07):**
 - ✅ Rota haritası §6: `/health-test/*`, `/schedule`, `/staff/collab-messages`

@@ -13,7 +13,7 @@ export default function BrandLogo({ size = 'md', linkTo = '/' }) {
     <Link to={linkTo} className="inline-flex shrink-0 items-center" aria-label={BRAND.name}>
       <img
         src={BRAND.assets.logo}
-        alt={BRAND.name}
+        alt={`${BRAND.name} — ${BRAND.domain}`}
         className={`${HEIGHT[size]} w-auto max-w-[min(100vw-8rem,240px)] bg-transparent object-contain object-left`}
         width={240}
         height={64}

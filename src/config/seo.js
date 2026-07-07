@@ -27,6 +27,98 @@ export function absoluteUrl(path = '/') {
   return base ? `${base}${normalized}` : normalized
 }
 
+/** Resmi alan adı — arama ve schema için */
+export const BRAND_DOMAIN = 'yeniform.com'
+
+/** Schema.org alternateName — boşluksuz / domain / yaygın yazımlar */
+export const BRAND_ALIASES = [
+  'YeniForm',
+  BRAND_DOMAIN,
+  `www.${BRAND_DOMAIN}`,
+  'yenifrom',
+  'Yeni Form Wellness',
+]
+
+/** Meta keywords — marka + domain + yaygın yazım hataları */
+export const BRAND_SEARCH_TERMS = [
+  'Yeni Form',
+  'YeniForm',
+  'yeniform',
+  'yeniform.com',
+  'www.yeniform.com',
+  'yeni form wellness',
+  'yeni form koçluk',
+  'yeni form diyetisyen',
+  'yeni form üyelik',
+  'yenifrom',
+  'yenifrom.com',
+  'yneiform',
+  'yeni frm',
+  'yeni-form',
+]
+
+const CORE_KEYWORDS = [
+  'online koçluk',
+  'fitness koçu',
+  'diyetisyen online',
+  'wellness platformu',
+  'beslenme programı',
+  'antrenman programı',
+  'kalori hesaplama',
+  'kişisel sağlık analizi',
+  'online fitness',
+  'video koçluk',
+  'sağlıklı yaşam',
+  'evde antrenman',
+  'spor salonu programı',
+]
+
+/** Marka keşfi için statik SSS — admin SSS boş olsa bile JSON-LD ve landing'de görünür */
+export const STATIC_BRAND_FAQS = [
+  {
+    q: 'Yeni Form nedir?',
+    a: 'Yeni Form (yeniform.com), Türkiye\'nin çevrimiçi koçluk, diyetisyen ve wellness platformudur. Kişisel sağlık analizi, uzman görüşmeleri ve otomatik beslenme-antrenman programları sunar.',
+  },
+  {
+    q: 'Yeni Form sitesine nasıl ulaşırım?',
+    a: 'Resmi web adresimiz www.yeniform.com\'dur. Google\'da "Yeni Form", "yeniform" veya "yeni form wellness" yazarak da bize ulaşabilirsiniz.',
+  },
+  {
+    q: 'Yeni Form ücretsiz mi?',
+    a: 'Evet. Basic paket tamamen ücretsizdir; kayıt olup kişisel sağlık analizi ve otomatik programlarla hemen başlayabilirsiniz. Ücretli paketler isteğe bağlıdır.',
+  },
+]
+
+export function mergeKeywords(...parts) {
+  const set = new Set()
+  for (const part of parts) {
+    if (!part) continue
+    const items = Array.isArray(part) ? part : String(part).split(',')
+    for (const item of items) {
+      const trimmed = item.trim()
+      if (trimmed) set.add(trimmed)
+    }
+  }
+  return [...set].join(', ')
+}
+
+export function buildBrandKeywords(extra) {
+  return mergeKeywords(BRAND_SEARCH_TERMS, extra)
+}
+
+/** Admin SSS ile marka SSS birleştir — tekrar eden sorular elenir */
+export function mergeBrandFaqs(faqs = []) {
+  const seen = new Set()
+  const merged = []
+  for (const faq of [...STATIC_BRAND_FAQS, ...(faqs || [])]) {
+    const q = (faq?.q || faq?.question || '').trim().toLowerCase()
+    if (!q || seen.has(q)) continue
+    seen.add(q)
+    merged.push(faq)
+  }
+  return merged
+}
+
 export const SEO = {
   siteName: BRAND.name,
   locale: 'tr_TR',
@@ -34,21 +126,8 @@ export const SEO = {
   defaultTitle: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
   titleSuffix: BRAND.name,
   defaultDescription:
-    'Yeni Form ile kişisel sağlık analizi, uzman koç ve diyetisyen desteği, video görüşme randevuları ve beslenme programları. Türkiye\'nin çevrimiçi wellness platformu.',
-  defaultKeywords: [
-    'online koçluk',
-    'fitness koçu',
-    'diyetisyen online',
-    'wellness platformu',
-    'beslenme programı',
-    'antrenman programı',
-    'kalori hesaplama',
-    'kişisel sağlık analizi',
-    'Yeni Form',
-    'online fitness',
-    'video koçluk',
-    'sağlıklı yaşam',
-  ].join(', '),
+    'Yeni Form (yeniform.com) ile kişisel sağlık analizi, uzman koç ve diyetisyen desteği, video görüşme randevuları ve beslenme programları. Türkiye\'nin çevrimiçi wellness platformu.',
+  defaultKeywords: buildBrandKeywords(CORE_KEYWORDS),
   ogImage: BRAND.assets.ogImage,
   ogImageWidth: 1200,
   ogImageHeight: 630,
@@ -118,11 +197,15 @@ export function buildStaffProfileKeywords(member, roleLabel) {
     `${name} ${brand}`.toLowerCase(),
     `${brand} ${roleLower}`.toLowerCase(),
     `${first} ${brand}`.toLowerCase(),
+    `${first} yeniform`.toLowerCase(),
+    `${roleLower} ${first} yeniform`.toLowerCase(),
+    'yeniform',
+    BRAND_DOMAIN,
     member?.specialty,
     member?.title,
     ...(member?.specialties || []),
   ].filter(Boolean))
-  return [...keywords].join(', ')
+  return mergeKeywords([...keywords])
 }
 
 /** Statik public rotalar — sitemap ve varsayılan meta eşlemesi */
@@ -145,22 +228,20 @@ export const PAGE_SEO = {
   '/': {
     title: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
     description:
-      'Evde veya spor salonunda antrenman — kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
-    keywords:
-      'online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, Yeni Form, ücretsiz fitness',
+      'Yeni Form (yeniform.com) — evde veya spor salonunda antrenman, kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
+    keywords: buildBrandKeywords('online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, ücretsiz fitness'),
   },
   '/membership': {
     title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Doktor & VIP',
     description:
       'Basic (ücretsiz), Eko, Diyet, Spor, Doktor Paketi ve VIP paketlerini karşılaştırın. Koç, diyetisyen ve doktor görüşmeleri, kalori hesaplama, video kütüphanesi ve kişisel programlar.',
-    keywords:
-      'üyelik planları, eko paket, diyet paketi, spor paketi, doktor paketi, vip paket, online koçluk fiyat, Yeni Form üyelik',
+    keywords: buildBrandKeywords('üyelik planları, eko paket, diyet paketi, spor paketi, doktor paketi, vip paket, online koçluk fiyat'),
   },
   '/onboarding': {
     title: 'Kayıt Ol — Ücretsiz Hesap Oluştur',
     description:
       'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya Eko, Diyet, Spor, Doktor Paketi ve VIP planlarıyla kişisel wellness yolculuğunuza başlayın.',
-    keywords: 'kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik, eko paket kayıt',
+    keywords: buildBrandKeywords('kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik, eko paket kayıt'),
   },
   '/login': {
     title: 'Giriş Yap',
@@ -176,37 +257,37 @@ export const PAGE_SEO = {
     title: 'Başarı Hikayeleri — Topluluk Dönüşümleri',
     description:
       'Yeni Form topluluğunun ilham verici dönüşüm hikayeleri. Gerçek üyelerin wellness yolculuklarından öğrenin.',
-    keywords: 'başarı hikayeleri, dönüşüm, fitness motivasyon, kilo verme hikayesi, wellness',
+    keywords: buildBrandKeywords('başarı hikayeleri, dönüşüm, fitness motivasyon, kilo verme hikayesi, wellness'),
   },
   '/blog': {
     title: 'Blog — Sağlık, Beslenme ve Motivasyon',
     description:
       'Beslenme, antrenman, motivasyon ve sağlıklı yaşam üzerine uzman içerikler. Yeni Form blog.',
-    keywords: 'fitness blog, beslenme ipuçları, antrenman rehberi, sağlıklı yaşam, motivasyon',
+    keywords: buildBrandKeywords('fitness blog, beslenme ipuçları, antrenman rehberi, sağlıklı yaşam, motivasyon'),
   },
   '/team/coaches': {
     title: 'Koçlarımız — Uzman Fitness Koçları',
     description:
       'Deneyimli fitness koçlarımızla tanışın. Kişisel antrenman programları ve video görüşme desteği.',
-    keywords: 'fitness koçu, online koç, antrenör, kişisel antrenman',
+    keywords: buildBrandKeywords('fitness koçu, online koç, antrenör, kişisel antrenman'),
   },
   '/team/dietitians': {
     title: 'Diyetisyenlerimiz — Uzman Beslenme Danışmanları',
     description:
       'Uzman diyetisyenlerimizle sağlıklı ve sürdürülebilir beslenme alışkanlıkları kazanın.',
-    keywords: 'online diyetisyen, beslenme danışmanı, diyet programı',
+    keywords: buildBrandKeywords('online diyetisyen, beslenme danışmanı, diyet programı'),
   },
   '/team/doctors': {
     title: 'Doktorlarımız — Sağlık Sürecinizde Yanınızda',
     description:
       'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktor kadromuz.',
-    keywords: 'wellness doktor, sağlık danışmanlığı, online sağlık',
+    keywords: buildBrandKeywords('wellness doktor, sağlık danışmanlığı, online sağlık'),
   },
   '/corporate': {
     title: 'Kurumsal Wellness Programları',
     description:
       'Şirketiniz için ölçeklenebilir koçluk, beslenme ve çalışan wellness çözümleri. Yeni Form kurumsal paketleri.',
-    keywords: 'kurumsal wellness, çalışan sağlığı, şirket fitness programı, kurumsal koçluk',
+    keywords: buildBrandKeywords('kurumsal wellness, çalışan sağlığı, şirket fitness programı, kurumsal koçluk'),
   },
   '/corporate/apply': {
     title: 'Kurumsal Başvuru Formu',
@@ -216,7 +297,7 @@ export const PAGE_SEO = {
   '/team/apply': {
     title: 'Kadromuza Katıl — Koç & Diyetisyen Başvurusu',
     description: 'Yeni Form kadrosuna koç veya diyetisyen olarak başvurun. Online wellness platformunda uzman ekibimize katılın.',
-    keywords: 'koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer',
+    keywords: buildBrandKeywords('koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer'),
   },
   '/kvkk': {
     title: 'KVKK Aydınlatma Metni',
@@ -273,7 +354,9 @@ export function buildOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${url}#organization`,
     name: BRAND.name,
+    alternateName: BRAND_ALIASES,
     url,
     logo: absoluteUrl(BRAND.assets.logo),
     description: SEO.defaultDescription,
@@ -301,14 +384,17 @@ export function buildItemListSchema({ name, path, items = [] }) {
 }
 
 export function buildWebSiteSchema() {
+  const url = absoluteUrl('/')
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${url}#website`,
     name: BRAND.name,
-    url: absoluteUrl('/'),
+    alternateName: BRAND_ALIASES,
+    url,
     description: SEO.defaultDescription,
     inLanguage: SEO.language,
-    publisher: { '@type': 'Organization', name: BRAND.name },
+    publisher: { '@id': `${url}#organization` },
   }
 }
 

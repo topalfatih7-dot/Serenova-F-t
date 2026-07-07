@@ -6,6 +6,7 @@ import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
 import ScrollToTop from './ScrollToTop'
+import FooterSocialLinks from './FooterSocialLinks'
 import NavDropdown from './NavDropdown'
 import PublicRouteSeo from '../seo/PublicRouteSeo'
 import { BRAND } from '../../config/brand'
@@ -294,10 +295,19 @@ export default function PublicLayout() {
         <div aria-hidden className="wellness-orb -left-20 top-0 h-64 w-64 bg-brand-500/20" />
         <div aria-hidden className="wellness-orb -right-16 bottom-0 h-72 w-72 bg-sage-500/15" />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-8 md:grid-cols-3">
             <div>
               <p className="font-display text-xl font-bold text-white">{BRAND.name}</p>
               <p className="mt-3 text-sm leading-relaxed text-white/65">{BRAND.tagline}</p>
+              <p className="mt-2 text-xs text-white/45">
+                <a
+                  href={BRAND.siteUrl}
+                  className="hover:text-white/80"
+                  rel="noopener noreferrer"
+                >
+                  {BRAND.domain}
+                </a>
+              </p>
               <p className="mt-4 text-xs leading-relaxed text-white/40">Güvenli, destekleyici ve sürdürülebilir dönüşüm.</p>
             </div>
             <div>
@@ -316,6 +326,7 @@ export default function PublicLayout() {
                 )}
               </div>
             </div>
+            <FooterSocialLinks />
           </div>
           <div className="mt-10 border-t border-white/10 pt-8">
             <p className="text-sm font-semibold text-white">Yasal Bilgilendirme</p>

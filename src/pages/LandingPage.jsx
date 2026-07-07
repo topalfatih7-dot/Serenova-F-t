@@ -25,6 +25,7 @@ import {
   buildOrganizationSchema,
   buildWebSiteSchema,
   buildFaqSchema,
+  mergeBrandFaqs,
 } from '../config/seo'
 
 const staticStats = [
@@ -39,6 +40,7 @@ const fadeUp = {
 
 export default function LandingPage() {
   const { testimonials, faqs, plans, successStories, posts } = useApp()
+  const allFaqs = mergeBrandFaqs(faqs)
   const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
   const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
@@ -64,7 +66,7 @@ export default function LandingPage() {
         data={[
           buildOrganizationSchema(),
           buildWebSiteSchema(),
-          buildFaqSchema(faqs),
+          buildFaqSchema(allFaqs),
         ]}
       />
 
@@ -147,7 +149,7 @@ export default function LandingPage() {
                 custom={2}
                 className="mt-3 text-sm leading-relaxed text-white/80"
               >
-                İster spor salonunda, ister evde antrenman yapın — koç ve diyetisyeniniz size özel
+                İster spor salonunda, ister evde antrenman yapın — Yeni Form (yeniform.com) ile koç ve diyetisyeniniz size özel
                 program hazırlasın. Ücretsiz keşfedin, hedefinize kendi hızınızda ulaşın.
               </motion.p>
 
@@ -300,11 +302,11 @@ export default function LandingPage() {
       )}
 
       {/* SSS — arka plan statik CSS, accordion CSS grid */}
-      {faqs.length > 0 && (
+      {allFaqs.length > 0 && (
         <section className="relative isolate overflow-hidden py-16 sm:py-24">
           <FAQQuestionMarksBackground />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-            <FAQAccordion items={faqs} />
+            <FAQAccordion items={allFaqs} />
           </div>
         </section>
       )}

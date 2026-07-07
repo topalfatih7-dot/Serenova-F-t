@@ -107,6 +107,7 @@ function CorporateWellnessVideo() {
       <div className="corporate-video-frame">
         <div className="corporate-video-frame-inner relative overflow-hidden">
           <HeroBackgroundVideo
+            layout="inline"
             src={CORPORATE_VIDEOS.wellness.src}
             poster={CORPORATE_VIDEOS.wellness.poster}
             videoClassName="corporate-video-media"

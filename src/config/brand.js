@@ -9,14 +9,34 @@ function socialUrlsFromEnv() {
 }
 
 const manualSocialUrls = [
-  // 'https://www.instagram.com/yeniform',
-  // 'https://www.facebook.com/yeniform',
-  // 'https://www.linkedin.com/company/yeniform',
+  'https://www.instagram.com/yeniform/',
 ]
+
+/** Footer + sosyal bağlantılar — yeni platform eklemek için buraya ekleyin */
+export const BRAND_SOCIAL_LINKS = [
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    url: 'https://www.instagram.com/yeniform/',
+    handle: '@yeniform',
+  },
+]
+
+function mergeSocialUrls() {
+  return [...new Set([
+    ...socialUrlsFromEnv(),
+    ...manualSocialUrls,
+    ...BRAND_SOCIAL_LINKS.map((item) => item.url),
+  ].filter(Boolean))]
+}
 
 export const BRAND = {
   name: 'Yeni Form',
   shortName: 'Yeni Form',
+  domain: 'yeniform.com',
+  siteUrl: 'https://www.yeniform.com',
+  instagram: BRAND_SOCIAL_LINKS[0]?.url || '',
+  socialLinks: BRAND_SOCIAL_LINKS,
   tagline: 'Herkes için çevrimiçi koçluk ve wellness',
   initials: 'YF',
   /** Statik marka görselleri — kaynak: public/brand-logo-alt.png → npm run og:image */
@@ -30,8 +50,8 @@ export const BRAND = {
     /** Orijinal kaynak — değiştirin, sonra npm run og:image */
     logoSource: '/brand-logo-alt.png',
   },
-  /** Organization JSON-LD sameAs — Vercel env veya manualSocialUrls */
-  socialUrls: socialUrlsFromEnv().length ? socialUrlsFromEnv() : manualSocialUrls,
+  /** Organization JSON-LD sameAs — Vercel env + manualSocialUrls birleşimi */
+  socialUrls: mergeSocialUrls(),
   /** Google Analytics 4 — env ile override: VITE_GA4_MEASUREMENT_ID */
   ga4MeasurementId: 'G-40ENH7MC5W',
 }

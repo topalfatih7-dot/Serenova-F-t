@@ -1,7 +1,7 @@
 {
-  "name": "Yeni Form",
+  "name": "Yeni Form — yeniform.com",
   "short_name": "Yeni Form",
-  "description": "Online koçluk, diyetisyen desteği ve wellness platformu",
+  "description": "Yeni Form (yeniform.com) — online koçluk, diyetisyen desteği ve wellness platformu",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fafbfc",
