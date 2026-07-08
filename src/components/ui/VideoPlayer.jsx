@@ -6,6 +6,7 @@ import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../ser
 import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { BRAND } from '../../config/brand'
 import {
+  canUseIosNativeVideoFullscreen,
   exerciseVideoPreload,
   isIosDevice,
   needsPseudoFullscreen,
@@ -186,21 +187,28 @@ function VideoWatermarkFrame({
 }) {
   const frameRef = useRef(null)
   const videoRef = useRef(null)
+  const useIosNativeExpand = useCustomControls && isIosDevice()
   const usePseudoMode = useCustomControls && needsPseudoFullscreen()
   const [nativeFullscreen, setNativeFullscreen] = useState(false)
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false)
-  const isExpanded = usePseudoMode ? pseudoFullscreen : nativeFullscreen
+  const [iosNativeVideoFs, setIosNativeVideoFs] = useState(false)
+  const isExpanded = useIosNativeExpand
+    ? (iosNativeVideoFs || pseudoFullscreen)
+    : usePseudoMode
+      ? pseudoFullscreen
+      : nativeFullscreen
+  const showPseudoOverlay = pseudoFullscreen && (usePseudoMode || useIosNativeExpand)
 
   const syncNativeFullscreen = useCallback(() => {
-    if (usePseudoMode) return
+    if (usePseudoMode || useIosNativeExpand) return
     const el = frameRef.current
     const active = document.fullscreenElement === el
       || document.webkitFullscreenElement === el
     setNativeFullscreen(active)
-  }, [usePseudoMode])
+  }, [usePseudoMode, useIosNativeExpand])
 
   useEffect(() => {
-    if (usePseudoMode) return undefined
+    if (usePseudoMode || useIosNativeExpand) return undefined
     document.addEventListener('fullscreenchange', syncNativeFullscreen)
     document.addEventListener('webkitfullscreenchange', syncNativeFullscreen)
     return () => {
@@ -239,6 +247,19 @@ function VideoWatermarkFrame({
   }, [])
 
   const toggleExpand = useCallback(async () => {
+    const video = videoRef.current
+
+    if (useIosNativeExpand) {
+      if (iosNativeVideoFs) return
+      if (canUseIosNativeVideoFullscreen(video)) {
+        await recoverIosVideoPlayback(video)
+        video.webkitEnterFullscreen()
+        return
+      }
+      setPseudoFullscreen(true)
+      return
+    }
+
     if (usePseudoMode) {
       setPseudoFullscreen((prev) => !prev)
       return
@@ -249,11 +270,52 @@ function VideoWatermarkFrame({
       || document.webkitFullscreenElement === el
     if (active) await exitNativeFullscreen()
     else await enterNativeFullscreen()
-  }, [enterNativeFullscreen, exitNativeFullscreen, usePseudoMode])
+  }, [enterNativeFullscreen, exitNativeFullscreen, iosNativeVideoFs, useIosNativeExpand, usePseudoMode])
 
-  /** Masaüstü: native video tam ekranını engelle — logo kaybolmasın. */
+  /** iOS: sistem video tam ekranı (portrait dahil) — DOM taşımadan çalışır. */
   useEffect(() => {
-    if (usePseudoMode) return undefined
+    if (!useIosNativeExpand) return undefined
+    const video = videoRef.current
+    if (!video) return undefined
+
+    const onBegin = () => setIosNativeVideoFs(true)
+    const onEnd = () => setIosNativeVideoFs(false)
+
+    video.addEventListener('webkitbeginfullscreen', onBegin)
+    video.addEventListener('webkitendfullscreen', onEnd)
+
+    return () => {
+      video.removeEventListener('webkitbeginfullscreen', onBegin)
+      video.removeEventListener('webkitendfullscreen', onEnd)
+    }
+  }, [useIosNativeExpand, useCustomControls])
+
+  /** Pseudo tam ekran: portal sonrası oynatmayı ve konumu koru. */
+  useEffect(() => {
+    if (!pseudoFullscreen || useIosNativeExpand) return undefined
+    const video = videoRef.current
+    if (!video) return undefined
+
+    const savedTime = video.currentTime
+    const wasPlaying = !video.paused
+    let cancelled = false
+
+    const restore = async () => {
+      if (cancelled) return
+      if (savedTime > 0 && Number.isFinite(savedTime)) {
+        try { video.currentTime = savedTime } catch { /* ignore */ }
+      }
+      if (wasPlaying) await recoverIosVideoPlayback(video)
+      else if (video.readyState < HTMLMediaElement.HAVE_METADATA) video.load()
+    }
+
+    requestAnimationFrame(() => requestAnimationFrame(restore))
+    return () => { cancelled = true }
+  }, [pseudoFullscreen, useIosNativeExpand])
+
+  /** Masaüstü: native video tam ekranını engelle — logo kaybolmasın. iOS'ta webkitEnterFullscreen serbest. */
+  useEffect(() => {
+    if (usePseudoMode || useIosNativeExpand) return undefined
     const frame = frameRef.current
     const video = videoRef.current
     if (!frame || !video) return undefined
@@ -288,7 +350,7 @@ function VideoWatermarkFrame({
       video.removeEventListener('webkitbeginfullscreen', onWebkitBeginFullscreen)
       video.removeEventListener('dblclick', onDblClick)
     }
-  }, [enterNativeFullscreen, exitNativeFullscreen, toggleExpand, usePseudoMode])
+  }, [enterNativeFullscreen, exitNativeFullscreen, toggleExpand, usePseudoMode, useIosNativeExpand])
 
   /** İzleme alanına girildiğinde otomatik başlat (iOS hariç — kullanıcı jesti gerekir). */
   useEffect(() => {
@@ -361,11 +423,12 @@ function VideoWatermarkFrame({
       : children
 
   const frameClassName = [
-    'video-player-frame group relative aspect-video w-full overflow-hidden rounded-xl bg-black',
-    usePseudoMode && pseudoFullscreen
-      ? 'fixed inset-0 z-[9999] h-[100dvh] max-h-none w-screen max-w-none rounded-none'
+    'video-player-frame group relative overflow-hidden rounded-xl bg-black',
+    !showPseudoOverlay && 'aspect-video w-full',
+    showPseudoOverlay
+      ? 'video-player-pseudo-fullscreen fixed inset-0 z-[100000] flex h-[100dvh] w-screen max-w-none flex-col rounded-none'
       : '',
-    !usePseudoMode && [
+    !usePseudoMode && !useIosNativeExpand && [
       '[&:fullscreen]:flex [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen',
       '[&:fullscreen]:max-h-none [&:fullscreen]:max-w-none [&:fullscreen]:items-center [&:fullscreen]:justify-center',
       '[&:fullscreen]:rounded-none',
@@ -376,9 +439,13 @@ function VideoWatermarkFrame({
     className,
   ].filter(Boolean).join(' ')
 
+  const mediaShellClass = showPseudoOverlay
+    ? 'video-player-media relative z-0 min-h-0 flex-1 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain'
+    : 'absolute inset-0 z-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain'
+
   const frame = (
     <div ref={frameRef} className={frameClassName}>
-      <div className="absolute inset-0 z-0 [&>iframe]:h-full [&>iframe]:w-full [&>video]:h-full [&>video]:w-full [&>video]:object-contain">
+      <div className={mediaShellClass}>
         {mediaChild}
       </div>
       <img
@@ -422,7 +489,7 @@ function VideoWatermarkFrame({
     </div>
   )
 
-  if (usePseudoMode && pseudoFullscreen && typeof document !== 'undefined') {
+  if (showPseudoOverlay && typeof document !== 'undefined') {
     return createPortal(frame, document.body)
   }
 

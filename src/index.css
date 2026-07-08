@@ -980,6 +980,21 @@ body {
   touch-action: pan-y;
 }
 
+.video-player-pseudo-fullscreen {
+  height: 100dvh;
+  height: -webkit-fill-available;
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+}
+
+.video-player-pseudo-fullscreen .video-player-media {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .video-player-frame video {
   touch-action: pan-y;
 }

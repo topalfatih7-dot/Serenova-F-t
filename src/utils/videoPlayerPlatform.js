@@ -11,9 +11,14 @@ export function supportsElementFullscreen() {
   return Boolean(probe.requestFullscreen || probe.webkitRequestFullscreen)
 }
 
-/** Native video kontrolleri yerine özel UI + viewport kaplama modu. */
+/** iOS Safari: video.webkitEnterFullscreen() — modal transform içinde de çalışır. */
+export function canUseIosNativeVideoFullscreen(video) {
+  return isIosDevice() && Boolean(video && typeof video.webkitEnterFullscreen === 'function')
+}
+
+/** Android / eski tarayıcılar: viewport kaplama modu (iOS hariç). */
 export function needsPseudoFullscreen() {
-  return isIosDevice() || !supportsElementFullscreen()
+  return !isIosDevice() && !supportsElementFullscreen()
 }
 
 /**
