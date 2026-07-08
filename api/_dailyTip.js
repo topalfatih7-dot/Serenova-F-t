@@ -1,8 +1,5 @@
 /**
- * Günün ipucu — Gemini ile günlük motivasyon cümlesi.
- *
- * GET (üye oturumu): bugünün ipucunu döner; yoksa üretir ve site_content'e yazar.
- * Cron (CRON_SECRET): her sabah önceden üretir — vercel.json schedule.
+ * Günün ipucu — Gemini + site_content cache (serverless yardımcı, ayrı route değil).
  */
 
 import {
@@ -135,7 +132,8 @@ export async function resolveDailyTip({ force = false } = {}) {
   }
 }
 
-export default async function handler(req, res) {
+/** GET/POST ?task=daily-tip — üye oturumu veya CRON_SECRET */
+export async function handleDailyTip(req, res) {
   setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
   if (handleOptions(req, res)) return
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -156,7 +154,7 @@ export default async function handler(req, res) {
   try {
     const result = await resolveDailyTip({ force })
     return res.status(200).json(result)
-  } catch (e) {
+  } catch {
     const date = todayIstanbul()
     return res.status(200).json({
       ok: true,

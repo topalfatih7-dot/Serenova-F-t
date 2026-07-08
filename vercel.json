@@ -4,7 +4,7 @@
   "framework": "vite",
   "crons": [
     {
-      "path": "/api/ai-daily-tip",
+      "path": "/api/ai-blog-generate?task=daily-tip",
       "schedule": "0 4 * * *"
     },
     {

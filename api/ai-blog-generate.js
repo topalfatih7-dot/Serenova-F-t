@@ -1,13 +1,8 @@
 /**
- * Günlük AI blog makalesi üretimi — Vercel Cron veya manuel tetikleme.
+ * Günlük AI işleri — Vercel Hobby 12 fonksiyon limiti için tek route.
  *
- * Her gün belirlenen saatte (vercel.json cron) Gemini ile bilimsel makale üretir
- * ve Supabase posts tablosuna yayınlar. İçerik min. 1350 karakter (~1.5x uzun makale).
- *
- * Koruma: CRON_SECRET (Vercel cron otomatik Bearer gönderir)
- * Manuel test: POST + header X-Cron-Secret veya Authorization: Bearer <CRON_SECRET>
- *
- * Opsiyonel body: { "force": true } — bugün yazı olsa bile yeni üret
+ * ?task=blog (varsayılan) — günlük blog makalesi (CRON_SECRET, cron 05:00)
+ * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  */
 
 import {
@@ -20,6 +15,7 @@ import {
   buildBlogInstruction,
 } from './_ai-prompts.js'
 import { coverForCategory } from './_blog-images.js'
+import { handleDailyTip } from './_dailyTip.js'
 import { setCorsHeaders, handleOptions, requireCronSecret } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 
@@ -114,6 +110,14 @@ async function hasPostToday(admin) {
 }
 
 export default async function handler(req, res) {
+  const task = String(req.query?.task || 'blog').toLowerCase()
+  if (task === 'daily-tip' || task === 'daily_tip') {
+    return handleDailyTip(req, res)
+  }
+  return handleBlogGenerate(req, res)
+}
+
+async function handleBlogGenerate(req, res) {
   setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
   if (handleOptions(req, res)) return
   if (req.method !== 'GET' && req.method !== 'POST') {

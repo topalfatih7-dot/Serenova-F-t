@@ -11,7 +11,7 @@ function todayLocal() {
 export async function fetchDailyTip() {
   const date = todayLocal()
   try {
-    const res = await fetch('/api/ai-daily-tip', {
+    const res = await fetch('/api/ai-blog-generate?task=daily-tip', {
       method: 'GET',
       headers: await getApiAuthHeaders(),
     })

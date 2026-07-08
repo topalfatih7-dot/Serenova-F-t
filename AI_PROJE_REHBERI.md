@@ -32,7 +32,7 @@
 | Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
 | Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
 | Kadro public gizlilik | ✅ | `/team/*` sayfalarında e-posta, telefon ve sosyal medya **gösterilmez**; yalnızca çalışma saatleri (varsa) · JSON-LD `sameAs` yok |
-| Günün ipucu (AI) | ✅ | `api/ai-daily-tip` + cron 04:00 · `site_content` günlük cache · `useDailyTip` |
+| Günün ipucu (AI) | ✅ | `api/ai-blog-generate?task=daily-tip` + cron 04:00 · `site_content` cache · `useDailyTip` |
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -149,7 +149,7 @@ Tarayıcı
   │
   ├─► GET/POST /api/ai-blog-generate (Günlük blog cron — CRON_SECRET)
   │
-  ├─► GET /api/ai-daily-tip (Günün ipucu — aynı GEMINI_API_KEY; cron 04:00 veya üye GET)
+  ├─► GET /api/ai-blog-generate?task=daily-tip (Günün ipucu — aynı GEMINI_API_KEY; cron 04:00 veya üye GET)
   │
   └─► Daily.co WebRTC (VideoCallPage → useDailyCall)
 ```
@@ -443,7 +443,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya | Ana işlev |
 |-------|------|-------|-----------|
-| Dashboard | `/dashboard` | `DashboardPage.jsx` | Foto-hero (`welcome-banner` + `PANEL_IMAGES.dashboardHero`), **AI günün ipucu** (`api/ai-daily-tip`), blog önerileri; grafikler, görevler, yaklaşan seanslar |
+| Dashboard | `/dashboard` | `DashboardPage.jsx` | Foto-hero (`welcome-banner` + `PANEL_IMAGES.dashboardHero`), **AI günün ipucu** (`api/ai-blog-generate?task=daily-tip`), blog önerileri; grafikler, görevler, yaklaşan seanslar |
 | Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi \| Koç Programı**; thumbnail → `ExerciseDetailModal`; **İzle** inline video |
 | Randevular | `/schedule?tab=` | `AppointmentsPage.jsx` | Koç / diyetisyen / doktor sekmeleri; eski `/schedule/coach` vb. → redirect |
 | Sağlık testleri | `/health-test` | `HealthTestPage.jsx` + `HealthTestHub.jsx` | Kategori hub; `/health-test/:sectionId`, `/health-test/finish` |
@@ -727,8 +727,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `calorie-chat-notify.js` | POST | Kalori chat → Telegram | `requireAuth` + secret |
 | `ai-food-text.js` | POST | Gemini metin kalori analizi | `requireAuth` |
 | `ai-food-vision.js` | POST | Gemini fotoğraf kalori analizi | `requireAuth` |
-| `ai-blog-generate.js` | GET/POST | Günlük AI blog üretimi → `posts` | **`requireCronSecret`** |
-| `ai-daily-tip.js` | GET/POST | Günlük motivasyon ipucu → `site_content` | **`requireAuth`** veya **`CRON_SECRET`** (blog ile aynı Gemini key) |
+| `ai-blog-generate.js` | GET/POST | Günlük blog (`?task=blog`) + günün ipucu (`?task=daily-tip`) | **`requireCronSecret`** veya üye auth (daily-tip) |
 | `_gemini.js` | — | Gemini API + model fallback zinciri | Yardımcı |
 | `_ai-prompts.js` | — | Kalori + blog + günün ipucu promptları | Yardımcı |
 | `_blog-images.js` | — | Kategori bazlı blog kapak URL'leri | Yardımcı |
@@ -1286,7 +1285,7 @@ eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 | **Metin Kalori (Chat)** | `api/ai-food-text.js` | `src/services/calorieChat.js` | `CalorieCalculatorPage.jsx` (Gümüş+) |
 | **Fotoğraflı Kalori** | `api/ai-food-vision.js` | `src/services/aiVision.js` | `CalorieCalculatorPage.jsx` (Platinum) |
 | **Günlük Blog Makalesi** | `api/ai-blog-generate.js` | — (cron) | Vercel Cron → `posts` tablosu |
-| **Günün İpucu (Dashboard)** | `api/ai-daily-tip.js` | `src/services/dailyTip.js` → `useDailyTip` | Vercel Cron 04:00 + üye GET → `site_content` (`kind=daily_tip`) |
+| **Günün İpucu (Dashboard)** | `api/ai-blog-generate.js?task=daily-tip` | `src/services/dailyTip.js` → `useDailyTip` | Vercel Cron 04:00 + üye GET → `site_content` (`kind=daily_tip`) |
 | **Kalori Telegram** | `api/calorie-chat-notify.js` | `calorieChat.js` | Chat mesajı → Telegram |
 
 ### Dosyalar
@@ -1297,11 +1296,11 @@ api/_ai-prompts.js      → Kalori + blog + günün ipucu promptları (Yeni Form
 api/_blog-images.js     → Blog kapak görselleri (kategori → Unsplash URL)
 api/ai-food-vision.js   → Fotoğraf → kalori
 api/ai-food-text.js     → Metin → kalori
-api/ai-blog-generate.js → Günlük blog → Supabase posts (min. 1350 karakter, hedef ~1800)
-api/ai-daily-tip.js     → Günlük motivasyon cümlesi → site_content (tek cümle, ~120 karakter)
+api/ai-blog-generate.js → Günlük blog + günün ipucu (`?task=daily-tip`) → posts / site_content
+api/_dailyTip.js          → Günün ipucu mantığı (ayrı serverless route değil — Hobby 12 limit)
 scripts/test-ai.mjs     → npm run test:ai
 scripts/patch-blog-covers.mjs → Mevcut yazılara coverImage ekler
-vercel.json             → crons: 04:00 UTC → /api/ai-daily-tip · 05:00 UTC → /api/ai-blog-generate
+vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/api/ai-blog-generate`
 ```
 
 > **Ek API anahtarı gerekmez.** Günün ipucu, blog ve kalori AI ile **aynı** `GEMINI_API_KEY` + `GEMINI_MODEL` + `api/_gemini.js` zincirini kullanır. Cron koruması için mevcut `CRON_SECRET` yeterlidir (blog ile paylaşımlı).
@@ -4130,7 +4129,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | Konu | Değişiklik | Dosyalar |
 |------|------------|----------|
 | **Panel görselleri** | Merkezi Unsplash CDN kaynağı; sayfa başlıklarına sağdan sola maskeli foto | `src/utils/panelImages.js`, `PanelPageHeader.jsx` (`image` prop), `index.css` (`.panel-page-header-photo`) |
-| **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; **AI günün ipucu** (`api/ai-daily-tip`, cron 04:00); son 3 blog kartı | `DashboardPage.jsx`, `useDailyTip.js`, `index.css` (`.welcome-banner*`) |
+| **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; **AI günün ipucu** (`?task=daily-tip`, cron 04:00); son 3 blog kartı | `DashboardPage.jsx`, `useDailyTip.js`, `index.css` (`.welcome-banner*`) |
 | **Sayfa başlık fotoğrafları** | Takvim, sağlık testi, programlar, kalori, mesaj, bildirim, destek, randevu sekmeleri | `CalendarPage.jsx`, `HealthTest*.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`, `MessagesPage.jsx`, `NotificationsPage.jsx`, `SupportPage.jsx`, `MemberScheduleView.jsx` |
 | **Profil kapak kadrajı** | Yoga/wellness kapak görseli — kafa/göz görünür (`object-[50%_18%]`) | `ProfilePage.jsx`, `PANEL_IMAGES.profileCover` |
 | **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; sepette **video thumbnail/oynatma yok**; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
@@ -4168,7 +4167,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 
 | Konu | Değişiklik | Dosyalar |
 |------|------------|----------|
-| **API** | `GET /api/ai-daily-tip` — üye oturumu ile bugünün ipucu; yoksa Gemini üretir, `site_content` (`kind=daily_tip`, `data.date`) cache | `api/ai-daily-tip.js` |
+| **API** | `GET /api/ai-blog-generate?task=daily-tip` — üye/cron; cache `site_content` | `api/_dailyTip.js`, `api/ai-blog-generate.js` |
 | **Cron** | Her gün 04:00 UTC — ipucu önceden üretilir (`vercel.json`) | `vercel.json` |
 | **Altyapı** | Blog/kalori ile **aynı** `GEMINI_API_KEY`, `GEMINI_MODEL`, `api/_gemini.js`, `CRON_SECRET` — **ek anahtar gerekmez** | `api/_gemini.js`, `docs/setup/AI_SETUP.md` |
 | **Prompt** | Tek cümle motivasyon; son 7 gün tekrarlanmaz | `api/_ai-prompts.js` (`DAILY_TIP_*`) |
