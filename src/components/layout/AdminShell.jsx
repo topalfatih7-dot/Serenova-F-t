@@ -105,7 +105,7 @@ export default function AdminShell() {
           loggingOut={loggingOut}
           headerRight={<span className="text-xs font-medium text-cream-800/50">Admin</span>}
         />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
+        <main data-panel-scroll className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
           <div className="flex min-h-0 flex-1 flex-col">
             <Outlet />
           </div>

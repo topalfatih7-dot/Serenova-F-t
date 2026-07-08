@@ -49,11 +49,12 @@ export default function AppShell() {
   })
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div className="member-panel-bg relative flex h-dvh overflow-hidden">
       <NoIndexHead />
       <ScrollToTop />
+      <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />
       <Sidebar healthTestIncomplete={healthTestIncomplete} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <PanelMobileMenu
           navItems={navItems}
           brandLink="/dashboard"
@@ -75,12 +76,10 @@ export default function AppShell() {
         <div className="hidden md:block">
           <TopBar />
         </div>
-        <main data-panel-scroll className="member-panel-bg relative flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <div className="pointer-events-none sticky top-0 h-0">
-            <div className="relative h-screen w-full overflow-hidden">
-              <AnimatedBackground emojis={MEMBER_EMOJIS} accent="member" />
-            </div>
-          </div>
+        <main
+          data-panel-scroll
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+        >
           <div className="relative flex min-h-0 flex-1 flex-col px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
             <Outlet />
           </div>

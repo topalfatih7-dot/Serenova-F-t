@@ -46,6 +46,8 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--color-cream-50);
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -53,7 +55,20 @@ body {
   background: var(--color-cream-50);
   color: var(--color-cream-900);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Üye/personel/admin paneli — tek scroll konteyneri; phantom h-screen alanı yok */
+[data-panel-scroll] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .font-display {
