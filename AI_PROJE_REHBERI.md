@@ -4,8 +4,8 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-08 · günün ipucu AI · kadro public gizlilik · üye paneli görselleri · koç Program Akışı mobile-first  
-> **Son oturum özeti:** Kadromuz public sayfalarında e-posta/telefon/sosyal medya gizlendi (`StaffProfileDisplay`, `buildPersonSchema`) · `panelImages.js` + `PanelPageHeader image` · Dashboard foto-hero / günün ipucu / blog · `StaffClientProgramPage` sepet (mobil bar + sheet, sıralama, video yok) · profil kapak kadrajı · kütüphane filtre accordion (mobil)
+> **Son güncelleme:** 2026-07-08 · navbar dropdown kapanma · günün ipucu AI · kadro public gizlilik · üye paneli görselleri · koç Program Akışı mobile-first  
+> **Son oturum özeti:** Navbar Keşfet/Kadromuz dropdown'ları rota değişiminde ve diğer nav tıklamalarında kapanır (`closeDropdown`, `pathname` effect) · Kadromuz public gizlilik · `panelImages.js` · Dashboard günün ipucu · `StaffClientProgramPage` sepet · kütüphane filtre accordion
 
 ---
 
@@ -4175,3 +4175,18 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Dashboard** | `useDailyTip` hook — yüklenirken pulse, sonra AI metin | `DashboardPage.jsx`, `src/hooks/useDailyTip.js`, `src/services/dailyTip.js` |
 
 **Akış:** Cron veya ilk üye ziyareti → cache kontrol → Gemini → `site_content` insert → tüm üyeler aynı günün cümlesini görür.
+
+---
+
+## §65 Navbar Dropdown — Sayfa Geçişinde Kapanma (2026-07-08)
+
+**Sorun:** Keşfet veya Kadromuz açıkken başka bir nav öğesine (Ana Sayfa, Üyelikler, logo, Giriş Yap vb.) tıklanınca dropdown açık kalıyordu. Dışarı tıklama (`mousedown` + `navRef`) yalnızca nav dışı tıklamalarda çalışıyordu.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Rota değişimi** | `pathname` değişince `setOpenDropdown(null)` | `PublicLayout.jsx` |
+| **Nav link tıklama** | `renderNavLink` → `closeDropdown()` | `PublicLayout.jsx` |
+| **Header CTA** | Logo (`BrandLogo onNavigate`), Giriş/Kayıt/Profil/Panel linkleri | `PublicLayout.jsx`, `BrandLogo.jsx` |
+| **Dropdown içi** | Zaten `NavDropdown` `onClose` ile kapanıyordu — değişiklik yok | `NavDropdown.jsx` |
+
+**Davranış:** Açık dropdown + başka sayfaya git → menü kapanır. Aynı sayfa linkine tıklama da anında kapatır (`onClick`). Mobil hamburger menü ayrı state (`menuOpen`) — etkilenmez.

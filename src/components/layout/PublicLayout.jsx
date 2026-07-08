@@ -49,6 +49,8 @@ export default function PublicLayout() {
   const [openDropdown, setOpenDropdown] = useState(null)
   const navRef = useRef(null)
 
+  const closeDropdown = useCallback(() => setOpenDropdown(null), [])
+
   useEffect(() => {
     const handler = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) setOpenDropdown(null)
@@ -56,9 +58,14 @@ export default function PublicLayout() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    setOpenDropdown(null)
+  }, [pathname])
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
 
   // Kayıt/ödeme akışı sırasında (Stripe'a yönlendirilmeden önce) gerçek bir üye satırı
@@ -87,7 +94,10 @@ export default function PublicLayout() {
       <Link
         key={l.to}
         to={l.to}
-        onClick={onClickExtra}
+        onClick={() => {
+          closeDropdown()
+          onClickExtra?.()
+        }}
         className={`group relative flex items-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium transition xl:px-3.5 xl:text-sm ${
           active ? 'text-brand-700' : 'text-cream-800 hover:text-brand-600'
         }`}
@@ -130,7 +140,7 @@ export default function PublicLayout() {
       <PromoBanner />
       <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <BrandLogo />
+          <BrandLogo onNavigate={closeDropdown} />
           <nav ref={navRef} aria-label="Ana menü" className="hidden items-center gap-0.5 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur lg:flex xl:gap-1">
             {publicLinks.map((l) => renderNavLink(l))}
             <NavDropdown
@@ -160,29 +170,29 @@ export default function PublicLayout() {
           <div className="hidden items-center gap-2 lg:flex xl:gap-2.5">
             {isFullyRegistered ? (
               isAdmin ? (
-                <Link to="/admin" className="flex items-center gap-2 rounded-full bg-cream-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cream-800 hover:shadow-md">
+                <Link to="/admin" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-cream-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cream-800 hover:shadow-md">
                   <LayoutDashboard className="h-4 w-4" />
                   Admin Panel
                 </Link>
               ) : isStaff ? (
-                <Link to="/staff" className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
+                <Link to="/staff" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
                   <LayoutDashboard className="h-4 w-4" />
                   {firstName ? `Panelim · ${firstName}` : 'Panelim'}
                 </Link>
               ) : (
-                <Link to="/profile" className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
+                <Link to="/profile" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
                   <UserRound className="h-4 w-4" />
                   {firstName ? `Profil · ${firstName}` : 'Profil'}
                 </Link>
               )
             ) : (
               <>
-                <Link to="/login" className="btn-wellness-outline !py-2.5 !px-4 !text-sm">
+                <Link to="/login" onClick={closeDropdown} className="btn-wellness-outline !py-2.5 !px-4 !text-sm">
                   <LogIn className="h-4 w-4" />
                   Giriş Yap
                 </Link>
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Link to="/onboarding" className="btn-wellness !py-2.5 !px-5 !text-sm">
+                  <Link to="/onboarding" onClick={closeDropdown} className="btn-wellness !py-2.5 !px-5 !text-sm">
                     <UserPlus className="h-4 w-4" />
                     Kayıt Ol
                   </Link>

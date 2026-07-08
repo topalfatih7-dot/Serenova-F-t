@@ -8,9 +8,9 @@ const HEIGHT = {
 }
 
 /** Yatay marka logosu — public/brand-logo.png (npm run og:image) */
-export default function BrandLogo({ size = 'md', linkTo = '/' }) {
+export default function BrandLogo({ size = 'md', linkTo = '/', onNavigate }) {
   return (
-    <Link to={linkTo} className="inline-flex shrink-0 items-center" aria-label={BRAND.name}>
+    <Link to={linkTo} onClick={onNavigate} className="inline-flex shrink-0 items-center" aria-label={BRAND.name}>
       <img
         src={BRAND.assets.logo}
         alt={`${BRAND.name} — ${BRAND.domain}`}
