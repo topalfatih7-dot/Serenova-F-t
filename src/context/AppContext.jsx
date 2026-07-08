@@ -922,7 +922,7 @@ export function AppProvider({ children }) {
 
   const sendTicketReply = useCallback(async (ticketId, from, text) => {
     const t = await sb.sendTicketReply(ticketId, from, text)
-    if (t) {
+    if (t?.id) {
       setRemoteDb((prev) => {
         if (!prev) return prev
         return {

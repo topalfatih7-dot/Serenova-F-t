@@ -17,6 +17,7 @@ import { staffProfilePath } from '../../config/seo'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
 import { supabase } from '../../services/supabaseClient'
 import { useToast } from '../../context/ToastContext'
+import { detectExternalContactInfo } from '../../utils/contactInfoGuard'
 
 const TABS = [
   { id: 'profile', label: 'Profil', icon: User, hint: 'Fotoğraf, iletişim ve tanıtım' },
@@ -76,6 +77,8 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
     if (!form.city?.trim() || !form.district?.trim()) return 'İl ve ilçe seçin.'
     if (!form.gender) return 'Cinsiyet seçin.'
     if (!form.photo) return 'Profil fotoğrafı gerekli.'
+    const bioGuard = detectExternalContactInfo(form.bio)
+    if (bioGuard.blocked) return `Biyografide ${bioGuard.reason} paylaşamazsınız. Tüm iletişim uygulama içinden yürütülmelidir.`
     return ''
   }
 

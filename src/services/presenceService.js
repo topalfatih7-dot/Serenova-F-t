@@ -35,9 +35,12 @@ export async function fetchPresenceForUsers(userIds = [], { includeAdmins = fals
   const ids = [...new Set(userIds.filter(Boolean))]
   const rows = []
 
+  // user_presence_public: email sütunu içermeyen view — sohbet karşı tarafının
+  // e-postasının konsoldan doğrudan sorgulanamamasını garanti eder (bkz.
+  // 20260715_staff_contact_field_hardening.sql).
   if (ids.length) {
     const { data, error } = await supabase
-      .from('user_presence')
+      .from('user_presence_public')
       .select('user_id, last_seen_at, role')
       .in('user_id', ids)
     if (!error && data) rows.push(...data)
@@ -45,7 +48,7 @@ export async function fetchPresenceForUsers(userIds = [], { includeAdmins = fals
 
   if (includeAdmins) {
     const { data, error } = await supabase
-      .from('user_presence')
+      .from('user_presence_public')
       .select('user_id, last_seen_at, role')
       .eq('role', 'admin')
     if (!error && data) rows.push(...data)

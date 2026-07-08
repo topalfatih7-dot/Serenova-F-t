@@ -48,6 +48,7 @@ import {
   compactMembersForRole,
   extractSessionsFromMemberData,
 } from '../utils/memberSessions'
+import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
 const ADMIN_EMAIL = ADMIN_CREDENTIALS.email.toLowerCase()
 
@@ -277,15 +278,23 @@ async function fetchAuthenticatedBundle(user, staff) {
 async function hydrateOnce() {
   const user = await resolveAuthUser()
 
-  const [staffRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
+  const [staffRes, staffDirectoryRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
+    // staff tablosunun ham SELECT'i artık RLS ile admin/kendi kaydına daraltılmış
+    // (bkz. 20260715_staff_contact_field_hardening.sql) — email/telefon/sosyal
+    // medya sızıntısını önler. Herkese güvenli alanlar staff_directory'den gelir.
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
+    supabase.from('staff_directory').select('*').order('created_at', { ascending: true }),
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
     supabase.from('exercises').select('id', { count: 'exact', head: true }),
     supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
   ])
 
-  const staff = (staffRes.data || []).map(rowToStaff)
+  // Güvenli temel liste (herkes) + erişimi olanlarda (admin/kendi kaydı) tam veriyle üzerine yaz.
+  const staffById = new Map()
+  ;(staffDirectoryRes.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
+  ;(staffRes.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
+  const staff = Array.from(staffById.values())
   const posts = (postsRes.data || []).map(rowToPost)
   const exerciseCount = exercisesRes.count ?? 0
   const exercises = []
@@ -1743,6 +1752,9 @@ export async function setTicketStatus(id, status) {
 }
 
 export async function sendTicketReply(id, from, text) {
+  const guard = detectExternalContactInfo(text)
+  if (guard.blocked) return { success: false, error: CONTACT_INFO_BLOCK_MESSAGE, blockedReason: guard.reason }
+
   const { data: rows } = await supabase.from('tickets').select('*').eq('id', id).limit(1)
   const current = rows?.[0]
   if (!current) return null
@@ -1760,7 +1772,7 @@ export async function sendTicketReply(id, from, text) {
     }))
   }
 
-  return { ...ticket, messages, status }
+  return { ...ticket, messages, status, success: true }
 }
 
 /** Admin: koç/diyetisyen ataması, paket değiştirme ve süre yönetimi */

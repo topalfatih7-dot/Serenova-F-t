@@ -17,6 +17,7 @@ import {
   parseLines,
   joinLines,
 } from '../../data/staffProfile'
+import { detectExternalContactInfo } from '../../utils/contactInfoGuard'
 
 function ListEditor({ items, emptyItem, fields, onChange, addLabel }) {
   const updateItem = (index, patch) => {
@@ -98,6 +99,11 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
     }
     if (form.workDays.length === 0) {
       setError('Panel erişimi için en az bir çalışma günü seçin.')
+      return
+    }
+    const bioGuard = detectExternalContactInfo(form.bio)
+    if (bioGuard.blocked) {
+      setError(`Biyografide ${bioGuard.reason} paylaşılamaz. Tüm iletişim uygulama içinden yürütülmelidir.`)
       return
     }
     setError('')

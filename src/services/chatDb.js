@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { notifyMemberChatMessage } from './memberNotifications'
+import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
 const nowISO = () => new Date().toISOString()
 
@@ -125,6 +126,9 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
   const value = String(text || '').trim()
   if (!value || !thread?.id) return { success: false, error: 'Mesaj boş.' }
 
+  const guard = detectExternalContactInfo(value)
+  if (guard.blocked) return { success: false, error: CONTACT_INFO_BLOCK_MESSAGE, blockedReason: guard.reason }
+
   const { data: msgRow, error: msgErr } = await supabase.from('chat_messages').insert({
     thread_id: thread.id,
     sender_type: senderType,
@@ -132,7 +136,12 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
     data: { text: value },
   }).select().single()
 
-  if (msgErr) return { success: false, error: msgErr.message }
+  if (msgErr) {
+    // DB tetikleyicisi de aynı korumayı uygular (bkz. 20260715_chat_contact_info_db_guard.sql) —
+    // istemci kontrolü atlanırsa burada yakalanır.
+    const isContactBlock = msgErr.message?.includes('CONTACT_INFO_BLOCKED')
+    return { success: false, error: isContactBlock ? CONTACT_INFO_BLOCK_MESSAGE : msgErr.message }
+  }
 
   const preview = value.length > 120 ? `${value.slice(0, 119)}…` : value
   const data = { ...(thread.data || {}) }

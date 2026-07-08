@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { packageIncludesCoach, packageIncludesDietitian, isPaidMembership } from '../data/membershipPlans'
 import { normalizeStaffRole } from '../utils/staffRoles'
+import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
 const nowISO = () => new Date().toISOString()
 
@@ -146,6 +147,9 @@ export async function sendStaffCollabMessage({ thread, senderType, senderId, tex
     return { success: false, error: 'Geçersiz gönderici.' }
   }
 
+  const guard = detectExternalContactInfo(value)
+  if (guard.blocked) return { success: false, error: CONTACT_INFO_BLOCK_MESSAGE, blockedReason: guard.reason }
+
   const { data: msgRow, error: msgErr } = await supabase.from('staff_collab_messages').insert({
     thread_id: thread.id,
     sender_type: senderType,
@@ -153,7 +157,10 @@ export async function sendStaffCollabMessage({ thread, senderType, senderId, tex
     data: { text: value },
   }).select().single()
 
-  if (msgErr) return { success: false, error: msgErr.message }
+  if (msgErr) {
+    const isContactBlock = msgErr.message?.includes('CONTACT_INFO_BLOCKED')
+    return { success: false, error: isContactBlock ? CONTACT_INFO_BLOCK_MESSAGE : msgErr.message }
+  }
 
   const preview = value.length > 120 ? `${value.slice(0, 119)}…` : value
   const data = { ...(thread.data || {}) }

@@ -30,8 +30,12 @@ export default function SupportPage() {
     toast('Destek talebiniz alındı. Admin panelinde görünecek.', 'success')
   }
 
-  const handleReply = (text) => {
-    sendTicketReply(activeId, 'member', text)
+  const handleReply = async (text) => {
+    const result = await sendTicketReply(activeId, 'member', text)
+    if (result?.success === false) {
+      toast(result.error || 'Mesaj gönderilemedi', 'error')
+      return
+    }
     toast('Mesajınız gönderildi', 'success')
   }
 

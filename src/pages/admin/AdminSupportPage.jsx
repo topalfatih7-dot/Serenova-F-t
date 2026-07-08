@@ -60,8 +60,12 @@ export default function AdminSupportPage() {
     toast(status === 'closed' ? 'Talep çözüldü' : status === 'in-progress' ? 'Talep işleme alındı' : 'Talep yeniden açıldı', 'success')
   }
 
-  const handleReply = (text) => {
-    sendTicketReply(activeId, 'admin', text)
+  const handleReply = async (text) => {
+    const result = await sendTicketReply(activeId, 'admin', text)
+    if (result?.success === false) {
+      toast(result.error || 'Yanıt gönderilemedi', 'error')
+      return
+    }
     toast('Yanıt gönderildi', 'success')
   }
 
