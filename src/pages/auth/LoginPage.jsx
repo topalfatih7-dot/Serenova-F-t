@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { BRAND } from '../../config/brand'
 import { getRememberMe } from '../../services/authStorage'
+import { consumeSessionRevokedMessage } from '../../services/singleSession'
 import BrandLogo from '../../components/ui/BrandLogo'
 import FormField from '../../components/ui/FormField'
 import SocialAuthButtons from '../../components/auth/SocialAuthButtons'
@@ -39,6 +40,12 @@ export default function LoginPage() {
   const msgShownRef = useRef(false)
 
   useEffect(() => {
+    const revokedMsg = consumeSessionRevokedMessage()
+    if (revokedMsg && !msgShownRef.current) {
+      msgShownRef.current = true
+      toast(revokedMsg, 'warning', 7000)
+    }
+
     const msg = location.state?.message
     if (msg && !msgShownRef.current) {
       msgShownRef.current = true

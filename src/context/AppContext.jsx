@@ -19,6 +19,7 @@ import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
+import { registerActiveSession, verifyActiveSessionOrSignOut } from '../services/singleSession'
 import * as chatDb from '../services/chatDb'
 import * as adminChatDb from '../services/adminChatDb'
 import * as staffCollabChatDb from '../services/staffCollabChatDb'
@@ -91,7 +92,13 @@ export function AppProvider({ children }) {
         if (active) setLoading(false)
       }
     })()
-    const unsub = sb.onAuthChange(async (event) => {
+    const unsub = sb.onAuthChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        await registerActiveSession()
+      }
+      if (event === 'TOKEN_REFRESHED' && session) {
+        await verifyActiveSessionOrSignOut()
+      }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
       const d = await sb.hydrate()
       if (active) setRemoteDb(d)
@@ -118,6 +125,23 @@ export function AppProvider({ children }) {
     return {}
   }, [isStaff, isAdmin, currentStaff, currentMember, authUser])
   const isAuthenticated = !!db.session
+
+  useEffect(() => {
+    if (!isSupabaseEnabled || !isAuthenticated) return undefined
+
+    const tick = () => { verifyActiveSessionOrSignOut() }
+    const interval = setInterval(tick, 60_000)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') tick()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    tick()
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [isAuthenticated])
 
   const adminStats = useMemo(() => computeAdminStats(db), [db])
   const onboardingFunnel = useMemo(() => computeOnboardingFunnel(db), [db])

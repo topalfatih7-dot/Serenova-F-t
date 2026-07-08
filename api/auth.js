@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report
+ * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | claim-active-session | verify-active-session
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -12,6 +12,7 @@ import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
 import { handleGa4Report } from './_ga4Report.js'
+import { claimActiveSession, isActiveSession } from './_singleSession.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -333,6 +334,33 @@ async function handleExerciseVideoUrls(req, res, body) {
   return res.status(200).json({ ok: true, urls })
 }
 
+async function handleClaimActiveSession(req, res) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const { user, error: authErr } = await getUserFromRequest(req)
+  if (authErr || !user) {
+    return res.status(401).json({ ok: false, error: authErr || 'Oturum geçersiz.' })
+  }
+
+  const admin = getSupabaseAdmin()
+  const result = await claimActiveSession(admin, user, token)
+  if (!result.ok) {
+    return res.status(500).json({ ok: false, error: result.error || 'Aktif oturum kaydedilemedi.' })
+  }
+  return res.status(200).json({ ok: true, sessionId: result.sessionId })
+}
+
+async function handleVerifyActiveSession(req, res) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, valid: false })
+
+  const { user, error: authErr } = await getUserFromRequest(req)
+  if (authErr || !user) return res.status(401).json({ ok: false, valid: false })
+
+  return res.status(200).json({ ok: true, valid: isActiveSession(user, token) })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -360,6 +388,8 @@ export default async function handler(req, res) {
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'exercise-video-urls') return handleExerciseVideoUrls(req, res, body)
     if (action === 'ga4-report') return handleGa4Report(req, res, body)
+    if (action === 'claim-active-session') return handleClaimActiveSession(req, res)
+    if (action === 'verify-active-session') return handleVerifyActiveSession(req, res)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

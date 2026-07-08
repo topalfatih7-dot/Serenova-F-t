@@ -17,14 +17,6 @@ export default function HealthTestFinishPage() {
   const [showErrors, setShowErrors] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  if (!user?.id) return <Navigate to="/login" replace />
-
-  const sectionsComplete = isHealthTestComplete(user.healthTest, user.gender, packageConfig)
-  if (!sectionsComplete) return <Navigate to="/health-test" replace />
-
-  const fullyComplete = sectionsComplete && user.healthAck && user.disclaimer
-  if (fullyComplete) return <Navigate to="/health-test" replace />
-
   const handleComplete = useCallback(async () => {
     if (!healthAck || !disclaimer) {
       setShowErrors(true)
@@ -50,6 +42,14 @@ export default function HealthTestFinishPage() {
       setSaving(false)
     }
   }, [healthAck, disclaimer, user, updateProfile, createProgram, exercises, myPrograms, toast])
+
+  if (!user?.id) return <Navigate to="/login" replace />
+
+  const sectionsComplete = isHealthTestComplete(user.healthTest, user.gender, packageConfig)
+  if (!sectionsComplete) return <Navigate to="/health-test" replace />
+
+  const fullyComplete = sectionsComplete && user.healthAck && user.disclaimer
+  if (fullyComplete) return <Navigate to="/health-test" replace />
 
   return (
     <PanelPageShell>

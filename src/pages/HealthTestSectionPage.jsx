@@ -19,10 +19,9 @@ export default function HealthTestSectionPage() {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
-  if (!user?.id) return <Navigate to="/login" replace />
-
-  const section = getApplicableSections(user.gender, packageConfig).find((s) => s.id === sectionId)
-  if (!section) return <Navigate to="/health-test" replace />
+  const section = user?.id
+    ? getApplicableSections(user.gender, packageConfig).find((s) => s.id === sectionId)
+    : null
 
   const handleProgressSave = useCallback(async ({ healthTest }) => {
     if (saving) return
@@ -34,7 +33,7 @@ export default function HealthTestSectionPage() {
   }, [saveHealthTestProgress, saving])
 
   const handleSectionComplete = useCallback(async ({ healthTest }) => {
-    if (!isSectionComplete(section, healthTest)) {
+    if (!section || !isSectionComplete(section, healthTest)) {
       toast('Lütfen tüm soruları eksiksiz cevaplayın (açıklama alanları dahil).', 'error')
       return
     }
@@ -52,7 +51,11 @@ export default function HealthTestSectionPage() {
     } finally {
       setSaving(false)
     }
-  }, [saveHealthTestProgress, user, packageConfig, section.title, toast, navigate])
+  }, [saveHealthTestProgress, user, packageConfig, section, toast, navigate])
+
+  if (!user?.id) return <Navigate to="/login" replace />
+
+  if (!section) return <Navigate to="/health-test" replace />
 
   const sectionDone = isSectionComplete(section, user.healthTest)
 
