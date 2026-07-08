@@ -5,6 +5,7 @@ import {
   fetchExerciseEquipmentOptions,
   fetchExercisesPage,
 } from '../services/exerciseLibrary'
+import { prefetchExerciseVideosFromItems } from '../utils/exerciseVideoPrefetch'
 
 const DEFAULT_FILTERS = {
   search: '',
@@ -51,6 +52,12 @@ export function useExerciseLibrary({
   }, [page, pageSize, sort, filters])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (loading || !items.length) return undefined
+    prefetchExerciseVideosFromItems(items)
+    return undefined
+  }, [items, loading])
 
   useEffect(() => {
     fetchExerciseEquipmentOptions().then(setEquipmentOptions)

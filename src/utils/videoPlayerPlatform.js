@@ -17,16 +17,6 @@ export function needsPseudoFullscreen() {
 }
 
 /**
- * Kart listesinde eşzamanlı <video> önizlemeleri iOS Safari'de oynatıcıyı askıya alır.
- * YouTube statik thumb kullanılmaya devam eder.
- */
-export function shouldLimitVideoPreviews() {
-  if (isIosDevice()) return true
-  if (typeof window === 'undefined' || !window.matchMedia) return false
-  return window.matchMedia('(max-width: 640px)').matches
-}
-
-/**
  * Apple WebKit: sesli videolar kullanıcı jesti olmadan otomatik oynatılamaz.
  * Modal açıldığında kullanıcı play'e basar.
  */

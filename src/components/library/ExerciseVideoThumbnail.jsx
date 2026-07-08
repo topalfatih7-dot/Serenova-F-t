@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Loader2, PlayCircle } from 'lucide-react'
 import { getExerciseVideoUrl } from '../../services/supabaseDb'
 import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { exerciseStoragePathFromUrl } from '../../utils/exerciseVideoPrefetch'
-import { shouldLimitVideoPreviews } from '../../utils/videoPlayerPlatform'
+import { acquireThumbnailVideoSlot } from '../../utils/exerciseVideoLoadQueue'
+import { useInView } from '../../hooks/useInView'
 
 function youTubeId(url) {
   const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
@@ -32,9 +33,31 @@ const ACCENT_CLASS = {
   sage: 'bg-gradient-to-br from-sage-400 to-emerald-500 text-white',
 }
 
+const PLAY_ICON = {
+  xs: 'h-3.5 w-3.5',
+  sm: 'h-4 w-4',
+  list: 'h-4 w-4',
+  md: 'h-5 w-5 sm:h-6 sm:w-6',
+  card: 'h-7 w-7 sm:h-8 sm:w-8',
+}
+
+function PlaceholderThumb({ boxClass, accent, FallbackIcon, size, showPlay = true }) {
+  const iconClass = PLAY_ICON[size] || PLAY_ICON.md
+  return (
+    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
+      <FallbackIcon className={iconClass} />
+      {showPlay && (
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+          <PlayCircle className={`text-white drop-shadow-md ${iconClass}`} />
+        </span>
+      )}
+    </span>
+  )
+}
+
 /**
  * Hareket videosunun ilk karesi — program listesi / kart önizlemesi.
- * YouTube: statik thumb; Supabase: metadata ile ilk frame; yoksa ikon.
+ * Görünür olduğunda yüklenir; iOS'ta eşzamanlı video sayısı sınırlıdır.
  */
 export default function ExerciseVideoThumbnail({
   url,
@@ -44,95 +67,118 @@ export default function ExerciseVideoThumbnail({
   fallbackIcon: FallbackIcon = PlayCircle,
   className = '',
 }) {
-  const skipVideoPreview = shouldLimitVideoPreviews()
+  const containerRef = useRef(null)
+  const inView = useInView(containerRef, { rootMargin: '180px' })
   const [playSrc, setPlaySrc] = useState(null)
-  const [loading, setLoading] = useState(Boolean(url && !videoPending && !skipVideoPreview))
+  const [urlLoading, setUrlLoading] = useState(false)
+  const [canMountVideo, setCanMountVideo] = useState(false)
 
   const ytThumb = url && !videoPending ? youTubeThumb(url) : null
   const storagePath = url && !videoPending ? exerciseStoragePathFromUrl(url) : null
   const directUrl = url && !videoPending && isDirectVideoUrl(url) ? url : null
   const boxClass = `${SIZE_CLASS[size] || SIZE_CLASS.md} ${className}`.trim()
+  const playIconClass = PLAY_ICON[size] || PLAY_ICON.md
 
   useEffect(() => {
-    if (!url || videoPending || skipVideoPreview) {
-      setPlaySrc(null)
-      setLoading(false)
+    if (!inView || !url || videoPending) {
       return undefined
     }
 
     if (ytThumb || directUrl) {
       setPlaySrc(directUrl)
-      setLoading(false)
+      setUrlLoading(false)
       return undefined
     }
 
     if (!storagePath) {
       setPlaySrc(null)
-      setLoading(false)
+      setUrlLoading(false)
       return undefined
     }
 
     const cached = readExerciseVideoUrlCache(storagePath)
     if (cached) {
       setPlaySrc(cached)
-      setLoading(false)
+      setUrlLoading(false)
       return undefined
     }
 
     let cancelled = false
-    setLoading(true)
+    setUrlLoading(true)
     getExerciseVideoUrl(storagePath).then((signed) => {
       if (cancelled) return
       setPlaySrc(signed)
-      setLoading(false)
+      setUrlLoading(false)
     })
 
     return () => { cancelled = true }
-  }, [url, videoPending, ytThumb, directUrl, storagePath, skipVideoPreview])
+  }, [inView, url, videoPending, ytThumb, directUrl, storagePath])
 
-  if (skipVideoPreview && url && !videoPending && !ytThumb) {
-    return (
-      <span className={`relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
-        <FallbackIcon className={size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'} />
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
-          <PlayCircle className={`text-white drop-shadow-md ${size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5'}`} />
-        </span>
-      </span>
-    )
-  }
+  useEffect(() => {
+    if (!inView || !playSrc || ytThumb) {
+      setCanMountVideo(false)
+      return undefined
+    }
+
+    let release = null
+    let cancelled = false
+
+    acquireThumbnailVideoSlot().then((releaseSlot) => {
+      if (cancelled) {
+        releaseSlot()
+        return
+      }
+      release = releaseSlot
+      setCanMountVideo(true)
+    })
+
+    return () => {
+      cancelled = true
+      release?.()
+      setCanMountVideo(false)
+    }
+  }, [inView, playSrc, ytThumb])
 
   if (videoPending) {
     return (
-      <span className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
+      <span ref={containerRef} className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
         <Loader2 className="h-5 w-5 animate-spin text-cream-400" />
-      </span>
-    )
-  }
-
-  if (loading) {
-    return (
-      <span className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
-        <Loader2 className="h-5 w-5 animate-spin text-brand-400" />
       </span>
     )
   }
 
   if (ytThumb) {
     return (
-      <span className={`relative shrink-0 overflow-hidden bg-cream-100 shadow-sm ${boxClass}`}>
+      <span ref={containerRef} className={`relative shrink-0 overflow-hidden bg-cream-100 shadow-sm ${boxClass}`}>
         <img src={ytThumb} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
-          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
+          <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
         </span>
       </span>
     )
   }
 
-  if (playSrc) {
+  if (!inView) {
     return (
-      <span className={`relative shrink-0 overflow-hidden bg-cream-900/5 shadow-sm ${boxClass}`}>
+      <span ref={containerRef}>
+        <PlaceholderThumb boxClass={boxClass} accent={accent} FallbackIcon={FallbackIcon} size={size} />
+      </span>
+    )
+  }
+
+  if (urlLoading || (playSrc && !canMountVideo)) {
+    return (
+      <span ref={containerRef} className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
+        <Loader2 className="h-5 w-5 animate-spin text-brand-400" />
+      </span>
+    )
+  }
+
+  if (playSrc && canMountVideo) {
+    return (
+      <span ref={containerRef} className={`relative shrink-0 overflow-hidden bg-cream-900/5 shadow-sm ${boxClass}`}>
         <video
-          src={playSrc}
+          src={`${playSrc}#t=0.05`}
           muted
           playsInline
           preload="metadata"
@@ -141,20 +187,20 @@ export default function ExerciseVideoThumbnail({
           onLoadedData={(event) => {
             try {
               const video = event.currentTarget
-              if (video.currentTime < 0.05) video.currentTime = 0.1
+              if (video.currentTime < 0.05) video.currentTime = 0.05
             } catch { /* ignore */ }
           }}
         />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/15">
-          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
+          <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
         </span>
       </span>
     )
   }
 
   return (
-    <span className={`flex shrink-0 items-center justify-center shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
-      <FallbackIcon className={size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'} />
+    <span ref={containerRef} className={`flex shrink-0 items-center justify-center shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
+      <FallbackIcon className={playIconClass} />
     </span>
   )
 }

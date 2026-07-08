@@ -20,6 +20,7 @@ import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffPro
 import { coverForCategory } from '../utils/blogImages.js'
 import { ensureUniqueBlogSlug } from '../utils/blogSlug.js'
 import { getApiAuthHeaders } from './apiAuth'
+import { runWithVideoUrlSlot } from '../utils/exerciseVideoLoadQueue'
 import {
   dedupeExerciseVideoUrlFetch,
   readExerciseVideoUrlCache,
@@ -1369,6 +1370,86 @@ export function isExerciseVideoStoragePath(value) {
   return Boolean(path && /^[\w.-]+$/.test(path) && !path.includes('..'))
 }
 
+async function signExerciseVideoPathViaApi(storagePath) {
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: await getApiAuthHeaders(),
+      body: JSON.stringify({ action: 'exercise-video-url', path: storagePath }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (json.ok && json.url) {
+      writeExerciseVideoUrlCache(storagePath, json.url, json.expiresAt)
+      return json.url
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function signExerciseVideoPathViaClient(storagePath) {
+  let { data } = await supabase.auth.getSession()
+  if (!data?.session) {
+    await supabase.auth.getUser()
+    ;({ data } = await supabase.auth.getSession())
+  }
+  if (!data?.session) return null
+
+  const { data: signData, error } = await supabase.storage
+    .from('exercise-videos')
+    .createSignedUrl(storagePath, 3600)
+  if (!error && signData?.signedUrl) {
+    writeExerciseVideoUrlCache(storagePath, signData.signedUrl, Date.now() + 3600 * 1000)
+    return signData.signedUrl
+  }
+  return null
+}
+
+async function signExerciseVideoPathRaw(storagePath) {
+  return (await signExerciseVideoPathViaApi(storagePath)) || (await signExerciseVideoPathViaClient(storagePath))
+}
+
+/** Sayfa/thumbnail için toplu imzalı URL — tek HTTP turu, önbelleğe yazar. */
+export async function prefetchExerciseVideoUrls(paths = []) {
+  if (!supabase || !Array.isArray(paths) || paths.length === 0) return
+
+  const unique = [...new Set(
+    paths
+      .map((path) => normalizeExerciseVideoRef(path))
+      .filter((path) => isExerciseVideoStoragePath(path)),
+  )]
+  const missing = unique.filter((path) => !readExerciseVideoUrlCache(path))
+  if (!missing.length) return
+
+  const CHUNK = 24
+  for (let i = 0; i < missing.length; i += CHUNK) {
+    const chunk = missing.slice(i, i + CHUNK)
+    await runWithVideoUrlSlot(async () => {
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: await getApiAuthHeaders(),
+          body: JSON.stringify({ action: 'exercise-video-urls', paths: chunk }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (json.ok && json.urls && typeof json.urls === 'object') {
+          Object.entries(json.urls).forEach(([path, entry]) => {
+            if (entry?.url) writeExerciseVideoUrlCache(path, entry.url, entry.expiresAt)
+          })
+        }
+      } catch {
+        /* batch başarısız — tekil imzaya düş */
+      }
+    })
+
+    const stillMissing = chunk.filter((path) => !readExerciseVideoUrlCache(path))
+    if (stillMissing.length) {
+      await Promise.all(stillMissing.map((path) => getExerciseVideoUrl(path)))
+    }
+  }
+}
+
 /** 1 saat gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
 export async function getExerciseVideoUrl(path) {
   const storagePath = normalizeExerciseVideoRef(path)
@@ -1377,44 +1458,7 @@ export async function getExerciseVideoUrl(path) {
   return dedupeExerciseVideoUrlFetch(storagePath, async () => {
     const cached = readExerciseVideoUrlCache(storagePath)
     if (cached) return cached
-
-    const tryApiSign = async () => {
-      try {
-        const res = await fetch('/api/auth', {
-          method: 'POST',
-          headers: await getApiAuthHeaders(),
-          body: JSON.stringify({ action: 'exercise-video-url', path: storagePath }),
-        })
-        const json = await res.json().catch(() => ({}))
-        if (json.ok && json.url) {
-          writeExerciseVideoUrlCache(storagePath, json.url, json.expiresAt)
-          return json.url
-        }
-        return null
-      } catch {
-        return null
-      }
-    }
-
-    const tryClientSign = async () => {
-      let { data } = await supabase.auth.getSession()
-      if (!data?.session) {
-        await supabase.auth.getUser()
-        ;({ data } = await supabase.auth.getSession())
-      }
-      if (!data?.session) return null
-
-      const { data: signData, error } = await supabase.storage
-        .from('exercise-videos')
-        .createSignedUrl(storagePath, 3600)
-      if (!error && signData?.signedUrl) {
-        writeExerciseVideoUrlCache(storagePath, signData.signedUrl, Date.now() + 3600 * 1000)
-        return signData.signedUrl
-      }
-      return null
-    }
-
-    return (await tryApiSign()) || (await tryClientSign())
+    return runWithVideoUrlSlot(() => signExerciseVideoPathRaw(storagePath))
   })
 }
 

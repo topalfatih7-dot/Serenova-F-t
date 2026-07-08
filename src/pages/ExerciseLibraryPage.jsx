@@ -13,7 +13,6 @@ import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
 import { useApp } from '../context/AppContext'
 import { memberHasFullVideoAccess } from '../utils/memberPackages'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
-import { shouldLimitVideoPreviews } from '../utils/videoPlayerPlatform'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 const CATEGORY_COLORS = {
@@ -156,8 +155,8 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
                   key={ex.id}
                   type="button"
                   onClick={() => openExercise(ex)}
-                  onMouseEnter={() => allowVideoPlayback && !shouldLimitVideoPreviews() && prefetchExerciseVideo(ex.videoUrl)}
-                  onFocus={() => allowVideoPlayback && !shouldLimitVideoPreviews() && prefetchExerciseVideo(ex.videoUrl)}
+                  onMouseEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                  onFocus={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
                 >
                   <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>

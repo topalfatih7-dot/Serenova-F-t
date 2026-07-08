@@ -320,16 +320,20 @@ function VideoWatermarkFrame({
     const video = videoRef.current
     if (!video || !isIosDevice()) return undefined
 
+    let debounceId = null
     const prime = () => {
-      if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
-        video.load()
-      }
+      if (video.readyState >= HTMLMediaElement.HAVE_METADATA) return
+      clearTimeout(debounceId)
+      debounceId = setTimeout(() => {
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) video.load()
+      }, 400)
     }
 
     video.addEventListener('suspend', prime)
     video.addEventListener('stalled', prime)
 
     return () => {
+      clearTimeout(debounceId)
       video.removeEventListener('suspend', prime)
       video.removeEventListener('stalled', prime)
     }

@@ -2,6 +2,7 @@ import {
   getExerciseVideoUrl,
   isExerciseVideoStoragePath,
   normalizeExerciseVideoRef,
+  prefetchExerciseVideoUrls,
 } from '../services/supabaseDb'
 
 /** video_url alanından storage path çıkarır (YouTube/harici URL → null). */
@@ -22,3 +23,14 @@ export function prefetchExerciseVideo(url) {
   if (!path) return Promise.resolve(null)
   return getExerciseVideoUrl(path)
 }
+
+/** Sayfa yüklendiğinde görünür kartların URL'lerini toplu imzala. */
+export function prefetchExerciseVideosFromItems(items = []) {
+  const paths = items
+    .filter((item) => item?.videoUrl && !item?.videoPending)
+    .map((item) => exerciseStoragePathFromUrl(item.videoUrl))
+    .filter(Boolean)
+  return prefetchExerciseVideoUrls(paths)
+}
+
+export { prefetchExerciseVideoUrls }
