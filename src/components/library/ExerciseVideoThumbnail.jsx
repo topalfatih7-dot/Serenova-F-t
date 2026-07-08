@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Loader2, PlayCircle } from 'lucide-react'
 import { getExerciseVideoUrl } from '../../services/supabaseDb'
 import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
@@ -44,20 +44,20 @@ const PLAY_ICON = {
 function PlaceholderThumb({ boxClass, accent, FallbackIcon, size, showPlay = true }) {
   const iconClass = PLAY_ICON[size] || PLAY_ICON.md
   return (
-    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
+    <>
       <FallbackIcon className={iconClass} />
       {showPlay && (
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
           <PlayCircle className={`text-white drop-shadow-md ${iconClass}`} />
         </span>
       )}
-    </span>
+    </>
   )
 }
 
 /**
  * Hareket videosunun ilk karesi — program listesi / kart önizlemesi.
- * Görünür olduğunda yüklenir; iOS'ta eşzamanlı video sayısı sınırlıdır.
+ * Slot yalnızca metadata yüklenirken tutulur; ilk kare gelince serbest bırakılır.
  */
 export default function ExerciseVideoThumbnail({
   url,
@@ -68,16 +68,34 @@ export default function ExerciseVideoThumbnail({
   className = '',
 }) {
   const containerRef = useRef(null)
-  const inView = useInView(containerRef, { rootMargin: '180px' })
+  const releaseSlotRef = useRef(null)
+  const inView = useInView(containerRef, { rootMargin: '180px', once: false })
   const [playSrc, setPlaySrc] = useState(null)
   const [urlLoading, setUrlLoading] = useState(false)
   const [canMountVideo, setCanMountVideo] = useState(false)
+  const [frameReady, setFrameReady] = useState(false)
 
   const ytThumb = url && !videoPending ? youTubeThumb(url) : null
   const storagePath = url && !videoPending ? exerciseStoragePathFromUrl(url) : null
   const directUrl = url && !videoPending && isDirectVideoUrl(url) ? url : null
   const boxClass = `${SIZE_CLASS[size] || SIZE_CLASS.md} ${className}`.trim()
   const playIconClass = PLAY_ICON[size] || PLAY_ICON.md
+  const shellClass = `relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`
+
+  const releaseSlot = useCallback(() => {
+    releaseSlotRef.current?.()
+    releaseSlotRef.current = null
+  }, [])
+
+  useEffect(() => {
+    if (!inView) setFrameReady(false)
+  }, [inView])
+
+  useEffect(() => {
+    setFrameReady(false)
+    setCanMountVideo(false)
+    releaseSlot()
+  }, [playSrc, releaseSlot])
 
   useEffect(() => {
     if (!inView || !url || videoPending) {
@@ -115,92 +133,98 @@ export default function ExerciseVideoThumbnail({
   }, [inView, url, videoPending, ytThumb, directUrl, storagePath])
 
   useEffect(() => {
-    if (!inView || !playSrc || ytThumb) {
+    if (!inView || !playSrc || ytThumb || frameReady) {
       setCanMountVideo(false)
+      releaseSlot()
       return undefined
     }
 
-    let release = null
     let cancelled = false
 
-    acquireThumbnailVideoSlot().then((releaseSlot) => {
+    acquireThumbnailVideoSlot().then((releaseSlotFn) => {
       if (cancelled) {
-        releaseSlot()
+        releaseSlotFn()
         return
       }
-      release = releaseSlot
+      releaseSlotRef.current = releaseSlotFn
       setCanMountVideo(true)
     })
 
     return () => {
       cancelled = true
-      release?.()
+      releaseSlot()
       setCanMountVideo(false)
     }
-  }, [inView, playSrc, ytThumb])
+  }, [inView, playSrc, ytThumb, frameReady, releaseSlot])
 
-  if (videoPending) {
-    return (
-      <span ref={containerRef} className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
-        <Loader2 className="h-5 w-5 animate-spin text-cream-400" />
-      </span>
-    )
-  }
+  const handleFrameLoaded = useCallback((event) => {
+    try {
+      const video = event.currentTarget
+      if (video.currentTime < 0.05) video.currentTime = 0.05
+    } catch { /* ignore */ }
+    setFrameReady(true)
+    releaseSlot()
+    setCanMountVideo(false)
+  }, [releaseSlot])
 
-  if (ytThumb) {
-    return (
-      <span ref={containerRef} className={`relative shrink-0 overflow-hidden bg-cream-100 shadow-sm ${boxClass}`}>
-        <img src={ytThumb} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
-          <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
-        </span>
-      </span>
-    )
-  }
-
-  if (!inView) {
-    return (
-      <span ref={containerRef}>
-        <PlaceholderThumb boxClass={boxClass} accent={accent} FallbackIcon={FallbackIcon} size={size} />
-      </span>
-    )
-  }
-
-  if (urlLoading || (playSrc && !canMountVideo)) {
-    return (
-      <span ref={containerRef} className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`}>
-        <Loader2 className="h-5 w-5 animate-spin text-brand-400" />
-      </span>
-    )
-  }
-
-  if (playSrc && canMountVideo) {
-    return (
-      <span ref={containerRef} className={`relative shrink-0 overflow-hidden bg-cream-900/5 shadow-sm ${boxClass}`}>
-        <video
-          src={`${playSrc}#t=0.05`}
-          muted
-          playsInline
-          preload="metadata"
-          aria-hidden
-          className="h-full w-full object-cover"
-          onLoadedData={(event) => {
-            try {
-              const video = event.currentTarget
-              if (video.currentTime < 0.05) video.currentTime = 0.05
-            } catch { /* ignore */ }
-          }}
-        />
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/15">
-          <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
-        </span>
-      </span>
-    )
-  }
+  const showVideo = Boolean(playSrc && inView && (canMountVideo || frameReady) && !ytThumb)
+  const showSpinner = inView && (urlLoading || (playSrc && !frameReady && !canMountVideo && !ytThumb))
 
   return (
-    <span ref={containerRef} className={`flex shrink-0 items-center justify-center shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
-      <FallbackIcon className={playIconClass} />
+    <span
+      ref={containerRef}
+      className={
+        videoPending
+          ? `relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`
+          : ytThumb
+            ? `relative shrink-0 overflow-hidden bg-cream-100 shadow-sm ${boxClass}`
+            : showVideo
+              ? `relative shrink-0 overflow-hidden bg-cream-900/5 shadow-sm ${boxClass}`
+              : showSpinner
+                ? `relative flex shrink-0 items-center justify-center overflow-hidden bg-cream-100 ${boxClass}`
+                : shellClass
+      }
+    >
+      {videoPending && <Loader2 className="h-5 w-5 animate-spin text-cream-400" />}
+
+      {!videoPending && ytThumb && (
+        <>
+          <img src={ytThumb} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
+            <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
+          </span>
+        </>
+      )}
+
+      {!videoPending && !ytThumb && !inView && (
+        <PlaceholderThumb boxClass="" accent={accent} FallbackIcon={FallbackIcon} size={size} />
+      )}
+
+      {!videoPending && !ytThumb && inView && showSpinner && (
+        <Loader2 className="h-5 w-5 animate-spin text-brand-400" />
+      )}
+
+      {!videoPending && !ytThumb && showVideo && (
+        <>
+          <video
+            key={playSrc}
+            src={playSrc}
+            muted
+            playsInline
+            preload="metadata"
+            aria-hidden
+            className="h-full w-full object-cover"
+            onLoadedData={handleFrameLoaded}
+          />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/15">
+            <PlayCircle className={`text-white drop-shadow-md ${playIconClass}`} />
+          </span>
+        </>
+      )}
+
+      {!videoPending && !ytThumb && inView && !showVideo && !showSpinner && !playSrc && (
+        <FallbackIcon className={playIconClass} />
+      )}
     </span>
   )
 }

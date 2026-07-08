@@ -1537,6 +1537,112 @@ body {
   font-size: max(16px, 1em);
 }
 
+/* ── 404 sayfası — aurora + animasyonlu tipografi ── */
+@keyframes notFoundAuroraShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes notFoundFloatA {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+@keyframes notFoundFloatB {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-18px) scale(1.04); }
+}
+
+@keyframes notFoundFloatC {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(-12px) rotate(-4deg); }
+}
+
+@keyframes notFoundShimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+@keyframes notFoundCardGlow {
+  0%, 100% { box-shadow: 0 24px 48px -12px color-mix(in srgb, var(--color-brand-400) 18%, transparent); }
+  50% { box-shadow: 0 28px 56px -10px color-mix(in srgb, var(--color-sage-400) 22%, transparent); }
+}
+
+.not-found-page {
+  isolation: isolate;
+}
+
+.not-found-aurora {
+  background: linear-gradient(
+    135deg,
+    #dbeafe 0%,
+    #e9d5ff 22%,
+    #d1fae5 48%,
+    #ffedd5 72%,
+    #dbeafe 100%
+  );
+  background-size: 300% 300%;
+  animation: notFoundAuroraShift 14s ease-in-out infinite;
+}
+
+.not-found-orb-a {
+  --orb-dur: 17s;
+}
+
+.not-found-orb-b {
+  --orb-dur: 20s;
+  animation-delay: -4s;
+}
+
+.not-found-float-a {
+  animation: notFoundFloatA 5s ease-in-out infinite;
+}
+
+.not-found-float-b {
+  animation: notFoundFloatB 4.2s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
+
+.not-found-float-c {
+  animation: notFoundFloatC 4.8s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+.not-found-digit {
+  filter: drop-shadow(0 8px 24px color-mix(in srgb, var(--color-brand-400) 25%, transparent));
+  will-change: transform;
+}
+
+.not-found-card {
+  animation: notFoundCardGlow 6s ease-in-out infinite;
+}
+
+.not-found-btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-500) 0%,
+    var(--color-brand-600) 40%,
+    var(--color-sage-500) 100%
+  );
+  background-size: 200% auto;
+  animation: notFoundShimmer 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .not-found-aurora,
+  .not-found-float-a,
+  .not-found-float-b,
+  .not-found-float-c,
+  .not-found-card,
+  .not-found-btn-primary,
+  .not-found-page .panel-orb,
+  .not-found-page .panel-float-a,
+  .not-found-page .panel-float-b,
+  .not-found-page .panel-float-c {
+    animation: none;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
