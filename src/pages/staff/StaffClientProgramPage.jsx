@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Search, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2, PlayCircle,
+  ArrowLeft, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2, PlayCircle,
   ChevronUp, ChevronDown, Minus, ListChecks,
 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
@@ -10,6 +10,8 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useExerciseLibrary } from '../../hooks/useExerciseLibrary'
 import ExercisePagination from '../../components/library/ExercisePagination'
+import ExerciseLibraryFilters, { DIFFICULTY_ALL, EXERCISE_CATEGORY_ALL, FILTER_ALL } from '../../components/library/ExerciseLibraryFilters'
+import { DIFFICULTY_LABELS, formatExerciseLocations } from '../../data/exerciseTurkish'
 import { getStaffClients } from '../../utils/chatAccess'
 import CoachProgramSendModal from '../../components/staff/CoachProgramSendModal'
 import {
@@ -200,6 +202,11 @@ export default function StaffClientProgramPage() {
   const { staffUser, platform, createProgram } = useApp()
   const { toast } = useToast()
   const [searchInput, setSearchInput] = useState('')
+  const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
+  const [difficulty, setDifficulty] = useState(DIFFICULTY_ALL)
+  const [equipment, setEquipment] = useState('')
+  const [location, setLocation] = useState(FILTER_ALL)
+  const [requiresMachine, setRequiresMachine] = useState(FILTER_ALL)
   const [cart, setCart] = useState([])
   const [cartOpen, setCartOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
@@ -213,7 +220,13 @@ export default function StaffClientProgramPage() {
     totalPages,
     loading,
     setSearch,
+    setCategory: setCategoryFilter,
+    setDifficulty: setDifficultyFilter,
+    setEquipment: setEquipmentFilter,
+    setLocation: setLocationFilter,
+    setRequiresMachine: setRequiresMachineFilter,
     setPage,
+    equipmentOptions,
   } = useExerciseLibrary({ pageSize: 20 })
 
   const isCoach = staffUser?.role === 'coach'
@@ -374,21 +387,29 @@ export default function StaffClientProgramPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-400" />
-            <input
-              type="text"
-              placeholder="Hareket ara…"
-              value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); setSearch(e.target.value) }}
-              className="w-full rounded-xl border border-cream-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
-            />
-          </div>
+          <ExerciseLibraryFilters
+            searchInput={searchInput}
+            onSearchChange={(value) => { setSearchInput(value); setSearch(value) }}
+            category={category}
+            onCategoryChange={(value) => { setCategory(value); setCategoryFilter(value) }}
+            difficulty={difficulty}
+            onDifficultyChange={(value) => {
+              setDifficulty(value)
+              setDifficultyFilter(value === DIFFICULTY_ALL ? 'Tümü' : value)
+            }}
+            equipment={equipment}
+            onEquipmentChange={(value) => { setEquipment(value); setEquipmentFilter(value) }}
+            location={location}
+            onLocationChange={(value) => { setLocation(value); setLocationFilter(value) }}
+            requiresMachine={requiresMachine}
+            onRequiresMachineChange={(value) => { setRequiresMachine(value); setRequiresMachineFilter(value) }}
+            equipmentOptions={equipmentOptions}
+          />
 
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 animate-spin text-brand-400" /></div>
           ) : filteredExercisesList.length === 0 ? (
-            <p className="py-12 text-center text-sm text-cream-800/50">Hareket bulunamadı</p>
+            <p className="py-12 text-center text-sm text-cream-800/50">Hareket bulunamadı. Arama veya filtreleri değiştirin.</p>
           ) : (
             <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -421,6 +442,22 @@ export default function StaffClientProgramPage() {
                     <p className="mt-2 font-semibold text-cream-900">{ex.name}</p>
                     <div className="mt-1 min-h-0 max-h-28 flex-1 overflow-y-auto overscroll-contain pr-0.5 text-xs leading-relaxed text-cream-800/55">
                       {ex.description || 'Açıklama yok'}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {ex.equipment && (
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">{ex.equipment}</span>
+                      )}
+                      {ex.difficulty && (
+                        <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
+                          {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
+                        </span>
+                      )}
+                      {formatExerciseLocations(ex.locations).map((label) => (
+                        <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
+                      ))}
+                      {ex.requiresMachine && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
+                      )}
                     </div>
                     {(ex.videoUrl || ex.videoPending) && (
                       <button
