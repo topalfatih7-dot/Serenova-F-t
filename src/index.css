@@ -976,6 +976,14 @@ body {
 }
 
 /* Egzersiz oynatıcı — yalnızca özel tam ekran butonu (native gizli) */
+.video-player-frame {
+  touch-action: pan-y;
+}
+
+.video-player-frame video {
+  touch-action: pan-y;
+}
+
 .video-player-frame video::-webkit-media-controls-fullscreen-button {
   display: none !important;
 }

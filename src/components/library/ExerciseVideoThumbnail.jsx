@@ -3,6 +3,7 @@ import { Loader2, PlayCircle } from 'lucide-react'
 import { getExerciseVideoUrl } from '../../services/supabaseDb'
 import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { exerciseStoragePathFromUrl } from '../../utils/exerciseVideoPrefetch'
+import { shouldLimitVideoPreviews } from '../../utils/videoPlayerPlatform'
 
 function youTubeId(url) {
   const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
@@ -43,8 +44,9 @@ export default function ExerciseVideoThumbnail({
   fallbackIcon: FallbackIcon = PlayCircle,
   className = '',
 }) {
+  const skipVideoPreview = shouldLimitVideoPreviews()
   const [playSrc, setPlaySrc] = useState(null)
-  const [loading, setLoading] = useState(Boolean(url && !videoPending))
+  const [loading, setLoading] = useState(Boolean(url && !videoPending && !skipVideoPreview))
 
   const ytThumb = url && !videoPending ? youTubeThumb(url) : null
   const storagePath = url && !videoPending ? exerciseStoragePathFromUrl(url) : null
@@ -52,7 +54,7 @@ export default function ExerciseVideoThumbnail({
   const boxClass = `${SIZE_CLASS[size] || SIZE_CLASS.md} ${className}`.trim()
 
   useEffect(() => {
-    if (!url || videoPending) {
+    if (!url || videoPending || skipVideoPreview) {
       setPlaySrc(null)
       setLoading(false)
       return undefined
@@ -86,7 +88,18 @@ export default function ExerciseVideoThumbnail({
     })
 
     return () => { cancelled = true }
-  }, [url, videoPending, ytThumb, directUrl, storagePath])
+  }, [url, videoPending, ytThumb, directUrl, storagePath, skipVideoPreview])
+
+  if (skipVideoPreview && url && !videoPending && !ytThumb) {
+    return (
+      <span className={`relative flex shrink-0 items-center justify-center overflow-hidden shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
+        <FallbackIcon className={size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'} />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+          <PlayCircle className={`text-white drop-shadow-md ${size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5'}`} />
+        </span>
+      </span>
+    )
+  }
 
   if (videoPending) {
     return (

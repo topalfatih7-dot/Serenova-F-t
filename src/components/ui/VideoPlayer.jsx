@@ -5,7 +5,13 @@ import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath } from '../../services/supabaseDb'
 import { readExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { BRAND } from '../../config/brand'
-import { needsPseudoFullscreen } from '../../utils/videoPlayerPlatform'
+import {
+  exerciseVideoPreload,
+  isIosDevice,
+  needsPseudoFullscreen,
+  recoverIosVideoPlayback,
+  shouldAutoplayExerciseVideo,
+} from '../../utils/videoPlayerPlatform'
 
 function youTubeId(url) {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
@@ -44,6 +50,11 @@ function formatVideoTime(seconds) {
   return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
+function videoMimeFromUrl(url) {
+  if (/\.mov(\?|$)/i.test(String(url || ''))) return 'video/quicktime'
+  return 'video/mp4'
+}
+
 function VideoCustomControls({
   videoRef,
   expanded,
@@ -54,6 +65,7 @@ function VideoCustomControls({
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [buffering, setBuffering] = useState(false)
 
   useEffect(() => {
     const video = videoRef.current
@@ -72,6 +84,9 @@ function VideoCustomControls({
     video.addEventListener('loadedmetadata', sync)
     video.addEventListener('durationchange', sync)
     video.addEventListener('ended', sync)
+    video.addEventListener('waiting', () => setBuffering(true))
+    video.addEventListener('canplay', () => setBuffering(false))
+    video.addEventListener('playing', () => setBuffering(false))
 
     return () => {
       video.removeEventListener('play', sync)
@@ -83,11 +98,17 @@ function VideoCustomControls({
     }
   }, [videoRef])
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     const video = videoRef.current
     if (!video) return
-    if (video.paused) video.play().catch(() => {})
-    else video.pause()
+    if (video.paused) {
+      setBuffering(true)
+      const ok = await recoverIosVideoPlayback(video)
+      if (!ok) await video.play().catch(() => {})
+      setBuffering(false)
+    } else {
+      video.pause()
+    }
   }
 
   const seek = (event) => {
@@ -99,9 +120,23 @@ function VideoCustomControls({
   }
 
   const progress = duration > 0 ? (current / duration) * 100 : 0
+  const showCenterPlay = !playing && (isIosDevice() || duration === 0)
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 pb-3 pt-10">
+    <>
+      {showCenterPlay && (
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black/25"
+          aria-label="Videoyu oynat"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
+            {buffering ? <Loader2 className="h-8 w-8 animate-spin" /> : <Play className="ml-1 h-8 w-8" />}
+          </span>
+        </button>
+      )}
+      <div className="absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 pb-3 pt-10">
       <input
         type="range"
         min={0}
@@ -136,6 +171,7 @@ function VideoCustomControls({
         </button>
       </div>
     </div>
+    </>
   )
 }
 
@@ -254,10 +290,10 @@ function VideoWatermarkFrame({
     }
   }, [enterNativeFullscreen, exitNativeFullscreen, toggleExpand, usePseudoMode])
 
-  /** İzleme alanına girildiğinde otomatik başlat ve döngüye al. */
+  /** İzleme alanına girildiğinde otomatik başlat (iOS hariç — kullanıcı jesti gerekir). */
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !autoPlay) return undefined
+    if (!video || !autoPlay || !shouldAutoplayExerciseVideo()) return undefined
 
     const tryPlay = () => {
       video.play().catch(() => {})
@@ -279,10 +315,30 @@ function VideoWatermarkFrame({
     }
   }, [autoPlay, loop, useCustomControls])
 
+  /** iOS Safari: askıya alınmış videoyu metadata yüklenince hazırla. */
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !isIosDevice()) return undefined
+
+    const prime = () => {
+      if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+        video.load()
+      }
+    }
+
+    video.addEventListener('suspend', prime)
+    video.addEventListener('stalled', prime)
+
+    return () => {
+      video.removeEventListener('suspend', prime)
+      video.removeEventListener('stalled', prime)
+    }
+  }, [useCustomControls])
+
   const mediaChild = isValidElement(children) && children.type === 'video'
     ? cloneElement(children, {
       ref: videoRef,
-      autoPlay,
+      autoPlay: autoPlay && shouldAutoplayExerciseVideo(),
       loop,
       playsInline: true,
       controls: useCustomControls ? false : true,
@@ -291,7 +347,7 @@ function VideoWatermarkFrame({
         : 'nodownload nofullscreen noremoteplayback',
       disablePictureInPicture: true,
       disableRemotePlayback: true,
-      className: [children.props.className, 'border-0'].filter(Boolean).join(' '),
+      className: [children.props.className, 'border-0 touch-pan-y'].filter(Boolean).join(' '),
     })
     : isValidElement(children) && children.type === 'iframe'
       ? cloneElement(children, {
@@ -464,7 +520,9 @@ export default function VideoPlayer({
     }
     return (
       <VideoWatermarkFrame {...frameProps}>
-        <video src={playUrl} preload={autoPlay ? 'auto' : 'metadata'} />
+        <video key={playUrl} preload={exerciseVideoPreload(autoPlay)}>
+          <source src={playUrl} type={videoMimeFromUrl(playUrl)} />
+        </video>
       </VideoWatermarkFrame>
     )
   }
@@ -480,7 +538,9 @@ export default function VideoPlayer({
 
   return (
     <VideoWatermarkFrame {...frameProps}>
-      <video src={url} />
+      <video key={url} preload={exerciseVideoPreload(autoPlay)}>
+        <source src={url} type={videoMimeFromUrl(url)} />
+      </video>
     </VideoWatermarkFrame>
   )
 }

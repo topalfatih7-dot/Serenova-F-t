@@ -15,3 +15,55 @@ export function supportsElementFullscreen() {
 export function needsPseudoFullscreen() {
   return isIosDevice() || !supportsElementFullscreen()
 }
+
+/**
+ * Kart listesinde eşzamanlı <video> önizlemeleri iOS Safari'de oynatıcıyı askıya alır.
+ * YouTube statik thumb kullanılmaya devam eder.
+ */
+export function shouldLimitVideoPreviews() {
+  if (isIosDevice()) return true
+  if (typeof window === 'undefined' || !window.matchMedia) return false
+  return window.matchMedia('(max-width: 640px)').matches
+}
+
+/**
+ * Apple WebKit: sesli videolar kullanıcı jesti olmadan otomatik oynatılamaz.
+ * Modal açıldığında kullanıcı play'e basar.
+ */
+export function shouldAutoplayExerciseVideo() {
+  return !isIosDevice()
+}
+
+/** iOS'ta preload="auto" çoğu zaman metadata indirmez; metadata yeterli. */
+export function exerciseVideoPreload(autoPlay) {
+  if (isIosDevice()) return 'metadata'
+  return autoPlay ? 'auto' : 'metadata'
+}
+
+/** Safari askıya alınmış / takılmış videoyu kullanıcı jestiyle kurtarmayı dener. */
+export async function recoverIosVideoPlayback(video) {
+  if (!video) return false
+  try {
+    if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+      video.load()
+      await new Promise((resolve) => {
+        const onMeta = () => {
+          video.removeEventListener('loadedmetadata', onMeta)
+          resolve()
+        }
+        video.addEventListener('loadedmetadata', onMeta)
+        setTimeout(onMeta, 4000)
+      })
+    }
+    await video.play()
+    return !video.paused
+  } catch {
+    try {
+      video.load()
+      await video.play()
+      return !video.paused
+    } catch {
+      return false
+    }
+  }
+}
