@@ -62,14 +62,17 @@ export default function PanelPageHeader({
   )
 }
 
-export function PanelChip({ active, onClick, children, accent = 'brand' }) {
+export function PanelChip({ active, onClick, children, accent = 'brand', icon: Icon }) {
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={`panel-chip panel-chip-${accent} ${active ? 'panel-chip-active' : ''}`}
     >
-      {children}
+      {Icon ? <Icon className="panel-chip-icon" strokeWidth={2.25} aria-hidden /> : null}
+      <span>{children}</span>
     </button>
   )
 }

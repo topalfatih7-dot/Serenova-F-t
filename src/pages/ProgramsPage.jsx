@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClipboardList, Dumbbell, Apple, UserCheck, Clock } from 'lucide-react'
+import { ClipboardList, Dumbbell, Apple, UserCheck, Clock, LayoutGrid } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
@@ -14,9 +14,9 @@ import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 const FILTERS = [
-  { id: 'all', label: 'Tümü' },
-  { id: 'workout', label: 'Antrenman' },
-  { id: 'nutrition', label: 'Beslenme' },
+  { id: 'all', label: 'Tümü', icon: LayoutGrid, accent: 'warm' },
+  { id: 'workout', label: 'Antrenman', icon: Dumbbell, accent: 'brand' },
+  { id: 'nutrition', label: 'Beslenme', icon: Apple, accent: 'sage' },
 ]
 
 const dayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
@@ -96,9 +96,15 @@ export default function ProgramsPage() {
         image={PANEL_IMAGES.programs}
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="panel-chip-group" role="tablist" aria-label="Program türü">
         {FILTERS.map((f) => (
-          <PanelChip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)} accent="brand">
+          <PanelChip
+            key={f.id}
+            active={filter === f.id}
+            onClick={() => setFilter(f.id)}
+            accent={f.accent}
+            icon={f.icon}
+          >
             {f.label}
           </PanelChip>
         ))}

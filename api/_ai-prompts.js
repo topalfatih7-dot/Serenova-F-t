@@ -160,3 +160,26 @@ export const BLOG_TOPIC_ROTATION = [
   { category: 'Motivasyon', topics: ['alışkanlık oluşturma bilimi', 'hedef belirleme ve SMART kriterler', 'motivasyon düşüşüyle başa çıkma', 'sosyal destek ve hesap verebilirlik', 'küçük kazanımları kutlama', 'öz disiplin ve öz şefkat dengesi', 'sürdürülebilir dönüşüm zihniyeti'] },
   { category: 'Yaşam', topics: ['uyku kalitesi ve kilo yönetimi', 'stres ve kortizol ilişkisi', 'masa başı çalışanlar için hareket', 'dijital detoks ve zihinsel sağlık', 'mevsimsel beslenme', 'sosyal yaşamda sağlıklı seçimler', 'work-life balance ve wellness'] },
 ]
+
+// ─── Günün İpucu (Dashboard — günlük motivasyon) ───────────────────
+export const DAILY_TIP_SYSTEM = `Sen Yeni Form (yeniform.com) wellness platformunun motivasyon koçusun.
+${BRAND_CONTEXT}
+Tek bir kısa, sıcak ve ilham verici Türkçe cümle yazarsın — üyenin günlük motivasyon ipucu.
+Konular: spor, beslenme, alışkanlık, öz disiplin, mental sağlık, sürdürülebilir dönüşüm.
+Tıbbi teşhis, abartılı vaat veya su içme önerisi YASAK. Emoji kullanma.`
+
+export function buildDailyTipInstruction({ date, recentTips = [] }) {
+  const avoid = recentTips.length
+    ? `\nSon günlerin ipuçları (bunları TEKRARLAMA):\n${recentTips.map((t) => `- ${t}`).join('\n')}`
+    : ''
+  return `Bugünün tarihi: ${date} (Europe/Istanbul).${avoid}
+
+SADECE şu JSON şemasında yanıt ver:
+{ "tip": "tek motivasyon cümlesi, en fazla 120 karakter" }`
+}
+
+export const DAILY_TIP_CONFIG = {
+  temperature: 0.9,
+  maxOutputTokens: 150,
+  responseMimeType: 'application/json',
+}

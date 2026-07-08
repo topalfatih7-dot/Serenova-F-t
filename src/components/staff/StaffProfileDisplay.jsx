@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Award, BookOpen, Briefcase, CalendarDays, Clock, Globe, GraduationCap, Mail, Phone,
+  ArrowLeft, Award, BookOpen, Briefcase, CalendarDays, Clock, Globe, GraduationCap,
 } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { normalizeStaffProfile } from '../../data/staffProfile'
@@ -152,33 +152,19 @@ export default function StaffProfileDisplay({ member }) {
             </Section>
           )}
 
-          <Section title="İletişim & Çalışma Saatleri" icon={Clock}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {profile.email && (
-                <p className="flex items-center gap-2 text-sm text-cream-800/80">
-                  <Mail className="h-4 w-4 shrink-0 text-cream-800/40" />
-                  {profile.email}
-                </p>
-              )}
-              {profile.phone && (
-                <p className="flex items-center gap-2 text-sm text-cream-800/80">
-                  <Phone className="h-4 w-4 shrink-0 text-cream-800/40" />
-                  {profile.phone}
-                </p>
-              )}
-              {profile.workDays?.length > 0 && (
-                <p className="flex items-start gap-2 text-sm text-cream-800/80 sm:col-span-2">
-                  <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-cream-800/40" />
-                  <span>
-                    {profile.workDays.map(weekdayLabel).join(', ')}
-                    <span className="block text-xs text-cream-800/50">
-                      {profile.workStart} – {profile.workEnd}
-                    </span>
+          {profile.workDays?.length > 0 && (
+            <Section title="Çalışma Saatleri" icon={Clock}>
+              <p className="flex items-start gap-2 text-sm text-cream-800/80">
+                <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-cream-800/40" />
+                <span>
+                  {profile.workDays.map(weekdayLabel).join(', ')}
+                  <span className="block text-xs text-cream-800/50">
+                    {profile.workStart} – {profile.workEnd}
                   </span>
-                </p>
-              )}
-            </div>
-          </Section>
+                </span>
+              </p>
+            </Section>
+          )}
 
           <div className="flex flex-wrap gap-3 pt-2">
             <Link

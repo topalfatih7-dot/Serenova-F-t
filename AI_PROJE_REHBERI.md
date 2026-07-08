@@ -4,8 +4,8 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-08 · üye paneli görselleri · koç Program Akışı mobile-first · kütüphane mobil filtre  
-> **Son oturum özeti:** `panelImages.js` + `PanelPageHeader image` · Dashboard foto-hero / günün ipucu / blog · `StaffClientProgramPage` sepet (mobil bar + sheet, sıralama, video yok) · profil kapak kadrajı · kütüphane filtre accordion (mobil)
+> **Son güncelleme:** 2026-07-08 · günün ipucu AI · kadro public gizlilik · üye paneli görselleri · koç Program Akışı mobile-first  
+> **Son oturum özeti:** Kadromuz public sayfalarında e-posta/telefon/sosyal medya gizlendi (`StaffProfileDisplay`, `buildPersonSchema`) · `panelImages.js` + `PanelPageHeader image` · Dashboard foto-hero / günün ipucu / blog · `StaffClientProgramPage` sepet (mobil bar + sheet, sıralama, video yok) · profil kapak kadrajı · kütüphane filtre accordion (mobil)
 
 ---
 
@@ -31,6 +31,8 @@
 | Üye paneli görselleri | ✅ | `src/utils/panelImages.js` (Unsplash CDN); `PanelPageHeader` `image` prop + `.panel-page-header-photo` (`index.css`); Dashboard `.welcome-banner-photo`; takvim, sağlık, program, mesaj vb. sayfa başlıkları |
 | Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
 | Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
+| Kadro public gizlilik | ✅ | `/team/*` sayfalarında e-posta, telefon ve sosyal medya **gösterilmez**; yalnızca çalışma saatleri (varsa) · JSON-LD `sameAs` yok |
+| Günün ipucu (AI) | ✅ | `api/ai-daily-tip` + cron 04:00 · `site_content` günlük cache · `useDailyTip` |
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -51,7 +53,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§53–62 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+6. Son değişiklikler için **§53–64 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
 7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
@@ -146,6 +148,8 @@ Tarayıcı
   ├─► POST /api/ai-food-vision (Fotoğraf kalori — Platinum)
   │
   ├─► GET/POST /api/ai-blog-generate (Günlük blog cron — CRON_SECRET)
+  │
+  ├─► GET /api/ai-daily-tip (Günün ipucu — aynı GEMINI_API_KEY; cron 04:00 veya üye GET)
   │
   └─► Daily.co WebRTC (VideoCallPage → useDailyCall)
 ```
@@ -439,12 +443,12 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya | Ana işlev |
 |-------|------|-------|-----------|
-| Dashboard | `/dashboard` | `DashboardPage.jsx` | Foto-hero (`welcome-banner` + `PANEL_IMAGES.dashboardHero`), günün ipucu, blog önerileri; grafikler, görevler, yaklaşan seanslar |
+| Dashboard | `/dashboard` | `DashboardPage.jsx` | Foto-hero (`welcome-banner` + `PANEL_IMAGES.dashboardHero`), **AI günün ipucu** (`api/ai-daily-tip`), blog önerileri; grafikler, görevler, yaklaşan seanslar |
 | Takvim | `/calendar` | `CalendarPage.jsx` | Yan yana **Diyet Listesi \| Koç Programı**; thumbnail → `ExerciseDetailModal`; **İzle** inline video |
 | Randevular | `/schedule?tab=` | `AppointmentsPage.jsx` | Koç / diyetisyen / doktor sekmeleri; eski `/schedule/coach` vb. → redirect |
 | Sağlık testleri | `/health-test` | `HealthTestPage.jsx` + `HealthTestHub.jsx` | Kategori hub; `/health-test/:sectionId`, `/health-test/finish` |
 | Programlar | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; hareket satırında `ExerciseVideoThumbnail` + video modal |
-| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Filtre: arama, tip, zorluk, ekipman, konum, makine; **mobilde accordion** (`filtersOpen`); video gate |
+| Egzersiz kütüphanesi | `/library` | `ExerciseLibraryPage.jsx` | Filtre + **program satırı thumbnail** (`ExerciseVideoThumbnail`); tık → `ExerciseDetailModal`; video gate |
 | Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
@@ -724,8 +728,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `ai-food-text.js` | POST | Gemini metin kalori analizi | `requireAuth` |
 | `ai-food-vision.js` | POST | Gemini fotoğraf kalori analizi | `requireAuth` |
 | `ai-blog-generate.js` | GET/POST | Günlük AI blog üretimi → `posts` | **`requireCronSecret`** |
+| `ai-daily-tip.js` | GET/POST | Günlük motivasyon ipucu → `site_content` | **`requireAuth`** veya **`CRON_SECRET`** (blog ile aynı Gemini key) |
 | `_gemini.js` | — | Gemini API + model fallback zinciri | Yardımcı |
-| `_ai-prompts.js` | — | Kalori + blog promptları | Yardımcı |
+| `_ai-prompts.js` | — | Kalori + blog + günün ipucu promptları | Yardımcı |
 | `_blog-images.js` | — | Kategori bazlı blog kapak URL'leri | Yardımcı |
 | `daily-room.js` | POST | Daily.co oda oluşturma | `requireAuth` |
 | `stripe-checkout.js` | POST | Stripe ödeme oturumu | — |
@@ -1281,21 +1286,25 @@ eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 | **Metin Kalori (Chat)** | `api/ai-food-text.js` | `src/services/calorieChat.js` | `CalorieCalculatorPage.jsx` (Gümüş+) |
 | **Fotoğraflı Kalori** | `api/ai-food-vision.js` | `src/services/aiVision.js` | `CalorieCalculatorPage.jsx` (Platinum) |
 | **Günlük Blog Makalesi** | `api/ai-blog-generate.js` | — (cron) | Vercel Cron → `posts` tablosu |
+| **Günün İpucu (Dashboard)** | `api/ai-daily-tip.js` | `src/services/dailyTip.js` → `useDailyTip` | Vercel Cron 04:00 + üye GET → `site_content` (`kind=daily_tip`) |
 | **Kalori Telegram** | `api/calorie-chat-notify.js` | `calorieChat.js` | Chat mesajı → Telegram |
 
 ### Dosyalar
 
 ```
 api/_gemini.js          → Gemini API + model fallback (503/429 → sıradaki model)
-api/_ai-prompts.js      → Kalori + blog promptları (Yeni Form marka bağlamı)
+api/_ai-prompts.js      → Kalori + blog + günün ipucu promptları (Yeni Form marka bağlamı)
 api/_blog-images.js     → Blog kapak görselleri (kategori → Unsplash URL)
 api/ai-food-vision.js   → Fotoğraf → kalori
 api/ai-food-text.js     → Metin → kalori
 api/ai-blog-generate.js → Günlük blog → Supabase posts (min. 1350 karakter, hedef ~1800)
+api/ai-daily-tip.js     → Günlük motivasyon cümlesi → site_content (tek cümle, ~120 karakter)
 scripts/test-ai.mjs     → npm run test:ai
 scripts/patch-blog-covers.mjs → Mevcut yazılara coverImage ekler
-vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generate
+vercel.json             → crons: 04:00 UTC → /api/ai-daily-tip · 05:00 UTC → /api/ai-blog-generate
 ```
+
+> **Ek API anahtarı gerekmez.** Günün ipucu, blog ve kalori AI ile **aynı** `GEMINI_API_KEY` + `GEMINI_MODEL` + `api/_gemini.js` zincirini kullanır. Cron koruması için mevcut `CRON_SECRET` yeterlidir (blog ile paylaşımlı).
 
 ### Ortam Değişkenleri (Vercel)
 
@@ -1303,7 +1312,7 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 |----------|----------|:-------------:|
 | `GEMINI_API_KEY` | Gemini API anahtarı (GİZLİ) | ❌ Hayır |
 | `GEMINI_MODEL` | Model (varsayılan `gemini-2.5-flash-lite`) | ❌ Hayır |
-| `CRON_SECRET` | Blog cron koruması (Vercel otomatik Bearer) | ❌ Hayır |
+| `CRON_SECRET` | Blog + günün ipucu cron koruması (Vercel otomatik Bearer) | ❌ Hayır |
 | `VITE_AI_VISION_ENABLED` | Foto analizi (varsayılan açık; `false` ile kapat) | ✅ Evet |
 | `VITE_AI_CHAT_ENABLED` | Chat kalori analizi bayrağı | ✅ Evet |
 
@@ -1311,6 +1320,7 @@ vercel.json             → crons: 05:00 UTC (08:00 TR) → /api/ai-blog-generat
 - Kalori chat/foto **her zaman API'yi dener**; sunucuda `GEMINI_API_KEY` olmalı.
 - `isCalorieAiEnabled()` / `isAiVisionEnabled()` → yalnızca `VITE_AI_*=false` ile kapatılır.
 - Blog cron: günde 1 yazı; aynı gün tekrar üretmez (`force=true` ile test).
+- Günün ipucu cron: günde 1 cümle; `site_content` cache; aynı gün tekrar üretmez (`force=true` ile test). **Yeni env yok** — blog ile aynı Gemini anahtarı.
 - Yeni blog yazılarına otomatik `coverImage` + `coverImageAlt` atanır.
 
 ### Dashboard Değişikliği
@@ -1779,9 +1789,12 @@ Detaylı kurulum: `docs/setup/SEO_SETUP.md`
 | `experiences` | `{title,organization,period,description}[]` | İş deneyimi |
 | `certificates` | `{name,issuer,year}[]` | Sertifika / diploma |
 | `languages` | string[] | Konuşulan diller |
-| `photo`, `phone`, `workDays`, `workStart`, `workEnd` | (mevcut) | Görsel, iletişim, randevu |
+| `photo`, `workDays`, `workStart`, `workEnd` | (mevcut) | Görsel, çalışma saatleri (public profilde yalnızca bunlar görünür) |
+| `phone`, `email`, `instagram`, `youtube`, `linkedin`, `website` | (mevcut) | İç kullanım — admin/personel paneli ve başvuru; **public `/team/*` sayfalarında gösterilmez** |
 
 Eski `description` alanı okunurken `bio`'ya normalize edilir (`normalizeStaffProfile`).
+
+**Public gizlilik kuralı (2026-07-08):** Ziyaretçiler kadro listesi (`TeamListPage`) ve profil (`StaffProfileDisplay`) sayfalarında iletişim bilgisi görmez. `buildPersonSchema` sosyal medya `sameAs` yayınlamaz.
 
 ### Dosyalar
 
@@ -2705,10 +2718,10 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/stories` | `SuccessStoriesPage.jsx` | Başarı hikayeleri grid (`SuccessStoryCard`) | `site_content` kind=`success_story` |
 | `/blog` | `BlogPage.jsx` | Blog listesi, kategori filtre | `posts` |
 | `/blog/:id` | `BlogPostPage.jsx` | Tekil yazı, JSON-LD | `posts` |
-| `/team/coaches` | `TeamListPage.jsx` role=`coaches` | Koç listesi kartları | `staff` role=coach |
-| `/team/dietitians` | `TeamListPage.jsx` role=`dietitians` | Diyetisyen listesi | `staff` role=dietitian |
-| `/team/doctors` | `TeamListPage.jsx` role=`doctors` | Doktor listesi | `staff` role=doctor |
-| `/team/:id` | `StaffProfilePage.jsx` | Kadro profil detayı (`StaffProfileDisplay`) | `staff` |
+| `/team/coaches` | `TeamListPage.jsx` role=`coaches` | Koç listesi kartları (iletişim bilgisi yok) | `staff` role=coach |
+| `/team/dietitians` | `TeamListPage.jsx` role=`dietitians` | Diyetisyen listesi (iletişim bilgisi yok) | `staff` role=dietitian |
+| `/team/doctors` | `TeamListPage.jsx` role=`doctors` | Doktor listesi (iletişim bilgisi yok) | `staff` role=doctor |
+| `/team/:id` | `StaffProfilePage.jsx` | Kadro profil detayı (`StaffProfileDisplay` — bio/eğitim/sertifika/çalışma saatleri; e-posta/telefon/sosyal yok) | `staff` |
 | `/team/apply` | `StaffApplicationPage.jsx` | Kadro başvuru formu (çok adımlı) | RPC `submit_staff_application` |
 | `/corporate` | `CorporatePage.jsx` | Kurumsal tanıtım, paket özeti | statik + `corporateApplication.js` |
 | `/corporate/apply` | `CorporateApplicationPage.jsx` | Kurumsal başvuru formu | RPC `submit_corporate_application` |
@@ -2718,14 +2731,14 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 | Rota | Dosya | Ana bölümler | Veri / aksiyonlar |
 |------|-------|--------------|-------------------|
-| `/dashboard` | `DashboardPage.jsx` | Foto-hero, günün ipucu, blog kartları; grafikler, görevler, yaklaşan seanslar | `user`, `myPrograms`, `posts` |
+| `/dashboard` | `DashboardPage.jsx` | Foto-hero, AI günün ipucu (`useDailyTip`), blog kartları; grafikler, görevler, yaklaşan seanslar | `user`, `myPrograms`, `posts` |
 | `/calendar` | `CalendarPage.jsx` | Diyet \| Koç yan yana; xs thumbnail → detay modal; İzle inline video | `myPrograms`, `completedActivities` |
 | `/schedule` | `AppointmentsPage.jsx` | Birleşik randevular `?tab=coach\|dietitian\|doctor` | `user.*Sessions` |
 | `/health-test` | `HealthTestPage.jsx` | Sağlık testi hub — kategori kartları, toplam ilerleme | `healthTest.js`, `HealthTestHub` |
 | `/health-test/:sectionId` | `HealthTestSectionPage.jsx` | Tek test bölümü | `HealthTestFlow` |
 | `/health-test/finish` | `HealthTestFinishPage.jsx` | Onay + disclaimer | `healthAck`, `disclaimer` |
 | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; `entries[]` tıklanabilir video; `ExerciseVideoThumbnail` | `programs` |
-| `/library` | `ExerciseLibraryPage.jsx` | Renkli filtre çubuğu; **mobilde katlanır**; video gate | `exercises`, `useExerciseLibrary` |
+| `/library` | `ExerciseLibraryPage.jsx` | Filtre accordion; **program satırı thumbnail**; `ExerciseDetailModal` | `exercises`, `useExerciseLibrary` |
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
 | `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
 | `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
@@ -3934,7 +3947,13 @@ Script: `scripts/backfill-exercise-locations.mjs` — tam import yerine `locatio
 - Supabase path → imzalı URL + `<video preload="metadata">`; YouTube → statik thumb
 - Tıklanınca mevcut `VideoPlayer` modal; hover'da `prefetchExerciseVideo`
 - Video yoksa Dambıl ikonlu gradient fallback; beslenme satırları elma ikonu (değişmedi)
-- Boyutlar: `xs` (36px, takvim), `sm`, `md` (varsayılan program)
+- Boyutlar: `xs` (36px, takvim), `sm`, `md` (varsayılan program + kütüphane liste)
+
+### 54.3.1 Kütüphane — Programlarım ile aynı thumbnail satırı (2026-07-08)
+
+**Dosyalar:** `src/pages/ExerciseLibraryPage.jsx`, `ExerciseVideoThumbnail.jsx`, `ExerciseDetailModal.jsx`
+
+`/library` — renkli üst şerit (kategori + PlayCircle) + gövdede **hareket adının hemen üstünde** küçük thumb (`md`, 56–64px)
 
 ### 54.4 Takvim — hareket detay modalı (2026-07-07)
 
@@ -4111,7 +4130,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | Konu | Değişiklik | Dosyalar |
 |------|------------|----------|
 | **Panel görselleri** | Merkezi Unsplash CDN kaynağı; sayfa başlıklarına sağdan sola maskeli foto | `src/utils/panelImages.js`, `PanelPageHeader.jsx` (`image` prop), `index.css` (`.panel-page-header-photo`) |
-| **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; günün ipucu (`DAILY_TIPS`); son 3 blog kartı | `DashboardPage.jsx`, `index.css` (`.welcome-banner*`) |
+| **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; **AI günün ipucu** (`api/ai-daily-tip`, cron 04:00); son 3 blog kartı | `DashboardPage.jsx`, `useDailyTip.js`, `index.css` (`.welcome-banner*`) |
 | **Sayfa başlık fotoğrafları** | Takvim, sağlık testi, programlar, kalori, mesaj, bildirim, destek, randevu sekmeleri | `CalendarPage.jsx`, `HealthTest*.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`, `MessagesPage.jsx`, `NotificationsPage.jsx`, `SupportPage.jsx`, `MemberScheduleView.jsx` |
 | **Profil kapak kadrajı** | Yoga/wellness kapak görseli — kafa/göz görünür (`object-[50%_18%]`) | `ProfilePage.jsx`, `PANEL_IMAGES.profileCover` |
 | **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; sepette **video thumbnail/oynatma yok**; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
@@ -4123,3 +4142,37 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 - Kütüphane filtre accordion: `hidden sm:flex` + mobil toggle; tablet/desktop'ta her zaman açık.
 
 **Rota:** `/staff/clients/:memberId/program` → `StaffClientProgramPage` (koç only; diyetisyen redirect yok — sayfa içi `Navigate`).
+
+---
+
+## §63 Kadro Public Gizlilik — İletişim Bilgileri Gizlendi (2026-07-08)
+
+**İstek:** Kullanıcılar Kadromuz bölümünde personelin e-posta, telefon ve sosyal medya hesaplarını görmemeli.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Profil sayfası** | `İletişim & Çalışma Saatleri` bölümünden e-posta ve telefon kaldırıldı; bölüm yalnızca çalışma günü/saati varsa **Çalışma Saatleri** olarak gösterilir | `src/components/staff/StaffProfileDisplay.jsx` |
+| **Kadro kartları** | Zaten iletişim göstermiyordu — değişiklik yok | `src/components/staff/StaffMemberCard.jsx` |
+| **SEO JSON-LD** | `buildPersonSchema` artık `sameAs` (Instagram/YouTube/LinkedIn/web) yayınlamaz | `src/config/seo.js` |
+| **Veri modeli** | `phone`, `email`, sosyal alanlar Supabase'de ve admin/personel panelinde kalır; yalnızca public vitrin gizler | `src/data/staffProfile.js` (şema aynı) |
+
+**Görünür kalır (public):** ad, unvan, uzmanlık, bio, eğitim, deneyim, sertifikalar, diller, fotoğraf, çalışma saatleri (tanımlıysa), Programa Katıl / Üyelik CTA'ları.
+
+**Gizli kalır (public):** e-posta, telefon, Instagram, YouTube, LinkedIn, web sitesi.
+
+---
+
+## §64 Günün İpucu — AI ile Günlük Motivasyon (2026-07-08)
+
+**İstek:** Dashboard'daki "Günün ipucu" her gün otomatik değişsin; Gemini ile motivasyon cümlesi üretilsin.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **API** | `GET /api/ai-daily-tip` — üye oturumu ile bugünün ipucu; yoksa Gemini üretir, `site_content` (`kind=daily_tip`, `data.date`) cache | `api/ai-daily-tip.js` |
+| **Cron** | Her gün 04:00 UTC — ipucu önceden üretilir (`vercel.json`) | `vercel.json` |
+| **Altyapı** | Blog/kalori ile **aynı** `GEMINI_API_KEY`, `GEMINI_MODEL`, `api/_gemini.js`, `CRON_SECRET` — **ek anahtar gerekmez** | `api/_gemini.js`, `docs/setup/AI_SETUP.md` |
+| **Prompt** | Tek cümle motivasyon; son 7 gün tekrarlanmaz | `api/_ai-prompts.js` (`DAILY_TIP_*`) |
+| **Yedek** | AI/DB hata → statik rotasyon (`pickFallbackTip`) | `api/_daily-tip-fallback.js`, `src/data/dailyTipFallback.js` |
+| **Dashboard** | `useDailyTip` hook — yüklenirken pulse, sonra AI metin | `DashboardPage.jsx`, `src/hooks/useDailyTip.js`, `src/services/dailyTip.js` |
+
+**Akış:** Cron veya ilk üye ziyareti → cache kontrol → Gemini → `site_content` insert → tüm üyeler aynı günün cümlesini görür.

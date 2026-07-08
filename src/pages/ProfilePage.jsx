@@ -187,7 +187,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="min-w-0 flex-1 text-center sm:text-left">
-              <h1 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl">{user.name}</h1>
+              <h1 className="font-display text-2xl font-bold text-cream-900 sm:text-3xl sm:text-white sm:drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">{user.name}</h1>
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <MembershipBadge tier={membership} status={membershipStatus !== 'active' ? membershipStatus : null} />
                 <span className="rounded-full bg-gradient-to-r from-brand-100 to-sage-100 px-3 py-1 text-xs font-semibold text-brand-800">

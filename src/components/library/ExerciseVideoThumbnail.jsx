@@ -19,9 +19,11 @@ function isDirectVideoUrl(url) {
 }
 
 const SIZE_CLASS = {
-  xs: 'h-9 w-9 rounded-lg',
-  sm: 'h-10 w-10 rounded-lg',
-  md: 'h-14 w-14 rounded-xl sm:h-16 sm:w-16',
+  xs: 'inline-flex h-9 w-9 max-h-9 max-w-9 shrink-0 rounded-lg',
+  sm: 'inline-flex h-10 w-10 max-h-10 max-w-10 shrink-0 rounded-lg',
+  list: 'inline-flex h-11 w-11 max-h-11 max-w-11 shrink-0 rounded-lg sm:h-12 sm:w-12 sm:max-h-12 sm:max-w-12',
+  md: 'inline-flex h-14 w-14 max-h-14 max-w-14 shrink-0 rounded-xl sm:h-16 sm:w-16 sm:max-h-16 sm:max-w-16',
+  card: 'inline-flex h-28 w-36 max-h-28 max-w-36 shrink-0 rounded-2xl sm:h-32 sm:w-44 sm:max-h-32 sm:max-w-44',
 }
 
 const ACCENT_CLASS = {
@@ -107,7 +109,7 @@ export default function ExerciseVideoThumbnail({
       <span className={`relative shrink-0 overflow-hidden bg-cream-100 shadow-sm ${boxClass}`}>
         <img src={ytThumb} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
-          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' ? 'h-4 w-4' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
+          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
         </span>
       </span>
     )
@@ -131,7 +133,7 @@ export default function ExerciseVideoThumbnail({
           }}
         />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/15">
-          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' ? 'h-4 w-4' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
+          <PlayCircle className={`text-white drop-shadow-md ${size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'}`} />
         </span>
       </span>
     )
@@ -139,7 +141,7 @@ export default function ExerciseVideoThumbnail({
 
   return (
     <span className={`flex shrink-0 items-center justify-center shadow-sm ${ACCENT_CLASS[accent] || ACCENT_CLASS.brand} ${boxClass}`}>
-      <FallbackIcon className={size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' ? 'h-4 w-4' : 'h-5 w-5 sm:h-6 sm:w-6'} />
+      <FallbackIcon className={size === 'xs' ? 'h-3.5 w-3.5' : size === 'sm' || size === 'list' ? 'h-4 w-4' : size === 'card' ? 'h-7 w-7 sm:h-8 sm:w-8' : 'h-5 w-5 sm:h-6 sm:w-6'} />
     </span>
   )
 }

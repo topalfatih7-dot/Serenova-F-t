@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { Search, PlayCircle, Dumbbell, Library, Sparkles, Loader2, Lock, ChevronDown } from 'lucide-react'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
-import VideoPlayer from '../components/ui/VideoPlayer'
 import ExerciseCategorySelect from '../components/library/ExerciseCategorySelect'
 import ExercisePagination from '../components/library/ExercisePagination'
+import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
+import ExerciseDetailModal from '../components/library/ExerciseDetailModal'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { EXERCISE_CATEGORY_ALL } from '../data/exerciseCategories'
 import { DIFFICULTY_LABELS, EXERCISE_LOCATION_LABELS, EXERCISE_LOCATION_OPTIONS, REQUIRES_MACHINE_LABELS, REQUIRES_MACHINE_OPTIONS, formatExerciseLocations } from '../data/exerciseTurkish'
@@ -336,84 +337,77 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((ex) => (
-              <button
-                key={ex.id}
-                type="button"
-                onClick={() => openExercise(ex)}
-                onMouseEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
-                onFocus={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
-              >
-                <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_50%)]" aria-hidden />
-                  <span className="relative rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
-                    {ex.category}
-                  </span>
-                  <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-white/30">
-                    <PlayCircle className="h-5 w-5" />
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="font-display font-bold leading-snug text-cream-900 group-hover:text-violet-800">{ex.name}</p>
-                  <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed text-cream-800/60">
-                    {ex.description || 'Açıklama eklenmemiş.'}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {ex.equipment && (
-                      <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">{ex.equipment}</span>
-                    )}
-                    {ex.difficulty && (
-                      <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
-                        {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
-                      </span>
-                    )}
-                    {formatExerciseLocations(ex.locations).map((label) => (
-                      <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
-                    ))}
-                    {ex.requiresMachine && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
-                    )}
+            {items.map((ex) => {
+              const locked = !allowVideoPlayback && ex.videoUrl && !ex.videoPending
+              return (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => openExercise(ex)}
+                  onMouseEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                  onFocus={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
+                >
+                  <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>
+                    <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
+                    <span className="relative rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                      {ex.category}
+                    </span>
+                    <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-white/30">
+                      <PlayCircle className="h-5 w-5" />
+                    </span>
                   </div>
-                  <p className="mt-3 text-xs font-semibold text-violet-600">
-                    {ex.videoPending ? 'Video yakında →' : allowVideoPlayback ? 'Videoyu izle →' : 'Tam erişim için yükselt →'}
-                  </p>
-                </div>
-              </button>
-            ))}
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="mb-4 flex justify-center">
+                      <div className="relative h-28 w-36 overflow-hidden rounded-2xl shadow-md ring-1 ring-violet-100/80 sm:h-32 sm:w-44">
+                        <ExerciseVideoThumbnail
+                          url={ex.videoUrl}
+                          videoPending={ex.videoPending}
+                          size="card"
+                          accent="brand"
+                          fallbackIcon={Dumbbell}
+                          className="!h-full !w-full !max-h-full !max-w-full !rounded-2xl"
+                        />
+                        {locked && (
+                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-black/45">
+                            <Lock className="h-5 w-5 text-white drop-shadow" />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="font-display font-bold leading-snug text-cream-900 group-hover:text-violet-800">{ex.name}</p>
+                    <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed text-cream-800/60">
+                      {ex.description || 'Açıklama eklenmemiş.'}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {ex.equipment && (
+                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">{ex.equipment}</span>
+                      )}
+                      {ex.difficulty && (
+                        <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
+                          {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
+                        </span>
+                      )}
+                      {formatExerciseLocations(ex.locations).map((label) => (
+                        <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
+                      ))}
+                      {ex.requiresMachine && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
+                      )}
+                    </div>
+                    <p className="mt-3 text-xs font-semibold text-violet-600">
+                      {ex.videoPending ? 'Video yakında →' : locked ? 'Tam erişim için yükselt →' : 'Videoyu izle →'}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
           </div>
           <ExercisePagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} className="mt-6" />
         </>
       )}
 
-      <Modal open={!!active} onClose={() => setActive(null)} title={active?.name} size="lg">
-        {active && (
-          <div className="space-y-4">
-            <VideoPlayer url={active.videoUrl} videoPending={active.videoPending} />
-            <div className="flex flex-wrap gap-2">
-              <span className={`inline-block rounded-full bg-gradient-to-r px-3 py-1 text-xs font-semibold text-white ${categoryGradient(active.category)}`}>
-                {active.category}
-              </span>
-              {active.equipment && (
-                <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">{active.equipment}</span>
-              )}
-              {active.difficulty && (
-                <span className="rounded-full bg-cream-100 px-3 py-1 text-xs font-medium text-cream-800/70">
-                  {DIFFICULTY_LABELS[active.difficulty] || active.difficulty}
-                </span>
-              )}
-              {formatExerciseLocations(active.locations).map((label) => (
-                <span key={label} className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">{label}</span>
-              ))}
-              {active.requiresMachine && (
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Makinalı</span>
-              )}
-            </div>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-cream-800/80">{active.description || 'Açıklama eklenmemiş.'}</p>
-          </div>
-        )}
-      </Modal>
-
+      <ExerciseDetailModal open={!!active} onClose={() => setActive(null)} exercise={active} />
       <Modal open={upgradeHint} onClose={() => setUpgradeHint(false)} title="Tam video erişimi" size="sm">
         <p className="text-sm text-cream-800/70">
           Paketiniz hareket listesini içerir; videoları izlemek için Spor veya VIP pakete geçmeniz gerekir.

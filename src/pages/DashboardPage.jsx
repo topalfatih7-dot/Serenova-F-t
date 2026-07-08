@@ -18,21 +18,9 @@ import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
-import { format, getDayOfYear } from 'date-fns'
+import { useDailyTip } from '../hooks/useDailyTip'
+import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
-
-const DAILY_TIPS = [
-  'Bugün 10 dakikalık bir yürüyüş bile metabolizmanızı canlandırır.',
-  'Su içmeyi unutmayın — güne 1 bardak suyla başlamak sindirimi destekler.',
-  'Kaliteli uyku, antrenman kadar önemlidir. Bu gece erken yatmayı deneyin.',
-  'Öğünlerinizi yavaş yemek tokluk hissini %20 artırır.',
-  'Küçük hedefler koyun: bugün sadece bir sağlıklı tercih yapın.',
-  'Esneme hareketleri gün içindeki gerginliği azaltır — 5 dakika ayırın.',
-  'Protein ağırlıklı kahvaltı gün boyu tatlı krizlerini azaltır.',
-  'Merdiveni tercih edin — günlük küçük hareketler birikir.',
-  'İlerlemenizi takip edin: bugünkü kilonuzu veya öğününüzü kaydedin.',
-  'Kendinize nazik olun — dönüşüm bir maraton, sprint değil.',
-]
 
 function ChartEmpty({ message = 'Henüz veri yok' }) {
   return (
@@ -51,6 +39,7 @@ export default function DashboardPage() {
     exerciseCount, updateProfile, createProgram, posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
+  const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
 
   useHealthAnalysisSync({ user, exerciseCount, myPrograms, updateProfile, createProgram })
   useStripePaymentReturn(refresh)
@@ -91,7 +80,6 @@ export default function DashboardPage() {
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
 
   const today = new Date()
-  const dailyTip = DAILY_TIPS[getDayOfYear(today) % DAILY_TIPS.length]
   const latestPosts = (posts || [])
     .filter((p) => p.published)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -103,10 +91,10 @@ export default function DashboardPage() {
         <div className="welcome-banner-photo" aria-hidden>
           <img src={PANEL_IMAGES.dashboardHero.url} alt="" />
         </div>
-        <div className="relative">
-          <p className="text-sm font-medium text-white/80">{format(today, 'd MMMM yyyy, EEEE', { locale: tr })}</p>
-          <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{firstName}, bugün harika bir gün olabilir</h1>
-          <p className="mt-2 max-w-xl text-sm text-white/75">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
+        <div className="welcome-banner-content relative">
+          <p className="text-sm font-medium text-white/80 sm:text-white">{format(today, 'd MMMM yyyy, EEEE', { locale: tr })}</p>
+          <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl sm:text-white">{firstName}, bugün harika bir gün olabilir</h1>
+          <p className="mt-2 max-w-xl text-sm text-white/75 sm:text-white/95">Küçük adımlar büyük dönüşümlerin başlangıcıdır — görevlerinizi tamamlayarak ilerleyin.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               to="/calendar"
@@ -125,12 +113,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow ${dailyTipLoading ? 'animate-pulse' : ''}`}>
           <Sparkles className="h-4.5 w-4.5" />
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-wide text-amber-700/70">Günün ipucu</p>
-          <p className="mt-0.5 text-sm leading-relaxed text-cream-900">{dailyTip}</p>
+          <p className={`mt-0.5 text-sm leading-relaxed text-cream-900 transition-opacity ${dailyTipLoading ? 'opacity-60' : 'opacity-100'}`}>
+            {dailyTip}
+          </p>
         </div>
       </div>
 

@@ -448,9 +448,6 @@ export function buildPersonSchema(member, { profilePath } = {}) {
   const alumni = (profile.education || [])
     .filter((e) => e?.school)
     .map((e) => ({ '@type': 'EducationalOrganization', name: e.school }))
-  const sameAs = [profile.instagram, profile.youtube, profile.linkedin, profile.website]
-    .filter(Boolean)
-
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -462,7 +459,6 @@ export function buildPersonSchema(member, { profilePath } = {}) {
     knowsAbout: profile.specialties?.length ? profile.specialties : undefined,
     hasCredential: credentials.length ? credentials : undefined,
     alumniOf: alumni.length ? alumni : undefined,
-    sameAs: sameAs.length ? sameAs : undefined,
     worksFor: { '@type': 'Organization', name: BRAND.name },
   }
 }
