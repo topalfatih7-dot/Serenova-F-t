@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   ArrowRight, Sparkles, HeartHandshake, Target, Eye, ShieldCheck, FlaskConical,
   Fingerprint, Globe, Leaf, Users, Dumbbell, Apple, Stethoscope, Lock, MessageCircle,
-  BadgeCheck, CreditCard, Video, Star,
+  BadgeCheck, CreditCard, Video, Star, ClipboardList,
 } from 'lucide-react'
 import TrustStrip from '../components/landing/TrustStrip'
 import JsonLd from '../components/seo/JsonLd'
@@ -116,9 +116,9 @@ const GUARANTEES = [
     accent: 'from-brand-300 to-sage-500',
   },
   {
-    icon: HeartHandshake,
-    title: 'Taahhüt Yok',
-    desc: 'Uzun süreli sözleşme yok — üyeliğinizi istediğiniz an tek tıkla iptal edebilirsiniz.',
+    icon: ClipboardList,
+    title: 'Kişiye Özel Program',
+    desc: 'Hazır şablon yok — koç ve diyetisyeniniz hedefinize göre programı birlikte şekillendirir.',
     accent: 'from-rose-400 to-brand-500',
   },
   {
@@ -305,10 +305,10 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ MİSYON & VİZYON ═══ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white to-cream-50/60 py-14 sm:py-20">
-        <div aria-hidden className="wellness-orb -left-24 top-10 h-64 w-64 bg-brand-200/40" />
-        <div aria-hidden className="wellness-orb -right-16 bottom-0 h-72 w-72 bg-sage-200/35" />
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+      <section className="about-section-asymmetric py-14 sm:py-20">
+        <div aria-hidden className="about-mesh about-mesh-mission" />
+        <div aria-hidden className="about-mesh-dot" />
+        <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '50px' }} className="text-center">
             <span className="section-badge">Biz Kimiz?</span>
             <h2 className="section-title mt-4">Misyonumuz ve Vizyonumuz</h2>
@@ -363,8 +363,10 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ DEĞERLERİMİZ ═══ */}
-      <section className="relative bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <section className="about-section-asymmetric py-14 sm:py-20">
+        <div aria-hidden className="about-mesh about-mesh-values" />
+        <div aria-hidden className="about-mesh-dot" />
+        <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '50px' }} className="text-center">
             <span className="section-badge">Değerlerimiz</span>
             <h2 className="section-title mt-4">Bizi Biz Yapan İlkeler</h2>
@@ -454,14 +456,14 @@ export default function AboutPage() {
                 </p>
                 <p>
                   Ücretsiz Basic paketle risksiz başlayabilir, hazır hissettiğinizde uzman desteği
-                  içeren paketlere geçebilirsiniz — taahhüt yok, istediğiniz an iptal edebilirsiniz.
+                  içeren paketlere geçerek koç, diyetisyen ve doktor eşleşmenizi güçlendirebilirsiniz.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
                 {[
                   { icon: ShieldCheck, label: 'KVKK uyumlu' },
                   { icon: Lock, label: '256-bit SSL' },
-                  { icon: HeartHandshake, label: 'İstediğiniz an iptal' },
+                  { icon: Video, label: 'Birebir video görüşme' },
                 ].map((t) => (
                   <span key={t.label} className="inline-flex items-center gap-1.5 text-xs font-semibold text-cream-800/70">
                     <t.icon className="h-4 w-4 text-sage-600" />
@@ -475,10 +477,10 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ GÜVENCELERİMİZ — neden bize güvenebilirsiniz ═══ */}
-      <section className="relative overflow-hidden bg-white py-14 sm:py-20">
-        <div aria-hidden className="wellness-orb -right-24 top-10 h-72 w-72 bg-brand-200/30" />
-        <div aria-hidden className="wellness-orb -left-16 bottom-0 h-64 w-64 bg-warm-200/30" />
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+      <section className="about-section-asymmetric py-14 sm:py-20">
+        <div aria-hidden className="about-mesh about-mesh-guarantees" />
+        <div aria-hidden className="about-mesh-dot" />
+        <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '50px' }} className="text-center">
             <span className="section-badge">Güvencelerimiz</span>
             <h2 className="section-title mt-4">Neden Bize Güvenebilirsiniz?</h2>

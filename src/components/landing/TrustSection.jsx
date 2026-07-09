@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ShieldCheck, Lock, BadgeCheck, CreditCard, HeartHandshake, MessageCircle,
+  ShieldCheck, Lock, BadgeCheck, CreditCard, Video, MessageCircle,
   ArrowRight, Star,
 } from 'lucide-react'
 
@@ -31,9 +31,9 @@ const GUARANTEES = [
     accent: 'from-warm-400 to-warm-500',
   },
   {
-    icon: HeartHandshake,
-    title: 'Taahhüt Yok',
-    desc: 'Uzun süreli sözleşme yok — üyeliğinizi istediğiniz an tek tıkla iptal edin.',
+    icon: Video,
+    title: 'Birebir Video Görüşme',
+    desc: 'Koç ve diyetisyeninizle yüz yüze görüşün; programınız her adımda birlikte güncellenir.',
     accent: 'from-rose-400 to-brand-500',
   },
 ]
@@ -63,7 +63,7 @@ export default function TrustSection() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-black/5">
+            <div className="relative overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-brand-900/5">
               <div className="aspect-[4/3] w-full">
                 <img
                   src={TRUST_IMAGE.url}
@@ -73,9 +73,20 @@ export default function TrustSection() {
                   decoding="async"
                 />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-900/30 via-transparent to-transparent" />
+              <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-t from-brand-900/25 via-transparent to-transparent" />
             </div>
-            <div aria-hidden className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-3xl bg-gradient-to-br from-brand-100 to-sage-100" />
+            <div
+              aria-hidden
+              className="absolute -bottom-5 -right-5 -z-10 h-[92%] w-[92%] rounded-[1.75rem] bg-gradient-to-br from-brand-200/70 via-sage-100/80 to-warm-100/60"
+            />
+            <div
+              aria-hidden
+              className="absolute -left-6 top-10 -z-10 h-28 w-28 rounded-full bg-brand-300/25 blur-2xl"
+            />
+            <div
+              aria-hidden
+              className="absolute -right-3 bottom-16 -z-10 h-20 w-20 rounded-full bg-sage-300/30 blur-xl"
+            />
 
             {/* Yüzen memnuniyet kartı */}
             <div className="absolute -bottom-5 left-4 flex items-center gap-2.5 rounded-2xl border border-cream-100 bg-white/95 px-4 py-3 shadow-xl backdrop-blur sm:left-6">

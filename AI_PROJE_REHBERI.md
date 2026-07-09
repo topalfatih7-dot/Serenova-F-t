@@ -4,17 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-<<<<<<< Updated upstream
-> **Son güncelleme:** 2026-07-08 · navbar dropdown kapanma · günün ipucu AI · kadro public gizlilik · üye paneli görselleri · koç Program Akışı mobile-first  
-> **Son oturum özeti:** Navbar Keşfet/Kadromuz dropdown'ları rota değişiminde ve diğer nav tıklamalarında kapanır (`closeDropdown`, `pathname` effect) · Kadromuz public gizlilik · `panelImages.js` · Dashboard günün ipucu · `StaffClientProgramPage` sepet · kütüphane filtre accordion
-=======
-> **Son güncelleme:** 2026-07-08 · landing hero modernizasyonu (ilk 10 sn netlik + güven) · yeni Hakkımızda sayfası (`/hakkimizda`)  
-> **Son oturum özeti:** `LandingPage` hero yeniden tasarım (sol değer önerisi + sağ "3 adımda başlayın" kartı + güven rozetleri) · `AboutPage.jsx` (misyon/vizyon, değerler, ekip, CTA) · nav Keşfet + footer + SEO/sitemap girişleri
->>>>>>> Stashed changes
+> **Son güncelleme:** 2026-07-09 · About/Trust/Membership asimetrik arka plan · profil kapak mobil/masaüstü · landing + Hakkımızda · navbar/kadro/günün ipucu  
+> **Son oturum özeti:** `AboutPage` + `TrustSection` + `MembershipComparisonPage` asimetrik mesh · “Taahhüt Yok” kaldırıldı · `profileCoverDesktop` · merge conflict temizliği · §62–67 günlüğü
 
 ---
 
-## Son Durum Özeti (2026-07-08)
+## Son Durum Özeti (2026-07-09)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -36,13 +31,13 @@
 | Üye paneli görselleri | ✅ | `src/utils/panelImages.js` (Unsplash CDN); `PanelPageHeader` `image` prop + `.panel-page-header-photo` (`index.css`); Dashboard `.welcome-banner-photo`; takvim, sağlık, program, mesaj vb. sayfa başlıkları |
 | Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
 | Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
-<<<<<<< Updated upstream
 | Kadro public gizlilik | ✅ | `/team/*` sayfalarında e-posta, telefon ve sosyal medya **gösterilmez**; yalnızca çalışma saatleri (varsa) · JSON-LD `sameAs` yok |
 | Günün ipucu (AI) | ✅ | `api/ai-blog-generate?task=daily-tip` + cron 04:00 · `site_content` cache · `useDailyTip` |
-=======
-| Landing hero (modern) | ✅ | `LandingPage.jsx` — sol net değer önerisi (H1 + özellik chip'leri + güven rozetleri + istatistik), sağ `lg+` "3 adımda başlayın" cam kartı; KVKK/SSL/uzman kadro rozetleri hero içinde |
-| Hakkımızda sayfası | ✅ | `/hakkimizda` → `AboutPage.jsx` — hero, istatistik bandı, misyon/vizyon, 6 değer kartı, yaklaşım, ekip linkleri, CTA + `TrustStrip`; nav Keşfet + footer + `PAGE_SEO` + sitemap |
->>>>>>> Stashed changes
+| Landing hero (modern) | ✅ | `LandingPage.jsx` — sol değer önerisi + sağ `lg+` "3 adımda başlayın" cam kartı; KVKK/SSL/uzman rozetleri |
+| Hakkımızda sayfası | ✅ | `/hakkimizda` → `AboutPage.jsx` — asimetrik mesh arka planlar (misyon/değerler/güvenceler); “Taahhüt Yok” yok → “Kişiye Özel Program” |
+| Landing TrustSection | ✅ | Foto çerçeve gri köşe düzeltmesi; güvence kartı “Birebir Video Görüşme” (iptal/taahhüt metni yok) |
+| Üyelik karşılaştırma UI | ✅ | `MembershipComparisonPage` — `membership-page-shell` + how/compare asimetrik mesh; taahhüt dili kaldırıldı |
+| Profil kapak (responsive) | ✅ | Mobil: `profileCover` (yoga); `sm+`: `profileCoverDesktop` (salon) — `panelImages.js` |
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -63,11 +58,7 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-<<<<<<< Updated upstream
-6. Son değişiklikler için **§53–64 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-=======
-6. Son değişiklikler için **§53–63 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
->>>>>>> Stashed changes
+6. Son değişiklikler için **§53–67 Değişiklik Günlüğü** (2026-07-03 — 2026-07-09); tam arşiv **§14–52** (2026-06 — 2026-07-01).
 7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
@@ -466,7 +457,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Kalori hesaplayıcı | `/calorie` | `CalorieCalculatorPage.jsx` | **Paket bazlı erişim:** Gümüş+ yazarak, Platinum fotoğraflı tahmini kalori (müşteriye YZ/AI ifadesi gösterilmez) |
 | Bildirimler | `/notifications` | `NotificationsPage.jsx` | Okundu işaretleme |
 | Destek | `/support` | `SupportPage.jsx` | Ticket oluşturma/thread |
-| Profil | `/profile` | `ProfilePage.jsx` | Hero kapak (`PANEL_IMAGES.profileCover`, `object-[50%_18%]`); profil, üyelik, atanan uzmanlar |
+| Profil | `/profile` | `ProfilePage.jsx` | Hero kapak: mobil `profileCover` / `sm+` `profileCoverDesktop`; profil, üyelik, atanan uzmanlar |
 | Ödeme (mock) | `/profile/payments` | `PaymentManagementPage.jsx` | Kayıtlı kartlar, ödeme geçmişi (demo) |
 | Video görüşme | `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co |
 
@@ -534,8 +525,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Sayfa | Rota | Dosya |
 |-------|------|-------|
 | Ana sayfa | `/` | `LandingPage.jsx` — hero (sol değer önerisi + sağ 3 adım kartı + güven rozetleri), fiyat, SSS, kadro, yorumlar, **Son Yazılarımız**, iletişim |
-| Hakkımızda | `/hakkimizda` (`/about` redirect) | `AboutPage.jsx` — hero, istatistikler, misyon/vizyon, değerler, yaklaşım, ekip linkleri, CTA |
-| Üyelik karşılaştırma | `/membership` | `MembershipComparisonPage.jsx` |
+| Hakkımızda | `/hakkimizda` (`/about` redirect) | `AboutPage.jsx` — hero, istatistikler, misyon/vizyon, değerler (asimetrik mesh), yaklaşım, güvenceler, ekip, CTA |
+| Üyelik karşılaştırma | `/membership` | `MembershipComparisonPage.jsx` — how-it-works + compare asimetrik mesh; plan kartları + tablo |
 | Kayıt | `/onboarding` | `OnboardingPage.jsx` |
 | Başarı hikâyeleri | `/stories` | `SuccessStoriesPage.jsx` |
 | Blog listesi | `/blog` | `BlogPage.jsx` | Supabase `posts` + kapak görselleri |
@@ -836,7 +827,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `memberProgress.js` | `buildMealProgress`, streak, workout + öğün ilerleme |
 | `programSchedule.js` | `mealCompletionKey`, `groupEntriesByMeal`, `isMealCompleted`, `splitEntriesByType` |
 | `blogImages.js` | `resolveBlogCover`, `coverForCategory` — kategori bazlı Unsplash kapak |
-| `panelImages.js` | `PANEL_IMAGES` — üye paneli sayfa hero/başlık görselleri (Unsplash CDN) |
+| `panelImages.js` | `PANEL_IMAGES` — üye paneli hero/başlık görselleri; `profileCover` (mobil) + `profileCoverDesktop` (`sm+`) |
 | `healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` — sağlık testi → profil |
 | `aiErrors.js` | `formatAiError` — AI hata mesajları |
 | `presenceStatus.js` | `isUserOnline`, `formatLastSeen` — çevrimiçi eşik (90 sn) |
@@ -2726,9 +2717,9 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 | Rota | Dosya | Ana bölümler / bileşenler | Veri |
 |------|-------|----------------------------|------|
-| `/` | `LandingPage.jsx` | Hero, fiyat kartları (`PricingCard`), TrustStrip, WhyUs, SSS (`FAQAccordion`), yorumlar, kadro önizleme, **Son Yazılarımız** (`LatestBlogPosts`), iletişim (`ContactSection`), canlı sayaç (`LiveActiveCounter`) | `useApp().platform.plans`, `site_content`, `usePlatformDisplayStats`, `posts` |
-| `/hakkimizda` | `AboutPage.jsx` | Hero (foto + misyon cümlesi), istatistik bandı, Misyon/Vizyon kartları, 6 değer kartı, yaklaşım bölümü (foto), ekip link kartları, CTA + `TrustStrip` | `useApp().staff`, `usePlatformDisplayStats` |
-| `/membership` | `MembershipComparisonPage.jsx` | Plan karşılaştırma tablosu, süre seçimi (1/3/6 ay), Stripe/checkout CTA | `plans` tablosu + `membershipPlans.js` fallback |
+| `/` | `LandingPage.jsx` | Hero (değer önerisi + 3 adım kartı), fiyat (`PricingCard`), `TrustSection` (güvence + foto), TrustStrip, WhyUs, SSS, yorumlar, kadro, blog, iletişim | `plans`, `site_content`, `usePlatformDisplayStats`, `posts` |
+| `/hakkimizda` | `AboutPage.jsx` | Hero, istatistik, misyon/vizyon + değerler + güvenceler (asimetrik mesh), yaklaşım, ekip, CTA + `TrustStrip` | `useApp().staff`, `usePlatformDisplayStats` |
+| `/membership` | `MembershipComparisonPage.jsx` | How-it-works mesh, plan kartları, karşılaştırma accordion/tablo (asimetrik), reassurance | `plans` + `membershipPlans.js` |
 | `/onboarding` | `OnboardingPage.jsx` | Çok adımlı kayıt: profil, sağlık testi (`HealthTestStep`), plan seçimi, ödeme | `register`, `registerWithPlan`, `processPremiumPayment` |
 | `/login` | `auth/LoginPage.jsx` | E-posta/şifre giriş, rol yönlendirme | `supabaseDb.login` |
 | `/forgot-password` | `auth/ForgotPasswordPage.jsx` | Şifre sıfırlama e-postası | Supabase Auth |
@@ -2761,7 +2752,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
 | `/notifications` | `NotificationsPage.jsx` | Bildirim listesi, okundu | `user.notifications` |
 | `/support` | `SupportPage.jsx` | Ticket oluştur, thread (`SupportForm`, `TicketThread`) | `tickets` |
-| `/profile` | `ProfilePage.jsx` | Kapak hero + profil kartı; üyelik, uzmanlar, doğrulama | `PANEL_IMAGES.profileCover`, `PersonalInfoSection` |
+| `/profile` | `ProfilePage.jsx` | Kapak hero (mobil yoga / masaüstü salon) + profil kartı; üyelik, uzmanlar | `profileCover` / `profileCoverDesktop`, `PersonalInfoSection` |
 | `/profile/payments` | `payments/PaymentManagementPage.jsx` | Mock ödeme geçmişi (demo banner) | `mockPayments.js` |
 | `/call/:type/:id` | `VideoCallPage.jsx` | Daily.co görüşme odası | `videoCallSession.js`, `useDailyCall` |
 
@@ -4151,7 +4142,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Panel görselleri** | Merkezi Unsplash CDN kaynağı; sayfa başlıklarına sağdan sola maskeli foto | `src/utils/panelImages.js`, `PanelPageHeader.jsx` (`image` prop), `index.css` (`.panel-page-header-photo`) |
 | **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; **AI günün ipucu** (`?task=daily-tip`, cron 04:00); son 3 blog kartı | `DashboardPage.jsx`, `useDailyTip.js`, `index.css` (`.welcome-banner*`) |
 | **Sayfa başlık fotoğrafları** | Takvim, sağlık testi, programlar, kalori, mesaj, bildirim, destek, randevu sekmeleri | `CalendarPage.jsx`, `HealthTest*.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`, `MessagesPage.jsx`, `NotificationsPage.jsx`, `SupportPage.jsx`, `MemberScheduleView.jsx` |
-| **Profil kapak kadrajı** | Yoga/wellness kapak görseli — kafa/göz görünür (`object-[50%_18%]`) | `ProfilePage.jsx`, `PANEL_IMAGES.profileCover` |
+| **Profil kapak (responsive)** | Mobil: yoga (`profileCover`, `object-[50%_18%]`); `sm+`: salon antrenmanı (`profileCoverDesktop`, opacity-80) | `ProfilePage.jsx`, `panelImages.js` |
 | **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; sepette **video thumbnail/oynatma yok**; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
 | **Kütüphane mobil UX** | `filtersOpen` state — `sm` altında arama+filtre paneli kapalı; başlık satırına dokunarak açılır; `activeFilterCount` özeti | `ExerciseLibraryPage.jsx` |
 
@@ -4164,72 +4155,70 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 
 ---
 
-<<<<<<< Updated upstream
-## §63 Kadro Public Gizlilik — İletişim Bilgileri Gizlendi (2026-07-08)
-
-**İstek:** Kullanıcılar Kadromuz bölümünde personelin e-posta, telefon ve sosyal medya hesaplarını görmemeli.
-
-| Konu | Değişiklik | Dosyalar |
-|------|------------|----------|
-| **Profil sayfası** | `İletişim & Çalışma Saatleri` bölümünden e-posta ve telefon kaldırıldı; bölüm yalnızca çalışma günü/saati varsa **Çalışma Saatleri** olarak gösterilir | `src/components/staff/StaffProfileDisplay.jsx` |
-| **Kadro kartları** | Zaten iletişim göstermiyordu — değişiklik yok | `src/components/staff/StaffMemberCard.jsx` |
-| **SEO JSON-LD** | `buildPersonSchema` artık `sameAs` (Instagram/YouTube/LinkedIn/web) yayınlamaz | `src/config/seo.js` |
-| **Veri modeli** | `phone`, `email`, sosyal alanlar Supabase'de ve admin/personel panelinde kalır; yalnızca public vitrin gizler | `src/data/staffProfile.js` (şema aynı) |
-
-**Görünür kalır (public):** ad, unvan, uzmanlık, bio, eğitim, deneyim, sertifikalar, diller, fotoğraf, çalışma saatleri (tanımlıysa), Programa Katıl / Üyelik CTA'ları.
-
-**Gizli kalır (public):** e-posta, telefon, Instagram, YouTube, LinkedIn, web sitesi.
-
----
-
-## §64 Günün İpucu — AI ile Günlük Motivasyon (2026-07-08)
-
-**İstek:** Dashboard'daki "Günün ipucu" her gün otomatik değişsin; Gemini ile motivasyon cümlesi üretilsin.
-
-| Konu | Değişiklik | Dosyalar |
-|------|------------|----------|
-| **API** | `GET /api/ai-blog-generate?task=daily-tip` — üye/cron; cache `site_content` | `api/_dailyTip.js`, `api/ai-blog-generate.js` |
-| **Cron** | Her gün 04:00 UTC — ipucu önceden üretilir (`vercel.json`) | `vercel.json` |
-| **Altyapı** | Blog/kalori ile **aynı** `GEMINI_API_KEY`, `GEMINI_MODEL`, `api/_gemini.js`, `CRON_SECRET` — **ek anahtar gerekmez** | `api/_gemini.js`, `docs/setup/AI_SETUP.md` |
-| **Prompt** | Tek cümle motivasyon; son 7 gün tekrarlanmaz | `api/_ai-prompts.js` (`DAILY_TIP_*`) |
-| **Yedek** | AI/DB hata → statik rotasyon (`pickFallbackTip`) | `api/_daily-tip-fallback.js`, `src/data/dailyTipFallback.js` |
-| **Dashboard** | `useDailyTip` hook — yüklenirken pulse, sonra AI metin | `DashboardPage.jsx`, `src/hooks/useDailyTip.js`, `src/services/dailyTip.js` |
-
-**Akış:** Cron veya ilk üye ziyareti → cache kontrol → Gemini → `site_content` insert → tüm üyeler aynı günün cümlesini görür.
-
----
-
-## §65 Navbar Dropdown — Sayfa Geçişinde Kapanma (2026-07-08)
-
-**Sorun:** Keşfet veya Kadromuz açıkken başka bir nav öğesine (Ana Sayfa, Üyelikler, logo, Giriş Yap vb.) tıklanınca dropdown açık kalıyordu. Dışarı tıklama (`mousedown` + `navRef`) yalnızca nav dışı tıklamalarda çalışıyordu.
-
-| Konu | Değişiklik | Dosyalar |
-|------|------------|----------|
-| **Rota değişimi** | `pathname` değişince `setOpenDropdown(null)` | `PublicLayout.jsx` |
-| **Nav link tıklama** | `renderNavLink` → `closeDropdown()` | `PublicLayout.jsx` |
-| **Header CTA** | Logo (`BrandLogo onNavigate`), Giriş/Kayıt/Profil/Panel linkleri | `PublicLayout.jsx`, `BrandLogo.jsx` |
-| **Dropdown içi** | Zaten `NavDropdown` `onClose` ile kapanıyordu — değişiklik yok | `NavDropdown.jsx` |
-
-**Davranış:** Açık dropdown + başka sayfaya git → menü kapanır. Aynı sayfa linkine tıklama da anında kapatır (`onClick`). Mobil hamburger menü ayrı state (`menuOpen`) — etkilenmez.
-=======
 ## §63 Landing Hero Modernizasyonu + Hakkımızda Sayfası (2026-07-08)
 
 **Amaç:** Ziyaretçinin ilk 10 saniyede ne yaptığımızı anlaması, güven duyması ve sayfada kalması.
 
 | Konu | Değişiklik | Dosyalar |
 |------|------------|----------|
-| **Landing hero yeniden tasarım** | Küçük asimetrik cam kart → iki sütunlu düzen. **Sol:** net H1 ("Size özel antrenman ve beslenme programı — `RotatingHeroText`"), somut alt metin, 3 özellik chip'i (kişisel antrenman / diyetisyen onaylı beslenme / birebir video görüşme), CTA'lar + "Kredi kartı gerekmez" mikro-metin, güven rozetleri (KVKK · 256-bit SSL · uzman onaylı kadro), istatistikler. **Sağ (lg+):** "3 adımda başlayın" cam kartı (sağlık testi → program → görüşme) + KVKK veri güvencesi notu | `src/pages/LandingPage.jsx` |
-| **Hero overlay** | Sol koyu gradient güçlendirildi (`from-black/80 via-black/55 to-black/25`) — beyaz metin okunabilirliği; video `brightness(0.5)` | `LandingPage.jsx` |
-| **Hakkımızda sayfası** | Yeni `/hakkimizda` (+ `/about` redirect). Bölümler: foto hero + misyon cümlesi, istatistik bandı (aktif üye · uzman kadro · %94 · 7/24), Misyon/Vizyon kartları, 6 değer kartı (güven, bilim, kişiselleştirme, erişilebilirlik, sürdürülebilirlik, topluluk), "İnsan Odaklı, Teknoloji Destekli" yaklaşım bölümü (foto + güven rozetleri), ekip link kartları (`/team/*`), koyu CTA bandı (Ücretsiz Başla + Bize Ulaşın), `TrustStrip`. Tamamen responsive (mobile-first grid'ler) | `src/pages/AboutPage.jsx` (yeni) |
-| **Rota** | `hakkimizda` lazy route; `about` → redirect | `src/App.jsx` |
-| **Navigasyon** | Keşfet dropdown'a **Hakkımızda** (ilk sıra, `HeartHandshake` ikonu); `activePaths` güncellendi; mobil menü otomatik (aynı `discoverSubLinks`); footer Platform sütununa link | `src/components/layout/PublicLayout.jsx` |
-| **SEO** | `PAGE_SEO['/hakkimizda']` (title/description/keywords), `STATIC_PUBLIC_ROUTES` girişi; JSON-LD: `Organization` + `AboutPage` (`buildAboutPageSchema` sayfa içinde) | `src/config/seo.js`, `src/pages/AboutPage.jsx` |
-| **Sitemap** | `/hakkimizda` (monthly, 0.8) | `api/sitemap.js` |
+| **Landing hero yeniden tasarım** | İki sütunlu düzen. **Sol:** H1 + özellik chip'leri + CTA + güven rozetleri + istatistik. **Sağ (lg+):** "3 adımda başlayın" cam kartı | `src/pages/LandingPage.jsx` |
+| **Hakkımızda sayfası** | `/hakkimizda` (+ `/about` redirect). Hero, istatistik, misyon/vizyon, 6 değer, yaklaşım, ekip linkleri, CTA + `TrustStrip` | `src/pages/AboutPage.jsx` |
+| **Rota / nav / SEO** | Lazy route; Keşfet + footer; `PAGE_SEO` + sitemap + JSON-LD | `App.jsx`, `PublicLayout.jsx`, `seo.js`, `api/sitemap.js` |
 
-**Teknik notlar (AI için):**
-- `AboutPage` görselleri Unsplash CDN (`panelImages.js` deseni — sayfa içi `unsplash()` helper).
-- İstatistikler: `usePlatformDisplayStats()` (aktif üye) + `useApp().staff` aktif sayısı (0 ise `25+` fallback).
-- "Bize Ulaşın" CTA `/#bize-ulasin`'e gider; ana sayfadaysa `scrollToContactSection()` ile yumuşak kaydırma.
-- Hero'daki eski istatistik/rozet yapıları korunur: `heroStats` (`usePlatformDisplayStats` + `staticStats`).
-- Doğrulama: `npx eslint` (temiz) + `npm run build` (başarılı).
->>>>>>> Stashed changes
+**Teknik notlar:** About görselleri sayfa içi Unsplash helper; istatistikler `usePlatformDisplayStats` + aktif staff.
+
+---
+
+## §64 Kadro Public Gizlilik — İletişim Bilgileri Gizlendi (2026-07-08)
+
+**İstek:** Kullanıcılar Kadromuz bölümünde personelin e-posta, telefon ve sosyal medya hesaplarını görmemeli.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Profil sayfası** | E-posta/telefon kaldırıldı; yalnızca çalışma saatleri (varsa) | `StaffProfileDisplay.jsx` |
+| **SEO JSON-LD** | `buildPersonSchema` `sameAs` yayınlamaz | `src/config/seo.js` |
+| **Veri modeli** | Alanlar DB/admin'de kalır; yalnızca public vitrin gizler | `staffProfile.js` |
+
+**Public görünür:** ad, unvan, bio, eğitim, sertifikalar, fotoğraf, çalışma saatleri, CTA.  
+**Public gizli:** e-posta, telefon, Instagram, YouTube, LinkedIn, web.
+
+---
+
+## §65 Günün İpucu — AI ile Günlük Motivasyon (2026-07-08)
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **API / cron** | `?task=daily-tip` + 04:00 UTC; `site_content` cache | `api/_dailyTip.js`, `ai-blog-generate.js`, `vercel.json` |
+| **Dashboard** | `useDailyTip` — AI metin, hata → fallback | `DashboardPage.jsx`, `useDailyTip.js`, `dailyTip.js` |
+
+Aynı `GEMINI_API_KEY` / `_gemini.js` — ek anahtar yok. Detay: `docs/setup/AI_SETUP.md`.
+
+---
+
+## §66 Navbar Dropdown — Sayfa Geçişinde Kapanma (2026-07-08)
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Rota / nav tıklama** | `pathname` → kapat; `closeDropdown` link/CTA/logo | `PublicLayout.jsx`, `BrandLogo.jsx` |
+
+Mobil hamburger (`menuOpen`) etkilenmez.
+
+---
+
+## §67 Public UI — Asimetrik Arka Planlar, Trust Kartı, Üyelik Mesh (2026-07-09)
+
+**Amaç:** Hakkımızda / landing güven / üyelik sayfalarında göz yoran düz arka planları asimetrik mesh ile zenginleştirmek; iptal/taahhüt pazarlama dilini kaldırmak; Trust fotoğrafındaki gri köşe artefaktını düzeltmek.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **About asimetrik mesh** | Misyon, Değerler, Güvenceler: `.about-mesh-mission` / `-values` / `-guarantees` + nokta dokusu | `AboutPage.jsx`, `index.css` |
+| **About güvence kartı** | “Taahhüt Yok” → **Kişiye Özel Program**; yaklaşım metninden iptal vurgusu kaldırıldı | `AboutPage.jsx` |
+| **TrustSection** | Overlay `relative` kapsayıcıda; arka plaka küçültüldü + soft blob; “Taahhüt Yok” → **Birebir Video Görüşme** | `TrustSection.jsx` |
+| **Üyelik karşılaştırma** | `.membership-page-shell`, how/compare mesh; adım metninden “taahhüt baskısı” kaldırıldı | `MembershipComparisonPage.jsx`, `index.css` |
+| **Profil kapak** | Mobil yoga / masaüstü salon (`profileCoverDesktop`) — zaten §62’de; Unsplash ID doğrulanmış | `panelImages.js`, `ProfilePage.jsx` |
+
+**CSS sınıfları (AI için):**
+- About: `.about-section-asymmetric`, `.about-mesh-*`, `.about-mesh-dot`
+- Membership: `.membership-page-shell`, `.membership-section-asymmetric`, `.membership-mesh-how`, `.membership-mesh-compare`
+
+**Pazarlama kuralı:** Public UI’da “tek tıkla iptal”, “taahhüt yok”, “dondurma” gibi vaat kartları kullanılmaz (yasal metinler ayrı).
