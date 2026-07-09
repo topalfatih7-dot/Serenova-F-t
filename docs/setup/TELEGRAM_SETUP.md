@@ -56,6 +56,7 @@ Aşağıdakileri **Production**, **Preview** ve **Development** için ekleyin:
 |----------|-------|----------|
 | `TELEGRAM_BOT_TOKEN` | `123456789:AAH...` | BotFather token |
 | `TELEGRAM_CHAT_ID` | `123456789` | Giriş/kayıt bildirimleri chat id |
+| `TELEGRAM_OPS_CHAT_ID` | `-100...` | **Supabase sağlık uyarıları** (saatlik cron) |
 | `TELEGRAM_CONTACT_CHAT_ID` | `-1009876543210` | **Bize Ulaşın** formu — ayrı chat/grup id |
 | `TELEGRAM_STAFF_APPLICATION_CHAT_ID` | `-100...` | **Kadro başvurusu** — yalnızca iletişim bilgileri |
 | `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` | `-100...` | **Kurumsal başvuru** — yalnızca iletişim bilgileri |
@@ -233,6 +234,76 @@ curl -X POST "https://SITENIZ.vercel.app/api/application-notify" \
 
 ---
 
+## Supabase sağlık uyarısı (saatlik)
+
+Her saat Supabase DB / Storage / bağlantı kontrol edilir. Sorun varsa (veya
+düzelince) Telegram’a mesaj gider. Aynı uyarı en fazla **6 saatte bir** tekrarlanır.
+
+```
+GitHub Actions (0 * * * *)  ← Hobby’de Vercel saatlik cron yok
+  → GET /api/ai-blog-generate?task=supabase-health
+  → ops_health_snapshot() RPC
+  → TELEGRAM_OPS_CHAT_ID (yoksa TELEGRAM_CHAT_ID)
+```
+
+> **Neden GitHub Actions?** Vercel Hobby yalnızca **günde 1** cron’a izin verir;
+> saatlik ifade deploy’u kırar. Endpoint Vercel’de; tetikleyici Actions’ta.
+> Vercel Pro’ya geçerseniz `vercel.json`’a `0 * * * *` ekleyebilirsiniz.
+
+### Vercel env
+
+| Değişken | Zorunlu? | Açıklama |
+|----------|----------|----------|
+| `TELEGRAM_OPS_CHAT_ID` | Önerilir | Ops/uyarı chat id — siz oluşturup yazacaksınız |
+| `TELEGRAM_CHAT_ID` | Yedek | `TELEGRAM_OPS_CHAT_ID` yoksa buraya düşer |
+| `TELEGRAM_BOT_TOKEN` | Evet | Mevcut bot |
+| `CRON_SECRET` | Evet (prod) | Bearer koruması (Actions + manuel test) |
+| `SUPABASE_PLAN` | Hayır | `free` (varsayılan) veya `pro` — eşikleri ayarlar |
+| `SUPABASE_SERVICE_ROLE_KEY` | Evet | Metrik RPC + state kaydı |
+
+### GitHub Secrets (Actions)
+
+Repo → **Settings** → **Secrets and variables** → **Actions**:
+
+| Secret | Açıklama |
+|--------|----------|
+| `CRON_SECRET` | Vercel’deki `CRON_SECRET` ile **aynı** değer |
+| `HEALTH_CHECK_URL` | Opsiyonel; varsayılan `https://www.yeniform.com` |
+
+Workflow: `.github/workflows/supabase-health.yml` — manuel test: Actions → **Run workflow**.
+
+### Chat kurulum
+
+1. Telegram’da yeni grup oluşturun (ör. **Yeni Form — Ops**).
+2. Mevcut botu gruba ekleyin.
+3. Grupta bir mesaj yazın → `getUpdates` ile chat id alın (`-100...`).
+4. Vercel’e `TELEGRAM_OPS_CHAT_ID` ekleyin → **Redeploy**.
+
+### Ne zaman uyarı gider?
+
+| Durum | Seviye |
+|-------|--------|
+| API/DB erişilemiyor veya RPC yok | critical |
+| Storage / DB kota eşiği aşıldı | warn → critical |
+| Bağlantı sayısı yüksek | warn → critical |
+| Önceki uyarı düzeldi | recovery ✅ |
+
+Sorun yokken saatlik kontrol **sessiz** kalır. Manuel “her şey OK” testi:
+
+```bash
+curl -X GET "https://www.yeniform.com/api/ai-blog-generate?task=supabase-health&notifyOk=true&force=true" \
+  -H "Authorization: Bearer CRON_SECRET"
+```
+
+### Dosyalar
+
+- `api/_supabaseHealth.js` — kontrol + Telegram
+- `api/ai-blog-generate.js` — `?task=supabase-health` yönlendirme
+- `supabase/migrations/20260709_ops_health_snapshot.sql` — metrik RPC
+- `.github/workflows/supabase-health.yml` — saatlik tetikleyici
+
+---
+
 ## Dosya referansları
 
 - Giriş/kayıt API: `api/telegram-notify.js`
@@ -242,3 +313,4 @@ curl -X POST "https://SITENIZ.vercel.app/api/application-notify" \
 - İstemci: `src/services/contactForm.js`
 - Başvuru istemci: `src/services/applicationNotify.js`
 - Auth olayları: `src/services/supabaseDb.js`
+- Ops sağlık: `api/_supabaseHealth.js`

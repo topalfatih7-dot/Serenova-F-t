@@ -1,8 +1,9 @@
 /**
- * Günlük AI işleri — Vercel Hobby 12 fonksiyon limiti için tek route.
+ * Günlük AI / ops işleri — Vercel Hobby 12 fonksiyon limiti için tek route.
  *
  * ?task=blog (varsayılan) — günlük blog makalesi (CRON_SECRET, cron 05:00)
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
+ * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
  */
 
 import {
@@ -16,6 +17,7 @@ import {
 } from './_ai-prompts.js'
 import { coverForCategory } from './_blog-images.js'
 import { handleDailyTip } from './_dailyTip.js'
+import { handleSupabaseHealth } from './_supabaseHealth.js'
 import { setCorsHeaders, handleOptions, requireCronSecret } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 
@@ -113,6 +115,9 @@ export default async function handler(req, res) {
   const task = String(req.query?.task || 'blog').toLowerCase()
   if (task === 'daily-tip' || task === 'daily_tip') {
     return handleDailyTip(req, res)
+  }
+  if (task === 'supabase-health' || task === 'supabase_health' || task === 'health') {
+    return handleSupabaseHealth(req, res)
   }
   return handleBlogGenerate(req, res)
 }
