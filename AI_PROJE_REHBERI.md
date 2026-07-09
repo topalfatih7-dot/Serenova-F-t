@@ -4,8 +4,13 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
+<<<<<<< Updated upstream
 > **Son güncelleme:** 2026-07-08 · navbar dropdown kapanma · günün ipucu AI · kadro public gizlilik · üye paneli görselleri · koç Program Akışı mobile-first  
 > **Son oturum özeti:** Navbar Keşfet/Kadromuz dropdown'ları rota değişiminde ve diğer nav tıklamalarında kapanır (`closeDropdown`, `pathname` effect) · Kadromuz public gizlilik · `panelImages.js` · Dashboard günün ipucu · `StaffClientProgramPage` sepet · kütüphane filtre accordion
+=======
+> **Son güncelleme:** 2026-07-08 · landing hero modernizasyonu (ilk 10 sn netlik + güven) · yeni Hakkımızda sayfası (`/hakkimizda`)  
+> **Son oturum özeti:** `LandingPage` hero yeniden tasarım (sol değer önerisi + sağ "3 adımda başlayın" kartı + güven rozetleri) · `AboutPage.jsx` (misyon/vizyon, değerler, ekip, CTA) · nav Keşfet + footer + SEO/sitemap girişleri
+>>>>>>> Stashed changes
 
 ---
 
@@ -31,8 +36,13 @@
 | Üye paneli görselleri | ✅ | `src/utils/panelImages.js` (Unsplash CDN); `PanelPageHeader` `image` prop + `.panel-page-header-photo` (`index.css`); Dashboard `.welcome-banner-photo`; takvim, sağlık, program, mesaj vb. sayfa başlıkları |
 | Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
 | Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
+<<<<<<< Updated upstream
 | Kadro public gizlilik | ✅ | `/team/*` sayfalarında e-posta, telefon ve sosyal medya **gösterilmez**; yalnızca çalışma saatleri (varsa) · JSON-LD `sameAs` yok |
 | Günün ipucu (AI) | ✅ | `api/ai-blog-generate?task=daily-tip` + cron 04:00 · `site_content` cache · `useDailyTip` |
+=======
+| Landing hero (modern) | ✅ | `LandingPage.jsx` — sol net değer önerisi (H1 + özellik chip'leri + güven rozetleri + istatistik), sağ `lg+` "3 adımda başlayın" cam kartı; KVKK/SSL/uzman kadro rozetleri hero içinde |
+| Hakkımızda sayfası | ✅ | `/hakkimizda` → `AboutPage.jsx` — hero, istatistik bandı, misyon/vizyon, 6 değer kartı, yaklaşım, ekip linkleri, CTA + `TrustStrip`; nav Keşfet + footer + `PAGE_SEO` + sitemap |
+>>>>>>> Stashed changes
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
@@ -53,7 +63,11 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
+<<<<<<< Updated upstream
 6. Son değişiklikler için **§53–64 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+=======
+6. Son değişiklikler için **§53–63 Değişiklik Günlüğü** (2026-07-03 — 2026-07-08); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+>>>>>>> Stashed changes
 7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
@@ -519,7 +533,8 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 
 | Sayfa | Rota | Dosya |
 |-------|------|-------|
-| Ana sayfa | `/` | `LandingPage.jsx` — hero, fiyat, SSS, kadro, yorumlar, **Son Yazılarımız**, iletişim |
+| Ana sayfa | `/` | `LandingPage.jsx` — hero (sol değer önerisi + sağ 3 adım kartı + güven rozetleri), fiyat, SSS, kadro, yorumlar, **Son Yazılarımız**, iletişim |
+| Hakkımızda | `/hakkimizda` (`/about` redirect) | `AboutPage.jsx` — hero, istatistikler, misyon/vizyon, değerler, yaklaşım, ekip linkleri, CTA |
 | Üyelik karşılaştırma | `/membership` | `MembershipComparisonPage.jsx` |
 | Kayıt | `/onboarding` | `OnboardingPage.jsx` |
 | Başarı hikâyeleri | `/stories` | `SuccessStoriesPage.jsx` |
@@ -575,6 +590,8 @@ Kaynak: `src/App.jsx` satır 56–117
 /reset-password      → ResetPasswordPage
 /onboarding          → OnboardingPage
 /membership          → MembershipComparisonPage
+/hakkimizda          → AboutPage (Hakkımızda)
+/about               → redirect /hakkimizda
 /builder             → redirect /membership
 /stories             → SuccessStoriesPage
 /blog                → BlogPage
@@ -599,7 +616,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Ana Sayfa | doğrudan | `/` |
 | Üyelikler | doğrudan | `/membership` |
 | Kurumsal | doğrudan | `/corporate` — başvuru sayfada CTA |
-| **Keşfet** | dropdown | Başarı Hikayeleri (`/stories`), Blog (`/blog`) |
+| **Keşfet** | dropdown | Hakkımızda (`/hakkimizda`), Başarı Hikayeleri (`/stories`), Blog (`/blog`) |
 | Kadromuz | dropdown | Koçlar, Diyetisyenler, Doktorlar + **Kadromuza Katıl** footer |
 | Destek | doğrudan | yalnız giriş yapmış üyeler |
 
@@ -845,6 +862,7 @@ Kaynak: `src/App.jsx` satır 56–117
 ```
 VideoCallPage.jsx
 LandingPage.jsx
+AboutPage.jsx                   ← /hakkimizda (Hakkımızda)
 OnboardingPage.jsx
 MembershipComparisonPage.jsx
 DashboardPage.jsx
@@ -1665,6 +1683,7 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 |------|--------------|---------|
 | `/` | `PAGE_SEO['/']` + `PublicRouteSeo` | Organization, WebSite, FAQPage (`LandingPage`) |
 | `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/*` | `PAGE_SEO` | ItemList (`BlogPage`, `TeamListPage`) |
+| `/hakkimizda` | `PAGE_SEO['/hakkimizda']` | Organization + AboutPage (`AboutPage.jsx`) |
 | `/blog/:id` | `BlogPostPage` → `SeoHead` | Article + BreadcrumbList |
 | `/team/:id` | `StaffProfilePage` → `SeoHead` | Person + BreadcrumbList |
 | `/login`, `/forgot-password` | `PAGE_SEO` | `noindex` |
@@ -2708,6 +2727,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | Rota | Dosya | Ana bölümler / bileşenler | Veri |
 |------|-------|----------------------------|------|
 | `/` | `LandingPage.jsx` | Hero, fiyat kartları (`PricingCard`), TrustStrip, WhyUs, SSS (`FAQAccordion`), yorumlar, kadro önizleme, **Son Yazılarımız** (`LatestBlogPosts`), iletişim (`ContactSection`), canlı sayaç (`LiveActiveCounter`) | `useApp().platform.plans`, `site_content`, `usePlatformDisplayStats`, `posts` |
+| `/hakkimizda` | `AboutPage.jsx` | Hero (foto + misyon cümlesi), istatistik bandı, Misyon/Vizyon kartları, 6 değer kartı, yaklaşım bölümü (foto), ekip link kartları, CTA + `TrustStrip` | `useApp().staff`, `usePlatformDisplayStats` |
 | `/membership` | `MembershipComparisonPage.jsx` | Plan karşılaştırma tablosu, süre seçimi (1/3/6 ay), Stripe/checkout CTA | `plans` tablosu + `membershipPlans.js` fallback |
 | `/onboarding` | `OnboardingPage.jsx` | Çok adımlı kayıt: profil, sağlık testi (`HealthTestStep`), plan seçimi, ödeme | `register`, `registerWithPlan`, `processPremiumPayment` |
 | `/login` | `auth/LoginPage.jsx` | E-posta/şifre giriş, rol yönlendirme | `supabaseDb.login` |
@@ -4144,6 +4164,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 
 ---
 
+<<<<<<< Updated upstream
 ## §63 Kadro Public Gizlilik — İletişim Bilgileri Gizlendi (2026-07-08)
 
 **İstek:** Kullanıcılar Kadromuz bölümünde personelin e-posta, telefon ve sosyal medya hesaplarını görmemeli.
@@ -4190,3 +4211,25 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Dropdown içi** | Zaten `NavDropdown` `onClose` ile kapanıyordu — değişiklik yok | `NavDropdown.jsx` |
 
 **Davranış:** Açık dropdown + başka sayfaya git → menü kapanır. Aynı sayfa linkine tıklama da anında kapatır (`onClick`). Mobil hamburger menü ayrı state (`menuOpen`) — etkilenmez.
+=======
+## §63 Landing Hero Modernizasyonu + Hakkımızda Sayfası (2026-07-08)
+
+**Amaç:** Ziyaretçinin ilk 10 saniyede ne yaptığımızı anlaması, güven duyması ve sayfada kalması.
+
+| Konu | Değişiklik | Dosyalar |
+|------|------------|----------|
+| **Landing hero yeniden tasarım** | Küçük asimetrik cam kart → iki sütunlu düzen. **Sol:** net H1 ("Size özel antrenman ve beslenme programı — `RotatingHeroText`"), somut alt metin, 3 özellik chip'i (kişisel antrenman / diyetisyen onaylı beslenme / birebir video görüşme), CTA'lar + "Kredi kartı gerekmez" mikro-metin, güven rozetleri (KVKK · 256-bit SSL · uzman onaylı kadro), istatistikler. **Sağ (lg+):** "3 adımda başlayın" cam kartı (sağlık testi → program → görüşme) + KVKK veri güvencesi notu | `src/pages/LandingPage.jsx` |
+| **Hero overlay** | Sol koyu gradient güçlendirildi (`from-black/80 via-black/55 to-black/25`) — beyaz metin okunabilirliği; video `brightness(0.5)` | `LandingPage.jsx` |
+| **Hakkımızda sayfası** | Yeni `/hakkimizda` (+ `/about` redirect). Bölümler: foto hero + misyon cümlesi, istatistik bandı (aktif üye · uzman kadro · %94 · 7/24), Misyon/Vizyon kartları, 6 değer kartı (güven, bilim, kişiselleştirme, erişilebilirlik, sürdürülebilirlik, topluluk), "İnsan Odaklı, Teknoloji Destekli" yaklaşım bölümü (foto + güven rozetleri), ekip link kartları (`/team/*`), koyu CTA bandı (Ücretsiz Başla + Bize Ulaşın), `TrustStrip`. Tamamen responsive (mobile-first grid'ler) | `src/pages/AboutPage.jsx` (yeni) |
+| **Rota** | `hakkimizda` lazy route; `about` → redirect | `src/App.jsx` |
+| **Navigasyon** | Keşfet dropdown'a **Hakkımızda** (ilk sıra, `HeartHandshake` ikonu); `activePaths` güncellendi; mobil menü otomatik (aynı `discoverSubLinks`); footer Platform sütununa link | `src/components/layout/PublicLayout.jsx` |
+| **SEO** | `PAGE_SEO['/hakkimizda']` (title/description/keywords), `STATIC_PUBLIC_ROUTES` girişi; JSON-LD: `Organization` + `AboutPage` (`buildAboutPageSchema` sayfa içinde) | `src/config/seo.js`, `src/pages/AboutPage.jsx` |
+| **Sitemap** | `/hakkimizda` (monthly, 0.8) | `api/sitemap.js` |
+
+**Teknik notlar (AI için):**
+- `AboutPage` görselleri Unsplash CDN (`panelImages.js` deseni — sayfa içi `unsplash()` helper).
+- İstatistikler: `usePlatformDisplayStats()` (aktif üye) + `useApp().staff` aktif sayısı (0 ise `25+` fallback).
+- "Bize Ulaşın" CTA `/#bize-ulasin`'e gider; ana sayfadaysa `scrollToContactSection()` ile yumuşak kaydırma.
+- Hero'daki eski istatistik/rozet yapıları korunur: `heroStats` (`usePlatformDisplayStats` + `staticStats`).
+- Doğrulama: `npx eslint` (temiz) + `npm run build` (başarılı).
+>>>>>>> Stashed changes

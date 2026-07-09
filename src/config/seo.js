@@ -211,6 +211,7 @@ export function buildStaffProfileKeywords(member, roleLabel) {
 /** Statik public rotalar — sitemap ve varsayılan meta eşlemesi */
 export const STATIC_PUBLIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
   { path: '/membership', changefreq: 'weekly', priority: '0.9' },
   { path: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { path: '/stories', changefreq: 'weekly', priority: '0.8' },
@@ -230,6 +231,12 @@ export const PAGE_SEO = {
     description:
       'Yeni Form (yeniform.com) — evde veya spor salonunda antrenman, kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
     keywords: buildBrandKeywords('online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, ücretsiz fitness'),
+  },
+  '/hakkimizda': {
+    title: 'Hakkımızda — Misyonumuz, Değerlerimiz ve Uzman Kadromuz',
+    description:
+      'Yeni Form (yeniform.com) kimdir? Online koçluk, diyetisyen ve wellness platformumuzun misyonu, değerleri, uzman kadrosu ve güvenlik yaklaşımı hakkında bilgi edinin.',
+    keywords: buildBrandKeywords('hakkımızda, yeni form kimdir, wellness platformu, online koçluk şirketi, misyon, vizyon, güvenilir diyetisyen platformu'),
   },
   '/membership': {
     title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Doktor & VIP',

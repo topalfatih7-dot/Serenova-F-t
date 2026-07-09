@@ -7,6 +7,7 @@ import { getSupabaseUrl, isSupabaseAdminConfigured, getSupabaseAdmin } from './_
 
 const STATIC_ROUTES = [
   { loc: '/', changefreq: 'weekly', priority: '1.0' },
+  { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
   { loc: '/membership', changefreq: 'weekly', priority: '0.9' },
   { loc: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { loc: '/stories', changefreq: 'weekly', priority: '0.8' },
