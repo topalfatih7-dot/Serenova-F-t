@@ -8,7 +8,9 @@ import { BRAND } from '../../config/brand'
 import {
   canUseIosNativeVideoFullscreen,
   createPlayGuard,
+  enterIosNativeVideoFullscreen,
   exerciseVideoPreload,
+  exitIosNativeVideoFullscreen,
   isIosDevice,
   needsPseudoFullscreen,
   recoverIosVideoPlayback,
@@ -232,6 +234,7 @@ function VideoWatermarkFrame({
   const videoRef = useRef(null)
   const playGuardRef = useRef(createPlayGuard())
   const expandBtnRef = useRef(null)
+  const iosExpandFallbackTimerRef = useRef(null)
   const decodeRetryRef = useRef(0)
   const healthyTimerRef = useRef(null)
   const stallTimerRef = useRef(null)
@@ -349,16 +352,49 @@ function VideoWatermarkFrame({
     }
   }, [])
 
+  const clearIosExpandFallback = useCallback(() => {
+    if (iosExpandFallbackTimerRef.current != null) {
+      window.clearTimeout(iosExpandFallbackTimerRef.current)
+      iosExpandFallbackTimerRef.current = null
+    }
+  }, [])
+
   const toggleExpand = useCallback(async () => {
     const video = videoRef.current
 
     if (useIosNativeExpand) {
-      if (iosNativeVideoFs) return
-      if (canUseIosNativeVideoFullscreen(video)) {
-        await recoverIosVideoPlayback(video, playGuardRef.current)
-        video.webkitEnterFullscreen()
+      // Çıkış: native veya pseudo
+      if (iosNativeVideoFs) {
+        clearIosExpandFallback()
+        exitIosNativeVideoFullscreen(video)
         return
       }
+      if (pseudoFullscreen) {
+        clearIosExpandFallback()
+        setPseudoFullscreen(false)
+        return
+      }
+
+      // iOS: webkitEnterFullscreen kullanıcı jesti içinde SENKRON olmalı.
+      // await recoverIosVideoPlayback / play() jesti bozar → sessiz no-op (iPhone 14 Pro).
+      if (canUseIosNativeVideoFullscreen(video) && video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        try {
+          if (video.paused) void video.play().catch(() => {})
+          enterIosNativeVideoFullscreen(video)
+          clearIosExpandFallback()
+          // iOS 17+: API var ama bazen hiç başlamaz → pseudo fallback
+          iosExpandFallbackTimerRef.current = window.setTimeout(() => {
+            iosExpandFallbackTimerRef.current = null
+            const stillInline = video && !video.webkitDisplayingFullscreen
+            if (stillInline) setPseudoFullscreen(true)
+          }, 350)
+          return
+        } catch {
+          setPseudoFullscreen(true)
+          return
+        }
+      }
+
       setPseudoFullscreen(true)
       return
     }
@@ -373,27 +409,44 @@ function VideoWatermarkFrame({
       || document.webkitFullscreenElement === el
     if (active) await exitNativeFullscreen()
     else await enterNativeFullscreen()
-  }, [enterNativeFullscreen, exitNativeFullscreen, iosNativeVideoFs, useIosNativeExpand, usePseudoMode])
+  }, [
+    clearIosExpandFallback,
+    enterNativeFullscreen,
+    exitNativeFullscreen,
+    iosNativeVideoFs,
+    pseudoFullscreen,
+    useIosNativeExpand,
+    usePseudoMode,
+  ])
 
   useEffect(() => {
     if (!useIosNativeExpand) return undefined
     const video = videoRef.current
     if (!video) return undefined
 
-    const onBegin = () => setIosNativeVideoFs(true)
-    const onEnd = () => setIosNativeVideoFs(false)
+    const onBegin = () => {
+      clearIosExpandFallback()
+      setPseudoFullscreen(false)
+      setIosNativeVideoFs(true)
+    }
+    const onEnd = () => {
+      clearIosExpandFallback()
+      setIosNativeVideoFs(false)
+    }
 
     video.addEventListener('webkitbeginfullscreen', onBegin)
     video.addEventListener('webkitendfullscreen', onEnd)
 
     return () => {
+      clearIosExpandFallback()
       video.removeEventListener('webkitbeginfullscreen', onBegin)
       video.removeEventListener('webkitendfullscreen', onEnd)
     }
-  }, [useIosNativeExpand, useCustomControls])
+  }, [clearIosExpandFallback, useIosNativeExpand, useCustomControls])
 
+  /** Pseudo portal (iOS fallback dahil): DOM taşıması sonrası oynatmayı koru. */
   useEffect(() => {
-    if (!pseudoFullscreen || useIosNativeExpand) return undefined
+    if (!pseudoFullscreen) return undefined
     const video = videoRef.current
     if (!video) return undefined
 
@@ -412,7 +465,7 @@ function VideoWatermarkFrame({
 
     requestAnimationFrame(() => requestAnimationFrame(restore))
     return () => { cancelled = true }
-  }, [pseudoFullscreen, useIosNativeExpand])
+  }, [pseudoFullscreen])
 
   useEffect(() => {
     if (usePseudoMode || useIosNativeExpand) return undefined

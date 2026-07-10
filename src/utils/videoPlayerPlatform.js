@@ -11,9 +11,29 @@ export function supportsElementFullscreen() {
   return Boolean(probe.requestFullscreen || probe.webkitRequestFullscreen)
 }
 
-/** iOS Safari: video.webkitEnterFullscreen() — modal transform içinde de çalışır. */
+/** iOS Safari: video.webkitEnterFullscreen() — kullanıcı jesti içinde senkron çağrılmalı. */
 export function canUseIosNativeVideoFullscreen(video) {
-  return isIosDevice() && Boolean(video && typeof video.webkitEnterFullscreen === 'function')
+  if (!isIosDevice() || !video) return false
+  if (video.webkitSupportsFullscreen === false) return false
+  return typeof video.webkitEnterFullscreen === 'function'
+    || typeof video.webkitEnterFullScreen === 'function'
+}
+
+export function enterIosNativeVideoFullscreen(video) {
+  if (!canUseIosNativeVideoFullscreen(video)) return false
+  const enter = video.webkitEnterFullscreen || video.webkitEnterFullScreen
+  enter.call(video)
+  return true
+}
+
+export function exitIosNativeVideoFullscreen(video) {
+  if (!video) return
+  try {
+    video.webkitExitFullscreen?.()
+    video.webkitExitFullScreen?.()
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Android / eski tarayıcılar: viewport kaplama modu (iOS hariç). */
