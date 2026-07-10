@@ -22,7 +22,7 @@ Optimizasyon katmanı (Faz 1–3) + bu blueprint’in player sertleştirme madde
 | §2.2 Attempt-then-fallback autoplay | ✅ | `shouldAttemptAutoplay` + `createPlayGuard`; iOS wholesale disable kaldırıldı |
 | §2.3 Poster + blocked overlay | ✅ | verified block → overlay (custom + native controls) |
 | §3.1 playsInline + webkit-playsinline | ✅ | attribute + React prop |
-| §3.2 Fullscreen state machine | ✅ | iOS native FS (custom controls on iOS); pseudo; element FS |
+| §3.2 Fullscreen state machine | ✅ | iOS: pseudo portal (not webkitEnterFullscreen); flushSync restore; scrollLock — see `VIDEO_PLAYER_IOS_FULLSCREEN.md` |
 | §3.3 Safe-area / `100dvh` | ✅ | control bar `env(safe-area-inset-*)`; `viewport-fit=cover` in `index.html` |
 | §4.1 Signed-URL + prefetch | ✅ | 15 dk + invalidate on recover |
 | §4.2 Stall / progress watchdog | ✅ | waiting 10s; timeupdate 3s stall; online/offline |
@@ -133,19 +133,20 @@ Current code disables autoplay wholesale on iOS. Replace with an **attempt-then-
 Facts:
 
 - **Desktop (Chrome/Edge/Firefox/Safari ≥ 16.4):** `element.requestFullscreen()` on the wrapper `<div>` works. Older desktop Safari needs `webkitRequestFullscreen` and `webkitfullscreenchange`/`webkitFullscreenElement`.
-- **iPhone Safari:** `requestFullscreen` does NOT exist on arbitrary elements (iPadOS partially does). The ONLY native fullscreen is `video.webkitEnterFullscreen()` — the system player. It ignores CSS overlays: **watermark and custom controls disappear** inside it. Exit is signaled by `webkitendfullscreen`.
+- **iPhone Safari (exercise player):** Do **NOT** use `video.webkitEnterFullscreen()` for the expand button. Inside a modal + `playsInline` it often swallows the inline video without presenting the system UI (Pro Max: “video disappears”). Use **pseudo-fullscreen portal** so watermark + custom controls stay. Runbook: [`VIDEO_PLAYER_IOS_FULLSCREEN.md`](./VIDEO_PLAYER_IOS_FULLSCREEN.md).
 - **Android Chrome:** element fullscreen works; entering fullscreen on a landscape video may auto-rotate; `screen.orientation.lock('landscape')` is best-effort (throws in non-fullscreen; wrap in try/catch, never await-block on it).
 
 Required state machine (this is what `VideoWatermarkFrame` already approximates — keep and harden):
 
 - One derived boolean `isExpanded` with exactly three mutually exclusive strategies chosen at mount:
-  - `useIosNativeExpand` (iOS): prefer `video.webkitEnterFullscreen()`; IF unavailable (rare WebViews) THEN pseudo-fullscreen.
-  - `usePseudoMode` (no element-fullscreen support, non-iOS): portal the frame to `document.body`, `position: fixed; inset: 0; height: 100dvh; z-index` above app chrome, `body { overflow: hidden }`.
+  - `useIosNativeExpand` (iOS + custom controls): **always** `transitionPseudoFullscreen` (portal). Keep `webkitbeginfullscreen`/`webkitendfullscreen` listeners only to resync if the system enters native FS somehow.
+  - `usePseudoMode` (no element-fullscreen support, non-iOS): same portal path (`position: fixed; inset: 0; height: 100dvh; z-index` above app chrome).
   - native element fullscreen otherwise.
 - State MUST be read from the DOM (event-driven), never assumed: listen to `fullscreenchange` + `webkitfullscreenchange` on `document`, and `webkitbeginfullscreen`/`webkitendfullscreen` on the video. The user can exit via Esc / system gesture — button-toggled local state alone WILL desync.
-- **Portal side-effect rule:** moving a playing `<video>` across the DOM (pseudo-fullscreen portal) resets playback in some browsers. On portal enter/exit: snapshot `currentTime` + `paused`, restore after two `requestAnimationFrame`s, replay via the §2.2 promise-guard (existing effect — keep).
+- **Portal side-effect rule:** moving a playing `<video>` across the DOM resets playback on Safari. Snapshot `currentTime` + playing **before** the state update; apply restore with `flushSync` **in the same user-gesture turn** (`transitionPseudoFullscreen`). Effect/rAF-only restore loses the gesture → black screen.
+- **Scroll lock rule:** NEVER set `document.body.style.overflow = 'hidden'` during pseudo-FS — iOS can clip `position: fixed` portals under `body`. Use `lockAppScroll` / `unlockAppScroll` (`src/utils/scrollLock.js`) on `documentElement`, `[data-panel-scroll]`, and `[data-scroll-lock]` (Modal).
 - **Desktop watermark protection rule:** if the browser puts the raw `<video>` element into fullscreen (double-click, native control), immediately exit and re-enter fullscreen on the wrapper div so the watermark stays visible (existing `redirectNativeVideoFullscreen` — keep).
-- iOS native fullscreen watermark loss is ACCEPTED (documented trade-off; blob-hiding alternatives are forbidden per §0).
+- iOS expand path keeps watermark (pseudo). Accidental system native FS may still hide overlays — accepted edge case; expand button itself does not opt into native FS.
 - Keyboard: IF native fullscreen active THEN Esc is handled by the browser; IF pseudo-fullscreen THEN the component MUST handle `keydown Escape` itself to exit.
 
 ### 3.3 Notch / safe-area handling (fullscreen + pseudo-fullscreen)

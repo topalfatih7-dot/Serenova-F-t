@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState, cloneElement, isValidElement } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { Loader2, Maximize2, Minimize2, Pause, Play, VideoOff } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { normalizeExerciseVideoRef, isExerciseVideoStoragePath, getExerciseThumbUrl } from '../../services/supabaseDb'
 import { readExerciseVideoUrlCache, invalidateExerciseVideoUrlCache } from '../../services/exerciseVideoUrlCache'
 import { BRAND } from '../../config/brand'
+import { lockAppScroll, unlockAppScroll } from '../../utils/scrollLock'
 import {
-  canUseIosNativeVideoFullscreen,
   createPlayGuard,
-  enterIosNativeVideoFullscreen,
   exerciseVideoPreload,
   exitIosNativeVideoFullscreen,
   isIosDevice,
@@ -240,6 +239,9 @@ function VideoWatermarkFrame({
   const stallTimerRef = useRef(null)
   const progressStallRef = useRef({ t: 0, at: 0 })
   const recoveringRef = useRef(false)
+  /** Portal enter/exit öncesi currentTime + play; DOM taşıması sonrası restore. */
+  const pseudoFsRestoreRef = useRef(null)
+  const pseudoFullscreenRef = useRef(false)
   const attemptAutoplay = shouldAttemptAutoplay(autoPlay)
 
   const useIosNativeExpand = useCustomControls && isIosDevice()
@@ -311,14 +313,13 @@ function VideoWatermarkFrame({
 
   useEffect(() => {
     if (!pseudoFullscreen) return undefined
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockAppScroll()
     const frame = frameRef.current
     const prevFocus = document.activeElement
     const expandBtn = expandBtnRef.current
     frame?.focus?.({ preventScroll: true })
     return () => {
-      document.body.style.overflow = prev
+      unlockAppScroll()
       if (prevFocus && typeof prevFocus.focus === 'function') {
         try { prevFocus.focus({ preventScroll: true }) } catch { /* ignore */ }
       } else {
@@ -359,6 +360,46 @@ function VideoWatermarkFrame({
     }
   }, [])
 
+  const applyPseudoFsRestore = useCallback((video, snapshot) => {
+    if (!video || !snapshot) return
+    if (snapshot.time > 0 && Number.isFinite(snapshot.time)) {
+      try { video.currentTime = snapshot.time } catch { /* ignore */ }
+    }
+    if (snapshot.wasPlaying) {
+      video.muted = true
+      void playGuardRef.current.play(video).then((result) => {
+        if (!result?.ok) {
+          void recoverIosVideoPlayback(video, playGuardRef.current)
+        }
+      })
+    } else if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+      video.load()
+    }
+  }, [])
+
+  /**
+   * Pseudo FS aç/kapa.
+   * flushSync: portal DOM taşıması aynı jest turunda bitsin → iOS muted play izni korunur.
+   * (Safari video'yu reparent edince sıfırlar; effect/rAF jesti kaçırır → siyah/kayıp ekran.)
+   */
+  const transitionPseudoFullscreen = useCallback((next) => {
+    if (pseudoFullscreenRef.current === next) return
+    const video = videoRef.current
+    const snapshot = video
+      ? {
+        time: video.currentTime || 0,
+        wasPlaying: !video.paused && !video.ended,
+      }
+      : null
+    pseudoFsRestoreRef.current = snapshot
+    pseudoFullscreenRef.current = next
+    flushSync(() => {
+      setPseudoFullscreen(next)
+    })
+    applyPseudoFsRestore(videoRef.current, snapshot)
+    pseudoFsRestoreRef.current = null
+  }, [applyPseudoFsRestore])
+
   const toggleExpand = useCallback(async () => {
     const video = videoRef.current
 
@@ -371,36 +412,19 @@ function VideoWatermarkFrame({
       }
       if (pseudoFullscreen) {
         clearIosExpandFallback()
-        setPseudoFullscreen(false)
+        transitionPseudoFullscreen(false)
         return
       }
 
-      // iOS: webkitEnterFullscreen kullanıcı jesti içinde SENKRON olmalı.
-      // await recoverIosVideoPlayback / play() jesti bozar → sessiz no-op (iPhone 14 Pro).
-      if (canUseIosNativeVideoFullscreen(video) && video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-        try {
-          if (video.paused) void video.play().catch(() => {})
-          enterIosNativeVideoFullscreen(video)
-          clearIosExpandFallback()
-          // iOS 17+: API var ama bazen hiç başlamaz → pseudo fallback
-          iosExpandFallbackTimerRef.current = window.setTimeout(() => {
-            iosExpandFallbackTimerRef.current = null
-            const stillInline = video && !video.webkitDisplayingFullscreen
-            if (stillInline) setPseudoFullscreen(true)
-          }, 350)
-          return
-        } catch {
-          setPseudoFullscreen(true)
-          return
-        }
-      }
-
-      setPseudoFullscreen(true)
+      // iOS Pro Max / modal: webkitEnterFullscreen inline videoyu alıp native UI
+      // göstermeden "yutabiliyor". Watermark + custom controls için doğrudan pseudo.
+      clearIosExpandFallback()
+      transitionPseudoFullscreen(true)
       return
     }
 
     if (usePseudoMode) {
-      setPseudoFullscreen((prev) => !prev)
+      transitionPseudoFullscreen(!pseudoFullscreenRef.current)
       return
     }
     const el = frameRef.current
@@ -415,6 +439,7 @@ function VideoWatermarkFrame({
     exitNativeFullscreen,
     iosNativeVideoFs,
     pseudoFullscreen,
+    transitionPseudoFullscreen,
     useIosNativeExpand,
     usePseudoMode,
   ])
@@ -426,6 +451,9 @@ function VideoWatermarkFrame({
 
     const onBegin = () => {
       clearIosExpandFallback()
+      // Native FS açıldı — pseudo'ya düşme; restore gerekmez (aynı video elemanı).
+      pseudoFsRestoreRef.current = null
+      pseudoFullscreenRef.current = false
       setPseudoFullscreen(false)
       setIosNativeVideoFs(true)
     }
@@ -444,28 +472,26 @@ function VideoWatermarkFrame({
     }
   }, [clearIosExpandFallback, useIosNativeExpand, useCustomControls])
 
-  /** Pseudo portal (iOS fallback dahil): DOM taşıması sonrası oynatmayı koru. */
+  /** Pseudo portal enter + exit yedek restore (flushSync kaçarsa). */
   useEffect(() => {
-    if (!pseudoFullscreen) return undefined
+    pseudoFullscreenRef.current = pseudoFullscreen
+    const pending = pseudoFsRestoreRef.current
+    if (!pending) return undefined
     const video = videoRef.current
     if (!video) return undefined
 
-    const savedTime = video.currentTime
-    const wasPlaying = !video.paused
+    const snapshot = pending
+    pseudoFsRestoreRef.current = null
     let cancelled = false
 
-    const restore = async () => {
+    const restore = () => {
       if (cancelled) return
-      if (savedTime > 0 && Number.isFinite(savedTime)) {
-        try { video.currentTime = savedTime } catch { /* ignore */ }
-      }
-      if (wasPlaying) await recoverIosVideoPlayback(video, playGuardRef.current)
-      else if (video.readyState < HTMLMediaElement.HAVE_METADATA) video.load()
+      applyPseudoFsRestore(video, snapshot)
     }
 
     requestAnimationFrame(() => requestAnimationFrame(restore))
     return () => { cancelled = true }
-  }, [pseudoFullscreen])
+  }, [applyPseudoFsRestore, pseudoFullscreen])
 
   useEffect(() => {
     if (usePseudoMode || useIosNativeExpand) return undefined
@@ -716,7 +742,7 @@ function VideoWatermarkFrame({
     const onKey = (event) => {
       if (event.key === 'Escape' && pseudoFullscreen) {
         event.preventDefault()
-        setPseudoFullscreen(false)
+        transitionPseudoFullscreen(false)
         return
       }
       if (!useCustomControls) return
@@ -771,7 +797,7 @@ function VideoWatermarkFrame({
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [useCustomControls, pseudoFullscreen, toggleExpand])
+  }, [useCustomControls, pseudoFullscreen, toggleExpand, transitionPseudoFullscreen])
 
   /** Pseudo-fullscreen Tab trap (§5.3) */
   useEffect(() => {
@@ -961,8 +987,8 @@ function VideoWatermarkFrame({
             'absolute top-3 right-3 z-40 flex h-11 w-11 items-center justify-center rounded-lg',
             'bg-black/55 text-white/90 opacity-80 backdrop-blur-sm transition hover:bg-black/75 hover:opacity-100',
             'sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100',
-            isExpanded && 'opacity-100',
-          ].join(' ')}
+            isExpanded ? 'opacity-100' : '',
+          ].filter(Boolean).join(' ')}
           aria-label={isExpanded ? 'Tam ekrandan çık' : 'Tam ekran'}
         >
           {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}

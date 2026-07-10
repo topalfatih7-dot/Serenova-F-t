@@ -18,6 +18,7 @@
 | [TELEGRAM_SETUP.md](./TELEGRAM_SETUP.md) | Bot, chat ID, bildirimler | Kısmen |
 | [AI_SETUP.md](./AI_SETUP.md) | Gemini API, kalori AI | ✅ |
 | [VIDEO_SETUP.md](./VIDEO_SETUP.md) | Daily.co video görüşme | ✅ |
+| [../VIDEO_PLAYER_IOS_FULLSCREEN.md](../VIDEO_PLAYER_IOS_FULLSCREEN.md) | Egzersiz VideoPlayer iOS/Pro Max tam ekran runbook | ✅ |
 | [HEYGEN_SETUP.md](./HEYGEN_SETUP.md) | Hareket kütüphanesi AI video (Cursor MCP) | 🧪 Opsiyonel |
 | [HIGGSFIELD_SETUP.md](./HIGGSFIELD_SETUP.md) | AI görsel/video alternatif (Cursor MCP) | 🧪 Opsiyonel |
 | [SEO_SETUP.md](./SEO_SETUP.md) | Search Console, sitemap, OG | ✅ |
