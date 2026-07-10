@@ -22,7 +22,7 @@ export default function ExerciseDetailModal({ open, onClose, exercise, zClass = 
       {exercise && (
         <div className="space-y-4">
           {(exercise.videoUrl || exercise.videoPending) && (
-            <VideoPlayer url={exercise.videoUrl} videoPending={exercise.videoPending} />
+            <VideoPlayer url={exercise.videoUrl} videoPending={exercise.videoPending} title={name} />
           )}
           <div className="flex flex-wrap gap-2">
             {exercise.category && (

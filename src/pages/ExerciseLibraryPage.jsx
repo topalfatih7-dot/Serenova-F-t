@@ -155,7 +155,8 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
                   key={ex.id}
                   type="button"
                   onClick={() => openExercise(ex)}
-                  onMouseEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                  onPointerEnter={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
+                  onPointerDown={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
                   onFocus={() => allowVideoPlayback && prefetchExerciseVideo(ex.videoUrl)}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
                 >

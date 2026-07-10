@@ -593,7 +593,11 @@ export default function StaffClientProgramPage() {
       <Modal open={!!activeExercise} onClose={() => setActiveExercise(null)} title={activeExercise?.name} size="lg">
         {activeExercise && (
           <div className="space-y-4">
-            <VideoPlayer url={activeExercise.videoUrl} videoPending={activeExercise.videoPending} />
+            <VideoPlayer
+              url={activeExercise.videoUrl}
+              videoPending={activeExercise.videoPending}
+              title={activeExercise.name}
+            />
             {activeExercise.category && (
               <span className="inline-block rounded-full bg-sage-50 px-3 py-1 text-xs font-semibold text-sage-700">
                 {activeExercise.category}

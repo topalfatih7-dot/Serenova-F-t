@@ -709,7 +709,8 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, onOpenDetail, 
           <button
             type="button"
             onClick={onOpenDetail}
-            onMouseEnter={() => prefetchExerciseVideo(entry.videoUrl)}
+            onPointerEnter={() => prefetchExerciseVideo(entry.videoUrl)}
+            onPointerDown={() => prefetchExerciseVideo(entry.videoUrl)}
             onFocus={() => prefetchExerciseVideo(entry.videoUrl)}
             className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
             title="Hareket detayı"
@@ -756,7 +757,7 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, onOpenDetail, 
                 exit={{ height: 0, opacity: 0 }}
                 className="mt-3 overflow-hidden rounded-xl border border-cream-200 bg-cream-50 p-2"
               >
-                <VideoPlayer url={entry.videoUrl} />
+                <VideoPlayer url={entry.videoUrl} title={entry.exerciseName || entry.name} />
               </motion.div>
             )}
           </AnimatePresence>

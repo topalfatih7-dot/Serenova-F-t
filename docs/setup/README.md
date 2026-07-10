@@ -64,17 +64,11 @@ Detaylı tablo: [`AI_PROJE_REHBERI.md` §8](../../AI_PROJE_REHBERI.md)
 
 ```
 docs/
-└── setup/
-    ├── README.md           ← bu dosya (indeks)
-    ├── SUPABASE_SETUP.md
-    ├── OAUTH_SETUP.md
-    ├── FACEBOOK_SETUP.md   ← Facebook detay
-    ├── APPLE_SETUP.md      ← Apple detay (ertelendi)
-    ├── STRIPE_SETUP.md
-    ├── TELEGRAM_SETUP.md
-    ├── AI_SETUP.md
-    ├── VIDEO_SETUP.md
-    ├── HEYGEN_SETUP.md       ← Hareket kütüphanesi AI video (HeyGen MCP)
-    ├── HIGGSFIELD_SETUP.md   ← AI görsel/video alternatif (deneme)
-    └── SEO_SETUP.md
+├── setup/                  ← harici servis kurulumları (bu indeks)
+│   ├── README.md
+│   ├── SUPABASE_SETUP.md
+│   ├── … (OAuth, Stripe, Telegram, AI, Daily VIDEO, SEO, …)
+│   └── SEO_SETUP.md
+├── VIDEO_OPTIMIZASYON_BLUEPRINT.md      ← egzersiz video Faz 1–3 ✅ (§68)
+└── VIDEO_INFRASTRUCTURE_BLUEPRINT.md    ← player sertleştirme ✅ (§69)
 ```

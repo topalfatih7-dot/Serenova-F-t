@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, X, ChevronDown } from 'lucide-react'
-import { formatMonthlyPrice, getPlanBadge, getPlanDurationLabel } from '../../data/membershipPlans'
+import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from '../membership/planTheme'
 
 const VISIBLE_COLLAPSED = 6
@@ -17,6 +17,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
   const hiddenCount = features.length - VISIBLE_COLLAPSED
   const daily = dailyPrice(plan.price)
   const isFeatured = featured || plan.id === 'vip'
+  const isOneTime = isOneTimeBillingPlan(plan)
   const durationLabel = getPlanDurationLabel(plan)
 
   return (
@@ -25,16 +26,22 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       className={`plans-pricing-card relative flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm md:min-h-[30rem] lg:min-h-[32rem] ${
         isFeatured
           ? `border-amber-200/70 ${theme.glow} ring-2 ring-amber-100/60`
-          : plan.id === 'vip'
-            ? `border-brand-200/70 ${theme.glow} ring-2 ring-brand-100/50`
-            : 'border-cream-200/80 hover:border-sage-200'
+          : isOneTime
+            ? `border-teal-200/70 ${theme.glow} ring-2 ring-teal-100/50`
+            : plan.id === 'vip'
+              ? `border-brand-200/70 ${theme.glow} ring-2 ring-brand-100/50`
+              : 'border-cream-200/80 hover:border-sage-200'
       }`}
     >
       <div className={`h-2 w-full bg-gradient-to-r ${theme.accent}`} />
 
       {badge && (
         <span className={`absolute -top-0 left-1/2 z-10 -translate-x-1/2 translate-y-3 whitespace-nowrap rounded-full px-4 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-lg ${
-          plan.id === 'vip' ? 'bg-gradient-to-r from-brand-500 to-violet-500' : 'bg-gradient-to-r from-brand-500 to-sage-500'
+          plan.id === 'vip'
+            ? 'bg-gradient-to-r from-brand-500 to-violet-500'
+            : isOneTime
+              ? 'bg-gradient-to-r from-teal-500 to-cyan-600'
+              : 'bg-gradient-to-r from-brand-500 to-sage-500'
         }`}>
           {badge}
         </span>
@@ -42,26 +49,28 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
 
       <div className="flex flex-col items-center px-6 pt-10 text-center sm:px-8">
         <span
-          className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' ? theme.icon : theme.iconIdle}`}
+          className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' || isOneTime ? theme.icon : theme.iconIdle}`}
         >
           {planIcon(plan.id, 'h-7 w-7')}
         </span>
         <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
-        {plan.id === 'doktor' && (
+        {isOneTime && (
           <p className="mt-1 text-xs font-medium text-teal-700/90">Uzman doktor ile online sağlık danışmanlığı</p>
         )}
       </div>
 
       <div className="mt-5 px-6 text-center sm:px-8">
         <p className={`font-display text-2xl font-bold ${isFree ? 'text-sage-700' : 'text-cream-900'}`}>
-          {formatMonthlyPrice(plan.price)}
+          {formatPlanPrice(plan)}
         </p>
         {isFree ? (
           <p className="mt-1 text-sm text-sage-600">Kredi kartı gerekmez</p>
+        ) : isOneTime ? (
+          <p className="mt-1 text-sm text-cream-800/60">{durationLabel} · mevcut üyeliğe eklenebilir</p>
         ) : (
           <>
             <p className="mt-1 text-sm text-cream-800/60">
-              {plan.id === 'doktor' ? durationLabel : `${durationLabel} · 3 ve 6 aylık seçenekler de mevcut`}
+              {`${durationLabel} · 3 ve 6 aylık seçenekler de mevcut`}
             </p>
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
               Günde ~{daily.toLocaleString('tr-TR')}₺
@@ -100,9 +109,9 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       <Link
         to={ctaTo}
         className={`mx-6 mb-6 mt-6 block rounded-full py-3.5 text-center text-sm font-semibold transition sm:mx-8 ${
-          isFeatured ? theme.btn + ' shadow-lg hover:brightness-105'
-            : plan.id === 'vip' ? theme.btn + ' shadow-md hover:brightness-105'
-              : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-sage-200 hover:shadow-md'
+          isFeatured || isOneTime || plan.id === 'vip'
+            ? theme.btn + ' shadow-lg hover:brightness-105'
+            : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-sage-200 hover:shadow-md'
         }`}
       >
         {ctaLabel}

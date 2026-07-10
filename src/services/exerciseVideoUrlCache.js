@@ -3,8 +3,8 @@
 const CACHE = new Map()
 const INFLIGHT = new Map()
 
-const DEFAULT_TTL_MS = 55 * 60 * 1000
-const REFRESH_MARGIN_MS = 5 * 60 * 1000
+const DEFAULT_TTL_MS = 13 * 60 * 1000
+const REFRESH_MARGIN_MS = 2 * 60 * 1000
 
 export function readExerciseVideoUrlCache(path) {
   if (!path) return null
@@ -23,6 +23,13 @@ export function writeExerciseVideoUrlCache(path, url, expiresAt) {
     url,
     expiresAt: expiresAt || Date.now() + DEFAULT_TTL_MS,
   })
+}
+
+/** Zorla yeniden imza (403 / mid-session expiry) — TTL dolmasa bile sil. */
+export function invalidateExerciseVideoUrlCache(path) {
+  if (!path) return
+  CACHE.delete(path)
+  INFLIGHT.delete(path)
 }
 
 /** Aynı path için eşzamanlı istekleri tek promise'te birleştirir. */

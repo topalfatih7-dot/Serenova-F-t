@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, X, HelpCircle, UserPlus, CreditCard, LayoutDashboard, RefreshCw } from 'lucide-react'
 import { useApp } from '../context/AppContext'
-import { ALL_PLANS, formatMonthlyPrice, sortPlansForDisplay } from '../data/membershipPlans'
+import { ALL_PLANS, formatPlanPrice, sortPlansForDisplay } from '../data/membershipPlans'
 import MembershipHero from '../components/membership/MembershipHero'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipReassurance from '../components/membership/MembershipReassurance'
@@ -176,7 +176,7 @@ export default function MembershipComparisonPage() {
             <div className="hidden text-center md:block">
               <span className="section-badge">Detaylı Karşılaştırma</span>
               <h2 className="section-title mt-4">Özellik özellik yan yana</h2>
-              <p className="section-subtitle">Tüm planlarda 1, 3 veya 6 aylık süre seçenekleri mevcuttur.</p>
+              <p className="section-subtitle">Abonelik planlarında 1, 3 veya 6 aylık süre; Doktor Paketi tek seferliktir.</p>
             </div>
 
             <motion.div
@@ -205,7 +205,7 @@ export default function MembershipComparisonPage() {
                               </span>
                               <span className={`font-display text-sm font-bold ${theme.label}`}>{plan.name}</span>
                               <span className="text-xs font-medium text-cream-800/50">
-                                {plan.price === 0 ? 'Ücretsiz' : formatMonthlyPrice(plan.price)}
+                                {plan.price === 0 ? 'Ücretsiz' : formatPlanPrice(plan)}
                               </span>
                             </Link>
                           </th>

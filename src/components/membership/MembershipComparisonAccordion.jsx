@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, X, ChevronDown } from 'lucide-react'
-import { formatMonthlyPrice } from '../../data/membershipPlans'
+import { formatPlanPrice } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon } from './planTheme'
 import { getPlanCtaLabel } from '../../utils/planCta'
 
@@ -60,7 +60,7 @@ export default function MembershipComparisonAccordion({
                   )}
                 </span>
                 <span className="mt-0.5 block text-xs text-cream-800/55">
-                  {plan.price === 0 ? 'Ücretsiz' : formatMonthlyPrice(plan.price)}
+                  {plan.price === 0 ? 'Ücretsiz' : formatPlanPrice(plan)}
                 </span>
               </span>
               <ChevronDown className={`h-5 w-5 shrink-0 text-cream-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

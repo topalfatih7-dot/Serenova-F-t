@@ -1379,6 +1379,15 @@ export function isExerciseVideoStoragePath(value) {
   return Boolean(path && /^[\w.-]+$/.test(path) && !path.includes('..'))
 }
 
+/** exercise-thumbs public bucket'ından statik kapak URL'i (imzalama yok). */
+export function getExerciseThumbUrl(videoRef) {
+  const path = normalizeExerciseVideoRef(videoRef)
+  if (!isExerciseVideoStoragePath(path) || !supabase) return null
+  const thumbPath = path.replace(/\.\w+$/, '.webp')
+  const { data } = supabase.storage.from('exercise-thumbs').getPublicUrl(thumbPath)
+  return data?.publicUrl || null
+}
+
 async function signExerciseVideoPathViaApi(storagePath) {
   try {
     const res = await fetch('/api/auth', {
@@ -1407,9 +1416,9 @@ async function signExerciseVideoPathViaClient(storagePath) {
 
   const { data: signData, error } = await supabase.storage
     .from('exercise-videos')
-    .createSignedUrl(storagePath, 3600)
+    .createSignedUrl(storagePath, 900)
   if (!error && signData?.signedUrl) {
-    writeExerciseVideoUrlCache(storagePath, signData.signedUrl, Date.now() + 3600 * 1000)
+    writeExerciseVideoUrlCache(storagePath, signData.signedUrl, Date.now() + 900 * 1000)
     return signData.signedUrl
   }
   return null
@@ -1459,7 +1468,7 @@ export async function prefetchExerciseVideoUrls(paths = []) {
   }
 }
 
-/** 1 saat gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
+/** 15 dk gecerli imzali oynatma URL'i uretir (path bazli, private bucket). */
 export async function getExerciseVideoUrl(path) {
   const storagePath = normalizeExerciseVideoRef(path)
   if (!storagePath || !supabase || !isExerciseVideoStoragePath(storagePath)) return null

@@ -22,6 +22,27 @@ export function getPlanDurationLabel(plan) {
   return `${getDurationDays(1)} gün`
 }
 
+/** Tek seferlik plan mı (fiyat/CTA gösterimi) */
+export function isOneTimeBillingPlan(plan) {
+  if (!plan) return false
+  if (plan.id === 'doktor') return true
+  return plan.period === 'Tek Seferlik'
+}
+
+/** Fiyat gösterimi: "Aylık 3.499₺" */
+export function formatMonthlyPrice(price) {
+  if (!price || price <= 0) return 'Ücretsiz'
+  return `Aylık ${Number(price).toLocaleString('tr-TR')}₺`
+}
+
+/** Plan kartı fiyatı — tek seferlikte "Aylık" öneki yok */
+export function formatPlanPrice(plan) {
+  if (!plan || !plan.price || plan.price <= 0) return 'Ücretsiz'
+  const amount = `${Number(plan.price).toLocaleString('tr-TR')}₺`
+  if (isOneTimeBillingPlan(plan)) return amount
+  return `Aylık ${amount}`
+}
+
 export const PAID_MEMBERSHIPS = [
   'eko', 'diyet', 'spor', 'doktor', 'vip',
   // geriye dönük uyumluluk
@@ -45,12 +66,6 @@ export const PLAN_LABELS = {
 }
 
 export const RECOMMENDED_PLAN = 'vip'
-
-/** Fiyat gösterimi: "Aylık 3.499₺" */
-export function formatMonthlyPrice(price) {
-  if (!price || price <= 0) return 'Ücretsiz'
-  return `Aylık ${Number(price).toLocaleString('tr-TR')}₺`
-}
 
 export function getPlanBadge(plan) {
   return plan?.badge || null
@@ -218,11 +233,12 @@ export const DOKTOR_PLAN = {
   price: 1500,
   period: 'Tek Seferlik',
   color: 'teal',
-  badge: null,
+  badge: 'Tek Seferlik',
   pricingTiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   features: [
     { text: '1 Online Doktor Görüşmesi', included: true },
     { text: 'Görüntülü Görüşme', included: true },
+    { text: 'Mevcut üyeliğe ek paket olarak eklenebilir', included: true },
   ],
   limits: ['Tek seferlik doktor görüşmesi'],
 }

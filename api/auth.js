@@ -270,7 +270,7 @@ async function handleBookSession(req, res, body) {
 }
 
 const EXERCISE_VIDEO_BUCKET = 'exercise-videos'
-const EXERCISE_VIDEO_EXPIRES = 60 * 60
+const EXERCISE_VIDEO_EXPIRES = 15 * 60
 
 function isExerciseVideoPath(path) {
   return typeof path === 'string' && /^[\w.-]+$/.test(path) && !path.includes('..')

@@ -4,12 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-09 · About/Trust/Membership asimetrik arka plan · profil kapak mobil/masaüstü · landing + Hakkımızda · navbar/kadro/günün ipucu  
-> **Son oturum özeti:** `AboutPage` + `TrustSection` + `MembershipComparisonPage` asimetrik mesh · “Taahhüt Yok” kaldırıldı · `profileCoverDesktop` · merge conflict temizliği · §62–67 günlüğü
+> **Son güncelleme:** 2026-07-10 · Video infrastructure blueprint uygulandı (autoplay/network/a11y) + optimizasyon §68  
+> **Son oturum özeti:** `VideoPlayer` sertleştirme · `createPlayGuard` · stall/re-sign recovery · §69 · blueprint status ✅
 
 ---
 
-## Son Durum Özeti (2026-07-09)
+## Son Durum Özeti (2026-07-10)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -18,11 +18,12 @@
 | Stripe Checkout + webhook | ✅ Canlı | `STRIPE_WEBHOOK_SECRET` Vercel production'da; `npm run test:stripe`, `npm run test:stripe:checkout` |
 | Sosyal giriş | Google only | Apple/Facebook UI kaldırıldı — `src/services/oauthAuth.js` |
 | RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
-| Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` private + imzalı URL |
+| Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` **private** + **15 dk** imzalı URL |
+| Egzersiz kapak / oynatma | ✅ | Statik webp + prefetch + faststart + 15 dk TTL (§68); player sertleştirme (§69) |
 | Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
 | Sağlık testi akışı | ✅ | Hub `/health-test` · kategori `/health-test/:sectionId` · onay `/health-test/finish`; grid 2/3/4 sütun |
 | Hareket kütüphanesi filtreleri | ✅ | Konum + makine (`locations`, `requires_machine`); sıralama UI kaldırıldı (varsayılan A→Z) |
-| Programlarım antrenman UI | ✅ | `ExerciseVideoThumbnail` — hareket satırında video ilk karesi (sol) |
+| Programlarım antrenman UI | ✅ | `ExerciseVideoThumbnail` — satırda **statik webp** kapak (sol); tık → modal |
 | Takvim antrenman detayı | ✅ | `ExerciseDetailModal` (thumbnail tık); `İzle` inline video; satırda açıklama yok |
 | Diyetisyen sağlık testi | ✅ | 3 bölüm birleştirildi; `diet_activity` koç paketinde gizli (`skipWhenCoach`) |
 | Personel sağlık görünümü | ✅ | `showHealthAnalysis={false}` personelde; admin'de tam analiz |
@@ -58,8 +59,8 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§53–67 Değişiklik Günlüğü** (2026-07-03 — 2026-07-09); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak.
+6. Son değişiklikler için **§53–69 Değişiklik Günlüğü** (2026-07-03 — 2026-07-10); tam arşiv **§14–52** (2026-06 — 2026-07-01).
+7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video katmanı: **§68–§69** + `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) / `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ uygulandı).
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
@@ -98,6 +99,10 @@
 | `npm run db:migrate` | Supabase migration'ları uygular (`scripts/db-migrate.mjs`) |
 | `npm run import:exercises` | Hareket kütüphanesi import pipeline |
 | `npm run backfill:exercise-locations` | Yalnızca `locations` + `requires_machine` backfill (çeviri yok) |
+| `npm run thumbs:generate` | `exercise-thumbs` webp toplu üretim (`generate-exercise-thumbs.mjs`) |
+| `npm run thumbs:generate:dry` | Thumb dry-run (`--limit=5`) |
+| `npm run videos:faststart` | MP4 moov atomu başa (`faststart-exercise-videos.mjs`) |
+| `npm run videos:faststart:dry` | Faststart dry-run (`--limit=5`) |
 | `npm run og:image` | Open Graph görseli üretir |
 
 ---
@@ -246,11 +251,15 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 ### Storage
 
 - Bucket: **`exercise-videos`** — **private** (2026-07-04 §48'den itibaren); admin yükleme
-- Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage` — artık kalıcı public URL değil, sadece storage **path** döner
-- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → **`POST /api/auth`** (`action: 'exercise-video-url'`, service role) → **1 saatlik imzalı URL**. Vercel Hobby 12 fonksiyon limiti nedeniyle ayrı `api/exercise-video-url.js` kaldırıldı.
+- Bucket: **`exercise-thumbs`** — **public** (2026-07-10 §68); kapak `.webp` (CDN, imzalama yok). Path = video path uzantısı `.webp` (`gym100-0001.mp4` → `gym100-0001.webp`); DB kolonu yok → `getExerciseThumbUrl()`
+- Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage` — kalıcı public URL değil, sadece storage **path** döner; import/upload’ta faststart + thumb üretilir
+- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → **`POST /api/auth`** (`action: 'exercise-video-url'`, service role) → **15 dakikalık imzalı URL** (`EXERCISE_VIDEO_EXPIRES = 900`); cache `exerciseVideoUrlCache.js` (TTL ~13 dk, margin 2 dk). Ayrı `api/exercise-video-url.js` yok (Vercel Hobby limit).
+- Kapak UI: `ExerciseVideoThumbnail` yalnızca lazy `<img>` — thumbnail için signed URL / `<video>` **yok**
+- Prefetch: kart `pointerenter`/`pointerdown`/`focus` → `prefetchExerciseVideo` (modal jesti içinde fetch yok)
 - Üye kütüphanesi: **Spor/VIP** (veya çoklu paket union) → tam video; diğer paketler liste görür, oynatma kilitli (`memberHasFullVideoAccess`).
 - Eski kayıtlardaki tam public URL'ler de `VideoPlayer` içinde otomatik path'e çevrilip imzalanır (geriye dönük veri migrasyonu gerekmedi).
 - YouTube linkleri bu akışın dışında, aynen `iframe embed` ile oynatılıyor.
+- Kurallar: `.cursor/rules/exercise-import.mdc` · blueprint: `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) · `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ §69)
 
 ### RPC fonksiyonları
 
@@ -706,6 +715,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | `supabase/setup.sql` | Tek dosya şema + RLS + RPC + planlar |
 | `supabase/migrations/*.sql` | Artımlı migration'lar → `npm run db:migrate` |
 | `supabase/email-templates/README.md` | Auth e-posta şablonları |
+| `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` | Egzersiz video Faz 1–3 (thumb/prefetch/faststart/15 dk) — ✅ · §68 |
+| `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` | Player sertleştirme (autoplay/network/a11y) — ✅ · §69 |
 | `YAPILACAKLAR.md` | Satışa hazırlık checklist (kök) |
 
 ### 7.1 Kök dizin
@@ -801,6 +812,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | `authStorage.js` | `getRememberMe`, `setRememberMe`, `authStorage` | ✅ |
 | `telegramNotify.js` | `notifyTelegram` | ✅ |
 | `videoCallSession.js` | `resolveCallContext`, `canJoinSession` | ✅ |
+| `exerciseVideoUrlCache.js` | Signed URL önbelleği + `invalidateExerciseVideoUrlCache` (TTL ~13 dk) | ✅ |
+| `exerciseLibrary.js` | Filtre + sayfalama + `fetchExerciseById` | ✅ |
 
 ### 7.7 Hooks (`src/hooks/`)
 
@@ -833,6 +846,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `presenceStatus.js` | `isUserOnline`, `formatLastSeen` — çevrimiçi eşik (90 sn) |
 | `chatAccess.js` | Thread erişim, inbox sıralama, okunmamış sayımı |
 | `exportChatPdf.js` | Admin denetim sohbeti PDF dışa aktarım |
+| `videoPlayerPlatform.js` | iOS/FS, `shouldAttemptAutoplay`, `createPlayGuard`, `exerciseVideoPreload`, `recoverIosVideoPlayback` |
+| `exerciseVideoPrefetch.js` | `prefetchExerciseVideo` — imzalı URL önbelleğe alma |
+| `exerciseVideoLoadQueue.js` | `runWithVideoUrlSlot` — paralel signed URL istek sınırı |
 
 ### 7.9 Data (`src/data/`)
 
@@ -917,7 +933,7 @@ admin/AdminActivityPage.jsx
 
 **Onboarding / sağlık testi:** `HealthTestStep`, `HealthTestPrompt`, `HealthTestHub` (kategori kartları), `HealthTestFlow` (bölüm veya tam akış)
 
-**Kütüphane:** `ExerciseCategorySelect`, `ExercisePagination`, `ExerciseVideoThumbnail` (program + takvim thumb `xs`), `ExerciseDetailModal` (kütüphane/takvim detay), `VideoPlayer` (imzalı URL)
+**Kütüphane:** `ExerciseCategorySelect`, `ExercisePagination`, `ExerciseVideoThumbnail` (statik `exercise-thumbs` webp / YouTube; program + takvim `xs`), `ExerciseDetailModal`, `VideoPlayer` (15 dk imzalı URL + poster)
 
 **Package:** `SupportScheduler`, `WeeklyAvailability`, `AvailabilityView`
 
@@ -1004,7 +1020,9 @@ Kaynak: `.env.example`
 | `addPost/editPost/removePost` | 576–603 | Blog CRUD |
 | `addContent/editContent/removeContent` | 605–619 | Site içerik CRUD |
 | `submitSuccessStory(...)` | 621 | Başarı hikâyesi gönder |
-| `uploadExerciseVideo(file)` | 638 | Storage yükleme |
+| `uploadExerciseVideo(file)` | — | Path döner; best-effort thumb (`exercise-thumbs`) |
+| `getExerciseVideoUrl(path)` | — | `POST /api/auth` → 15 dk signed URL + cache |
+| `getExerciseThumbUrl(path)` | — | Public `exercise-thumbs` webp URL (imza yok) |
 | `addExercise/editExercise/removeExercise` | 649–667 | Egzersiz CRUD |
 | `createMembershipRequest(...)` | 670 | Üyelik talebi |
 | `resolveMembershipRequest(...)` | 679 | Talep onay/red |
@@ -1048,6 +1066,7 @@ Kaynak: `.env.example`
 | Paket yapısı (Basic→Platinum) | `src/data/membershipPlans.js` satırlar 10–90 |
 | Kalori hesaplayıcı erişim kontrolü | `src/pages/CalorieCalculatorPage.jsx` satırlar 137–142, 225–253 |
 | Video görüşme ayarları | `src/config/videoCall.js` + `.env` |
+| Hareket video oynatma / kapak | `VideoPlayer.jsx`, `ExerciseVideoThumbnail.jsx`, `exerciseVideoPrefetch.js`, `api/auth.js` (`exercise-video-url`); kurallar: `docs/VIDEO_*.md`, §68 |
 | Telegram bildirim metni | `api/telegram-notify.js` |
 | Veritabanı şeması | `supabase/setup.sql` + `supabase/migrations/*.sql` |
 | Yeni API endpoint | `api/` klasörü + `vercel.json` |
@@ -3891,13 +3910,13 @@ Koç başvuru formunda resmi antrenörlük alanı, GSB Antrenör Eğitimi Yönet
 
 Önceden `exercise-videos` bucket'ı `public: true` idi; `uploadExerciseVideo()` kalıcı `getPublicUrl()` döndürüyordu ve bu URL `exercises.video_url` alanında client state'e kadar taşınıyordu — gerçek dosya adresi tarayıcıda süresiz açık kalıyordu.
 
-**Yeni akış:** bucket private → yükleme sadece storage **path** döner → oynatma anında `api/exercise-video-url.js` (service role, `requireAuth` guard) **1 saatlik imzalı URL** üretir. Erişim kapsamı değişmedi (paket bazlı kısıtlama eklenmedi — giriş yapan her üye/koç/admin tüm kütüphaneyi görebiliyor, öncekiyle aynı).
+**Yeni akış (2026-07-04):** bucket private → yükleme sadece storage **path** döner → oynatma anında imzalı URL. İlk sürümde ayrı `api/exercise-video-url.js` + **1 saat** TTL vardı; sonra `/api/auth` (`exercise-video-url`) birleştirmesi ve **§68’de 15 dk TTL** uygulandı. Erişim kapsamı paket gate ile sınırlı (`memberHasFullVideoAccess` — §59).
 
 | Dosya | Değişiklik |
 |-------|------------|
 | `supabase/migrations/20260704_private_exercise_videos.sql` | `exercise-videos` bucket'ı `public = false` |
-| `api/exercise-video-url.js` | Yeni — `requireAuth` + service role `createSignedUrl(path, 3600)` |
-| `src/services/supabaseDb.js` | `uploadExerciseVideo()` artık path döner; yeni `getExerciseVideoUrl(path)` |
+| `api/auth.js` (eski: `api/exercise-video-url.js`) | `requireAuth` + service role `createSignedUrl` — süre §68’de 900 sn |
+| `src/services/supabaseDb.js` | `uploadExerciseVideo()` path döner; `getExerciseVideoUrl(path)` |
 | `src/context/AppContext.jsx` | `getExerciseVideoUrl` action eklendi |
 | `src/components/ui/VideoPlayer.jsx` | Path/tam public URL algılar → imzalı URL çekip oynatır; YouTube linkleri değişmedi |
 
@@ -3948,14 +3967,14 @@ Script: `scripts/backfill-exercise-locations.mjs` — tam import yerine `locatio
 
 **Sınıflandırma kuralları (özet):** Makinalı = `machine`, `cable`, `smith machine`, `leverage machine`, `assisted`. Konum paket + ekipman kurallarıyla atanır (ofis paketi → ofis; kablo/makine → salon; dambıl/bant → ev+salon vb.). Detay: `1600exercisedbpro/_metadata_enrichment/classification_rules.md`.
 
-### 54.3 Programlarım — hareket video thumbnail (2026-07-07)
+### 54.3 Programlarım — hareket video thumbnail (2026-07-07; kapak modeli 2026-07-10 §68)
 
 **Dosyalar:** `src/pages/ProgramsPage.jsx`, `src/components/library/ExerciseVideoThumbnail.jsx`
 
 Üye `/programs` antrenman satırları (`p.entries[]`, `videoUrl` varsa):
-- Sol tarafta **video ilk karesi** (56–64 px, responsive)
-- Supabase path → imzalı URL + `<video preload="metadata">`; YouTube → statik thumb
-- Tıklanınca mevcut `VideoPlayer` modal; hover'da `prefetchExerciseVideo`
+- Sol tarafta **statik kapak** (`exercise-thumbs` `.webp` veya YouTube thumb) — 56–64 px, responsive
+- ~~Supabase path → imzalı URL + `<video preload="metadata">`~~ → **kaldırıldı (§68)**; thumbnail’de video mount yok
+- Tıklanınca mevcut `VideoPlayer` modal; hover/pointerdown’da `prefetchExerciseVideo`
 - Video yoksa Dambıl ikonlu gradient fallback; beslenme satırları elma ikonu (değişmedi)
 - Boyutlar: `xs` (36px, takvim), `sm`, `md` (varsayılan program + kütüphane liste)
 
@@ -4114,7 +4133,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 |------|------------|----------|
 | **Sağlık testi hub** | Kategori hub tam genişlik; grid **1 / 3 / 4** sütun (mobil tek sütun); `PanelBackLink` geri dönüş; rotalar §1445 | `HealthTestHub.jsx`, `HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`, `healthTest.js` |
 | **Kütüphane filtreleri** | Konum + makine metadata; renkli filtre çubuğu; **sıralama UI kaldırıldı** | §54.1–54.2, `ExerciseLibraryPage.jsx`, `exerciseLibrary.js`, migration `20260707_*` |
-| **Program thumbnail** | Antrenman satırında sol video ilk karesi | §54.3, `ExerciseVideoThumbnail.jsx`, `ProgramsPage.jsx` |
+| **Program thumbnail** | Antrenman satırında sol kapak (eski: video ilk karesi → §68’de statik webp) | §54.3, §68, `ExerciseVideoThumbnail.jsx`, `ProgramsPage.jsx` |
 | **Üye panel scroll** | Sayfa değişince `main[data-panel-scroll]` en üste (`ScrollToTop` + `AppShell`) | `ScrollToTop.jsx`, `AppShell.jsx` |
 | **Üye menü tipografi** | Sidebar + mobil menü: `text-[15px]`→`text-base`, semibold, daha büyük ikon | `Sidebar.jsx`, `PanelMobileMenu.jsx` |
 | **Personel sağlık** | Otomatik `healthAnalysis` gizlendi (personel); admin'de açık | `MemberHealthProfilePanel.jsx`, `MemberHealthInsights.jsx`, `StaffClientsPage.jsx` — §38.3.1 |
@@ -4222,3 +4241,70 @@ Mobil hamburger (`menuOpen`) etkilenmez.
 - Membership: `.membership-page-shell`, `.membership-section-asymmetric`, `.membership-mesh-how`, `.membership-mesh-compare`
 
 **Pazarlama kuralı:** Public UI’da “tek tıkla iptal”, “taahhüt yok”, “dondurma” gibi vaat kartları kullanılmaz (yasal metinler ayrı).
+
+---
+
+## §68 Hareket Videosu Optimizasyonu — Statik Thumb, Prefetch, Faststart, 15 dk TTL (2026-07-10)
+
+**Amaç:** Kütüphane/program/takvim listelerinde her kart için gizli `<video>` + signed URL maliyetini kaldırmak; modal açılışında tıklama→oynatma gecikmesini düşürmek; signed URL ömrünü kısaltmak.
+
+**Blueprint’ler:**
+- [`docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md`](docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md) — Faz 1–3 **✅ uygulandı** (bu bölümün kaynağı)
+- [`docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md`](docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md) — player sertleştirme (autoplay attempt-fallback, network recovery, a11y) — **kısmen mevcut / kalan ⬜**; status tablosuna bak
+
+### Yapılanlar
+
+| Faz | Değişiklik | Dosyalar / komut |
+|-----|------------|------------------|
+| **1** | Public `exercise-thumbs` bucket; path = video path → `.webp`; `getExerciseThumbUrl()`; `ExerciseVideoThumbnail` yalnızca lazy `<img>` | Migration `20260710_exercise_thumbs_bucket.sql`; `supabaseDb.js`; `ExerciseVideoThumbnail.jsx`; `npm run thumbs:generate` |
+| **1** | Toplu + import-time thumb | `scripts/generate-exercise-thumbs.mjs`; `import-exercises.mjs` upload; `scripts/lib/ffmpeg-bin.mjs` |
+| **2** | Player: poster anında, URL yokken `preload="none"`; kart prefetch | `VideoPlayer.jsx`; `ExerciseLibraryPage` / `ProgramsPage` / `CalendarPage` (`pointerenter`/`down`/`focus`) |
+| **2** | MP4 `-movflags +faststart` | `scripts/faststart-exercise-videos.mjs`; import upload remux; `npm run videos:faststart` |
+| **3** | Signed URL **15 dk**; cache TTL 13 dk / margin 2 dk; sağ tık engeli | `api/auth.js` `EXERCISE_VIDEO_EXPIRES`; `exerciseVideoUrlCache.js`; `createSignedUrl(..., 900)`; `VideoWatermarkFrame` + thumb `onContextMenu` |
+| **Temizlik** | Thumbnail video slot kaldırıldı | `exerciseVideoLoadQueue.js` yalnızca URL slot; `.cursor/rules/exercise-import.mdc` güncellendi |
+
+### Mimari (güncel — AI için)
+
+```
+Liste kartı → getExerciseThumbUrl(path) → public CDN webp <img>
+         ↘ prefetchExerciseVideo(path) → POST /api/auth exercise-video-url → cache
+
+Modal/İzle → VideoPlayer poster=webp; playUrl cache-hit veya getExerciseVideoUrl
+           → <video> H.264 MP4 (faststart); watermark + nodownload; blob src YOK
+```
+
+### Bilinçli yapılmayan (hâlâ geçerli)
+
+- HLS / çoklu codec rendition — kısa klipler için gerekmez
+- Blob/MediaSource ile `src` gizleme — iOS fullscreen bozar
+
+**Player sertleştirme (§2.2 / §4 / §5):** → **§69** (uygulandı)
+
+### Regresyon noktaları
+
+- `/library`, `/programs`, `/calendar` Network: açılışta `exercise-videos` yok
+- Admin upload + `AdminLibraryPage` önizleme
+- iOS Safari modal play + native fullscreen
+- Thumb yoksa placeholder ikon (img `onError`)
+
+---
+
+## §69 Video Player Sertleştirme — Infrastructure Blueprint (2026-07-10)
+
+**Kaynak:** [`docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md`](docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md) — status tablosu artık ✅.
+
+| Konu | Uygulama |
+|------|----------|
+| Attempt-then-fallback autoplay | `shouldAttemptAutoplay` (reduced-motion / saveData); iOS’ta da dene; blok → overlay |
+| play() promise-guard | `createPlayGuard()` — pending play sırasında pause kuyruğu |
+| MEDIA_ERR routing | 4 → kalıcı hata; 3 → tek `load()` retry; 2/null → network recover |
+| Stall watchdog | `waiting` 10 sn; `timeupdate` 3 sn ilerleme yok → recover |
+| Signed URL recover | `invalidateExerciseVideoUrlCache` + yeniden imza ≤2; backoff 1s/4s; Tekrar dene |
+| Teardown | unmount: pause → src/source temizle → `load()` |
+| iOS custom controls | `webkitEnterFullscreen` yolu; `webkit-playsinline` |
+| A11y | `title` prop → `aria-label`; `aria-live`; klavye (custom); 44px hit; seek `aria-valuetext` |
+| Safe area | control bar `env(safe-area-inset-*)`; `index.html` `viewport-fit=cover` |
+
+**Dosyalar:** `VideoPlayer.jsx`, `videoPlayerPlatform.js`, `exerciseVideoUrlCache.js`, `index.html`, call-site `title` (DetailModal, Programs, Calendar, Admin, Staff program).
+
+**Manuel test:** blueprint §6 acceptance matrix (Low Power Mode, Data Saver, 16 dk seek, offline/online, modal 10×).

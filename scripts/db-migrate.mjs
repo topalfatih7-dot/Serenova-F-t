@@ -145,10 +145,11 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: null, color: 'teal',
+    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'teal',
     features: [
       { text: '1 Online Doktor Görüşmesi', included: true },
       { text: 'Görüntülü Görüşme', included: true },
+      { text: 'Mevcut üyeliğe ek paket olarak eklenebilir', included: true },
     ],
     limits: ['Tek seferlik doktor görüşmesi'],
     pricing_tiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],

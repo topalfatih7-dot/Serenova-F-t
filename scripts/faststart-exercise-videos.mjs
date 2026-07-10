@@ -1,0 +1,182 @@
+/**
+ * exercise-videos MP4 dosyalarına moov atomunu başa alır (-movflags +faststart).
+ * Yeniden kodlama yok (-c copy); oynatma başlangıcını hızlandırır.
+ *
+ *   node scripts/faststart-exercise-videos.mjs --dry-run --limit=5
+ *   node scripts/faststart-exercise-videos.mjs
+ *   node scripts/faststart-exercise-videos.mjs --concurrency=3
+ *
+ * Gereksinim: ffmpeg (PATH veya ffmpeg-static), SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+ */
+
+import { readFileSync, existsSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
+import { createClient } from '@supabase/supabase-js'
+import { fileURLToPath } from 'node:url'
+import { requireFfmpeg } from './lib/ffmpeg-bin.mjs'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const root = join(__dirname, '..')
+
+const args = process.argv.slice(2)
+const dryRun = args.includes('--dry-run')
+const limitArg = args.find((a) => a.startsWith('--limit='))
+const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : null
+const concurrencyArg = args.find((a) => a.startsWith('--concurrency='))
+const concurrency = Math.max(1, Math.min(6, concurrencyArg ? parseInt(concurrencyArg.split('=')[1], 10) : 3))
+
+function loadEnv() {
+  const path = join(root, '.env.local')
+  if (!existsSync(path)) return
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    const t = line.trim()
+    if (!t || t.startsWith('#')) continue
+    const i = t.indexOf('=')
+    if (i === -1) continue
+    const key = t.slice(0, i).trim()
+    let val = t.slice(i + 1).trim()
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1)
+    }
+    if (!process.env[key]) process.env[key] = val
+  }
+}
+
+loadEnv()
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const FFMPEG = requireFfmpeg()
+
+async function fetchAllVideoPaths(supabase) {
+  const paths = []
+  const pageSize = 1000
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('video_url')
+      .eq('video_pending', false)
+      .not('video_url', 'is', null)
+      .neq('video_url', '')
+      .range(from, from + pageSize - 1)
+
+    if (error) throw new Error(`exercises: ${error.message}`)
+    if (!data?.length) break
+
+    for (const row of data) {
+      const path = String(row.video_url || '').trim().split('?')[0]
+      if (!path || /^https?:\/\//.test(path) || /youtube|youtu\.be/i.test(path)) continue
+      if (!/^[\w.-]+$/.test(path)) continue
+      if (!/\.(mp4|mov)$/i.test(path)) continue
+      paths.push(path)
+    }
+
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return [...new Set(paths)]
+}
+
+async function processOne(supabase, videoPath, workDir) {
+  if (dryRun) {
+    return { status: 'would-remux', videoPath }
+  }
+
+  const { data: blob, error: dlErr } = await supabase.storage.from('exercise-videos').download(videoPath)
+  if (dlErr || !blob) {
+    return { status: 'error', videoPath, error: dlErr?.message || 'download failed' }
+  }
+
+  const safe = videoPath.replace(/[^\w.-]/g, '_')
+  const inputFile = join(workDir, `in-${safe}`)
+  const outputFile = join(workDir, `out-${safe}`)
+  const contentType = /\.mov$/i.test(videoPath) ? 'video/quicktime' : 'video/mp4'
+
+  try {
+    writeFileSync(inputFile, Buffer.from(await blob.arrayBuffer()))
+    execFileSync(FFMPEG, [
+      '-y', '-i', inputFile,
+      '-c', 'copy',
+      '-movflags', '+faststart',
+      outputFile,
+    ], { stdio: 'ignore' })
+
+    const outBuf = readFileSync(outputFile)
+    const { error: upErr } = await supabase.storage.from('exercise-videos').upload(videoPath, outBuf, {
+      contentType,
+      cacheControl: '3600',
+      upsert: true,
+    })
+    if (upErr) {
+      return { status: 'error', videoPath, error: upErr.message }
+    }
+    return { status: 'remuxed', videoPath }
+  } finally {
+    try { unlinkSync(inputFile) } catch { /* ignore */ }
+    try { unlinkSync(outputFile) } catch { /* ignore */ }
+  }
+}
+
+async function mapPool(items, poolSize, worker) {
+  let idx = 0
+  async function run() {
+    while (idx < items.length) {
+      const i = idx++
+      await worker(items[i], i)
+    }
+  }
+  await Promise.all(Array.from({ length: poolSize }, () => run()))
+}
+
+async function main() {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    console.error('SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli (.env.local)')
+    process.exit(1)
+  }
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+
+  let paths = await fetchAllVideoPaths(supabase)
+  if (limit != null && Number.isFinite(limit)) paths = paths.slice(0, limit)
+
+  console.log(`Faststart remux: ${paths.length} video, concurrency=${concurrency}${dryRun ? ' (dry-run)' : ''}`)
+
+  const workDir = join(tmpdir(), `serenova-faststart-${Date.now()}`)
+  mkdirSync(workDir, { recursive: true })
+
+  let ok = 0
+  let errors = 0
+  let done = 0
+
+  try {
+    await mapPool(paths, concurrency, async (path, i) => {
+      const workerDir = join(workDir, `w${i % concurrency}`)
+      mkdirSync(workerDir, { recursive: true })
+      const result = await processOne(supabase, path, workerDir)
+      done++
+      if (result.status === 'remuxed' || result.status === 'would-remux') {
+        ok++
+        if (ok % 25 === 0 || done === paths.length) {
+          console.log(`  ✓ ${result.status}: ${result.videoPath}  [${done}/${paths.length}]`)
+        }
+      } else {
+        errors++
+        console.warn(`  ✗ ${result.videoPath}: ${result.error}  [${done}/${paths.length}]`)
+      }
+    })
+  } finally {
+    try { rmSync(workDir, { recursive: true, force: true }) } catch { /* ignore */ }
+  }
+
+  console.log(`\nTamamlandı: işlenen=${ok}, hata=${errors}`)
+}
+
+main().catch((e) => {
+  console.error('\nHata:', e.message)
+  process.exit(1)
+})

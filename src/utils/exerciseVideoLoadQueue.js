@@ -26,20 +26,8 @@ function createSlotQueue(getMax) {
 /** Imzalı URL API isteklerini sınırla (sayfa başına 24 paralel istek yavaşlatır). */
 export const acquireVideoUrlSlot = createSlotQueue(() => (isIosDevice() ? 3 : 6))
 
-/** iOS Safari'de eşzamanlı <video> metadata yüklemelerini sınırla. */
-export const acquireThumbnailVideoSlot = createSlotQueue(() => (isIosDevice() ? 2 : 5))
-
 export async function runWithVideoUrlSlot(fn) {
   const release = await acquireVideoUrlSlot()
-  try {
-    return await fn()
-  } finally {
-    release()
-  }
-}
-
-export async function runWithThumbnailVideoSlot(fn) {
-  const release = await acquireThumbnailVideoSlot()
   try {
     return await fn()
   } finally {

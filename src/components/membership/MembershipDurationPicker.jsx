@@ -9,9 +9,10 @@ import {
   RECOMMENDED_DURATION_MONTHS,
   RECOMMENDED_PLAN,
 } from '../../data/membershipPlans'
+import { isOneTimePlan } from '../../utils/memberPackages'
 
 export default function MembershipDurationPicker({ planId, value, onChange }) {
-  if (!isPaidMembership(planId)) return null
+  if (!isPaidMembership(planId) || isOneTimePlan(planId)) return null
 
   const showSixMonthHint = planId === RECOMMENDED_PLAN
 

@@ -16,13 +16,15 @@
  *   node scripts/import-exercises.mjs --upsert-taxonomy
  */
 
-import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, unlinkSync } from 'node:fs'
 import { join, basename, dirname } from 'node:path'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 import { fileURLToPath } from 'node:url'
 import { EXERCISE_PACKS, DEFAULT_EXERCISE_DB_ROOT, plannedVideoPath } from './lib/exercise-packs.mjs'
 import { translateExerciseContent } from './lib/exercise-translate-tr.mjs'
+import { resolveFfmpegPath } from './lib/ffmpeg-bin.mjs'
 import {
   mapBodyPart,
   mapEquipment,
@@ -238,25 +240,91 @@ async function syncVideoStatusFlags(supabase) {
   console.log(`Video durumu senkron: ${cleared} kayit hazir olarak isaretlendi`)
 }
 
+function remuxFaststart(localPath) {
+  const ffmpeg = resolveFfmpegPath()
+  if (!ffmpeg) return null
+  const out = join(tmpdir(), `fs-${Date.now()}-${basename(localPath)}`)
+  try {
+    execFileSync(ffmpeg, [
+      '-y', '-i', localPath,
+      '-c', 'copy',
+      '-movflags', '+faststart',
+      out,
+    ], { stdio: 'ignore' })
+    return out
+  } catch {
+    try { unlinkSync(out) } catch { /* ignore */ }
+    return null
+  }
+}
+
+function extractThumbWebp(localPath) {
+  const ffmpeg = resolveFfmpegPath()
+  if (!ffmpeg) return null
+  const out = join(tmpdir(), `thumb-${Date.now()}-${basename(localPath)}.webp`)
+  try {
+    execFileSync(ffmpeg, [
+      '-y', '-ss', '0.5', '-i', localPath,
+      '-frames:v', '1',
+      '-vf', 'scale=480:-2',
+      '-quality', '80',
+      out,
+    ], { stdio: 'ignore' })
+    return out
+  } catch {
+    try { unlinkSync(out) } catch { /* ignore */ }
+    return null
+  }
+}
+
 async function uploadVideoBatch(supabase, records) {
   let uploaded = 0
   for (const rec of records) {
     if (!rec._localVideo) continue
     const path = rec.video_url
-    const buf = readFileSync(rec._localVideo)
     const contentType = rec._localVideo.toLowerCase().endsWith('.mov') ? 'video/quicktime' : 'video/mp4'
     if (dryRun) {
-      console.log('[dry-run] upload:', path)
+      console.log('[dry-run] upload:', path, '(+thumb +faststart)')
       uploaded++
       continue
     }
+
+    let uploadSource = rec._localVideo
+    let remuxed = null
+    remuxed = remuxFaststart(rec._localVideo)
+    if (remuxed) uploadSource = remuxed
+
+    const buf = readFileSync(uploadSource)
     const { error } = await supabase.storage.from('exercise-videos').upload(path, buf, {
       cacheControl: '3600',
       upsert: true,
       contentType,
     })
-    if (!error) uploaded++
-    else console.warn('Upload hata:', path, error.message)
+    if (remuxed) {
+      try { unlinkSync(remuxed) } catch { /* ignore */ }
+    }
+
+    if (error) {
+      console.warn('Upload hata:', path, error.message)
+      continue
+    }
+    uploaded++
+
+    const thumbPath = path.replace(/\.\w+$/, '.webp')
+    const thumbFile = extractThumbWebp(rec._localVideo)
+    if (thumbFile) {
+      try {
+        const thumbBuf = readFileSync(thumbFile)
+        const { error: thumbErr } = await supabase.storage.from('exercise-thumbs').upload(thumbPath, thumbBuf, {
+          contentType: 'image/webp',
+          cacheControl: '31536000',
+          upsert: true,
+        })
+        if (thumbErr) console.warn('Thumb hata:', thumbPath, thumbErr.message)
+      } finally {
+        try { unlinkSync(thumbFile) } catch { /* ignore */ }
+      }
+    }
   }
   return uploaded
 }

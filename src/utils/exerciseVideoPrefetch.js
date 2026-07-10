@@ -17,20 +17,11 @@ export function exerciseStoragePathFromUrl(url) {
   return null
 }
 
-/** Hover / modal öncesi imzalı URL'i önbelleğe alır (no-op if invalid). */
+/** Hover / pointerdown / modal öncesi imzalı URL'i önbelleğe alır (no-op if invalid). */
 export function prefetchExerciseVideo(url) {
   const path = exerciseStoragePathFromUrl(url)
   if (!path) return Promise.resolve(null)
   return getExerciseVideoUrl(path)
-}
-
-/** Sayfa yüklendiğinde görünür kartların URL'lerini toplu imzala. */
-export function prefetchExerciseVideosFromItems(items = []) {
-  const paths = items
-    .filter((item) => item?.videoUrl && !item?.videoPending)
-    .map((item) => exerciseStoragePathFromUrl(item.videoUrl))
-    .filter(Boolean)
-  return prefetchExerciseVideoUrls(paths)
 }
 
 export { prefetchExerciseVideoUrls }

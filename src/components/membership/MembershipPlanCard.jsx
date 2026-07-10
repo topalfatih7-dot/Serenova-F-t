@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
-import { formatMonthlyPrice, getPlanBadge, getPlanDurationLabel, RECOMMENDED_PLAN } from '../../data/membershipPlans'
+import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan, RECOMMENDED_PLAN } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
 
 const VISIBLE_FEATURES = 4
@@ -30,6 +30,7 @@ export default function MembershipPlanCard({
   const hiddenCount = features.length - VISIBLE_FEATURES
   const daily = dailyPrice(plan.price)
   const durationLabel = getPlanDurationLabel(plan)
+  const isOneTime = isOneTimeBillingPlan(plan)
   const Tag = mode === 'select' ? motion.button : motion(Link)
   const tagProps = mode === 'select'
     ? { type: 'button', onClick: () => onSelect?.(plan.id) }
@@ -55,7 +56,9 @@ export default function MembershipPlanCard({
           ? `border-2 ${theme.ring} shadow-lg ${theme.glow}`
           : isRecommended
             ? 'border-amber-200/80 shadow-md shadow-amber-100/40 hover:shadow-lg'
-            : 'border-cream-200/80 hover:border-sage-200 hover:shadow-md'
+            : isOneTime
+              ? `border-teal-200/80 shadow-md ${theme.glow} hover:border-teal-300 hover:shadow-lg`
+              : 'border-cream-200/80 hover:border-sage-200 hover:shadow-md'
       } ${compact ? 'min-h-[17.5rem]' : 'min-h-[22rem]'}`}
     >
       {isRecommended && (
@@ -93,20 +96,28 @@ export default function MembershipPlanCard({
 
       <div className={`flex flex-1 flex-col p-5 ${planBadge ? 'pt-9' : 'pt-5'}`}>
         <div className="flex flex-col items-center text-center">
-          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition group-hover:scale-105 ${selected || isRecommended ? theme.icon : theme.iconIdle}`}>
+          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition group-hover:scale-105 ${selected || isRecommended || isOneTime ? theme.icon : theme.iconIdle}`}>
             {planIcon(plan.id, 'h-6 w-6')}
           </span>
           <h3 className={`mt-3 font-display text-lg font-bold text-cream-900 ${theme.label}`}>{plan.name}</h3>
+          {isOneTime && (
+            <p className="mt-1 text-xs font-medium text-teal-700/90">Uzman doktor ile online sağlık danışmanlığı</p>
+          )}
           <p className="mt-1 font-display text-xl font-extrabold text-cream-900">
-            {formatMonthlyPrice(plan.price)}
+            {formatPlanPrice(plan)}
           </p>
           {plan.price > 0 && (
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">{durationLabel}</p>
           )}
-          {plan.price > 0 && (
+          {plan.price > 0 && !isOneTime && (
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
               <Sparkles className="h-3 w-3" />
               Günde ~{daily.toLocaleString('tr-TR')}₺ — kahve fiyatına wellness
+            </p>
+          )}
+          {isOneTime && (
+            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-semibold text-teal-800 ring-1 ring-teal-100">
+              Mevcut üyeliğe ek paket
             </p>
           )}
           {plan.price === 0 && (

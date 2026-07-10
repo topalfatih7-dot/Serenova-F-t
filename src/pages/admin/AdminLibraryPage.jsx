@@ -72,7 +72,11 @@ function ExerciseFormModal({ open, onClose, onSubmit, initial, isEdit, categorie
             {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…</> : <><Upload className="h-4 w-4" /> Video dosyası seç</>}
           </button>
           <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-          {form.videoUrl && <div className="mt-3"><VideoPlayer url={form.videoUrl} videoPending={form.videoPending} /></div>}
+          {form.videoUrl && (
+            <div className="mt-3">
+              <VideoPlayer url={form.videoUrl} videoPending={form.videoPending} title={form.name} />
+            </div>
+          )}
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         <button type="button" onClick={submit} disabled={uploading} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">

@@ -221,7 +221,8 @@ export default function ProgramsPage() {
                               key={e.id}
                               type="button"
                               onClick={() => hasVideo && setActiveExercise(e)}
-                              onMouseEnter={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
+                              onPointerEnter={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
+                              onPointerDown={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
                               onFocus={() => hasVideo && prefetchExerciseVideo(e.videoUrl)}
                               className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:gap-4 sm:px-4 ${
                                 isNutrition
@@ -294,7 +295,12 @@ export default function ProgramsPage() {
       <Modal open={!!activeExercise} onClose={() => setActiveExercise(null)} title={activeExercise?.exerciseName || activeExercise?.name} size="lg">
         {activeExercise && (
           <div className="space-y-4">
-            {activeExercise.videoUrl && <VideoPlayer url={activeExercise.videoUrl} />}
+            {activeExercise.videoUrl && (
+              <VideoPlayer
+                url={activeExercise.videoUrl}
+                title={activeExercise.exerciseName || activeExercise.name}
+              />
+            )}
             <div className="flex flex-wrap gap-2 text-sm">
               <span className="rounded-full bg-brand-50 px-3 py-1 font-medium text-brand-700">
                 {activeExercise.date
