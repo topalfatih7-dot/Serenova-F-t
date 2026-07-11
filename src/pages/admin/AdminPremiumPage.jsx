@@ -18,6 +18,8 @@ import { countStaffClients } from '../../services/staffAssignment'
 import { isOneTimePlan, isPackageEntryActive } from '../../utils/memberPackages'
 import { fetchMemberSessions } from '../../services/supabaseDb'
 
+const EMPTY_LIST = Object.freeze([])
+
 const STATUS_STYLES = {
   active: 'bg-sage-50 text-sage-700 ring-sage-200',
   expiring: 'bg-orange-50 text-orange-700 ring-orange-200',
@@ -173,7 +175,6 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, onStatusCha
   useEffect(() => {
     if (!member?.id) return undefined
     let active = true
-    setSessionsLoading(true)
     fetchMemberSessions(member.id)
       .then((sessions) => {
         if (!active) return
@@ -449,8 +450,8 @@ export default function AdminPremiumPage() {
   const [selected, setSelected] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  const staff = platform.staff || []
-  const members = platform.members || []
+  const staff = platform.staff || EMPTY_LIST
+  const members = useMemo(() => platform.members ?? EMPTY_LIST, [platform.members])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || 'Atanmadı'
 
   const premiumMembers = useMemo(() => {

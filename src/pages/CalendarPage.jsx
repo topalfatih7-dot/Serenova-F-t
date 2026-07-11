@@ -34,6 +34,8 @@ import {
 
 // ── Yardımcılar ────────────────────────────────────────────────────
 const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const EMPTY_OBJ = Object.freeze({})
+const EMPTY_AVAIL = Object.freeze({})
 const amountText = (e) => {
   if (!e) return ''
   if (e.amountType === 'duration') return `${e.amount} ${e.durationUnit || 'sn'}`
@@ -66,22 +68,24 @@ export default function CalendarPage() {
   const [expandedEntryId, setExpandedEntryId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [availOpen, setAvailOpen] = useState(false)
-  const [availForm, setAvailForm] = useState(user?.availability || {})
+  const [availForm, setAvailForm] = useState(user?.availability || EMPTY_AVAIL)
   const [availSaving, setAvailSaving] = useState(false)
+  const [urlAvailHandled, setUrlAvailHandled] = useState(false)
+
+  // ?avail=1 → modal aç (render-time); URL temizliği harici sistem sync (effect)
+  if (!urlAvailHandled && searchParams.get('avail') === '1') {
+    setUrlAvailHandled(true)
+    setAvailOpen(true)
+  }
 
   useEffect(() => {
     if (searchParams.get('avail') !== '1') return
-    setAvailOpen(true)
     const next = new URLSearchParams(searchParams)
     next.delete('avail')
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
 
-  useEffect(() => {
-    if (availOpen) setAvailForm(user?.availability || {})
-  }, [availOpen, user?.availability])
-
-  const completedActivities = user?.completedActivities || {}
+  const completedActivities = user?.completedActivities ?? EMPTY_OBJ
 
   // Ay takvim günleri
   const monthStart = startOfMonth(current)
@@ -132,7 +136,7 @@ export default function CalendarPage() {
     } finally {
       setSaving(false)
     }
-  }, [selectedDateStr, saving, selectedDate, toggleActivityCompletion])
+  }, [selectedDateStr, saving, toggleActivityCompletion])
 
   const openDay = useCallback((day) => {
     if (!isSameMonth(day, current)) return
@@ -148,7 +152,7 @@ export default function CalendarPage() {
     } finally {
       setSaving(false)
     }
-  }, [selectedDateStr, saving, selectedDate, toggleMealCompletion])
+  }, [selectedDateStr, saving, toggleMealCompletion])
 
   const isMealDone = (mealType, mealEntries) => {
     if (!selectedDateStr) return false
@@ -246,7 +250,13 @@ export default function CalendarPage() {
       <div className="overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white shadow-sm">
         <button
           type="button"
-          onClick={() => { setAvailOpen((v) => !v); setAvailForm(user?.availability || {}) }}
+          onClick={() => {
+            setAvailOpen((v) => {
+              const next = !v
+              if (next) setAvailForm(user?.availability || EMPTY_AVAIL)
+              return next
+            })
+          }}
           className="flex w-full items-center justify-between px-5 py-4"
         >
           <div className="flex items-center gap-3">

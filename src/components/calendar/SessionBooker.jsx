@@ -6,6 +6,8 @@ import Modal from '../ui/Modal'
 import { useToast } from '../../context/ToastContext'
 
 const WINDOW_DAYS = 28
+const EMPTY_AVAIL = Object.freeze({})
+const NOW_TICK_MS = 60_000
 
 const ACCENTS = {
   brand: { sel: 'bg-brand-500 text-white', ring: 'border-brand-300 text-brand-700', btn: 'bg-brand-500 hover:bg-brand-600' },
@@ -49,7 +51,7 @@ export default function SessionBooker({
 }) {
   const { toast } = useToast()
   const tone = ACCENTS[accent] || ACCENTS.brand
-  const availability = staff?.availability || {}
+  const availability = staff?.availability ?? EMPTY_AVAIL
 
   const days = useMemo(() => {
     const out = []
@@ -65,21 +67,27 @@ export default function SessionBooker({
   const [pendingTime, setPendingTime] = useState(null)
   const [takenSet, setTakenSet] = useState(() => new Set())
   const [booking, setBooking] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+  const [prevOpen, setPrevOpen] = useState(open)
 
-  useEffect(() => {
+  // Modal her açıldığında seçimi sıfırla (effect yerine render-time adjust — React önerisi)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) {
       setSelectedIdx(0)
       setPendingTime(null)
     }
+  }
+
+  useEffect(() => {
+    if (!open) return undefined
+    const id = setInterval(() => setNow(Date.now()), NOW_TICK_MS)
+    return () => clearInterval(id)
   }, [open])
 
+  // Pencere boyunca dolu slotları çek (setState yalnızca async callback’te)
   useEffect(() => {
-    setPendingTime(null)
-  }, [selectedIdx])
-
-  // Pencere boyunca dolu slotları çek
-  useEffect(() => {
-    if (!open || !staff?.id || !getBookedSlots) return
+    if (!open || !staff?.id || !getBookedSlots) return undefined
     let active = true
     const from = startOfDay(new Date()).toISOString()
     const to = addDays(startOfDay(new Date()), WINDOW_DAYS).toISOString()
@@ -117,7 +125,7 @@ export default function SessionBooker({
   const selectTime = (time) => {
     if (booking || !selectedDay || limitReached) return
     const dt = slotDateTime(selectedDay, time)
-    if (dt.getTime() <= Date.now()) {
+    if (dt.getTime() <= now) {
       toast('Geçmiş bir saat seçilemez.', 'warning')
       return
     }
@@ -131,6 +139,7 @@ export default function SessionBooker({
   const handleBook = async (time) => {
     if (booking || !selectedDay) return
     const dt = slotDateTime(selectedDay, time)
+    // Tıklama anı doğrulaması — interval’dan bağımsız güncel saat
     if (dt.getTime() <= Date.now()) {
       toast('Geçmiş bir saat seçilemez.', 'warning')
       return
@@ -148,6 +157,11 @@ export default function SessionBooker({
     } finally {
       setBooking(false)
     }
+  }
+
+  const pickDay = (i) => {
+    setSelectedIdx(i)
+    setPendingTime(null)
   }
 
   return (
@@ -172,7 +186,6 @@ export default function SessionBooker({
             </span>
           </div>
 
-          {/* Gün seçimi */}
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {days.map((d, i) => {
               const sel = i === selectedIdx
@@ -180,7 +193,7 @@ export default function SessionBooker({
                 <button
                   key={d.toISOString()}
                   type="button"
-                  onClick={() => setSelectedIdx(i)}
+                  onClick={() => pickDay(i)}
                   className={`flex min-w-[4.5rem] shrink-0 flex-col items-center rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                     sel ? tone.sel : 'border-cream-200 bg-white text-cream-800/70 hover:border-brand-200'
                   }`}
@@ -193,7 +206,6 @@ export default function SessionBooker({
             })}
           </div>
 
-          {/* Saat slotları */}
           {limitReached ? (
             <p className="rounded-xl bg-amber-50 px-3 py-3 text-center text-sm font-medium text-amber-700">
               Bu ay için randevu hakkınız doldu. Sonraki ay için bir gün seçebilirsiniz.
@@ -203,7 +215,7 @@ export default function SessionBooker({
               {slots.map((t) => {
                 const dt = slotDateTime(selectedDay, t)
                 const ts = dt.getTime()
-                const past = ts <= Date.now()
+                const past = ts <= now
                 const taken = takenSet.has(ts)
                 const own = ownActive.has(ts)
                 const disabled = past || taken || own || booking

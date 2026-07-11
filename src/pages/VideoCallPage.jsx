@@ -74,25 +74,23 @@ export default function VideoCallPage({ audience = 'member' }) {
   const configured = isVideoCallConfigured()
   const [meetingToken, setMeetingToken] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const canFetchToken = configured && !context.error && context.roomAccess?.ok
 
   useEffect(() => {
-    if (!configured || context.error || !context.roomAccess?.ok) {
-      setMeetingToken('')
-      return
-    }
+    if (!canFetchToken) return undefined
     let cancelled = false
     const roomName = buildRoomName(context.sessionType, sessionId)
     getDailyToken(roomName, context.displayName, audience === 'staff')
       .then((t) => { if (!cancelled && t) setMeetingToken(t) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [configured, context.error, context.roomAccess?.ok, context.sessionType, sessionId, context.displayName, audience])
+  }, [canFetchToken, context.sessionType, sessionId, context.displayName, audience])
 
   const call = useDailyCall({
     roomUrl,
     userName: context.displayName,
-    enabled: configured && !context.error && context.roomAccess?.ok,
-    token: meetingToken,
+    enabled: canFetchToken,
+    token: canFetchToken ? meetingToken : '',
   })
 
   const backPath = audience === 'staff'

@@ -102,8 +102,6 @@ export default function AdminContentPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   const tab = TABS.find((t) => t.id === activeTab)
-  const lists = { testimonials, faqs, successStories }
-  const rawItems = lists[activeTab] || []
 
   const storyCounts = useMemo(() => ({
     all: successStories.length,
@@ -112,10 +110,15 @@ export default function AdminContentPage() {
   }), [successStories])
 
   const items = useMemo(() => {
+    const rawItems = activeTab === 'testimonials'
+      ? testimonials
+      : activeTab === 'faqs'
+        ? faqs
+        : successStories
     if (activeTab !== 'successStories' || storyFilter === 'all') return rawItems
     if (storyFilter === 'approved') return rawItems.filter((s) => s.approved)
     return rawItems.filter((s) => !s.approved)
-  }, [activeTab, rawItems, storyFilter])
+  }, [activeTab, storyFilter, testimonials, faqs, successStories])
 
   const handleAdd = async (form) => {
     setAddOpen(false)

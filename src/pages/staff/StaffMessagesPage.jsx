@@ -58,7 +58,8 @@ export default function StaffMessagesPage() {
 
   const activeMemberId = memberIdParam || (isWide ? filtered[0]?.member?.id : null)
   const active = inboxItems.find(({ member }) => String(member.id) === String(activeMemberId))
-  const messages = activeThreadId ? (chatMessages[activeThreadId] || []) : []
+  const effectiveThreadId = active?.member?.id ? activeThreadId : null
+  const messages = effectiveThreadId ? (chatMessages[effectiveThreadId] || []) : []
   const showThread = Boolean(active?.member && (memberIdParam || isWide))
 
   const memberPrograms = useMemo(
@@ -72,7 +73,6 @@ export default function StaffMessagesPage() {
 
   useEffect(() => {
     if (!active?.member?.id) {
-      setActiveThreadId(null)
       activeThreadRef.current = null
       return undefined
     }
@@ -94,7 +94,7 @@ export default function StaffMessagesPage() {
       cancelled = true
       if (poll) clearInterval(poll)
     }
-  }, [active?.member?.id, active?.thread?.id, ensureStaffChatThread, loadChatMessages, markChatThreadRead])
+  }, [active?.member?.id, active?.thread?.id, active?.member, active?.thread, ensureStaffChatThread, loadChatMessages, markChatThreadRead])
 
   const handleSend = async (text) => {
     if (!active?.member) return

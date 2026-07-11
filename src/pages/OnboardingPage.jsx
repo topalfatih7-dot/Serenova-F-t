@@ -69,6 +69,12 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const initial = preselectedPlan && preselectedPlan !== currentMembership ? preselectedPlan : currentMembership
   const [selected, setSelected] = useState(initial)
   const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(initial, searchParams))
+  const [prevDurationKey, setPrevDurationKey] = useState(`${selected}|${searchParams.toString()}`)
+  const durationKey = `${selected}|${searchParams.toString()}`
+  if (durationKey !== prevDurationKey) {
+    setPrevDurationKey(durationKey)
+    setDurationMonths(resolveDurationMonths(selected, searchParams))
+  }
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paying, setPaying] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -79,14 +85,10 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const isCurrent = selected === currentMembership
 
   useEffect(() => {
-    setDurationMonths(resolveDurationMonths(selected, searchParams))
-  }, [selected, searchParams])
-
-  useEffect(() => {
     if (searchParams.get('payment') === 'cancelled') {
       toast('Ödeme iptal edildi. Planınız değişmedi.', 'info')
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnızca mount toast
   }, [])
 
   const applyChange = async (price = 0) => {
@@ -219,10 +221,14 @@ export default function OnboardingPage() {
     confirmPassword: '',
     membership: preselectedPlan,
   })
-
-  useEffect(() => {
+  const [prevRegDurationKey, setPrevRegDurationKey] = useState(
+    `${preselectedPlan}|${searchParams.toString()}`,
+  )
+  const regDurationKey = `${data.membership}|${searchParams.toString()}`
+  if (regDurationKey !== prevRegDurationKey) {
+    setPrevRegDurationKey(regDurationKey)
     setDurationMonths(resolveDurationMonths(data.membership, searchParams))
-  }, [data.membership, searchParams])
+  }
 
   const { register, registerWithPlan, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()

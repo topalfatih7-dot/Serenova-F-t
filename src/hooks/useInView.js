@@ -3,20 +3,13 @@ import { useEffect, useState } from 'react'
 /** Görünür olduğunda true — lazy thumbnail / prefetch için. */
 export function useInView(ref, { rootMargin = '160px', once = true, enabled = true } = {}) {
   const [inView, setInView] = useState(false)
+  const supportsIO = typeof IntersectionObserver !== 'undefined'
 
   useEffect(() => {
-    if (!enabled) {
-      setInView(false)
-      return undefined
-    }
+    if (!enabled || !supportsIO) return undefined
 
     const el = ref.current
     if (!el) return undefined
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setInView(true)
-      return undefined
-    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -32,7 +25,9 @@ export function useInView(ref, { rootMargin = '160px', once = true, enabled = tr
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [ref, rootMargin, once, enabled])
+  }, [ref, rootMargin, once, enabled, supportsIO])
 
+  if (!enabled) return false
+  if (!supportsIO) return true
   return inView
 }

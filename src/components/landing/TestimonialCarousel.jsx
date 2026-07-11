@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Star, Quote, BadgeCheck } from 
 import SectionBackdrop, { SectionHeader } from './SectionBackdrop'
 
 const PREVIEW_LIMIT = 180
+const EMPTY_LIST = Object.freeze([])
 
 function TestimonialCard({ item }) {
   const rating = item.rating || 5
@@ -67,7 +68,7 @@ function TestimonialCard({ item }) {
 }
 
 export default function TestimonialCarousel({ testimonials }) {
-  const list = testimonials || []
+  const list = useMemo(() => testimonials ?? EMPTY_LIST, [testimonials])
   const count = list.length
   const scrollRef = useRef(null)
   const [canLeft, setCanLeft] = useState(false)

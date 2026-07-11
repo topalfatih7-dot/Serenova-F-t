@@ -17,13 +17,14 @@ export function useActiveUsers(isAdmin) {
 
   useEffect(() => {
     if (!isAdmin || !supabase) return undefined
-    refresh()
+    const kick = setTimeout(() => { void refresh() }, 0)
     const poll = setInterval(refresh, 15_000)
     const channel = supabase
       .channel('admin-presence')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, refresh)
       .subscribe()
     return () => {
+      clearTimeout(kick)
       clearInterval(poll)
       supabase.removeChannel(channel)
     }

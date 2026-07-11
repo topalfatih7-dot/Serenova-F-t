@@ -47,7 +47,12 @@ export default function AuthCallbackPage() {
   const { refresh } = useApp()
   const [phase, setPhase] = useState('loading')
   const [hasSession, setHasSession] = useState(false)
-  const [countdown, setCountdown] = useState(AUTO_REDIRECT_SECONDS)
+  const [countdown, setCountdown] = useState(null)
+  const [countdownPhase, setCountdownPhase] = useState(phase)
+  if (phase !== countdownPhase) {
+    setCountdownPhase(phase)
+    setCountdown(phase === 'success' ? AUTO_REDIRECT_SECONDS : null)
+  }
   const countdownRef = useRef(null)
   const dbRef = useRef(null)
   const navigatingRef = useRef(false)
@@ -205,9 +210,9 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     if (phase !== 'success') return undefined
-    setCountdown(AUTO_REDIRECT_SECONDS)
     countdownRef.current = setInterval(() => {
       setCountdown((c) => {
+        if (c == null) return c
         if (c <= 1) {
           clearInterval(countdownRef.current)
           goPanel()

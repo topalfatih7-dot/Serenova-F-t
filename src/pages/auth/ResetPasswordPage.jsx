@@ -78,14 +78,16 @@ export default function ResetPasswordPage() {
   const [searchParams]          = useSearchParams()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm]   = useState('')
-  const [status, setStatus]     = useState('loading') // loading | ready | done | invalid
+  const [status, setStatus]     = useState(() => (
+    (!isSupabaseEnabled || !supabase) ? 'invalid' : 'loading'
+  )) // loading | ready | done | invalid
   const [loading, setLoading]   = useState(false)
   const { toast } = useToast()
   const navigate  = useNavigate()
 
   /* ── oturum kurma ── */
   useEffect(() => {
-    if (!isSupabaseEnabled || !supabase) { setStatus('invalid'); return undefined }
+    if (!isSupabaseEnabled || !supabase) return undefined
 
     let cancelled = false
     let settled   = false

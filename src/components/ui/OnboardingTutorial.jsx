@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, ChevronRight, ArrowLeft, CalendarDays, ClipboardList,
@@ -99,19 +99,25 @@ const STEPS = [
 
 const STORAGE_KEY = (userId) => `tutorial_shown_${userId}`
 
+function shouldShowTutorial(userId, seen) {
+  if (!userId || seen) return false
+  try {
+    return !localStorage.getItem(STORAGE_KEY(userId))
+  } catch {
+    return true
+  }
+}
+
 export default function OnboardingTutorial({ userId, seen = false, onComplete }) {
   const [step, setStep] = useState(0)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(() => shouldShowTutorial(userId, seen))
+  const [prevGate, setPrevGate] = useState(`${userId || ''}:${seen ? 1 : 0}`)
+  const gate = `${userId || ''}:${seen ? 1 : 0}`
 
-  useEffect(() => {
-    if (!userId) return
-    // Veritabanında daha önce görüldü olarak işaretlendiyse hiç açma
-    if (seen) return
-    const key = STORAGE_KEY(userId)
-    if (!localStorage.getItem(key)) {
-      setVisible(true)
-    }
-  }, [userId, seen])
+  if (gate !== prevGate) {
+    setPrevGate(gate)
+    setVisible(shouldShowTutorial(userId, seen))
+  }
 
   const close = () => {
     if (userId) localStorage.setItem(STORAGE_KEY(userId), '1')

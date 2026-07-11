@@ -217,7 +217,7 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     } catch (err) {
       setError(err?.message || 'Mikrofon değiştirilemedi.')
     }
-  }, [mediaState.micOn, phase, refreshParticipants])
+  }, [mediaState.micOn, refreshParticipants])
 
   const toggleScreenShare = useCallback(async () => {
     const call = callRef.current
@@ -247,7 +247,7 @@ export function useDailyCall({ roomUrl, userName, enabled, token = '' }) {
     } catch {
       /* ignore */
     }
-  }, [phase, mediaState.camOn, refreshParticipants])
+  }, [mediaState.camOn, refreshParticipants])
 
   const setMic = useCallback(async (deviceId) => {
     setSelectedDevices((s) => ({ ...s, micId: deviceId }))

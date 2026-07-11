@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CheckCircle2, Send } from 'lucide-react'
 
 const CATEGORIES = [
@@ -19,12 +19,14 @@ export default function SupportForm({ onSubmit, defaultCategory }) {
   })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [prevDefaultCategory, setPrevDefaultCategory] = useState(defaultCategory)
 
-  useEffect(() => {
+  if (defaultCategory !== prevDefaultCategory) {
+    setPrevDefaultCategory(defaultCategory)
     if (defaultCategory) {
       setForm((prev) => ({ ...prev, category: defaultCategory }))
     }
-  }, [defaultCategory])
+  }
 
   const validate = () => {
     const e = {}

@@ -26,8 +26,8 @@ export function useExerciseLibrary({
   includeDeferred = false,
   adminMode = false,
 } = {}) {
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState(initialSort)
+  const [page, setPageState] = useState(1)
+  const [sort, setSortState] = useState(initialSort)
   const [filters, setFilters] = useState({
     ...DEFAULT_FILTERS,
     excludeDeferred: !includeDeferred && !adminMode,
@@ -50,15 +50,33 @@ export function useExerciseLibrary({
     setLoading(false)
   }, [page, pageSize, sort, filters])
 
-  useEffect(() => { load() }, [load])
+  // setState yalnızca await sonrası — loading=true event handler'larda / initial state
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const res = await fetchExercisesPage({ page, pageSize, sort, filters })
+      if (cancelled) return
+      setItems(res.items)
+      setTotal(res.total)
+      setTotalPages(res.totalPages)
+      setError(res.error)
+      setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [page, pageSize, sort, filters])
 
   useEffect(() => {
-    fetchExerciseEquipmentOptions().then(setEquipmentOptions)
+    let cancelled = false
+    fetchExerciseEquipmentOptions().then((opts) => {
+      if (!cancelled) setEquipmentOptions(opts)
+    })
+    return () => { cancelled = true }
   }, [total])
 
   const patchFilters = useCallback((patch) => {
+    setLoading(true)
     setFilters((f) => ({ ...f, ...patch }))
-    setPage(1)
+    setPageState(1)
   }, [])
 
   const setSearch = useCallback((search) => patchFilters({ search }), [patchFilters])
@@ -67,6 +85,17 @@ export function useExerciseLibrary({
   const setEquipment = useCallback((equipment) => patchFilters({ equipment }), [patchFilters])
   const setLocation = useCallback((location) => patchFilters({ location }), [patchFilters])
   const setRequiresMachine = useCallback((requiresMachine) => patchFilters({ requiresMachine }), [patchFilters])
+
+  const setPage = useCallback((p) => {
+    setLoading(true)
+    setPageState(p)
+  }, [])
+
+  const setSort = useCallback((s) => {
+    setLoading(true)
+    setSortState(s)
+    setPageState(1)
+  }, [])
 
   const sortOptions = useMemo(() => EXERCISE_SORT_OPTIONS, [])
 
@@ -79,7 +108,7 @@ export function useExerciseLibrary({
     loading,
     error,
     sort,
-    setSort: (s) => { setSort(s); setPage(1) },
+    setSort,
     sortOptions,
     filters,
     setSearch,

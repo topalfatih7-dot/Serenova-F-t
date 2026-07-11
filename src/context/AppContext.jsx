@@ -40,7 +40,7 @@ export function AppProvider({ children }) {
   const location = useLocation()
   const authFastPath = isAuthFastPath(location.pathname)
   const [remoteDb, setRemoteDb] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => isSupabaseEnabled)
   const [syncing, setSyncing] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [chatThreads, setChatThreads] = useState([])
@@ -80,7 +80,6 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!isSupabaseEnabled) {
-      setLoading(false)
       return undefined
     }
     let active = true
@@ -167,8 +166,11 @@ export function AppProvider({ children }) {
     )
   }, [remoteDb])
 
-  useEffect(() => {
-    if (!isSupabaseEnabled || !remoteDb?.session) {
+  const hasChatSession = Boolean(isSupabaseEnabled && remoteDb?.session)
+  const [prevHasChatSession, setPrevHasChatSession] = useState(hasChatSession)
+  if (hasChatSession !== prevHasChatSession) {
+    setPrevHasChatSession(hasChatSession)
+    if (!hasChatSession) {
       setChatThreads([])
       setChatMessages({})
       setAdminStaffThreads([])
@@ -179,8 +181,11 @@ export function AppProvider({ children }) {
       chatThreadIdsRef.current = new Set()
       adminStaffThreadIdsRef.current = new Set()
       staffCollabThreadIdsRef.current = new Set()
-      return undefined
     }
+  }
+
+  useEffect(() => {
+    if (!hasChatSession) return undefined
     if (!chatHydrationKeyString) return undefined
     if (chatHydratedKey.current === chatHydrationKeyString) return undefined
 
@@ -225,7 +230,7 @@ export function AppProvider({ children }) {
       }
     })()
     return () => { active = false }
-  }, [chatHydrationKeyString])
+  }, [chatHydrationKeyString, hasChatSession])
 
   const chatUnreadCount = useMemo(() => {
     if (isStaff) {
@@ -265,12 +270,13 @@ export function AppProvider({ children }) {
   }, [isAdmin, db.staffApplications, db.corporateApplications, db.contactInquiries])
 
   const openSupportTicketsCount = useMemo(() => {
+    const memberId = currentMember?.id
     if (isAdmin) {
       return (db.tickets || []).filter((t) => t.status === 'open' || t.status === 'pending').length
     }
-    if (currentMember) {
+    if (memberId) {
       return (db.tickets || []).filter(
-        (t) => t.memberId === currentMember.id && (t.status === 'open' || t.status === 'pending'),
+        (t) => t.memberId === memberId && (t.status === 'open' || t.status === 'pending'),
       ).length
     }
     return 0
@@ -587,7 +593,7 @@ export function AppProvider({ children }) {
         })
       },
     })
-  }, [isSupabaseEnabled, sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
+  }, [sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -1108,15 +1114,17 @@ export function AppProvider({ children }) {
     return res
   }, [currentMember, reloadRemote])
 
-  const myPrograms = useMemo(
-    () => (currentMember ? (db.programs || []).filter((p) => p.memberId === currentMember.id) : []),
-    [currentMember?.id, db.programs],
-  )
+  const myPrograms = useMemo(() => {
+    const memberId = currentMember?.id
+    if (!memberId) return []
+    return (db.programs || []).filter((p) => p.memberId === memberId)
+  }, [currentMember?.id, db.programs])
 
-  const myTickets = useMemo(
-    () => (currentMember ? (db.tickets || []).filter((t) => t.memberId === currentMember.id) : []),
-    [currentMember?.id, db.tickets],
-  )
+  const myTickets = useMemo(() => {
+    const memberId = currentMember?.id
+    if (!memberId) return []
+    return (db.tickets || []).filter((t) => t.memberId === memberId)
+  }, [currentMember?.id, db.tickets])
 
   const platform = useMemo(() => ({
     members: db.members,
@@ -1293,6 +1301,7 @@ export function AppProvider({ children }) {
     myPrograms,
     myTickets,
     db.exercises,
+    db.exerciseCount,
     user,
     authUser,
     currentMember,

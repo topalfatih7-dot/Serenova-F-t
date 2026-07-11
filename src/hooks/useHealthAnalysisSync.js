@@ -37,11 +37,7 @@ export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, upd
       syncing.current = false
     })
   }, [
-    user?.id,
-    user?.healthTest,
-    user?.healthAnalysis,
-    user?.gender,
-    user?.packageConfig,
+    user,
     libraryCount,
     myPrograms,
     updateProfile,

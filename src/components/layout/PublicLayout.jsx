@@ -63,10 +63,11 @@ export default function PublicLayout() {
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
-
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
     setOpenDropdown(null)
-  }, [pathname])
+  }
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
 
   // Kayıt/ödeme akışı sırasında (Stripe'a yönlendirilmeden önce) gerçek bir üye satırı

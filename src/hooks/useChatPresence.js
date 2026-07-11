@@ -3,6 +3,8 @@ import { supabase } from '../services/supabaseClient'
 import { fetchPresenceForUsers } from '../services/presenceService'
 import { isUserOnline } from '../utils/presenceStatus'
 
+const EMPTY_PRESENCE = Object.freeze({})
+
 /**
  * Chat partner user_id → { lastSeenAt, online, role }
  */
@@ -14,12 +16,11 @@ export function useChatPresence(userIds = [], { includeAdmins = false } = {}) {
     [userIds],
   )
 
+  const tracking = Boolean(supabase && (idsKey || includeAdmins))
+
   useEffect(() => {
     const ids = idsKey ? idsKey.split(',') : []
-    if (!supabase || (!ids.length && !includeAdmins)) {
-      setPresenceMap({})
-      return undefined
-    }
+    if (!tracking) return undefined
 
     let active = true
 
@@ -73,19 +74,21 @@ export function useChatPresence(userIds = [], { includeAdmins = false } = {}) {
       clearInterval(poll)
       supabase.removeChannel(channel)
     }
-  }, [idsKey, includeAdmins])
+  }, [idsKey, includeAdmins, tracking])
+
+  const map = tracking ? presenceMap : EMPTY_PRESENCE
 
   const isOnline = (userId) => {
     if (!userId) return false
-    return presenceMap[userId]?.online ?? false
+    return map[userId]?.online ?? false
   }
 
-  const lastSeenAt = (userId) => presenceMap[userId]?.lastSeenAt ?? null
+  const lastSeenAt = (userId) => map[userId]?.lastSeenAt ?? null
 
   const anyAdminOnline = useMemo(
-    () => Object.values(presenceMap).some((p) => p.role === 'admin' && p.online),
-    [presenceMap],
+    () => Object.values(map).some((p) => p.role === 'admin' && p.online),
+    [map],
   )
 
-  return { presenceMap, isOnline, lastSeenAt, anyAdminOnline }
+  return { presenceMap: map, isOnline, lastSeenAt, anyAdminOnline }
 }

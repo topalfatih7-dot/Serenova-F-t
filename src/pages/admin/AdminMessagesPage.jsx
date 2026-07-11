@@ -18,6 +18,8 @@ import { downloadChatTranscriptPdf, mapMemberStaffMessagesForExport, mapStaffCol
 import { supabase } from '../../services/supabaseClient'
 import { staffRoleMeta } from '../../utils/staffRoles'
 
+const EMPTY_MSGS = Object.freeze([])
+
 function TabLink({ to, active, children }) {
   return (
     <Link
@@ -112,7 +114,10 @@ export default function AdminMessagesPage() {
     ? (threadId || (isWide ? filteredAudit[0]?.thread?.id : null))
     : null
   const activeAudit = filteredAudit.find(({ thread }) => thread.id === activeAuditId)
-  const auditMessages = activeAudit?.thread ? (chatMessages[activeAudit.thread.id] || []) : []
+  const auditMessages = useMemo(
+    () => (activeAudit?.thread ? (chatMessages[activeAudit.thread.id] || EMPTY_MSGS) : EMPTY_MSGS),
+    [activeAudit?.thread, chatMessages],
+  )
   const showAuditThread = Boolean(isAudit && activeAudit && (threadId || isWide))
 
   const collabThreads = useMemo(() => {
@@ -141,7 +146,10 @@ export default function AdminMessagesPage() {
     ? (threadId || (isWide ? filteredCollab[0]?.thread?.id : null))
     : null
   const activeCollab = filteredCollab.find(({ thread }) => thread.id === activeCollabId)
-  const collabMessages = activeCollab?.thread ? (staffCollabMessages[activeCollab.thread.id] || []) : []
+  const collabMessages = useMemo(
+    () => (activeCollab?.thread ? (staffCollabMessages[activeCollab.thread.id] || EMPTY_MSGS) : EMPTY_MSGS),
+    [activeCollab?.thread, staffCollabMessages],
+  )
   const showCollabThread = Boolean(isCollab && activeCollab && (threadId || isWide))
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Mail, Phone, ShieldCheck, Loader2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import PhoneField from '../ui/PhoneField'
@@ -38,6 +38,7 @@ export default function VerificationSection({
   const [emailCode, setEmailCode] = useState('')
   const [phoneCode, setPhoneCode] = useState('')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [prevUserPhone, setPrevUserPhone] = useState(user?.phone || '')
   const [countryIso, setCountryIso] = useState(DEFAULT_COUNTRY_ISO)
   const [emailStep, setEmailStep] = useState(false)
   const [showEmailCode, setShowEmailCode] = useState(false)
@@ -46,9 +47,11 @@ export default function VerificationSection({
   const [pendingPhone, setPendingPhone] = useState('')
   const [loading, setLoading] = useState(null)
 
-  useEffect(() => {
-    setPhone(user?.phone || '')
-  }, [user?.phone])
+  const serverPhone = user?.phone || ''
+  if (serverPhone !== prevUserPhone) {
+    setPrevUserPhone(serverPhone)
+    setPhone(serverPhone)
+  }
 
   const status = verificationStatus || {
     email: user?.email,

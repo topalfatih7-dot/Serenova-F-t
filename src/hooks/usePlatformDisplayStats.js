@@ -25,5 +25,5 @@ export function usePlatformDisplayStats() {
       showMemberPlus: members.showPlus,
       displayOnline: getDisplayOnlineCount(stats.onlineNow, sessionBoost),
     }
-  }, [stats])
+  }, [stats, sessionBoost])
 }

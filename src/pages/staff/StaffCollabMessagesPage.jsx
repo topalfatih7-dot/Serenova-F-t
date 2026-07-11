@@ -59,7 +59,8 @@ export default function StaffCollabMessagesPage() {
 
   const activeMemberId = memberIdParam || (isWide ? filtered[0]?.member?.id : null)
   const active = inboxItems.find(({ member }) => String(member.id) === String(activeMemberId))
-  const messages = activeThreadId ? (staffCollabMessages[activeThreadId] || []) : []
+  const effectiveThreadId = active?.member?.id ? activeThreadId : null
+  const messages = effectiveThreadId ? (staffCollabMessages[effectiveThreadId] || []) : []
   const showThread = Boolean(active?.member && (memberIdParam || isWide))
 
   const peerLabel = role === 'coach' ? 'Diyetisyen' : 'Koç'
@@ -73,7 +74,6 @@ export default function StaffCollabMessagesPage() {
 
   useEffect(() => {
     if (!active?.member?.id) {
-      setActiveThreadId(null)
       activeThreadRef.current = null
       return undefined
     }
@@ -95,7 +95,7 @@ export default function StaffCollabMessagesPage() {
       cancelled = true
       if (poll) clearInterval(poll)
     }
-  }, [active?.member?.id, active?.thread?.id, ensureStaffCollabThread, loadStaffCollabMessages, markStaffCollabThreadRead, role])
+  }, [active?.member?.id, active?.thread?.id, active?.member, active?.thread, ensureStaffCollabThread, loadStaffCollabMessages, markStaffCollabThreadRead, role])
 
   if (!isAllowedRole) {
     return <Navigate to="/staff" replace />

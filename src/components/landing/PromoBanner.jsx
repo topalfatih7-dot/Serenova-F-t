@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, ArrowRight, CreditCard } from 'lucide-react'
 
 const STORAGE_KEY = 'yf_promo_banner_dismissed'
 
-export default function PromoBanner() {
-  const [visible, setVisible] = useState(false)
+function readVisible() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== '1'
+  } catch {
+    return true
+  }
+}
 
-  useEffect(() => {
-    try {
-      setVisible(localStorage.getItem(STORAGE_KEY) !== '1')
-    } catch {
-      setVisible(true)
-    }
-  }, [])
+export default function PromoBanner() {
+  const [visible, setVisible] = useState(readVisible)
 
   const dismiss = () => {
     setVisible(false)

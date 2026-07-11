@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -73,20 +73,18 @@ export default function ProfilePage() {
     () => migrateLegacyToPackages(user).filter((p) => isPackageEntryActive(p)),
     [user]
   )
+  const preferredPkgId = useMemo(() => {
+    if (!activePackages.length) return null
+    return (activePackages.find((p) => p.planId === membership) || activePackages[0]).id
+  }, [activePackages, membership])
   const [selectedPkgId, setSelectedPkgId] = useState(null)
+  const effectivePkgId = (
+    selectedPkgId && activePackages.some((p) => p.id === selectedPkgId)
+      ? selectedPkgId
+      : preferredPkgId
+  )
 
-  useEffect(() => {
-    if (!activePackages.length) {
-      setSelectedPkgId(null)
-      return
-    }
-    if (!selectedPkgId || !activePackages.some((p) => p.id === selectedPkgId)) {
-      const preferred = activePackages.find((p) => p.planId === membership) || activePackages[0]
-      setSelectedPkgId(preferred.id)
-    }
-  }, [activePackages, membership, selectedPkgId])
-
-  const selectedPackage = activePackages.find((p) => p.id === selectedPkgId)
+  const selectedPackage = activePackages.find((p) => p.id === effectivePkgId)
   const selectedRemainingDays = selectedPackage?.expiresAt
     ? getRemainingDays(selectedPackage.expiresAt)
     : null
@@ -267,7 +265,7 @@ export default function ProfilePage() {
                 <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-violet-600/75">Aktif Paketler</p>
                 <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {activePackages.map((pkg) => {
-                    const isSelected = pkg.id === selectedPkgId
+                    const isSelected = pkg.id === effectivePkgId
                     const pkgDays = pkg.expiresAt ? getRemainingDays(pkg.expiresAt) : null
                     return (
                       <button
