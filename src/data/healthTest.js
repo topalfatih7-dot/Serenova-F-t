@@ -154,10 +154,14 @@ export function isQuestionAnswered(q, healthTest) {
   return isQuestionFullyAnswered(q, healthTest)
 }
 
-/** Yarım kalan testte soru indeksi ve onay fazını döndürür. */
+/** Yarım kalan testte soru indeksi ve onay fazını döndürür. Onay yoksa önce ack. */
 export function getHealthTestResumeState(healthTest, gender, packageConfig = null, opts = {}) {
   const questions = getApplicableQuestions(gender, packageConfig)
   if (!questions.length) return { questionIndex: 0, phase: 'questions' }
+
+  if (!opts.healthAck || !opts.disclaimer) {
+    return { questionIndex: 0, phase: 'ack' }
+  }
 
   const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
 
@@ -173,9 +177,6 @@ export function getHealthTestResumeState(healthTest, gender, packageConfig = nul
 
   const allPass = questions.every((q) => isQuestionAnswered(q, ht))
   if (allPass) {
-    if (!opts.healthAck || !opts.disclaimer) {
-      return { questionIndex: Math.max(0, questions.length - 1), phase: 'ack' }
-    }
     return { questionIndex: 0, phase: 'questions' }
   }
 

@@ -1967,4 +1967,58 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
   return { success: true, member: updated }
 }
 
+const MEMBERSHIP_STATUS_ACTIONS = new Set(['active', 'paused', 'cancelled'])
+
+/**
+ * Admin-only: üyelik durumunu dondur / iptal / yeniden aktifleştir.
+ * Üye paneline talep UI’si yok — yalnızca operasyon.
+ */
+export async function adminSetMembershipStatus(memberId, { status, note = '', pauseUntil = null } = {}) {
+  if (!MEMBERSHIP_STATUS_ACTIONS.has(status)) {
+    return { success: false, error: 'Geçersiz üyelik durumu.' }
+  }
+
+  const { data: memberRows } = await supabase.from('members').select('*').eq('id', memberId).limit(1)
+  const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
+  if (!member) return { success: false, error: 'Üye bulunamadı.' }
+
+  const prev = member.membershipStatus || 'active'
+  if (prev === status && !note && status !== 'paused') {
+    return { success: true, member, unchanged: true }
+  }
+
+  let draft = {
+    ...member,
+    membershipStatusNote: String(note || '').trim() || null,
+    membershipStatusChangedAt: nowISO(),
+    pauseUntil: status === 'paused' && pauseUntil ? String(pauseUntil) : null,
+  }
+
+  if (status === 'paused' || status === 'cancelled') {
+    draft.membershipStatus = status
+    draft = syncMembershipExpiryStatus(draft)
+    draft.membershipStatus = status
+  } else {
+    draft.membershipStatus = 'active'
+    draft.pauseUntil = null
+    draft = syncMembershipExpiryStatus(draft)
+  }
+
+  await upsertMember(draft)
+
+  const labels = {
+    active: 'yeniden aktifleştirildi',
+    paused: 'donduruldu',
+    cancelled: 'iptal edildi',
+  }
+  const noteSuffix = draft.membershipStatusNote ? ` — ${draft.membershipStatusNote}` : ''
+  await addActivity(
+    'admin_membership_status',
+    `${draft.name} üyeliği ${labels[status]}${noteSuffix}`,
+    draft.id,
+  )
+
+  return { success: true, member: draft }
+}
+
 export async function deleteRowGeneric() { /* reserved */ }

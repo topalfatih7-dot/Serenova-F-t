@@ -191,11 +191,12 @@ export function syncMemberPackages(member) {
 
   let membership = active.length ? primary : 'free'
   let membershipStatus = member.membershipStatus || 'active'
+  const adminHeld = membershipStatus === 'paused' || membershipStatus === 'cancelled'
 
   if (!active.length && isPaidMembership(member.membership)) {
     membership = 'free'
-    membershipStatus = 'active'
-  } else if (latestExpiry) {
+    if (!adminHeld) membershipStatus = 'active'
+  } else if (latestExpiry && !adminHeld) {
     const remaining = Math.ceil((new Date(latestExpiry) - new Date(now)) / (1000 * 60 * 60 * 24))
     if (remaining <= 0) {
       membership = active.length ? primary : 'free'
@@ -204,6 +205,8 @@ export function syncMemberPackages(member) {
     } else if (membershipStatus === 'expiring') {
       membershipStatus = 'active'
     }
+  } else if (adminHeld) {
+    membershipStatus = member.membershipStatus
   }
 
   const synced = {

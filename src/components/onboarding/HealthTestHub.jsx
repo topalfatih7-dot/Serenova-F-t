@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, Moon, Clock3,
   CheckCircle2, Circle, ArrowRight, Sparkles,
 } from 'lucide-react'
+import HealthTestConsentForm from './HealthTestConsentForm'
 import {
   HEALTH_AUDIENCE_META,
   getHealthTestHubSections,
@@ -41,17 +43,46 @@ export default function HealthTestHub({
   healthTest,
   healthAck,
   disclaimer,
+  healthAnalysis = null,
+  onConsentSave,
+  consentSaving = false,
 }) {
+  const [localAck, setLocalAck] = useState(!!healthAck)
+  const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
+  const [showErrors, setShowErrors] = useState(false)
+
   const sections = getHealthTestHubSections(gender, packageConfig, healthTest)
   const overall = getOverallHealthTestProgress(healthTest, gender, packageConfig)
   const allSectionsDone = sections.every(({ progress }) => progress.complete)
-  const needsAck = allSectionsDone && (!healthAck || !disclaimer)
+  const needsConsent = !healthAck || !disclaimer
   const fullyComplete = isHealthTestComplete(healthTest, gender, packageConfig)
     && healthAck && disclaimer
+  const needsSync = allSectionsDone && healthAck && disclaimer && !healthAnalysis
+
+  const handleConsentSubmit = () => {
+    if (!localAck || !localDisclaimer) {
+      setShowErrors(true)
+      return
+    }
+    onConsentSave?.({ healthAck: localAck, disclaimer: localDisclaimer })
+  }
+
+  if (needsConsent) {
+    return (
+      <HealthTestConsentForm
+        healthAck={localAck}
+        disclaimer={localDisclaimer}
+        onHealthAckChange={setLocalAck}
+        onDisclaimerChange={setLocalDisclaimer}
+        onSubmit={handleConsentSubmit}
+        submitting={consentSaving}
+        showErrors={showErrors}
+      />
+    )
+  }
 
   return (
     <div className="w-full space-y-6">
-      {/* Genel ilerleme */}
       <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -75,7 +106,7 @@ export default function HealthTestHub({
         </div>
       </div>
 
-      {needsAck && (
+      {needsSync && (
         <Link
           to="/health-test/finish"
           className="flex items-center justify-between gap-4 rounded-2xl border border-brand-300 bg-gradient-to-r from-brand-50 to-sage-50 p-4 shadow-sm transition hover:border-brand-400 hover:shadow-md"
@@ -85,15 +116,15 @@ export default function HealthTestHub({
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-semibold text-cream-900">Son adım kaldı</p>
-              <p className="text-sm text-cream-800/65">Tüm testler tamam — onayları işaretleyip profilinizi kaydedin.</p>
+              <p className="font-semibold text-cream-900">Testler tamam — profili kaydedin</p>
+              <p className="text-sm text-cream-800/65">Kişisel programlarınızı hazırlamak için son adıma geçin.</p>
             </div>
           </div>
           <ArrowRight className="h-5 w-5 shrink-0 text-brand-600" />
         </Link>
       )}
 
-      {fullyComplete && (
+      {fullyComplete && healthAnalysis && (
         <div className="rounded-2xl border border-sage-200 bg-sage-50/60 px-4 py-3 text-sm text-sage-900">
           <span className="flex items-center gap-2 font-semibold">
             <CheckCircle2 className="h-4 w-4 text-sage-600" />
@@ -103,7 +134,6 @@ export default function HealthTestHub({
         </div>
       )}
 
-      {/* Kategori kartları — mobil 1, tablet 3, masaüstü 4 sütun */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
         {sections.map(({ section, progress }) => {
           const Icon = ICONS[section.icon] || HeartPulse

@@ -767,6 +767,12 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
+  const adminSetMembershipStatus = useCallback(async (memberId, options) => {
+    const r = await sb.adminSetMembershipStatus(memberId, options)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
   const addStaff = useCallback(async (data) => {
     const r = await sb.addStaff(data)
     if (r.success) await reloadRemote()
@@ -1226,6 +1232,7 @@ export function AppProvider({ children }) {
     adminPatchMember,
     staffPatchMember,
     adminUpdatePremium,
+    adminSetMembershipStatus,
     createProgram,
     addPost,
     editPost,
@@ -1347,6 +1354,7 @@ export function AppProvider({ children }) {
     adminPatchMember,
     staffPatchMember,
     adminUpdatePremium,
+    adminSetMembershipStatus,
     createProgram,
     addPost,
     editPost,

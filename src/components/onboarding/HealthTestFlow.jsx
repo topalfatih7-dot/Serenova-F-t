@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Loader2 } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import HealthTestStep from './HealthTestStep'
-import DisclaimerBox from '../ui/DisclaimerBox'
+import HealthTestConsentForm from './HealthTestConsentForm'
 import {
   EMPTY_HEALTH_TEST,
   getApplicableQuestions,
@@ -117,17 +117,15 @@ export default function HealthTestFlow({
 
   const updateHealthTest = (patch) => setHealthTest((prev) => ({ ...prev, ...patch }))
 
-  const handleComplete = () => {
-    if (!healthAck || !disclaimer) {
-      setShowErrors(true)
-      return
-    }
-    onComplete?.({ healthTest, healthAck, disclaimer })
-  }
-
   const goNext = () => {
     if (phase === 'ack') {
-      handleComplete()
+      if (!healthAck || !disclaimer) {
+        setShowErrors(true)
+        return
+      }
+      setShowErrors(false)
+      setPhase('questions')
+      setQuestionIndex(0)
       return
     }
     if (!isQuestionAnswered(currentQuestion, healthTest)) {
@@ -149,30 +147,43 @@ export default function HealthTestFlow({
       onSectionComplete?.({ healthTest, sectionId })
       return
     }
-    setPhase('ack')
+    onComplete?.({ healthTest, healthAck, disclaimer })
   }
 
   const goBack = () => {
     setShowErrors(false)
-    if (phase === 'ack') {
-      setPhase('questions')
+    if (phase === 'questions' && questionIndex === 0 && !sectionMode) {
+      setPhase('ack')
       return
     }
+    if (phase === 'ack') return
     if (questionIndex > 0) setQuestionIndex((i) => i - 1)
   }
 
   if (!open) return null
 
   const nextLabel = phase === 'ack'
-    ? (saving ? 'Kaydediliyor…' : 'Tamamla')
+    ? 'Onayla ve başla'
     : lastQuestion
-      ? (sectionMode ? (saving ? 'Kaydediliyor…' : 'Testi Bitir') : 'Onaya Geç')
+      ? (sectionMode ? (saving ? 'Kaydediliyor…' : 'Testi Bitir') : (saving ? 'Kaydediliyor…' : 'Tamamla'))
       : 'İleri'
 
   const body = (
         <div className={layout === 'page' ? '' : 'p-4 sm:p-6'}>
           <AnimatePresence mode="wait">
-            {phase === 'questions' ? (
+            {phase === 'ack' ? (
+              <motion.div key="ack" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+                <HealthTestConsentForm
+                  healthAck={healthAck}
+                  disclaimer={disclaimer}
+                  onHealthAckChange={setHealthAck}
+                  onDisclaimerChange={setDisclaimer}
+                  showErrors={showErrors}
+                  title="Başlamadan önce"
+                  subtitle="Güvenliğiniz için lütfen aşağıdaki onayları işaretleyin."
+                />
+              </motion.div>
+            ) : (
               <motion.div key={`q-${questionIndex}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
                 <HealthTestStep
                   question={currentQuestion}
@@ -184,35 +195,6 @@ export default function HealthTestFlow({
                   showErrors={showErrors}
                 />
               </motion.div>
-            ) : (
-              <motion.div key="ack" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} className="mx-auto max-w-lg space-y-4">
-                <h3 className="font-display text-xl font-bold text-cream-900">Son bir adım</h3>
-                <p className="text-sm text-cream-800/65">Güvenliğiniz için lütfen aşağıdaki onayları işaretleyin.</p>
-                <DisclaimerBox variant="prominent" />
-                {[
-                  { key: 'healthAck', checked: healthAck, set: setHealthAck, text: 'Sağlık durumumu doğru bildirdim ve gerekli durumlarda doktoruma danıştım.' },
-                  { key: 'disclaimer', checked: disclaimer, set: setDisclaimer, text: 'Bu hizmetin tıbbi teşhis veya tedavi olmadığını kabul ediyorum.' },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => item.set(!item.checked)}
-                    className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition ${
-                      item.checked ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-200' : 'border-cream-200 bg-white'
-                    }`}
-                  >
-                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${
-                      item.checked ? 'border-brand-500 bg-brand-500 text-white' : 'border-cream-300'
-                    }`}>
-                      {item.checked && <Check className="h-3 w-3" strokeWidth={3} />}
-                    </span>
-                    <span className="text-sm leading-snug text-cream-800/80">{item.text}</span>
-                  </button>
-                ))}
-                {showErrors && (!healthAck || !disclaimer) && (
-                  <p className="text-xs font-medium text-red-600">Lütfen tüm onayları işaretleyin.</p>
-                )}
-              </motion.div>
             )}
           </AnimatePresence>
 
@@ -220,7 +202,7 @@ export default function HealthTestFlow({
             <button
               type="button"
               onClick={goBack}
-              disabled={phase === 'questions' && questionIndex === 0}
+              disabled={(phase === 'questions' && questionIndex === 0 && sectionMode) || phase === 'ack'}
               className="text-sm font-medium text-cream-800 disabled:opacity-30"
             >
               Geri

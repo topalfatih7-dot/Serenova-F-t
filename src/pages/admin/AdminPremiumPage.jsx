@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
+import AdminMembershipStatusPanel from '../../components/admin/AdminMembershipStatusPanel'
 import {
   isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor,
   memberNeedsStaffAssignment, PLAN_IDS, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
@@ -20,11 +21,15 @@ import { fetchMemberSessions } from '../../services/supabaseDb'
 const STATUS_STYLES = {
   active: 'bg-sage-50 text-sage-700 ring-sage-200',
   expiring: 'bg-orange-50 text-orange-700 ring-orange-200',
+  paused: 'bg-sky-50 text-sky-700 ring-sky-200',
+  cancelled: 'bg-red-50 text-red-700 ring-red-200',
 }
 
 const STATUS_LABELS = {
   active: 'Aktif',
   expiring: 'Sona Eriyor',
+  paused: 'Donduruldu',
+  cancelled: 'İptal',
 }
 
 function PremiumMemberCard({ member, staffName, onEdit }) {
@@ -144,7 +149,7 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
   )
 }
 
-function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
+function EditPremiumModal({ member, staff, members, onClose, onSave, onStatusChange, busy }) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
   const doctors = staff.filter((s) => s.role === 'doctor' && s.active !== false)
@@ -243,6 +248,14 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
             </div>
           )}
         </div>
+
+        <AdminMembershipStatusPanel
+          key={`${member.id}-${member.membershipStatus}-${member.membershipStatusChangedAt || ''}`}
+          member={member}
+          busy={busy}
+          compact
+          onSubmit={onStatusChange}
+        />
 
         {/* Paket & süre */}
         <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
@@ -429,7 +442,7 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, busy }) {
 }
 
 export default function AdminPremiumPage() {
-  const { platform, adminUpdatePremium } = useApp()
+  const { platform, adminUpdatePremium, adminSetMembershipStatus } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -455,6 +468,8 @@ export default function AdminPremiumPage() {
           return r != null && r > 0 && r <= 7
         }
         if (filter === 'active') return m.membershipStatus === 'active'
+        if (filter === 'paused') return m.membershipStatus === 'paused'
+        if (filter === 'cancelled') return m.membershipStatus === 'cancelled'
         if (filter === 'premium') return isPaidMembership(m.membership)
         return true
       })
@@ -490,6 +505,23 @@ export default function AdminPremiumPage() {
       } else {
         toast(r.error || 'Kaydedilemedi', 'error')
       }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleStatusChange = async ({ status, note, pauseUntil }) => {
+    if (!selected) return
+    setBusy(true)
+    try {
+      const r = await adminSetMembershipStatus(selected.id, { status, note, pauseUntil })
+      if (!r?.success) {
+        toast(r?.error || 'Durum güncellenemedi', 'error')
+        return
+      }
+      const labels = { active: 'Aktifleştirildi', paused: 'Donduruldu', cancelled: 'İptal edildi' }
+      toast(labels[status] || 'Durum güncellendi', 'success')
+      if (r.member) setSelected(r.member)
     } finally {
       setBusy(false)
     }
@@ -542,6 +574,8 @@ export default function AdminPremiumPage() {
           <option value="premium">Premium (ücretli)</option>
           <option value="free">Ücretsiz (Basic)</option>
           <option value="active">Aktif</option>
+          <option value="paused">Donduruldu</option>
+          <option value="cancelled">İptal</option>
           <option value="unassigned">Atama eksik</option>
           <option value="expiring">7 gün içinde biten</option>
         </select>
@@ -567,6 +601,7 @@ export default function AdminPremiumPage() {
         members={members}
         onClose={() => setSelected(null)}
         onSave={handleSave}
+        onStatusChange={handleStatusChange}
         busy={busy}
       />
     </div>

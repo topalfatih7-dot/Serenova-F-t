@@ -21,7 +21,7 @@
 | Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` **private** + **15 dk** imzalı URL |
 | Egzersiz kapak / oynatma | ✅ | Statik webp + prefetch + **§1.1 encode** + client-first imza + 15 dk TTL (§68/§70); player (§69) |
 | Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
-| Sağlık testi akışı | ✅ | Hub `/health-test` · kategori `/health-test/:sectionId` · onay `/health-test/finish`; grid 2/3/4 sütun |
+| Sağlık testi akışı | ✅ | Hub `/health-test` (önce onay) · kategori `/health-test/:sectionId` · kayıt `/health-test/finish`; grid 2/3/4 sütun |
 | Hareket kütüphanesi filtreleri | ✅ | Konum + makine (`locations`, `requires_machine`); sıralama UI kaldırıldı (varsayılan A→Z) |
 | Programlarım antrenman UI | ✅ | `ExerciseVideoThumbnail` — satırda **statik webp** kapak (sol); tık → modal |
 | Takvim antrenman detayı | ✅ | `ExerciseDetailModal` (thumbnail tık); `İzle` inline video; satırda açıklama yok |
@@ -30,7 +30,7 @@
 | Ekip mesajları etiketleme | ✅ | Personel adı birincil; alt başlık `Danışan adına: …` |
 | Üye navigasyon | ✅ | `memberNav.js` — Sağlık Testi `/health-test`, Randevular `/schedule?tab=` |
 | Üye paneli görselleri | ✅ | `src/utils/panelImages.js` (Unsplash CDN); `PanelPageHeader` `image` prop + `.panel-page-header-photo` (`index.css`); Dashboard `.welcome-banner-photo`; takvim, sağlık, program, mesaj vb. sayfa başlıkları |
-| Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList`; xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; sepette **video/thumbnail yok**; `CoachProgramSendModal` adımlı gönderim |
+| Koç program akışı UI | ✅ | `StaffClientProgramPage` — mobile-first **Program Akışı**: `CartEntryCard` + `CartList` (+ `ExerciseVideoThumbnail`); xl sticky aside; mobil alt bar + `Modal` sheet; sıralama okları; `CoachProgramSendModal` adımlı gönderim |
 | Kütüphane mobil filtre | ✅ | `ExerciseLibraryPage` — `sm` altında arama+filtre paneli kapalı; başlığa dokunarak açılır; aktif filtre sayacı |
 | Kadro public gizlilik | ✅ | `/team/*` sayfalarında e-posta, telefon ve sosyal medya **gösterilmez**; yalnızca çalışma saatleri (varsa) · JSON-LD `sameAs` yok |
 | Günün ipucu (AI) | ✅ | `api/ai-blog-generate?task=daily-tip` + cron 04:00 · `site_content` cache · `useDailyTip` |
@@ -1518,12 +1518,12 @@ vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/a
 - Üye menüsü → `/health-test` (`HealthTestPage` → `HealthTestHub`)
 - Tamamlanmamışsa menüde amber `!` badge (`memberNav.js`)
 
-**Hub modeli (2026-07):** Tek uzun akış yerine kategori bazlı tamamlama:
+**Hub modeli (2026-07; onay sırası 2026-07-11):** Onaylar testlerden **önce**; kategori bazlı tamamlama; sonda yalnızca profil sync:
 | Rota | Dosya | İşlev |
 |------|-------|-------|
-| `/health-test` | `HealthTestPage.jsx` → `HealthTestHub.jsx` | Toplam ilerleme + kategori kartları |
-| `/health-test/:sectionId` | `HealthTestSectionPage.jsx` → `HealthTestFlow` (`sectionId` modu) | Tek bölüm soruları |
-| `/health-test/finish` | `HealthTestFinishPage.jsx` | Tüm bölümler bitince onay + disclaimer |
+| `/health-test` | `HealthTestPage.jsx` → `HealthTestHub.jsx` + `HealthTestConsentForm` | Önce `healthAck`/`disclaimer`; sonra ilerleme + kategori kartları |
+| `/health-test/:sectionId` | `HealthTestSectionPage.jsx` → `HealthTestFlow` (`sectionId` modu) | Tek bölüm soruları (onaysız erişim yok) |
+| `/health-test/finish` | `HealthTestFinishPage.jsx` | Bölümler bitince `syncMemberHealthAssets` (onay yok) |
 
 **Hub grid (responsive):** mobil **2**, tablet (`md`) **3**, masaüstü (`lg`) **4** sütun — `max-w-3xl` kaldırıldı, tam genişlik.
 
@@ -2260,7 +2260,7 @@ Yardımcılar (`programSchedule.js`):
 | Ödeme Yönetimi UI | Mock (`mockPayments.js`); Stripe sonraki aşama |
 | Şifre sıfırlama | ✅ §34 — `ForgotPasswordPage` + `ResetPasswordPage` + `/auth/callback` |
 | E-posta/telefon doğrulama | ✅ E-posta profilden (bağlantı); telefon şimdilik kapalı (`VITE_PHONE_VERIFY_ENABLED=false`) |
-| Üyelik talepleri (üye UI) | API var, arayüz henüz yok |
+| Üyelik talepleri (üye UI) | ❌ Bilinçli yok — dondur/iptal yalnızca admin (`AdminMembershipStatusPanel`) |
 
 ### İlgili dosya envanteri (yeni)
 
@@ -2283,7 +2283,7 @@ Yardımcılar (`programSchedule.js`):
 
 1. Stripe → `PaymentManagementPage` gerçek `payments` tablosu
 2. ~~`ForgotPasswordPage` → `supabase.auth.resetPasswordForEmail`~~ ✅ §34
-3. Üye panelinde `membership_requests` oluşturma UI (dondur/iptal)
+3. ~~Üye panelinde `membership_requests` oluşturma UI (dondur/iptal)~~ → **Yok** (pazarlama kuralı). Admin: Üyeler + Premium Yönetimi → `AdminMembershipStatusPanel` (`paused` / `cancelled` / aktifleştir)
 4. ~~`setup.sql` birleştirme~~ ✅ (2026-06-24)
 5. **Twilio SMS** → §34.5 (telefon şimdilik kapalı; Twilio hazır olunca `VITE_PHONE_VERIFY_ENABLED=true`)
 
@@ -2769,7 +2769,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/schedule` | `AppointmentsPage.jsx` | Birleşik randevular `?tab=coach\|dietitian\|doctor` | `user.*Sessions` |
 | `/health-test` | `HealthTestPage.jsx` | Sağlık testi hub — kategori kartları, toplam ilerleme | `healthTest.js`, `HealthTestHub` |
 | `/health-test/:sectionId` | `HealthTestSectionPage.jsx` | Tek test bölümü | `HealthTestFlow` |
-| `/health-test/finish` | `HealthTestFinishPage.jsx` | Onay + disclaimer | `healthAck`, `disclaimer` |
+| `/health-test/finish` | `HealthTestFinishPage.jsx` | Profil sync (onaylar hub’da) | `healthAnalysis` |
 | `/programs` | `ProgramsPage.jsx` | Antrenman/beslenme; `entries[]` tıklanabilir video; `ExerciseVideoThumbnail` | `programs` |
 | `/library` | `ExerciseLibraryPage.jsx` | Filtre accordion; **program satırı thumbnail**; `ExerciseDetailModal` | `exercises`, `useExerciseLibrary` |
 | `/calorie` | `CalorieCalculatorPage.jsx` | Chat-first kalori hesaplama; paket bazlı fotoğraflı erişim | `ai-food-text`, `ai-food-vision` API |
@@ -2786,7 +2786,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `/staff` | `staff/StaffOverviewPage.jsx` | her ikisi | Danışan sayısı, yaklaşan randevular, `StaffVideoPanel` |
 | `/staff/profile` | `staff/StaffSelfProfilePage.jsx` | her ikisi | Personel profil düzenleme (`StaffProfileEditor`); şifre değişimi mevcut şifre ile |
 | `/staff/clients` | `staff/StaffClientsPage.jsx` | her ikisi | Danışan listesi, program/liste oluşturma, randevu yönetimi |
-| `/staff/clients/:memberId/program` | `staff/StaffClientProgramPage.jsx` | koç | Hareket sepeti: `CartEntryCard` / `CartList`; xl aside; mobil alt bar + sheet; sepette video yok |
+| `/staff/clients/:memberId/program` | `staff/StaffClientProgramPage.jsx` | koç | Hareket sepeti: `CartEntryCard` / `CartList` (+ `ExerciseVideoThumbnail`); xl aside; mobil alt bar + sheet |
 | `/staff/clients/:memberId/health` | `shared/MemberHealthProfilePage.jsx` | her ikisi | Sağlık testi cevapları + klinik notlar (**`healthAnalysis` yok**) |
 | `/staff/collab-messages` | `staff/StaffCollabMessagesPage.jsx` | koç, diyetisyen | Ekip içi mesaj; inbox: peer adı büyük, `Danışan adına: …` alt satır |
 | `/staff/programs` | `staff/StaffProgramsPage.jsx` | koç | Antrenman programları; diyetisyen → `/staff/lists` redirect |
@@ -4166,12 +4166,12 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **Dashboard hero** | `.welcome-banner-photo` — foto arka plan; **AI günün ipucu** (`?task=daily-tip`, cron 04:00); son 3 blog kartı | `DashboardPage.jsx`, `useDailyTip.js`, `index.css` (`.welcome-banner*`) |
 | **Sayfa başlık fotoğrafları** | Takvim, sağlık testi, programlar, kalori, mesaj, bildirim, destek, randevu sekmeleri | `CalendarPage.jsx`, `HealthTest*.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`, `MessagesPage.jsx`, `NotificationsPage.jsx`, `SupportPage.jsx`, `MemberScheduleView.jsx` |
 | **Profil kapak (responsive)** | Mobil: yoga (`profileCover`, `object-[50%_18%]`); `sm+`: salon antrenmanı (`profileCoverDesktop`, opacity-80) | `ProfilePage.jsx`, `panelImages.js` |
-| **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; sepette **video thumbnail/oynatma yok**; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
+| **Koç Program Akışı** | Mobile-first sepet: `CartEntryCard` (statik webp thumbnail, numara, tekrar/süre stepper, not, sıralama okları); `CartList` boş durum; xl sticky aside; mobil sabit alt bar + `Modal` sheet; kütüphane kartlarında kapak görseli; `moveCartItem`, `openSend`, `CYCLE_PLAN_LENGTH` import | `StaffClientProgramPage.jsx` |
 | **Kütüphane mobil UX** | `filtersOpen` state — `sm` altında arama+filtre paneli kapalı; başlık satırına dokunarak açılır; `activeFilterCount` özeti | `ExerciseLibraryPage.jsx` |
 
 **Teknik notlar (AI için):**
 - `PanelPageHeader` `image={{ url, alt? }}` — foto yalnızca `url` varsa render; mobilde daha geniş/soluk (CSS `@media max-width 639px`).
-- `StaffClientProgramPage` kütüphane kartlarında video izleme devam eder; yalnızca Program Akışı sepetinde kaldırıldı.
+- `StaffClientProgramPage` kütüphane + Program Akışı sepetinde `ExerciseVideoThumbnail` (statik `exercise-thumbs` webp; sepette oynatma yok — tık → modal önizleme).
 - Kütüphane filtre accordion: `hidden sm:flex` + mobil toggle; tablet/desktop'ta her zaman açık.
 
 **Rota:** `/staff/clients/:memberId/program` → `StaffClientProgramPage` (koç only; diyetisyen redirect yok — sayfa içi `Navigate`).
@@ -4262,7 +4262,7 @@ Mobil hamburger (`menuOpen`) etkilenmez.
 |-----|------------|------------------|
 | **1** | Public `exercise-thumbs` bucket; path = video path → `.webp`; `getExerciseThumbUrl()`; `ExerciseVideoThumbnail` yalnızca lazy `<img>` | Migration `20260710_exercise_thumbs_bucket.sql`; `supabaseDb.js`; `ExerciseVideoThumbnail.jsx`; `npm run thumbs:generate` |
 | **1** | Toplu + import-time thumb | `scripts/generate-exercise-thumbs.mjs`; `import-exercises.mjs` upload; `scripts/lib/ffmpeg-bin.mjs` |
-| **2** | Player: poster anında, URL yokken `preload="none"`; kart prefetch | `VideoPlayer.jsx`; `ExerciseLibraryPage` / `ProgramsPage` / `CalendarPage` (`pointerenter`/`down`/`focus`) |
+| **2** | Player: poster anında, URL yokken `preload="none"`; kart prefetch | `VideoPlayer.jsx`; `ExerciseLibraryPage` / `ProgramsPage` / `CalendarPage` / `StaffClientProgramPage` (`pointerenter`/`down`/`focus`) |
 | **2** | MP4 `-movflags +faststart` + §1.1 encode | `scripts/faststart-exercise-videos.mjs`; `compress-exercise-videos.mjs`; import upload encode; `npm run videos:compress` |
 | **3** | Signed URL **15 dk**; cache TTL 13 dk / margin 2 dk; sağ tık engeli | `api/auth.js` `EXERCISE_VIDEO_EXPIRES`; `exerciseVideoUrlCache.js`; `createSignedUrl(..., 900)`; `VideoWatermarkFrame` + thumb `onContextMenu` |
 | **Temizlik** | Thumbnail video slot kaldırıldı | `exerciseVideoLoadQueue.js` yalnızca URL slot; `.cursor/rules/exercise-import.mdc` güncellendi |

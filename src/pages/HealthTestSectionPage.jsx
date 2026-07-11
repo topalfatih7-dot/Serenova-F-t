@@ -41,8 +41,8 @@ export default function HealthTestSectionPage() {
     try {
       await saveHealthTestProgress(healthTest)
       const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig)
-      if (allSectionsDone && (!user.healthAck || !user.disclaimer)) {
-        toast(`${section.title} tamamlandı. Son adım için onayları işaretleyin.`, 'success')
+      if (allSectionsDone) {
+        toast(`${section.title} tamamlandı. Profilinizi kaydetmek için son adıma geçin.`, 'success')
         navigate('/health-test/finish')
       } else {
         toast(`${section.title} testi kaydedildi.`, 'success')
@@ -54,6 +54,10 @@ export default function HealthTestSectionPage() {
   }, [saveHealthTestProgress, user, packageConfig, section, toast, navigate])
 
   if (!user?.id) return <Navigate to="/login" replace />
+
+  if (!user.healthAck || !user.disclaimer) {
+    return <Navigate to="/health-test" replace />
+  }
 
   if (!section) return <Navigate to="/health-test" replace />
 

@@ -27,10 +27,14 @@ const BADGE_CONFIG = {
 const statusColors = {
   active: 'bg-sage-50 text-sage-700 border-sage-200',
   expiring: 'bg-orange-50 text-orange-700 border-orange-200',
+  paused: 'bg-cream-100 text-cream-700 border-cream-200',
+  cancelled: 'bg-cream-100 text-cream-700 border-cream-200',
 }
 
 const statusLabels = {
   expiring: 'Sona Eriyor',
+  paused: 'Pasif',
+  cancelled: 'Pasif',
 }
 
 export default function MembershipBadge({ tier, status }) {

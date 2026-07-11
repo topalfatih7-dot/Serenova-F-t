@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Dumbbell, Plus, Check, Trash2, Video, Send, ShoppingBag, Loader2, PlayCircle,
+  ArrowLeft, Dumbbell, Plus, Check, Trash2, Send, ShoppingBag, Loader2, PlayCircle,
   ChevronUp, ChevronDown, Minus, ListChecks,
 } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import VideoPlayer from '../../components/ui/VideoPlayer'
+import ExerciseVideoThumbnail from '../../components/library/ExerciseVideoThumbnail'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useExerciseLibrary } from '../../hooks/useExerciseLibrary'
@@ -36,6 +37,7 @@ function createCartEntry(ex) {
     exerciseId: ex.id,
     exerciseName: ex.name,
     videoUrl: ex.videoUrl || '',
+    videoPending: Boolean(ex.videoPending),
     description: ex.description || '',
     amountType: 'reps',
     amount: 12,
@@ -44,125 +46,150 @@ function createCartEntry(ex) {
   }
 }
 
-/** Program Akışı — tek hareket satırı (mobile-first dokunmatik kontroller) */
-function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMove }) {
-  const iconBtn = 'flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 sm:h-8 sm:w-8'
+/** Program Akışı — tek hareket satırı (thumbnail + dokunmatik kontroller) */
+function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMove, onPreview }) {
+  const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-95 sm:h-8 sm:w-8'
+  const hasVideo = Boolean(entry.videoUrl || entry.videoPending)
   return (
-    <div className="rounded-2xl border border-cream-100 bg-white p-3 shadow-sm">
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-[11px] font-bold text-white shadow-sm">
-          {index + 1}
-        </span>
-        <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-cream-900">{entry.exerciseName}</p>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => onMove(entry.id, -1)}
-            disabled={isFirst}
-            className={`${iconBtn} text-cream-800/45 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
-            aria-label="Yukarı taşı"
-          >
-            <ChevronUp className="h-4.5 w-4.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove(entry.id, 1)}
-            disabled={isLast}
-            className={`${iconBtn} text-cream-800/45 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
-            aria-label="Aşağı taşı"
-          >
-            <ChevronDown className="h-4.5 w-4.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onRemove(entry.id)}
-            className={`${iconBtn} text-red-400 hover:bg-red-50 hover:text-red-600`}
-            aria-label="Hareketi çıkar"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-xl bg-cream-100 p-0.5" role="group" aria-label="Miktar tipi">
-          {[
-            { id: 'reps', label: 'Tekrar' },
-            { id: 'duration', label: 'Süre' },
-          ].map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => onPatch(entry.id, { amountType: m.id })}
-              className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition sm:py-1.5 ${
-                entry.amountType === m.id ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/55'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="ml-auto flex items-center overflow-hidden rounded-xl border border-cream-200 bg-white">
-          <button
-            type="button"
-            onClick={() => onPatch(entry.id, { amount: Math.max(1, (Number(entry.amount) || 1) - 1) })}
-            className="flex h-10 w-10 items-center justify-center text-cream-800/60 transition hover:bg-cream-50 active:scale-95 sm:h-8 sm:w-8"
-            aria-label="Azalt"
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </button>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={entry.amount}
-            onChange={(ev) => onPatch(entry.id, { amount: Number(ev.target.value) || 1 })}
-            aria-label="Miktar"
-            className="h-10 w-12 border-x border-cream-100 bg-white text-center text-base font-bold text-cream-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:h-8 sm:text-sm"
+    <div className="overflow-hidden rounded-2xl border border-cream-100/90 bg-gradient-to-br from-white to-cream-50/40 shadow-sm ring-1 ring-cream-100/60">
+      <div className="flex gap-3 p-3">
+        <button
+          type="button"
+          disabled={!hasVideo}
+          onClick={() => hasVideo && onPreview?.(entry)}
+          onPointerEnter={() => hasVideo && prefetchExerciseVideo(entry.videoUrl)}
+          onPointerDown={() => hasVideo && prefetchExerciseVideo(entry.videoUrl)}
+          className={`relative shrink-0 ${hasVideo ? 'cursor-pointer' : 'cursor-default'}`}
+          aria-label={hasVideo ? 'Videoyu önizle' : undefined}
+        >
+          <ExerciseVideoThumbnail
+            url={entry.videoUrl}
+            videoPending={entry.videoPending}
+            size="list"
+            accent="brand"
+            fallbackIcon={Dumbbell}
           />
-          <button
-            type="button"
-            onClick={() => onPatch(entry.id, { amount: (Number(entry.amount) || 0) + 1 })}
-            className="flex h-10 w-10 items-center justify-center text-cream-800/60 transition hover:bg-cream-50 active:scale-95 sm:h-8 sm:w-8"
-            aria-label="Artır"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
+          <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+            {index + 1}
+          </span>
+        </button>
 
-        {entry.amountType === 'duration' ? (
-          <div className="flex rounded-xl bg-cream-100 p-0.5" role="group" aria-label="Süre birimi">
-            {['sn', 'dk'].map((u) => (
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-1">
+            <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-cream-900">{entry.exerciseName}</p>
+            <div className="flex shrink-0 items-center">
               <button
-                key={u}
                 type="button"
-                onClick={() => onPatch(entry.id, { durationUnit: u })}
-                className={`rounded-[10px] px-2.5 py-2 text-xs font-semibold transition sm:py-1.5 ${
-                  entry.durationUnit === u ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/55'
-                }`}
+                onClick={() => onMove(entry.id, -1)}
+                disabled={isFirst}
+                className={`${iconBtn} text-cream-800/40 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
+                aria-label="Yukarı taşı"
               >
-                {u}
+                <ChevronUp className="h-4 w-4" />
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => onMove(entry.id, 1)}
+                disabled={isLast}
+                className={`${iconBtn} text-cream-800/40 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-20`}
+                aria-label="Aşağı taşı"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onRemove(entry.id)}
+                className={`${iconBtn} text-red-400 hover:bg-red-50 hover:text-red-600`}
+                aria-label="Hareketi çıkar"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-        ) : (
-          <span className="text-xs font-medium text-cream-800/45">tekrar</span>
-        )}
+
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <div className="flex rounded-lg bg-cream-100/80 p-0.5" role="group" aria-label="Miktar tipi">
+              {[
+                { id: 'reps', label: 'Tekrar' },
+                { id: 'duration', label: 'Süre' },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => onPatch(entry.id, { amountType: m.id })}
+                  className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition sm:py-1 ${
+                    entry.amountType === m.id ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/50'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center overflow-hidden rounded-lg border border-cream-200/80 bg-white">
+              <button
+                type="button"
+                onClick={() => onPatch(entry.id, { amount: Math.max(1, (Number(entry.amount) || 1) - 1) })}
+                className="flex h-8 w-8 items-center justify-center text-cream-800/55 transition hover:bg-cream-50 active:scale-95"
+                aria-label="Azalt"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={entry.amount}
+                onChange={(ev) => onPatch(entry.id, { amount: Number(ev.target.value) || 1 })}
+                aria-label="Miktar"
+                className="h-8 w-10 border-x border-cream-100 bg-white text-center text-sm font-bold text-cream-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() => onPatch(entry.id, { amount: (Number(entry.amount) || 0) + 1 })}
+                className="flex h-8 w-8 items-center justify-center text-cream-800/55 transition hover:bg-cream-50 active:scale-95"
+                aria-label="Artır"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+
+            {entry.amountType === 'duration' ? (
+              <div className="flex rounded-lg bg-cream-100/80 p-0.5" role="group" aria-label="Süre birimi">
+                {['sn', 'dk'].map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => onPatch(entry.id, { durationUnit: u })}
+                    className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition sm:py-1 ${
+                      entry.durationUnit === u ? 'bg-white text-brand-700 shadow-sm' : 'text-cream-800/50'
+                    }`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="text-[11px] font-medium text-cream-800/40">tekrar</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <input
-        value={entry.note}
-        onChange={(ev) => onPatch(entry.id, { note: ev.target.value })}
-        placeholder="Not ekle (ör. 3 set, yavaş tempo)"
-        className="mt-2.5 w-full rounded-xl border border-cream-200 bg-cream-50/50 px-3 py-2.5 text-base outline-none transition placeholder:text-cream-800/35 focus:border-brand-300 focus:bg-white sm:py-2 sm:text-sm"
-      />
+      <div className="border-t border-cream-100/80 px-3 pb-3 pt-2">
+        <input
+          value={entry.note}
+          onChange={(ev) => onPatch(entry.id, { note: ev.target.value })}
+          placeholder="Not ekle (ör. 3 set, yavaş tempo)"
+          className="w-full rounded-xl border border-cream-200/70 bg-white/80 px-3 py-2 text-sm outline-none transition placeholder:text-cream-800/35 focus:border-brand-300 focus:bg-white"
+        />
+      </div>
     </div>
   )
 }
 
 /** Program Akışı — hareket listesi + boş durum (masaüstü panel ve mobil sheet ortak) */
-function CartList({ cart, onPatch, onRemove, onMove, className = '' }) {
+function CartList({ cart, onPatch, onRemove, onMove, onPreview, className = '' }) {
   if (cart.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -190,6 +217,7 @@ function CartList({ cart, onPatch, onRemove, onMove, className = '' }) {
           onPatch={onPatch}
           onRemove={onRemove}
           onMove={onMove}
+          onPreview={onPreview}
         />
       ))}
     </div>
@@ -270,6 +298,16 @@ export default function StaffClientProgramPage() {
 
   const updateCartItem = (id, patch) => {
     setCart((list) => list.map((e) => (e.id === id ? { ...e, ...patch } : e)))
+  }
+
+  const previewCartEntry = (entry) => {
+    if (!entry?.videoUrl && !entry?.videoPending) return
+    setActiveExercise({
+      name: entry.exerciseName,
+      videoUrl: entry.videoUrl,
+      videoPending: entry.videoPending,
+      description: entry.description,
+    })
   }
 
   const removeFromCart = (id) => {
@@ -415,74 +453,87 @@ export default function StaffClientProgramPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {filteredExercisesList.map((ex) => {
                 const inCart = cartExerciseIds.has(ex.id)
+                const hasVideo = Boolean(ex.videoUrl || ex.videoPending)
                 return (
                   <div
                     key={ex.id}
-                    className={`flex flex-col rounded-2xl border p-4 transition ${
-                      inCart ? 'border-brand-200 bg-brand-50/40' : 'border-cream-200 bg-white hover:border-brand-200'
+                    className={`group flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                      inCart
+                        ? 'border-brand-200 bg-gradient-to-b from-brand-50/70 to-white ring-1 ring-brand-100'
+                        : 'border-cream-200/90 bg-white hover:border-brand-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="rounded-full bg-sage-50 px-2 py-0.5 text-[10px] font-semibold text-sage-700">
-                        {ex.category || 'Genel'}
-                      </span>
-                      {(ex.videoUrl || ex.videoPending) && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveExercise(ex)}
-                          onMouseEnter={() => prefetchExerciseVideo(ex.videoUrl)}
-                          onFocus={() => prefetchExerciseVideo(ex.videoUrl)}
-                          className="shrink-0 rounded-lg p-1 text-brand-400 transition hover:bg-brand-50 hover:text-brand-600"
-                          title="Videoyu izle"
-                        >
-                          <PlayCircle className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    <p className="mt-2 font-semibold text-cream-900">{ex.name}</p>
-                    <div className="mt-1 min-h-0 max-h-28 flex-1 overflow-y-auto overscroll-contain pr-0.5 text-xs leading-relaxed text-cream-800/55">
-                      {ex.description || 'Açıklama yok'}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {ex.equipment && (
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">{ex.equipment}</span>
-                      )}
-                      {ex.difficulty && (
-                        <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
-                          {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
-                        </span>
-                      )}
-                      {formatExerciseLocations(ex.locations).map((label) => (
-                        <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
-                      ))}
-                      {ex.requiresMachine && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
-                      )}
-                    </div>
-                    {(ex.videoUrl || ex.videoPending) && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveExercise(ex)}
-                        onMouseEnter={() => prefetchExerciseVideo(ex.videoUrl)}
-                        onFocus={() => prefetchExerciseVideo(ex.videoUrl)}
-                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
-                      >
-                        <Video className="h-3 w-3" />
-                        {ex.videoPending ? 'Video yakında' : 'Videoyu izle'}
-                      </button>
-                    )}
                     <button
                       type="button"
-                      onClick={() => addToCart(ex)}
-                      disabled={inCart}
-                      className={`mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition ${
-                        inCart
-                          ? 'cursor-default bg-brand-100 text-brand-600'
-                          : 'bg-brand-500 text-white hover:bg-brand-600 active:scale-[0.98]'
+                      disabled={!hasVideo}
+                      onClick={() => hasVideo && setActiveExercise(ex)}
+                      onPointerEnter={() => hasVideo && prefetchExerciseVideo(ex.videoUrl)}
+                      onPointerDown={() => hasVideo && prefetchExerciseVideo(ex.videoUrl)}
+                      onFocus={() => hasVideo && prefetchExerciseVideo(ex.videoUrl)}
+                      className={`relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-brand-100 to-blue-100 ${
+                        hasVideo ? 'cursor-pointer' : 'cursor-default'
                       }`}
+                      aria-label={hasVideo ? `${ex.name} videosunu izle` : undefined}
                     >
-                      {inCart ? <><Check className="h-3.5 w-3.5" /> Sepette</> : <><Plus className="h-3.5 w-3.5" /> Sepete Ekle</>}
+                      <div className="absolute inset-0 flex items-center justify-center p-3">
+                        <ExerciseVideoThumbnail
+                          url={ex.videoUrl}
+                          videoPending={ex.videoPending}
+                          size="card"
+                          accent="brand"
+                          fallbackIcon={Dumbbell}
+                          className="!h-full !w-auto !max-h-full !max-w-full !rounded-xl shadow-md ring-1 ring-white/40"
+                        />
+                      </div>
+                      <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-sage-800 shadow-sm backdrop-blur-sm">
+                        {ex.category || 'Genel'}
+                      </span>
+                      {hasVideo && !ex.videoPending && (
+                        <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white shadow-sm backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-brand-600">
+                          <PlayCircle className="h-4 w-4" />
+                        </span>
+                      )}
+                      {ex.videoPending && (
+                        <span className="absolute bottom-2.5 right-2.5 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                          Yakında
+                        </span>
+                      )}
                     </button>
+
+                    <div className="flex flex-1 flex-col p-3.5">
+                      <p className="font-semibold leading-snug text-cream-900">{ex.name}</p>
+                      <div className="mt-1 min-h-0 max-h-28 flex-1 overflow-y-auto overscroll-contain pr-0.5 text-xs leading-relaxed text-cream-800/55">
+                        {ex.description || 'Açıklama yok'}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {ex.equipment && (
+                          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">{ex.equipment}</span>
+                        )}
+                        {ex.difficulty && (
+                          <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
+                            {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
+                          </span>
+                        )}
+                        {formatExerciseLocations(ex.locations).map((label) => (
+                          <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
+                        ))}
+                        {ex.requiresMachine && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addToCart(ex)}
+                        disabled={inCart}
+                        className={`mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition ${
+                          inCart
+                            ? 'cursor-default bg-brand-100 text-brand-600'
+                            : 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-sm hover:brightness-105 active:scale-[0.98]'
+                        }`}
+                      >
+                        {inCart ? <><Check className="h-3.5 w-3.5" /> Sepette</> : <><Plus className="h-3.5 w-3.5" /> Sepete Ekle</>}
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -515,6 +566,7 @@ export default function StaffClientProgramPage() {
                 onPatch={updateCartItem}
                 onRemove={removeFromCart}
                 onMove={moveCartItem}
+                onPreview={previewCartEntry}
                 className="max-h-[min(58vh,500px)] overflow-y-auto pr-0.5"
               />
               <button
@@ -567,6 +619,7 @@ export default function StaffClientProgramPage() {
             onPatch={updateCartItem}
             onRemove={removeFromCart}
             onMove={moveCartItem}
+            onPreview={previewCartEntry}
           />
           {cart.length > 0 && (
             <button
