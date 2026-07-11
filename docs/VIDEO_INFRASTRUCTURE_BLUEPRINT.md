@@ -38,9 +38,13 @@ Optimizasyon katmanı (Faz 1–3) + bu blueprint’in player sertleştirme madde
 ## 0. Fixed Architectural Context (constraints the implementation MUST respect)
 
 - Videos live in a **private** Supabase Storage bucket `exercise-videos`. `exercises.video_url` stores only a storage path (e.g. `gym100-0001.mp4`). This security model is immutable (see `.cursor/rules/exercise-import.mdc`).
-- Playback URL = **15-minute signed URL** obtained via `POST /api/auth` (`action: exercise-video-url`), cached in `exerciseVideoUrlCache.js`.
+- Playback URL = **15-minute signed URL**. Prefer **client** `createSignedUrl` / `createSignedUrls`
+  (authenticated RLS on `exercise-videos`); fallback `POST /api/auth` (`exercise-video-url(s)`).
+  Cached in `exerciseVideoUrlCache.js`.
 - Posters are static `.webp` files in the **public** bucket `exercise-thumbs`; path is derived (`gym100-0001.mp4` → `gym100-0001.webp`) via `getExerciseThumbUrl()`. Thumbnails NEVER mount a `<video>`.
-- Content = short exercise loop clips (< ~60 s), MP4/H.264, remuxed with `-movflags +faststart` (scripts: `faststart-exercise-videos.mjs`, `import-exercises.mjs --upload-videos`).
+- Content = short exercise loop clips (< ~60 s), MP4/H.264, encoded per §1.1
+  (`scripts/lib/exercise-video-encode.mjs`, `compress-exercise-videos.mjs`,
+  `import-exercises.mjs --upload-videos`). Legacy remux-only: `faststart-exercise-videos.mjs`.
 - Anti-download posture (keep): `controlsList="nodownload nofullscreen noremoteplayback"`, `disablePictureInPicture`, `disableRemotePlayback`, `onContextMenu` prevented, watermark overlay (`VideoWatermarkFrame`). Blob/MediaSource src-hiding is explicitly **forbidden** (breaks iOS native fullscreen and `recoverIosVideoPlayback`).
 - YouTube URLs take a separate `<iframe>` path — out of scope for the rules below except where noted.
 
@@ -58,6 +62,7 @@ Optimizasyon katmanı (Faz 1–3) + bu blueprint’in player sertleştirme madde
     - Cap resolution at 1080p and ~4 Mbps for exercise clips; low-end phones (2 GB RAM, Mali-400 class GPUs) drop frames above that.
   - Audio: `-c:a aac -b:a 96k` OR strip audio entirely (`-an`) for silent loop clips. IF a clip has no audio track, autoplay policy handling becomes trivial (see §2), so PREFER `-an` for silent demo loops.
   - Container: `-movflags +faststart` ALWAYS (moov atom at file head). Without it, browsers must fetch the tail of the file before first frame → multi-second click-to-play delay and iOS `preload="metadata"` downloads nearly the whole file.
+  - **Enforcement:** `scripts/lib/exercise-video-encode.mjs` + `npm run videos:compress` (backfill) and import `--upload-videos`. Remux-only (`-c copy`) does NOT satisfy bitrate caps.
 - `.mov` uploads (video/quicktime): remux to `.mp4` at import time (`-c copy` when codec is already H.264). `videoMimeFromUrl()` in `VideoPlayer.jsx` already maps `.mov` → `video/quicktime` as a stopgap; treat any surviving `.mov` as legacy, because Firefox and some Android builds refuse `video/quicktime`.
 
 ### 1.2 Multi-source strategy and `<source>` order

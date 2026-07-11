@@ -20,8 +20,10 @@
 npm run db:migrate                    # exercise-thumbs bucket
 npm run thumbs:generate:dry           # thumb dry-run
 npm run thumbs:generate               # tüm thumb'lar
-npm run videos:faststart:dry          # moov atom dry-run
-npm run videos:faststart              # tüm videolar faststart
+npm run videos:faststart:dry          # moov atom dry-run (yalnız remux)
+npm run videos:faststart              # tüm videolar faststart remux
+npm run videos:compress:dry           # encode dry-run (en büyük 5, min 1.5 MB)
+npm run videos:compress               # §1.1 H.264 encode (bitrate düşürme)
 ```
 
 ### Ana dosyalar
@@ -30,8 +32,10 @@ npm run videos:faststart              # tüm videolar faststart
 |-------|-----|
 | `supabase/migrations/20260710_exercise_thumbs_bucket.sql` | Public `exercise-thumbs` bucket + read policy |
 | `scripts/generate-exercise-thumbs.mjs` | Toplu webp üretimi |
-| `scripts/faststart-exercise-videos.mjs` | Moov atomu başa |
-| `scripts/import-exercises.mjs` | Upload sırasında faststart + thumb |
+| `scripts/faststart-exercise-videos.mjs` | Moov atomu başa (`-c copy`) |
+| `scripts/compress-exercise-videos.mjs` | §1.1 libx264 encode + `-an` + faststart |
+| `scripts/lib/exercise-video-encode.mjs` | Ortak encode sözleşmesi |
+| `scripts/import-exercises.mjs` | Upload sırasında encode + thumb |
 | `scripts/lib/ffmpeg-bin.mjs` | ffmpeg yolu |
 | `src/services/supabaseDb.js` | `getExerciseThumbUrl`, signed URL 900 sn |
 | `src/services/exerciseVideoUrlCache.js` | TTL 13 dk / margin 2 dk |

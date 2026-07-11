@@ -11,7 +11,7 @@
  *   node scripts/import-exercises.mjs --dry-run
  *   node scripts/import-exercises.mjs --limit 20
  *   node scripts/import-exercises.mjs --pack yoga
- *   node scripts/import-exercises.mjs --upload-videos   (video yukleme — ayri adim)
+ *   node scripts/import-exercises.mjs --upload-videos   (encode §1.1 + thumb)
  *   node scripts/import-exercises.mjs --sync-video-status
  *   node scripts/import-exercises.mjs --upsert-taxonomy
  */
@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url'
 import { EXERCISE_PACKS, DEFAULT_EXERCISE_DB_ROOT, plannedVideoPath } from './lib/exercise-packs.mjs'
 import { translateExerciseContent } from './lib/exercise-translate-tr.mjs'
 import { resolveFfmpegPath } from './lib/ffmpeg-bin.mjs'
+import { encodeExerciseClip, ENCODE_CACHE_CONTROL } from './lib/exercise-video-encode.mjs'
 import {
   mapBodyPart,
   mapEquipment,
@@ -240,20 +241,27 @@ async function syncVideoStatusFlags(supabase) {
   console.log(`Video durumu senkron: ${cleared} kayit hazir olarak isaretlendi`)
 }
 
-function remuxFaststart(localPath) {
+/** Blueprint §1.1 encode; başarısızsa faststart remux'a düş. */
+function prepareVideoForUpload(localPath) {
   const ffmpeg = resolveFfmpegPath()
   if (!ffmpeg) return null
-  const out = join(tmpdir(), `fs-${Date.now()}-${basename(localPath)}`)
+
+  const encodedOut = join(tmpdir(), `enc-${Date.now()}-${basename(localPath)}.mp4`)
+  const encoded = encodeExerciseClip(ffmpeg, localPath, encodedOut)
+  if (encoded.ok) return encodedOut
+  try { unlinkSync(encodedOut) } catch { /* ignore */ }
+
+  const remuxOut = join(tmpdir(), `fs-${Date.now()}-${basename(localPath)}`)
   try {
     execFileSync(ffmpeg, [
       '-y', '-i', localPath,
       '-c', 'copy',
       '-movflags', '+faststart',
-      out,
+      remuxOut,
     ], { stdio: 'ignore' })
-    return out
+    return remuxOut
   } catch {
-    try { unlinkSync(out) } catch { /* ignore */ }
+    try { unlinkSync(remuxOut) } catch { /* ignore */ }
     return null
   }
 }
@@ -282,26 +290,25 @@ async function uploadVideoBatch(supabase, records) {
   for (const rec of records) {
     if (!rec._localVideo) continue
     const path = rec.video_url
-    const contentType = rec._localVideo.toLowerCase().endsWith('.mov') ? 'video/quicktime' : 'video/mp4'
     if (dryRun) {
-      console.log('[dry-run] upload:', path, '(+thumb +faststart)')
+      console.log('[dry-run] upload:', path, '(+thumb +encode §1.1)')
       uploaded++
       continue
     }
 
     let uploadSource = rec._localVideo
-    let remuxed = null
-    remuxed = remuxFaststart(rec._localVideo)
-    if (remuxed) uploadSource = remuxed
+    let prepared = null
+    prepared = prepareVideoForUpload(rec._localVideo)
+    if (prepared) uploadSource = prepared
 
     const buf = readFileSync(uploadSource)
     const { error } = await supabase.storage.from('exercise-videos').upload(path, buf, {
-      cacheControl: '3600',
+      cacheControl: ENCODE_CACHE_CONTROL,
       upsert: true,
-      contentType,
+      contentType: 'video/mp4',
     })
-    if (remuxed) {
-      try { unlinkSync(remuxed) } catch { /* ignore */ }
+    if (prepared) {
+      try { unlinkSync(prepared) } catch { /* ignore */ }
     }
 
     if (error) {

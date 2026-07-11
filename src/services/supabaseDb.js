@@ -1425,7 +1425,10 @@ async function signExerciseVideoPathViaClient(storagePath) {
 }
 
 async function signExerciseVideoPathRaw(storagePath) {
-  return (await signExerciseVideoPathViaApi(storagePath)) || (await signExerciseVideoPathViaClient(storagePath))
+  // Client-first: RLS authenticated read var → Vercel /api/auth hop'unu atla.
+  // API fallback: client imza başarısızsa (policy/session) service-role yolu.
+  return (await signExerciseVideoPathViaClient(storagePath))
+    || (await signExerciseVideoPathViaApi(storagePath))
 }
 
 /** Sayfa/thumbnail için toplu imzalı URL — tek HTTP turu, önbelleğe yazar. */
@@ -1441,14 +1444,42 @@ export async function prefetchExerciseVideoUrls(paths = []) {
   if (!missing.length) return
 
   const CHUNK = 24
+  const expiresAt = Date.now() + 900 * 1000
+
   for (let i = 0; i < missing.length; i += CHUNK) {
     const chunk = missing.slice(i, i + CHUNK)
     await runWithVideoUrlSlot(async () => {
+      // Client-first batch (RLS); API yalnızca kalan path'ler için.
+      try {
+        let { data: sessionData } = await supabase.auth.getSession()
+        if (!sessionData?.session) {
+          await supabase.auth.getUser()
+          ;({ data: sessionData } = await supabase.auth.getSession())
+        }
+        if (sessionData?.session) {
+          const { data: signed, error } = await supabase.storage
+            .from('exercise-videos')
+            .createSignedUrls(chunk, 900)
+          if (!error && Array.isArray(signed)) {
+            signed.forEach((entry) => {
+              if (entry?.path && entry?.signedUrl && !entry.error) {
+                writeExerciseVideoUrlCache(entry.path, entry.signedUrl, expiresAt)
+              }
+            })
+          }
+        }
+      } catch {
+        /* client batch başarısız — API'ye düş */
+      }
+
+      const stillAfterClient = chunk.filter((path) => !readExerciseVideoUrlCache(path))
+      if (!stillAfterClient.length) return
+
       try {
         const res = await fetch('/api/auth', {
           method: 'POST',
           headers: await getApiAuthHeaders(),
-          body: JSON.stringify({ action: 'exercise-video-urls', paths: chunk }),
+          body: JSON.stringify({ action: 'exercise-video-urls', paths: stillAfterClient }),
         })
         const json = await res.json().catch(() => ({}))
         if (json.ok && json.urls && typeof json.urls === 'object') {

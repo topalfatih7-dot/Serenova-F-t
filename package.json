@@ -21,6 +21,8 @@
     "thumbs:generate:dry": "node scripts/generate-exercise-thumbs.mjs --dry-run --limit=5",
     "videos:faststart": "node scripts/faststart-exercise-videos.mjs",
     "videos:faststart:dry": "node scripts/faststart-exercise-videos.mjs --dry-run --limit=5",
+    "videos:compress": "node scripts/compress-exercise-videos.mjs",
+    "videos:compress:dry": "node scripts/compress-exercise-videos.mjs --dry-run --limit=5",
     "backfill:exercise-locations": "node scripts/backfill-exercise-locations.mjs",
     "import:pack:gym100": "node scripts/import-exercises.mjs --pack=gym100 --upload-videos",
     "import:pack:w100": "node scripts/import-exercises.mjs --pack=w100 --upload-videos",

@@ -103,6 +103,8 @@
 | `npm run thumbs:generate:dry` | Thumb dry-run (`--limit=5`) |
 | `npm run videos:faststart` | MP4 moov atomu başa (`faststart-exercise-videos.mjs`) |
 | `npm run videos:faststart:dry` | Faststart dry-run (`--limit=5`) |
+| `npm run videos:compress` | §1.1 H.264 encode backfill (`compress-exercise-videos.mjs`) |
+| `npm run videos:compress:dry` | Compress dry-run (en büyük 5, min 1.5 MB) |
 | `npm run og:image` | Open Graph görseli üretir |
 
 ---
@@ -253,7 +255,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 - Bucket: **`exercise-videos`** — **private** (2026-07-04 §48'den itibaren); admin yükleme
 - Bucket: **`exercise-thumbs`** — **public** (2026-07-10 §68); kapak `.webp` (CDN, imzalama yok). Path = video path uzantısı `.webp` (`gym100-0001.mp4` → `gym100-0001.webp`); DB kolonu yok → `getExerciseThumbUrl()`
 - Yükleme: `supabaseDb.uploadExerciseVideo()` → `AdminLibraryPage` — kalıcı public URL değil, sadece storage **path** döner; import/upload’ta faststart + thumb üretilir
-- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → **`POST /api/auth`** (`action: 'exercise-video-url'`, service role) → **15 dakikalık imzalı URL** (`EXERCISE_VIDEO_EXPIRES = 900`); cache `exerciseVideoUrlCache.js` (TTL ~13 dk, margin 2 dk). Ayrı `api/exercise-video-url.js` yok (Vercel Hobby limit).
+- Oynatma: `VideoPlayer.jsx` path'i görünce `supabaseDb.getExerciseVideoUrl()` → **önce client** `createSignedUrl` (authenticated RLS), başarısızsa **`POST /api/auth`** (`action: 'exercise-video-url'`, service role) → **15 dakikalık imzalı URL** (`EXERCISE_VIDEO_EXPIRES = 900`); cache `exerciseVideoUrlCache.js` (TTL ~13 dk, margin 2 dk). Batch: `createSignedUrls` client-first + API fallback. Ayrı `api/exercise-video-url.js` yok (Vercel Hobby limit).
 - Kapak UI: `ExerciseVideoThumbnail` yalnızca lazy `<img>` — thumbnail için signed URL / `<video>` **yok**
 - Prefetch: kart `pointerenter`/`pointerdown`/`focus` → `prefetchExerciseVideo` (modal jesti içinde fetch yok)
 - Üye kütüphanesi: **Spor/VIP** (veya çoklu paket union) → tam video; diğer paketler liste görür, oynatma kilitli (`memberHasFullVideoAccess`).
@@ -4259,7 +4261,7 @@ Mobil hamburger (`menuOpen`) etkilenmez.
 | **1** | Public `exercise-thumbs` bucket; path = video path → `.webp`; `getExerciseThumbUrl()`; `ExerciseVideoThumbnail` yalnızca lazy `<img>` | Migration `20260710_exercise_thumbs_bucket.sql`; `supabaseDb.js`; `ExerciseVideoThumbnail.jsx`; `npm run thumbs:generate` |
 | **1** | Toplu + import-time thumb | `scripts/generate-exercise-thumbs.mjs`; `import-exercises.mjs` upload; `scripts/lib/ffmpeg-bin.mjs` |
 | **2** | Player: poster anında, URL yokken `preload="none"`; kart prefetch | `VideoPlayer.jsx`; `ExerciseLibraryPage` / `ProgramsPage` / `CalendarPage` (`pointerenter`/`down`/`focus`) |
-| **2** | MP4 `-movflags +faststart` | `scripts/faststart-exercise-videos.mjs`; import upload remux; `npm run videos:faststart` |
+| **2** | MP4 `-movflags +faststart` + §1.1 encode | `scripts/faststart-exercise-videos.mjs`; `compress-exercise-videos.mjs`; import upload encode; `npm run videos:compress` |
 | **3** | Signed URL **15 dk**; cache TTL 13 dk / margin 2 dk; sağ tık engeli | `api/auth.js` `EXERCISE_VIDEO_EXPIRES`; `exerciseVideoUrlCache.js`; `createSignedUrl(..., 900)`; `VideoWatermarkFrame` + thumb `onContextMenu` |
 | **Temizlik** | Thumbnail video slot kaldırıldı | `exerciseVideoLoadQueue.js` yalnızca URL slot; `.cursor/rules/exercise-import.mdc` güncellendi |
 

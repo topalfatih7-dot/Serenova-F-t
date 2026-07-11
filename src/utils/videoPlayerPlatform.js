@@ -36,6 +36,60 @@ export function exitIosNativeVideoFullscreen(video) {
   }
 }
 
+/** webkitDisplayingFullscreen yalnızca true iken güvenilir; undefined → false say. */
+export function isIosVideoDisplayingFullscreen(video) {
+  return video?.webkitDisplayingFullscreen === true
+}
+
+/**
+ * Modal / fixed overlay (z≥40) içinde mi? webkitEnterFullscreen burada sessizce başarısız olur.
+ */
+export function isInsideFixedOverlay(el) {
+  if (!el || typeof window === 'undefined') return false
+  let node = el.parentElement
+  while (node && node !== document.documentElement) {
+    const style = window.getComputedStyle(node)
+    if (style.position === 'fixed') {
+      const z = Number.parseInt(style.zIndex, 10)
+      if (Number.isFinite(z) && z >= 40) return true
+      const top = style.top
+      const bottom = style.bottom
+      const left = style.left
+      const right = style.right
+      if (
+        (top === '0px' || top === '0')
+        && (bottom === '0px' || bottom === '0')
+        && (left === '0px' || left === '0')
+        && (right === '0px' || right === '0')
+      ) {
+        return true
+      }
+    }
+    node = node.parentElement
+  }
+  return false
+}
+
+/**
+ * Tam ekran jesti içinde SENKRON — await yok. load + play fire-and-forget.
+ */
+export function primeIosVideoForExpand(video) {
+  if (!video) return
+  const hasSrc = Boolean(video.currentSrc || video.src)
+    || video.querySelector?.('source[src]')
+  if (!hasSrc) return
+  if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+    try {
+      video.load()
+    } catch {
+      /* ignore */
+    }
+  }
+  if (video.paused) {
+    void video.play().catch(() => {})
+  }
+}
+
 /** Android / eski tarayıcılar: viewport kaplama modu (iOS hariç). */
 export function needsPseudoFullscreen() {
   return !isIosDevice() && !supportsElementFullscreen()

@@ -1,6 +1,6 @@
 ---
 description: Hareket kütüphanesi import ve video güvenlik kuralları
-globs: scripts/import-exercises.mjs, scripts/dedupe-exercise-db-ids.mjs, scripts/generate-exercise-thumbs.mjs, scripts/faststart-exercise-videos.mjs, src/services/supabaseDb.js, src/components/ui/VideoPlayer.jsx, src/components/library/ExerciseVideoThumbnail.jsx, api/auth.js
+globs: scripts/import-exercises.mjs, scripts/dedupe-exercise-db-ids.mjs, scripts/generate-exercise-thumbs.mjs, scripts/faststart-exercise-videos.mjs, scripts/compress-exercise-videos.mjs, scripts/lib/exercise-video-encode.mjs, src/services/supabaseDb.js, src/components/ui/VideoPlayer.jsx, src/components/library/ExerciseVideoThumbnail.jsx, api/auth.js
 alwaysApply: false
 ---
 
@@ -10,10 +10,17 @@ alwaysApply: false
 
 1. `exercise-videos` bucket **private** kalır.
 2. `exercises.video_url` yalnızca **storage path** tutar (`gym100-0001.mp4`). Kalıcı public URL **asla** yazılmaz.
-3. Oynatma: `VideoPlayer` → `getExerciseVideoUrl()` → `POST /api/auth` (`exercise-video-url`) → service role ile **15 dakikalık** signed URL.
+3. Oynatma: `VideoPlayer` → `getExerciseVideoUrl()` → **client-first** `createSignedUrl` (RLS), fallback `POST /api/auth` (`exercise-video-url`) → **15 dakikalık** signed URL.
 4. `video_pending=true` iken signed URL isteği yapılmaz.
 5. Path doğrulama: `^[\w.-]+$`, `..` yasak (`api/auth.js`, `isExerciseVideoStoragePath`).
 6. Kapak görselleri: `exercise-thumbs` **public** bucket. Path = video path uzantısı `.webp` (`gym100-0001.mp4` → `gym100-0001.webp`). DB kolonu yok; `getExerciseThumbUrl()` ile türetilir. Thumbnail için signed URL / `<video>` mount **yok**.
+
+## Encode sözleşmesi (VIDEO_INFRASTRUCTURE §1.1)
+
+- Master: MP4 / H.264 High 4.0 / `yuv420p` / ≤1280w / CRF 28 / `-an` / `+faststart`
+- Pipeline: `scripts/lib/exercise-video-encode.mjs` → `npm run videos:compress` (mevcut) + import `--upload-videos`
+- Yalnızca remux (`-c copy`) yetmez; bitrate düşürme zorunlu
+- `.mov` → encode sonrası `.mp4` path + `exercises.video_url` güncelle
 
 ## Import sırası
 
@@ -21,9 +28,9 @@ alwaysApply: false
 2. `npm run db:migrate` (şema)
 3. `npm run import:exercises:dry` (kontrol)
 4. `node scripts/import-exercises.mjs --upsert-taxonomy` (metadata, video yok)
-5. Video yükleme (ayrı): `node scripts/import-exercises.mjs --upload-videos` (faststart remux + thumb üretir)
+5. Video yükleme (ayrı): `node scripts/import-exercises.mjs --upload-videos` (encode §1.1 + thumb)
 6. `node scripts/import-exercises.mjs --sync-video-status`
-7. Mevcut videolar için: `node scripts/generate-exercise-thumbs.mjs` ve `node scripts/faststart-exercise-videos.mjs`
+7. Mevcut videolar için: `node scripts/generate-exercise-thumbs.mjs`, `node scripts/faststart-exercise-videos.mjs` (yalnız remux), `npm run videos:compress` (bitrate)
 
 ## Ertelenen paketler (şimdilik import edilmez)
 
