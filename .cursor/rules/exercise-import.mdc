@@ -21,6 +21,7 @@ alwaysApply: false
 - Pipeline: `scripts/lib/exercise-video-encode.mjs` → `npm run videos:compress` (mevcut) + import `--upload-videos`
 - Yalnızca remux (`-c copy`) yetmez; bitrate düşürme zorunlu
 - `.mov` → encode sonrası `.mp4` path + `exercises.video_url` güncelle
+- Operasyon + troubleshooting: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`
 
 ## Import sırası
 

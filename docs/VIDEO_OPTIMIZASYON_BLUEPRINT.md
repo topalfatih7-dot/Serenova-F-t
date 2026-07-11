@@ -57,10 +57,11 @@ npm run videos:compress               # §1.1 H.264 encode (bitrate düşürme)
 ## Mevcut Mimari (uygulama sonrası — ajan için bağlam)
 
 - `exercise-videos` bucket **private**; `exercises.video_url` yalnızca storage path (`gym100-0001.mp4`).
-- Oynatma: `getExerciseVideoUrl()` → `POST /api/auth` (`exercise-video-url`) → **15 dakikalık** signed URL → `exerciseVideoUrlCache.js`.
+- Oynatma: `getExerciseVideoUrl()` → **client-first** `createSignedUrl` (RLS) → fallback `POST /api/auth` → **15 dk** signed URL → `exerciseVideoUrlCache.js`.
+- Encode: §1.1 H.264 (`exercise-video-encode.mjs` / `videos:compress` / import upload) — remux yetmez.
 - Kapak: `exercise-thumbs` **public** → `getExerciseThumbUrl()` (`gym100-0001.mp4` → `gym100-0001.webp`). Thumbnail’de `<video>` yok.
-- Prefetch: `ExerciseLibraryPage` / `ProgramsPage` / `CalendarPage` kartlarında `onPointerEnter` / `onPointerDown` / `onFocus`.
-- Kullanım: thumbnail → library/programs/calendar; player → `ExerciseDetailModal`, `AdminLibraryPage`, takvim inline İzle.
+- Prefetch: kart `pointerenter` / `pointerdown` / `focus` (sayfa açılışında toplu imza yok).
+- Operasyonel runbook: [`VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md).
 
 ---
 

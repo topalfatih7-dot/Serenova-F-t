@@ -5,6 +5,7 @@
 > **Ground truth files:** `src/components/ui/VideoPlayer.jsx`, `src/utils/videoPlayerPlatform.js`,
 > `src/services/exerciseVideoUrlCache.js`, `src/utils/exerciseVideoPrefetch.js`,
 > `src/services/supabaseDb.js` (`getExerciseVideoUrl`, `getExerciseThumbUrl`), `api/auth.js`.
+> **Related (ops):** [`VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md) — encode backfill, client-first signing, iOS play overlay, troubleshooting (2026-07-11).
 > **Related (done):** [`VIDEO_OPTIMIZASYON_BLUEPRINT.md`](./VIDEO_OPTIMIZASYON_BLUEPRINT.md) — thumbs / prefetch / faststart / 15 dk TTL.
 > **Proje rehberi:** `AI_PROJE_REHBERI.md` §68.
 

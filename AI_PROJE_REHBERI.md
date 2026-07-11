@@ -4,12 +4,12 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-10 · Video infrastructure blueprint uygulandı (autoplay/network/a11y) + optimizasyon §68  
-> **Son oturum özeti:** `VideoPlayer` sertleştirme · `createPlayGuard` · stall/re-sign recovery · §69 · blueprint status ✅
+> **Son güncelleme:** 2026-07-11 · Video encode backfill + client-first imza + iOS play overlay (§70)  
+> **Son oturum özeti:** Storage ~7 GB→~0.6 GB · `videos:compress` · client-first signed URL · Pro Max play butonu fix · runbook `VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`
 
 ---
 
-## Son Durum Özeti (2026-07-10)
+## Son Durum Özeti (2026-07-11)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -19,7 +19,7 @@
 | Sosyal giriş | Google only | Apple/Facebook UI kaldırıldı — `src/services/oauthAuth.js` |
 | RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
 | Storage güvenliği | ✅ | `staff-application-docs` listeleme admin-only; `exercise-videos` **private** + **15 dk** imzalı URL |
-| Egzersiz kapak / oynatma | ✅ | Statik webp + prefetch + faststart + 15 dk TTL (§68); player sertleştirme (§69) |
+| Egzersiz kapak / oynatma | ✅ | Statik webp + prefetch + **§1.1 encode** + client-first imza + 15 dk TTL (§68/§70); player (§69) |
 | Kayıt → Stripe UX | ✅ | Header `isFullyRegistered` — ödeme öncesi sahte "Profil · İsim" yok |
 | Sağlık testi akışı | ✅ | Hub `/health-test` · kategori `/health-test/:sectionId` · onay `/health-test/finish`; grid 2/3/4 sütun |
 | Hareket kütüphanesi filtreleri | ✅ | Konum + makine (`locations`, `requires_machine`); sıralama UI kaldırıldı (varsayılan A→Z) |
@@ -60,7 +60,7 @@
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
 6. Son değişiklikler için **§53–69 Değişiklik Günlüğü** (2026-07-03 — 2026-07-10); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video katmanı: **§68–§69** + `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) / `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ uygulandı).
+7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video katmanı: **§68–§70** + `docs/VIDEO_*.md` (özellikle `VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`).
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
@@ -261,7 +261,7 @@ Admin: `admin@serenova.fit` / `Serenova2026!`.
 - Üye kütüphanesi: **Spor/VIP** (veya çoklu paket union) → tam video; diğer paketler liste görür, oynatma kilitli (`memberHasFullVideoAccess`).
 - Eski kayıtlardaki tam public URL'ler de `VideoPlayer` içinde otomatik path'e çevrilip imzalanır (geriye dönük veri migrasyonu gerekmedi).
 - YouTube linkleri bu akışın dışında, aynen `iframe embed` ile oynatılıyor.
-- Kurallar: `.cursor/rules/exercise-import.mdc` · blueprint: `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) · `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ §69)
+- Kurallar: `.cursor/rules/exercise-import.mdc` · blueprint: `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) · `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ §69) · runbook: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` (§70)
 
 ### RPC fonksiyonları
 
@@ -719,6 +719,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | `supabase/email-templates/README.md` | Auth e-posta şablonları |
 | `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` | Egzersiz video Faz 1–3 (thumb/prefetch/faststart/15 dk) — ✅ · §68 |
 | `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` | Player sertleştirme (autoplay/network/a11y) — ✅ · §69 |
+| `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` | Encode + client-first imza + iOS play overlay + troubleshooting — ✅ · §70 |
+| `docs/VIDEO_PLAYER_IOS_FULLSCREEN.md` | iOS Pro Max pseudo-FS runbook |
 | `YAPILACAKLAR.md` | Satışa hazırlık checklist (kök) |
 
 ### 7.1 Kök dizin
@@ -1068,7 +1070,7 @@ Kaynak: `.env.example`
 | Paket yapısı (Basic→Platinum) | `src/data/membershipPlans.js` satırlar 10–90 |
 | Kalori hesaplayıcı erişim kontrolü | `src/pages/CalorieCalculatorPage.jsx` satırlar 137–142, 225–253 |
 | Video görüşme ayarları | `src/config/videoCall.js` + `.env` |
-| Hareket video oynatma / kapak | `VideoPlayer.jsx`, `ExerciseVideoThumbnail.jsx`, `exerciseVideoPrefetch.js`, `api/auth.js` (`exercise-video-url`); kurallar: `docs/VIDEO_*.md`, §68 |
+| Hareket video oynatma / kapak | `VideoPlayer.jsx`, `ExerciseVideoThumbnail.jsx`, `exerciseVideoPrefetch.js`, `supabaseDb.js` (client-first imza), `api/auth.js` fallback; runbook: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`, §68–§70 |
 | Telegram bildirim metni | `api/telegram-notify.js` |
 | Veritabanı şeması | `supabase/setup.sql` + `supabase/migrations/*.sql` |
 | Yeni API endpoint | `api/` klasörü + `vercel.json` |
@@ -4310,3 +4312,31 @@ Modal/İzle → VideoPlayer poster=webp; playUrl cache-hit veya getExerciseVideo
 **Dosyalar:** `VideoPlayer.jsx`, `videoPlayerPlatform.js`, `exerciseVideoUrlCache.js`, `index.html`, call-site `title` (DetailModal, Programs, Calendar, Admin, Staff program).
 
 **Manuel test:** blueprint §6 acceptance matrix (Low Power Mode, Data Saver, 16 dk seek, offline/online, modal 10×).
+
+---
+
+## §70 Video gecikme + encode + client-first imza + iOS play overlay (2026-07-11)
+
+**Runbook (kaynak gerçeği):** [`docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md)
+
+### Ne değişti
+
+| Konu | Ne / nerede |
+|------|-------------|
+| §1.1 encode backfill | `scripts/lib/exercise-video-encode.mjs` + `compress-exercise-videos.mjs` (`npm run videos:compress`) — storage ~7 GB→~0.6 GB |
+| Import encode | `import-exercises.mjs` `--upload-videos` artık CRF encode (remux fallback) |
+| Client-first imza | `supabaseDb.signExerciseVideoPathRaw` — önce RLS `createSignedUrl(s)`, sonra `/api/auth` |
+| iOS play overlay | `VideoPlayer.jsx` — oynarken ortadaki play yok; `playing` → unblock; `mediaKey` dinleyici yenileme |
+
+### Komutlar
+
+```bash
+npm run videos:compress:dry
+npm run videos:compress
+```
+
+### Sorun olursa
+
+Runbook §5 tablosu: yavaşlık → storage boyutu + imza yolu; 403 → oturum/TTL/path; play butonu takılı → `showCenterPlay` / `autoplayBlocked`; siyah ekran → `VIDEO_PLAYER_IOS_FULLSCREEN.md`.
+
+**Yapma:** bucket public, path yerine public URL, blob src gizleme, sayfa açılışında toplu imza.
