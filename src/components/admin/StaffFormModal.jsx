@@ -5,7 +5,7 @@ import PhotoUpload from '../ui/PhotoUpload'
 import PhoneField from '../ui/PhoneField'
 import { STAFF_ROLES } from '../../utils/staffRoles'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
-import { WEEKDAYS } from '../package/SupportScheduler'
+import { WEEKDAYS } from '../package/supportScheduleConstants'
 import { GENDERS } from '../../data/staffApplication'
 import { CITY_NAMES, getDistricts } from '../../data/turkeyCities'
 import {

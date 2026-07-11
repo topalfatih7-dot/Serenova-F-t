@@ -5,7 +5,7 @@ import { Plus, Trash2, Apple, CalendarDays, Coffee, Sun, Moon, Cookie } from 'lu
 import { useToast } from '../../context/ToastContext'
 import { MEAL_TYPES, mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries } from '../../utils/programSchedule'
 import { getDateInputBounds } from '../../utils/programPackageScope'
-import { WEEKDAYS } from '../package/SupportScheduler'
+import { WEEKDAYS } from '../package/supportScheduleConstants'
 
 const MEAL_UI = {
   breakfast: { icon: Coffee, accent: 'bg-amber-100 text-amber-700 ring-amber-200', btn: 'bg-amber-500 hover:bg-amber-600' },
@@ -176,7 +176,7 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
   const submit = () => {
     if (!title.trim()) { toast('Liste başlığı gerekli', 'error'); return }
 
-    let scoped = entries
+    let scoped
     if (isDailyMode(scheduleMode)) {
       scoped = entries.filter((e) => e.day != null && !e.date && e.cycleDay == null)
     } else if (scheduleMode === 'date') {

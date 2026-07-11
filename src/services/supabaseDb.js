@@ -36,9 +36,7 @@ import { shouldSkipExpiryPersistDuringPayment } from '../utils/stripePaymentGrac
 import { displayNameFromAuthUser, memberNeedsProfileCompletion, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import {
   syncMemberPackages,
-  addMemberPackage,
   resolvePackagePurchase,
-  createPackageEntry,
   migrateLegacyToPackages,
   isOneTimePlan,
   isPackageEntryActive,
@@ -142,13 +140,6 @@ function rowToPayment(row) {
 }
 
 // --------------------------- auth & hydrate ---------------------------
-function roleForEmail(email, staffList) {
-  const e = (email || '').toLowerCase()
-  if (e === ADMIN_EMAIL) return 'admin'
-  if (staffList.some((s) => (s.email || '').toLowerCase() === e)) return 'staff'
-  return 'member'
-}
-
 function findStaffMatch(user, staffList) {
   if (!user) return null
   const email = (user.email || '').toLowerCase()

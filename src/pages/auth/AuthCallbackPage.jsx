@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, Loader2, LayoutDashboard, LogIn, Sparkles } 
 import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
 import { markEmailVerified, confirmEmailVerificationByEvt } from '../../services/authVerification'
 import { BRAND } from '../../config/brand'
-import { getPostLoginPath, getCurrentMember } from '../../services/platformStats'
+import { getPostLoginPath } from '../../services/platformStats'
 import { establishAuthSessionFromUrl } from '../../services/authSessionFromUrl'
 import { recordSocialLogin, resolveQuickPostLoginPath } from '../../services/supabaseDb'
 import { useApp } from '../../context/AppContext'
@@ -57,7 +57,10 @@ export default function AuthCallbackPage() {
   const dbRef = useRef(null)
   const navigatingRef = useRef(false)
   const refreshRef = useRef(refresh)
-  refreshRef.current = refresh
+
+  useEffect(() => {
+    refreshRef.current = refresh
+  }, [refresh])
 
   const isOAuthCallback = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
 

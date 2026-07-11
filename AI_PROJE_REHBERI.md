@@ -2534,7 +2534,7 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 
 **Korunanlar (yanlış pozitif değil — hâlâ kullanımda):**
 - `services/packagePricing.js` → `supabaseDb.js` + `platformStats.js`
-- `components/package/SupportScheduler.jsx` → `weekdayLabel`/`WEEKDAYS`/`DEFAULT_SUPPORT_SCHEDULE` staff sayfalarında
+- `components/package/supportScheduleConstants.js` → `weekdayLabel` / `WEEKDAYS` / `DEFAULT_SUPPORT_SCHEDULE` (UI: `SupportScheduler.jsx`)
 - `api/_ai-prompts.js`, `api/_gemini.js` → `ai-food-vision.js` + `ai-food-text.js`
 
 ### 35.4 Kullanılmayan görsel/asset temizliği

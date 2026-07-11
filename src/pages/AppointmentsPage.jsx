@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Dumbbell, Apple, Stethoscope } from 'lucide-react'
-import MemberScheduleView, { coachMonthlyLimit, dietitianMonthlyLimit } from '../components/calendar/MemberScheduleView'
+import MemberScheduleView from '../components/calendar/MemberScheduleView'
+import { coachMonthlyLimit, dietitianMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
 import {
   packageIncludesCoach,

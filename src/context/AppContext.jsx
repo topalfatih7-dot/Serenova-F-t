@@ -148,12 +148,18 @@ export function AppProvider({ children }) {
   const monthlyGrowth = useMemo(() => computeMonthlyGrowth(db), [db])
   const sessionStats = useMemo(() => getSessionStats(db), [db])
   const remoteDbRef = useRef(remoteDb)
-  remoteDbRef.current = remoteDb
   const memberRef = useRef(currentMember)
-  memberRef.current = currentMember
   const notificationsDirtyRef = useRef(false)
   const notificationFlushTimerRef = useRef(null)
   const notificationFlushInFlightRef = useRef(null)
+
+  useEffect(() => {
+    remoteDbRef.current = remoteDb
+  }, [remoteDb])
+
+  useEffect(() => {
+    memberRef.current = currentMember
+  }, [currentMember])
 
   const chatHydrationKeyString = useMemo(() => {
     if (!remoteDb?.session) return ''
@@ -177,12 +183,16 @@ export function AppProvider({ children }) {
       setAdminStaffMessages({})
       setStaffCollabThreads([])
       setStaffCollabMessages({})
-      chatHydratedKey.current = null
-      chatThreadIdsRef.current = new Set()
-      adminStaffThreadIdsRef.current = new Set()
-      staffCollabThreadIdsRef.current = new Set()
     }
   }
+
+  useEffect(() => {
+    if (hasChatSession) return
+    chatHydratedKey.current = null
+    chatThreadIdsRef.current = new Set()
+    adminStaffThreadIdsRef.current = new Set()
+    staffCollabThreadIdsRef.current = new Set()
+  }, [hasChatSession])
 
   useEffect(() => {
     if (!hasChatSession) return undefined
@@ -477,7 +487,10 @@ export function AppProvider({ children }) {
   }, [isAuthenticated])
 
   const sessionType = remoteDb?.session?.type
-  sessionTypeRef.current = sessionType
+
+  useEffect(() => {
+    sessionTypeRef.current = sessionType
+  }, [sessionType])
 
   useEffect(() => {
     if (!isSupabaseEnabled || !sessionType) return undefined
@@ -1141,7 +1154,7 @@ export function AppProvider({ children }) {
       && currentMember?.freeTrialExpiresAt
       && new Date() > new Date(currentMember.freeTrialExpiresAt),
     ),
-    [currentMember?.membership, currentMember?.freeTrialExpiresAt],
+    [currentMember],
   )
 
   const value = useMemo(() => ({

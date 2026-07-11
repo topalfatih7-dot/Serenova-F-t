@@ -5,7 +5,6 @@ import {
   Mail, CalendarRange, UserRound, FileText, HeartPulse,
 } from 'lucide-react'
 import { format, addDays } from 'date-fns'
-import { tr } from 'date-fns/locale'
 import NutritionProgramBuilder from '../../components/staff/NutritionProgramBuilder'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
@@ -14,7 +13,8 @@ import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
-import { getStaffClients, getStaffAppointments } from './StaffOverviewPage'
+import { getStaffClients } from '../../utils/chatAccess'
+import { getStaffAppointments } from './staffAppointments'
 import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import {
   findEntriesOutsidePackage,

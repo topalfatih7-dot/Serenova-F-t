@@ -42,7 +42,7 @@ function amountText(e) {
   return e.amountType === 'duration' ? `${e.amount} ${e.durationUnit || 'sn'}` : `${e.amount} tekrar`
 }
 
-function ProgramBlock({ program, tone }) {
+function ProgramBlock({ program }) {
   const groups = useMemo(() => groupEntries(program.entries || []), [program.entries])
   const isWorkout = program.type === 'workout'
   const Icon = isWorkout ? Dumbbell : Apple

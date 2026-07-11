@@ -109,6 +109,12 @@ export default function AdminContentPage() {
     pending: successStories.filter((s) => !s.approved).length,
   }), [successStories])
 
+  const lists = useMemo(() => ({
+    testimonials,
+    faqs,
+    successStories,
+  }), [testimonials, faqs, successStories])
+
   const items = useMemo(() => {
     const rawItems = activeTab === 'testimonials'
       ? testimonials

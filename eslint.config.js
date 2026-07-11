@@ -17,6 +17,31 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Bilinçli atılan destructure alanları (_c) ve rest sibling'ler
+      'no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      }],
+      // Vite: sabit export'lar HMR'yi bozmaz
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+  // Context: Provider + useX hook birlikte export (standart kalıp)
+  {
+    files: ['src/context/**/*.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true, allowExportNames: ['useApp', 'useToast'] },
+      ],
+    },
   },
   // Sunucu/Node tarafı dosyalar (Vercel serverless, build/araç scriptleri)
   {

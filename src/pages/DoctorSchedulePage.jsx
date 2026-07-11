@@ -1,4 +1,5 @@
-import MemberScheduleView, { doctorMonthlyLimit } from '../components/calendar/MemberScheduleView'
+import MemberScheduleView from '../components/calendar/MemberScheduleView'
+import { doctorMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
 import { packageIncludesDoctor } from '../data/membershipPlans'
 import { Stethoscope } from 'lucide-react'

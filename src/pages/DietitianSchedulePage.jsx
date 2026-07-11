@@ -1,4 +1,5 @@
-import MemberScheduleView, { dietitianMonthlyLimit } from '../components/calendar/MemberScheduleView'
+import MemberScheduleView from '../components/calendar/MemberScheduleView'
+import { dietitianMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
 import { packageIncludesDietitian } from '../data/membershipPlans'
 import { Apple } from 'lucide-react'

@@ -6,7 +6,7 @@ import {
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { normalizeStaffProfile } from '../../data/staffProfile'
 import { teamListPathForRole } from '../../config/seo'
-import { weekdayLabel } from '../package/SupportScheduler'
+import { weekdayLabel } from '../package/supportScheduleConstants'
 
 function Section({ title, icon: Icon, children }) {
   if (!children) return null

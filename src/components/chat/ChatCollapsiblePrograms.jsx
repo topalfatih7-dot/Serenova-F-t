@@ -30,7 +30,7 @@ const ROLE_CONFIG = {
   },
 }
 
-export function filterProgramsByRole(programs = [], role) {
+function filterProgramsByRole(programs = [], role) {
   const cfg = ROLE_CONFIG[role]
   if (!cfg || !cfg.type) return []
   return programs.filter((p) => p.type === cfg.type)

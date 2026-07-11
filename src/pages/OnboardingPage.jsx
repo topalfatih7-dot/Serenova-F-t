@@ -31,7 +31,7 @@ import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
-import { memberNeedsProfileCompletion, displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
+import { displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import { supabase } from '../services/supabaseClient'
 import { ensureAuthForRegistration, savePendingRegistrationMetadata } from '../services/supabaseDb'
 

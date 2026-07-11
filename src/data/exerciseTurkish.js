@@ -283,7 +283,7 @@ export function buildTurkishDescription(exercise) {
   return parts.join('\n').trim()
 }
 
-export function translateExerciseRecord(exercise, pack) {
+export function translateExerciseRecord(exercise, _pack) {
   const secondary = (exercise.secondaryMuscles || []).map(translateMuscle)
   return {
     name: translateExerciseName(exercise.name),

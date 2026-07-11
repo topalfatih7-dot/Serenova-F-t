@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import { Users, CalendarClock, ClipboardList, ArrowRight } from 'lucide-react'
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
-import { weekdayLabel } from '../../components/package/SupportScheduler'
+import { weekdayLabel } from '../../components/package/supportScheduleConstants'
 import StaffVideoPanel from '../../components/video/StaffVideoPanel'
 import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import { useApp } from '../../context/AppContext'
 import { getStaffClients } from '../../utils/chatAccess'
+import { getStaffAppointments } from './staffAppointments'
 import { resolveFirstName } from '../../utils/displayName'
 import {
   fallbackNameForRole,
@@ -17,22 +18,6 @@ import {
   staffRoleMeta,
   isCoachRole,
 } from '../../utils/staffRoles'
-
-export { getStaffClients }
-
-export function getStaffAppointments(clients, role) {
-  const now = new Date()
-  const key = sessionsKeyForRole(role)
-  const list = []
-  clients.forEach((m) => {
-    (m[key] || []).forEach((s) => {
-      if (s.status === 'scheduled' && new Date(s.date) >= now) {
-        list.push({ ...s, memberName: m.name, memberId: m.id })
-      }
-    })
-  })
-  return list.sort((a, b) => new Date(a.date) - new Date(b.date))
-}
 
 export default function StaffOverviewPage() {
   const { staffUser, platform } = useApp()

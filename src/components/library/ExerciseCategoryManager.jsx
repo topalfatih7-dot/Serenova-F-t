@@ -71,10 +71,6 @@ export default function ExerciseCategoryManager({ categoryCounts = {} }) {
     }
   }
 
-  const otherCategories = deleteTarget
-    ? categories.filter((c) => c !== deleteTarget)
-    : []
-
   return (
     <div className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">

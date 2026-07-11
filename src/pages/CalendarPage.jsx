@@ -499,7 +499,7 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
         } : ex))
       })
     }
-  }, [])
+  }, [setDetailExercise])
 
   return (
     <>

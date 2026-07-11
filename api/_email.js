@@ -2,10 +2,14 @@
 
 export function sanitizeEmailInput(raw) {
   if (raw == null) return ''
-  return String(raw)
-    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '')
-    .trim()
-    .toLowerCase()
+  let out = ''
+  for (const ch of String(raw)) {
+    const cp = ch.codePointAt(0)
+    if (cp <= 0x1f || (cp >= 0x7f && cp <= 0x9f)) continue
+    if (cp === 0x200b || cp === 0x200c || cp === 0x200d || cp === 0xfeff) continue
+    out += ch
+  }
+  return out.trim().toLowerCase()
 }
 
 const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/

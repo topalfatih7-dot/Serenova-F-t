@@ -1,4 +1,5 @@
-import MemberScheduleView, { coachMonthlyLimit } from '../components/calendar/MemberScheduleView'
+import MemberScheduleView from '../components/calendar/MemberScheduleView'
+import { coachMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
 import { packageIncludesCoach } from '../data/membershipPlans'
 import { Dumbbell } from 'lucide-react'

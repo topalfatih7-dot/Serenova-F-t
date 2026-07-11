@@ -53,7 +53,7 @@ function appendCalorieHistory(existing = [], entry) {
 export default function CalorieCalculatorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { membership, user, updateProfile } = useApp()
+  const { user, updateProfile } = useApp()
   const fileRef = useRef(null)
   const chatEndRef = useRef(null)
 

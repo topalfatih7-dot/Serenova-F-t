@@ -52,11 +52,17 @@ export default function HealthTestFlow({
   const [disclaimer, setDisclaimer] = useState(initialDisclaimer)
   const [phase, setPhase] = useState(resume.phase)
   const healthTestRef = useRef(healthTest)
-  healthTestRef.current = healthTest
   const prevOpenRef = useRef(open)
   const onProgressSaveRef = useRef(onProgressSave)
-  onProgressSaveRef.current = onProgressSave
   const lastPersistedRef = useRef(JSON.stringify({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
+
+  useEffect(() => {
+    healthTestRef.current = healthTest
+  }, [healthTest])
+
+  useEffect(() => {
+    onProgressSaveRef.current = onProgressSave
+  }, [onProgressSave])
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {

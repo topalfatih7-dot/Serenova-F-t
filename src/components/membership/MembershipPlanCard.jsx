@@ -6,6 +6,7 @@ import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPl
 import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
 
 const VISIBLE_FEATURES = 4
+const MotionLink = motion(Link)
 
 export default function MembershipPlanCard({
   plan,
@@ -31,7 +32,7 @@ export default function MembershipPlanCard({
   const daily = dailyPrice(plan.price)
   const durationLabel = getPlanDurationLabel(plan)
   const isOneTime = isOneTimeBillingPlan(plan)
-  const Tag = mode === 'select' ? motion.button : motion(Link)
+  const Tag = mode === 'select' ? motion.button : MotionLink
   const tagProps = mode === 'select'
     ? { type: 'button', onClick: () => onSelect?.(plan.id) }
     : { to: ctaTo || `/onboarding?plan=${plan.id}` }

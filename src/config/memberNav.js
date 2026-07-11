@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Bell, HelpCircle, Crown,
-  Dumbbell, Settings, ClipboardList, Library, CalendarDays, Flame, Wallet,
+  Settings, ClipboardList, Library, CalendarDays, Flame, Wallet,
   MessageCircle, HeartPulse, CalendarCheck,
 } from 'lucide-react'
 

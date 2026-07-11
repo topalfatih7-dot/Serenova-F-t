@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, ArrowRight, UserPlus, Dumbbell, Apple, CheckCircle,
-  Plus, Briefcase, GraduationCap, Award, Upload, Loader2,
+  Plus, Briefcase, GraduationCap, Award, Upload,
   Share2, Video, Link2, Globe, MapPin, Building2, Sparkles,
-  Target, Users, User, Mail,
+  Target, Users, User,
 } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
@@ -77,7 +77,6 @@ export default function StaffApplicationPage() {
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
   const dietitianGroups = useMemo(() => [{ id: 'all', label: 'Uzmanlık Alanları', tone: 'sage', items: DIETITIAN_SPECIALTIES }], [])
   const specialtyGroups = form.role === 'dietitian' ? dietitianGroups : COACH_SPECIALTY_GROUPS
-  const RoleIcon = form.role === 'dietitian' ? Apple : Dumbbell
   const districts = useMemo(() => getDistricts(form.city), [form.city])
   const gymDistricts = useMemo(() => getDistricts(form.gymCity), [form.gymCity])
 
