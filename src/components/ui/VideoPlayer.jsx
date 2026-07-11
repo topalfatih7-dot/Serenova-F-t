@@ -88,6 +88,7 @@ function VideoCustomControls({
   autoplayBlocked,
   onUserPlay,
   buffering,
+  mediaKey = '',
 }) {
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -105,6 +106,7 @@ function VideoCustomControls({
 
     sync()
     video.addEventListener('play', sync)
+    video.addEventListener('playing', sync)
     video.addEventListener('pause', sync)
     video.addEventListener('timeupdate', sync)
     video.addEventListener('loadedmetadata', sync)
@@ -113,13 +115,14 @@ function VideoCustomControls({
 
     return () => {
       video.removeEventListener('play', sync)
+      video.removeEventListener('playing', sync)
       video.removeEventListener('pause', sync)
       video.removeEventListener('timeupdate', sync)
       video.removeEventListener('loadedmetadata', sync)
       video.removeEventListener('durationchange', sync)
       video.removeEventListener('ended', sync)
     }
-  }, [videoRef])
+  }, [videoRef, mediaKey])
 
   const togglePlay = async () => {
     const video = videoRef.current
@@ -143,7 +146,8 @@ function VideoCustomControls({
   }
 
   const progress = duration > 0 ? (current / duration) * 100 : 0
-  const showCenterPlay = autoplayBlocked || (!playing && (isIosDevice() || duration === 0))
+  // Oynuyorsa ortadaki play asla kalmasın (iOS: play() "blocked" dönüp video yine de oynayabilir).
+  const showCenterPlay = !playing && (autoplayBlocked || isIosDevice() || duration === 0)
   const valueText = `${formatVideoTime(current)} / ${formatVideoTime(duration)}`
 
   return (
@@ -582,7 +586,8 @@ function VideoWatermarkFrame({
       video.muted = true
       if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return
       const result = await guard.play(video)
-      if (result.ok) {
+      // iOS: promise "blocked"/"paused-after" olsa bile muted autoplay sonra başlayabilir.
+      if (result.ok || !video.paused) {
         setAutoplayBlocked(false)
         setAnnounce('')
       } else if (result.reason === 'blocked' || result.reason === 'paused-after') {
@@ -640,6 +645,7 @@ function VideoWatermarkFrame({
       clearStallWatchdog()
       setBuffering(false)
       setAnnounce('')
+      setAutoplayBlocked(false)
       clearTimeout(healthyTimerRef.current)
       healthyTimerRef.current = setTimeout(() => {}, HEALTHY_PLAYBACK_RESET_MS)
     }
@@ -977,6 +983,7 @@ function VideoWatermarkFrame({
           autoplayBlocked={autoplayBlocked}
           onUserPlay={handleUserPlay}
           buffering={showBuffering}
+          mediaKey={mediaKey}
         />
       ) : allowFullscreen && (
         <button
