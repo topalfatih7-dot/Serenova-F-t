@@ -1,5 +1,7 @@
 /**
- * Sağlık profili + test → AI beslenme ipuçları (günlük menü yok).
+ * Üye AI uçları (Vercel Hobby 12-fn limiti — tek route):
+ * - POST /api/ai-nutrition-tips              → beslenme ipuçları
+ * - POST /api/ai-nutrition-tips?task=auto-programs → antrenman + diyet programı
  */
 
 import {
@@ -7,6 +9,7 @@ import {
   buildNutritionInstruction,
   NUTRITION_CONFIG,
 } from './_ai-prompts.js'
+import { runAutoPrograms } from './_autoPrograms.js'
 import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
 
 async function loadGemini() {
@@ -21,6 +24,13 @@ function filterTips(tips) {
     .filter((t) => t.length > 0)
     .filter((t) => !/\bsu\b|hidrasyon|litre|water/i.test(t))
     .slice(0, 6)
+}
+
+function resolveTask(req, body) {
+  const q = typeof req.query?.task === 'string' ? req.query.task : ''
+  if (q === 'auto-programs') return 'auto-programs'
+  if (body?.task === 'auto-programs') return 'auto-programs'
+  return 'tips'
 }
 
 export default async function handler(req, res) {
@@ -41,14 +51,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+    const task = resolveTask(req, body)
+
+    if (task === 'auto-programs') {
+      const result = await runAutoPrograms({ body, callGemini, parseJsonResponse })
+      return res.status(result.status).json(result.body)
+    }
+
     const profile = body?.profile || {}
     const healthTestSummary = String(body?.healthTestSummary || '').slice(0, 3000)
 
     const instruction = buildNutritionInstruction(profile, healthTestSummary)
     const raw = await callGemini([{ text: instruction }], NUTRITION_SYSTEM, NUTRITION_CONFIG)
-    const result = parseJsonResponse(raw)
-    const tips = filterTips(result.tips)
+    const parsed = parseJsonResponse(raw)
+    const tips = filterTips(parsed.tips)
 
     if (tips.length === 0) {
       return res.status(502).json({ ok: false, error: 'AI beslenme ipucu üretemedi' })
@@ -57,14 +74,14 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       tips,
-      focus: String(result.focus || '').trim().slice(0, 200),
+      focus: String(parsed.focus || '').trim().slice(0, 200),
       aiGenerated: true,
     })
   } catch (e) {
     const status = e?.status || 500
-    const body = e?.code
+    const errBody = e?.code
       ? { ok: false, code: e.code, error: e.message || String(e) }
       : { ok: false, error: String(e?.message || e) }
-    return res.status(status).json(body)
+    return res.status(status).json(errBody)
   }
 }

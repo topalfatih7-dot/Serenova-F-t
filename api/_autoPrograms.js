@@ -1,6 +1,6 @@
 /**
- * Profil + aday hareket kataloğu → otomatik antrenman + diyet programı (Gemini).
- * Hareket id'leri yalnızca gönderilen katalogdan kabul edilir.
+ * Otomatik antrenman + diyet programı (Gemini) — ayrı Vercel route değil.
+ * Hobby 12-fn limiti: /api/ai-nutrition-tips?task=auto-programs üzerinden çağrılır.
  */
 
 import {
@@ -9,7 +9,6 @@ import {
   AUTO_MEAL_TYPES,
   buildAutoProgramsInstruction,
 } from './_ai-prompts.js'
-import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
 
 const MAX_CANDIDATES = 80
 const VALID_DAYS = new Set([0, 1, 2, 3, 4, 5, 6])
@@ -20,12 +19,6 @@ const DEFAULT_MEAL_TIMES = {
   snack_afternoon: '16:00',
   dinner: '19:00',
   snack_evening: '21:30',
-}
-
-async function loadGemini() {
-  const href = new URL('./_gemini.js', import.meta.url).href
-  const url = process.env.NODE_ENV === 'production' ? href : `${href}?t=${Date.now()}`
-  return import(url)
 }
 
 function normalizeCandidates(raw) {
@@ -91,7 +84,6 @@ function sanitizeWorkout(rawWorkout, catalogById, allowedDays) {
     if (exercises.length > 0) days.push({ day, exercises })
   }
 
-  // Eksik günleri katalogdan doldur (round-robin)
   const catalogIds = [...catalogById.keys()]
   let cursor = 0
   for (const day of allowedDays) {
@@ -152,62 +144,49 @@ function sanitizeNutrition(rawNutrition) {
   }
 }
 
-export default async function handler(req, res) {
-  setCorsHeaders(res)
-  if (handleOptions(req, res)) return
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
+/**
+ * @returns {{ status: number, body: object }}
+ */
+export async function runAutoPrograms({ body, callGemini, parseJsonResponse }) {
+  const profile = body?.profile || {}
+  const healthTestSummary = String(body?.healthTestSummary || '').slice(0, 3000)
+  const candidates = normalizeCandidates(body?.candidates)
+  const workoutDays = (Array.isArray(body?.workoutDays) ? body.workoutDays : [1, 3, 5])
+    .map((d) => Number(d))
+    .filter((d) => VALID_DAYS.has(d))
+  const dailyCalories = body?.dailyCalories != null ? Number(body.dailyCalories) : null
+
+  if (candidates.length < 3) {
+    return { status: 400, body: { ok: false, error: 'En az 3 aday hareket gerekli' } }
   }
 
-  const auth = await requireAuth(req)
-  if (!auth.ok) {
-    return res.status(auth.status).json({ ok: false, error: auth.error })
+  const catalogById = new Map(candidates.map((c) => [c.id, c]))
+  const allowedDays = workoutDays.length ? workoutDays : [1, 3, 5]
+
+  const instruction = buildAutoProgramsInstruction({
+    profile,
+    healthTestSummary,
+    candidates,
+    workoutDays: allowedDays,
+    dailyCalories: Number.isFinite(dailyCalories) ? dailyCalories : null,
+  })
+
+  const raw = await callGemini([{ text: instruction }], AUTO_PROGRAMS_SYSTEM, AUTO_PROGRAMS_CONFIG)
+  const result = parseJsonResponse(raw)
+
+  const workout = sanitizeWorkout(result.workout, catalogById, allowedDays)
+  const nutrition = sanitizeNutrition(result.nutrition)
+
+  if (workout.days.length === 0) {
+    return { status: 502, body: { ok: false, error: 'AI geçerli antrenman üretemedi' } }
+  }
+  if (!nutrition.hasRequired || nutrition.meals.length < 3) {
+    return { status: 502, body: { ok: false, error: 'AI geçerli diyet menüsü üretemedi' } }
   }
 
-  const { callGemini, parseJsonResponse, isGeminiConfigured } = await loadGemini()
-  if (!isGeminiConfigured()) {
-    return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)' })
-  }
-
-  try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const profile = body?.profile || {}
-    const healthTestSummary = String(body?.healthTestSummary || '').slice(0, 3000)
-    const candidates = normalizeCandidates(body?.candidates)
-    const workoutDays = (Array.isArray(body?.workoutDays) ? body.workoutDays : [1, 3, 5])
-      .map((d) => Number(d))
-      .filter((d) => VALID_DAYS.has(d))
-    const dailyCalories = body?.dailyCalories != null ? Number(body.dailyCalories) : null
-
-    if (candidates.length < 3) {
-      return res.status(400).json({ ok: false, error: 'En az 3 aday hareket gerekli' })
-    }
-
-    const catalogById = new Map(candidates.map((c) => [c.id, c]))
-    const allowedDays = workoutDays.length ? workoutDays : [1, 3, 5]
-
-    const instruction = buildAutoProgramsInstruction({
-      profile,
-      healthTestSummary,
-      candidates,
-      workoutDays: allowedDays,
-      dailyCalories: Number.isFinite(dailyCalories) ? dailyCalories : null,
-    })
-
-    const raw = await callGemini([{ text: instruction }], AUTO_PROGRAMS_SYSTEM, AUTO_PROGRAMS_CONFIG)
-    const result = parseJsonResponse(raw)
-
-    const workout = sanitizeWorkout(result.workout, catalogById, allowedDays)
-    const nutrition = sanitizeNutrition(result.nutrition)
-
-    if (workout.days.length === 0) {
-      return res.status(502).json({ ok: false, error: 'AI geçerli antrenman üretemedi' })
-    }
-    if (!nutrition.hasRequired || nutrition.meals.length < 3) {
-      return res.status(502).json({ ok: false, error: 'AI geçerli diyet menüsü üretemedi' })
-    }
-
-    return res.status(200).json({
+  return {
+    status: 200,
+    body: {
       ok: true,
       aiGenerated: true,
       workout,
@@ -215,12 +194,6 @@ export default async function handler(req, res) {
         focus: nutrition.focus,
         meals: nutrition.meals,
       },
-    })
-  } catch (e) {
-    const status = e?.status || 500
-    const errBody = e?.code
-      ? { ok: false, code: e.code, error: e.message || String(e) }
-      : { ok: false, error: String(e?.message || e) }
-    return res.status(status).json(errBody)
+    },
   }
 }

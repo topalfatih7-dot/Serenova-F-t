@@ -85,10 +85,10 @@ VITE_AI_NUTRITION_ENABLED=true
 | `api/_ai-prompts.js` | Tüm promptlar (maliyet optimize, tek yerde) |
 | `api/ai-food-vision.js` | Fotoğraf → kalori (serverless endpoint) |
 | `api/ai-food-text.js` | Metin → kalori (serverless endpoint) |
-| `api/ai-nutrition-tips.js` | Profil → beslenme ipuçları |
-| `api/ai-auto-programs.js` | Profil + aday hareketler → antrenman + diyet programı JSON |
+| `api/ai-nutrition-tips.js` | Profil → beslenme ipuçları; `?task=auto-programs` → antrenman + diyet |
+| `api/_autoPrograms.js` | Otomatik program Gemini mantığı (ayrı route değil — Hobby 12-fn) |
 | `src/services/aiVision.js` | Frontend: görsel küçültme + `/api/ai-food-vision` çağrısı |
-| `src/services/aiAutoPrograms.js` | Frontend: `/api/ai-auto-programs` çağrısı |
+| `src/services/aiAutoPrograms.js` | Frontend: `/api/ai-nutrition-tips?task=auto-programs` |
 | `src/services/memberHealthSync.js` | Basic otomatik program oluşturma (AI + yedek) |
 
 ---

@@ -12,10 +12,11 @@ export async function fetchAiAutoPrograms({
   dailyCalories,
 }) {
   try {
-    const res = await fetch('/api/ai-auto-programs', {
+    const res = await fetch('/api/ai-nutrition-tips?task=auto-programs', {
       method: 'POST',
       headers: await getApiAuthHeaders(),
       body: JSON.stringify({
+        task: 'auto-programs',
         profile,
         healthTestSummary,
         candidates,
