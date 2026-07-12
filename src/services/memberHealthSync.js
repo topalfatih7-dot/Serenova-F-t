@@ -1,4 +1,9 @@
-import { generateHealthAnalysis, isHealthAnalysisStale, selectExerciseCandidates } from './aiAnalysis'
+import {
+  generateHealthAnalysis,
+  isHealthAnalysisStale,
+  needsAiNutritionTips,
+  selectExerciseCandidates,
+} from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 import { fetchAiNutritionTips } from './aiNutritionTips'
@@ -33,6 +38,20 @@ function programType(p) {
   return p?.type || (p?.entries?.some((e) => e.mealType) ? 'nutrition' : 'workout')
 }
 
+function mergePreviousDietTips(healthAnalysis, previous) {
+  const prev = previous?.dietitianRecommendations
+  if (!prev) return healthAnalysis
+  if (prev.aiGenerated || (prev.tips || []).length > 0 || prev.aiAttemptedAt) {
+    healthAnalysis.dietitianRecommendations = {
+      tips: prev.tips || [],
+      focus: prev.focus || '',
+      aiGenerated: Boolean(prev.aiGenerated),
+      ...(prev.aiAttemptedAt ? { aiAttemptedAt: prev.aiAttemptedAt } : {}),
+    }
+  }
+  return healthAnalysis
+}
+
 /**
  * Basic / otomatik: 15 günlük antrenman + diyet programlarını oluşturur.
  * Koç hareketleri yalnızca exercises kütüphanesinden (exerciseId).
@@ -49,6 +68,7 @@ export async function createAutoProgramsForMember({
   exercises = [],
   profile = null,
   membership = 'free',
+  skipAi = false,
 }) {
   if (!memberId || !healthAnalysis) return { created: [] }
   if (!isBasicAutoProgramEligible(membership)) return { created: [], skipped: 'paid' }
@@ -75,7 +95,7 @@ export async function createAutoProgramsForMember({
   let aiWorkout = null
   let aiNutrition = null
 
-  if (candidates.length >= 3) {
+  if (!skipAi && candidates.length >= 3) {
     const ai = await fetchAiAutoPrograms({
       profile: {
         age: enriched.age,
@@ -156,12 +176,19 @@ export async function createAutoProgramsForMember({
   return { created, aiGenerated: Boolean(aiWorkout && aiNutrition) }
 }
 
+/**
+ * @param {object} opts
+ * @param {boolean} [opts.skipAi] — Gemini çağırma (ölçü güncelleme / arka plan)
+ * @param {boolean} [opts.skipPrograms] — otomatik program üretme
+ */
 export async function syncMemberHealthAssets({
   user,
   exercises,
   updateProfile,
   createProgram,
   myPrograms = [],
+  skipAi = false,
+  skipPrograms = false,
 }) {
   if (!user?.id) return { synced: false }
   if (!isHealthTestComplete(user.healthTest, user.gender, user.packageConfig)) return { synced: false, reason: 'test' }
@@ -169,33 +196,45 @@ export async function syncMemberHealthAssets({
 
   const enriched = enrichProfileForAnalysis(user)
   const exList = exercises?.length ? exercises : await fetchExercisesForAi()
-  const healthAnalysis = generateHealthAnalysis(enriched, exList)
+  let healthAnalysis = generateHealthAnalysis(enriched, exList)
 
-  const aiNutrition = await fetchAiNutritionTips({
-    profile: {
-      age: enriched.age,
-      gender: enriched.gender,
-      height: enriched.height,
-      weight: enriched.weight,
-      goals: enriched.goals,
-      nutritionPrefs: enriched.nutritionPrefs,
-      fitnessLevel: enriched.fitnessLevel,
-    },
-    healthTestSummary: buildHealthTestSummary(healthAnalysis.healthTestInsights),
-  })
+  const shouldCallAiTips = !skipAi && needsAiNutritionTips(user.healthAnalysis)
 
-  if (aiNutrition.ok) {
-    healthAnalysis.dietitianRecommendations = {
-      tips: aiNutrition.tips,
-      focus: aiNutrition.focus,
-      aiGenerated: true,
+  if (shouldCallAiTips) {
+    const aiNutrition = await fetchAiNutritionTips({
+      profile: {
+        age: enriched.age,
+        gender: enriched.gender,
+        height: enriched.height,
+        weight: enriched.weight,
+        goals: enriched.goals,
+        nutritionPrefs: enriched.nutritionPrefs,
+        fitnessLevel: enriched.fitnessLevel,
+      },
+      healthTestSummary: buildHealthTestSummary(healthAnalysis.healthTestInsights),
+    })
+
+    if (aiNutrition.ok) {
+      healthAnalysis.dietitianRecommendations = {
+        tips: aiNutrition.tips,
+        focus: aiNutrition.focus,
+        aiGenerated: true,
+      }
+    } else {
+      healthAnalysis.dietitianRecommendations = {
+        ...healthAnalysis.dietitianRecommendations,
+        aiGenerated: false,
+        aiAttemptedAt: new Date().toISOString(),
+      }
     }
+  } else {
+    healthAnalysis = mergePreviousDietTips(healthAnalysis, user.healthAnalysis)
   }
 
   await updateProfile({ healthAnalysis })
 
   let programsResult = { created: [], skipped: null }
-  if (isBasicAutoProgramEligible(user)) {
+  if (!skipPrograms && isBasicAutoProgramEligible(user)) {
     programsResult = await createAutoProgramsForMember({
       memberId: user.id,
       memberName: user.name,
@@ -205,6 +244,7 @@ export async function syncMemberHealthAssets({
       exercises: exList,
       profile: enriched,
       membership: user.membership || 'free',
+      skipAi,
     })
   }
 

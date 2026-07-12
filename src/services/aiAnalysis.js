@@ -21,7 +21,6 @@ export function isHealthAnalysisStale(analysis, libraryCount = 0) {
   if ((analysis.version || 0) < HEALTH_ANALYSIS_VERSION) return true
   if (analysis.dietitianRecommendations?.hydration != null) return true
   if ((analysis.dietitianRecommendations?.mealPlan || []).length > 0) return true
-  if (!analysis.dietitianRecommendations?.aiGenerated) return true
 
   const weekly = analysis.coachRecommendations?.weeklyPlan || []
   if (weekly.some((day) => isGenericWeeklyPlanDay(day))) return true
@@ -32,6 +31,15 @@ export function isHealthAnalysisStale(analysis, libraryCount = 0) {
   }
 
   return false
+}
+
+/** Gemini ipuçları henüz yok ve denenmedi mi? (sonsuz retry önleme) */
+export function needsAiNutritionTips(analysis) {
+  const tips = analysis?.dietitianRecommendations
+  if (!tips) return true
+  if (tips.aiGenerated) return false
+  if (tips.aiAttemptedAt) return false
+  return true
 }
 
 export function generateHealthAnalysis(profile, exercises = []) {

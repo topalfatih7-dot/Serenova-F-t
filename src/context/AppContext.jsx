@@ -611,9 +611,32 @@ export function AppProvider({ children }) {
   const { activeUsers } = useActiveUsers(isAdmin)
 
   const patchCurrentRemote = useCallback(async (patch) => {
-    if (!currentMember) return
-    await sb.saveMemberPatch(currentMember, patch)
-    await reloadRemote()
+    if (!currentMember) return null
+    const member = memberRef.current || currentMember
+    const optimistic = { ...member, ...patch }
+    memberRef.current = optimistic
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        members: prev.members.map((m) => (m.id === member.id ? { ...m, ...patch } : m)),
+      }
+    })
+    try {
+      const updated = await sb.saveMemberPatch(member, patch)
+      memberRef.current = updated
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          members: prev.members.map((m) => (m.id === updated.id ? { ...updated } : m)),
+        }
+      })
+      return updated
+    } catch {
+      await reloadRemote()
+      return null
+    }
   }, [currentMember, reloadRemote])
 
   const applyNotificationsOptimistic = useCallback((notifications) => {

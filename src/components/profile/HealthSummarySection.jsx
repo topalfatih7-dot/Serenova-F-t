@@ -75,21 +75,22 @@ export default function HealthSummarySection({ user }) {
         waist: form.waist,
       }
       await updateProfile(patch)
+      setOpen(false)
+      toast('Ölçüleriniz kaydedildi.', 'success')
+
+      // AI / program üretimini bekleme — arka planda yalnızca kural tabanlı özeti yenile
       const merged = { ...user, ...patch }
-      const result = await syncMemberHealthAssets({
+      void syncMemberHealthAssets({
         user: merged,
         exercises,
         updateProfile,
         createProgram,
         myPrograms,
+        skipAi: true,
+        skipPrograms: true,
       })
-      setOpen(false)
-      toast(
-        result.synced
-          ? 'Ölçüleriniz güncellendi ve programlarınız yenilendi.'
-          : 'Ölçüleriniz kaydedildi.',
-        'success',
-      )
+    } catch {
+      toast('Ölçüler kaydedilemedi. Tekrar deneyin.', 'error')
     } finally {
       setSaving(false)
     }

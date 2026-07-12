@@ -133,21 +133,21 @@ export default function PersonalInfoSection({ user }) {
         age: form.birthDate ? ageFromBirthDate(form.birthDate) : '',
       }
       await updateProfile(patch)
+      setOpen(false)
+      toast('Kişisel bilgileriniz kaydedildi.', 'success')
+
       const merged = { ...user, ...patch }
-      const result = await syncMemberHealthAssets({
+      void syncMemberHealthAssets({
         user: merged,
         exercises,
         updateProfile,
         createProgram,
         myPrograms,
+        skipAi: true,
+        skipPrograms: true,
       })
-      setOpen(false)
-      toast(
-        result.synced
-          ? 'Bilgileriniz güncellendi ve kişisel programlarınız hazırlandı.'
-          : 'Kişisel bilgileriniz kaydedildi.',
-        'success',
-      )
+    } catch {
+      toast('Bilgiler kaydedilemedi. Tekrar deneyin.', 'error')
     } finally {
       setSaving(false)
     }
