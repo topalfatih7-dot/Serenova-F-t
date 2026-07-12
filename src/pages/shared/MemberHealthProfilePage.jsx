@@ -95,7 +95,7 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
         noteAuthor={noteAuthor}
         onSaveNotes={handleSaveNotes}
         notesSaving={savingNotes}
-        showHealthAnalysis={audience === 'admin'}
+        showHealthAnalysis={false}
       />
     </PanelPageShell>
   )

@@ -42,8 +42,8 @@ export default function HealthTestSectionPage() {
       await saveHealthTestProgress(healthTest)
       const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig)
       if (allSectionsDone) {
-        toast(`${section.title} tamamlandı. Profilinizi kaydetmek için son adıma geçin.`, 'success')
-        navigate('/health-test/finish')
+        toast(`${section.title} tamamlandı. Tüm testler kaydedildi.`, 'success')
+        navigate('/health-test')
       } else {
         toast(`${section.title} testi kaydedildi.`, 'success')
         navigate('/health-test')

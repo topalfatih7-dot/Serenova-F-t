@@ -20,8 +20,8 @@ const comparisonRows = [
   { feature: 'Online Doktor Seansı', free: false, eko: false, diyet: false, spor: false, vip: false, doktor: true },
   { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko: false, diyet: '2', spor: false, vip: '2', doktor: false },
   { feature: 'Koç Görüşmesi / Ay', free: false, eko: false, diyet: false, spor: '2', vip: '2', doktor: false },
-  { feature: 'Diyet Programı', free: 'Otomatik', eko: 'Ayda 2', diyet: 'Özel', spor: false, vip: 'Özel', doktor: false },
-  { feature: 'Spor Programı', free: 'Otomatik', eko: 'Ayda 1', diyet: false, spor: 'Özel', vip: 'Özel', doktor: false },
+  { feature: 'Diyet Programı', free: false, eko: 'Ayda 2', diyet: 'Özel', spor: false, vip: 'Özel', doktor: false },
+  { feature: 'Spor Programı', free: false, eko: 'Ayda 1', diyet: false, spor: 'Özel', vip: 'Özel', doktor: false },
   { feature: 'Video Kütüphanesi', free: 'Temel', eko: 'Sınırlı', diyet: false, spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
   { feature: 'İlerleme Raporları', free: 'Temel', eko: true, diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
   { feature: 'Destek', free: 'Standart', eko: 'Standart', diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
@@ -40,7 +40,7 @@ const HOW_IT_WORKS_MEMBER = [
 ]
 
 const MEMBERSHIP_FAQ = [
-  { q: 'Ücretsiz Basic paketle başlayabilir miyim?', a: 'Evet. Basic paket ücretsizdir; kişisel sağlık analizi ve otomatik programlarla hemen başlayabilirsiniz.' },
+  { q: 'Ücretsiz Basic paketle başlayabilir miyim?', a: 'Evet. Basic paket ücretsizdir; kişisel sağlık analizi ile başlayabilirsiniz. Antrenman ve beslenme programları ücretli paketlerde koç / diyetisyen tarafından hazırlanır.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
   { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket satın alabilirsiniz.' },
 ]

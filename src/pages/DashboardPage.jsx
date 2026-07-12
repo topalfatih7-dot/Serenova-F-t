@@ -13,7 +13,6 @@ import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/Pr
 import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
-import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
@@ -36,12 +35,11 @@ export default function DashboardPage() {
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
-    exerciseCount, updateProfile, createProgram, posts,
+    posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
 
-  useHealthAnalysisSync({ user, exerciseCount, myPrograms, updateProfile, createProgram })
   useStripePaymentReturn(refresh)
 
   if (isFreeTrialExpired) {
@@ -163,7 +161,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Otomatik programlar' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={() => navigate('/membership')} />
+        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Sağlık testi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={() => navigate('/membership')} />
         <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={() => navigate('/schedule?tab=coach')} />
         <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={() => navigate('/schedule?tab=dietitian')} />
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />

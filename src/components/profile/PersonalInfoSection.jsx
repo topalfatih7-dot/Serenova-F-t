@@ -10,7 +10,6 @@ import PhotoUpload from '../ui/PhotoUpload'
 import Modal from '../ui/Modal'
 import { CITY_NAMES, getDistricts } from '../../data/turkeyCities'
 import { DEFAULT_COUNTRY_ISO, toE164, formatE164, parseE164, formatNationalNumber } from '../../data/countryCodes'
-import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import ProfileSectionCard from './ProfileSectionCard'
@@ -56,7 +55,7 @@ function rangeError(field, value) {
 }
 
 export default function PersonalInfoSection({ user }) {
-  const { updateProfile, createProgram, exercises, myPrograms } = useApp()
+  const { updateProfile } = useApp()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -135,17 +134,6 @@ export default function PersonalInfoSection({ user }) {
       await updateProfile(patch)
       setOpen(false)
       toast('Kişisel bilgileriniz kaydedildi.', 'success')
-
-      const merged = { ...user, ...patch }
-      void syncMemberHealthAssets({
-        user: merged,
-        exercises,
-        updateProfile,
-        createProgram,
-        myPrograms,
-        skipAi: true,
-        skipPrograms: true,
-      })
     } catch {
       toast('Bilgiler kaydedilemedi. Tekrar deneyin.', 'error')
     } finally {
@@ -199,7 +187,7 @@ export default function PersonalInfoSection({ user }) {
           <div className="mb-4 flex items-start gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2.5">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p className="text-xs text-amber-800">
-              Eksik: {completionHints.join(', ')} — kişisel programlar için tamamlayın.
+              Eksik: {completionHints.join(', ')} — profilinizi tamamlayın.
             </p>
           </div>
         )}

@@ -78,14 +78,14 @@ const ACTIVE_PLANS = [
     id: 'free', name: 'Basic', price: 0, period: 'Süresiz', badge: null, color: 'sage',
     features: [
       { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-      { text: 'Otomatik Beslenme Programı', included: true },
-      { text: 'Otomatik Antrenman Programı', included: true },
       { text: 'Video Kütüphanesi (Temel)', included: true },
       { text: 'Program Takibi', included: true },
+      { text: 'Otomatik Beslenme Programı', included: false },
+      { text: 'Otomatik Antrenman Programı', included: false },
       { text: 'Birebir Koç Görüşmesi', included: false },
       { text: 'Diyetisyen Randevusu', included: false },
     ],
-    limits: ['Otomatik programlar', 'Temel video erişimi', 'Standart destek'],
+    limits: ['Sağlık analizi', 'Temel video erişimi', 'Standart destek'],
     pricing_tiers: [],
   },
   {

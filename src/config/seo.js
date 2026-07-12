@@ -85,7 +85,7 @@ export const STATIC_BRAND_FAQS = [
   },
   {
     q: 'Yeni Form ücretsiz mi?',
-    a: 'Evet. Basic paket tamamen ücretsizdir; kayıt olup kişisel sağlık analizi ve otomatik programlarla hemen başlayabilirsiniz. Ücretli paketler isteğe bağlıdır.',
+    a: 'Evet. Basic paket tamamen ücretsizdir; kayıt olup kişisel sağlık analizi ile başlayabilirsiniz. Antrenman ve beslenme programları ücretli paketlerde koç / diyetisyen tarafından hazırlanır. Ücretli paketler isteğe bağlıdır.',
   },
 ]
 

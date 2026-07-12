@@ -14,7 +14,7 @@ const STEPS = [
     step: '02',
     icon: Sparkles,
     title: 'Size özel programınız hazırlansın',
-    desc: 'Ücretsiz otomatik program veya premium planda koç ve diyetisyen eşleşmesi.',
+    desc: 'Ücretsiz sağlık analizi veya premium planda koç ve diyetisyen eşleşmesi.',
     accent: 'from-sage-500 to-sage-600',
   },
   {

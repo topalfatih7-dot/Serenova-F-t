@@ -6,7 +6,6 @@ import Modal from '../ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI } from '../../services/health'
-import { syncMemberHealthAssets } from '../../services/memberHealthSync'
 
 const LIMITS = {
   weight: { min: 30, max: 300 },
@@ -35,7 +34,7 @@ function MetricCard({ icon: Icon, value, label, iconClass }) {
 }
 
 export default function HealthSummarySection({ user }) {
-  const { updateProfile, createProgram, exercises, myPrograms } = useApp()
+  const { updateProfile } = useApp()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -77,18 +76,6 @@ export default function HealthSummarySection({ user }) {
       await updateProfile(patch)
       setOpen(false)
       toast('Ölçüleriniz kaydedildi.', 'success')
-
-      // AI / program üretimini bekleme — arka planda yalnızca kural tabanlı özeti yenile
-      const merged = { ...user, ...patch }
-      void syncMemberHealthAssets({
-        user: merged,
-        exercises,
-        updateProfile,
-        createProgram,
-        myPrograms,
-        skipAi: true,
-        skipPrograms: true,
-      })
     } catch {
       toast('Ölçüler kaydedilemedi. Tekrar deneyin.', 'error')
     } finally {

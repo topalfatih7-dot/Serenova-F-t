@@ -76,7 +76,7 @@ export function AnalysisBlock({ analysis }) {
   )
 }
 
-export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = true }) {
+export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = false }) {
   if (!member) return null
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
 
