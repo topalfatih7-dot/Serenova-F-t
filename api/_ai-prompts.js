@@ -183,3 +183,91 @@ export const DAILY_TIP_CONFIG = {
   maxOutputTokens: 150,
   responseMimeType: 'application/json',
 }
+
+// ─── Otomatik Antrenman + Diyet Programı (Basic) ───────────────────
+export const AUTO_PROGRAMS_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
+${BRAND_CONTEXT}
+Üye için haftalık antrenman ve 14 günlük günlük beslenme menüsü üret.
+ANTRENMAN: Yalnızca verilen aday hareket listesindeki id'leri kullan. Yeni hareket uydurma.
+DİYET: Türk mutfağına uygun, pratik öğünler yaz. Tıbbi teşhis KOYMA.
+Türkçe yanıt ver.`
+
+export const AUTO_MEAL_TYPES = [
+  'breakfast',
+  'snack_morning',
+  'lunch',
+  'snack_afternoon',
+  'dinner',
+  'snack_evening',
+]
+
+export function buildAutoProgramsInstruction({
+  profile = {},
+  healthTestSummary = '',
+  candidates = [],
+  workoutDays = [1, 3, 5],
+  dailyCalories = null,
+}) {
+  const catalog = (candidates || []).slice(0, 80).map((ex) => ({
+    id: ex.id,
+    name: ex.name,
+    difficulty: ex.difficulty || '',
+    equipment: ex.equipment || '',
+    targetMuscle: ex.targetMuscle || '',
+    movementCategory: ex.movementCategory || '',
+  }))
+
+  const dayList = (workoutDays || [1, 3, 5]).join(', ')
+  const calHint = dailyCalories
+    ? `Önerilen günlük kalori: ~${dailyCalories} kcal.`
+    : ''
+
+  return `ÜYE PROFİLİ:
+- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
+- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
+- Hedefler: ${(profile.goals || []).join(', ') || '—'}
+- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
+- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
+${calHint}
+
+SAĞLIK TESTİ ÖZETİ:
+${healthTestSummary || '—'}
+
+ADAY HAREKET KATALOĞU (yalnızca bu id'lerden seç):
+${JSON.stringify(catalog)}
+
+ANTRENMAN GÜNLERİ (date-fns getDay: 0=Pazar … 6=Cumartesi): ${dayList}
+Her antrenman gününe 3–5 hareket seç; aynı id'yi aynı günde tekrarlama.
+amountType: "reps" (tekrar) veya "duration" (saniye). amount: reps için 8–15, duration için 20–60.
+
+DİYET: Her gün aynı menü (14 gün). Zorunlu öğünler: breakfast, lunch, dinner.
+İsteğe bağlı: snack_morning, snack_afternoon, snack_evening.
+Tercihlere (vejetaryen vb.) uy. Su/hidrasyon satırı yazma.
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "workout": {
+    "message": "1-2 cümle program özeti",
+    "days": [
+      {
+        "day": 1,
+        "exercises": [
+          { "id": "katalogdaki-id", "amountType": "reps", "amount": 12, "note": "" }
+        ]
+      }
+    ]
+  },
+  "nutrition": {
+    "focus": "1 cümle beslenme odağı",
+    "meals": [
+      { "mealType": "breakfast", "name": "öğün içeriği", "note": "", "start": "08:00" }
+    ]
+  }
+}`
+}
+
+export const AUTO_PROGRAMS_CONFIG = {
+  temperature: 0.35,
+  maxOutputTokens: 2500,
+  responseMimeType: 'application/json',
+}

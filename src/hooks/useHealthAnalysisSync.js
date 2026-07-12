@@ -4,7 +4,18 @@ import { isHealthAnalysisStale } from '../services/aiAnalysis'
 import { fetchExercisesForAi } from '../services/exerciseLibrary'
 import { syncMemberHealthAssets } from '../services/memberHealthSync'
 
-/** Sağlık testi tamam ama özet yoksa veya eski şemadaysa otomatik üretir. */
+function programType(p) {
+  return p?.type || (p?.entries?.some((e) => e.mealType) ? 'nutrition' : 'workout')
+}
+
+function needsAutoPrograms(myPrograms = []) {
+  const list = myPrograms || []
+  const hasWorkout = list.some((p) => programType(p) === 'workout')
+  const hasNutrition = list.some((p) => programType(p) === 'nutrition')
+  return !hasWorkout || !hasNutrition
+}
+
+/** Sağlık testi tamam ama özet yoksa, eski şemadaysa veya otomatik program eksikse üretir. */
 export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, updateProfile, createProgram }) {
   const syncing = useRef(false)
   const libraryCount = exerciseCount
@@ -20,8 +31,9 @@ export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, upd
         user.healthAnalysis?.dietitianRecommendations?.tips?.length)
 
     const stale = isHealthAnalysisStale(user.healthAnalysis, libraryCount)
+    const missingPrograms = needsAutoPrograms(myPrograms)
 
-    if (hasSummary && !stale) return
+    if (hasSummary && !stale && !missingPrograms) return
 
     syncing.current = true
     ;(async () => {

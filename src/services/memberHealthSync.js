@@ -1,8 +1,16 @@
-import { generateHealthAnalysis, isHealthAnalysisStale } from './aiAnalysis'
+import { generateHealthAnalysis, isHealthAnalysisStale, selectExerciseCandidates } from './aiAnalysis'
 import { isHealthTestComplete } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 import { fetchAiNutritionTips } from './aiNutritionTips'
+import { fetchAiAutoPrograms } from './aiAutoPrograms'
 import { fetchExercisesForAi } from './exerciseLibrary'
+import {
+  workoutDaysForLevel,
+  buildFallbackNutritionMeals,
+  buildWorkoutProgramFromAi,
+  buildWorkoutProgramFromLibrary,
+  buildNutritionProgramFromMeals,
+} from '../utils/autoProgramBuilders'
 
 export function profileReadyForAnalysis(profile) {
   return isHealthTestComplete(profile?.healthTest, profile?.gender, profile?.packageConfig)
@@ -12,39 +20,127 @@ function buildHealthTestSummary(insights = []) {
   return (insights || []).slice(0, 10).join('\n')
 }
 
-export async function createAutoProgramsForMember({ memberId, memberName, healthAnalysis, createProgram }) {
-  if (!memberId || !healthAnalysis) return
+function programType(p) {
+  return p?.type || (p?.entries?.some((e) => e.mealType) ? 'nutrition' : 'workout')
+}
 
-  const dayRotation = [1, 3, 5]
-  const exList = (healthAnalysis.coachRecommendations?.exercises || [])
-    .filter((ex) => ex?.id && String(ex.name || '').trim())
-  if (exList.length === 0) return
+/**
+ * Basic / otomatik: antrenman + diyet programlarını oluşturur.
+ * Gemini başarılıysa katalog kısıtlı plan; değilse kural + şablon yedek.
+ * Eksik tarafı tamamlar (çift workout üretmez).
+ */
+export async function createAutoProgramsForMember({
+  memberId,
+  memberName,
+  healthAnalysis,
+  createProgram,
+  myPrograms = [],
+  exercises = [],
+  profile = null,
+}) {
+  if (!memberId || !healthAnalysis) return { created: [] }
 
-  const workoutEntries = exList.map((ex, i) => ({
-    id: `auto-${Date.now()}-${i}`,
-    day: dayRotation[i % dayRotation.length],
-    start: '09:00',
-    end: '09:30',
-    exerciseId: ex.id,
-    exerciseName: ex.name,
-    videoUrl: ex.videoUrl || '',
-    description: ex.description || '',
-    amountType: 'reps',
-    amount: 12,
-    durationUnit: 'sn',
-    note: '',
-  }))
-  await createProgram({
-    type: 'workout',
-    memberId,
-    memberName,
-    staffId: null,
-    staffName: 'Yeni Form',
-    title: 'Otomatik Antrenman Programı',
-    description: healthAnalysis.coachRecommendations?.message || '',
-    entries: workoutEntries,
-    items: workoutEntries.map((e) => `${e.exerciseName} · ${e.amount} tekrar`),
+  const existing = myPrograms || []
+  const needsWorkout = !existing.some((p) => programType(p) === 'workout')
+  const needsNutrition = !existing.some((p) => programType(p) === 'nutrition')
+  if (!needsWorkout && !needsNutrition) return { created: [] }
+
+  const enriched = profile || {}
+  const fitnessLevel = enriched.fitnessLevel || 'beginner'
+  const workoutDays = workoutDaysForLevel(fitnessLevel)
+  const dailyCalories = healthAnalysis.dailyCalories?.recommended || null
+  const candidates = selectExerciseCandidates(enriched, exercises, 60)
+  const exerciseById = new Map(
+    (exercises || [])
+      .filter((ex) => ex?.id)
+      .map((ex) => [ex.id, ex]),
+  )
+  candidates.forEach((ex) => {
+    if (!exerciseById.has(ex.id)) exerciseById.set(ex.id, ex)
   })
+
+  let aiWorkout = null
+  let aiNutrition = null
+
+  if (candidates.length >= 3) {
+    const ai = await fetchAiAutoPrograms({
+      profile: {
+        age: enriched.age,
+        gender: enriched.gender,
+        height: enriched.height,
+        weight: enriched.weight,
+        goals: enriched.goals,
+        nutritionPrefs: enriched.nutritionPrefs,
+        fitnessLevel,
+      },
+      healthTestSummary: buildHealthTestSummary(healthAnalysis.healthTestInsights),
+      candidates: candidates.map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        difficulty: ex.difficulty,
+        equipment: ex.equipment,
+        targetMuscle: ex.targetMuscle,
+        movementCategory: ex.movementCategory,
+      })),
+      workoutDays,
+      dailyCalories,
+    })
+    if (ai.ok) {
+      aiWorkout = ai.workout
+      aiNutrition = ai.nutrition
+    }
+  }
+
+  const created = []
+
+  if (needsWorkout) {
+    let workoutPayload = aiWorkout
+      ? buildWorkoutProgramFromAi({
+        memberId,
+        memberName,
+        workout: aiWorkout,
+        exerciseById,
+      })
+      : null
+
+    if (!workoutPayload) {
+      const exList = (healthAnalysis.coachRecommendations?.exercises || [])
+        .filter((ex) => ex?.id && String(ex.name || '').trim())
+      workoutPayload = buildWorkoutProgramFromLibrary({
+        memberId,
+        memberName,
+        exercises: exList,
+        message: healthAnalysis.coachRecommendations?.message || '',
+        fitnessLevel,
+      })
+    }
+
+    if (workoutPayload) {
+      const p = await createProgram(workoutPayload)
+      if (p) created.push(p)
+    }
+  }
+
+  if (needsNutrition) {
+    const meals = aiNutrition?.meals?.length >= 3
+      ? aiNutrition.meals
+      : buildFallbackNutritionMeals(enriched, dailyCalories)
+
+    const nutritionPayload = buildNutritionProgramFromMeals({
+      memberId,
+      memberName,
+      meals,
+      focus: aiNutrition?.focus || '',
+      aiGenerated: Boolean(aiNutrition?.meals?.length >= 3),
+    })
+
+    if (nutritionPayload) {
+      const p = await createProgram(nutritionPayload)
+      if (p) created.push(p)
+    }
+  }
+
+  return { created, aiGenerated: Boolean(aiWorkout && aiNutrition) }
 }
 
 export async function syncMemberHealthAssets({
@@ -85,15 +181,15 @@ export async function syncMemberHealthAssets({
 
   await updateProfile({ healthAnalysis })
 
-  const shouldCreatePrograms = (myPrograms || []).length === 0
-  if (shouldCreatePrograms) {
-    await createAutoProgramsForMember({
-      memberId: user.id,
-      memberName: user.name,
-      healthAnalysis,
-      createProgram,
-    })
-  }
+  await createAutoProgramsForMember({
+    memberId: user.id,
+    memberName: user.name,
+    healthAnalysis,
+    createProgram,
+    myPrograms,
+    exercises: exList,
+    profile: enriched,
+  })
 
   return { synced: true, refreshed: isHealthAnalysisStale(user.healthAnalysis, (exList || []).length) }
 }

@@ -207,8 +207,12 @@ function difficultyFitScore(exDifficulty, profileLevel) {
   return exRank > profRank ? -8 : 2
 }
 
-function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
+/** Profil + sağlık testine göre kütüphaneden aday hareket seç (AI katalog / kural yedek). */
+export function selectExerciseCandidates(profile, exercises = [], limit = 60) {
   const library = pickLibraryExercises(exercises)
+  if (library.length === 0) return []
+
+  const goalCategories = mapGoalsToCategories(profile.goals || [])
   const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
   const lowImpactOnly = ht.injuries === 'yes' || (ht.painAreas || []).length > 0
   const profileLevel = profile.fitnessLevel || 'beginner'
@@ -250,10 +254,14 @@ function generateCoachList(profile, exercises, goalCategories, healthTestInsight
   })
 
   scored.sort((a, b) => b.score - a.score)
-  const selected = (scored.filter((s) => s.score > 0).length > 0 ? scored.filter((s) => s.score > 0) : scored)
-    .slice(0, 6)
-    .map((s) => normalizeLibraryExercise(s.ex))
+  const positive = scored.filter((s) => s.score > 0)
+  const pool = positive.length > 0 ? positive : scored
+  return pool.slice(0, Math.max(1, limit)).map((s) => normalizeLibraryExercise(s.ex))
+}
 
+function generateCoachList(profile, exercises, goalCategories, healthTestInsights = []) {
+  const library = pickLibraryExercises(exercises)
+  const selected = selectExerciseCandidates(profile, exercises, 6)
   const fallback = selected.length > 0 ? selected : library.slice(0, 6).map(normalizeLibraryExercise)
 
   const levelTips = {
