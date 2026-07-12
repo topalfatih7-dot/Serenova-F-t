@@ -4,6 +4,7 @@ import { enrichProfileForAnalysis } from '../utils/healthProfile'
 import { fetchAiNutritionTips } from './aiNutritionTips'
 import { fetchAiAutoPrograms } from './aiAutoPrograms'
 import { fetchExercisesForAi } from './exerciseLibrary'
+import { isPaidMembership } from '../data/membershipPlans'
 import {
   workoutDaysForLevel,
   buildFallbackNutritionMeals,
@@ -16,6 +17,14 @@ export function profileReadyForAnalysis(profile) {
   return isHealthTestComplete(profile?.healthTest, profile?.gender, profile?.packageConfig)
 }
 
+/** 15 günlük otomatik koç+diyet yalnızca Basic (free) üyeler için */
+export function isBasicAutoProgramEligible(userOrMembership) {
+  const membership = typeof userOrMembership === 'string'
+    ? userOrMembership
+    : userOrMembership?.membership
+  return !isPaidMembership(membership || 'free')
+}
+
 function buildHealthTestSummary(insights = []) {
   return (insights || []).slice(0, 10).join('\n')
 }
@@ -25,9 +34,11 @@ function programType(p) {
 }
 
 /**
- * Basic / otomatik: antrenman + diyet programlarını oluşturur.
+ * Basic / otomatik: 15 günlük antrenman + diyet programlarını oluşturur.
+ * Koç hareketleri yalnızca exercises kütüphanesinden (exerciseId).
  * Gemini başarılıysa katalog kısıtlı plan; değilse kural + şablon yedek.
  * Eksik tarafı tamamlar (çift workout üretmez).
+ * Ücretli paketlerde çağrılmaz (koç/diyetisyen programı beklenir).
  */
 export async function createAutoProgramsForMember({
   memberId,
@@ -37,8 +48,10 @@ export async function createAutoProgramsForMember({
   myPrograms = [],
   exercises = [],
   profile = null,
+  membership = 'free',
 }) {
   if (!memberId || !healthAnalysis) return { created: [] }
+  if (!isBasicAutoProgramEligible(membership)) return { created: [], skipped: 'paid' }
 
   const existing = myPrograms || []
   const needsWorkout = !existing.some((p) => programType(p) === 'workout')
@@ -181,15 +194,24 @@ export async function syncMemberHealthAssets({
 
   await updateProfile({ healthAnalysis })
 
-  await createAutoProgramsForMember({
-    memberId: user.id,
-    memberName: user.name,
-    healthAnalysis,
-    createProgram,
-    myPrograms,
-    exercises: exList,
-    profile: enriched,
-  })
+  let programsResult = { created: [], skipped: null }
+  if (isBasicAutoProgramEligible(user)) {
+    programsResult = await createAutoProgramsForMember({
+      memberId: user.id,
+      memberName: user.name,
+      healthAnalysis,
+      createProgram,
+      myPrograms,
+      exercises: exList,
+      profile: enriched,
+      membership: user.membership || 'free',
+    })
+  }
 
-  return { synced: true, refreshed: isHealthAnalysisStale(user.healthAnalysis, (exList || []).length) }
+  return {
+    synced: true,
+    refreshed: isHealthAnalysisStale(user.healthAnalysis, (exList || []).length),
+    programsCreated: programsResult.created?.length || 0,
+    programsSkipped: programsResult.skipped || null,
+  }
 }

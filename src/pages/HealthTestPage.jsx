@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestPage() {
-  const { user, packageConfig, updateProfile } = useApp()
+  const { user, packageConfig, updateProfile, myPrograms, membership } = useApp()
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
 
@@ -46,6 +46,8 @@ export default function HealthTestPage() {
         healthAck={user.healthAck}
         disclaimer={user.disclaimer}
         healthAnalysis={user.healthAnalysis}
+        myPrograms={myPrograms}
+        membership={membership || user.membership || 'free'}
         onConsentSave={handleConsentSave}
         consentSaving={consentSaving}
       />

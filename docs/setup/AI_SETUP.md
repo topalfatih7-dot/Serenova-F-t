@@ -90,6 +90,30 @@ VITE_AI_NUTRITION_ENABLED=true
 | `src/services/aiVision.js` | Frontend: görsel küçültme + `/api/ai-food-vision` çağrısı |
 | `src/services/aiAutoPrograms.js` | Frontend: `/api/ai-nutrition-tips?task=auto-programs` |
 | `src/services/memberHealthSync.js` | Basic otomatik program oluşturma (AI + yedek) |
+| `src/utils/autoProgramBuilders.js` | 15 günlük koç + diyet payload (`AUTO_PLAN_LENGTH`) |
+| `src/components/onboarding/HealthTestHub.jsx` | Test sonrası **Sonuçlar** (AI özet + program kartları) |
+
+---
+
+## Basic — 15 günlük otomatik koç + diyet (sağlık testi sonrası)
+
+> **Yalnızca Basic (`membership: free`).** Eko / Diyet / Spor / Doktor / Vip üyelerine otomatik AI koç+diyet programı **üretilmez**; programları personel (koç/diyetisyen) gönderir. Sağlık özeti (`healthAnalysis`) test tamamlanınca üretilmeye devam edebilir.
+
+Sağlık testleri tamamlanıp onaylar kaydedilince `syncMemberHealthAssets` çalışır:
+
+1. **Kural tabanlı özet** → `healthAnalysis` (VKİ, kalori, form skoru, test içgörüleri).
+2. **Gemini beslenme ipuçları** → `dietitianRecommendations.tips` (varsa).
+3. **15 günlük programlar** (`AUTO_PLAN_LENGTH = 15`):
+   - **Antrenman:** `scheduleType: 'dateRange'`, `cycleStartDate` = bugün, `cycleLength: 15`, haftalık gün rotasyonu (`day`). Hareketler **yalnızca** `exercises` kütüphanesinden (`exerciseId` zorunlu; Gemini yalnızca aday id listesinden seçer).
+   - **Beslenme:** aynı 15 günlük pencere, `cycleSameDaily: true` (her gün aynı menü).
+4. Programlar `/programs` ve `/calendar` üzerinde görünür (`entryMatchesDate` + süre penceresi).
+5. **Sonuçlar UI:** `/health-test` hub altında AI özet + program önizlemesi + Programlarım / Takvim linkleri.
+
+**API:** `POST /api/ai-nutrition-tips?task=auto-programs` (ayrı Vercel route yok — Hobby 12-fn). Gemini yoksa veya katalog dışı id gelirse `buildWorkoutProgramFromLibrary` + `buildFallbackNutritionMeals` yedekleri kullanılır.
+
+**Kaynak etiketi:** `source: 'auto_ai' | 'auto_rules'`, `staffId: null`, `staffName: 'Yeni Form'`.
+
+Personel diyet listeleri hâlâ **14 gün** (`CYCLE_PLAN_LENGTH`); otomatik Basic planlar **15 gün** (`AUTO_PLAN_LENGTH`).
 
 ---
 

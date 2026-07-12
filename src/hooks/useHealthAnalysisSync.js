@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { isHealthTestComplete } from '../data/healthTest'
 import { isHealthAnalysisStale } from '../services/aiAnalysis'
 import { fetchExercisesForAi } from '../services/exerciseLibrary'
-import { syncMemberHealthAssets } from '../services/memberHealthSync'
+import { isBasicAutoProgramEligible, syncMemberHealthAssets } from '../services/memberHealthSync'
 
 function programType(p) {
   return p?.type || (p?.entries?.some((e) => e.mealType) ? 'nutrition' : 'workout')
@@ -15,7 +15,7 @@ function needsAutoPrograms(myPrograms = []) {
   return !hasWorkout || !hasNutrition
 }
 
-/** Sağlık testi tamam ama özet yoksa, eski şemadaysa veya otomatik program eksikse üretir. */
+/** Sağlık testi tamam ama özet yoksa / eskiyse üretir. Otomatik program yalnızca Basic. */
 export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, updateProfile, createProgram }) {
   const syncing = useRef(false)
   const libraryCount = exerciseCount
@@ -31,7 +31,8 @@ export function useHealthAnalysisSync({ user, exerciseCount = 0, myPrograms, upd
         user.healthAnalysis?.dietitianRecommendations?.tips?.length)
 
     const stale = isHealthAnalysisStale(user.healthAnalysis, libraryCount)
-    const missingPrograms = needsAutoPrograms(myPrograms)
+    const basicEligible = isBasicAutoProgramEligible(user)
+    const missingPrograms = basicEligible && needsAutoPrograms(myPrograms)
 
     if (hasSummary && !stale && !missingPrograms) return
 

@@ -1,8 +1,12 @@
 /**
  * Otomatik antrenman / diyet programı payload yardımcıları (takvim uyumlu).
+ * Koç hareketleri YALNIZCA exercises kütüphanesinden (exerciseId zorunlu).
  */
-import { format } from 'date-fns'
-import { CYCLE_PLAN_LENGTH } from '../utils/programSchedule'
+import { format, addDays } from 'date-fns'
+import { tr } from 'date-fns/locale'
+
+/** Basic / AI otomatik plan süresi (gün) */
+export const AUTO_PLAN_LENGTH = 15
 
 /** date-fns getDay: 0=Pazar … 6=Cumartesi */
 export const AUTO_WORKOUT_DAYS_BY_LEVEL = {
@@ -22,6 +26,18 @@ const DEFAULT_MEAL_TIMES = {
   snack_afternoon: '16:00',
   dinner: '19:00',
   snack_evening: '21:30',
+}
+
+function autoPlanWindow() {
+  const start = format(new Date(), 'yyyy-MM-dd')
+  const end = format(addDays(new Date(`${start}T12:00:00`), AUTO_PLAN_LENGTH - 1), 'yyyy-MM-dd')
+  return { startDate: start, endDate: end, cycleLength: AUTO_PLAN_LENGTH }
+}
+
+function formatRangeLabel(startDate, endDate) {
+  const a = format(new Date(`${startDate}T12:00:00`), 'd MMM', { locale: tr })
+  const b = format(new Date(`${endDate}T12:00:00`), 'd MMM yyyy', { locale: tr })
+  return `${a} – ${b}`
 }
 
 /** Gemini yok / hata → basit Türk mutfağı şablon menü */
@@ -51,14 +67,20 @@ export function buildFallbackNutritionMeals(profile = {}, dailyCalories = null) 
   ]
 }
 
+/**
+ * AI çıktısından koç programı — yalnızca exerciseById’de bulunan kütüphane hareketleri.
+ */
 export function buildWorkoutProgramFromAi({ memberId, memberName, workout, exerciseById }) {
+  const { startDate, endDate, cycleLength } = autoPlanWindow()
   const entries = []
   let order = 0
   for (const slot of workout?.days || []) {
     const day = Number(slot.day)
+    if (!Number.isFinite(day) || day < 0 || day > 6) continue
     for (const ex of slot.exercises || []) {
-      const lib = exerciseById.get(ex.id)
-      if (!lib) continue
+      const id = String(ex?.id || '').trim()
+      const lib = id ? exerciseById.get(id) : null
+      if (!lib?.id || !String(lib.name || '').trim()) continue
       const amountType = ex.amountType === 'duration' ? 'duration' : 'reps'
       entries.push({
         id: `auto-w-${Date.now()}-${order}`,
@@ -80,14 +102,21 @@ export function buildWorkoutProgramFromAi({ memberId, memberName, workout, exerc
   }
   if (entries.length === 0) return null
 
+  const range = formatRangeLabel(startDate, endDate)
   return {
     type: 'workout',
     memberId,
     memberName,
     staffId: null,
     staffName: 'Yeni Form',
-    title: 'Otomatik Antrenman Programı',
-    description: workout?.message || '',
+    title: `15 Günlük Otomatik Antrenman Programı (${range})`,
+    description: workout?.message || 'Kütüphaneden seçilmiş kişisel antrenman programı',
+    scheduleType: 'dateRange',
+    cycleStartDate: startDate,
+    cycleLength,
+    cycleLoop: false,
+    cycleSameDaily: false,
+    source: 'auto_ai',
     entries,
     items: entries.map((e) => {
       const amount = e.amountType === 'duration' ? `${e.amount} ${e.durationUnit || 'sn'}` : `${e.amount} tekrar`
@@ -96,11 +125,13 @@ export function buildWorkoutProgramFromAi({ memberId, memberName, workout, exerc
   }
 }
 
+/** Kural tabanlı yedek — yine yalnızca kütüphane id’leri */
 export function buildWorkoutProgramFromLibrary({ memberId, memberName, exercises, message, fitnessLevel }) {
   const days = workoutDaysForLevel(fitnessLevel)
   const list = (exercises || []).filter((ex) => ex?.id && String(ex.name || '').trim())
   if (list.length === 0) return null
 
+  const { startDate, endDate, cycleLength } = autoPlanWindow()
   const entries = list.map((ex, i) => ({
     id: `auto-${Date.now()}-${i}`,
     day: days[i % days.length],
@@ -117,14 +148,21 @@ export function buildWorkoutProgramFromLibrary({ memberId, memberName, exercises
     order: i,
   }))
 
+  const range = formatRangeLabel(startDate, endDate)
   return {
     type: 'workout',
     memberId,
     memberName,
     staffId: null,
     staffName: 'Yeni Form',
-    title: 'Otomatik Antrenman Programı',
-    description: message || '',
+    title: `15 Günlük Otomatik Antrenman Programı (${range})`,
+    description: message || 'Kütüphaneden seçilmiş başlangıç antrenman programı',
+    scheduleType: 'dateRange',
+    cycleStartDate: startDate,
+    cycleLength,
+    cycleLoop: false,
+    cycleSameDaily: false,
+    source: 'auto_rules',
     entries,
     items: entries.map((e) => `${e.exerciseName} · ${e.amount} tekrar`),
   }
@@ -140,7 +178,7 @@ export function buildNutritionProgramFromMeals({
   const list = (meals || []).filter((m) => m?.mealType && String(m.name || '').trim())
   if (list.length === 0) return null
 
-  const startDate = format(new Date(), 'yyyy-MM-dd')
+  const { startDate, endDate, cycleLength } = autoPlanWindow()
   const entries = list.map((m, i) => {
     const name = String(m.name).trim()
     return {
@@ -154,20 +192,30 @@ export function buildNutritionProgramFromMeals({
     }
   })
 
+  const range = formatRangeLabel(startDate, endDate)
   return {
     type: 'nutrition',
     memberId,
     memberName,
     staffId: null,
     staffName: 'Yeni Form',
-    title: 'Otomatik Beslenme Programı',
+    title: `15 Günlük Otomatik Beslenme Listesi (${range})`,
     description: focus || (aiGenerated ? 'AI destekli kişisel beslenme listesi' : 'Profilinize göre hazırlanan başlangıç menüsü'),
-    scheduleType: 'cycle14',
+    scheduleType: 'dateRange',
     cycleStartDate: startDate,
-    cycleLength: CYCLE_PLAN_LENGTH,
+    cycleLength,
     cycleLoop: false,
     cycleSameDaily: true,
+    source: aiGenerated ? 'auto_ai' : 'auto_rules',
     entries,
     items: entries.map((e) => `${e.start} ${e.mealType}: ${e.name}`),
   }
+}
+
+export function isAutoSystemProgram(program) {
+  if (!program) return false
+  if (program.source === 'auto_ai' || program.source === 'auto_rules') return true
+  if (program.staffId) return false
+  const title = String(program.title || '')
+  return /otomatik/i.test(title) || program.staffName === 'Yeni Form'
 }

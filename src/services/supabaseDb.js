@@ -1777,6 +1777,7 @@ export async function createProgram(data) {
       cycleLoop: data.cycleLoop !== undefined ? data.cycleLoop : null,
       cycleSameDaily: data.cycleSameDaily !== undefined ? data.cycleSameDaily : null,
       sessionDuration: data.sessionDuration || null,
+      source: data.source || null,
       createdAt: nowISO(),
     },
   }).select().single()

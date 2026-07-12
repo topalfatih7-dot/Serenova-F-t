@@ -162,7 +162,8 @@ export default function ProgramsPage() {
                         )}
                         {p.scheduleType === 'dateRange' && p.cycleStartDate && (
                           <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
-                            {p.cycleLength || 0} Gün · Her Gün Aynı
+                            {p.cycleLength || 0} Gün
+                            {p.cycleSameDaily === false ? ' · Haftalık Rotasyon' : ' · Her Gün Aynı'}
                           </span>
                         )}
                         {isWorkout && p.sessionDuration && (
@@ -176,7 +177,9 @@ export default function ProgramsPage() {
                           {format(new Date(`${p.cycleStartDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
                           {' — '}
                           {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
-                          {' · her gün aynı program'}
+                          {p.cycleSameDaily === false
+                            ? ' · antrenman günlerinde geçerli'
+                            : ' · her gün aynı program'}
                         </p>
                       )}
                       <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-white/75">

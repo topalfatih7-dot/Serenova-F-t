@@ -803,7 +803,8 @@ Kaynak: `src/App.jsx` satır 56–117
 | `supabaseClient.js` | `supabase`, `isSupabaseEnabled`, `syncAutoRefresh` | ✅ |
 | `supabaseDb.js` | `hydrate`, `login`, `logout`, tüm CRUD, başvuru RPC'leri | ✅ Ana veri katmanı |
 | `contactForm.js` | `submitContactForm` → `submitContactInquiry` + Telegram | ✅ |
-| `memberHealthSync.js` | Otomatik program + sağlık analizi senkronu | ✅ (`staffId: null` sistem programları) |
+| `memberHealthSync.js` | Otomatik 15g program + sağlık analizi senkronu | ✅ (`staffId: null`, kütüphane-only koç) |
+| `aiAutoPrograms.js` | Gemini auto-programs istemcisi | ✅ |
 | `staffAssignment.js` | `assignStaffOnly`, `applyStaffAssignments`, `countStaffClients` — paket bazlı atama | ✅ |
 | `packagePricing.js` | `calculatePackagePrice`, `getRecommendedPackage` | ✅ |
 | `apiAuth.js` | `getApiAuthHeaders` — korunan API istekleri için Bearer token | ✅ |
@@ -1319,6 +1320,7 @@ eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 | **Günlük Blog Makalesi** | `api/ai-blog-generate.js` | — (cron) | Vercel Cron → `posts` tablosu |
 | **Günün İpucu (Dashboard)** | `api/ai-blog-generate.js?task=daily-tip` | `src/services/dailyTip.js` → `useDailyTip` | Vercel Cron 04:00 + üye GET → `site_content` (`kind=daily_tip`) |
 | **Kalori Telegram** | `api/calorie-chat-notify.js` | `calorieChat.js` | Chat mesajı → Telegram |
+| **15g Auto Koç+Diyet** | `api/ai-nutrition-tips.js?task=auto-programs` | `aiAutoPrograms.js` + `autoProgramBuilders.js` | Sağlık testi sonrası Basic programlar (kütüphane-only) |
 
 ### Dosyalar
 
@@ -1518,14 +1520,18 @@ vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/a
 - Üye menüsü → `/health-test` (`HealthTestPage` → `HealthTestHub`)
 - Tamamlanmamışsa menüde amber `!` badge (`memberNav.js`)
 
-**Hub modeli (2026-07; onay sırası 2026-07-11):** Onaylar testlerden **önce**; kategori bazlı tamamlama; sonda yalnızca profil sync:
+**Hub modeli (2026-07; onay sırası 2026-07-11; sonuçlar 2026-07-12):** Onaylar testlerden **önce**; kategori bazlı tamamlama; sonda profil sync + **Sonuçlar** paneli:
 | Rota | Dosya | İşlev |
 |------|-------|-------|
-| `/health-test` | `HealthTestPage.jsx` → `HealthTestHub.jsx` + `HealthTestConsentForm` | Önce `healthAck`/`disclaimer`; sonra ilerleme + kategori kartları |
+| `/health-test` | `HealthTestPage.jsx` → `HealthTestHub.jsx` + `HealthTestConsentForm` | Önce `healthAck`/`disclaimer`; kategori kartları; tamamlanınca **Sonuçlar** (AI özet + 15 günlük programlar) |
 | `/health-test/:sectionId` | `HealthTestSectionPage.jsx` → `HealthTestFlow` (`sectionId` modu) | Tek bölüm soruları (onaysız erişim yok) |
 | `/health-test/finish` | `HealthTestFinishPage.jsx` | Bölümler bitince `syncMemberHealthAssets` (onay yok) |
 
-**Hub grid (responsive):** mobil **2**, tablet (`md`) **3**, masaüstü (`lg`) **4** sütun — `max-w-3xl` kaldırıldı, tam genişlik.
+**Sonuçlar paneli:** `healthAnalysis` + `myPrograms` içindeki otomatik programlar (`source: auto_ai|auto_rules` veya Yeni Form sistem programı). Linkler: `/programs`, `/calendar`.
+
+**15 günlük otomatik programlar (yalnızca Basic / `free`):** `autoProgramBuilders.js` → `AUTO_PLAN_LENGTH = 15`, `scheduleType: 'dateRange'`. `isBasicAutoProgramEligible` — ücretli paketlerde atlanır. Koç hareketleri **yalnızca kütüphane** (`exerciseId`). Diyet: günlük aynı menü. Detay: `docs/setup/AI_SETUP.md`.
+
+**Hub grid (responsive):** mobil **1–2**, tablet (`md`) **3**, masaüstü (`lg`) **4** sütun — tam genişlik.
 
 **Veri:** `src/data/healthTest.js` — `getHealthTestHubSections`, `getOverallHealthTestProgress`, `isSectionComplete`, `isQuestionFullyAnswered` (çoklu seçim + koşullu "Diğer" detay).
 
@@ -2944,13 +2950,14 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `src/pages/BlogPostPage.jsx` | Hero kapak + başlık overlay |
 | `supabaseDb.addPost/editPost` | `coverImage` otomatik atanır |
 
-### 38.3 Kişisel Sağlık Özeti (Dashboard)
+### 38.3 Kişisel Sağlık Özeti (Dashboard + Sağlık Testi Sonuçları)
 
 **Akış:**
-1. Üye sağlık testini tamamlar (`HealthTestWidget` veya kayıt sonrası).
-2. `syncMemberHealthAssets()` → `enrichProfileForAnalysis()` → `generateHealthAnalysis()`.
-3. Sonuç `members.data.healthAnalysis` olarak kaydedilir.
-4. Dashboard `HealthAnalysisPanel` — test özeti, VKİ, kalori, makrolar, **kütüphane egzersizleri**, **beslenme planı**, haftalık antrenman.
+1. Üye sağlık testini tamamlar (`HealthTestHub` / finish).
+2. `syncMemberHealthAssets()` → `enrichProfileForAnalysis()` → `generateHealthAnalysis()` + (opsiyonel) Gemini tip + **15 günlük** auto workout/nutrition.
+3. Sonuç `members.data.healthAnalysis` olarak kaydedilir; programlar `programs` tablosuna yazılır (`staffId: null`, `source: auto_ai|auto_rules`).
+4. Dashboard `HealthAnalysisPanel` — test özeti, VKİ, kalori, makrolar, kütüphane egzersizleri, beslenme planı.
+5. `/health-test` hub altında **Sonuçlar** — aynı AI özet + program kartları; Programlarım / Takvim’e link.
 
 **Önemli değişiklik:** `profileReadyForAnalysis()` artık yalnızca **sağlık testinin tamamlanmasını** ister; boy/kilo/hedef yoksa `healthProfile.js` test cevaplarından türetir (tahmini metrik uyarısı gösterilir).
 
@@ -2958,11 +2965,15 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 |-------|-----|
 | `src/utils/healthProfile.js` | `inferGoalsFromHealthTest`, `enrichProfileForAnalysis` |
 | `src/services/memberHealthSync.js` | Senkron + otomatik program oluşturma |
+| `src/utils/autoProgramBuilders.js` | 15 günlük payload; kütüphane-only `exerciseId` |
+| `src/services/aiAutoPrograms.js` | Gemini auto-programs istemcisi |
+| `api/_autoPrograms.js` + `api/_ai-prompts.js` | Katalog kısıtlı Gemini üretim / sanitizasyon |
 | `src/services/aiAnalysis.js` | Kütüphane skorlaması, beslenme ipuçları (test bazlı) |
 | `src/hooks/useHealthAnalysisSync.js` | Dashboard otomatik özet üretimi |
+| `src/components/onboarding/HealthTestHub.jsx` | Sonuçlar paneli |
 | `src/pages/DashboardPage.jsx` | Genişletilmiş `HealthAnalysisPanel` |
 
-**Egzersiz kaynağı:** `exercises` tablosu → `supabaseDb.hydrate()` → `coachRecommendations.exercises[]`.
+**Egzersiz kaynağı:** `exercises` tablosu → aday skorlama → Gemini yalnızca id seçer → `buildWorkoutProgramFromAi` kütüphane dışı id’leri atar.
 
 ### 38.3.1 Personel vs admin — sağlık profili görünümü
 

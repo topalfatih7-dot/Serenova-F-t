@@ -15,7 +15,7 @@ function Chips({ values, map }) {
   )
 }
 
-function AnalysisBlock({ analysis }) {
+export function AnalysisBlock({ analysis }) {
   if (!analysis) return null
   const cal = analysis.dailyCalories
   return (

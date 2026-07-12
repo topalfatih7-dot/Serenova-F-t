@@ -5,14 +5,15 @@ import PanelPageHeader, { PanelBackLink, PanelPageShell } from '../components/la
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { isHealthTestComplete } from '../data/healthTest'
-import { syncMemberHealthAssets } from '../services/memberHealthSync'
+import { isBasicAutoProgramEligible, syncMemberHealthAssets } from '../services/memberHealthSync'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestFinishPage() {
   const navigate = useNavigate()
-  const { user, packageConfig, updateProfile, createProgram, exercises, myPrograms } = useApp()
+  const { user, packageConfig, updateProfile, createProgram, exercises, myPrograms, membership } = useApp()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
+  const isBasic = isBasicAutoProgramEligible(membership || user?.membership)
 
   const handleComplete = useCallback(async () => {
     setSaving(true)
@@ -25,7 +26,12 @@ export default function HealthTestFinishPage() {
         myPrograms,
       })
       if (result.synced) {
-        toast('Sağlık profiliniz kaydedildi ve kişisel programlarınız hazırlandı.', 'success')
+        toast(
+          isBasic
+            ? 'Sağlık profiliniz kaydedildi ve 15 günlük programlarınız hazırlandı.'
+            : 'Sağlık profiliniz kaydedildi.',
+          'success',
+        )
       } else {
         toast('Sağlık profiliniz kaydedildi.', 'success')
       }
@@ -33,7 +39,7 @@ export default function HealthTestFinishPage() {
     } finally {
       setSaving(false)
     }
-  }, [user, updateProfile, createProgram, exercises, myPrograms, toast, navigate])
+  }, [user, updateProfile, createProgram, exercises, myPrograms, toast, navigate, isBasic])
 
   if (!user?.id) return <Navigate to="/login" replace />
 
@@ -53,7 +59,11 @@ export default function HealthTestFinishPage() {
       </div>
       <PanelPageHeader
         title="Son Adım"
-        subtitle="Tüm testleri tamamladınız — kişisel programlarınızı hazırlayın"
+        subtitle={
+          isBasic
+            ? 'Tüm testleri tamamladınız — Basic 15 günlük programlarınızı hazırlayın'
+            : 'Tüm testleri tamamladınız — sağlık özetinizi kaydedin'
+        }
         icon={HeartPulse}
         accent="brand"
         image={PANEL_IMAGES.healthTest}
@@ -66,7 +76,9 @@ export default function HealthTestFinishPage() {
           <div>
             <p className="font-semibold text-cream-900">Profiliniz hazırlanmaya hazır</p>
             <p className="mt-1 text-sm leading-relaxed text-cream-800/70">
-              Cevaplarınıza göre sağlık özeti ve uygun program önerileri oluşturulacak.
+              {isBasic
+                ? 'Cevaplarınıza göre AI sağlık özeti ve 15 günlük antrenman + beslenme programları oluşturulacak. Antrenman hareketleri yalnızca kütüphaneden seçilir.'
+                : 'Cevaplarınıza göre sağlık özeti oluşturulacak. Antrenman ve beslenme programlarını koç / diyetisyeniniz hazırlar.'}
             </p>
           </div>
         </div>
