@@ -21,7 +21,7 @@ Tüm kurulum rehberleri: **[docs/setup/README.md](./docs/setup/README.md)**
 Özetle:
 1. Supabase projesi aç, `.env` dosyasına `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` gir.
 2. `supabase/setup.sql` dosyasını SQL Editor'da çalıştır (isteğe bağlı: ardından `supabase/seed.sql` ile içerik tablolarını temizle).
-3. `admin@serenova.fit` ile kayıt olup admin paneline gir.
+3. `admin@yeniform.com` ile giriş yapıp admin paneline gir (şifreyi `/admin/account` veya Supabase Dashboard’dan ayarlayın).
 
 `.env` dolu olduğunda uygulama Supabase üzerinden çalışır. Vercel'de aynı değişkenleri Environment Variables bölümüne ekleyin.
 

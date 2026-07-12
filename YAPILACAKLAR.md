@@ -10,8 +10,8 @@
 
 | Öncelik | Durum | Konu |
 |---------|-------|------|
-| P0 | ⬜ | **Stripe** — Vercel'de `STRIPE_*` + `VITE_STRIPE_ENABLED=true` |
-| P0 | ⬜ | **Admin şifresi** — varsayılan `Serenova2026!` değiştir |
+| P0 | ✅ | **Stripe** — yalnızca Checkout; test kartı UI kaldırıldı |
+| P0 | ✅ | **Admin e-posta** — `admin@yeniform.com`; şifre kodda yok (`/admin/account`) |
 | P0 | ✅ | Yasal sayfalar (`/kvkk`, `/privacy`, `/terms`) |
 | P0 | ✅ | Güvenlik guard'ları + RLS düzeltmeleri |
 | P1 | ⬜ | Admin panelden içerik doldur (SSS, yorumlar, başarı hikayeleri) |
@@ -38,13 +38,9 @@ Aşağıdakiler **bilerek** tasarlandı; gerçek sayıların altında gösterili
 | `2.500+ Üye` | Trust strip fallback | `TrustStrip.jsx` |
 | `16–25` çevrimiçi | Gerçek online < 25 ise oturum boost | `displayPlatformStats.js` |
 
-### Test kartı ödemesi (şimdilik açık)
-Stripe kapalıyken (`VITE_STRIPE_ENABLED` ≠ `true`) **production dahil** test kartı modalı açılır. Ücretli paketler bu yolla aktive edilebilir.
-
-**Stripe canlıya alındığında yapılacak:**
-- Vercel'de `VITE_STRIPE_ENABLED=true` ayarla
-- Test kartı akışını kapat (Stripe checkout zorunlu olsun)
-- `OnboardingPage.jsx` → `isStripeEnabled()` false iken `setPaymentOpen(true)` yerine bilgilendirme mesajı
+### Test kartı ödemesi (kaldırıldı)
+Ücretli paketler yalnızca Stripe Checkout. `PaymentForm` / `testPayment.js` silindi.
+`VITE_STRIPE_ENABLED` production'da `true` olmalı.
 
 ---
 
@@ -116,13 +112,11 @@ Stripe aktif olunca test kartı akışını kapat (yukarıdaki "Bilinçli tercih
 
 ---
 
-### 2. ACİL — Admin şifresini değiştir
+### 2. ACİL — Admin hesabı
 
-Varsayılan: `admin@serenova.fit` / `Serenova2026!`
-
-1. Supabase Dashboard → Authentication → Users → admin şifresini değiştir
-2. `src/config/brand.js` → `ADMIN_CREDENTIALS.password` güncelle
-3. Admin e-postası değişirse: `setup.sql` `is_admin()` + `brand.js` + Vercel `ADMIN_EMAIL`
+- E-posta: `admin@yeniform.com`
+- Şifre: kod/dokümanda tutulmaz — panilden **Hesap Ayarları** (`/admin/account`)
+- Ortam: Vercel `ADMIN_EMAIL` / `VITE_ADMIN_EMAIL` (opsiyonel override)
 
 ---
 
@@ -195,7 +189,7 @@ npm run dev
 | `VITE_SITE_URL` / `APP_URL` | ✅ | |
 | `STRIPE_SECRET_KEY` | ❌ **eksik** | Gerçek tahsilat için |
 | `STRIPE_WEBHOOK_SECRET` | ❌ **eksik** | Gerçek tahsilat için |
-| `VITE_STRIPE_ENABLED` | ❌ **eksik** | `true` = Stripe checkout |
+| `VITE_STRIPE_ENABLED` | ✅ | `true` — test kartı UI yok |
 
 ---
 

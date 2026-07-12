@@ -241,7 +241,7 @@ Bu dosyayı **güvenli tutun**; repoya veya sohbete yapıştırmayın.
 #### E6 — Deploy ve doğrulama
 
 1. **Deployments** → son deploy → **⋯ → Redeploy** (env değişince zorunlu)
-2. `admin@serenova.fit` ile giriş → **Admin → Analitik**
+2. `admin@yeniform.com` ile giriş → **Admin → Analitik**
 3. **Google Analytics 4** bölümünde aktif kullanıcı / oturum / sayfa hunisi görünmeli
 4. Hata alırsanız:
    - `403` / `permission` → E3'te service account eklendi mi?

@@ -52,19 +52,19 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ## 6) Admin hesabını oluştur
 
-`setup.sql` admin kullanıcısını (`admin@serenova.fit` / `Serenova2026!`) otomatik oluşturur. Giriş yapamıyorsan:
+`setup.sql` admin kullanıcısını (`admin@yeniform.com`) oluşturur. Şifre kod/dokümanda tutulmaz — kurulum sonrası **Admin → Hesap Ayarları** (`/admin/account`) veya Supabase Dashboard → Authentication → Users üzerinden ayarlayın.
 
-**A) Hazır SQL:** SQL Editor'da `supabase/create_admin.sql` dosyasını çalıştır.
+Giriş yapamıyorsan:
 
-**B) Uygulamadan kayıt:** `npm run dev` ile başlat, **Kayıt Ol** sayfasından bu e-posta ile hesap aç (e-posta onayı kapalı olmalı, bkz. 7. adım).
+**A) Hazır SQL:** SQL Editor'da `supabase/create_admin.sql` dosyasını çalıştır (geçici bootstrap şifre içerir; hemen değiştirin).
 
-**C) Dashboard'dan:** Supabase → **Authentication** → **Users** → **Add user** ile `admin@serenova.fit` ekle (Auto Confirm açık).
+**B) Dashboard'dan:** Supabase → **Authentication** → **Users** → **Add user** ile `admin@yeniform.com` ekle (Auto Confirm açık).
 
-> Admin e-postasını değiştirmek istersen **üç yerde** aynı olmalı:
-> 1. `src/config/brand.js` → `ADMIN_CREDENTIALS.email`
-> 2. `supabase/setup.sql` → `is_admin()` fonksiyonu içindeki adres
-> 3. `supabase/setup.sql` → `handle_new_user()` fonksiyonundaki kontrol
-> Değiştirdikten sonra `setup.sql` içindeki ilgili fonksiyonları SQL Editor'da tekrar çalıştır.
+> Admin e-postasını değiştirmek istersen **şu yerler aynı olmalı**:
+> 1. `src/config/brand.js` → `ADMIN_EMAIL` / `VITE_ADMIN_EMAIL`
+> 2. `supabase` içindeki `is_admin()` e-posta kontrolü
+> 3. Vercel `ADMIN_EMAIL` (API guard)
+> 4. Migration ile canlı DB güncellemesi
 
 ## 7) E-posta onayını kapat (geliştirme için)
 

@@ -19,7 +19,7 @@ Google giriş ekranında `rvzksmyhsgxgrxgeabmi.supabase.co uygulamasına devam e
 3. **App information:**
    - **App name:** `Yeni Form`
    - **User support email:** `info@yeniform.com` (veya aktif destek adresiniz)
-   - **App logo:** `public/brand-mark.png` (kare, min. 120×120)
+   - **App logo:** `public/google-oauth-logo.png` (veya `brand-mark.png` — kare 512×512, Google min. 120×120)
 4. **App domain:**
    - **Application home page:** `https://www.yeniform.com`
    - **Privacy policy:** `https://www.yeniform.com/privacy`

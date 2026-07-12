@@ -170,7 +170,7 @@ Tarayıcı
 
 | Rol | Koşul | Yönlendirme (LoginPage) |
 |-----|-------|-------------------------|
-| **admin** | E-posta = `admin@serenova.fit` | `/admin` |
+| **admin** | E-posta = `admin@yeniform.com` | `/admin` |
 | **staff** | E-posta `staff` tablosunda kayıtlı | `/staff` |
 | **member** | Diğer tüm auth kullanıcıları | **`/profile`** |
 
@@ -222,7 +222,7 @@ Cursor **Supabase MCP** eklentisi bağlıyken ajan, bu projede migration uygulay
 
 **Çalıştırma (manuel kurulum):** Supabase Dashboard → SQL Editor → `supabase/setup.sql` içeriğini yapıştır → Run.
 Tekrar çalıştırmak güvenlidir (her şey `if not exists` / `on conflict` / `create or replace`).
-Admin: `admin@serenova.fit` / `Serenova2026!`.
+Admin: `admin@yeniform.com` (şifre kodda yok — `/admin/account`).
 
 ### Tablolar
 
@@ -1363,7 +1363,7 @@ vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/a
 
 ### 1. Tek Dosya Supabase Kurulumu
 - `supabase/setup.sql` tek, idempotent dosya. Eski `schema.sql` (537 satır, `membership_requests` dahil) kaldırıldı; yerine deprecation stub bırakıldı. Artımlı güncellemeler `supabase/migrations/` + `npm run db:migrate`.
-- Çalıştırma: SQL Editor'a yapıştır → Run. Admin: `admin@serenova.fit` / `Serenova2026!`.
+- Çalıştırma: SQL Editor'a yapıştır → Run. Admin: `admin@yeniform.com` (şifre: `/admin/account`).
 
 ### 2. Mevcut Üyenin Planını Değiştirme (yeni kayıt sorunu çözüldü)
 - **Sorun:** Giriş yapmış (ör. Basic) üye paket seçmeye çalışınca `/onboarding` yeni kayıt başlatıyordu.
@@ -3818,7 +3818,7 @@ Manuel DB silmelerinden kalan ödeme, abonelik ve destek kayıtları artık gör
 ### `admin_delete_member(p_id)`
 
 - Yalnızca `is_admin()` çağırabilir
-- `admin@serenova.fit` / `role = admin` silinemez
+- `admin@yeniform.com` / `role = admin` silinemez
 - Sıra: `DELETE members` (CASCADE → programs, payments, tickets, activities, chat_threads, chat_messages) → `DELETE auth.users`
 
 ### Dosyalar

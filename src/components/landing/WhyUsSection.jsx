@@ -30,9 +30,9 @@ const WHY_ITEMS = [
   },
   {
     icon: Calendar,
-    title: 'Takvim & hatırlatıcılar',
+    title: 'Takvim & program takibi',
     accent: 'from-brand-300 to-sage-500',
-    description: 'Randevularınızı, antrenman günlerinizi ve öğün zamanlarınızı tek panelde görün. Kaçırmamak için otomatik hatırlatıcılar.',
+    description: 'Randevularınızı, antrenman günlerinizi ve öğün planınızı tek panelde görün; programınızı düzenli takip edin.',
     cta: { label: 'Üyeliğe başlayın', to: '/onboarding' },
   },
   {

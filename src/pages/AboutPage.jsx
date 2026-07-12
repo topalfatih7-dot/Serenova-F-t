@@ -452,7 +452,7 @@ export default function AboutPage() {
                 <p>
                   Kayıt olduğunuz anda kişisel sağlık testinizle başlıyoruz; hedefinize göre koçunuz
                   antrenman programınızı, diyetisyeniniz beslenme planınızı hazırlıyor. Video
-                  görüşmeler, ilerleme grafikleri ve hatırlatıcılarla motivasyonunuz hiç düşmüyor.
+                  görüşmeler ve ilerleme grafikleriyle motivasyonunuz hiç düşmüyor.
                 </p>
                 <p>
                   Ücretsiz Basic paketle risksiz başlayabilir, hazır hissettiğinizde uzman desteği

@@ -56,8 +56,12 @@ export const BRAND = {
   ga4MeasurementId: 'G-40ENH7MC5W',
 }
 
+/** Admin e-postası — şifre kodda tutulmaz; panelden /admin/account ile güncellenir. */
+export const ADMIN_EMAIL = (
+  import.meta.env.VITE_ADMIN_EMAIL || 'admin@yeniform.com'
+).trim().toLowerCase()
+
 export const ADMIN_CREDENTIALS = {
-  email: 'admin@serenova.fit',
-  password: 'Serenova2026!',
+  email: ADMIN_EMAIL,
   name: 'Yeni Form Admin',
 }

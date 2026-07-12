@@ -45,9 +45,8 @@ Kullanıcı plan seçer (Gümüş/Altın/Platinum)
 - Üye kimliği istemciden gelen değerle değil, **Supabase access token doğrulanarak** belirlenir.
 - Webhook **imza ile doğrulanır** ve **idempotent**'tir (aynı ödeme iki kez işlenmez).
 
-**Stripe kapalıyken ne olur?** `VITE_STRIPE_ENABLED` `true` değilse uygulama
-eski **test kartı** simülasyonunu (`PaymentForm` + `4242…`) kullanmaya devam eder.
-Yani bu kurulumu yapmadan da site çalışır.
+**Stripe kapalıysa:** `VITE_STRIPE_ENABLED` `true` değilse ücretli paket ödemesi
+başlamaz; kullanıcıya yapılandırma mesajı gösterilir. Test kartı UI kaldırılmıştır.
 
 ---
 
@@ -125,7 +124,7 @@ Stripe, ödeme tamamlanınca senin `/api/stripe-webhook` adresine olay gönderir
 - Kayıt formunda ücretli plan seçilip "Ödemeye Geç"e basılınca → Stripe Checkout.
 - Profil/üyelik değiştirmede ücretli plan seçilince → Stripe Checkout.
 
-`false`/boş ise eski test kartı modalı kullanılır (geliştirme için pratik).
+`false`/boş ise ücretli ödeme başlamaz (yapılandırma hatası mesajı). Uygulama içi test kartı UI yoktur.
 
 ---
 

@@ -856,7 +856,7 @@ export async function completeOAuthMember(profile, membership = 'free', packageC
       }
     }
   } else {
-    return { success: false, error: 'Telefon numarası gerekli — randevu hatırlatmaları için kullanılır.' }
+    return { success: false, error: 'Telefon numarası gerekli.' }
   }
 
   if (!profile.gender || !['female', 'male'].includes(profile.gender)) {

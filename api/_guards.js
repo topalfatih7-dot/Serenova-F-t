@@ -4,7 +4,7 @@
 import { getUserFromRequest, getBearerToken } from './_apiAuth.js'
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
 
-const DEFAULT_ADMIN_EMAIL = 'admin@serenova.fit'
+const DEFAULT_ADMIN_EMAIL = 'admin@yeniform.com'
 
 export function getAdminEmail() {
   return (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase()

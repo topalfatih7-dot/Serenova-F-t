@@ -38,7 +38,7 @@ export default function AdminOverviewPage() {
       {!hasMembers && (
         <EmptyState
           title="Henüz kayıtlı üye yok"
-          description="Test için /onboarding adresinden ücretsiz veya premium kayıt oluşturun. Premium için test kartı kullanın."
+          description="İlk üyeler /onboarding üzerinden ücretsiz veya Stripe ile ücretli kayıt olabilir."
         />
       )}
 

@@ -31,8 +31,10 @@
 --    coverImage, coverImageAlt  — blog kapak görseli (kategori bazlı Unsplash URL)
 --    createdAt, updatedAt
 --
---  Admin girişi:  admin@serenova.fit  /  Serenova2026!
---  (Değiştirirseniz aşağıdaki is_admin(), handle_new_user() ve en alttaki
+--  Admin girişi:  admin@yeniform.com
+--  Şifre kodda tutulmaz — kurulum sonrası Supabase Dashboard veya /admin/account ile ayarlayın.
+--  (E-postayı değiştirirseniz aşağıdaki is_admin() adresini ve ADMIN_EMAIL / VITE_ADMIN_EMAIL
+--   ortam değişkenlerini de güncelleyin.)
 --   admin bloğundaki e-postayı; ayrıca src/config/brand.js dosyasını güncelleyin.)
 -- =====================================================================
 
@@ -46,7 +48,7 @@ returns boolean language sql stable
 security definer
 set search_path = public, pg_temp as $$
   select coalesce(
-    (auth.jwt() ->> 'email') = 'admin@serenova.fit',
+    (auth.jwt() ->> 'email') = 'admin@yeniform.com',
     false
   )
   or exists (
@@ -809,7 +811,7 @@ begin
     raise exception 'Üye bulunamadı.';
   end if;
 
-  if v_role = 'admin' or lower(coalesce(v_email, '')) = 'admin@serenova.fit' then
+  if v_role = 'admin' or lower(coalesce(v_email, '')) = 'admin@yeniform.com' then
     raise exception 'Admin hesabı silinemez.';
   end if;
 
@@ -907,8 +909,9 @@ update public.plans set is_active = false where id in ('gumus', 'altin', 'platin
 -- ---------------------------------------------------------------------
 do $$
 declare
-  v_email    text := 'admin@serenova.fit';
-  v_password text := 'Serenova2026!';
+  v_email    text := 'admin@yeniform.com';
+  -- Bootstrap şifre: yalnızca ilk kurulum. Canlıda /admin/account ile değiştirin; repoda gerçek şifre tutmayın.
+  v_password text := coalesce(nullif(current_setting('app.admin_bootstrap_password', true), ''), 'ChangeMeAfterSetup1!');
   v_name     text := 'Yeni Form Admin';
   v_uid      uuid;
 begin
@@ -1023,7 +1026,7 @@ grant execute on function public.get_active_users() to authenticated;
 
 -- =====================================================================
 --  BİTTİ. Temiz kurulum hazır.
---  • Admin:  admin@serenova.fit / Serenova2026!
+--  • Admin:  admin@yeniform.com (şifre: Dashboard veya /admin/account)
 --  • Kadro, blog, hareket kütüphanesi, içerik → admin panelinden eklenir.
 --  • Sağlık testi cevapları members.data->'healthTest' içinde saklanır.
 -- =====================================================================

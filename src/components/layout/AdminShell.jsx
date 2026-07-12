@@ -1,7 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle,
-  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2,
+  BarChart3, LogOut, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Loader2, Shield,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
@@ -28,6 +28,7 @@ const adminNav = [
   { to: '/admin/content', icon: Sparkles, label: 'İçerik' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analitik' },
   { to: '/admin/activity', icon: Activity, label: 'Aktivite' },
+  { to: '/admin/account', icon: Shield, label: 'Hesap Ayarları' },
 ]
 
 function NavBadge({ count }) {

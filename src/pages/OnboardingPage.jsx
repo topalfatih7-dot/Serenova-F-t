@@ -7,11 +7,9 @@ import {
   Dumbbell, HeartPulse, ArrowRight, ArrowLeft,
 } from 'lucide-react'
 import Stepper from '../components/ui/Stepper'
-import PaymentForm from '../components/payment/PaymentForm'
 import FormField from '../components/ui/FormField'
 import LegalConsentCheckbox from '../components/ui/LegalConsentCheckbox'
 import PhoneField from '../components/ui/PhoneField'
-import Modal from '../components/ui/Modal'
 import BrandLogo from '../components/ui/BrandLogo'
 import AuthFormShell, { AuthFormCard } from '../components/auth/AuthFormShell'
 import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
@@ -25,7 +23,7 @@ import { BRAND } from '../config/brand'
 import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay, getDefaultPackageForPlan, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
-import { isStripeEnabled } from '../config/stripe'
+import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
 import { startStripeCheckout } from '../services/stripePayment'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
@@ -75,8 +73,6 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
     setPrevDurationKey(durationKey)
     setDurationMonths(resolveDurationMonths(selected, searchParams))
   }
-  const [paymentOpen, setPaymentOpen] = useState(false)
-  const [paying, setPaying] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const selectedPlan = plans.find((p) => p.id === selected) || plans[0]
@@ -106,32 +102,19 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const handleConfirm = async () => {
     if (isCurrent) return
     if (isPaid) {
-      if (isStripeEnabled()) {
-        setSaving(true)
-        const r = await startStripeCheckout(selected, 'change', durationMonths, userEmail)
-        if (!r.success) { setSaving(false); toast(r.error || 'Ödeme başlatılamadı', 'error') }
+      if (!isStripeEnabled()) {
+        toast(STRIPE_REQUIRED_MESSAGE, 'error')
         return
       }
-      setPaymentOpen(true)
+      setSaving(true)
+      const r = await startStripeCheckout(selected, 'change', durationMonths, userEmail)
+      if (!r.success) { setSaving(false); toast(r.error || 'Ödeme başlatılamadı', 'error') }
       return
     }
     if (await applyChange(0)) {
       toast('Planınız güncellendi.', 'success')
       navigate('/profile')
     }
-  }
-
-  const handlePaid = () => {
-    setPaying(true)
-    setTimeout(async () => {
-      const ok = await applyChange(selectedPrice)
-      setPaying(false)
-      if (ok) {
-        setPaymentOpen(false)
-        toast(`${selectedPlan?.name} planınız aktif! Ödeme başarılı.`, 'success')
-        navigate('/profile')
-      }
-    }, 1200)
   }
 
   return (
@@ -182,10 +165,6 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
           </div>
         </div>
       </div>
-
-      <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
-        <PaymentForm amount={selectedPrice} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaid} />
-      </Modal>
     </div>
   )
 }
@@ -198,8 +177,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
   const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(resolvePlanFromQuery(rawPlan), searchParams))
-  const [paymentOpen, setPaymentOpen] = useState(false)
-  const [paying, setPaying] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -418,27 +395,16 @@ export default function OnboardingPage() {
     }
   }
 
-  const handlePaidPayment = () => {
-    setPaying(true)
-    setTimeout(async () => {
-      const result = await persistRegistration(data.membership, selectedPrice)
-      setPaying(false)
-      if (!result.success) {
-        showFormError(result.error || 'Kayıt tamamlanamadı.')
-        return
-      }
-      setPaymentOpen(false)
-      setWelcomePaid(true)
-      setWelcomeOpen(true)
-    }, 1200)
-  }
-
   // Stripe: önce yalnızca auth + bekleyen kayıt metadata; üye satırı ödeme webhook'unda oluşur.
   const startStripeRegister = async () => {
     if (submitting) return
     if (!canNext()) {
       setShowErrors(true)
       showFormError(getValidationError())
+      return
+    }
+    if (!isStripeEnabled()) {
+      showFormError(STRIPE_REQUIRED_MESSAGE)
       return
     }
     setSubmitting(true)
@@ -471,8 +437,7 @@ export default function OnboardingPage() {
 
   const finish = () => {
     if (isPaid) {
-      if (isStripeEnabled()) startStripeRegister()
-      else setPaymentOpen(true)
+      startStripeRegister()
     } else {
       finishFree()
     }
@@ -586,7 +551,7 @@ export default function OnboardingPage() {
             <p className="mt-2 text-base leading-relaxed text-cream-800/65">
               {step === 0
                 ? (isOAuthFlow
-                  ? 'Google hesabınızla bağlandınız. Randevu hatırlatmaları için telefon numaranızı girin.'
+                  ? 'Google hesabınızla bağlandınız. İletişim için telefon numaranızı girin.'
                   : 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.')
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
@@ -633,7 +598,7 @@ export default function OnboardingPage() {
                         onCountryChange={(iso) => update({ phoneCountry: iso, phone: '' })}
                         onValueChange={(phone) => update({ phone })}
                         error={errors.phone}
-                        hint="Randevu ve hatırlatma mesajları bu numaraya gönderilir."
+                        hint="İletişim ve destek için kullanılır."
                       />
 
                       <GenderSelect
@@ -813,10 +778,6 @@ export default function OnboardingPage() {
           </AuthFormShell>
         </motion.div>
       </div>
-
-      <Modal open={paymentOpen} onClose={() => !paying && setPaymentOpen(false)} title={`${selectedPlan?.name} Ödeme`} size="md">
-        <PaymentForm amount={selectedPrice} loading={paying} onCancel={() => setPaymentOpen(false)} onSubmit={handlePaidPayment} />
-      </Modal>
 
       <FormErrorModal
         open={errorModal.open}

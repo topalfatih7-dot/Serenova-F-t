@@ -72,6 +72,7 @@ const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplications
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
+const AdminAccountPage = lazy(() => import('./pages/admin/AdminAccountPage'))
 const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
 const MemberHealthProfilePage = lazy(() => import('./pages/shared/MemberHealthProfilePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -196,6 +197,7 @@ export default function App() {
                 <Route path="admin/messages/collab/:threadId" element={<AdminMessagesPage />} />
                 <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
                 <Route path="admin/activity" element={<AdminActivityPage />} />
+                <Route path="admin/account" element={<AdminAccountPage />} />
               </Route>
             </Route>
 

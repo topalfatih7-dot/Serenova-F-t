@@ -12,6 +12,7 @@ import { getPlanLabel, packageIncludesCoach, packageIncludesDietitian } from '..
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
+import { ADMIN_EMAIL } from '../../config/brand'
 
 const STATUS_LABELS = {
   active: 'Aktif',
@@ -276,7 +277,7 @@ export default function AdminMembersPage() {
               </div>
             )}
 
-            {selected.role !== 'admin' && selected.email?.toLowerCase() !== 'admin@serenova.fit' && (
+            {selected.role !== 'admin' && selected.email?.toLowerCase() !== ADMIN_EMAIL && (
               <div className="rounded-xl border border-red-100 bg-red-50/50 px-4 py-4">
                 <p className="text-sm font-semibold text-red-800">Üyeliği kalıcı sil</p>
                 <p className="mt-1 text-xs text-red-700/80">
