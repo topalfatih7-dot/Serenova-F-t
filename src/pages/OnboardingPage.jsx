@@ -290,7 +290,7 @@ export default function OnboardingPage() {
         return 'Cinsiyet seçimi zorunludur — Kadın veya Erkek seçin.'
       }
       if (!isOAuthFlow && !isPasswordValid(data.password)) {
-        return 'Şifre en az 8 karakter, bir büyük harf ve bir rakam içermelidir.'
+        return 'Şifre en az 8 karakter olmalı; büyük harf, küçük harf, rakam ve özel karakter içermelidir.'
       }
       if (!isOAuthFlow && data.password !== data.confirmPassword) {
         return 'Şifreler eşleşmiyor — iki alanı da aynı yazın.'

@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | claim-active-session | verify-active-session
+ * action: signup | unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | claim-active-session | verify-active-session
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -13,6 +13,7 @@ import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
 import { handleGa4Report } from './_ga4Report.js'
 import { claimActiveSession, isActiveSession } from './_singleSession.js'
+import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -93,6 +94,43 @@ async function sendRecoveryEmail(email, redirectTo) {
     }
   }
   return { ok: true }
+}
+
+async function handleSignup(res, body) {
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = String(body.password || '')
+  const name = String(body.name || '').trim()
+
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta adresi girin.' })
+  }
+  if (!isPasswordValid(password)) {
+    return res.status(400).json({ ok: false, error: passwordRequirementsMessage() })
+  }
+
+  const admin = getSupabaseAdmin()
+  const { data, error } = await admin.rpc('register_email_user', {
+    p_email: email,
+    p_password: password,
+    p_name: name,
+  })
+
+  if (error) {
+    return res.status(500).json({ ok: false, error: formatPasswordAuthError(error.message) })
+  }
+
+  const payload = data && typeof data === 'object' ? data : {}
+  if (!payload.ok) {
+    if (payload.error === 'already_registered') {
+      return res.status(409).json({ ok: false, error: 'already_registered' })
+    }
+    return res.status(400).json({
+      ok: false,
+      error: formatPasswordAuthError(payload.error) || passwordRequirementsMessage(),
+    })
+  }
+
+  return res.status(200).json({ ok: true, userId: payload.user_id })
 }
 
 async function handleUnlockSignup(res, body) {
@@ -380,6 +418,7 @@ export default async function handler(req, res) {
     const body = parseBody(req)
     const action = resolveAction(body, req)
 
+    if (action === 'signup') return handleSignup(res, body)
     if (action === 'unlock-signup') return handleUnlockSignup(res, body)
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)

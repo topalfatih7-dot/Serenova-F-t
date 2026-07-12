@@ -762,6 +762,36 @@ export async function ensureAuthForRegistration(profile) {
 
   try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
 
+  // GoTrue HIBP (sızmış şifre) kaydı engellemesin diye service-role RPC ile oluştur
+  try {
+    const signupRes = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'signup',
+        email,
+        password,
+        name: profile.name || '',
+      }),
+    })
+    const signupData = await signupRes.json().catch(() => ({}))
+    if (signupRes.ok && signupData.ok) {
+      const signIn = await signInAfterSignup(email, password)
+      if (signIn.success) return { success: true }
+      return { success: false, error: signIn.error || 'Kayıt oluştu ancak giriş yapılamadı. Lütfen giriş sayfasından deneyin.' }
+    }
+    if (signupData.error === 'already_registered' || signupRes.status === 409) {
+      const signIn = await signInAfterSignup(email, password)
+      if (signIn.success) return { success: true }
+      return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
+    }
+    if (signupData.error) {
+      return { success: false, error: signupData.error }
+    }
+  } catch {
+    /* API yoksa (yalnızca Vite) klasik signUp’a düş */
+  }
+
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
@@ -779,6 +809,12 @@ export async function ensureAuthForRegistration(profile) {
       const signIn = await signInAfterSignup(email, password)
       if (signIn.success) return { success: true }
       return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
+    }
+    if (/known to be weak|easy to guess|pwned|leaked|hibp|weak.?password/i.test(signUpError.message)) {
+      return {
+        success: false,
+        error: 'Şifre en az 8 karakter olmalı; büyük harf, küçük harf, rakam ve özel karakter içermelidir.',
+      }
     }
     return { success: false, error: signUpError.message }
   }
