@@ -35,6 +35,7 @@
     "import:pack:yoga": "node scripts/import-exercises.mjs --pack=yoga --upload-videos",
     "import:pack:pilate-home": "node scripts/import-exercises.mjs --pack=pilate-home --upload-videos",
     "import:pack:pilate-wall": "node scripts/import-exercises.mjs --pack=pilate-wall --upload-videos",
+    "import:pack:office": "node scripts/import-exercises.mjs --pack=office --upload-videos",
     "import:packs:remaining": "node scripts/import-exercises.mjs --pack=w130 --upload-videos && node scripts/import-exercises.mjs --pack=yoga --upload-videos && node scripts/import-exercises.mjs --pack=pilate-home --upload-videos && node scripts/import-exercises.mjs --pack=pilate-wall --upload-videos",
     "retranslate:exercises": "node scripts/retranslate-exercises.mjs",
     "retranslate:exercises:dry": "node scripts/retranslate-exercises.mjs --dry-run --limit=5"

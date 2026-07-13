@@ -35,7 +35,9 @@ alwaysApply: false
 
 ## Ertelenen paketler (şimdilik import edilmez)
 
-`face`, `office` — manifest: `scripts/data/deferred-exercise-packs.json`
+`face` — manifest: `scripts/data/deferred-exercise-packs.json`
+
+`office` paketi aktif: `npm run import:pack:office` (metadata + encode + thumb)
 
 ## Türkçe
 

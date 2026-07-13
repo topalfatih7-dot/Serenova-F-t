@@ -150,7 +150,7 @@ async function mapRecord(ex, pack, { deferred = false, skipTranslate = false } =
       packSlug: ex.packSlug || pack.slug,
       importSource: '1600exercisedbpro',
       importStatus: deferred ? 'deferred' : 'ready',
-      deferredReason: deferred ? 'Sonra eklenecek (yüz/ofis paketi)' : null,
+      deferredReason: deferred ? 'Sonra eklenecek (yüz paketi)' : null,
       movementCategoryLabel: tr.movement_category_label,
       localVideoFound: Boolean(localVideo),
       plannedVideoPath: videoPath,
@@ -426,7 +426,7 @@ async function main() {
   console.log(dryRun ? 'DRY RUN\n' : '')
   console.log('Kaynak:', sourceRoot)
   console.log('Kayit:', slice.length, '/', allRecords.length)
-  console.log('Ertelenen (face/office):', deferredManifest.length, '→ scripts/data/deferred-exercise-packs.json')
+  console.log('Ertelenen (face):', deferredManifest.length, '→ scripts/data/deferred-exercise-packs.json')
   console.log('Mod:', uploadVideos ? 'metadata + video upload' : 'metadata-only (video_pending=true)')
 
   if (upsertTaxonomy) await upsertTaxonomyRow(supabase)

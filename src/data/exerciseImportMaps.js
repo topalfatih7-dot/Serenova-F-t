@@ -68,7 +68,7 @@ export const IMPORT_TAXONOMY_BODY_PARTS = [
 ]
 
 /** Şimdilik import edilmeyecek paketler */
-export const DEFERRED_IMPORT_PACKS = ['face', 'office']
+export const DEFERRED_IMPORT_PACKS = ['face']
 
 export function mapBodyPart(bodyPart) {
   const key = String(bodyPart || '').trim().toLowerCase()

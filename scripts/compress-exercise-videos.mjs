@@ -33,6 +33,8 @@ const dryRun = args.includes('--dry-run')
 const force = args.includes('--force')
 const limitArg = args.find((a) => a.startsWith('--limit='))
 const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : null
+const prefixArg = args.find((a) => a.startsWith('--prefix='))
+const prefix = prefixArg ? prefixArg.split('=')[1] : null
 const minBytesArg = args.find((a) => a.startsWith('--min-bytes='))
 const minBytes = minBytesArg
   ? parseInt(minBytesArg.split('=')[1], 10)
@@ -240,12 +242,13 @@ async function main() {
   })
 
   let candidates = await fetchCandidates(supabase)
+  if (prefix) candidates = candidates.filter((c) => c.path.startsWith(prefix))
   if (limit != null && Number.isFinite(limit)) candidates = candidates.slice(0, limit)
 
   const totalIn = candidates.reduce((s, c) => s + (c.bytes || 0), 0)
   console.log(
     `Compress encode: ${candidates.length} aday, min-bytes=${minBytes}, `
-    + `concurrency=${concurrency}${force ? ', force' : ''}${dryRun ? ' (dry-run)' : ''}`,
+    + `concurrency=${concurrency}${prefix ? `, prefix=${prefix}` : ''}${force ? ', force' : ''}${dryRun ? ' (dry-run)' : ''}`,
   )
   console.log(`  aday toplam boyut: ${formatBytes(totalIn)} (en büyüğünden)`)
 

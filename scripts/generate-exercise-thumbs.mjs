@@ -24,6 +24,8 @@ const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const limitArg = args.find((a) => a.startsWith('--limit='))
 const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : null
+const prefixArg = args.find((a) => a.startsWith('--prefix='))
+const prefix = prefixArg ? prefixArg.split('=')[1] : null
 const concurrencyArg = args.find((a) => a.startsWith('--concurrency='))
 const concurrency = Math.max(1, Math.min(8, concurrencyArg ? parseInt(concurrencyArg.split('=')[1], 10) : 4))
 
@@ -166,9 +168,10 @@ async function main() {
   })
 
   let paths = await fetchAllVideoPaths(supabase)
+  if (prefix) paths = paths.filter((p) => p.startsWith(prefix))
   if (limit != null && Number.isFinite(limit)) paths = paths.slice(0, limit)
 
-  console.log(`Thumb üretimi: ${paths.length} video, concurrency=${concurrency}${dryRun ? ' (dry-run)' : ''}`)
+  console.log(`Thumb üretimi: ${paths.length} video, concurrency=${concurrency}${prefix ? ` prefix=${prefix}` : ''}${dryRun ? ' (dry-run)' : ''}`)
 
   const workDir = join(tmpdir(), `serenova-thumbs-${Date.now()}`)
   mkdirSync(workDir, { recursive: true })
