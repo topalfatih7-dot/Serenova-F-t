@@ -4,17 +4,21 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-11 · Video encode backfill + client-first imza + iOS play overlay (§70)  
-> **Son oturum özeti:** Storage ~7 GB→~0.6 GB · `videos:compress` · client-first signed URL · Pro Max play butonu fix · runbook `VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`
+> **Son güncelleme:** 2026-07-14 · Panel performans audit uygulandı (§71)  
+> **Son oturum özeti:** AppContext dilimleme · GPU/pil optimizasyonu · Lighthouse mobile 65→89 · logo 342→12 KB · `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`
 
 ---
 
-## Son Durum Özeti (2026-07-11)
+## Son Durum Özeti (2026-07-14)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
 | Alan | Durum | Doğrulama / Not |
 |------|-------|-----------------|
+| Panel performans (GPU/pil/render) | ✅ | Blueprint `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md` · §71 · LH mobile 89 / desktop 100 |
+| AppContext dilimleri | ✅ | `useAuth` / `useData` / `useActions` · `useApp()` geriye uyumlu birleşim |
+| Bundle splitting | ✅ | `vite.config.js` manualChunks + modulePreload filter · LandingPage lazy · recharts entry’de yok |
+| Marka logo (webp) | ✅ | `brand-logo.webp` + png · ~12 KB · `BrandLogo` `<picture>` · `npm run og:image` sıkıştırır |
 | Stripe Checkout + webhook | ✅ Canlı | `STRIPE_WEBHOOK_SECRET` Vercel production'da; `npm run test:stripe`, `npm run test:stripe:checkout` |
 | Sosyal giriş | Google only | Apple/Facebook UI kaldırıldı — `src/services/oauthAuth.js` |
 | RLS performans | ✅ Uygulandı | Migration `20260705_rls_performance_tuning.sql`; `npm run test:rls` (19/19) |
@@ -60,7 +64,7 @@
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
 6. Son değişiklikler için **§53–69 Değişiklik Günlüğü** (2026-07-03 — 2026-07-10); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video katmanı: **§68–§70** + `docs/VIDEO_*.md` (özellikle `VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`).
+7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video: **§68–§70** + `docs/VIDEO_*.md`. Panel performans: **§71** + `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
@@ -114,7 +118,9 @@
 ```
 main.jsx
   └─ App.jsx
-       ├─ AppProvider (AppContext) ──► supabaseDb.hydrate()
+       ├─ AppProvider ──► AuthContext + DataContext + ActionsContext
+       │                    (useAuth / useData / useActions · useApp = birleşim)
+       │                    ──► supabaseDb.hydrate()
        ├─ ToastProvider
        └─ BrowserRouter
             ├─ PublicLayout (/, login, onboarding, blog…)
@@ -128,9 +134,9 @@ main.jsx
 | Dosya | Satır | Ne yapar |
 |-------|-------|----------|
 | `src/main.jsx` | 1–10 | React StrictMode, `#root` mount, `index.css` import |
-| `src/App.jsx` | 51–122 | Tüm route tanımları, layout shell'leri |
-| `src/context/AppContext.jsx` | 24–441 | Merkezi state, tüm CRUD aksiyonları |
-| `src/services/supabaseDb.js` | 173–235 | `hydrate()` — tüm veriyi Supabase'den çeker |
+| `src/App.jsx` | ~88+ | Tüm route tanımları, layout shell'leri · `LandingPage` lazy |
+| `src/context/AppContext.jsx` | — | Auth/Data/Actions dilimleri + CRUD aksiyonları (§71) |
+| `src/services/supabaseDb.js` | — | `hydrate()` — tüm veriyi Supabase'den çeker |
 
 ---
 
@@ -147,7 +153,7 @@ Tarayıcı
   │     └─ Giriş varsa: members, programs, tickets, activities, payments
   │     └─ Admin ise ek: staff_applications, corporate_applications, contact_inquiries
   │
-  ├─► AppContext → useApp() → tüm sayfalar
+  ├─► AppContext → useApp() / useAuth|useData|useActions → sayfalar
   │
   ├─► POST /api/telegram-notify (giriş/kayıt bildirimi)
   │
@@ -330,6 +336,16 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 
 **Dosya:** `src/context/AppContext.jsx`
 
+**2026-07-14 dilimleme (§71):** Tek “god context” yerine üç Provider:
+| Hook | İçerik | Ne zaman değişir |
+|------|--------|------------------|
+| `useAuth()` | kimlik, membership*, `loggingOut`, kabuk rozet sayaçları | oturum / rozet |
+| `useData()` | listeler, chat gövdesi, platform istatistikleri | realtime / hydrate |
+| `useActions()` | ~80 `useCallback` aksiyon | neredeyse hiç (stabil) |
+| `useApp()` | üç dilimin birleşimi — **geriye uyumlu**; tüm tüketiciler hâlâ çalışır |
+
+Kabuk (`Sidebar`/`TopBar`) tercihen `useAuth` (+ `useActions` logout) kullanır — sohbet gövdesi değişince yeniden render olmaz.
+
 **State (useApp() ile erişilir):**
 - Kullanıcı: `user`, `membership`, `membershipStatus`, `isAuthenticated`, `isAdmin`, `isStaff`, `loggingOut` (çıkış sırasında spinner — §57)
 - Seanslar: `coachSessions`, `dietitianSessions`
@@ -337,7 +353,7 @@ Profil alanları (boy, kilo, hedefler, şehir, telefon…), `healthTest` (sağl�
 - Admin: `platform`, `adminStats`, `membershipBreakdown`, `monthlyGrowth`, `sessionStats`
 - Başvurular (admin hydrate): `staffApplications`, `corporateApplications`, `contactInquiries`
 - Mesajlaşma: `chatThreads`, `chatMessages`, `adminStaffThreads`, `adminStaffMessages`
-- **Bildirim rozetleri (2026-06-28):** `chatUnreadCount`, `adminStaffUnreadCount`, `staffAdminUnreadCount`, `pendingApplicationsCount`, `openSupportTicketsCount`, `notificationUnreadCount` — nav badge kaynakları (§42)
+- **Bildirim rozetleri (2026-06-28):** `chatUnreadCount`, `adminStaffUnreadCount`, `staffAdminUnreadCount`, `pendingApplicationsCount`, `openSupportTicketsCount`, `notificationUnreadCount` — nav badge kaynakları (§42); Auth diliminde de tutulur (kabuk izolasyonu)
 
 **Aksiyonlar (tam liste):**
 `login`, `logout`, `register`, `registerWithPayment`, `registerWithPlan`, `savePlan`, `changePlan` (mevcut üyenin planını değiştirir — yeni kayıt OLUŞTURMAZ), `processPremiumPayment`, `upgradeToPremium`, `savePackage`, `saveSupportSchedule`, `pauseMembership`, `resumeMembership`, `cancelMembership`, `renewMembership`, `adminPatchMember`, `adminUpdatePremium`, `addStaff`, `editStaff`, `removeStaff`, `createProgram`, `addPost`, `editPost`, `removePost`, `createTicket`, `setTicketStatus`, `sendTicketReply`, `uploadExerciseVideo`, `addExercise`, `editExercise`, `removeExercise`, `createMembershipRequest`, `resolveMembershipRequest`, `resolveStaffApplication`, `resolveCorporateApplication`, `updateContactInquiryStatus`, `addContent`, `editContent`, `removeContent`, `submitSuccessStory`, `markNotificationRead`, `markAllNotificationsRead`, `rescheduleSession`, `cancelSession`, `toggleTask`, `toggleMealCompletion`, `updateProfile`, `updateSettings`, `refresh`
@@ -784,14 +800,14 @@ Kaynak: `src/App.jsx` satır 56–117
 
 | Dosya | Export |
 |-------|--------|
-| `AppContext.jsx` | `AppProvider`, `useApp` |
+| `AppContext.jsx` | `AppProvider`, `useApp`, `useAuth`, `useData`, `useActions` |
 | `ToastContext.jsx` | `ToastProvider`, `useToast` |
 
 ### 7.5 Config (`src/config/`)
 
 | Dosya | Export |
 |-------|--------|
-| `brand.js` | `BRAND`, `ADMIN_CREDENTIALS`, `BRAND.assets` (logo, mark, ogImage) |
+| `brand.js` | `BRAND`, `ADMIN_CREDENTIALS`, `BRAND.assets` (logo, logoWebp, mark, ogImage) |
 | `seo.js` | `SEO`, `PAGE_SEO`, `getSiteUrl`, JSON-LD builder'ları |
 | `videoCall.js` | `VIDEO_CALL_CONFIG`, `buildRoomUrl`, `memberCallPath`, `staffCallPath`, `SESSION_TYPE_META` |
 | `testPayment.js` | `TEST_CARD`, `validateTestPayment` |
@@ -4338,3 +4354,44 @@ npm run videos:compress
 Runbook §5 tablosu: yavaşlık → storage boyutu + imza yolu; 403 → oturum/TTL/path; play butonu takılı → `showCenterPlay` / `autoplayBlocked`; siyah ekran → `VIDEO_PLAYER_IOS_FULLSCREEN.md`.
 
 **Yapma:** bucket public, path yerine public URL, blob src gizleme, sayfa açılışında toplu imza.
+
+---
+
+## §71 Panel performans audit + Lighthouse iyileştirme (2026-07-14)
+
+**Kaynak sözleşme:** [`docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`](docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md)
+
+### Sorun
+
+Üye/personel/admin panellerinde telefon ısınması, pil, jank ve uzun oturumda bellek artışı. Kök nedenler: tek büyük AppContext render fırtınası, animasyonlu blur + backdrop-filter, gizli sekmede poll, ağır landing payload (logo 342 KB + recharts preload).
+
+### Uygulanan (özet)
+
+| Alan | Ne |
+|------|----|
+| Context | `AuthContext` / `DataContext` / `ActionsContext` · `useAuth`/`useData`/`useActions` · `useApp` birleşik |
+| GPU | orb blur 70→32px; scale kaldırıldı; mobil `<768` ambient `null`; panel `.glass-card*` backdrop kapalı |
+| Pil | presence heartbeat 60s; stats/active-users `document.hidden` iken durur |
+| Bellek | seen-id Set cap 1000 + logout temizliği |
+| Ağ | `onApplicationsChange` hedefli patch (tam hydrate yok) |
+| Bundle | `LandingPage` lazy; `react-vendor` + recharts/framer/daily/html2pdf chunks; modulePreload filter (recharts landing’e sızmaz) |
+| Logo/font | `brand-logo.webp` ~12 KB; Inter 400/600 + Jakarta 700/800 async |
+| Başlangıç | GA + audio-unlock idle/ilk etkileşim |
+
+### Ölçüm (Lighthouse · local preview · Slow 4G)
+
+| Sayfa | Önce | Sonra |
+|-------|------|-------|
+| Landing mobile | 65 · LCP 6.6s | **89** · LCP **3.1s** |
+| Login mobile | 72 · LCP 5.4s | **88** · LCP **3.2s** |
+| Landing desktop | 98 | **100** |
+| Transfer | ~988 KB | ~548 KB |
+
+### Bilinçli ertelenen
+
+- **Task 4.1** role göre hydrate daraltma — RLS + yüksek risk; ayrı plan
+- Gerçek telefonda Paint flashing / presence Network smoke (kod hazır)
+
+### Ana dosyalar
+
+`src/context/AppContext.jsx`, `src/components/layout/{Sidebar,TopBar}.jsx`, `src/components/ui/{AnimatedBackground,BrandLogo,StatsCard}.jsx`, `src/services/presenceService.js`, `src/hooks/{useRealtimeSync,useIncomingChatSound,useNotificationAlerts}.js`, `vite.config.js`, `index.html`, `public/brand-logo.{png,webp}`, `scripts/generate-og-image.mjs`, `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`

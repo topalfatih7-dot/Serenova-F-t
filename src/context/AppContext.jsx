@@ -16,6 +16,8 @@ import {
 import { ALL_PLANS } from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
+import { clearIncomingChatSoundState } from '../hooks/useIncomingChatSound'
+import { clearNotificationAlertState } from '../hooks/useNotificationAlerts'
 import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
@@ -28,7 +30,9 @@ import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isAuthFastPath } from '../utils/authPaths'
 
-const AppContext = createContext(null)
+const AuthContext = createContext(null)
+const DataContext = createContext(null)
+const ActionsContext = createContext(null)
 
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
@@ -589,8 +593,26 @@ export function AppProvider({ children }) {
           return { ...prev, [message.threadId]: [...list, message] }
         })
       },
-      onApplicationsChange: () => {
-        reloadRemote()
+      onApplicationsChange: ({ table, type, id, record }) => {
+        const listKey = {
+          staff_applications: 'staffApplications',
+          corporate_applications: 'corporateApplications',
+          contact_inquiries: 'contactInquiries',
+        }[table]
+        if (!listKey) return
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          const list = prev[listKey] || []
+          if (type === 'delete') {
+            return { ...prev, [listKey]: list.filter((r) => r.id !== id) }
+          }
+          if (!record) return prev
+          const idx = list.findIndex((r) => r.id === record.id)
+          const next = idx >= 0
+            ? list.map((r, i) => (i === idx ? record : r))
+            : [record, ...list]
+          return { ...prev, [listKey]: next }
+        })
       },
       onProgramsChange: ({ type, id, program }) => {
         setRemoteDb((prev) => {
@@ -606,7 +628,7 @@ export function AppProvider({ children }) {
         })
       },
     })
-  }, [sessionType, currentMember?.id, currentStaff?.id, reloadRemote])
+  }, [sessionType, currentMember?.id, currentStaff?.id])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -720,6 +742,8 @@ export function AppProvider({ children }) {
     setLoggingOut(true)
     try {
       await flushNotificationReads()
+      clearIncomingChatSoundState()
+      clearNotificationAlertState()
       await sb.logout()
       await reloadRemote()
     } finally {
@@ -1180,7 +1204,7 @@ export function AppProvider({ children }) {
     [currentMember],
   )
 
-  const value = useMemo(() => ({
+  const authValue = useMemo(() => ({
     mode: 'supabase',
     loading,
     syncing,
@@ -1188,6 +1212,45 @@ export function AppProvider({ children }) {
     isAdmin,
     isStaff,
     staffUser: currentStaff || {},
+    user,
+    authUser,
+    membership: currentMember?.membership || 'free',
+    membershipStatus: currentMember?.membershipStatus || 'active',
+    packageConfig: currentMember?.packageConfig,
+    premiumExpiresAt: currentMember?.premiumExpiresAt,
+    premiumStartedAt: currentMember?.premiumStartedAt,
+    freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
+    isFreeTrialExpired,
+    verificationStatus,
+    loggingOut,
+    // Kabuk rozetleri — Data listelerinden bağımsız; sohbet gövdesi değişince Auth sabit kalır
+    chatUnreadCount,
+    notificationUnreadCount,
+    openSupportTicketsCount,
+  }), [
+    loading,
+    syncing,
+    isAuthenticated,
+    isAdmin,
+    isStaff,
+    currentStaff,
+    user,
+    authUser,
+    currentMember?.membership,
+    currentMember?.membershipStatus,
+    currentMember?.packageConfig,
+    currentMember?.premiumExpiresAt,
+    currentMember?.premiumStartedAt,
+    currentMember?.freeTrialExpiresAt,
+    isFreeTrialExpired,
+    verificationStatus,
+    loggingOut,
+    chatUnreadCount,
+    notificationUnreadCount,
+    openSupportTicketsCount,
+  ])
+
+  const dataValue = useMemo(() => ({
     staff: db.staff || [],
     programs: db.programs || [],
     posts: db.posts || [],
@@ -1199,11 +1262,6 @@ export function AppProvider({ children }) {
     staffApplications: db.staffApplications || [],
     corporateApplications: db.corporateApplications || [],
     contactInquiries: db.contactInquiries || [],
-    user,
-    authUser,
-    membership: currentMember?.membership || 'free',
-    membershipStatus: currentMember?.membershipStatus || 'active',
-    packageConfig: currentMember?.packageConfig,
     supportSchedule: currentMember?.supportSchedule || null,
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
@@ -1219,31 +1277,12 @@ export function AppProvider({ children }) {
     pendingApplicationsCount,
     openSupportTicketsCount,
     notificationUnreadCount,
-    loadChatMessages,
-    sendChatMessage,
-    markChatThreadRead,
-    refreshStaffChatThreads,
-    ensureStaffChatThread,
-    acceptChatConsent,
-    loadAdminStaffMessages,
-    sendAdminStaffMessage,
-    markAdminStaffThreadRead,
-    ensureAdminStaffThread,
     staffCollabThreads: sortedStaffCollabThreads,
     staffCollabMessages,
     staffCollabUnreadCount,
-    loadStaffCollabMessages,
-    sendStaffCollabMessage,
-    markStaffCollabThreadRead,
-    refreshStaffCollabThreads,
-    ensureStaffCollabThread,
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
     settings: currentMember?.settings || {},
-    premiumExpiresAt: currentMember?.premiumExpiresAt,
-    premiumStartedAt: currentMember?.premiumStartedAt,
-    freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
-    isFreeTrialExpired,
     testimonials: db.content?.testimonials || [],
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],
@@ -1255,9 +1294,67 @@ export function AppProvider({ children }) {
     monthlyGrowth,
     sessionStats,
     activeUsers,
+  }), [
+    db.staff,
+    db.programs,
+    db.posts,
+    db.plans,
+    db.staffApplications,
+    db.corporateApplications,
+    db.contactInquiries,
+    db.content,
+    myPrograms,
+    myTickets,
+    db.exercises,
+    db.exerciseCount,
+    currentMember?.supportSchedule,
+    currentMember?.coachSessions,
+    currentMember?.dietitianSessions,
+    currentMember?.doctorSessions,
+    currentMember?.notifications,
+    currentMember?.tasks,
+    currentMember?.progress,
+    currentMember?.settings,
+    chatThreads,
+    chatMessages,
+    chatUnreadCount,
+    sortedAdminStaffThreads,
+    adminStaffMessages,
+    adminStaffUnreadCount,
+    staffAdminUnreadCount,
+    pendingApplicationsCount,
+    openSupportTicketsCount,
+    notificationUnreadCount,
+    sortedStaffCollabThreads,
+    staffCollabMessages,
+    staffCollabUnreadCount,
+    platform,
+    adminStats,
+    onboardingFunnel,
+    membershipBreakdown,
+    monthlyGrowth,
+    sessionStats,
+    activeUsers,
+  ])
+
+  const actionsValue = useMemo(() => ({
+    loadChatMessages,
+    sendChatMessage,
+    markChatThreadRead,
+    refreshStaffChatThreads,
+    ensureStaffChatThread,
+    acceptChatConsent,
+    loadAdminStaffMessages,
+    sendAdminStaffMessage,
+    markAdminStaffThreadRead,
+    ensureAdminStaffThread,
+    loadStaffCollabMessages,
+    sendStaffCollabMessage,
+    markStaffCollabThreadRead,
+    refreshStaffCollabThreads,
+    ensureStaffCollabThread,
     login,
     logout,
-    loggingOut,
     register,
     completeOAuthMember,
     registerWithPayment,
@@ -1311,7 +1408,6 @@ export function AppProvider({ children }) {
     updateProfile,
     saveHealthTestProgress,
     updateSettings,
-    verificationStatus,
     sendEmailVerification,
     confirmEmailVerification,
     sendPhoneVerification,
@@ -1320,49 +1416,6 @@ export function AppProvider({ children }) {
     refresh: reloadRemote,
     reloadRemote,
   }), [
-    loading,
-    syncing,
-    isAuthenticated,
-    isAdmin,
-    isStaff,
-    currentStaff,
-    db.staff,
-    db.programs,
-    db.posts,
-    db.plans,
-    db.staffApplications,
-    db.corporateApplications,
-    db.contactInquiries,
-    db.content,
-    myPrograms,
-    myTickets,
-    db.exercises,
-    db.exerciseCount,
-    user,
-    authUser,
-    currentMember,
-    chatThreads,
-    chatMessages,
-    chatUnreadCount,
-    sortedAdminStaffThreads,
-    adminStaffMessages,
-    adminStaffUnreadCount,
-    staffAdminUnreadCount,
-    pendingApplicationsCount,
-    openSupportTicketsCount,
-    notificationUnreadCount,
-    sortedStaffCollabThreads,
-    staffCollabMessages,
-    staffCollabUnreadCount,
-    isFreeTrialExpired,
-    platform,
-    adminStats,
-    onboardingFunnel,
-    membershipBreakdown,
-    monthlyGrowth,
-    sessionStats,
-    activeUsers,
-    verificationStatus,
     loadChatMessages,
     sendChatMessage,
     markChatThreadRead,
@@ -1380,7 +1433,6 @@ export function AppProvider({ children }) {
     ensureStaffCollabThread,
     login,
     logout,
-    loggingOut,
     register,
     completeOAuthMember,
     registerWithPayment,
@@ -1447,21 +1499,44 @@ export function AppProvider({ children }) {
   }
 
   return (
-    <AppContext.Provider value={value}>
-      {loading && !authFastPath ? (
-        <LoadingScreen />
-      ) : (
-        <>
-          {children}
-          {syncing && !authFastPath && <LoadingScreen overlay />}
-        </>
-      )}
-    </AppContext.Provider>
+    <AuthContext.Provider value={authValue}>
+      <DataContext.Provider value={dataValue}>
+        <ActionsContext.Provider value={actionsValue}>
+          {loading && !authFastPath ? (
+            <LoadingScreen />
+          ) : (
+            <>
+              {children}
+              {syncing && !authFastPath && <LoadingScreen overlay />}
+            </>
+          )}
+        </ActionsContext.Provider>
+      </DataContext.Provider>
+    </AuthContext.Provider>
   )
 }
 
-export function useApp() {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp must be used within AppProvider')
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AppProvider')
   return ctx
+}
+
+export function useData() {
+  const ctx = useContext(DataContext)
+  if (!ctx) throw new Error('useData must be used within AppProvider')
+  return ctx
+}
+
+export function useActions() {
+  const ctx = useContext(ActionsContext)
+  if (!ctx) throw new Error('useActions must be used within AppProvider')
+  return ctx
+}
+
+export function useApp() {
+  const auth = useAuth()
+  const data = useData()
+  const actions = useActions()
+  return useMemo(() => ({ ...auth, ...data, ...actions }), [auth, data, actions])
 }

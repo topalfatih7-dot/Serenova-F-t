@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -42,6 +42,18 @@ export default function DashboardPage() {
 
   useStripePaymentReturn(refresh)
 
+  const goMembership = useCallback(() => navigate('/membership'), [navigate])
+  const goCoachSchedule = useCallback(() => navigate('/schedule?tab=coach'), [navigate])
+  const goDietitianSchedule = useCallback(() => navigate('/schedule?tab=dietitian'), [navigate])
+
+  const latestPosts = useMemo(
+    () => (posts || [])
+      .filter((p) => p.published)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 3),
+    [posts],
+  )
+
   if (isFreeTrialExpired) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -78,10 +90,6 @@ export default function DashboardPage() {
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
 
   const today = new Date()
-  const latestPosts = (posts || [])
-    .filter((p) => p.published)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 3)
 
   return (
     <div className="space-y-6">
@@ -161,9 +169,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Sağlık testi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={() => navigate('/membership')} />
-        <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={() => navigate('/schedule?tab=coach')} />
-        <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={() => navigate('/schedule?tab=dietitian')} />
+        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Sağlık testi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={goMembership} />
+        <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={goCoachSchedule} />
+        <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={goDietitianSchedule} />
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />
       </div>
 

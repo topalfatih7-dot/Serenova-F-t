@@ -168,6 +168,18 @@ body {
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
+/* Panel ambient bg üstünde backdrop-filter maliyeti — opak yüzey (landing camı bozulmaz) */
+.member-panel-bg .glass-card,
+.member-panel-bg .glass-card-solid,
+.staff-panel-bg .glass-card,
+.staff-panel-bg .glass-card-solid,
+.admin-panel-bg .glass-card,
+.admin-panel-bg .glass-card-solid {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: color-mix(in srgb, white 97%, var(--color-cream-100));
+}
+
 .glass-card-solid::before {
   content: "";
   position: absolute;
@@ -553,8 +565,8 @@ body {
   66% { transform: translateY(16px) translateX(10px) rotate(-5deg); }
 }
 @keyframes panelOrbDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(36px, -28px) scale(1.14); }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(36px, -28px); }
 }
 
 .panel-emoji {
@@ -571,7 +583,7 @@ body {
   pointer-events: none;
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
+  filter: blur(32px);
   animation: panelOrbDrift var(--orb-dur, 16s) ease-in-out infinite;
 }
 

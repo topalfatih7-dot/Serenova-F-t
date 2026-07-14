@@ -24,11 +24,25 @@ const TOAST_BY_TYPE = {
 /** Oturum boyunca görülen bildirim id'leri — Strict Mode çift mount'ta tekrar ses çıkmaz. */
 const seenByUser = new Map()
 const bootstrappedUsers = new Set()
+const SEEN_ID_CAP = 1000
 
 function getSeenSet(userId) {
   if (!userId) return new Set()
   if (!seenByUser.has(userId)) seenByUser.set(userId, new Set())
   return seenByUser.get(userId)
+}
+
+function addSeen(set, id) {
+  set.add(id)
+  if (set.size <= SEEN_ID_CAP) return
+  const oldest = set.values().next().value
+  set.delete(oldest)
+}
+
+/** Logout sonrası bellek temizliği — tekrar login'de bootstrap sessiz kalır. */
+export function clearNotificationAlertState() {
+  seenByUser.clear()
+  bootstrappedUsers.clear()
 }
 
 function notificationBody(n) {
@@ -76,7 +90,7 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
     // aksi halde ilk gelen bildirim sessizce yutulur.
     if (!bootstrappedUsers.has(userId)) {
       bootstrappedUsers.add(userId)
-      list.forEach((n) => seen.add(n.id))
+      list.forEach((n) => addSeen(seen, n.id))
       return
     }
 
@@ -85,7 +99,7 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
 
     list.forEach((n) => {
       if (seen.has(n.id)) return
-      seen.add(n.id)
+      addSeen(seen, n.id)
       if (n.read) return
 
       // Kullanıcı o sohbeti zaten açık görüntülüyorsa uyarıya gerek yok.

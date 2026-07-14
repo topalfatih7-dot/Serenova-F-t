@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../services/supabaseClient'
 import { fetchActiveUsers } from '../services/presenceService'
-import { rowToTicket, rowToMember, rowToProgram } from '../services/supabaseDb'
+import { rowToTicket, rowToMember, rowToProgram, rowToStaffApplication, rowToCorporateApplication, rowToContactInquiry } from '../services/supabaseDb'
 import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
 import { rowToAdminStaffThread, rowToAdminStaffMessage } from '../services/adminChatDb'
 import { rowToStaffCollabThread, rowToStaffCollabMessage } from '../services/staffCollabChatDb'
@@ -17,15 +17,43 @@ export function useActiveUsers(isAdmin) {
 
   useEffect(() => {
     if (!isAdmin || !supabase) return undefined
+
+    let poll = null
+    const startPoll = () => {
+      if (poll != null) return
+      poll = setInterval(() => { void refresh() }, 15_000)
+    }
+    const stopPoll = () => {
+      if (poll == null) return
+      clearInterval(poll)
+      poll = null
+    }
+
     const kick = setTimeout(() => { void refresh() }, 0)
-    const poll = setInterval(refresh, 15_000)
+    if (typeof document === 'undefined' || !document.hidden) startPoll()
+
+    const onVis = () => {
+      if (document.hidden) {
+        stopPoll()
+        return
+      }
+      void refresh()
+      startPoll()
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVis)
+    }
+
     const channel = supabase
       .channel('admin-presence')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, refresh)
       .subscribe()
     return () => {
       clearTimeout(kick)
-      clearInterval(poll)
+      stopPoll()
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVis)
+      }
       supabase.removeChannel(channel)
     }
   }, [isAdmin, refresh])
@@ -146,11 +174,26 @@ export function subscribeRealtimeSync({
   channels.push(staffCollabMessageChannel)
 
   if (session.type === 'admin') {
-    for (const table of ['staff_applications', 'corporate_applications', 'contact_inquiries']) {
+    const applicationConverters = {
+      staff_applications: rowToStaffApplication,
+      corporate_applications: rowToCorporateApplication,
+      contact_inquiries: rowToContactInquiry,
+    }
+    for (const table of Object.keys(applicationConverters)) {
       const appChannel = supabase
         .channel(`apps-sync-${table}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-          onApplicationsChange?.()
+        .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+          if (payload.eventType === 'DELETE') {
+            onApplicationsChange?.({ table, type: 'delete', id: payload.old?.id })
+            return
+          }
+          if (payload.new) {
+            onApplicationsChange?.({
+              table,
+              type: 'upsert',
+              record: applicationConverters[table](payload.new),
+            })
+          }
         })
         .subscribe()
       channels.push(appChannel)

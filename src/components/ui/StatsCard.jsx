@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 
-export default function StatsCard({ label, value, sub, icon: Icon, accent = 'brand', onClick }) {
+function StatsCard({ label, value, sub, icon: Icon, accent = 'brand', onClick }) {
   const accents = {
     brand: 'from-brand-50 via-white to-violet-50/40',
     sage: 'from-sage-50 via-white to-emerald-50/50',
@@ -37,3 +38,5 @@ export default function StatsCard({ label, value, sub, icon: Icon, accent = 'bra
     </Tag>
   )
 }
+
+export default memo(StatsCard)

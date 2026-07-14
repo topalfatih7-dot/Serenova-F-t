@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 const FLOAT_CLASSES = ['panel-float-a', 'panel-float-b', 'panel-float-c']
 
@@ -24,7 +25,8 @@ const ORB_PRESETS = {
  * blur'lu gradient orb'lar + sektöre uygun yüzen emojiler.
  * pointer-events yok, içerik etkilenmez. prefers-reduced-motion'a saygılıdır.
  */
-export default function AnimatedBackground({ emojis = [], accent = 'member', className = '' }) {
+function AnimatedBackground({ emojis = [], accent = 'member', className = '' }) {
+  const isDesktop = useMediaQuery('(min-width: 768px)')
   const orbs = ORB_PRESETS[accent] || ORB_PRESETS.member
 
   const items = useMemo(
@@ -50,6 +52,9 @@ export default function AnimatedBackground({ emojis = [], accent = 'member', cla
       }),
     [emojis],
   )
+
+  // Mobilde animasyonlu orb/emoji yok — GPU/termal maliyet; shell gradient yeter.
+  if (!isDesktop) return null
 
   return (
     <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -79,3 +84,5 @@ export default function AnimatedBackground({ emojis = [], accent = 'member', cla
     </div>
   )
 }
+
+export default memo(AnimatedBackground)

@@ -39,7 +39,7 @@ export default defineConfig([
     rules: {
       'react-refresh/only-export-components': [
         'error',
-        { allowConstantExport: true, allowExportNames: ['useApp', 'useToast'] },
+        { allowConstantExport: true, allowExportNames: ['useApp', 'useAuth', 'useData', 'useActions', 'useToast'] },
       ],
     },
   },

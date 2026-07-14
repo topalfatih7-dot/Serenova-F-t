@@ -110,4 +110,48 @@ export default defineConfig({
   appType: 'spa',
   preview: { host: true },
   server: { port: 5173 },
+  build: {
+    modulePreload: {
+      // Ağır lazy vendor'ları entry'den preload etme (landing'e recharts vb. sızmasın)
+      resolveDependencies: (_filename, deps) =>
+        deps.filter(
+          (dep) =>
+            !dep.includes('recharts')
+            && !dep.includes('html2pdf')
+            && !dep.includes('daily-js')
+            && !dep.includes('jspdf'),
+        ),
+    },
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // React'i ayrı tut — aksi halde recharts chunk'ına kaçıp entry'ye static import sızıyor
+          if (
+            id.includes('node_modules/react-dom/')
+            || id.includes('node_modules/react/')
+            || id.includes('node_modules/scheduler/')
+          ) {
+            return 'react-vendor'
+          }
+          if (id.includes('node_modules/recharts/')) {
+            return 'recharts'
+          }
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'framer-motion'
+          }
+          if (id.includes('node_modules/@daily-co/daily-js/')) {
+            return 'daily-js'
+          }
+          if (
+            id.includes('node_modules/html2pdf.js/')
+            || id.includes('node_modules/jspdf/')
+            || id.includes('node_modules/html2canvas/')
+          ) {
+            return 'html2pdf'
+          }
+          return undefined
+        },
+      },
+    },
+  },
 })

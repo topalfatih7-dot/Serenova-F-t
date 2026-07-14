@@ -1,16 +1,18 @@
+import { memo } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LogOut, Loader2 } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useAuth, useActions } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 import BrandLogo from '../ui/BrandLogo'
 import { resolveFirstName } from '../../utils/displayName'
 import { buildMemberNavItems } from '../../config/memberNav'
 
-export default function Sidebar({ healthTestIncomplete = false }) {
+function Sidebar({ healthTestIncomplete = false }) {
   const {
-    user, membership, membershipStatus, logout, loggingOut,
+    user, membership, membershipStatus, loggingOut,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount,
-  } = useApp()
+  } = useAuth()
+  const { logout } = useActions()
 
   const displayName = resolveFirstName({ name: user?.name, email: user?.email })
 
@@ -70,3 +72,5 @@ export default function Sidebar({ healthTestIncomplete = false }) {
     </aside>
   )
 }
+
+export default memo(Sidebar)

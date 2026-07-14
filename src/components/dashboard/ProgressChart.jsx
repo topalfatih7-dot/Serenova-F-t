@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 
-export function WeightChart({ data }) {
+export const WeightChart = memo(function WeightChart({ data }) {
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
@@ -17,9 +18,9 @@ export function WeightChart({ data }) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
 
-export function WorkoutChart({ data }) {
+export const WorkoutChart = memo(function WorkoutChart({ data }) {
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
@@ -35,9 +36,9 @@ export function WorkoutChart({ data }) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
 
-export function MealChart({ data }) {
+export const MealChart = memo(function MealChart({ data }) {
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
@@ -53,9 +54,9 @@ export function MealChart({ data }) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
 
-export function MoodChart({ data }) {
+export const MoodChart = memo(function MoodChart({ data }) {
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
@@ -71,4 +72,5 @@ export function MoodChart({ data }) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
+

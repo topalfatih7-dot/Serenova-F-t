@@ -269,7 +269,6 @@ export default function OnboardingPage() {
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
   const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const selectedPlan = displayPlans.find((p) => p.id === data.membership) || displayPlans[0]
-  const selectedPrice = isPaidMembership(data.membership) ? getTierPrice(data.membership, durationMonths) : 0
   const isPaid = isPaidMembership(data.membership)
 
   const showFormError = (message) => {

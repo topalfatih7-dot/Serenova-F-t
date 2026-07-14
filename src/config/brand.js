@@ -42,7 +42,8 @@ export const BRAND = {
   /** Statik marka görselleri — kaynak: public/brand-logo-alt.png → npm run og:image */
   assets: {
     /** Navbar, giriş, panel — yatay logo (ikon + Yeni Form yazısı) */
-    logo: '/brand-logo.png?v=3',
+    logo: '/brand-logo.png?v=4',
+    logoWebp: '/brand-logo.webp?v=4',
     /** Favicon, manifest, JSON-LD — yalnızca ikon karesi */
     mark: '/brand-mark.png',
     /** Sosyal paylaşım / Open Graph — 1200×630 */

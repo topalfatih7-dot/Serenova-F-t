@@ -125,7 +125,7 @@ function rowToPost(row) {
 function rowToTicket(row) {
   return { ...(row.data || {}), id: row.id, memberId: row.member_id, status: row.status }
 }
-export { rowToMember, rowToTicket, rowToProgram }
+export { rowToMember, rowToTicket, rowToProgram, rowToStaffApplication, rowToCorporateApplication, rowToContactInquiry }
 function rowToActivity(row) {
   const data = row.data || {}
   return {

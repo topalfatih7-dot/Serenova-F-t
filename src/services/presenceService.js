@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 
-const OFFLINE_MS = 90_000
-const HEARTBEAT_MS = 30_000
+const OFFLINE_MS = 180_000
+const HEARTBEAT_MS = 60_000
 
 async function broadcastPresenceStats(stats) {
   if (!supabase || !stats) return
@@ -121,11 +121,37 @@ export function subscribeOnlineStats(onStats) {
   if (!supabase) return () => {}
 
   let active = true
-  fetchOnlineStats().then((s) => { if (active) onStats(s) })
+  let poll = null
 
-  const poll = setInterval(() => {
+  const pull = () => {
     fetchOnlineStats().then((s) => { if (active) onStats(s) })
-  }, HEARTBEAT_MS)
+  }
+
+  const startPoll = () => {
+    if (poll != null) return
+    poll = setInterval(pull, HEARTBEAT_MS)
+  }
+
+  const stopPoll = () => {
+    if (poll == null) return
+    clearInterval(poll)
+    poll = null
+  }
+
+  pull()
+  if (typeof document === 'undefined' || !document.hidden) startPoll()
+
+  const onVis = () => {
+    if (document.hidden) {
+      stopPoll()
+      return
+    }
+    pull()
+    startPoll()
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVis)
+  }
 
   const channel = supabase
     .channel('presence:stats')
@@ -136,7 +162,10 @@ export function subscribeOnlineStats(onStats) {
 
   return () => {
     active = false
-    clearInterval(poll)
+    stopPoll()
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVis)
+    }
     supabase.removeChannel(channel)
   }
 }

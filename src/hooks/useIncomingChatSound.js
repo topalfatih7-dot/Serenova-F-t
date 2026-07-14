@@ -5,6 +5,9 @@ import { isNotificationSoundEnabled, playNotificationSound } from '../utils/brow
 /** Sayfa açılış anı — daha eski mesajlar hiçbir zaman "yeni" sayılmaz. */
 const PAGE_LOADED_AT = Date.now()
 
+/** Uzun oturumda sınırsız büyümeyi önler (bellek). */
+const SEEN_ID_CAP = 1000
+
 /** userId -> Set(threadId): mesajları en az bir kez yüklenen sohbetler. */
 const seenThreadsByUser = new Map()
 /** userId -> Set(messageId): ses değerlendirmesi yapılmış mesajlar. */
@@ -13,6 +16,19 @@ const seenMessagesByUser = new Map()
 function getSet(map, userId) {
   if (!map.has(userId)) map.set(userId, new Set())
   return map.get(userId)
+}
+
+function addSeen(set, id) {
+  set.add(id)
+  if (set.size <= SEEN_ID_CAP) return
+  const oldest = set.values().next().value
+  set.delete(oldest)
+}
+
+/** Logout sonrası bellek temizliği — tekrar login'de bootstrap sessiz kalır. */
+export function clearIncomingChatSoundState() {
+  seenThreadsByUser.clear()
+  seenMessagesByUser.clear()
 }
 
 /**
@@ -39,11 +55,11 @@ export default function useIncomingChatSound({ enabled = true } = {}) {
 
     Object.entries(chatMessages || {}).forEach(([threadId, list]) => {
       const isFirstLoad = !seenThreads.has(threadId)
-      seenThreads.add(threadId)
+      addSeen(seenThreads, threadId)
 
       ;(list || []).forEach((m) => {
         if (seenMessages.has(m.id)) return
-        seenMessages.add(m.id)
+        addSeen(seenMessages, m.id)
         if (isFirstLoad) return
         if (m.senderType !== incomingSenderType) return
         if (new Date(m.createdAt).getTime() <= PAGE_LOADED_AT) return

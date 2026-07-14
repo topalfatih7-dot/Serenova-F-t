@@ -1,12 +1,12 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, MessageCircle } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useAuth } from '../../context/AppContext'
 import MembershipBadge from '../ui/MembershipBadge'
 import { resolveFirstName } from '../../utils/displayName'
 
-export default function TopBar({ title }) {
-  const { notifications, user, membership, chatUnreadCount, isStaff } = useApp()
-  const unread = (notifications || []).filter((n) => !n.read).length
+function TopBar({ title }) {
+  const { user, membership, chatUnreadCount, notificationUnreadCount, isStaff } = useAuth()
   const firstName = resolveFirstName({
     name: user?.name,
     email: user?.email,
@@ -33,7 +33,7 @@ export default function TopBar({ title }) {
         </Link>
         <Link to="/notifications" className="relative rounded-xl p-2 transition hover:bg-brand-50/80">
           <Bell className="h-5 w-5 text-brand-600" />
-          {unread > 0 && (
+          {notificationUnreadCount > 0 && (
             <span className="absolute right-1 top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-gradient-to-r from-rose-500 to-orange-400 ring-2 ring-white" />
           )}
         </Link>
@@ -44,3 +44,5 @@ export default function TopBar({ title }) {
     </header>
   )
 }
+
+export default memo(TopBar)

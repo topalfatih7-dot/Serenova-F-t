@@ -13,8 +13,8 @@ import NotificationAudioUnlock from './components/notifications/NotificationAudi
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
 import AuthRedirectHandler from './components/auth/AuthRedirectHandler'
-import LandingPage from './pages/LandingPage'
 
+const LandingPage = lazy(() => import('./pages/LandingPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
