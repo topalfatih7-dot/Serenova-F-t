@@ -232,9 +232,17 @@ export default function StaffClientsPage() {
                 className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-600">
-                    {m.name.charAt(0)}
-                  </span>
+                  {m.photo ? (
+                    <img
+                      src={m.photo}
+                      alt={m.name}
+                      className="h-11 w-11 shrink-0 rounded-full border border-cream-200 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-600">
+                      {m.name?.charAt(0) || '?'}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-cream-900">{m.name}</p>
                     <p className="truncate text-xs text-cream-800/50">{m.email}</p>
