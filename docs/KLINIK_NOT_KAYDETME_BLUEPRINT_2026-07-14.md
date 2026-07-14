@@ -1,6 +1,6 @@
 # Klinik Not Kaydetme (Koç & Diyetisyen) — Hata Düzeltme Blueprint
 
-> **Tarih:** 2026-07-14 · **Durum:** 🟡 UYGULANMADI (plan)
+> **Tarih:** 2026-07-14 · **Durum:** 🟢 UYGULANDI
 > **Hedef ajan:** Cursor / Grok 4.5
 > **Amaç:** Diyetisyen ve koçların danışan sağlık profilinde aldığı "Klinik Notlar"ın **kaydedilmemesi** hatasını kök nedeninden düzeltmek.
 > **Kural:** Bu dosya bir **uygulama sözleşmesidir**. Uygulamaya başlamadan önce "Ajan Çalışma Kuralları"nı oku.

@@ -517,6 +517,21 @@ async function upsertMember(member) {
   if (error) throw error
 }
 
+// Var olan üyeyi GÜNCELLER (upsert değil) — staff/diyetisyen yamaları
+// members_update RLS politikasını kullanır (members_insert WITH CHECK'e takılmaz).
+async function updateMemberRow(member) {
+  const { data, error } = await supabase
+    .from('members')
+    .update(memberToRow(member))
+    .eq('id', member.id)
+    .select('id')
+  if (error) throw error
+  if (!data || data.length === 0) {
+    // RLS satırı gizlediyse veya id yoksa 0 satır döner — sessiz başarısızlığı yakala
+    throw new Error('Üye güncellenemedi (yetki veya kayıt yok).')
+  }
+}
+
 async function resolveActorName(user, role, staffList) {
   if (!user) return 'Kullanıcı'
   if (role === 'admin') return user.user_metadata?.name || 'Admin'
@@ -1035,7 +1050,7 @@ export async function saveMemberPatch(member, patch) {
   if (isPaidMembership(updated.membership)) {
     updated = syncMembershipExpiryStatus(updated)
   }
-  await upsertMember(updated)
+  await updateMemberRow(updated)
   return updated
 }
 

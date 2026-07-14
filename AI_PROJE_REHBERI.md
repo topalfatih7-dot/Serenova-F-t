@@ -4,8 +4,8 @@
 > **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-14 · Panel performans audit uygulandı (§71)  
-> **Son oturum özeti:** AppContext dilimleme · GPU/pil optimizasyonu · Lighthouse mobile 65→89 · logo 342→12 KB · `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`
+> **Son güncelleme:** 2026-07-14 · Klinik not RLS düzeltmesi + haftalık takip UI (§72)  
+> **Son oturum özeti:** `saveMemberPatch` → `updateMemberRow` · Dashboard geçen/bu hafta tablosu · `docs/KLINIK_NOT_*` + `docs/TAKIP_HAFTALIK_*`
 
 ---
 
@@ -15,6 +15,8 @@
 
 | Alan | Durum | Doğrulama / Not |
 |------|-------|-----------------|
+| Klinik not kaydetme (koç/diyetisyen) | ✅ | `updateMemberRow` — upsert INSERT RLS takılmasını giderir · `docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md` |
+| Dashboard haftalık takip | ✅ | Geçen/bu hafta tablosu · `buildWeeklyAdherence` + `WeeklyAdherenceTable` · `docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md` |
 | Panel performans (GPU/pil/render) | ✅ | Blueprint `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md` · §71 · LH mobile 89 / desktop 100 |
 | AppContext dilimleri | ✅ | `useAuth` / `useData` / `useActions` · `useApp()` geriye uyumlu birleşim |
 | Bundle splitting | ✅ | `vite.config.js` manualChunks + modulePreload filter · LandingPage lazy · recharts entry’de yok |
@@ -64,7 +66,7 @@
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
 6. Son değişiklikler için **§53–69 Değişiklik Günlüğü** (2026-07-03 — 2026-07-10); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video: **§68–§70** + `docs/VIDEO_*.md`. Panel performans: **§71** + `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`.
+7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video: **§68–§70** + `docs/VIDEO_*.md`. Panel performans: **§71** + `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`. Klinik not + haftalık takip: **§72**.
 8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
 9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
 10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
@@ -4395,3 +4397,23 @@ Runbook §5 tablosu: yavaşlık → storage boyutu + imza yolu; 403 → oturum/T
 ### Ana dosyalar
 
 `src/context/AppContext.jsx`, `src/components/layout/{Sidebar,TopBar}.jsx`, `src/components/ui/{AnimatedBackground,BrandLogo,StatsCard}.jsx`, `src/services/presenceService.js`, `src/hooks/{useRealtimeSync,useIncomingChatSound,useNotificationAlerts}.js`, `vite.config.js`, `index.html`, `public/brand-logo.{png,webp}`, `scripts/generate-og-image.mjs`, `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`
+
+---
+
+## §72 Klinik not RLS + haftalık takip UI (2026-07-14)
+
+**Kaynak sözleşmeler:**
+- [`docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md`](docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md)
+- [`docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md`](docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md)
+
+### Klinik not
+
+`saveMemberPatch` artık `upsertMember` yerine `updateMemberRow` kullanır. Upsert, satır var olsa bile önce `members_insert` WITH CHECK’e takılıyordu; koç/diyetisyen danışan id’si ≠ `auth.uid()` olduğundan not kaydı reddediliyordu. UPDATE → `members_update` politikası (atanmış staff) geçer.
+
+### Haftalık takip
+
+Dashboard’daki 12 haftalık bar grafikler → geçen hafta / bu hafta karşılaştırma tablosu. Veri modeli aynı (`completedActivities`); yalnızca okuma/görselleştirme. Pazartesi başlangıç (`weekStartsOn: 1`).
+
+### Ana dosyalar
+
+`src/services/supabaseDb.js` (`updateMemberRow`, `saveMemberPatch`), `src/utils/memberProgress.js` (`buildWeeklyAdherence`), `src/components/dashboard/WeeklyAdherenceTable.jsx`, `src/pages/DashboardPage.jsx`

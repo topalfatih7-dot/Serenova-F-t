@@ -1,4 +1,7 @@
-import { format, subDays, startOfDay, getISOWeek, getISOWeekYear } from 'date-fns'
+import {
+  format, subDays, startOfDay, startOfWeek, endOfWeek,
+  eachDayOfInterval, subWeeks, isAfter, getISOWeek, getISOWeekYear,
+} from 'date-fns'
 import {
   getProgramEntriesForDate,
   completionKey,
@@ -130,5 +133,48 @@ export function buildProgressPatch(programs, completedActivities, currentProgres
       workouts: buildWorkoutProgress(programs, completedActivities, currentProgress.workouts, member),
       meals: buildMealProgress(programs, completedActivities, currentProgress.meals, member),
     },
+  }
+}
+
+/**
+ * Bir hafta aralığı için gün gün antrenman/öğün planlanan+tamamlanan sayıları.
+ * @returns {{ start, end, days: Array, workout: {planned,done}, meal: {planned,done} }}
+ */
+function weekAdherence(programs, completedActivities, weekStart, member, now) {
+  const start = startOfWeek(weekStart, { weekStartsOn: 1 })
+  const end = endOfWeek(weekStart, { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start, end }).map((date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const isFuture = isAfter(startOfDay(date), startOfDay(now))
+    const entries = getProgramEntriesForDate(programs, date, member)
+    const { workout, nutrition } = splitEntriesByType(entries)
+    const mealGroups = groupEntriesByMeal(nutrition)
+    const keys = completedActivities[dateStr] || []
+    const workoutDone = workout.filter((e) => keys.includes(completionKey(dateStr, e.id))).length
+    const mealDone = mealGroups.filter((g) =>
+      isMealCompleted(completedActivities, dateStr, g.mealType, g.entries)).length
+    return {
+      dateStr,
+      date,
+      isFuture,
+      workout: { planned: workout.length, done: workoutDone },
+      meal: { planned: mealGroups.length, done: mealDone },
+    }
+  })
+  const sum = (sel) => days.reduce((acc, d) => {
+    acc.planned += sel(d).planned
+    acc.done += sel(d).done
+    return acc
+  }, { planned: 0, done: 0 })
+  return { start, end, days, workout: sum((d) => d.workout), meal: sum((d) => d.meal) }
+}
+
+/** Önceki hafta + bu hafta antrenman/öğün takibi. */
+export function buildWeeklyAdherence(programs, completedActivities = {}, member = null, now = new Date()) {
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const prevWeekStart = subWeeks(thisWeekStart, 1)
+  return {
+    thisWeek: weekAdherence(programs, completedActivities, thisWeekStart, member, now),
+    prevWeek: weekAdherence(programs, completedActivities, prevWeekStart, member, now),
   }
 }

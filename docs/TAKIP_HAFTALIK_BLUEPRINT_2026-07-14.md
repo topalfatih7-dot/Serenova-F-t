@@ -1,6 +1,6 @@
 # Antrenman & Öğün Takibi — Haftalık (Önceki Hafta + Bu Hafta) Blueprint
 
-> **Tarih:** 2026-07-14 · **Durum:** 🟡 UYGULANMADI (plan)
+> **Tarih:** 2026-07-14 · **Durum:** 🟢 UYGULANDI
 > **Hedef ajan:** Cursor / Grok 4.5
 > **Amaç:** "Antrenman Tamamlama" ve "Öğün Takibi" tablolarını, 12 haftalık kümülatif bar grafiği yerine **önceki hafta** ve **bu hafta**yı yan yana karşılaştıran net bir takip görünümüne çevirmek.
 > **Kural:** Bu dosya bir **uygulama sözleşmesidir**. Uygulamaya başlamadan önce "Ajan Çalışma Kuralları"nı oku.

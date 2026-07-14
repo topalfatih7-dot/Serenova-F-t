@@ -9,7 +9,8 @@ import {
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
-import { WeightChart, WorkoutChart, MealChart } from '../components/dashboard/ProgressChart'
+import { WeightChart } from '../components/dashboard/ProgressChart'
+import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import { getPlanLabel } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
@@ -18,6 +19,7 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
 import { useDailyTip } from '../hooks/useDailyTip'
+import { buildWeeklyAdherence } from '../utils/memberProgress'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -52,6 +54,11 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 3),
     [posts],
+  )
+
+  const weekly = useMemo(
+    () => buildWeeklyAdherence(myPrograms, user?.completedActivities, user),
+    [myPrograms, user],
   )
 
   if (isFreeTrialExpired) {
@@ -181,15 +188,24 @@ export default function DashboardPage() {
           {progress.weight?.length ? <WeightChart data={progress.weight} /> : <ChartEmpty message="Kilo kayıtlarınız burada görünecek" />}
         </div>
         <div className="glass-card-solid p-6">
-          <h3 className="font-semibold text-cream-900">Antrenman Tamamlama</h3>
-          {progress.workouts?.length ? <WorkoutChart data={progress.workouts} /> : <ChartEmpty message="Antrenman verileriniz burada görünecek" />}
+          <WeeklyAdherenceTable
+            title="Antrenman Takibi"
+            icon={Dumbbell}
+            metric="workout"
+            accent="brand"
+            data={weekly}
+            emptyMessage="Antrenman verileriniz burada görünecek"
+          />
         </div>
         <div className="glass-card-solid p-6 lg:col-span-2 xl:col-span-1">
-          <h3 className="flex items-center gap-2 font-semibold text-cream-900">
-            <Apple className="h-4 w-4 text-sage-600" /> Öğün Takibi
-          </h3>
-          <p className="mt-0.5 text-xs text-cream-800/50">Diyet listelerindeki öğün onayları (takvimden ayrı)</p>
-          {progress.meals?.length ? <MealChart data={progress.meals} /> : <ChartEmpty message="Diyetisyen listeniz eklendikçe öğün verileri burada görünür" />}
+          <WeeklyAdherenceTable
+            title="Öğün Takibi"
+            icon={Apple}
+            metric="meal"
+            accent="sage"
+            data={weekly}
+            emptyMessage="Diyetisyen listeniz eklendikçe öğün verileri burada görünür"
+          />
         </div>
       </div>
 
