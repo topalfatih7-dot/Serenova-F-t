@@ -17,8 +17,14 @@ export function bmiCategory(bmi) {
 
 export const GOAL_LABELS = {
   weight: 'Kilo Yönetimi',
+  fatburn: 'Yağ Yakımı',
+  muscle: 'Kas Kazanımı',
   tone: 'Formda Kalmak',
+  endurance: 'Dayanıklılık',
+  heart: 'Kalp Sağlığı',
   habit: 'Sağlıklı Alışkanlık',
+  sleep: 'Uyku Kalitesi',
+  performance: 'Performans',
   confidence: 'Özgüven',
 }
 
@@ -30,7 +36,9 @@ export const FITNESS_LABELS = {
 
 export const NUTRITION_LABELS = {
   balanced: 'Dengeli Beslenme',
+  'high-protein': 'Yüksek Protein',
   vegetarian: 'Vejetaryen',
+  vegan: 'Vegan',
   'low-carb': 'Düşük Karbonhidrat',
   'no-pork': 'Domuz Eti Yok',
   'gluten-free': 'Glutensiz',

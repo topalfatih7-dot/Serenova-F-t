@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   EXERCISE_PAGE_SIZE,
   EXERCISE_SORT_OPTIONS,
-  fetchExerciseEquipmentOptions,
   fetchExercisesPage,
 } from '../services/exerciseLibrary'
 
@@ -37,7 +36,6 @@ export function useExerciseLibrary({
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [equipmentOptions, setEquipmentOptions] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,14 +63,6 @@ export function useExerciseLibrary({
     return () => { cancelled = true }
   }, [page, pageSize, sort, filters])
 
-  useEffect(() => {
-    let cancelled = false
-    fetchExerciseEquipmentOptions().then((opts) => {
-      if (!cancelled) setEquipmentOptions(opts)
-    })
-    return () => { cancelled = true }
-  }, [total])
-
   const patchFilters = useCallback((patch) => {
     setLoading(true)
     setFilters((f) => ({ ...f, ...patch }))
@@ -82,7 +72,6 @@ export function useExerciseLibrary({
   const setSearch = useCallback((search) => patchFilters({ search }), [patchFilters])
   const setCategory = useCallback((category) => patchFilters({ category }), [patchFilters])
   const setDifficulty = useCallback((difficulty) => patchFilters({ difficulty }), [patchFilters])
-  const setEquipment = useCallback((equipment) => patchFilters({ equipment }), [patchFilters])
   const setLocation = useCallback((location) => patchFilters({ location }), [patchFilters])
   const setRequiresMachine = useCallback((requiresMachine) => patchFilters({ requiresMachine }), [patchFilters])
 
@@ -114,11 +103,9 @@ export function useExerciseLibrary({
     setSearch,
     setCategory,
     setDifficulty,
-    setEquipment,
     setLocation,
     setRequiresMachine,
     setPage,
     refresh: load,
-    equipmentOptions,
   }
 }

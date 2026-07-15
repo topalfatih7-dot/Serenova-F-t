@@ -36,6 +36,8 @@ export async function analyzeFoodText(text) {
       label: data.label,
       items: data.items,
       confidence: data.confidence,
+      cached: Boolean(data.cached),
+      source: data.source || (data.cached ? 'cache' : 'openai'),
     }
   } catch (e) {
     return { ok: false, code: 'network_error', error: formatAiError(e.message, 'network_error') }
@@ -55,6 +57,12 @@ export function formatAnalysisReply(result) {
   lines.push('', `📊 Toplam: ~${total} kcal`)
   if (result.confidence === 'low') {
     lines.push('', '⚠️ Düşük güven — tahmini değerlerdir.')
+  }
+  if (result.source === 'cache' || result.source === 'dictionary' || result.cached) {
+    const tip = result.source === 'dictionary'
+      ? '💾 Kayıtlı yiyecek sözlüğünden hesaplandı (AI çağrılmadı).'
+      : '💾 Kayıtlı öğünden getirildi (AI çağrılmadı).'
+    lines.push('', tip)
   }
   return lines.join('\n')
 }

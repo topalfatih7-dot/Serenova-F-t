@@ -2,9 +2,9 @@
  * AI endpoint testleri — yerel veya production.
  *
  * Kullanım:
- *   node scripts/test-ai.mjs              # blog + metin kalori (GEMINI_API_KEY gerekli)
+ *   node scripts/test-ai.mjs              # blog (Gemini) + metin kalori (OpenAI gpt-4o)
  *   node scripts/test-ai.mjs --blog-only  # yalnızca blog üretimi
- *   node scripts/test-ai.mjs --text-only  # yalnızca metin kalori
+ *   node scripts/test-ai.mjs --text-only  # yalnızca metin kalori (OPENAI_API_KEY)
  *
  * Ortam: .env.local veya .env.production.local (vercel env pull)
  */
@@ -81,28 +81,36 @@ async function testBlogGenerate() {
 }
 
 async function testFoodTextDirect() {
-  console.log('\n── Metin kalori (doğrudan Gemini) ──')
+  console.log('\n── Metin kalori (doğrudan OpenAI GPT-4o) ──')
 
-  if (!process.env.GEMINI_API_KEY) {
-    console.log('⏭ GEMINI_API_KEY yok — atlanıyor')
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('⏭ OPENAI_API_KEY yok — atlanıyor')
     return false
   }
 
-  const { callGemini, parseJsonResponse } = await import('../api/_gemini.js')
+  const { callOpenAi, parseJsonResponse } = await import('../api/_openai.js')
   const { FOOD_TEXT_SYSTEM, FOOD_TEXT_INSTRUCTION, FOOD_TEXT_CONFIG } = await import('../api/_ai-prompts.js')
 
   const sample = '2 haşlanmış yumurta, 1 dilim tam buğday ekmeği, 1 kase süzme yoğurt, 1 bardak çay'
   const instruction = FOOD_TEXT_INSTRUCTION.replace('{{TEXT}}', sample)
 
   try {
-    const raw = await callGemini([{ text: instruction }], FOOD_TEXT_SYSTEM, FOOD_TEXT_CONFIG)
+    const { text: raw, usage, costUsd, model } = await callOpenAi({
+      messages: [
+        { role: 'system', content: FOOD_TEXT_SYSTEM },
+        { role: 'user', content: instruction },
+      ],
+      config: FOOD_TEXT_CONFIG,
+      endpoint: 'food-text',
+    })
     const result = parseJsonResponse(raw)
     const total = (result.items || []).reduce((s, i) => s + (Number(i.cal) || 0), 0)
-    console.log(`✅ Analiz: ${result.label}`)
+    console.log(`✅ Analiz: ${result.label} (${model})`)
     for (const item of result.items || []) {
       console.log(`   • ${item.name} — ${item.amount} ${item.unit} · ~${item.cal} kcal`)
     }
     console.log(`   Toplam: ~${total} kcal (güven: ${result.confidence})`)
+    console.log(`   Token: ${usage.totalTokens} · tahmini maliyet: $${costUsd}`)
     return (result.items || []).length > 0
   } catch (e) {
     console.log('❌ Hata:', e.message || e)
@@ -112,7 +120,7 @@ async function testFoodTextDirect() {
 
 async function main() {
   console.log('AI Test — Yeni Form')
-  console.log(`Ortam: GEMINI=${process.env.GEMINI_API_KEY ? '✓' : '✗'} CRON=${process.env.CRON_SECRET ? '✓' : '✗'}`)
+  console.log(`Ortam: OPENAI=${process.env.OPENAI_API_KEY ? '✓' : '✗'} GEMINI=${process.env.GEMINI_API_KEY ? '✓' : '✗'} CRON=${process.env.CRON_SECRET ? '✓' : '✗'}`)
 
   let ok = true
   if (!textOnly) {
@@ -121,7 +129,7 @@ async function main() {
   }
   if (!blogOnly) {
     const textOk = await testFoodTextDirect()
-    if (!textOk && process.env.GEMINI_API_KEY) ok = false
+    if (!textOk && process.env.OPENAI_API_KEY) ok = false
   }
 
   console.log(ok ? '\n✅ Testler tamamlandı' : '\n❌ Bazı testler başarısız')

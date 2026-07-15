@@ -32,12 +32,6 @@ const FILTER_THEMES = {
       `${SELECT_BASE} border-amber-300 bg-gradient-to-br from-amber-50 via-orange-50/70 to-white text-amber-950 shadow-sm shadow-amber-200/35 hover:border-amber-400 hover:from-amber-100/90 focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-200/70`,
     chevron: 'text-amber-600',
   },
-  equipment: {
-    label: `${FILTER_LABEL_BASE} text-teal-800`,
-    select:
-      `${SELECT_BASE} border-teal-300 bg-gradient-to-br from-teal-50 via-emerald-50/70 to-white text-teal-950 shadow-sm shadow-teal-200/35 hover:border-teal-400 hover:from-teal-100/90 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-200/70`,
-    chevron: 'text-teal-600',
-  },
   location: {
     label: `${FILTER_LABEL_BASE} text-rose-800`,
     select:
@@ -71,13 +65,10 @@ export default function ExerciseLibraryFilters({
   onCategoryChange,
   difficulty,
   onDifficultyChange,
-  equipment,
-  onEquipmentChange,
   location,
   onLocationChange,
   requiresMachine,
   onRequiresMachineChange,
-  equipmentOptions = [],
   className = '',
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -87,11 +78,10 @@ export default function ExerciseLibraryFilters({
     if (searchInput.trim()) count += 1
     if (category !== EXERCISE_CATEGORY_ALL) count += 1
     if (difficulty !== DIFFICULTY_ALL) count += 1
-    if (equipment) count += 1
     if (location) count += 1
     if (requiresMachine) count += 1
     return count
-  }, [searchInput, category, difficulty, equipment, location, requiresMachine])
+  }, [searchInput, category, difficulty, location, requiresMachine])
 
   const hasActiveFilters = Boolean(location || requiresMachine)
 
@@ -133,7 +123,7 @@ export default function ExerciseLibraryFilters({
             <input
               id="exercise-library-search"
               type="search"
-              placeholder="Hareket adı veya ekipman ara..."
+              placeholder="Hareket adı ara..."
               value={searchInput}
               onChange={(e) => onSearchChange(e.target.value)}
               className={FILTER_THEMES.search.input}
@@ -141,7 +131,7 @@ export default function ExerciseLibraryFilters({
           </div>
         </div>
 
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-4">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:gap-4">
           <div className="space-y-2">
             <label className={FILTER_THEMES.category.label}>Hareket Tipi</label>
             <ExerciseCategorySelect
@@ -165,22 +155,6 @@ export default function ExerciseLibraryFilters({
               ))}
             </FilterSelect>
           </div>
-          {equipmentOptions.length > 0 && (
-            <div className="space-y-2">
-              <label className={FILTER_THEMES.equipment.label}>Ekipman</label>
-              <FilterSelect
-                value={equipment}
-                onChange={(e) => onEquipmentChange(e.target.value)}
-                className={FILTER_THEMES.equipment.select}
-                chevronClassName={FILTER_THEMES.equipment.chevron}
-              >
-                <option value="">Tümü</option>
-                {equipmentOptions.map((eq) => (
-                  <option key={eq} value={eq}>{eq}</option>
-                ))}
-              </FilterSelect>
-            </div>
-          )}
           <div className="space-y-2">
             <label className={FILTER_THEMES.location.label}>Konum</label>
             <FilterSelect

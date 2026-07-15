@@ -1,5 +1,5 @@
 /**
- * Metin tabanlı kalori analizi — chat mesajları için.
+ * Metin tabanlı kalori analizi — cache → sözlük → GPT-4o.
  * Fotoğraf analizi ile aynı JSON şemasını döndürür.
  */
 
@@ -9,11 +9,30 @@ import {
   FOOD_TEXT_CONFIG,
 } from './_ai-prompts.js'
 import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
+import {
+  normalizeMealQuery,
+  lookupMealCache,
+  upsertMealCache,
+  parseMealItemsNaive,
+  lookupFoodItems,
+  composeFromDictionary,
+  upsertFoodItems,
+} from './_foodCache.js'
 
-async function loadGemini() {
-  const href = new URL('./_gemini.js', import.meta.url).href
+async function loadOpenAi() {
+  const href = new URL('./_openai.js', import.meta.url).href
   const url = process.env.NODE_ENV === 'production' ? href : `${href}?t=${Date.now()}`
   return import(url)
+}
+
+function normalizeItems(items) {
+  if (!Array.isArray(items)) return []
+  return items.map((it) => ({
+    name: String(it.name || 'Bilinmeyen').slice(0, 60),
+    amount: Number(it.amount) || 1,
+    unit: String(it.unit || 'porsiyon').slice(0, 20),
+    cal: Math.max(0, Math.round(Number(it.cal) || 0)),
+  }))
 }
 
 export default async function handler(req, res) {
@@ -28,11 +47,7 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ ok: false, error: auth.error })
   }
 
-  const { callGemini, parseJsonResponse, isGeminiConfigured } = await loadGemini()
-
-  if (!isGeminiConfigured()) {
-    return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)' })
-  }
+  const { callOpenAi, parseJsonResponse, isOpenAiConfigured, logAiUsage } = await loadOpenAi()
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
@@ -44,28 +59,134 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Metin çok uzun (max 2000 karakter)' })
     }
 
+    const queryNormalized = normalizeMealQuery(text)
+
+    // 1) Tam öğün cache
+    const cached = await lookupMealCache(queryNormalized)
+    if (cached?.items?.length) {
+      logAiUsage({
+        provider: 'cache',
+        model: 'meal-cache',
+        endpoint: 'food-text-cache',
+        userId: auth.user?.id,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        costUsd: 0,
+        success: true,
+        meta: { queryNormalized },
+      }).catch(() => {})
+
+      return res.status(200).json({
+        ok: true,
+        label: String(cached.label || 'Kayıtlı Öğün').slice(0, 60),
+        items: normalizeItems(cached.items),
+        confidence: cached.confidence || 'medium',
+        cached: true,
+        source: 'cache',
+      })
+    }
+
+    // 2) Sözlük hibrit (tüm parçalar bulunduysa AI yok)
+    const parsed = parseMealItemsNaive(text)
+    if (parsed.length > 0) {
+      const { found, missing } = await lookupFoodItems(parsed)
+      if (found.length > 0 && missing.length === 0) {
+        const composed = composeFromDictionary(found)
+        if (composed?.items?.length) {
+          const items = normalizeItems(composed.items)
+          await upsertMealCache({
+            queryNormalized,
+            queryRaw: text,
+            label: composed.label,
+            items,
+            confidence: composed.confidence,
+            userId: auth.user?.id,
+          })
+
+          logAiUsage({
+            provider: 'cache',
+            model: 'food-dictionary',
+            endpoint: 'food-text-dictionary',
+            userId: auth.user?.id,
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            costUsd: 0,
+            success: true,
+            meta: { queryNormalized, itemCount: items.length },
+          }).catch(() => {})
+
+          return res.status(200).json({
+            ok: true,
+            label: String(composed.label || 'Sözlük Öğünü').slice(0, 60),
+            items,
+            confidence: composed.confidence || 'medium',
+            cached: true,
+            source: 'dictionary',
+          })
+        }
+      }
+    }
+
+    // 3) GPT-4o
+    if (!isOpenAiConfigured()) {
+      return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (OPENAI_API_KEY)' })
+    }
+
     const instruction = FOOD_TEXT_INSTRUCTION.replace('{{TEXT}}', text)
-    const raw = await callGemini([{ text: instruction }], FOOD_TEXT_SYSTEM, FOOD_TEXT_CONFIG)
+    const { text: raw } = await callOpenAi({
+      messages: [
+        { role: 'system', content: FOOD_TEXT_SYSTEM },
+        { role: 'user', content: instruction },
+      ],
+      config: FOOD_TEXT_CONFIG,
+      endpoint: 'food-text',
+      userId: auth.user?.id,
+    })
     const result = parseJsonResponse(raw)
 
-    const items = Array.isArray(result.items) ? result.items.map((it) => ({
-      name: String(it.name || 'Bilinmeyen').slice(0, 60),
-      amount: Number(it.amount) || 1,
-      unit: String(it.unit || 'porsiyon').slice(0, 20),
-      cal: Math.max(0, Math.round(Number(it.cal) || 0)),
-    })) : []
+    const items = normalizeItems(result.items)
+    const label = String(result.label || 'Yazılan Öğün').slice(0, 60)
+    const confidence = result.confidence || 'medium'
+
+    if (items.length) {
+      await Promise.all([
+        upsertFoodItems(items, 'ai'),
+        upsertMealCache({
+          queryNormalized,
+          queryRaw: text,
+          label,
+          items,
+          confidence,
+          userId: auth.user?.id,
+        }),
+      ])
+    }
 
     return res.status(200).json({
       ok: true,
-      label: String(result.label || 'Yazılan Öğün').slice(0, 60),
+      label,
       items,
-      confidence: result.confidence || 'medium',
+      confidence,
+      cached: false,
+      source: 'openai',
     })
   } catch (e) {
+    if (e?.code || e?.name === 'OpenAiApiError') {
+      logAiUsage({
+        provider: 'openai',
+        model: process.env.OPENAI_MODEL || 'gpt-4o',
+        endpoint: 'food-text',
+        userId: auth.user?.id,
+        success: false,
+        errorCode: e.code || 'openai_error',
+      }).catch(() => {})
+    }
     const status = e?.status || 500
-    const body = e?.code
+    const errBody = e?.code
       ? { ok: false, code: e.code, error: e.message || String(e) }
       : { ok: false, error: String(e?.message || e) }
-    return res.status(status).json(body)
+    return res.status(status).json(errBody)
   }
 }

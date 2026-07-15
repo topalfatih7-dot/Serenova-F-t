@@ -232,7 +232,6 @@ export default function StaffClientProgramPage() {
   const [searchInput, setSearchInput] = useState('')
   const [category, setCategory] = useState(EXERCISE_CATEGORY_ALL)
   const [difficulty, setDifficulty] = useState(DIFFICULTY_ALL)
-  const [equipment, setEquipment] = useState('')
   const [location, setLocation] = useState(FILTER_ALL)
   const [requiresMachine, setRequiresMachine] = useState(FILTER_ALL)
   const [cart, setCart] = useState([])
@@ -250,11 +249,9 @@ export default function StaffClientProgramPage() {
     setSearch,
     setCategory: setCategoryFilter,
     setDifficulty: setDifficultyFilter,
-    setEquipment: setEquipmentFilter,
     setLocation: setLocationFilter,
     setRequiresMachine: setRequiresMachineFilter,
     setPage,
-    equipmentOptions,
   } = useExerciseLibrary({ pageSize: 20 })
 
   const isCoach = staffUser?.role === 'coach'
@@ -435,13 +432,10 @@ export default function StaffClientProgramPage() {
               setDifficulty(value)
               setDifficultyFilter(value === DIFFICULTY_ALL ? 'Tümü' : value)
             }}
-            equipment={equipment}
-            onEquipmentChange={(value) => { setEquipment(value); setEquipmentFilter(value) }}
             location={location}
             onLocationChange={(value) => { setLocation(value); setLocationFilter(value) }}
             requiresMachine={requiresMachine}
             onRequiresMachineChange={(value) => { setRequiresMachine(value); setRequiresMachineFilter(value) }}
-            equipmentOptions={equipmentOptions}
           />
 
           {loading ? (

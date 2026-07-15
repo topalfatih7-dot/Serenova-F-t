@@ -39,17 +39,14 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     setSearch,
     setCategory,
     setDifficulty,
-    setEquipment,
     setLocation,
     setRequiresMachine,
     setPage,
-    equipmentOptions,
   } = useExerciseLibrary()
 
   const [searchInput, setSearchInput] = useState('')
   const [category, setCategoryLocal] = useState(EXERCISE_CATEGORY_ALL)
   const [difficulty, setDifficultyLocal] = useState(DIFFICULTY_ALL)
-  const [equipment, setEquipmentLocal] = useState('')
   const [location, setLocationLocal] = useState(FILTER_ALL)
   const [requiresMachine, setRequiresMachineLocal] = useState(FILTER_ALL)
   const [active, setActive] = useState(null)
@@ -77,11 +74,6 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
   const handleDifficulty = (value) => {
     setDifficultyLocal(value)
     setDifficulty(value === DIFFICULTY_ALL ? 'Tümü' : value)
-  }
-
-  const handleEquipment = (value) => {
-    setEquipmentLocal(value)
-    setEquipment(value)
   }
 
   const handleLocation = (value) => {
@@ -130,13 +122,10 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
         onCategoryChange={handleCategory}
         difficulty={difficulty}
         onDifficultyChange={handleDifficulty}
-        equipment={equipment}
-        onEquipmentChange={handleEquipment}
         location={location}
         onLocationChange={handleLocation}
         requiresMachine={requiresMachine}
         onRequiresMachineChange={handleRequiresMachine}
-        equipmentOptions={equipmentOptions}
       />
 
       {loading ? (

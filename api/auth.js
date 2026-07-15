@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | claim-active-session | verify-active-session
+ * action: signup | unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
  * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -12,6 +12,7 @@ import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
 import { handleGa4Report } from './_ga4Report.js'
+import { handleAiUsageReport } from './_aiUsageReport.js'
 import { claimActiveSession, isActiveSession } from './_singleSession.js'
 import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
 
@@ -427,6 +428,7 @@ export default async function handler(req, res) {
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'exercise-video-urls') return handleExerciseVideoUrls(req, res, body)
     if (action === 'ga4-report') return handleGa4Report(req, res, body)
+    if (action === 'ai-usage-report') return handleAiUsageReport(req, res, body)
     if (action === 'claim-active-session') return handleClaimActiveSession(req, res)
     if (action === 'verify-active-session') return handleVerifyActiveSession(req, res)
 

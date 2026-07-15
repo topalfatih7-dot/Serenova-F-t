@@ -65,6 +65,7 @@ const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptio
 const AdminSessionsPage = lazy(() => import('./pages/admin/AdminSessionsPage'))
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'))
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const AdminAiCostsPage = lazy(() => import('./pages/admin/AdminAiCostsPage'))
 const AdminMessagesPage = lazy(() => import('./pages/admin/AdminMessagesPage'))
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
@@ -196,6 +197,7 @@ export default function App() {
                 <Route path="admin/messages/collab" element={<AdminMessagesPage />} />
                 <Route path="admin/messages/collab/:threadId" element={<AdminMessagesPage />} />
                 <Route path="admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="admin/ai-costs" element={<AdminAiCostsPage />} />
                 <Route path="admin/activity" element={<AdminActivityPage />} />
                 <Route path="admin/account" element={<AdminAccountPage />} />
               </Route>

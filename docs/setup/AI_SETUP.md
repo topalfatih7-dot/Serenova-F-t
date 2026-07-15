@@ -1,117 +1,100 @@
-# AI Kurulum Rehberi (Google Gemini)
+# AI Kurulum Rehberi
 
-Bu proje, **fotoğraflı kalori tespiti** ve **AI destekli beslenme notu** için
-yapay zekaya bağlanabilir. Mimari, mevcut Telegram entegrasyonuyla aynıdır:
-API anahtarı **yalnızca sunucuda** (Vercel) tutulur, tarayıcıya asla sızmaz.
+Bu proje iki AI sağlayıcısı kullanır:
 
-> **Önemli:** AI **opsiyoneldir**. Anahtar tanımlanmazsa uygulama eskisi gibi
-> çalışır; fotoğraf analizi "demo" örnek sonuçlar gösterir, beslenme planı
-> kural tabanlı üretilir. Hiçbir şey bozulmaz.
+| Özellik | Sağlayıcı | Model |
+|---------|-----------|--------|
+| **Kalori (metin + fotoğraf)** | OpenAI | **gpt-4o** |
+| Blog / günün ipucu | Google Gemini | `gemini-2.5-flash-lite` (varsayılan) |
 
----
-
-## Neden Gemini? (En ucuz seçenek)
-
-| Sağlayıcı | Vision | Ücretsiz katman | Ücretli fiyat (yaklaşık) |
-|-----------|:------:|-----------------|--------------------------|
-| **Google Gemini 2.0 Flash** | ✅ | **15 istek/dk, 1500/gün** (kart gerekmez) | ~$0.10 / 1M giriş token |
-| OpenAI gpt-4o-mini | ✅ | yok | ~$0.15 / 1M giriş token |
-
-**Sonuç:** Gemini 2.0 Flash hem ücretsiz katmanı hem de en düşük ücretli
-fiyatı sunduğu için seçildi. Çoğu küçük/orta işletme **ücretsiz katmanla**
-hiç ödeme yapmadan kullanabilir.
+API anahtarları **yalnızca sunucuda** (Vercel / `.env.local`) tutulur; tarayıcıya sızmaz.
 
 ---
 
-## Adım Adım Kurulum
+## 1) OpenAI — Kalori hesabı (zorunlu)
 
-### 1. Ücretsiz Gemini API anahtarı al
-1. https://aistudio.google.com/apikey adresine git (Google hesabıyla giriş).
-2. **"Create API key"** → anahtarı kopyala (`AIzaSy...` ile başlar).
-3. Kredi kartı **gerekmez**; ücretsiz katman otomatik aktiftir.
+### Anahtar al
+1. https://platform.openai.com/api-keys adresine git.
+2. **Create new secret key** → `sk-...` anahtarını kopyala.
+3. Hesapta faturalama / kredi tanımlı olmalı (GPT-4o ücretlidir).
 
-### 2. Vercel'e ortam değişkenlerini ekle
-Vercel Dashboard → Proje → **Settings → Environment Variables**:
+### Yerel (`.env.local`)
+```
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o
+VITE_AI_VISION_ENABLED=true
+VITE_AI_CHAT_ENABLED=true
+```
+`OPENAI_API_KEY=` satırına `sk-...` değerini yapıştır.
+
+### Vercel
+Dashboard → Proje → **Settings → Environment Variables**:
 
 | Değişken | Değer | Ortam |
 |----------|-------|-------|
-| `GEMINI_API_KEY` | `AIzaSy...` (kopyaladığın anahtar) | Production + Preview |
-| `GEMINI_MODEL` | `gemini-2.0-flash` *(opsiyonel)* | Production + Preview |
+| `OPENAI_API_KEY` | `sk-...` | Production + Preview (+ Development) |
+| `OPENAI_MODEL` | `gpt-4o` | Production + Preview (+ Development) |
 | `VITE_AI_VISION_ENABLED` | `true` | Production + Preview |
-| `VITE_AI_NUTRITION_ENABLED` | `true` *(opsiyonel)* | Production + Preview |
+| `VITE_AI_CHAT_ENABLED` | `true` | Production + Preview |
 
-> `GEMINI_API_KEY` **asla** `VITE_` ön eki almaz → tarayıcıya sızmaz.
-> `VITE_AI_*` bayrakları sadece arayüzün gerçek analizi deneyip denemeyeceğini
-> belirler (gizli bilgi değildir).
+> `OPENAI_API_KEY` **asla** `VITE_` ön eki almaz.
 
-### 3. Yeniden dağıt (redeploy)
-Vercel'de **Deployments → Redeploy** (env değişkenleri build'e dahil olsun diye).
-
-### 4. Test et
-- **Fotoğraflı kalori:** Platinum üye → Kalori Hesapla → "Fotoğrafla Hesapla"
-  → bir yemek fotoğrafı yükle. Gerçek analiz birkaç saniyede gelir.
-- Anahtar yanlışsa/limitte ise arayüz otomatik **demo sonuca** düşer (kırılmaz).
+Env ekledikten sonra **Deployments → Redeploy**.
 
 ---
 
-## Yerel Geliştirme (opsiyonel)
+## 2) Gemini — Blog / ipucu (opsiyonel, ayrı)
 
-Serverless fonksiyonları yerelde çalıştırmak için Vercel CLI gerekir:
+| Değişken | Değer |
+|----------|-------|
+| `GEMINI_API_KEY` | `AIzaSy...` |
+| `GEMINI_MODEL` | `gemini-2.5-flash-lite` *(opsiyonel)* |
+
+Kalori artık Gemini kullanmaz; yalnızca blog cron ve benzeri Gemini uçları bu anahtarı kullanır.
+
+---
+
+## 3) YZ Gider takibi
+
+Her başarılı (ve hatalı) kalori API çağrısı `ai_usage_logs` tablosuna yazılır:
+
+- provider, model, endpoint (`food-text` / `food-vision`)
+- prompt / completion / total token
+- tahmini `cost_usd` (GPT-4o: $2.50 / $10.00 per 1M giriş/çıkış)
+
+Admin paneli: **YZ Gider** → `/admin/ai-costs`
+
+Migration: `supabase/migrations/20260715_ai_usage_logs.sql`  
+Uygulama: `npm run db:migrate`
+
+---
+
+## 4) Yerel test
 
 ```bash
-npm i -g vercel
+# API route'lar için
+npm run dev
+# veya
 vercel dev
 ```
 
-Yerel `.env.local` dosyası (commit etme!):
+Kalori ekranından metin veya fotoğraf analizi dene. Admin → YZ Gider’de kayıt görünmeli.
 
+```bash
+node scripts/test-ai.mjs --text-only
 ```
-GEMINI_API_KEY=AIzaSy...
-VITE_AI_VISION_ENABLED=true
-VITE_AI_NUTRITION_ENABLED=true
-```
-
-> Not: Normal `npm run dev` (Vite) `/api/*` fonksiyonlarını **çalıştırmaz**.
-> Bu yüzden yerelde AI denemek için `vercel dev` kullan. `npm run dev` ile
-> arayüz yine açılır ama fotoğraf analizi demo moda düşer.
 
 ---
 
-## Dosya Haritası
+## Dosya haritası
 
 | Dosya | Sorumluluk |
 |-------|------------|
-| `api/_gemini.js` | Gemini API çağrısı + JSON ayrıştırma (paylaşılan yardımcı) |
-| `api/_ai-prompts.js` | Tüm promptlar (maliyet optimize, tek yerde) |
-| `api/ai-food-vision.js` | Fotoğraf → kalori (serverless endpoint) |
-| `api/ai-food-text.js` | Metin → kalori (serverless endpoint) |
-| `api/ai-nutrition-tips.js` | Beslenme ipuçları API (sağlık testi akışında **kullanılmıyor**) |
-| `src/services/aiVision.js` | Frontend: görsel küçültme + `/api/ai-food-vision` çağrısı |
-| `src/services/memberHealthSync.js` | **No-op** — sağlık testi AI analizi / program üretimi kapalı |
-
----
-
-## Sağlık testi (şu anlık — analiz yok)
-
-> **AI sağlık analizi, beslenme ipucu üretimi ve otomatik program/liste üretimi kapalı.**
-
-Sağlık testleri yalnızca:
-1. Onaylar (`healthAck`, `disclaimer`) + cevaplar (`healthTest`) Supabase `members` verisine kaydedilir
-2. Üye `/health-test` hub’ında ilerlemeyi görür
-3. Ham cevaplar koç / diyetisyen / doktor / admin panellerinde (`MemberHealthInsights` / `MemberHealthProfilePanel` + `describeHealthTest`) gösterilir
-
-`syncMemberHealthAssets` ve `useHealthAnalysisSync` şu an **no-op**. Kalori AI (chat/foto) ve blog/günün ipucu ayrı özelliklerdir; sağlık testine bağlı değildir.
-
----
-
-## Maliyet Optimizasyonu (otomatik uygulanan)
-
-- **Görsel küçültme:** Fotoğraflar gönderilmeden önce maks. 1024px + JPEG %80
-  ile sıkıştırılır → daha az giriş token.
-- **Doğrudan JSON:** Model'den `responseMimeType: application/json` ile yanıt
-  istenir → gereksiz açıklama metni üretilmez.
-- **Düşük `maxOutputTokens`:** Vision 800, beslenme 500 token ile sınırlı.
-- **Kısa promptlar:** `api/_ai-prompts.js` içinde net ve kısa tutulur.
-
-Tipik bir fotoğraf analizi **~1500-2500 token** tüketir → ücretsiz katmanda
-**bedava**, ücretli katmanda analiz başına **~$0.0003** (yani ~3.000 analiz ≈ $1).
+| `api/_openai.js` | GPT-4o çağrısı + maliyet logu |
+| `api/ai-food-text.js` | Metin → kalori |
+| `api/ai-food-vision.js` | Fotoğraf → kalori |
+| `api/_gemini.js` | Blog / ipucu (Gemini) |
+| `api/_aiUsageReport.js` | Admin rapor API |
+| `src/pages/admin/AdminAiCostsPage.jsx` | YZ Gider paneli |
+| `src/services/calorieChat.js` | Frontend metin kalori |
+| `src/services/aiVision.js` | Frontend fotoğraf kalori |
