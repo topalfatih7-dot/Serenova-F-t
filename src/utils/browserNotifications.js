@@ -1,10 +1,13 @@
 const SOUND_URL = '/sounds/notification.wav'
-const DEFAULT_VOLUME = 0.7
+/** Wellness / koçluk paneli — yumuşak, dikkat dağıtmayan seviye */
+const DEFAULT_VOLUME = 0.42
+const SOUND_THROTTLE_MS = 1400
 
 let audioTemplate = null
 let unlocked = false
 let unlockPromise = null
 let audioCtx = null
+let lastSoundAt = 0
 
 function canUseAudio() {
   return typeof window !== 'undefined'
@@ -15,12 +18,12 @@ function getAudioTemplate() {
   if (!audioTemplate) {
     audioTemplate = new Audio(SOUND_URL)
     audioTemplate.preload = 'auto'
-    audioTemplate.volume = DEFAULT_VOLUME
+    audioTemplate.volume = 0
   }
   return audioTemplate
 }
 
-/** Tarayıcı autoplay kilidini kullanıcı etkileşimiyle açar. */
+/** Tarayıcı autoplay kilidini kullanıcı etkileşimiyle açar (duyulmaz). */
 export function unlockNotificationAudio() {
   if (!canUseAudio()) return Promise.resolve(false)
   if (unlocked) return Promise.resolve(true)
@@ -32,11 +35,13 @@ export function unlockNotificationAudio() {
 
     try {
       template.muted = true
+      template.volume = 0
       template.currentTime = 0
       await template.play()
       template.pause()
       template.currentTime = 0
       template.muted = false
+      template.volume = DEFAULT_VOLUME
       unlocked = true
       return true
     } catch {
@@ -72,18 +77,19 @@ async function playWebAudioTone() {
   if (audioCtx.state !== 'running') return false
 
   const t0 = audioCtx.currentTime
-  ;[880, 1174.66].forEach((freq, i) => {
+  // Daha yumuşak çift ton (A5 → C#6 yerine daha alçak, kısa)
+  ;[698.46, 880].forEach((freq, i) => {
     const osc = audioCtx.createOscillator()
     const gain = audioCtx.createGain()
     osc.type = 'sine'
     osc.frequency.value = freq
-    gain.gain.setValueAtTime(0.0001, t0 + i * 0.12)
-    gain.gain.exponentialRampToValueAtTime(0.08, t0 + i * 0.12 + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.12 + 0.2)
+    gain.gain.setValueAtTime(0.0001, t0 + i * 0.1)
+    gain.gain.exponentialRampToValueAtTime(0.045, t0 + i * 0.1 + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.1 + 0.16)
     osc.connect(gain)
     gain.connect(audioCtx.destination)
-    osc.start(t0 + i * 0.12)
-    osc.stop(t0 + i * 0.12 + 0.22)
+    osc.start(t0 + i * 0.1)
+    osc.stop(t0 + i * 0.1 + 0.18)
   })
   return true
 }
@@ -126,6 +132,14 @@ export async function playNotificationSound() {
   } catch {
     return false
   }
+}
+
+/** Ardışık bildirimlerde tek ses (program + mesaj aynı anda vb.). */
+export async function playNotificationSoundThrottled() {
+  const now = Date.now()
+  if (now - lastSoundAt < SOUND_THROTTLE_MS) return false
+  lastSoundAt = now
+  return playNotificationSound()
 }
 
 export function getNotificationPermission() {
@@ -174,4 +188,8 @@ export function isNotificationSoundEnabled(settings) {
 
 export function isPushNotificationEnabled(settings) {
   return settings?.pushNotifs !== false
+}
+
+export function isReminderNotificationsEnabled(settings) {
+  return settings?.reminderNotifs !== false
 }

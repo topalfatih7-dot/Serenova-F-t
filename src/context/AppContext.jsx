@@ -28,7 +28,7 @@ import * as staffCollabChatDb from '../services/staffCollabChatDb'
 import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads, getStaffClients, staffCollabThreadUnreadCount, sortStaffCollabThreads, chatHydrationKey } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
-import { isAuthFastPath } from '../utils/authPaths'
+import { isHydratePassThrough } from '../utils/authPaths'
 
 const AuthContext = createContext(null)
 const DataContext = createContext(null)
@@ -42,10 +42,9 @@ const EMPTY_DB = {
 
 export function AppProvider({ children }) {
   const location = useLocation()
-  const authFastPath = isAuthFastPath(location.pathname)
+  const hydratePassThrough = isHydratePassThrough(location.pathname)
   const [remoteDb, setRemoteDb] = useState(null)
   const [loading, setLoading] = useState(() => isSupabaseEnabled)
-  const [syncing, setSyncing] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [chatThreads, setChatThreads] = useState([])
   const [chatMessages, setChatMessages] = useState({})
@@ -71,15 +70,11 @@ export function AppProvider({ children }) {
     staffCollabThreadIdsRef.current = new Set((staffCollabThreads || []).map((t) => t.id))
   }, [staffCollabThreads])
 
+  /** Sessiz yenileme — tam ekran LoadingScreen göstermez (panel mutasyonları / poll). */
   const reloadRemote = useCallback(async () => {
-    setSyncing(true)
-    try {
-      const d = await sb.hydrate()
-      setRemoteDb(d)
-      return d
-    } finally {
-      setSyncing(false)
-    }
+    const d = await sb.hydrate()
+    setRemoteDb(d)
+    return d
   }, [])
 
   useEffect(() => {
@@ -1207,7 +1202,6 @@ export function AppProvider({ children }) {
   const authValue = useMemo(() => ({
     mode: 'supabase',
     loading,
-    syncing,
     isAuthenticated,
     isAdmin,
     isStaff,
@@ -1229,7 +1223,6 @@ export function AppProvider({ children }) {
     openSupportTicketsCount,
   }), [
     loading,
-    syncing,
     isAuthenticated,
     isAdmin,
     isStaff,
@@ -1502,13 +1495,10 @@ export function AppProvider({ children }) {
     <AuthContext.Provider value={authValue}>
       <DataContext.Provider value={dataValue}>
         <ActionsContext.Provider value={actionsValue}>
-          {loading && !authFastPath ? (
+          {loading && !hydratePassThrough ? (
             <LoadingScreen />
           ) : (
-            <>
-              {children}
-              {syncing && !authFastPath && <LoadingScreen overlay />}
-            </>
+            children
           )}
         </ActionsContext.Provider>
       </DataContext.Provider>

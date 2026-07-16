@@ -78,10 +78,11 @@ const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
 const MemberHealthProfilePage = lazy(() => import('./pages/shared/MemberHealthProfilePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
+/** Rota geçişleri — tam LoadingScreen değil; hafif, paneli bozmayan spinner */
 function RouteFallback() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
+    <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-label="Yükleniyor">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
     </div>
   )
 }

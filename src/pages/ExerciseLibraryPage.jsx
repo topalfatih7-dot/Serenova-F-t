@@ -130,7 +130,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-brand-400" />
         </div>
       ) : items.length === 0 ? (
         <EmptyState icon={Dumbbell} title="Hareket bulunamadı" description="Arama veya filtreleri değiştirin." />
