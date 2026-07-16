@@ -1,5 +1,5 @@
 /**
- * VIDEO_INFRASTRUCTURE_BLUEPRINT §1.1 — canonical exercise clip encode.
+ * Encode §1.1 (AI_PROJE_REHBERI §70) — canonical exercise clip encode.
  * H.264 High 4.0 / yuv420p / ≤1280w / CRF 28 / -an / +faststart
  */
 import { execFileSync } from 'node:child_process'

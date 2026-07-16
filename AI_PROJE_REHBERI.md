@@ -1,23 +1,23 @@
 # Yeni Form (donusum-programi) — Yapay Zeka Proje Rehberi
 
 > **Bu dosyanın amacı:** Başka bir yapay zekaya veya geliştiriciye projeyi satır satır aramadan anlatabilmek.  
-> **Proje kökü:** `Adsız/` (macOS: `/Users/mac/Desktop/Serenova-F-t/Adsız`)  
+> **Proje kökü:** repo kökü (`Serenova-F-t`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-14 · Klinik not RLS düzeltmesi + haftalık takip UI (§72)  
-> **Son oturum özeti:** `saveMemberPatch` → `updateMemberRow` · Dashboard geçen/bu hafta tablosu · `docs/KLINIK_NOT_*` + `docs/TAKIP_HAFTALIK_*`
+> **Son güncelleme:** 2026-07-16 · Proje temizlik (docs/setup + RN + ölü kod) · tek klavuz bu dosya  
+> **Son oturum özeti:** Tamamlanmış blueprint/setup silindi · açık checklist buraya taşındı · ölü schedule sayfaları / mock exportlar temizlendi
 
 ---
 
-## Son Durum Özeti (2026-07-14)
+## Son Durum Özeti (2026-07-16)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
 | Alan | Durum | Doğrulama / Not |
 |------|-------|-----------------|
-| Klinik not kaydetme (koç/diyetisyen) | ✅ | `updateMemberRow` — upsert INSERT RLS takılmasını giderir · `docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md` |
-| Dashboard haftalık takip | ✅ | Geçen/bu hafta tablosu · `buildWeeklyAdherence` + `WeeklyAdherenceTable` · `docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md` |
-| Panel performans (GPU/pil/render) | ✅ | Blueprint `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md` · §71 · LH mobile 89 / desktop 100 |
+| Klinik not kaydetme (koç/diyetisyen) | ✅ | `updateMemberRow` — upsert INSERT RLS takılmasını giderir · §72 |
+| Dashboard haftalık takip | ✅ | Geçen/bu hafta tablosu · `buildWeeklyAdherence` + `WeeklyAdherenceTable` · §72 |
+| Panel performans (GPU/pil/render) | ✅ | §71 · LH mobile 89 / desktop 100 |
 | AppContext dilimleri | ✅ | `useAuth` / `useData` / `useActions` · `useApp()` geriye uyumlu birleşim |
 | Bundle splitting | ✅ | `vite.config.js` manualChunks + modulePreload filter · LandingPage lazy · recharts entry’de yok |
 | Marka logo (webp) | ✅ | `brand-logo.webp` + png · ~12 KB · `BrandLogo` `<picture>` · `npm run og:image` sıkıştırır |
@@ -52,9 +52,31 @@
 | Paket süre gösterimi | ✅ | `getPlanDurationLabel()` — landing, onboarding, süre seçici |
 | Admin → Premium Yönetimi | ✅ | **Tüm üyeler** (Basic dahil) listelenir; paket/süre/atama değiştirilebilir |
 | Veritabanı migrasyon | Otomatik | `npm run db:migrate` — `.cursor/rules/supabase-auto-migrate.mdc` |
-| Bilinçli bekleyen | ⚠️ Manuel | `auth_leaked_password_protection` → Supabase Dashboard → Auth → Policies |
+| React Native migration | ❌ | Yok / planlanmadı |
+| Bilinçli bekleyen | ⚠️ | Aşağıdaki **Açık checklist** |
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. Kayıt sırasında auth session Stripe öncesinde açılır (`ensureAuthForRegistration`); `members` satırı webhook ile oluşur — bu yüzden header'da `hasRegisteredMember()` kontrolü vardır.
+
+### Bilinçli bekleyen / açık checklist
+
+Kurulum şablonu: [`.env.example`](.env.example) · şema: [`supabase/setup.sql`](supabase/setup.sql) · e-posta şablonları: [`supabase/email-templates/README.md`](supabase/email-templates/README.md)  
+Supabase Auth providers: `https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/providers`  
+OAuth callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
+
+| Öncelik | Durum | Konu | Not |
+|---------|-------|------|-----|
+| P1 | ⬜ | Admin içerik doldur | SSS, yorumlar, başarı hikâyeleri — `/admin/content`, blog `/admin/blog` |
+| P1 | ⬜ | Kadro fotoğraf + biyografi | `/admin/staff` |
+| P1 | ⬜ | Leaked Password Protection | Supabase Dashboard → Auth → Password Security |
+| P1 | ⬜ | Yasal metin hukuk onayı | `/kvkk`, `/privacy`, `/terms` — kaynak `src/data/legalDocuments.js` |
+| P2 | ⬜ | Personel hakediş modülü | 500₺/görüşme, video katılım, Cuma ödeme — §40 · `sessionAttendance` |
+| P2 | ⬜ | Stripe Customer Portal | Kayıtlı kart / abonelik yönetimi (Checkout canlı ✅) |
+| P2 | ⬜ | `phone_in_use` rate limit | Telefon enumeration riski |
+| P2 | ⬜ | Google OAuth Dashboard | Consent screen + provider açık; UI Google-only (`oauthAuth.js`) |
+| P2 | ⬜ | Facebook Login | UI kaldırıldı; ileride açılırsa Dashboard provider |
+| P2 | ⬜ | Apple Sign In | Ertelendi; UI kaldırıldı |
+| P2 | ⬜ | Telegram eksik chat ID | Eksik kanal/chat ID varsa Dashboard/env tamamla |
+| — | ❌ | React Native migration | Yok / planlanmadı |
 
 ---
 
@@ -65,13 +87,13 @@
 3. Bir dosya arıyorsan **§7 Tam Dosya Envanteri** listesine bak.
 4. Veritabanı değişikliği için **§4 Veritabanı** ve `supabase/` SQL dosyalarına bak.
 5. Rota/sayfa eşlemesi için **§6 Rota Haritası** bölümüne bak.
-6. Son değişiklikler için **§53–69 Değişiklik Günlüğü** (2026-07-03 — 2026-07-10); tam arşiv **§14–52** (2026-06 — 2026-07-01).
-7. **Güncel proje durumu** için dosyanın başındaki **Son Durum Özeti** tablosuna bak. Egzersiz video: **§68–§70** + `docs/VIDEO_*.md`. Panel performans: **§71** + `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`. Klinik not + haftalık takip: **§72**.
-8. Ortam değişkenleri ve auth durumu için **§34.4**; telefon SMS (Twilio) yeniden açılınca **§34.5** bölümüne bak.
-9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46** bölümüne bak.
-10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js` yardımcı fonksiyonlarına bak.
-11. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri (AI için detaylı)** bölümüne bak.
-12. **Harici servis kurulumu / yapılacaklar** için **`docs/setup/README.md`** indeksine bak (Supabase, OAuth, Stripe, Telegram, AI, Video, SEO).
+6. Son değişiklikler için **§53–72 Değişiklik Günlüğü**; tam arşiv **§14–52**.
+7. **Güncel proje durumu** için baştaki **Son Durum Özeti** + **Açık checklist**. Egzersiz video: **§68–§70** + `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` + `docs/VIDEO_PLAYER_IOS_FULLSCREEN.md`. Panel performans: **§71**. Klinik not + haftalık takip: **§72**.
+8. Ortam değişkenleri ve auth durumu için **§34.4** / **§8**; telefon SMS (Twilio) yeniden açılınca **§34.5**.
+9. **Şifre sıfırlama ve Supabase e-posta şablonları** için **§46**.
+10. **Paket → koç/diyetisyen atama mantığı** için **§36.1** ve `membershipPlans.js`.
+11. **Her sayfanın ne yaptığı** için **§36.8 Sayfa Envanteri**.
+12. **Harici servis / açık işler** için baştaki **Açık checklist** + `.env.example` (ayrı `.env.example + acik checklist` yok).
 
 **Kritik kural:** Production veri kaynağı yalnızca `src/services/supabaseDb.js`. (Eski `localDb.js` legacy katmanı silindi.)
 
@@ -269,7 +291,7 @@ Admin: `admin@yeniform.com` (şifre kodda yok — `/admin/account`).
 - Üye kütüphanesi: **Spor/VIP** (veya çoklu paket union) → tam video; diğer paketler liste görür, oynatma kilitli (`memberHasFullVideoAccess`).
 - Eski kayıtlardaki tam public URL'ler de `VideoPlayer` içinde otomatik path'e çevrilip imzalanır (geriye dönük veri migrasyonu gerekmedi).
 - YouTube linkleri bu akışın dışında, aynen `iframe embed` ile oynatılıyor.
-- Kurallar: `.cursor/rules/exercise-import.mdc` · blueprint: `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` (✅) · `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` (✅ §69) · runbook: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` (§70)
+- Kurallar: `.cursor/rules/exercise-import.mdc` · §68–§69 uygulandı · runbook: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` (§70) · iOS: `docs/VIDEO_PLAYER_IOS_FULLSCREEN.md`
 
 ### RPC fonksiyonları
 
@@ -367,8 +389,7 @@ Kabuk (`Sidebar`/`TopBar`) tercihen `useAuth` (+ `useActions` logout) kullanır 
 | 7 adımlı kayıt | `src/pages/OnboardingPage.jsx` | Profil → hedefler → paket → randevu → ödeme |
 | Kural tabanlı sağlık analizi | `src/services/aiAnalysis.js` | BMI, kalori, beslenme ve antrenman önerileri — kural tabanlı hesaplama |
 | Sağlık hesapları | `src/services/health.js` | `calculateBMI`, `bmiCategory`, etiket sabitleri |
-| Test ödeme (fallback) | `src/config/testPayment.js` + `src/components/payment/PaymentForm.jsx` | Sahte kart (4242…) doğrulama — Stripe kapalıyken kullanılır |
-| **Stripe ödeme (gerçek)** | `api/stripe-checkout.js`, `api/stripe-webhook.js`, `src/services/stripePayment.js` | `VITE_STRIPE_ENABLED=true` → Stripe Checkout. Bkz. §22 + `docs/setup/STRIPE_SETUP.md` |
+| **Stripe ödeme (gerçek)** | `api/stripe-checkout.js`, `api/stripe-webhook.js`, `src/services/stripePayment.js` | `VITE_STRIPE_ENABLED=true` → Stripe Checkout. Bkz. §22 · Customer Portal ⬜ açık checklist |
 | Kayıt akışları | `supabaseDb.js` L460–535 | `register`, `registerWithPayment`, `registerWithPlan`, `processPremiumPayment` |
 | Türkiye illeri | `src/data/turkeyCities.js` | 81 il/ilçe listesi |
 
@@ -467,7 +488,7 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Kadro başvurusu | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_STAFF_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
 | Kurumsal başvuru | `src/services/applicationNotify.js` → `api/application-notify.js` → `TELEGRAM_CORPORATE_APPLICATION_CHAT_ID` (yalnızca iletişim bilgileri) |
 | Landing form UI | `src/components/landing/ContactSection.jsx` |
-| Kurulum rehberi | `docs/setup/TELEGRAM_SETUP.md` |
+| Kurulum | `.env.example` (`TELEGRAM_*`) · açık checklist P2 |
 
 **Kaldırıldı (2026-06-27):** Kalori chat Telegram bildirimi (`api/calorie-chat-notify.js` — deprecated, çağrılmıyor).
 
@@ -667,7 +688,7 @@ Kaynak: `src/App.jsx` satır 56–117
 /profile/payments    → PaymentManagementPage (member, mock)
 ```
 
-> **Not:** `CoachSchedulePage.jsx` / `DietitianSchedulePage.jsx` repoda duruyor; üye menüsü artık birleşik `AppointmentsPage` kullanır.
+> **Not:** Eski `AppointmentsPage` / `AppointmentsPage` / `AppointmentsPage` silindi; üye menüsü birleşik `AppointmentsPage` kullanır.
 
 ### Personel (RequireAuth staff)
 ```
@@ -711,35 +732,18 @@ Kaynak: `src/App.jsx` satır 56–117
 
 ## 7. Tam Dosya Envanteri
 
-### 7.0 Kurulum rehberleri (`docs/setup/`)
+### 7.0 Kurulum ve ops dosyaları
 
-> **Ana indeks:** [`docs/setup/README.md`](docs/setup/README.md) — öncelik sırası, Supabase proje linkleri, yapılacaklar özeti.
-
-| Dosya | Konu | Durum |
-|-------|------|-------|
-| `docs/setup/README.md` | Tüm kurulum rehberlerinin indeksi | — |
-| `docs/setup/SUPABASE_SETUP.md` | Supabase proje, SQL, admin, migration | ✅ |
-| `docs/setup/OAUTH_SETUP.md` | Google, Facebook, Apple (özet) | ⬜ Dashboard |
-| `docs/setup/APPLE_SETUP.md` | Sign in with Apple (detaylı adımlar) | ⬜ **Ertelendi** |
-| `docs/setup/STRIPE_SETUP.md` | Stripe Checkout, webhook, Vercel env | ⬜ Canlı anahtarlar |
-| `docs/setup/TELEGRAM_SETUP.md` | Bot, chat ID, bildirim kanalları | Kısmen |
-| `docs/setup/AI_SETUP.md` | Gemini API, kalori AI | ✅ |
-| `docs/setup/VIDEO_SETUP.md` | Daily.co video görüşme | ✅ |
-| `docs/setup/HIGGSFIELD_SETUP.md` | Higgsfield AI görsel/video (Cursor MCP — deneme) | 🧪 Opsiyonel |
-| `docs/setup/SEO_SETUP.md` | Search Console, sitemap, OG | ✅ |
-
-**İlgili (setup dışı):**
+> Ayrı `.env.example + acik checklist` yok. Açık işler: baştaki **Açık checklist**. Env: `.env.example` · şema: `supabase/setup.sql`.
 
 | Dosya | Amaç |
 |-------|------|
+| `.env.example` | Ortam değişkeni şablonu |
 | `supabase/setup.sql` | Tek dosya şema + RLS + RPC + planlar |
 | `supabase/migrations/*.sql` | Artımlı migration'lar → `npm run db:migrate` |
 | `supabase/email-templates/README.md` | Auth e-posta şablonları |
-| `docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md` | Egzersiz video Faz 1–3 (thumb/prefetch/faststart/15 dk) — ✅ · §68 |
-| `docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md` | Player sertleştirme (autoplay/network/a11y) — ✅ · §69 |
-| `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` | Encode + client-first imza + iOS play overlay + troubleshooting — ✅ · §70 |
+| `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` | Encode + client-first imza + troubleshooting — §70 |
 | `docs/VIDEO_PLAYER_IOS_FULLSCREEN.md` | iOS Pro Max pseudo-FS runbook |
-| `YAPILACAKLAR.md` | Satışa hazırlık checklist (kök) |
 
 ### 7.1 Kök dizin
 
@@ -752,10 +756,9 @@ Kaynak: `src/App.jsx` satır 56–117
 | `index.html` | Giriş HTML, Google Fonts |
 | `.env.example` | Ortam değişkeni şablonu |
 | `.gitignore` | Git ignore kuralları |
-| `README.md` | Kurulum özeti |
-| `YAPILACAKLAR.md` | Yapılacaklar checklist |
-| `AI_PROJE_REHBERI.md` | Bu dosya — AI/geliştirici proje rehberi |
-| `docs/setup/` | **Tüm kurulum rehberleri** (bkz. §7.0) |
+| `README.md` | Kısa kurulum özeti |
+| `AI_PROJE_REHBERI.md` | Bu dosya — tek AI/geliştirici proje rehberi |
+| `docs/` | Yalnızca video ops runbook'ları (§7.0) |
 
 ### 7.2 API (`api/`)
 
@@ -879,7 +882,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | `membershipPlans.js` | `ALL_PLANS`, plan tanımları, `isPaidMembership`, `getDefaultPackageForPlan`, **`packageIncludesCoach`**, **`packageIncludesDietitian`**, **`memberNeedsStaffAssignment`**, **`sanitizeStaffForPackage`** |
 | `legalDocuments.js` | `LEGAL_DOCUMENTS` — KVKK, gizlilik, kullanım şartları metinleri (`/kvkk`, `/privacy`, `/terms`) |
 | `turkeyCities.js` | `TURKEY_CITIES`, `CITY_NAMES`, `getDistricts` |
-| `blogPosts.js` | `BLOG_CATEGORIES`, `DEFAULT_POSTS` (Supabase boşsa fallback) |
+| `blogPosts.js` | `BLOG_CATEGORIES` (yazılar Supabase `posts`) |
 | `countryCodes.js` | `COUNTRY_CODES`, `DEFAULT_COUNTRY_ISO`, `getCountry`, `isValidNationalNumber`, `formatNationalNumber`, `toE164` |
 | `healthTest.js` | `HEALTH_SECTIONS`, `EMPTY_HEALTH_TEST`, `getApplicableSections`, `isSectionComplete`, `describeHealthTest` |
 | `staffApplication.js` | Kadro başvuru form şeması, validasyon, `APPLICATION_STEPS`, koç/diyetisyen alan sabitleri |
@@ -897,8 +900,6 @@ MembershipComparisonPage.jsx
 DashboardPage.jsx
 CalendarPage.jsx
 AppointmentsPage.jsx            ← /schedule birleşik randevular
-CoachSchedulePage.jsx           ← legacy (redirect dışı kullanılmıyor)
-DietitianSchedulePage.jsx       ← legacy
 NotificationsPage.jsx
 SupportPage.jsx
 ProfilePage.jsx
@@ -949,7 +950,7 @@ admin/AdminActivityPage.jsx
 
 **Auth:** `RequireAuth`
 
-**Landing:** `PricingCard`, `FAQAccordion`, `TeamCarousel`, `TestimonialCarousel`, `WhyUsSection`, `ContactSection`
+**Landing:** `PricingCard`, `FAQAccordion`, `TestimonialCarousel`, `WhyUsSection`, `ContactSection`
 
 **Video:** `VideoCallUI`, `VideoJoinLink`, `StaffVideoPanel` (personel için görüntülü görüşme alanı)
 
@@ -965,11 +966,9 @@ admin/AdminActivityPage.jsx
 
 **Calendar:** `SessionCard`, `CalendarView`
 
-**Dashboard:** `ProgressChart` (WeightChart, WorkoutChart, MealChart, MoodChart)
+**Dashboard:** `ProgressChart` (`WeightChart`), `WeeklyAdherenceTable`
 
 **Notifications:** `NotificationItem`
-
-**Payment:** `PaymentForm`
 
 **Support:** `SupportForm`, `TicketThread`
 
@@ -1124,7 +1123,7 @@ Kaynak: `.env.example`
 
 ## 11. Bilinen Sınırlamalar ve Tuzaklar
 
-1. **Ödeme: Stripe canlıda çalışıyor** — `VITE_STRIPE_ENABLED=true` + Vercel'de `STRIPE_WEBHOOK_SECRET` zorunlu. Webhook kopuksa ödeme alınır ama üyelik açılmaz (§55). Test: `npm run test:stripe`, `npm run test:stripe:checkout`. Bayrak kapalıyken `PaymentForm` + `testPayment.js` simülasyonu devrede kalır.
+1. **Ödeme: Stripe canlıda çalışıyor** — `VITE_STRIPE_ENABLED=true` + Vercel'de `STRIPE_WEBHOOK_SECRET` zorunlu. Webhook kopuksa ödeme alınır ama üyelik açılmaz (§55). Test: `npm run test:stripe`, `npm run test:stripe:checkout`. Test karti UI kaldirildi; yalnizca Stripe Checkout.
 2. **Kural tabanlı analiz** — `aiAnalysis.js` kural tabanlı hesaplama yapar (YZ/LLM yok).
 3. **localDb.js silindi** (2026-06-24) — diskten kaldırıldı; tek veri kaynağı `supabaseDb.js`.
 4. **PackageBuilder dosyaları silindi** — `/builder` → `/membership` redirect korunuyor.
@@ -1190,7 +1189,7 @@ Kaynak: `.env.example`
 | API | 2 |
 | Supabase SQL | 6 |
 | Kök config | 6 |
-| Dokümantasyon | 10+ (`docs/setup/*`, README, YAPILACAKLAR, AI_PROJE_REHBERI) |
+| Dokümantasyon | AI_PROJE_REHBERI.md (tek klavuz) + README.md + video runbooklar |
 
 **Toplam kaynak (`src/`):** 113 dosya
 
@@ -1326,7 +1325,7 @@ entegrasyonuyla birebir aynıdır: API anahtarı **yalnızca sunucuda** (Vercel
 Environment Variables) tutulur, tarayıcıya asla sızmaz. Anahtar yoksa uygulama
 eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 
-**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `docs/setup/AI_SETUP.md`.
+**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `§8 / .env.example (GEMINI_API_KEY)`.
 
 ### AI Entegrasyon Noktaları
 
@@ -1350,7 +1349,7 @@ api/ai-food-text.js     → Metin → kalori
 api/ai-blog-generate.js → Günlük blog + günün ipucu (`?task=daily-tip`) → posts / site_content
 api/_dailyTip.js          → Günün ipucu mantığı (ayrı serverless route değil — Hobby 12 limit)
 scripts/test-ai.mjs     → npm run test:ai
-scripts/patch-blog-covers.mjs → Mevcut yazılara coverImage ekler
+(kaldirildi; blog kapaklari admin/API) → Mevcut yazılara coverImage ekler
 vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/api/ai-blog-generate`
 ```
 
@@ -1458,8 +1457,8 @@ vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/a
 - **Bug fix:** Daily meeting token effect artık `sessionId`, `displayName` değişince yeniden alınıyor (eskiden yalnızca `configured`).
 
 ### 4. Dokümantasyon
-- **`YAPILACAKLAR.md`** — tüm setup adımları, Vercel env checklist, Supabase test sonuçları.
-- Setup detayları hâlâ: `docs/setup/SUPABASE_SETUP.md`, `docs/setup/TELEGRAM_SETUP.md`, `docs/setup/AI_SETUP.md`, `docs/setup/VIDEO_SETUP.md`.
+- **`bastaki Acik checklist`** — tüm setup adımları, Vercel env checklist, Supabase test sonuçları.
+- Setup detayları hâlâ: `supabase/setup.sql + .env.example`, `.env.example (TELEGRAM_*) + acik checklist`, `§8 / .env.example (GEMINI_API_KEY)`, `Daily.co · .env.example (DAILY_API_KEY)`.
 
 ### 5. Supabase
 - Migration `20260620_revoke_anon_rpc` **uygulandı** (admin RPC anon erişimi kapatıldı).
@@ -1477,7 +1476,7 @@ vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/a
 - `src/pages/VideoCallPage.jsx`, `src/components/video/VideoCallUI.jsx`, `src/hooks/useDailyCall.js`
 - `api/ai-food-text.js`, `api/calorie-chat-notify.js`, `api/_ai-prompts.js`
 - `src/services/calorieChat.js` (yeni)
-- `YAPILACAKLAR.md` (yeni)
+- `bastaki Acik checklist` (yeni)
 - `.env.local` (Telegram format düzeltmesi)
 
 ---
@@ -1617,7 +1616,7 @@ Ham test cevapları personel/admin’de `describeHealthTest` ile gösterilir. `h
 ### Genel
 İki mod vardır ve `VITE_STRIPE_ENABLED` bayrağı ile seçilir:
 - **Stripe açık (`true`):** Gerçek **Stripe Checkout** (yönlendirmeli, hosted) akışı.
-- **Stripe kapalı:** Eski **test kartı** simülasyonu (`PaymentForm` + `4242…`).
+- **Stripe kapali:** ucretli plan Checkout; test karti UI yok.
 
 Tüm gizli anahtarlar **yalnızca sunucuda** (Vercel) tutulur — Telegram/AI ile aynı desen.
 
@@ -1668,7 +1667,7 @@ bilgisi taşınır). Telegram hatası ödeme akışını **etkilemez** (try/catc
 - Webhook **imzayla** doğrulanır ve **idempotent**'tir.
 - `SUPABASE_SERVICE_ROLE_KEY` yalnızca webhook'ta; RLS'yi yalnızca sunucuda atlar.
 
-### Gerekli env (özet — detay `docs/setup/STRIPE_SETUP.md`)
+### Gerekli env (özet — detay `acik checklist + .env.example (Stripe)`)
 | Değişken | Kapsam |
 |----------|--------|
 | `STRIPE_SECRET_KEY` | Sunucu (gizli) |
@@ -1708,7 +1707,7 @@ React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni i
 | `public/brand-mark.png` | İkon karesi — favicon, manifest, JSON-LD |
 | `public/brand-logo-alt.png` | Logo kaynağı — değiştir → `npm run og:image` |
 | `scripts/generate-og-image.mjs` | Tüm marka PNG'lerini üretir |
-| `docs/setup/SEO_SETUP.md` | Search Console + sitemap + OG kurulum rehberi |
+| `§24 SEO + .env.example` | Search Console + sitemap + OG kurulum rehberi |
 | `public/site.webmanifest` | PWA-lite manifest |
 | `api/sitemap.js` | Dinamik XML sitemap (blog + kadro profilleri Supabase'den) |
 
@@ -1821,9 +1820,9 @@ APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 
 - `public/og-image.png` — canlı siteden repoya eklendi (deploy kaybı riski giderildi)
 - `scripts/generate-og-image.mjs` — `brand-logo.png` yoksa `favicon.svg` yedek
-- `docs/setup/SEO_SETUP.md`, `YAPILACAKLAR.md` — canlı denetim sonuçları
+- `§24 SEO + .env.example`, `bastaki Acik checklist` — canlı denetim sonuçları
 
-Detaylı kurulum: `docs/setup/SEO_SETUP.md`
+Detaylı kurulum: `§24 SEO + .env.example`
 
 ---
 
@@ -2027,7 +2026,7 @@ Diğer değişkenler (Supabase, Telegram, Gemini, Daily) SEO dışı — mevcut 
 
 - `public/og-image.png` repoya eklendi (önceden yalnızca canlıda vardı)
 - `scripts/generate-og-image.mjs` — `favicon.svg` yedek logo kaynağı
-- `docs/setup/SEO_SETUP.md`, `YAPILACAKLAR.md`, §24 güncellendi
+- `§24 SEO + .env.example`, `bastaki Acik checklist`, §24 güncellendi
 
 ### Kullanıcıdan beklenen
 
@@ -2079,7 +2078,7 @@ Kaynak: `public/brand-logo-alt.png` → çıktılar: `brand-logo.png`, `brand-ma
 - Kart içinde yalnızca yatay logo (alt slogan yok)
 - Paylaşım başlığı/açıklaması HTML meta etiketlerinden gelir
 
-### Kullanıcıdan beklenen (detay: `docs/setup/SEO_SETUP.md` §9)
+### Kullanıcıdan beklenen (detay: `§24 SEO + .env.example` §9)
 
 1. GA4 Measurement ID (`G-…`)
 2. Sosyal medya URL'leri → `brand.js` → `socialUrls`
@@ -2298,7 +2297,7 @@ Yardımcılar (`programSchedule.js`):
 | `src/components/staff/StaffLibraryGate.jsx` | Diyetisyen → `/staff/lists` redirect |
 | `src/pages/staff/StaffListsPage.jsx` | Diyetisyen beslenme listeleri |
 | `src/utils/memberProgress.js` | Streak, workout + **meal** progress |
-| `src/components/dashboard/ProgressChart.jsx` | `WeightChart`, `WorkoutChart`, `MealChart` |
+| `src/components/dashboard/ProgressChart.jsx` | `WeightChart` (+ `WeeklyAdherenceTable`) |
 
 ### Sonraki adımlar
 
@@ -2544,7 +2543,7 @@ Profil → Hesap Doğrulama → telefon → **SMS Kodu Gönder** → kodu gir �
 
 **Silinen orphan `.jsx`/`.js` (hiçbir yerden import edilmiyordu):**
 - Sayfa/paket: `pages/PackageBuilderPage.jsx`, `components/package/PackageBuilder.jsx`, `components/package/PackageSummaryCard.jsx`, `components/ui/NumberSelector.jsx` (`/builder` zaten `/membership`'e yönleniyor)
-- Landing: `components/landing/TeamSection.jsx`, `components/landing/TeamCarousel.jsx`
+- Landing kadro: /team/* sayfalari
 - UI/Layout: `components/calendar/CalendarView.jsx`, `components/layout/MobileNav.jsx`, `components/ui/ToggleGroup.jsx`, `components/ui/RangeSelector.jsx`, `components/ui/Skeleton.jsx`
 - Hook: `hooks/useLocalStorage.js`
 - Servis (aktif `calorieChat.js` + `aiVision.js` ile değişen eski sürümler): `services/foodParser.js`, `services/aiFoodEstimate.js`, `services/aiNutrition.js`, `services/supportSessions.js`
@@ -2952,7 +2951,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 **Prompt:** `api/_ai-prompts.js` → `BLOG_SYSTEM`, `buildBlogInstruction()`, kategori rotasyonu (`BLOG_TOPIC_ROTATION`).
 
-**Mevcut yazılara görsel:** `node scripts/patch-blog-covers.mjs` (service role gerekir).
+**Mevcut yazılara görsel:** `node (kaldirildi; blog kapaklari admin/API)` (service role gerekir).
 
 ### 38.2 Blog kapak görselleri (UI)
 
@@ -3012,7 +3011,7 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 
 ### 38.7 Değiştirilen / eklenen dosyalar
 
-`api/ai-blog-generate.js`, `api/_blog-images.js`, `api/_gemini.js`, `api/_ai-prompts.js`, `api/_guards.js`, `vercel.json`, `.env.example`, `src/utils/blogImages.js`, `src/utils/healthProfile.js`, `src/hooks/useHealthAnalysisSync.js`, `src/components/landing/LatestBlogPosts.jsx`, `src/pages/LandingPage.jsx`, `src/pages/BlogPage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/CalorieCalculatorPage.jsx`, `src/services/memberHealthSync.js`, `src/services/aiAnalysis.js`, `src/services/supabaseDb.js`, `src/services/calorieChat.js`, `src/services/aiVision.js`, `scripts/test-ai.mjs`, `scripts/patch-blog-covers.mjs`, `supabase/setup.sql`, `AI_PROJE_REHBERI.md`
+`api/ai-blog-generate.js`, `api/_blog-images.js`, `api/_gemini.js`, `api/_ai-prompts.js`, `api/_guards.js`, `vercel.json`, `.env.example`, `src/utils/blogImages.js`, `src/utils/healthProfile.js`, `src/hooks/useHealthAnalysisSync.js`, `src/components/landing/LatestBlogPosts.jsx`, `src/pages/LandingPage.jsx`, `src/pages/BlogPage.jsx`, `src/pages/BlogPostPage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/CalorieCalculatorPage.jsx`, `src/services/memberHealthSync.js`, `src/services/aiAnalysis.js`, `src/services/supabaseDb.js`, `src/services/calorieChat.js`, `src/services/aiVision.js`, `scripts/test-ai.mjs`, `(kaldirildi; blog kapaklari admin/API)`, `supabase/setup.sql`, `AI_PROJE_REHBERI.md`
 
 ---
 
@@ -3252,7 +3251,7 @@ Menü öğelerinde kırmızı sayaç (`9+` üst sınır); Realtime ile anlık g�
 | Öğe | Açıklama |
 |-----|----------|
 | `public/team/team-coach-*.png`, `team-dietitian-*.png` | Landing Kadromuz görselleri |
-| `src/data/seedTeamProfiles.js` | 4 referans profil (2 koç, 2 diyetisyen) |
+| `(kaldirildi)` | 4 referans profil (2 koç, 2 diyetisyen) |
 | `20260627_team_public_seed.sql` | `staff` tablosuna vitrin kayıtları |
 | `src/data/staffProfile.js` | `staffProfileDataPayload()` — admin manuel ekleme + başvuru onayı ortak şema |
 | `src/data/staffApplication.js` | `applicationToStaffPayload()` — onay sonrası staff kaydına dönüşüm |
@@ -3268,7 +3267,7 @@ Menü öğelerinde kırmızı sayaç (`9+` üst sınır); Realtime ile anlık g�
 
 ### Dosyalar (özet)
 
-`src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useChatPresence.js`, `src/services/presenceService.js`, `src/utils/presenceStatus.js`, `src/components/ui/PresenceIndicator.jsx`, `src/components/layout/{AdminShell,StaffShell,Sidebar,AppShell}.jsx`, `src/pages/{MessagesPage,staff/StaffMessagesPage,staff/StaffAdminMessagesPage,admin/AdminMessagesPage}.jsx`, `src/data/{seedTeamProfiles,staffProfile,staffApplication}.js`, `src/components/admin/StaffFormModal.jsx`, `src/pages/StaffApplicationPage.jsx`, `supabase/migrations/20260627_team_public_seed.sql`, `supabase/migrations/20260628_chat_presence_peers.sql`, `AI_PROJE_REHBERI.md`
+`src/context/AppContext.jsx`, `src/hooks/useRealtimeSync.js`, `src/hooks/useChatPresence.js`, `src/services/presenceService.js`, `src/utils/presenceStatus.js`, `src/components/ui/PresenceIndicator.jsx`, `src/components/layout/{AdminShell,StaffShell,Sidebar,AppShell}.jsx`, `src/pages/{MessagesPage,staff/StaffMessagesPage,staff/StaffAdminMessagesPage,admin/AdminMessagesPage}.jsx`, `src/data/{staffProfile,staffApplication}.js`, `src/components/admin/StaffFormModal.jsx`, `src/pages/StaffApplicationPage.jsx`, `supabase/migrations/20260627_team_public_seed.sql`, `supabase/migrations/20260628_chat_presence_peers.sql`, `AI_PROJE_REHBERI.md`
 
 ---
 
@@ -3886,7 +3885,7 @@ Migration MCP `apply_migration` ile **Yeni Form** (`rvzksmyhsgxgrxgeabmi`) proje
 
 ### 4. Google OAuth markalama
 
-- Kurulum: `docs/setup/OAUTH_SETUP.md` — Google OAuth consent screen **Yeni Form**, logo, `yeniform.com` domain.
+- Kurulum: `acik checklist (Google OAuth Dashboard)` — Google OAuth consent screen **Yeni Form**, logo, `yeniform.com` domain.
 - Alt satırdaki `supabase.co` metni için opsiyonel: Supabase **Custom Auth Domain** (`auth.yeniform.com`).
 
 ### 5. Program + mesaj bildirimleri (2026-07-02)
@@ -4027,7 +4026,7 @@ Düzeltme:
 3. Production yeniden deploy edildi (env değişikliği için gerekli) → `POST /api/stripe-webhook` artık imza doğrulamasına düşüyor (önceden "yapılandırma eksik" veriyordu).
 4. Doğrulama: `scripts/test-stripe-webhook.mjs` (11/11 ✅, mevcut script) + yeni `scripts/test-stripe-checkout.mjs` (canlı anahtarla gerçek Checkout session oluşturup ücret almadan `expire` ediyor, 7/7 ✅) — `npm run test:stripe` / `npm run test:stripe:checkout`.
 
-**Sosyal giriş sadeleştirme:** Apple ve Facebook ile giriş/kayıt kaldırıldı, yalnızca Google kaldı — `SocialAuthButtons.jsx`, `oauthAuth.js` (`PROVIDERS = ['google']`), `OnboardingPage.jsx` ve `AuthCallbackPage.jsx` metinleri güncellendi. (Bu değişiklik oturumun başında zaten kısmen yapılmıştı, tarama ile tamamlandığı doğrulandı.) `docs/setup/APPLE_SETUP.md` / `FACEBOOK_SETUP.md` ileride tekrar açmak için repoda duruyor.
+**Sosyal giriş sadeleştirme:** Apple ve Facebook ile giriş/kayıt kaldırıldı, yalnızca Google kaldı — `SocialAuthButtons.jsx`, `oauthAuth.js` (`PROVIDERS = ['google']`), `OnboardingPage.jsx` ve `AuthCallbackPage.jsx` metinleri güncellendi. Apple/Facebook setup dosyaları kaldırıldı; açık checklist’te not var.
 
 **React hook kuralı ihlali (gerçek çökme riski):** `StaffCollabMessagesPage.jsx` içinde rol kontrolü (`if (role !== 'coach' && role !== 'dietitian') return <Navigate />`) tüm `useState/useMemo/useEffect` çağrılarından **önce** early-return yapıyordu → `staffUser.role` async yüklenince hook sırası değişip React "Rendered fewer hooks than expected" hatası verebilirdi. Guard, tüm hook'lardan sonraya taşındı.
 
@@ -4168,7 +4167,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 - ✅ Rota haritası §6: `/health-test/*`, `/schedule`, `/staff/collab-messages`
 - ✅ `ExerciseCardMedia` referansı kaldırıldı → `ExerciseVideoThumbnail` / `ExerciseLibraryPage` (§59)
 - ✅ Egzersiz import: `npm run backfill:exercise-locations` — `.cursor/rules/exercise-import.mdc`
-- ⚠️ `CoachSchedulePage` / `DietitianSchedulePage` repoda var; üye UI birleşik `AppointmentsPage` — eski sayfalar legacy/redirect dışı kullanılmıyor
+- Eski Coach/Dietitian/Doctor SchedulePage dosyalari silindi; uye UI AppointmentsPage
 
 **Commit referansları:** `1e264dfa` (sağlık hub + blog), `e2997bca` (kütüphane filtre + personel UI)
 
@@ -4230,7 +4229,7 @@ Kapsamlı kod–rehber tutarlılık taraması sonrası uygulanan düzeltmeler:
 | **API / cron** | `?task=daily-tip` + 04:00 UTC; `site_content` cache | `api/_dailyTip.js`, `ai-blog-generate.js`, `vercel.json` |
 | **Dashboard** | `useDailyTip` — AI metin, hata → fallback | `DashboardPage.jsx`, `useDailyTip.js`, `dailyTip.js` |
 
-Aynı `GEMINI_API_KEY` / `_gemini.js` — ek anahtar yok. Detay: `docs/setup/AI_SETUP.md`.
+Aynı `GEMINI_API_KEY` / `_gemini.js` — ek anahtar yok. Detay: `§8 / .env.example (GEMINI_API_KEY)`.
 
 ---
 
@@ -4268,9 +4267,7 @@ Mobil hamburger (`menuOpen`) etkilenmez.
 
 **Amaç:** Kütüphane/program/takvim listelerinde her kart için gizli `<video>` + signed URL maliyetini kaldırmak; modal açılışında tıklama→oynatma gecikmesini düşürmek; signed URL ömrünü kısaltmak.
 
-**Blueprint’ler:**
-- [`docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md`](docs/VIDEO_OPTIMIZASYON_BLUEPRINT.md) — Faz 1–3 **✅ uygulandı** (bu bölümün kaynağı)
-- [`docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md`](docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md) — player sertleştirme (autoplay attempt-fallback, network recovery, a11y) — **kısmen mevcut / kalan ⬜**; status tablosuna bak
+**Durum:** ✅ uygulandı (ayrı blueprint dosyaları kaldırıldı; özet bu bölüm + §69–§70).
 
 ### Yapılanlar
 
@@ -4309,9 +4306,9 @@ Modal/İzle → VideoPlayer poster=webp; playUrl cache-hit veya getExerciseVideo
 
 ---
 
-## §69 Video Player Sertleştirme — Infrastructure Blueprint (2026-07-10)
+## §69 Video Player Sertleştirme (2026-07-10)
 
-**Kaynak:** [`docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md`](docs/VIDEO_INFRASTRUCTURE_BLUEPRINT.md) — status tablosu artık ✅.
+**Durum:** ✅ uygulandı (ayrı blueprint kaldırıldı).
 
 | Konu | Uygulama |
 |------|----------|
@@ -4327,7 +4324,7 @@ Modal/İzle → VideoPlayer poster=webp; playUrl cache-hit veya getExerciseVideo
 
 **Dosyalar:** `VideoPlayer.jsx`, `videoPlayerPlatform.js`, `exerciseVideoUrlCache.js`, `index.html`, call-site `title` (DetailModal, Programs, Calendar, Admin, Staff program).
 
-**Manuel test:** blueprint §6 acceptance matrix (Low Power Mode, Data Saver, 16 dk seek, offline/online, modal 10×).
+**Manuel test:** Low Power Mode, Data Saver, 16 dk seek, offline/online, modal 10× — runbook + iOS FS doc.
 
 ---
 
@@ -4361,7 +4358,7 @@ Runbook §5 tablosu: yavaşlık → storage boyutu + imza yolu; 403 → oturum/T
 
 ## §71 Panel performans audit + Lighthouse iyileştirme (2026-07-14)
 
-**Kaynak sözleşme:** [`docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`](docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md)
+**Durum:** ✅ uygulandı (ayrı blueprint kaldırıldı).
 
 ### Sorun
 
@@ -4396,15 +4393,13 @@ Runbook §5 tablosu: yavaşlık → storage boyutu + imza yolu; 403 → oturum/T
 
 ### Ana dosyalar
 
-`src/context/AppContext.jsx`, `src/components/layout/{Sidebar,TopBar}.jsx`, `src/components/ui/{AnimatedBackground,BrandLogo,StatsCard}.jsx`, `src/services/presenceService.js`, `src/hooks/{useRealtimeSync,useIncomingChatSound,useNotificationAlerts}.js`, `vite.config.js`, `index.html`, `public/brand-logo.{png,webp}`, `scripts/generate-og-image.mjs`, `docs/PERFORMANS_AUDIT_BLUEPRINT_2026-07-14.md`
+`src/context/AppContext.jsx`, `src/components/layout/{Sidebar,TopBar}.jsx`, `src/components/ui/{AnimatedBackground,BrandLogo,StatsCard}.jsx`, `src/services/presenceService.js`, `src/hooks/{useRealtimeSync,useIncomingChatSound,useNotificationAlerts}.js`, `vite.config.js`, `index.html`, `public/brand-logo.{png,webp}`, `scripts/generate-og-image.mjs`
 
 ---
 
 ## §72 Klinik not RLS + haftalık takip UI (2026-07-14)
 
-**Kaynak sözleşmeler:**
-- [`docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md`](docs/KLINIK_NOT_KAYDETME_BLUEPRINT_2026-07-14.md)
-- [`docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md`](docs/TAKIP_HAFTALIK_BLUEPRINT_2026-07-14.md)
+**Durum:** ✅ uygulandı (ayrı blueprint dosyaları kaldırıldı).
 
 ### Klinik not
 

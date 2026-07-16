@@ -74,6 +74,6 @@ Android / FS API yok: pseudo (`needsPseudoFullscreen`).
 
 ---
 
-## İlgili blueprint
+## İlgili
 
-Genel video kuralları: [`VIDEO_INFRASTRUCTURE_BLUEPRINT.md`](./VIDEO_INFRASTRUCTURE_BLUEPRINT.md) §3.2 (bu runbook ile güncel tutulmalı).
+Genel video kuralları: [`VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md) · `AI_PROJE_REHBERI.md` §69–§70.

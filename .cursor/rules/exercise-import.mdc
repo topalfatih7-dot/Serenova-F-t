@@ -15,13 +15,13 @@ alwaysApply: false
 5. Path doğrulama: `^[\w.-]+$`, `..` yasak (`api/auth.js`, `isExerciseVideoStoragePath`).
 6. Kapak görselleri: `exercise-thumbs` **public** bucket. Path = video path uzantısı `.webp` (`gym100-0001.mp4` → `gym100-0001.webp`). DB kolonu yok; `getExerciseThumbUrl()` ile türetilir. Thumbnail için signed URL / `<video>` mount **yok**.
 
-## Encode sözleşmesi (VIDEO_INFRASTRUCTURE §1.1)
+## Encode sözleşmesi (§1.1 — rehber §70)
 
 - Master: MP4 / H.264 High 4.0 / `yuv420p` / ≤1280w / CRF 28 / `-an` / `+faststart`
 - Pipeline: `scripts/lib/exercise-video-encode.mjs` → `npm run videos:compress` (mevcut) + import `--upload-videos`
 - Yalnızca remux (`-c copy`) yetmez; bitrate düşürme zorunlu
 - `.mov` → encode sonrası `.mp4` path + `exercises.video_url` güncelle
-- Operasyon + troubleshooting: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`
+- Operasyon + troubleshooting: `docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md` · `AI_PROJE_REHBERI.md` §70
 
 ## Import sırası
 

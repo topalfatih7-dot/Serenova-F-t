@@ -6,24 +6,23 @@ React + Vite tabanlı online koçluk/wellness platformu. Üyelik, premium paket 
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-Uygulama **Supabase** ile çalışır. `.env` dosyasında `VITE_SUPABASE_URL` ve anahtar tanımlı olmalıdır.
+Uygulama **Supabase** ile çalışır. `.env.local` içinde `VITE_SUPABASE_URL` ve publishable key tanımlı olmalıdır.
 
-## Supabase'e bağlama
+## Kurulum özeti
 
-Verileri gerçek bir veritabanından (Supabase) çekmek için adım adım rehber:
-**[docs/setup/SUPABASE_SETUP.md](./docs/setup/SUPABASE_SETUP.md)**
+1. `.env.example` → `.env.local` kopyala; Supabase + diğer anahtarları doldur.
+2. Taze DB: `supabase/setup.sql` (SQL Editor) veya artımlı: `npm run db:migrate`.
+3. Admin: `admin@yeniform.com` — şifreyi `/admin/account` veya Supabase Dashboard’dan ayarla.
 
-Tüm kurulum rehberleri: **[docs/setup/README.md](./docs/setup/README.md)**
+**Tek proje rehberi (AI + detay):** [`AI_PROJE_REHBERI.md`](./AI_PROJE_REHBERI.md) — açık checklist, mimari, rota, env tablosu.  
+**E-posta şablonları:** [`supabase/email-templates/README.md`](./supabase/email-templates/README.md)  
+**Video ops:** [`docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./docs/VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md)
 
-Özetle:
-1. Supabase projesi aç, `.env` dosyasına `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` gir.
-2. `supabase/setup.sql` dosyasını SQL Editor'da çalıştır (isteğe bağlı: ardından `supabase/seed.sql` ile içerik tablolarını temizle).
-3. `admin@yeniform.com` ile giriş yapıp admin paneline gir (şifreyi `/admin/account` veya Supabase Dashboard’dan ayarlayın).
-
-`.env` dolu olduğunda uygulama Supabase üzerinden çalışır. Vercel'de aynı değişkenleri Environment Variables bölümüne ekleyin.
+Vercel’de aynı değişkenleri Environment Variables bölümüne ekleyin.
 
 ## Komutlar
 
@@ -33,3 +32,4 @@ Tüm kurulum rehberleri: **[docs/setup/README.md](./docs/setup/README.md)**
 | `npm run build` | Üretim derlemesi |
 | `npm run preview` | Derlemeyi önizle |
 | `npm run lint` | ESLint |
+| `npm run db:migrate` | Supabase migration uygula |

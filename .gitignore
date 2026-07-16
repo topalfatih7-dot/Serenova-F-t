@@ -51,3 +51,6 @@ supabase/.branches/
 
 # Vite cache
 .vite/
+
+# Local scratch / one-off exports
+.tmp/

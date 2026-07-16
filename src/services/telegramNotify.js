@@ -1,6 +1,6 @@
 /**
  * Telegram bildirimi — Vercel API route (/api/telegram-notify) üzerinden gönderilir.
- * Bot token sunucuda tutulur; docs/setup/TELEGRAM_SETUP.md adımlarını izleyin.
+ * Bot token sunucuda tutulur; `.env.example` (`TELEGRAM_*`) + AI_PROJE_REHBERI açık checklist.
  */
 export async function notifyTelegram(event, payload = {}) {
   try {
