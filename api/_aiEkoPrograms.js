@@ -493,12 +493,12 @@ function memberDataPayloadForExpiry(member, data) {
  * Süresi dolan ücretli üyeleri free'ye indirger, AI eko programlarını siler.
  * eko-renew cron'undan önce çalıştırılır.
  */
-export async function runMembershipExpiryBatch(admin, { limit = 40 } = {}) {
+export async function runMembershipExpiryBatch(admin, { limit = 100 } = {}) {
   const { data: members, error } = await admin
     .from('members')
     .select('id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
     .neq('membership', 'free')
-    .limit(200)
+    .limit(500)
 
   if (error) throw new Error(error.message || 'Üyeler okunamadı')
 

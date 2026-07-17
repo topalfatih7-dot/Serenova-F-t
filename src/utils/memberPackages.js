@@ -24,7 +24,8 @@ export function isPackageEntryActive(pkg, now = today()) {
 
 /** Eski tekil üyelik → activePackages dizisine taşır */
 export function migrateLegacyToPackages(member) {
-  if (Array.isArray(member?.activePackages) && member.activePackages.length > 0) {
+  // Explicit array (including []) is authoritative — do not revive from membership
+  if (Array.isArray(member?.activePackages)) {
     return member.activePackages
   }
   if (!member || !isPaidMembership(member.membership)) return []

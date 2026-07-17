@@ -42,7 +42,8 @@ export function isPackageEntryActive(pkg, now = today()) {
 }
 
 export function migrateLegacyToPackages(member) {
-  if (Array.isArray(member?.activePackages) && member.activePackages.length > 0) {
+  // Explicit array (including []) is authoritative — do not revive from membership
+  if (Array.isArray(member?.activePackages)) {
     return member.activePackages
   }
   if (!member || !isPaidMembership(member.membership)) return []
@@ -233,6 +234,10 @@ export function memberExpirySyncNeedsPersist(before, after) {
   if (before.assignedDoctorId !== after.assignedDoctorId) return true
   if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
   if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
+  // Gelecek seans iptalleri (paket bitişi) de yazılsın — client ile aynı
+  for (const key of ['coachSessions', 'dietitianSessions', 'doctorSessions']) {
+    if (JSON.stringify(before[key] || []) !== JSON.stringify(after[key] || [])) return true
+  }
   return false
 }
 

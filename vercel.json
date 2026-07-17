@@ -4,6 +4,10 @@
   "framework": "vite",
   "crons": [
     {
+      "path": "/api/ai-blog-generate?task=membership-expiry",
+      "schedule": "0 3 * * *"
+    },
+    {
       "path": "/api/ai-blog-generate?task=daily-tip",
       "schedule": "0 4 * * *"
     },

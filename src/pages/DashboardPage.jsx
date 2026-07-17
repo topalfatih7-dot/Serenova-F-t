@@ -11,7 +11,8 @@ import MembershipBadge from '../components/ui/MembershipBadge'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
-import { getPlanLabel } from '../data/membershipPlans'
+import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
+import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
@@ -20,6 +21,7 @@ import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
 import { useDailyTip } from '../hooks/useDailyTip'
 import { buildWeeklyAdherence } from '../utils/memberProgress'
+import { getRemainingDays } from '../services/premiumMembership'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -36,7 +38,8 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt, refresh,
+    myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt,
+    premiumExpiresAt, premiumStartedAt, refresh,
     posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
@@ -47,6 +50,21 @@ export default function DashboardPage() {
   const goMembership = useCallback(() => navigate('/membership'), [navigate])
   const goCoachSchedule = useCallback(() => navigate('/schedule?tab=coach'), [navigate])
   const goDietitianSchedule = useCallback(() => navigate('/schedule?tab=dietitian'), [navigate])
+
+  const premiumRemainingDays = useMemo(
+    () => getRemainingDays(premiumExpiresAt),
+    [premiumExpiresAt],
+  )
+  const showExpiringBanner = Boolean(
+    isPaidMembership(membership)
+    && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
+  )
+  const showPaidExpiredBanner = Boolean(
+    membership === 'free'
+    && premiumStartedAt
+    && !freeTrialExpiresAt
+    && !isFreeTrialExpired,
+  )
 
   const latestPosts = useMemo(
     () => (posts || [])
@@ -62,32 +80,7 @@ export default function DashboardPage() {
   )
 
   if (isFreeTrialExpired) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-auto max-w-md rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-xl"
-        >
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100">
-            <Crown className="h-8 w-8 text-amber-500" />
-          </div>
-          <h2 className="mt-5 font-display text-xl font-bold text-cream-900">48 Saatlik Deneme Süreniz Doldu</h2>
-          <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
-            Üretsiz deneme süreniz sona erdi. Devam etmek için bir üyelik planı seçerek tüm özelliklere erişin.
-          </p>
-          <Link
-            to="/membership"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600"
-          >
-            <Crown className="h-4 w-4" /> Plan Seç &amp; Devam Et
-          </Link>
-          <p className="mt-4 text-xs text-cream-800/40">
-            Soru ve sorunlar için <Link to="/support" className="underline">destek merkezi</Link>
-          </p>
-        </motion.div>
-      </div>
-    )
+    return <FreeTrialExpiredGate />
   }
 
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
@@ -151,7 +144,54 @@ export default function DashboardPage() {
         )
       })()}
 
-      {membership === 'free' && (
+      {showExpiringBanner && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3.5">
+          <Clock className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-amber-950">
+              Paket süreniz bitmek üzere
+              {premiumRemainingDays != null ? (
+                <> — <strong>{premiumRemainingDays} gün</strong> kaldı</>
+              ) : null}
+            </p>
+            <p className="mt-0.5 text-xs text-amber-900/70">
+              Kesintisiz devam için planınızı yenileyin. Son gün dahil erişiminiz sürer.
+            </p>
+          </div>
+          <Link
+            to="/membership"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-amber-700"
+          >
+            Yenile <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {showPaidExpiredBanner && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-300 bg-gradient-to-r from-brand-50 to-white p-5"
+        >
+          <div className="flex items-center gap-3">
+            <Crown className="h-6 w-6 shrink-0 text-gold-500" />
+            <div>
+              <p className="font-medium text-cream-900">Paket süreniz doldu</p>
+              <p className="text-sm text-cream-800/60">
+                Ücretli özellikler kapandı. Devam etmek için bir plan seçip yenileyin.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/membership"
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          >
+            Planı Yenile <ArrowRight className="h-4 w-4" />
+          </Link>
+        </motion.div>
+      )}
+
+      {membership === 'free' && !showPaidExpiredBanner && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 to-white p-5">
           <div className="flex items-center gap-3">
             <Crown className="h-6 w-6 text-gold-500" />

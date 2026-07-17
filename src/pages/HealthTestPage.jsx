@@ -2,13 +2,14 @@ import { useCallback, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { HeartPulse } from 'lucide-react'
 import HealthTestHub from '../components/onboarding/HealthTestHub'
+import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestPage() {
-  const { user, packageConfig, updateProfile } = useApp()
+  const { user, packageConfig, updateProfile, isFreeTrialExpired } = useApp()
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
 
@@ -23,6 +24,14 @@ export default function HealthTestPage() {
   }, [updateProfile, toast])
 
   if (!user?.id) return <Navigate to="/login" replace />
+
+  if (isFreeTrialExpired) {
+    return (
+      <PanelPageShell>
+        <FreeTrialExpiredGate />
+      </PanelPageShell>
+    )
+  }
 
   const needsConsent = !user.healthAck || !user.disclaimer
 

@@ -1,25 +1,35 @@
 // Paket tanımları — bunlar Supabase'den yüklenen verinin fallback'idir.
 // Admin panelinden güncellenen veriler DB'den gelir.
 
+/** Paket süre seçenekleri — gerçek bitiş `computePremiumExpiresAt` ile takvim ayı (setMonth). */
 export const DURATION_OPTIONS = [
-  { months: 1, label: 'Aylık', days: 30 },
-  { months: 3, label: '3 Aylık', days: 90 },
-  { months: 6, label: '6 Aylık', days: 180 },
+  { months: 1, label: 'Aylık', shortLabel: '1 ay' },
+  { months: 3, label: '3 Aylık', shortLabel: '3 ay' },
+  { months: 6, label: '6 Aylık', shortLabel: '6 ay' },
 ]
 
-/** Ay sayısını yaklaşık gün sayısına çevirir (sabit 30 gün/ay varsayımı — UI gösterimi için). */
+/** Takvim ayı etiketi (bitiş hesabıyla aynı model). */
+export function getDurationMonthsLabel(months = 1) {
+  const m = Number(months) || 1
+  const found = DURATION_OPTIONS.find((o) => o.months === m)
+  if (found) return found.shortLabel
+  return `${m} ay`
+}
+
+/**
+ * Yaklaşık gün (eski UI / istatistik). Asıl süre takvim ayıdır — satın alma bitişi için kullanmayın.
+ * @deprecated Prefer getDurationMonthsLabel / computePremiumExpiresAt
+ */
 export function getDurationDays(months = 1) {
-  const found = DURATION_OPTIONS.find((o) => o.months === Number(months))
-  if (found) return found.days
   return Math.round((Number(months) || 1) * 30)
 }
 
-/** Fiyat kartlarında gösterilecek kısa süre etiketi: "30 gün", "Tek seferlik", "Süresiz" */
+/** Fiyat kartlarında kısa süre: "1 ay", "Tek seferlik", "Süresiz" (takvim ayı modeli). */
 export function getPlanDurationLabel(plan) {
   if (!plan) return ''
   if (plan.price === 0) return 'Süresiz'
-  if (plan.period === 'Tek Seferlik') return 'Tek seferlik'
-  return `${getDurationDays(1)} gün`
+  if (plan.period === 'Tek Seferlik' || plan.id === 'doktor') return 'Tek seferlik'
+  return getDurationMonthsLabel(1)
 }
 
 /** Tek seferlik plan mı (fiyat/CTA gösterimi) */

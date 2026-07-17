@@ -8,6 +8,7 @@ import {
   getDurationSavingsPercent,
   RECOMMENDED_DURATION_MONTHS,
   RECOMMENDED_PLAN,
+  getDurationMonthsLabel,
 } from '../../data/membershipPlans'
 import { isOneTimePlan } from '../../utils/memberPackages'
 
@@ -32,11 +33,12 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
         </p>
       )}
       <div className="mt-3 grid grid-cols-3 gap-2">
-        {DURATION_OPTIONS.map(({ months, label, days }) => {
+        {DURATION_OPTIONS.map(({ months, label, shortLabel }) => {
           const price = getTierPrice(planId, months)
           const selected = value === months
           const savings = getDurationSavingsPercent(planId, months)
           const isRecommendedDuration = months === RECOMMENDED_DURATION_MONTHS && planId === RECOMMENDED_PLAN
+          const durationText = shortLabel || getDurationMonthsLabel(months)
           return (
             <motion.button
               key={months}
@@ -60,7 +62,7 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
                 </span>
               )}
               <p className="text-[10px] font-semibold text-cream-800/60">{label}</p>
-              <p className="mt-0.5 text-[10px] font-medium text-sage-600">{days} gün</p>
+              <p className="mt-0.5 text-[10px] font-medium text-sage-600">{durationText}</p>
               <p className="mt-1 text-sm font-bold text-cream-900">
                 {months === 1 ? formatMonthlyPrice(price) : `${price.toLocaleString('tr-TR')}₺`}
               </p>
@@ -72,7 +74,7 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
         })}
       </div>
       <p className="mt-2.5 text-center text-[10px] text-cream-800/50">
-        Süreyi daha sonra profilinizden değiştirebilirsiniz.
+        Süre takvim ayı olarak hesaplanır (ör. 1 ay = başlangıç tarihinden bir ay sonra).
       </p>
     </motion.div>
   )
