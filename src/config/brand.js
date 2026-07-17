@@ -57,7 +57,11 @@ export const BRAND = {
   ga4MeasurementId: 'G-40ENH7MC5W',
 }
 
-/** Admin e-postası — şifre kodda tutulmaz; panelden /admin/account ile güncellenir. */
+/**
+ * Admin e-postası — şifre kodda tutulmaz; panelden /admin/account ile güncellenir.
+ * RLS `is_admin()` → `platform_settings.admin_email` (varsayılan aynı).
+ * Override: VITE_ADMIN_EMAIL + ADMIN_EMAIL + DB satırını birlikte güncelleyin.
+ */
 export const ADMIN_EMAIL = (
   import.meta.env.VITE_ADMIN_EMAIL || 'admin@yeniform.com'
 ).trim().toLowerCase()

@@ -102,16 +102,49 @@ export const NUTRITION_CONFIG = {
   responseMimeType: 'application/json',
 }
 
+function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines = []) {
+  const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
+  const calLine = cal
+    ? `BMR ~${dailyCalories?.bmr || '—'} · idame ~${dailyCalories?.maintenance || '—'} · önerilen ~${cal} kcal (${dailyCalories?.goal || ''})`
+    : 'hesaplanamadı'
+  const lines = [
+    `- Ad: ${profile.name || '—'}`,
+    `- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}`,
+    `- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg`,
+    `- BMI: ${profile.bmi != null ? `${profile.bmi} (${profile.bmiCategory || '—'})` : '—'}`,
+    `- Hedef kilo: ${profile.targetWeight || '—'}`,
+    `- Hedefler: ${(profile.goals || []).join(', ') || '—'}`,
+    `- Performans hedefi (test): ${profile.performanceGoal || '—'}`,
+    `- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}`,
+    `- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}`,
+    `- Antrenman yeri / ekipman: ${profile.trainingLocation || '—'} / ${profile.equipmentAccess || '—'}`,
+    `- Hedef seans süresi: ${profile.sessionDurationGoal || '—'}`,
+    `- Müsaitlik (antrenman günleri): ${profile.availabilitySummary || '—'}`,
+    `- Kalori: ${calLine}`,
+  ]
+  if (profile.healthAnalysisSummary) {
+    lines.push(`- Önceki sağlık analizi özeti: ${profile.healthAnalysisSummary}`)
+  }
+  for (const line of extraLines) {
+    if (line) lines.push(line)
+  }
+  return lines.join('\n')
+}
+
+const PROGRAM_ANALYSIS_RULES = `ANALİZ (önce tüm üye verisini değerlendir, sonra JSON yaz):
+1) Boy, kilo, BMI, hedef kilo, yaş, cinsiyet ve kalori bandını birlikte yorumla; eksik alanda uydurma yapma — güvenli beginner varsay.
+2) Sağlık testi özetindeki yaralanma, ağrı bölgeleri, kronik durum, ilaç, kontrendikasyon, gebelik ve doktor onayı kısıtlarını çıkar; bunlara aykırı hareket seçme.
+3) Fitness seviyesi, aktivite sıklığı, ekipman/yer tercihi ve müsaitliğe göre volume, seans süresi ve zorluk ayarla (beginner → düşük volume).
+4) Hedefler (kilo/kas/dayanıklılık/alışkanlık) + BMI kategorisine göre antrenman odağı ve kalori bandını hizala.
+5) Beslenme: alerji, yeme alışkanlıkları ve tercihlere uy; öğün kcal toplamı önerilen kaloriye ±15% yakın olsun.
+6) Uyku/stres/enerji düşükse volume ve tempo agresif olmasın; toparlanmayı gözet.`
+
 // ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
 export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
 ${BRAND_CONTEXT}
-Üyenin sağlık testi, hedefleri ve tercihlerine göre uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+Üyenin profili, sağlık testi ve varsa analiz özetindeki TÜM bilgileri kullanarak uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
 
-ANALİZ (önce düşün, sonra yaz):
-1) Sağlık testi özetindeki yaralanma, ağrı, kronik durum, ilaç veya kısıtları çıkar.
-2) Bu kısıtlara göre kütüphaneden GÜVENLİ hareketleri seç; riskli/ileri seviye hareketlerden kaçın.
-3) Fitness seviyesine uygun tekrar/süre ver (beginner → daha düşük volume).
-4) Beslenme tercihleri/alerji/vejetaryen vb. varsa öğünlerde mutlaka uy.
+${PROGRAM_ANALYSIS_RULES}
 
 KURALLAR:
 - Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
@@ -129,32 +162,26 @@ export function buildBasicProgramInstruction({
   candidates = [],
   cycleLength = 2,
 }) {
-  const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
   const candidateLines = candidates
     .slice(0, 60)
     .map((c) => `- ${c.id} | ${c.name} | ${c.bodyPart || '—'} | ${c.difficulty || 'beginner'} | ${c.equipment || '—'} | ${c.targetMuscle || '—'}`)
     .join('\n')
 
-  return `ÜYE PROFİLİ:
-- Ad: ${profile.name || '—'}
-- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
-- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
-- Hedefler: ${(profile.goals || []).join(', ') || '—'}
-- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
-- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
-- Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
-- Program süresi: ${cycleLength} gün (ücretsiz deneme bitişine kadar)
+  return `ÜYE PROFİLİ (bu verilerin tamamını analize al):
+${formatMemberProfileBlock(profile, dailyCalories, [
+    `- Program süresi: ${cycleLength} gün (ücretsiz deneme bitişine kadar)`,
+  ])}
 
-SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir):
+SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir; boş alanları yok say):
 ${healthTestSummary || '—'}
 
 HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
 ${candidateLines || '(liste boş)'}
 
 GÖREV:
-- 5–8 antrenman hareketi seç; vücut bölgelerini dengeli dağıt; sağlık kısıtlarına aykırı olanları ele.
-- description: 2–3 cümle — hedef + kısıtlara nasıl uyulduğu.
-- Beslenmede 6 öğün tipi doldur; name içinde porsiyon + ~kcal yaz; tercihlere uy.
+- Önce profil + sağlık özetini içsel olarak sentezle; sonra 5–8 güvenli hareket seç; vücut bölgelerini dengeli dağıt.
+- description: 2–3 cümle — hedef, BMI/kalori yaklaşımı ve kısıtlara nasıl uyulduğu.
+- Beslenmede 6 öğün tipi doldur; name içinde porsiyon + ~kcal yaz; alerji/tercihlere uy.
 - Öğün notlarında (note) kısa pratik ipucu verebilirsin.
 
 SADECE şu JSON şemasında yanıt ver:
@@ -192,13 +219,10 @@ export const BASIC_PROGRAM_CONFIG = {
 // ─── Eko paket: 15g diyet + 30g antrenman ────────────────────────────
 export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
 ${BRAND_CONTEXT}
-Eko paket üyesi için uygulanabilir antrenman ve/veya beslenme listesi hazırla.
+Eko paket üyesi için profil, sağlık testi ve varsa analiz özetindeki TÜM bilgileri kullanarak uygulanabilir antrenman ve/veya beslenme listesi hazırla.
 
-ANALİZ (önce düşün, sonra yaz):
-1) Sağlık testi özetindeki yaralanma, ağrı, kronik durum veya kısıtları çıkar.
-2) Kısıtlara göre kütüphaneden GÜVENLİ hareketleri seç; riskli hareketlerden kaçın.
-3) Fitness seviyesi ve hedeflere göre volume ayarla.
-4) Beslenme tercihleri/alerjilere uy; önceki diyet listesi varsa çeşitlendir ama süreklilik ve kalori hedefini koru.
+${PROGRAM_ANALYSIS_RULES}
+7) Önceki diyet listesi varsa aynı kalori bandında çeşitlendir; süreklilik ve tercih/alerji uyumunu koru, birebir kopyalama.
 
 KURALLAR:
 - Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
@@ -227,25 +251,19 @@ export function buildEkoProgramInstruction({
 
   const parts = []
   if (buildWorkout) {
-    parts.push(`ANTRENMAN (${workoutDays} gün tekrarlanacak şablon): 5–8 kütüphane hareketi; dengeli vücut bölgeleri; kısıtlara uygun; her harekette note.`)
+    parts.push(`ANTRENMAN (${workoutDays} gün tekrarlanacak şablon): 5–8 kütüphane hareketi; BMI/hedef/kısıtlara uygun; dengeli vücut bölgeleri; her harekette note.`)
   }
   if (buildNutrition) {
-    parts.push(`BESLENME (${dietDays} gün her gün aynı şablon): 6 öğün; name içinde porsiyon + ~kcal; günlük toplam ~${cal || 'hedef'} kcal.`)
+    parts.push(`BESLENME (${dietDays} gün her gün aynı şablon): 6 öğün; name içinde porsiyon + ~kcal; günlük toplam ~${cal || 'hedef'} kcal; alerji/tercihlere uy.`)
     if (previousDietSummary) {
       parts.push(`ÖNCEKİ DİYET LİSTESİ (aynı kalori bandında çeşitlendir, birebir kopyalama):\n${previousDietSummary}`)
     }
   }
 
-  return `ÜYE PROFİLİ:
-- Ad: ${profile.name || '—'}
-- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
-- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
-- Hedefler: ${(profile.goals || []).join(', ') || '—'}
-- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
-- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
-- Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
+  return `ÜYE PROFİLİ (bu verilerin tamamını analize al):
+${formatMemberProfileBlock(profile, dailyCalories)}
 
-SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir):
+SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir; boş alanları yok say):
 ${healthTestSummary || '—'}
 
 HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
@@ -253,7 +271,7 @@ ${candidateLines || '(liste boş)'}
 
 GÖREV:
 ${parts.join('\n')}
-- description alanlarında 2–3 cümle ile hedef ve güvenlik yaklaşımını özetle.
+- Önce profil + sağlık özetini sentezle; description alanlarında 2–3 cümle ile hedef, kalori/BMI yaklaşımı ve güvenlik notunu özetle.
 - Üretmeyeceğin bölümü null bırak; üreteceğin bölümü eksiksiz doldur.
 
 SADECE şu JSON şemasında yanıt ver:

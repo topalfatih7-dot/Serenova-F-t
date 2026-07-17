@@ -65,6 +65,7 @@ OAuth callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
 
 | Öncelik | Durum | Konu | Not |
 |---------|-------|------|-----|
+| P0 | ✅ | Üyelik güvenlik (Faz 1) | Privileged kolon trigger + payments insert + istemci ücretli plan kapalı + AI food plan guard — `docs/ROADMAP_DENETIM.md` |
 | P1 | ⬜ | Admin içerik doldur | SSS, yorumlar, başarı hikâyeleri — `/admin/content`, blog `/admin/blog` |
 | P1 | ⬜ | Kadro fotoğraf + biyografi | `/admin/staff` |
 | P1 | ⬜ | Leaked Password Protection | Supabase Dashboard → Auth → Password Security |
@@ -76,6 +77,7 @@ OAuth callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
 | P2 | ⬜ | Facebook Login | UI kaldırıldı; ileride açılırsa Dashboard provider |
 | P2 | ⬜ | Apple Sign In | Ertelendi; UI kaldırıldı |
 | P2 | ⬜ | Telegram eksik chat ID | Eksik kanal/chat ID varsa Dashboard/env tamamla |
+| P2 | ⬜ | Denetim Faz 2–5 | Trial gate, video/pazarlama, hakediş, aktivasyon — `docs/ROADMAP_DENETIM.md` |
 | — | ❌ | React Native migration | Yok / planlanmadı |
 
 ---

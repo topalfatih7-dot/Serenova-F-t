@@ -16,14 +16,22 @@ const DEFAULT_FILTERS = {
   excludeDeferred: true,
 }
 
+function idsKey(ids) {
+  if (ids === undefined) return '__full__'
+  if (!Array.isArray(ids)) return '__full__'
+  return `scoped:${ids.slice().sort().join(',')}`
+}
+
 /**
  * Sayfalı hareket kütüphanesi hook'u.
+ * @param {string[]|null|undefined} allowedIds — verildiğinde yalnızca bu id'ler; [] → boş liste
  */
 export function useExerciseLibrary({
   pageSize = EXERCISE_PAGE_SIZE,
   initialSort = 'name_asc',
   includeDeferred = false,
   adminMode = false,
+  allowedIds = undefined,
 } = {}) {
   const [page, setPageState] = useState(1)
   const [sort, setSortState] = useState(initialSort)
@@ -37,22 +45,29 @@ export function useExerciseLibrary({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const allowedKey = idsKey(allowedIds)
+  const mergedFilters = useMemo(() => {
+    if (allowedKey === '__full__') return filters
+    const ids = allowedKey === 'scoped:' ? [] : allowedKey.slice('scoped:'.length).split(',').filter(Boolean)
+    return { ...filters, ids }
+  }, [filters, allowedKey])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const res = await fetchExercisesPage({ page, pageSize, sort, filters })
+    const res = await fetchExercisesPage({ page, pageSize, sort, filters: mergedFilters })
     setItems(res.items)
     setTotal(res.total)
     setTotalPages(res.totalPages)
     setError(res.error)
     setLoading(false)
-  }, [page, pageSize, sort, filters])
+  }, [page, pageSize, sort, mergedFilters])
 
   // setState yalnızca await sonrası — loading=true event handler'larda / initial state
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const res = await fetchExercisesPage({ page, pageSize, sort, filters })
+      const res = await fetchExercisesPage({ page, pageSize, sort, filters: mergedFilters })
       if (cancelled) return
       setItems(res.items)
       setTotal(res.total)
@@ -61,7 +76,12 @@ export function useExerciseLibrary({
       setLoading(false)
     })()
     return () => { cancelled = true }
-  }, [page, pageSize, sort, filters])
+  }, [page, pageSize, sort, mergedFilters])
+
+  useEffect(() => {
+    setPageState(1)
+    setLoading(true)
+  }, [allowedKey])
 
   const patchFilters = useCallback((patch) => {
     setLoading(true)

@@ -8,7 +8,6 @@ import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
   sanitizeStaffForPackage,
 } from '../data/membershipPlans'
-import { calculatePackagePrice } from './packagePricing'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths, extendPremiumExpiry } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
@@ -675,6 +674,14 @@ function withPremiumDates(member, packageConfig, isNewPremium = false) {
 }
 
 async function buildAndPersistMember(profile, membership, packageConfig, opts = {}) {
+  // Ücretli üyelik satırı yalnızca Stripe webhook / admin (service_role) ile oluşur.
+  if (isPaidMembership(membership)) {
+    return {
+      success: false,
+      error: 'Ücretli paketler yalnızca güvenli ödeme (Stripe) ile açılır.',
+    }
+  }
+
   const user = await getUser()
   if (!user) return { success: false, error: 'Oturum oluşturulamadı.' }
 
@@ -1102,16 +1109,22 @@ export async function recordSocialLogin() {
   return { success: true, role }
 }
 
-export async function registerWithPayment(profile, packageConfig) {
-  const pricing = calculatePackagePrice(packageConfig)
-  const auth = await ensureAuthForRegistration(profile)
-  if (!auth.success) return auth
-  const res = await buildAndPersistMember(profile, 'premium', packageConfig, { payment: pricing.total })
-  return res.success ? { success: true, member: res.member, pricing } : res
+export async function registerWithPayment() {
+  return {
+    success: false,
+    error: 'Ücretli kayıt yalnızca Stripe Checkout ile yapılır. Bu istemci yolu kapatıldı.',
+  }
 }
 
 // Sabit fiyatlı plan ile kayıt (süre ay cinsinden)
 export async function registerWithPlan(profile, planId, planPrice, durationMonths = 1) {
+  // Ücretli üyelik yalnızca Stripe webhook / admin (service_role). İstemci yolu kapalı.
+  if (isPaidMembership(planId)) {
+    return {
+      success: false,
+      error: 'Ücretli paketler yalnızca güvenli ödeme (Stripe) ile açılır. Lütfen ödeme adımını kullanın.',
+    }
+  }
   const auth = await ensureAuthForRegistration(profile)
   if (!auth.success) return auth
   const months = Number(durationMonths) || 1
@@ -1183,90 +1196,43 @@ export async function saveSupportSchedule(member, schedule) {
   return updated
 }
 
-export async function processPremiumPayment(member, packageConfig, schedule) {
-  const pricing = calculatePackagePrice(packageConfig)
-  const draft = {
-    ...member,
-    membership: 'premium',
-    membershipStatus: 'active',
-    packageConfig,
-    supportSchedule: schedule,
+export async function processPremiumPayment() {
+  return {
+    success: false,
+    error: 'Premium yükseltme yalnızca Stripe Checkout ile yapılır. Bu istemci yolu kapatıldı.',
   }
-
-  const sanitized = sanitizeStaffForPackage(packageConfig, draft)
-
-  const updated = withPremiumDates({
-    ...sanitized,
-    lastActiveAt: today(),
-  }, packageConfig, true)
-  await upsertMember(updated)
-  await supabase.from('payments').insert({
-    member_id: member.id,
-    data: { memberName: member.name, amount: pricing.total, packageConfig, status: 'completed', createdAt: nowISO() },
-  })
-  await addActivity('upgrade', `${member.name} Premium üyeliğe geçti (${pricing.total.toLocaleString('tr-TR')}₺)`, member.id)
-  return { success: true, pricing }
 }
 
 // Mevcut üyenin planını değiştirir (yeni kayıt OLUŞTURMAZ).
-// Ücretli plan → premium tarihleri sıfırlanır + ödeme kaydı eklenir.
+// Ücretli plan → yalnızca Stripe webhook / admin (istemci engelli).
 // Ücretsiz plan → premium bilgileri temizlenir.
 export async function changeMemberPlan(member, planId, planPrice = 0, durationMonths = 1) {
   if (!member) return { success: false, error: 'Üye bulunamadı.' }
-  const paid = isPaidMembership(planId)
-  const months = Number(durationMonths) || 1
-  const packageConfig = getDefaultPackageForPlan(planId, months)
+  if (isPaidMembership(planId)) {
+    return {
+      success: false,
+      error: 'Ücretli paket değişikliği yalnızca Stripe ödeme ile yapılır.',
+    }
+  }
+  void planPrice
+  void durationMonths
 
   let draft = syncMemberPackages({ ...member })
-  let activePackages = migrateLegacyToPackages(draft)
-
-  if (!paid) {
-    activePackages = []
-    draft = {
-      ...draft,
-      activePackages,
-      membership: 'free',
-      membershipStatus: 'active',
-      packageConfig: DEFAULT_PACKAGE,
-      premiumStartedAt: null,
-      premiumExpiresAt: null,
-      freeTrialExpiresAt: null,
-    }
-  } else {
-    activePackages = resolvePackagePurchase(
-      activePackages,
-      planId,
-      packageConfig,
-      { price: planPrice },
-    )
-    draft = {
-      ...draft,
-      activePackages,
-      membership: planId,
-      membershipStatus: 'active',
-      premiumStartedAt: today(),
-      premiumExpiresAt: null,
-      freeTrialExpiresAt: null,
-    }
-    draft = syncMemberPackages(draft)
-    if (!packageConfig.billingType) {
-      draft = withPremiumDates(draft, packageConfig, true)
-    }
+  draft = {
+    ...draft,
+    activePackages: [],
+    membership: 'free',
+    membershipStatus: 'active',
+    packageConfig: DEFAULT_PACKAGE,
+    premiumStartedAt: null,
+    premiumExpiresAt: null,
+    freeTrialExpiresAt: null,
   }
 
   draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   draft.lastActiveAt = today()
   await upsertMember(draft)
-
-  if (paid && planPrice > 0) {
-    await supabase.from('payments').insert({
-      member_id: member.id,
-      data: { memberName: member.name, amount: planPrice, packageConfig, planId, status: 'completed', createdAt: nowISO() },
-    })
-    await addActivity('upgrade', `${member.name} planını ${planId} olarak ${isOneTimePlan(planId) ? 'ekledi' : 'değiştirdi'} (${planPrice.toLocaleString('tr-TR')}₺)`, member.id)
-  } else {
-    await addActivity('plan_change', `${member.name} planını ${planId} olarak değiştirdi`, member.id)
-  }
+  await addActivity('plan_change', `${member.name} planını free olarak değiştirdi`, member.id)
 
   return { success: true, member: draft }
 }

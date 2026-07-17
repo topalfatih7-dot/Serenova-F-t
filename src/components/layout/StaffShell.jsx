@@ -33,12 +33,15 @@ function staffNavForRole(role) {
       { to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
     ]
   }
-  return [
+  const items = [
     ...base,
     { to: '/staff/programs', icon: ClipboardList, label: 'Programlar' },
-    { to: '/staff/library', icon: Library, label: 'Kütüphane' },
-    { to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi' },
   ]
+  if (normalizedRole === 'coach') {
+    items.push({ to: '/staff/library', icon: Library, label: 'Kütüphane' })
+  }
+  items.push({ to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi' })
+  return items
 }
 
 export default function StaffShell() {

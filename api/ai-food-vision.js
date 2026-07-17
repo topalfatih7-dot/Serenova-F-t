@@ -17,6 +17,7 @@ import {
 import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
 import { checkAiDailyQuota } from './_aiQuota.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
+import { requireMemberCalorieAccess } from './_memberEntitlements.js'
 
 async function loadOpenAi() {
   const href = new URL('./_openai.js', import.meta.url).href
@@ -57,6 +58,11 @@ export default async function handler(req, res) {
   const quota = await checkAiDailyQuota(auth.user.id)
   if (!quota.ok) {
     return res.status(quota.status).json({ ok: false, error: quota.error })
+  }
+
+  const entitlement = await requireMemberCalorieAccess(auth.user?.id, { photo: true })
+  if (!entitlement.ok) {
+    return res.status(entitlement.status).json({ ok: false, error: entitlement.error })
   }
 
   const { callOpenAi, parseJsonResponse, isOpenAiConfigured, logAiUsage } = await loadOpenAi()

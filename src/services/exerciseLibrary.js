@@ -32,8 +32,13 @@ function applyFilters(query, filters = {}) {
     requiresMachine = '',
     videoReady = null,
     excludeDeferred = true,
+    ids = null,
   } = filters
 
+  if (Array.isArray(ids)) {
+    if (ids.length === 0) return null
+    query = query.in('id', ids)
+  }
   if (search.trim()) {
     const q = `%${search.trim()}%`
     query = query.or(`name.ilike.${q},equipment.ilike.${q}`)
@@ -63,6 +68,10 @@ export async function fetchExercisesPage({
 } = {}) {
   if (!supabase) return { items: [], total: 0, page, pageSize, totalPages: 0, error: 'Supabase yok' }
 
+  if (Array.isArray(filters.ids) && filters.ids.length === 0) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, error: null }
+  }
+
   const { column, ascending } = resolveSort(sort)
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
@@ -72,6 +81,9 @@ export async function fetchExercisesPage({
     .select('*', { count: 'exact' })
 
   query = applyFilters(query, filters)
+  if (!query) {
+    return { items: [], total: 0, page, pageSize, totalPages: 0, error: null }
+  }
   query = query.order(column, { ascending, nullsFirst: false })
 
   if (column !== 'name') query = query.order('name', { ascending: true })

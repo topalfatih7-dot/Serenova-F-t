@@ -125,6 +125,149 @@ export function eachDateInCycle(startStr, length) {
   return out
 }
 
+const DAY_LABELS = {
+  0: 'Pazar',
+  1: 'Pazartesi',
+  2: 'Salı',
+  3: 'Çarşamba',
+  4: 'Perşembe',
+  5: 'Cuma',
+  6: 'Cumartesi',
+}
+
+const HEALTH_PRIORITY_FIELDS = [
+  ['chronicConditions', 'Kronik durumlar'],
+  ['chronicConditionsDetail', 'Kronik durum detayı'],
+  ['injuries', 'Yaralanmalar'],
+  ['injuriesDetail', 'Yaralanma detayı'],
+  ['painAreas', 'Ağrı bölgeleri'],
+  ['painScale', 'Ağrı şiddeti'],
+  ['exerciseContraindications', 'Egzersiz kontrendikasyonları'],
+  ['exerciseContraindicationsDetail', 'Kontrendikasyon detayı'],
+  ['medications', 'İlaç kullanımı'],
+  ['medicationsDetail', 'İlaç detayı'],
+  ['foodAllergies', 'Besin alerjileri'],
+  ['foodAllergiesDetail', 'Alerji detayı'],
+  ['dietFoodAllergiesDetail', 'Diyet alerji notu'],
+  ['eatingHabits', 'Yeme alışkanlıkları'],
+  ['activityFrequency', 'Aktivite sıklığı'],
+  ['sittingHours', 'Günlük oturma süresi'],
+  ['trainingLocation', 'Antrenman yeri tercihi'],
+  ['equipmentAccess', 'Ekipman erişimi'],
+  ['currentActivityTypes', 'Mevcut aktivite türleri'],
+  ['sessionDurationGoal', 'Hedef antrenman süresi'],
+  ['performanceGoal', 'Performans hedefi'],
+  ['sleepQuality', 'Uyku kalitesi'],
+  ['stressLevel', 'Stres seviyesi'],
+  ['energy', 'Enerji'],
+  ['wellbeing', 'Genel iyilik hali'],
+  ['motivation', 'Motivasyon'],
+  ['pregnancy', 'Gebelik'],
+  ['doctorClearance', 'Doktor onayı'],
+  ['bloodPressureIssues', 'Tansiyon sorunları'],
+  ['digestiveDisorders', 'Sindirim sorunları'],
+  ['thyroidStatus', 'Tiroid durumu'],
+  ['currentComplaints', 'Güncel şikayetler'],
+  ['supplements', 'Takviyeler'],
+  ['supplementsDetail', 'Takviye detayı'],
+  ['targetWeight', 'Hedef kilo'],
+  ['weight', 'Test kilosu'],
+  ['height', 'Test boyu'],
+  ['weightChange', 'Kilo değişimi'],
+  ['weightChangeDetail', 'Kilo değişim detayı'],
+]
+
+function formatHealthValue(v) {
+  if (Array.isArray(v)) return v.join(', ')
+  if (typeof v === 'object' && v != null) return JSON.stringify(v)
+  return String(v)
+}
+
+function hasHealthValue(v) {
+  if (v == null || v === '') return false
+  if (Array.isArray(v)) return v.length > 0
+  return true
+}
+
+function inferGoalsFromHealthTest(ht = {}) {
+  const goals = new Set()
+  const habits = Array.isArray(ht.eatingHabits) ? ht.eatingHabits : []
+  if (habits.includes('fast_food') || habits.includes('night_snack') || habits.includes('skip_meals')) {
+    goals.add('weight')
+    goals.add('habit')
+  }
+  if (ht.stressLevel === 'high' || ht.sleepQuality === 'poor') goals.add('sleep')
+  if (ht.activityFrequency === 'sedentary' || ht.sittingHours === '8+') {
+    goals.add('habit')
+    goals.add('heart')
+  }
+  if (ht.activityFrequency === 'active' || ht.activityFrequency === 'moderate') goals.add('endurance')
+  const chronic = Array.isArray(ht.chronicConditions) ? ht.chronicConditions : []
+  if (chronic.includes('heart') || chronic.includes('hypertension')) goals.add('heart')
+  if (chronic.includes('diabetes')) goals.add('weight')
+  if (ht.performanceGoal === 'muscle' || ht.performanceGoal === 'strength') goals.add('muscle')
+  if (ht.performanceGoal === 'fat_loss' || ht.performanceGoal === 'weight_loss') goals.add('weight')
+  if (goals.size === 0) goals.add('habit')
+  return [...goals]
+}
+
+function inferNutritionPrefsFromHealthTest(ht = {}) {
+  const prefs = []
+  const allergyText = [
+    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : ht.foodAllergies,
+    ht.foodAllergiesDetail,
+    ht.dietFoodAllergiesDetail,
+  ].filter(Boolean).join(' ').toLowerCase()
+  if (allergyText.includes('gluten')) prefs.push('gluten-free')
+  if (allergyText.includes('laktoz') || allergyText.includes('süt') || allergyText.includes('sut')) prefs.push('lactose-aware')
+  if (allergyText.includes('vejet') || allergyText.includes('vegan')) prefs.push('plant-based')
+  const habits = Array.isArray(ht.eatingHabits) ? ht.eatingHabits : []
+  if (habits.includes('regular')) prefs.push('balanced')
+  if (prefs.length === 0) prefs.push('balanced')
+  return prefs
+}
+
+function calcBmi(weight, height) {
+  const w = parseFloat(weight)
+  const h = parseFloat(height)
+  if (!w || !h || h < 50) return null
+  const bmi = w / ((h / 100) ** 2)
+  return Math.round(bmi * 10) / 10
+}
+
+function bmiCategory(bmi) {
+  if (bmi == null) return ''
+  if (bmi < 18.5) return 'zayıf'
+  if (bmi < 25) return 'normal'
+  if (bmi < 30) return 'fazla kilolu'
+  return 'obezite aralığı'
+}
+
+function formatAvailabilitySummary(availability = {}) {
+  const days = getWorkoutWeekdays(availability)
+  if (!days.length) return 'belirtilmemiş'
+  return days
+    .map((d) => {
+      const hours = Array.isArray(availability[d]) ? availability[d].join(', ') : ''
+      return hours ? `${DAY_LABELS[d] || d} (${hours})` : (DAY_LABELS[d] || String(d))
+    })
+    .join('; ')
+}
+
+function summarizeHealthAnalysis(analysis) {
+  if (!analysis || typeof analysis !== 'object') return ''
+  const parts = []
+  if (analysis.bmi != null) parts.push(`BMI ${analysis.bmi}${analysis.bmiCategory ? ` (${analysis.bmiCategory})` : ''}`)
+  if (analysis.priorityGoal) parts.push(`öncelik: ${analysis.priorityGoal}`)
+  if (analysis.fitnessScore != null) parts.push(`fitness skoru: ${analysis.fitnessScore}`)
+  if (Array.isArray(analysis.healthTestInsights) && analysis.healthTestInsights.length) {
+    parts.push(analysis.healthTestInsights.slice(0, 6).join(' | '))
+  }
+  const tips = analysis.dietitianRecommendations?.tips
+  if (Array.isArray(tips) && tips.length) parts.push(`beslenme odağı: ${tips.slice(0, 2).join('; ')}`)
+  return parts.join('. ').slice(0, 600)
+}
+
 export function estimateDailyCalories(profile = {}) {
   const w = parseFloat(profile.weight) || 70
   const h = parseFloat(profile.height) || 170
@@ -138,14 +281,15 @@ export function estimateDailyCalories(profile = {}) {
   const activityMultiplier = { beginner: 1.375, intermediate: 1.55, advanced: 1.725 }
   const multiplier = activityMultiplier[profile.fitnessLevel] || 1.375
   const total = Math.round(bmr * multiplier)
+  const roundedBmr = Math.round(bmr)
   const goals = profile.goals || []
   if (goals.some((g) => g === 'weight' || g === 'fatburn')) {
-    return { maintenance: total, recommended: total - 300, goal: 'Kilo verme' }
+    return { bmr: roundedBmr, maintenance: total, recommended: total - 300, goal: 'Kilo verme' }
   }
   if (goals.some((g) => g === 'muscle' || g === 'tone')) {
-    return { maintenance: total, recommended: total + 200, goal: 'Kas kazanımı' }
+    return { bmr: roundedBmr, maintenance: total, recommended: total + 200, goal: 'Kas kazanımı' }
   }
-  return { maintenance: total, recommended: total, goal: 'Form koruma' }
+  return { bmr: roundedBmr, maintenance: total, recommended: total, goal: 'Form koruma' }
 }
 
 export function enrichProfileBasics(memberData = {}) {
@@ -174,7 +318,15 @@ export function enrichProfileBasics(memberData = {}) {
 
   const goals = Array.isArray(memberData.goals) && memberData.goals.length
     ? memberData.goals
-    : ['habit']
+    : inferGoalsFromHealthTest(ht)
+
+  const nutritionPrefs = Array.isArray(memberData.nutritionPrefs) && memberData.nutritionPrefs.length
+    ? memberData.nutritionPrefs
+    : inferNutritionPrefsFromHealthTest(ht)
+
+  const bmi = calcBmi(weight, height)
+  const targetWeight = parseFloat(memberData.targetWeight) || parseFloat(ht.targetWeight) || null
+  const availability = memberData.availability || {}
 
   return {
     ...memberData,
@@ -183,22 +335,39 @@ export function enrichProfileBasics(memberData = {}) {
     age: Math.round(age),
     fitnessLevel,
     goals,
-    nutritionPrefs: memberData.nutritionPrefs || [],
+    nutritionPrefs,
     gender: memberData.gender || '',
+    bmi,
+    bmiCategory: bmiCategory(bmi),
+    targetWeight: targetWeight || null,
+    availabilitySummary: formatAvailabilitySummary(availability),
+    healthAnalysisSummary: summarizeHealthAnalysis(memberData.healthAnalysis),
+    trainingLocation: ht.trainingLocation || memberData.trainingLocation || '',
+    equipmentAccess: Array.isArray(ht.equipmentAccess) ? ht.equipmentAccess.join(', ') : (ht.equipmentAccess || ''),
+    sessionDurationGoal: ht.sessionDurationGoal || '',
+    performanceGoal: ht.performanceGoal || '',
   }
 }
 
-export function buildHealthTestSummary(healthTest = {}, maxLen = 6000) {
+/** Yapılandırılmış sağlık testi özeti — öncelikli alanlar Türkçe etiketli. */
+export function buildHealthTestSummary(healthTest = {}, maxLen = 3800) {
   if (!healthTest || typeof healthTest !== 'object') return ''
-  const lines = Object.entries(healthTest)
-    .filter(([k, v]) => {
-      if (k === 'bloodWorkFiles') return false
-      if (v == null || v === '') return false
-      if (Array.isArray(v)) return v.length > 0
-      if (typeof v === 'object') return false
-      return true
-    })
-    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`)
+
+  const used = new Set()
+  const lines = []
+
+  for (const [key, label] of HEALTH_PRIORITY_FIELDS) {
+    const v = healthTest[key]
+    if (!hasHealthValue(v)) continue
+    used.add(key)
+    lines.push(`${label}: ${formatHealthValue(v)}`)
+  }
+
+  for (const [key, v] of Object.entries(healthTest)) {
+    if (used.has(key) || !hasHealthValue(v)) continue
+    lines.push(`${key}: ${formatHealthValue(v)}`)
+  }
+
   let out = lines.join('\n')
   if (out.length > maxLen) out = `${out.slice(0, maxLen)}\n…`
   return out

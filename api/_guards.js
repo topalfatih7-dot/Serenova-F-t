@@ -5,8 +5,14 @@ import { getUserFromRequest, getBearerToken } from './_apiAuth.js'
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
 import { getAppUrl } from './_appUrl.js'
 
+/** Canonical default — DB `platform_settings.admin_email` ile aynı tutulmalı. */
 const DEFAULT_ADMIN_EMAIL = 'admin@yeniform.com'
 
+/**
+ * API admin e-postası.
+ * Öncelik: ADMIN_EMAIL env → varsayılan. RLS `is_admin()` DB `platform_settings` okur;
+ * env değiştirirseniz `platform_settings.admin_email` satırını da güncelleyin.
+ */
 export function getAdminEmail() {
   return (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
 }

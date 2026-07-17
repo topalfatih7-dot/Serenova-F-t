@@ -20,6 +20,20 @@ export function entryToDisplayText(e) {
   return `${time}${e.exerciseName} · ${amount}${e.note ? ` (${e.note})` : ''}`
 }
 
+/** Workout programlarındaki benzersiz exerciseId listesi (koç + AI). */
+export function collectProgramExerciseIds(programs = []) {
+  const ids = new Set()
+  for (const program of programs || []) {
+    if (program?.type && program.type !== 'workout') continue
+    const entries = Array.isArray(program?.entries) ? program.entries : []
+    for (const entry of entries) {
+      const id = entry?.exerciseId
+      if (id && typeof id === 'string') ids.add(id)
+    }
+  }
+  return [...ids]
+}
+
 export function buildCoachProgramTitle(memberName, startStr, endStr, mode = 'fixed14') {
   const startFmt = format(parseISO(`${startStr}T12:00:00`), 'd MMM yyyy', { locale: tr })
   const endFmt = format(parseISO(`${endStr}T12:00:00`), 'd MMM yyyy', { locale: tr })

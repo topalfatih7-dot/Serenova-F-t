@@ -211,7 +211,7 @@ export default function OnboardingPage() {
     setDurationMonths(resolveDurationMonths(data.membership, searchParams))
   }
 
-  const { register, registerWithPlan, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
+  const { register, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
@@ -380,11 +380,14 @@ export default function OnboardingPage() {
       : null
     const paymentOpts = paymentAmount ? { payment: paymentAmount } : {}
 
+    if (isPaidMembership(membership)) {
+      return {
+        success: false,
+        error: 'Ücretli paketler yalnızca Stripe ödeme ile açılır.',
+      }
+    }
     if (isOAuthFlow) {
       return completeOAuthMember(profile, membership, packageConfig, paymentOpts)
-    }
-    if (isPaidMembership(membership)) {
-      return registerWithPlan(profile, membership, paymentAmount, durationMonths)
     }
     return register(profile, 'free')
   }
