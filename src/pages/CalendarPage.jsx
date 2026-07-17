@@ -12,7 +12,6 @@ import {
   PlayCircle, Clock, CheckCircle, Circle, Calendar,
   ClipboardList, Trophy, Zap, ArrowLeft, CalendarRange, ChevronDown, ChevronUp, Save,
 } from 'lucide-react'
-import VideoPlayer from '../components/ui/VideoPlayer'
 import ExerciseDetailModal from '../components/library/ExerciseDetailModal'
 import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
@@ -65,7 +64,6 @@ export default function CalendarPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [current, setCurrent] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(isToday(new Date()) ? new Date() : null)
-  const [expandedEntryId, setExpandedEntryId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [availOpen, setAvailOpen] = useState(false)
   const [availForm, setAvailForm] = useState(user?.availability || EMPTY_AVAIL)
@@ -141,7 +139,6 @@ export default function CalendarPage() {
   const openDay = useCallback((day) => {
     if (!isSameMonth(day, current)) return
     setSelectedDate(day)
-    setExpandedEntryId(null)
   }, [current])
 
   const toggleMeal = useCallback(async (mealType, entryIds) => {
@@ -461,9 +458,7 @@ export default function CalendarPage() {
             isMealDone={isMealDone}
             onToggle={toggleActivity}
             onToggleMeal={toggleMeal}
-            expandedEntryId={expandedEntryId}
-            onExpandEntry={setExpandedEntryId}
-            onClose={() => { setSelectedDate(null); setExpandedEntryId(null) }}
+            onClose={() => setSelectedDate(null)}
             saving={saving}
             canComplete
           />
@@ -474,7 +469,7 @@ export default function CalendarPage() {
 }
 
 // ── Gün Detay Paneli (tam ekran modal) ──────────────────────────────
-function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, expandedEntryId, onExpandEntry, onClose, saving, canComplete }) {
+function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, onClose, saving, canComplete }) {
   const { workout: workoutEntries, nutrition: nutritionEntries } = splitEntriesByType(entries)
   const mealGroups = groupEntriesByMeal(nutritionEntries)
   const [detailExercise, setDetailExercise] = useState(null)
@@ -613,8 +608,6 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
                         entry={entry}
                         done={isDone(entry.id)}
                         onToggle={() => onToggle(entry.id)}
-                        expanded={expandedEntryId === entry.id}
-                        onExpand={() => onExpandEntry(expandedEntryId === entry.id ? null : entry.id)}
                         onOpenDetail={() => openExerciseDetail(entry)}
                         saving={saving}
                         canComplete={canComplete}
@@ -680,10 +673,11 @@ function MealGroupRow({ group, done, onToggle, saving, canComplete }) {
 }
 
 // ── Aktivite Satırı ─────────────────────────────────────────────────
-function ActivityRow({ entry, done, onToggle, expanded, onExpand, onOpenDetail, saving, canComplete }) {
+function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete }) {
   const displayName = entry.exerciseName || entry.name || 'Aktivite'
   const isNutrition = entry.programType === 'nutrition' || entry.mealType
   const hasVideo = Boolean(entry.videoUrl)
+  const canOpenDetail = !isNutrition && Boolean(entry.exerciseId || entry.videoUrl || entry.description)
 
   return (
     <motion.div
@@ -758,33 +752,18 @@ function ActivityRow({ entry, done, onToggle, expanded, onExpand, onOpenDetail, 
               <span className="text-xs text-cream-800/50">{entry.note}</span>
             )}
           </div>
-
-          <AnimatePresence>
-            {expanded && entry.videoUrl && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="mt-3 overflow-hidden rounded-xl border border-cream-200 bg-cream-50 p-2"
-              >
-                <VideoPlayer url={entry.videoUrl} title={entry.exerciseName || entry.name} />
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
-        {hasVideo && (
+        {canOpenDetail && (
           <button
             type="button"
-            onClick={onExpand}
-            className={`shrink-0 flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition ${
-              expanded
-                ? 'border-brand-400 bg-brand-100 text-brand-800'
-                : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100'
-            }`}
+            onClick={onOpenDetail}
+            onPointerEnter={() => entry.videoUrl && prefetchExerciseVideo(entry.videoUrl)}
+            onPointerDown={() => entry.videoUrl && prefetchExerciseVideo(entry.videoUrl)}
+            className="shrink-0 flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
           >
             <PlayCircle className="h-3.5 w-3.5" />
-            {expanded ? 'Gizle' : 'İzle'}
+            İzle
           </button>
         )}
       </div>
