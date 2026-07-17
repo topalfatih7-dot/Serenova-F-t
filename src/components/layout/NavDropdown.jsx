@@ -50,6 +50,8 @@ export default function NavDropdown({
                 key={sub.to}
                 to={sub.to}
                 onClick={onClose}
+                onMouseEnter={sub.onPrefetch}
+                onFocus={sub.onPrefetch}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:bg-cream-50 ${
                   pathname === sub.to || pathname.startsWith(`${sub.to}/`) ? 'bg-brand-50/80 text-brand-700' : 'text-cream-800'
                 }`}

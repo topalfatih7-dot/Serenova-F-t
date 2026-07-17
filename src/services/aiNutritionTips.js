@@ -23,7 +23,7 @@ export async function fetchAiNutritionTips({ profile, healthTestSummary }) {
     const { res, data } = await fetchJsonWithTimeout('/api/ai-nutrition-tips', {
       method: 'POST',
       headers: await getApiAuthHeaders(),
-      body: JSON.stringify({ profile, healthTestSummary }),
+      body: JSON.stringify({ task: 'nutrition-tips', profile, healthTestSummary }),
     })
     if (!res.ok || !data.ok) {
       return { ok: false, error: formatAiError(data.error || res.statusText) }

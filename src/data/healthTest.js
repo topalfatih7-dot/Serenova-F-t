@@ -192,7 +192,16 @@ export function hasHealthTestProgress(healthTest, gender, packageConfig = null) 
 
 // Bir bölümün tüm soruları (koşullu detaylar dahil) geçerli mi?
 export function isSectionComplete(section, healthTest) {
+  if (!section?.questions?.length) return false
   const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  const required = section.questions.filter((q) => q.required)
+
+  // Zorunlu soru yoksa: bölüm ancak tüm sorular açıkça cevaplanınca tamamlanır.
+  // (Aksi halde her opsiyonel soru boşken "tamamlandı" görünür — 0/0 bug.)
+  if (required.length === 0) {
+    return section.questions.every((q) => hasStoredAnswer(q, ht) && isQuestionFullyAnswered(q, ht))
+  }
+
   return section.questions.every((q) => isQuestionFullyAnswered(q, ht))
 }
 
@@ -213,18 +222,24 @@ export function getSectionQuestions(sectionId, gender, packageConfig = null) {
 export function getSectionProgress(section, healthTest) {
   const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
   const required = section.questions.filter((q) => q.required)
-  const requiredAnswered = required.filter((q) => isQuestionFullyAnswered(q, ht)).length
+  // Zorunlu yoksa tüm soruları ilerleme paydası yap (0/0 gösterme).
+  const tracked = required.length > 0 ? required : section.questions
+  const requiredAnswered = tracked.filter((q) => (
+    required.length > 0
+      ? isQuestionFullyAnswered(q, ht)
+      : hasStoredAnswer(q, ht)
+  )).length
   const started = section.questions.some((q) => hasStoredAnswer(q, ht)
     || (q.detail && isDetailFilled(q.detail, ht)))
   const complete = isSectionComplete(section, ht)
   return {
-    requiredTotal: required.length,
+    requiredTotal: tracked.length,
     requiredAnswered,
     complete,
     started,
-    percent: required.length
-      ? Math.round((requiredAnswered / required.length) * 100)
-      : (complete ? 100 : 0),
+    percent: tracked.length
+      ? Math.round((requiredAnswered / tracked.length) * 100)
+      : 0,
   }
 }
 

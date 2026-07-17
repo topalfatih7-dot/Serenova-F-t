@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   ArrowRight, Sparkles, HeartHandshake, Target, Eye, ShieldCheck, FlaskConical,
   Fingerprint, Globe, Leaf, Users, Dumbbell, Apple, Stethoscope, Lock, MessageCircle,
-  BadgeCheck, CreditCard, Video, Star, ClipboardList,
+  BadgeCheck, Video, Star, ClipboardList,
 } from 'lucide-react'
 import TrustStrip from '../components/landing/TrustStrip'
 import JsonLd from '../components/seo/JsonLd'
@@ -12,6 +12,7 @@ import { BRAND } from '../config/brand'
 import { useApp } from '../context/AppContext'
 import { usePlatformDisplayStats } from '../hooks/usePlatformDisplayStats'
 import { scrollToContactSection } from '../utils/scrollToContact'
+import { preloadTeamHero } from '../utils/teamHeroImages'
 
 /** Unsplash CDN — panelImages.js ile aynı desen.
  *  Not: Buradaki görseller sitenin başka hiçbir yerinde kullanılmaz (benzersiz). */
@@ -110,12 +111,6 @@ const GUARANTEES = [
     accent: 'from-warm-400 to-warm-500',
   },
   {
-    icon: CreditCard,
-    title: 'Güvenli Ödeme',
-    desc: 'Ödemeleriniz uluslararası Stripe altyapısıyla alınır; kart bilgileriniz bizde saklanmaz.',
-    accent: 'from-brand-300 to-sage-500',
-  },
-  {
     icon: ClipboardList,
     title: 'Kişiye Özel Program',
     desc: 'Hazır şablon yok — koç ve diyetisyeniniz hedefinize göre programı birlikte şekillendirir.',
@@ -137,6 +132,7 @@ const TEAM_LINKS = [
     desc: 'Kişisel antrenman programları ve birebir takip',
     accent: 'from-brand-400 to-brand-600',
     image: 'teamCoach',
+    prefetchRole: 'coaches',
   },
   {
     to: '/team/dietitians',
@@ -145,6 +141,7 @@ const TEAM_LINKS = [
     desc: 'Sürdürülebilir, size özel beslenme planları',
     accent: 'from-sage-400 to-sage-600',
     image: 'teamDietitian',
+    prefetchRole: 'dietitians',
   },
   {
     to: '/team/doctors',
@@ -153,6 +150,7 @@ const TEAM_LINKS = [
     desc: 'Sağlık sürecinizde uzman hekim desteği',
     accent: 'from-warm-400 to-warm-500',
     image: 'teamDoctor',
+    prefetchRole: 'doctors',
   },
 ]
 
@@ -572,6 +570,8 @@ export default function AboutPage() {
               >
                 <Link
                   to={t.to}
+                  onMouseEnter={() => preloadTeamHero(t.prefetchRole)}
+                  onFocus={() => preloadTeamHero(t.prefetchRole)}
                   className="group flex h-full flex-col overflow-hidden rounded-3xl border border-cream-200/80 bg-white shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden">

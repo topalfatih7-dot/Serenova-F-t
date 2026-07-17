@@ -831,7 +831,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'prostateSymptoms',
         label: 'İdrar yapma duzeniyle ilgili prostat kaynakli sıkayetiniz var mi?',
-        required: false,
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'mild', label: 'Hafif' },
@@ -843,7 +843,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'testosteroneConcerns',
         label: 'Düşük testosteronla iliskili belirtiler yasiyor musunuz?',
-        required: false,
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'suspect', label: 'Şüpheleniyorum' },
@@ -854,7 +854,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'maleScreening',
         label: 'Son erkek sagligi kontrolunuzu ne zaman yaptırdınız?',
-        required: false,
+        required: true,
         options: [
           { value: 'last_year', label: 'Son 1 yıl içinde' },
           { value: '1_3_years', label: '1-3 yıl once' },
@@ -866,7 +866,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'erectionQuality',
         label: 'Cinsel fonksiyonla ilgili zorlanma yasiyor musunuz?',
-        required: false,
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'sometimes', label: 'Ara sira' },
@@ -877,7 +877,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'waistCircumferenceRisk',
         label: 'Bel cevresi olcumu konusunda risk oldugünu dusunuyor musunuz?',
-        required: false,
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'not_sure', label: 'Emin değilim' },
@@ -888,7 +888,7 @@ export const HEALTH_SECTIONS = [
         type: 'single',
         key: 'snoring',
         label: 'Yüksek sesle horlama veya uykuda nefes durması şüpheleri var mi?',
-        required: false,
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'occasionally', label: 'Ara sira' },

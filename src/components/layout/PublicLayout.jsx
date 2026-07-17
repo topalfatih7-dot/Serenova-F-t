@@ -15,6 +15,7 @@ import { hasRegisteredMember } from '../../utils/memberProfile'
 import { scrollToContactSection } from '../../utils/scrollToContact'
 import { LEGAL_FOOTER_PARAGRAPHS } from '../../data/legalDocuments'
 import { LegalFooterParagraph } from '../legal/LegalFooterParagraph'
+import { preloadTeamHero } from '../../utils/teamHeroImages'
 
 const guestLinks = [
   { to: '/', label: 'Ana Sayfa', icon: Home },
@@ -33,9 +34,27 @@ const memberExtraLinks = [
 ]
 
 const teamSubLinks = [
-  { to: '/team/coaches', label: 'Koçlar', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
-  { to: '/team/dietitians', label: 'Diyetisyenler', icon: Apple, color: 'text-sage-600 bg-sage-50' },
-  { to: '/team/doctors', label: 'Doktorlar', icon: Stethoscope, color: 'text-cream-700 bg-cream-100' },
+  {
+    to: '/team/coaches',
+    label: 'Koçlar',
+    icon: Dumbbell,
+    color: 'text-brand-600 bg-brand-50',
+    onPrefetch: () => preloadTeamHero('coaches'),
+  },
+  {
+    to: '/team/dietitians',
+    label: 'Diyetisyenler',
+    icon: Apple,
+    color: 'text-sage-600 bg-sage-50',
+    onPrefetch: () => preloadTeamHero('dietitians'),
+  },
+  {
+    to: '/team/doctors',
+    label: 'Doktorlar',
+    icon: Stethoscope,
+    color: 'text-cream-700 bg-cream-100',
+    onPrefetch: () => preloadTeamHero('doctors'),
+  },
 ]
 
 const teamDropdownFooter = {
@@ -247,6 +266,8 @@ export default function PublicLayout() {
                       key={sub.to}
                       to={sub.to}
                       onClick={() => setMenuOpen(false)}
+                      onMouseEnter={sub.onPrefetch}
+                      onFocus={sub.onPrefetch}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-cream-800 transition hover:bg-cream-100"
                     >
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>

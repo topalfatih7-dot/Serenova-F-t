@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext'
 import JsonLd from '../components/seo/JsonLd'
 import StaffMemberCard from '../components/staff/StaffMemberCard'
 import { buildItemListSchema, staffProfilePath } from '../config/seo'
+import { TEAM_HERO_IMAGES } from '../utils/teamHeroImages'
 
 const roleConfig = {
   coaches: {
@@ -13,7 +14,8 @@ const roleConfig = {
     label: 'Koçlarımız',
     sub: 'Sertifikalı fitness koçlarımızla hedefinize güvenle ulaşın',
     icon: Dumbbell,
-    gradient: 'from-brand-500 to-brand-700',
+    placeholder: 'from-brand-700 to-brand-900',
+    gradient: 'from-brand-900/75 via-brand-800/55 to-brand-700/70',
     light: 'from-brand-50 to-white',
     badge: 'bg-brand-500',
     accent: 'text-brand-600',
@@ -23,7 +25,8 @@ const roleConfig = {
     label: 'Diyetisyenlerimiz',
     sub: 'Uzman diyetisyenlerle sürdürülebilir beslenme alışkanlıkları kazanın',
     icon: Apple,
-    gradient: 'from-sage-500 to-sage-700',
+    placeholder: 'from-sage-600 to-sage-900',
+    gradient: 'from-sage-900/75 via-sage-800/55 to-sage-700/70',
     light: 'from-sage-50 to-white',
     badge: 'bg-sage-500',
     accent: 'text-sage-600',
@@ -33,7 +36,8 @@ const roleConfig = {
     label: 'Doktorlarımız',
     sub: 'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktorlar',
     icon: Stethoscope,
-    gradient: 'from-cream-700 to-cream-900',
+    placeholder: 'from-cream-800 to-cream-950',
+    gradient: 'from-cream-950/80 via-cream-900/60 to-cream-800/70',
     light: 'from-cream-50 to-white',
     badge: 'bg-cream-800',
     accent: 'text-cream-700',
@@ -45,6 +49,7 @@ export default function TeamListPage({ role: roleProp }) {
   const role = roleProp || params.role
   const { staff } = useApp()
   const config = roleConfig[role]
+  const hero = TEAM_HERO_IMAGES[role]
 
   // Hook'lar koşulsuz çağrılmalı (Rules of Hooks); erken return aşağıda.
   const members = useMemo(
@@ -64,14 +69,31 @@ export default function TeamListPage({ role: roleProp }) {
     [members, config, role]
   )
 
-  if (!config) return <Navigate to="/" replace />
+  if (!config || !hero) return <Navigate to="/" replace />
 
   const RoleIcon = config.icon
 
   return (
     <div className="min-h-screen bg-cream-50/30">
       <JsonLd data={teamListSchema} />
-      <div className={`relative overflow-hidden bg-gradient-to-br ${config.gradient} py-14 sm:py-20`}>
+      <div className="relative overflow-hidden py-14 sm:py-20">
+        {/* Anında gradient; görsel gelince üstüne biner — boş flash olmaz */}
+        <div aria-hidden className={`absolute inset-0 bg-gradient-to-br ${config.placeholder}`} />
+        <img
+          src={hero.src}
+          srcSet={`${hero.srcSm} 800w, ${hero.src} 1400w`}
+          sizes="100vw"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+          width={1400}
+          height={700}
+        />
+        <div aria-hidden className={`absolute inset-0 bg-gradient-to-br ${config.gradient}`} />
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
         <div aria-hidden className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div aria-hidden className="absolute -right-8 bottom-0 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -96,6 +118,7 @@ export default function TeamListPage({ role: roleProp }) {
             </div>
           </motion.div>
         </div>
+        <span className="sr-only">{hero.alt}</span>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">

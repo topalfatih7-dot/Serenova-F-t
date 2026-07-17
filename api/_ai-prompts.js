@@ -102,6 +102,80 @@ export const NUTRITION_CONFIG = {
   responseMimeType: 'application/json',
 }
 
+// ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
+export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
+${BRAND_CONTEXT}
+Üyenin sağlık testi cevaplarına göre 14 günlük uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+KURALLAR:
+- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId olarak listedeki id’yi kullan.
+- Kütüphane dışı hareket UYDURMA.
+- Sağlık kısıtlarına (yaralanma, ağrı, kronik durum) göre konservatif seç; yüksek riskli/ileri seviye hareketlerden kaçın.
+- Beslenme: Türk mutfağı, pratik ev yemekleri; kahvaltı/ara/öğle/ara/akşam/gece ara öğünleri.
+- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA.
+- Türkçe yanıt ver.`
+
+export function buildBasicProgramInstruction({
+  profile,
+  healthTestSummary = '',
+  dailyCalories = null,
+  candidates = [],
+}) {
+  const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
+  const candidateLines = candidates
+    .slice(0, 60)
+    .map((c) => `- ${c.id} | ${c.name} | ${c.bodyPart || '—'} | ${c.difficulty || 'beginner'} | ${c.equipment || '—'} | ${c.targetMuscle || '—'}`)
+    .join('\n')
+
+  return `ÜYE PROFİLİ:
+- Ad: ${profile.name || '—'}
+- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
+- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
+- Hedefler: ${(profile.goals || []).join(', ') || '—'}
+- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
+- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
+- Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
+
+SAĞLIK TESTİ ÖZETİ:
+${healthTestSummary || '—'}
+
+HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
+${candidateLines || '(liste boş)'}
+
+4–8 antrenman hareketi seç. Beslenmede en az kahvaltı, öğle, akşam; tercihen ara öğünler de ekle.
+Öğün metinlerini kalori hedefine yaklaşık uyumlu tut.
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "workout": {
+    "title": "kısa program başlığı",
+    "description": "1-2 cümle açıklama",
+    "sessionDuration": 30,
+    "sessionStart": "09:00",
+    "exercises": [
+      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "" }
+    ]
+  },
+  "nutrition": {
+    "title": "kısa liste başlığı",
+    "description": "1 cümle + kalori vurgusu",
+    "meals": [
+      { "mealType": "breakfast", "name": "öğün içeriği", "start": "08:00", "note": "" },
+      { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
+      { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
+      { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
+      { "mealType": "dinner", "name": "...", "start": "19:00", "note": "" },
+      { "mealType": "snack_evening", "name": "...", "start": "21:30", "note": "" }
+    ]
+  }
+}`
+}
+
+export const BASIC_PROGRAM_CONFIG = {
+  temperature: 0.35,
+  maxOutputTokens: 2500,
+  responseMimeType: 'application/json',
+}
+
 // ─── Günlük Blog Makalesi (Cron) ────────────────────────────────────
 export const BLOG_CATEGORIES = ['Beslenme', 'Antrenman', 'Motivasyon', 'Yaşam']
 export const BLOG_ACCENTS = ['brand', 'sage', 'gold', 'cream']

@@ -1,16 +1,15 @@
 import { motion } from 'framer-motion'
-import { Shield, CreditCard, RefreshCw, Headphones } from 'lucide-react'
+import { Shield, RefreshCw, Headphones } from 'lucide-react'
 
 const ITEMS = [
   { icon: Shield, label: 'KVKK uyumlu', sub: 'Verileriniz güvende', color: 'from-sage-100 to-emerald-50 text-sage-700' },
-  { icon: CreditCard, label: 'Güvenli ödeme', sub: 'Stripe altyapısı', color: 'from-sky-100 to-blue-50 text-sky-700' },
   { icon: RefreshCw, label: 'Esnek süre', sub: '1, 3 veya 6 ay', color: 'from-teal-100 to-cyan-50 text-teal-700' },
   { icon: Headphones, label: 'Destek ekibi', sub: 'Yalnız kalmazsınız', color: 'from-brand-100 to-violet-50 text-brand-700' },
 ]
 
 export default function MembershipReassurance({ compact = false }) {
   return (
-    <div className={`grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'} sm:gap-3`}>
+    <div className={`grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'} sm:gap-3`}>
       {ITEMS.map((item, i) => {
         const Icon = item.icon
         return (

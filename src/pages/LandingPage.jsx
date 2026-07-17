@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight, Sparkles, ChevronLeft, ChevronRight, X,
-  ShieldCheck, Lock, BadgeCheck, Dumbbell, Apple, Video,
+  ShieldCheck, Lock, BadgeCheck,
 } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
 import FAQAccordion from '../components/landing/FAQAccordion'
@@ -138,34 +138,11 @@ export default function LandingPage() {
               ücretsiz başlayın, kendi hızınızda ilerleyin.
             </motion.p>
 
-            {/* Ne sunduğumuz — tek bakışta */}
             <motion.div
               variants={fadeUp}
               initial="hidden"
               animate="show"
               custom={3}
-              className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start"
-            >
-              {[
-                { icon: Dumbbell, label: 'Kişisel antrenman programı' },
-                { icon: Apple, label: 'Diyetisyen onaylı beslenme' },
-                { icon: Video, label: 'Birebir video görüşme' },
-              ].map((f) => (
-                <span
-                  key={f.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 backdrop-blur sm:text-[13px]"
-                >
-                  <f.icon className="h-3.5 w-3.5 text-brand-300" />
-                  {f.label}
-                </span>
-              ))}
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              animate="show"
-              custom={4}
               className="mt-7 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
             >
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>

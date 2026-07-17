@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ShieldCheck, Lock, BadgeCheck, CreditCard, Video, MessageCircle,
+  ShieldCheck, Lock, BadgeCheck, Video, MessageCircle,
   ArrowRight, Star,
 } from 'lucide-react'
 
@@ -23,12 +23,6 @@ const GUARANTEES = [
     title: 'Uzman Onaylı Kadro',
     desc: 'Koç, diyetisyen ve doktorlarımız diploma ve deneyim kontrolünden geçer.',
     accent: 'from-sage-400 to-sage-600',
-  },
-  {
-    icon: CreditCard,
-    title: 'Güvenli Ödeme',
-    desc: 'Ödemeler uluslararası Stripe altyapısıyla alınır; kart bilgileriniz bizde saklanmaz.',
-    accent: 'from-warm-400 to-warm-500',
   },
   {
     icon: Video,
