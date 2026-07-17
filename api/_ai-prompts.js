@@ -103,16 +103,24 @@ export const NUTRITION_CONFIG = {
 }
 
 // ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
-export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
+export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
 ${BRAND_CONTEXT}
-Üyenin sağlık testi cevaplarına göre uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+Üyenin sağlık testi, hedefleri ve tercihlerine göre uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+
+ANALİZ (önce düşün, sonra yaz):
+1) Sağlık testi özetindeki yaralanma, ağrı, kronik durum, ilaç veya kısıtları çıkar.
+2) Bu kısıtlara göre kütüphaneden GÜVENLİ hareketleri seç; riskli/ileri seviye hareketlerden kaçın.
+3) Fitness seviyesine uygun tekrar/süre ver (beginner → daha düşük volume).
+4) Beslenme tercihleri/alerji/vejetaryen vb. varsa öğünlerde mutlaka uy.
+
 KURALLAR:
-- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId olarak listedeki id’yi kullan.
+- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
 - Kütüphane dışı hareket UYDURMA.
-- Sağlık kısıtlarına (yaralanma, ağrı, kronik durum) göre konservatif seç; yüksek riskli/ileri seviye hareketlerden kaçın.
-- Beslenme: Türk mutfağı, pratik ev yemekleri; kahvaltı/ara/öğle/ara/akşam/gece ara öğünleri.
-- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA.
-- Türkçe yanıt ver.`
+- Her hareket için note alanında kısa form/tempo veya dikkat notu yaz (max ~80 karakter).
+- Beslenme: Türk mutfağı, pratik ev yemekleri; kahvaltı + sabah ara + öğle + öğleden sonra ara + akşam + gece ara.
+- Her öğün name alanında: yiyecekler + yaklaşık porsiyon + o öğünün tahmini kcal (ör. "2 yumurta, 40g yulaf, domates (~350 kcal)").
+- Günlük öğün kcal toplamı kalori hedefine yaklaşık (±15%) uyumlu olsun.
+- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildBasicProgramInstruction({
   profile,
@@ -137,31 +145,34 @@ export function buildBasicProgramInstruction({
 - Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
 - Program süresi: ${cycleLength} gün (ücretsiz deneme bitişine kadar)
 
-SAĞLIK TESTİ ÖZETİ:
+SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir):
 ${healthTestSummary || '—'}
 
 HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
 ${candidateLines || '(liste boş)'}
 
-4–8 antrenman hareketi seç. Beslenmede en az kahvaltı, öğle, akşam; tercihen ara öğünler de ekle.
-Öğün metinlerini kalori hedefine yaklaşık uyumlu tut.
+GÖREV:
+- 5–8 antrenman hareketi seç; vücut bölgelerini dengeli dağıt; sağlık kısıtlarına aykırı olanları ele.
+- description: 2–3 cümle — hedef + kısıtlara nasıl uyulduğu.
+- Beslenmede 6 öğün tipi doldur; name içinde porsiyon + ~kcal yaz; tercihlere uy.
+- Öğün notlarında (note) kısa pratik ipucu verebilirsin.
 
 SADECE şu JSON şemasında yanıt ver:
 {
   "workout": {
     "title": "kısa program başlığı",
-    "description": "1-2 cümle açıklama",
+    "description": "2-3 cümle: hedef + güvenlik notu",
     "sessionDuration": 30,
     "sessionStart": "09:00",
     "exercises": [
-      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "" }
+      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "kısa form notu" }
     ]
   },
   "nutrition": {
     "title": "kısa liste başlığı",
-    "description": "1 cümle + kalori vurgusu",
+    "description": "1-2 cümle + günlük kalori vurgusu",
     "meals": [
-      { "mealType": "breakfast", "name": "öğün içeriği", "start": "08:00", "note": "" },
+      { "mealType": "breakfast", "name": "yiyecekler + porsiyon (~kcal)", "start": "08:00", "note": "" },
       { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
       { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
       { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
@@ -174,19 +185,27 @@ SADECE şu JSON şemasında yanıt ver:
 
 export const BASIC_PROGRAM_CONFIG = {
   temperature: 0.35,
-  maxOutputTokens: 2500,
+  maxOutputTokens: 3500,
   responseMimeType: 'application/json',
 }
 
 // ─── Eko paket: 15g diyet + 30g antrenman ────────────────────────────
-export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
+export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
 ${BRAND_CONTEXT}
 Eko paket üyesi için uygulanabilir antrenman ve/veya beslenme listesi hazırla.
+
+ANALİZ (önce düşün, sonra yaz):
+1) Sağlık testi özetindeki yaralanma, ağrı, kronik durum veya kısıtları çıkar.
+2) Kısıtlara göre kütüphaneden GÜVENLİ hareketleri seç; riskli hareketlerden kaçın.
+3) Fitness seviyesi ve hedeflere göre volume ayarla.
+4) Beslenme tercihleri/alerjilere uy; önceki diyet listesi varsa çeşitlendir ama süreklilik ve kalori hedefini koru.
+
 KURALLAR:
 - Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
 - Kütüphane dışı hareket UYDURMA.
-- Sağlık kısıtlarına göre konservatif seç.
-- Beslenme: Türk mutfağı; önceki diyet listesi varsa çeşitlendir ama süreklilik koru.
+- Her hareket için note alanında kısa form/tempo veya dikkat notu yaz.
+- Beslenme: Türk mutfağı; pratik ev yemekleri; 6 öğün tipi.
+- Her öğün name: yiyecekler + porsiyon + tahmini kcal; günlük toplam kalori hedefine (±15%) yakın olsun.
 - Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildEkoProgramInstruction({
@@ -208,12 +227,12 @@ export function buildEkoProgramInstruction({
 
   const parts = []
   if (buildWorkout) {
-    parts.push(`ANTRENMAN (${workoutDays} gün): 5–8 kütüphane hareketi seç.`)
+    parts.push(`ANTRENMAN (${workoutDays} gün tekrarlanacak şablon): 5–8 kütüphane hareketi; dengeli vücut bölgeleri; kısıtlara uygun; her harekette note.`)
   }
   if (buildNutrition) {
-    parts.push(`BESLENME (${dietDays} gün): kahvaltı/ara/öğle/ara/akşam/gece ara; kalori hedefine uyumlu.`)
+    parts.push(`BESLENME (${dietDays} gün her gün aynı şablon): 6 öğün; name içinde porsiyon + ~kcal; günlük toplam ~${cal || 'hedef'} kcal.`)
     if (previousDietSummary) {
-      parts.push(`ÖNCEKİ DİYET LİSTESİ (çeşitlendir, tamamen kopyalama):\n${previousDietSummary}`)
+      parts.push(`ÖNCEKİ DİYET LİSTESİ (aynı kalori bandında çeşitlendir, birebir kopyalama):\n${previousDietSummary}`)
     }
   }
 
@@ -226,7 +245,7 @@ export function buildEkoProgramInstruction({
 - Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
 - Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
 
-SAĞLIK TESTİ ÖZETİ:
+SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir):
 ${healthTestSummary || '—'}
 
 HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
@@ -234,23 +253,25 @@ ${candidateLines || '(liste boş)'}
 
 GÖREV:
 ${parts.join('\n')}
+- description alanlarında 2–3 cümle ile hedef ve güvenlik yaklaşımını özetle.
+- Üretmeyeceğin bölümü null bırak; üreteceğin bölümü eksiksiz doldur.
 
-SADECE şu JSON şemasında yanıt ver (üretmeyeceğin bölümü boş obje veya null bırakma; ilgili alanları doldur):
+SADECE şu JSON şemasında yanıt ver:
 {
   "workout": ${buildWorkout ? `{
     "title": "kısa program başlığı",
-    "description": "1-2 cümle",
+    "description": "2-3 cümle: hedef + güvenlik",
     "sessionDuration": 35,
     "sessionStart": "09:00",
     "exercises": [
-      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "" }
+      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "kısa form notu" }
     ]
   }` : 'null'},
   "nutrition": ${buildNutrition ? `{
     "title": "kısa liste başlığı",
-    "description": "1 cümle + kalori",
+    "description": "1-2 cümle + kalori",
     "meals": [
-      { "mealType": "breakfast", "name": "öğün içeriği", "start": "08:00", "note": "" },
+      { "mealType": "breakfast", "name": "yiyecekler + porsiyon (~kcal)", "start": "08:00", "note": "" },
       { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
       { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
       { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
@@ -263,7 +284,7 @@ SADECE şu JSON şemasında yanıt ver (üretmeyeceğin bölümü boş obje veya
 
 export const EKO_PROGRAM_CONFIG = {
   temperature: 0.35,
-  maxOutputTokens: 2800,
+  maxOutputTokens: 4000,
   responseMimeType: 'application/json',
 }
 

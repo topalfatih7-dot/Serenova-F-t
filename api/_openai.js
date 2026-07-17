@@ -1,14 +1,19 @@
 /**
- * OpenAI API yardımcısı (sunucu tarafı) — kalori chat/vision için GPT-4o.
+ * OpenAI API yardımcısı (sunucu tarafı).
+ * Kalori (chat/vision): GPT-4o — Program üretimi (Basic/Eko): GPT-4.1
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
 
 const API_URL = 'https://api.openai.com/v1/chat/completions'
 
-/** USD / 1M token — gpt-4o (standart API, 2026) */
+/** USD / 1M token — standart API fiyatları (2026) */
 const GPT4O_INPUT_PER_M = 2.5
 const GPT4O_OUTPUT_PER_M = 10.0
+const GPT41_INPUT_PER_M = 2.0
+const GPT41_OUTPUT_PER_M = 8.0
+const GPT4O_MINI_INPUT_PER_M = 0.15
+const GPT4O_MINI_OUTPUT_PER_M = 0.6
 
 export class OpenAiApiError extends Error {
   constructor(status, code, message) {
@@ -23,17 +28,26 @@ export function isOpenAiConfigured() {
   return Boolean(process.env.OPENAI_API_KEY)
 }
 
+/** Kalori metin/görsel modeli */
 export function getOpenAiModel() {
   return process.env.OPENAI_MODEL || 'gpt-4o'
+}
+
+/** Basic/Eko AI program üretimi modeli */
+export function getOpenAiProgramModel() {
+  return process.env.OPENAI_PROGRAM_MODEL || 'gpt-4.1'
 }
 
 export function estimateOpenAiCostUsd(promptTokens, completionTokens, model = 'gpt-4o') {
   const m = String(model || '').toLowerCase()
   let inRate = GPT4O_INPUT_PER_M
   let outRate = GPT4O_OUTPUT_PER_M
-  if (m.includes('gpt-4o-mini')) {
-    inRate = 0.15
-    outRate = 0.6
+  if (m.includes('gpt-4o-mini') || m.includes('gpt-4.1-mini')) {
+    inRate = GPT4O_MINI_INPUT_PER_M
+    outRate = GPT4O_MINI_OUTPUT_PER_M
+  } else if (m.includes('gpt-4.1')) {
+    inRate = GPT41_INPUT_PER_M
+    outRate = GPT41_OUTPUT_PER_M
   }
   const input = (Number(promptTokens) || 0) / 1_000_000 * inRate
   const output = (Number(completionTokens) || 0) / 1_000_000 * outRate
@@ -70,15 +84,22 @@ export function parseJsonResponse(text) {
  * @param {object} opts
  * @param {Array} opts.messages
  * @param {object} [opts.config]
- * @param {string} [opts.endpoint] — kullanım logu için (food-text | food-vision)
+ * @param {string} [opts.model] — verilmezse getOpenAiModel() (kalori varsayılanı)
+ * @param {string} [opts.endpoint] — kullanım logu için (food-text | food-vision | program-basic | program-eko)
  * @param {string} [opts.userId]
  * @returns {Promise<{ text: string, usage: object, model: string, costUsd: number }>}
  */
-export async function callOpenAi({ messages, config = {}, endpoint = 'openai', userId = null }) {
+export async function callOpenAi({
+  messages,
+  config = {},
+  model: modelOverride = null,
+  endpoint = 'openai',
+  userId = null,
+}) {
   const key = process.env.OPENAI_API_KEY
   if (!key) throw new Error('OPENAI_API_KEY tanımlı değil')
 
-  const model = getOpenAiModel()
+  const model = modelOverride || getOpenAiModel()
   const body = {
     model,
     messages,

@@ -35,7 +35,13 @@ import {
   memberExpirySyncNeedsPersist,
   syncMemberPackages,
 } from './_memberPackages.js'
-import { callGemini, parseJsonResponse, isGeminiConfigured } from './_gemini.js'
+import {
+  callOpenAi,
+  parseJsonResponse,
+  isOpenAiConfigured,
+  getOpenAiProgramModel,
+  OpenAiApiError,
+} from './_openai.js'
 
 export async function loadExerciseCandidates(admin) {
   let { data, error } = await admin
@@ -94,8 +100,8 @@ function memberPackageStillActive(memberData, membership, today = new Date()) {
  * Basic: deneme bitişine kadar diyet + antrenman.
  */
 export async function generateBasicPrograms(admin, memberRow) {
-  if (!isGeminiConfigured()) {
-    return { ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)', status: 503 }
+  if (!isOpenAiConfigured()) {
+    return { ok: false, error: 'AI yapılandırması eksik (OPENAI_API_KEY)', status: 503 }
   }
 
   const memberData = memberRow.data || {}
@@ -130,7 +136,26 @@ export async function generateBasicPrograms(admin, memberRow) {
     cycleLength: window.cycleLength,
   })
 
-  const raw = await callGemini([{ text: instruction }], BASIC_PROGRAM_SYSTEM, BASIC_PROGRAM_CONFIG)
+  let raw
+  try {
+    const result = await callOpenAi({
+      messages: [
+        { role: 'system', content: BASIC_PROGRAM_SYSTEM },
+        { role: 'user', content: instruction },
+      ],
+      model: getOpenAiProgramModel(),
+      config: BASIC_PROGRAM_CONFIG,
+      endpoint: 'program-basic',
+      userId: memberRow.id,
+    })
+    raw = result.text
+  } catch (e) {
+    return {
+      ok: false,
+      error: e?.message || 'OpenAI program çağrısı başarısız',
+      status: e instanceof OpenAiApiError ? e.status : (e?.status || 502),
+    }
+  }
   let aiJson
   try {
     aiJson = parseJsonResponse(raw)
@@ -190,8 +215,8 @@ export async function generateBasicPrograms(admin, memberRow) {
  * @param {{ force?: boolean, renewDiet?: boolean, renewWorkout?: boolean }} opts
  */
 export async function generateEkoPrograms(admin, memberRow, opts = {}) {
-  if (!isGeminiConfigured()) {
-    return { ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)', status: 503 }
+  if (!isOpenAiConfigured()) {
+    return { ok: false, error: 'AI yapılandırması eksik (OPENAI_API_KEY)', status: 503 }
   }
 
   const memberData = memberRow.data || {}
@@ -261,7 +286,7 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
   const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
   const previousDietSummary = lastDiet ? summarizeNutritionProgram(lastDiet) : ''
 
-  // Tek Gemini çağrısı — her iki tip isteniyorsa; aksi halde ilgili alanlar
+  // Tek OpenAI (gpt-4.1) çağrısı — her iki tip isteniyorsa; aksi halde ilgili alanlar
   const needBoth = renewDiet && renewWorkout
   const maxLenForPrompt = Math.max(dietLen || 0, workoutLen || 0) || EKO_WORKOUT_DAYS
 
@@ -279,12 +304,22 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
 
   let raw
   try {
-    raw = await callGemini([{ text: instruction }], EKO_PROGRAM_SYSTEM, EKO_PROGRAM_CONFIG)
+    const result = await callOpenAi({
+      messages: [
+        { role: 'system', content: EKO_PROGRAM_SYSTEM },
+        { role: 'user', content: instruction },
+      ],
+      model: getOpenAiProgramModel(),
+      config: EKO_PROGRAM_CONFIG,
+      endpoint: 'program-eko',
+      userId: memberRow.id,
+    })
+    raw = result.text
   } catch (e) {
     return {
       ok: false,
-      error: e?.message || 'Gemini çağrısı başarısız',
-      status: e?.status || 502,
+      error: e?.message || 'OpenAI program çağrısı başarısız',
+      status: e instanceof OpenAiApiError ? e.status : (e?.status || 502),
     }
   }
   let aiJson

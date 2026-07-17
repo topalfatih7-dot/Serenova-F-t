@@ -1325,7 +1325,10 @@ entegrasyonuyla birebir aynıdır: API anahtarı **yalnızca sunucuda** (Vercel
 Environment Variables) tutulur, tarayıcıya asla sızmaz. Anahtar yoksa uygulama
 eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 
-**Seçilen sağlayıcı:** Google **Gemini 2.5 Flash Lite** (varsayılan) — düşük maliyet; kota dolunca **`gemini-flash-lite-latest`** ve **`gemini-2.0-flash-lite`** fallback. Kurulum: `§8 / .env.example (GEMINI_API_KEY)`.
+**Sağlayıcılar:**
+- **OpenAI GPT-4o** — metin/foto kalori (`OPENAI_MODEL`, `api/_openai.js`)
+- **OpenAI GPT-4.1** — Basic/Eko otomatik program üretimi (`OPENAI_PROGRAM_MODEL`, `api/_aiEkoPrograms.js`)
+- **Google Gemini 2.5 Flash Lite** — blog, günün ipucu, beslenme ipucu metni (`GEMINI_MODEL`; 429/503’te lite fallback)
 
 ### AI Entegrasyon Noktaları
 
@@ -1333,6 +1336,7 @@ eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 |---------|----------|-----------------|----------------|
 | **Metin Kalori (Chat)** | `api/ai-food-text.js` | `src/services/calorieChat.js` | `CalorieCalculatorPage.jsx` (Gümüş+) |
 | **Fotoğraflı Kalori** | `api/ai-food-vision.js` | `src/services/aiVision.js` | `CalorieCalculatorPage.jsx` (Platinum) |
+| **AI Program (Basic/Eko)** | `api/ai-nutrition-tips.js` + `api/_aiEkoPrograms.js` | `memberHealthSync` / Stripe / cron `eko-renew` | Sağlık testi sonrası + Eko yenileme |
 | **Günlük Blog Makalesi** | `api/ai-blog-generate.js` | — (cron) | Vercel Cron → `posts` tablosu |
 | **Günün İpucu (Dashboard)** | `api/ai-blog-generate.js?task=daily-tip` | `src/services/dailyTip.js` → `useDailyTip` | Vercel Cron 04:00 + üye GET → `site_content` (`kind=daily_tip`) |
 | **Kalori Telegram** | `api/calorie-chat-notify.js` | `calorieChat.js` | Chat mesajı → Telegram |
@@ -1341,32 +1345,38 @@ eskisi gibi çalışır (foto analizi demo, beslenme kural tabanlı).
 ### Dosyalar
 
 ```
-api/_gemini.js          → Gemini API + model fallback (503/429 → sıradaki model)
-api/_ai-prompts.js      → Kalori + blog + günün ipucu promptları (Yeni Form marka bağlamı)
+api/_openai.js          → OpenAI Chat Completions (kalori gpt-4o + program gpt-4.1) + ai_usage_logs
+api/_aiEkoPrograms.js   → Basic/Eko program üretimi (OpenAI gpt-4.1)
+api/_aiBasicPrograms.js → Program doğrulama / payload
+api/_gemini.js          → Gemini API + model fallback (blog / tip)
+api/_ai-prompts.js      → Kalori + program + blog + günün ipucu promptları
 api/_blog-images.js     → Blog kapak görselleri (kategori → Unsplash URL)
-api/ai-food-vision.js   → Fotoğraf → kalori
-api/ai-food-text.js     → Metin → kalori
-api/ai-blog-generate.js → Günlük blog + günün ipucu (`?task=daily-tip`) → posts / site_content
+api/ai-food-vision.js   → Fotoğraf → kalori (gpt-4o)
+api/ai-food-text.js     → Metin → kalori (gpt-4o)
+api/ai-blog-generate.js → Günlük blog + günün ipucu + eko-renew cron
 api/_dailyTip.js          → Günün ipucu mantığı (ayrı serverless route değil — Hobby 12 limit)
 scripts/test-ai.mjs     → npm run test:ai
-(kaldirildi; blog kapaklari admin/API) → Mevcut yazılara coverImage ekler
-vercel.json             → crons: 04:00 `?task=daily-tip` · 05:00 blog → `/api/ai-blog-generate`
+vercel.json             → crons: daily-tip · blog · eko-renew
 ```
 
-> **Ek API anahtarı gerekmez.** Günün ipucu, blog ve kalori AI ile **aynı** `GEMINI_API_KEY` + `GEMINI_MODEL` + `api/_gemini.js` zincirini kullanır. Cron koruması için mevcut `CRON_SECRET` yeterlidir (blog ile paylaşımlı).
+> Blog / günün ipucu Gemini anahtarını kullanır. Kalori + Basic/Eko program OpenAI anahtarını kullanır (`OPENAI_API_KEY`). Cron koruması: `CRON_SECRET`.
 
 ### Ortam Değişkenleri (Vercel)
 
 | Değişken | Açıklama | VITE_ ön eki? |
 |----------|----------|:-------------:|
-| `GEMINI_API_KEY` | Gemini API anahtarı (GİZLİ) | ❌ Hayır |
+| `OPENAI_API_KEY` | OpenAI API anahtarı (kalori + program) | ❌ Hayır |
+| `OPENAI_MODEL` | Kalori modeli (varsayılan `gpt-4o`) | ❌ Hayır |
+| `OPENAI_PROGRAM_MODEL` | Basic/Eko program modeli (varsayılan `gpt-4.1`) | ❌ Hayır |
+| `GEMINI_API_KEY` | Gemini API anahtarı (blog/ipucu) | ❌ Hayır |
 | `GEMINI_MODEL` | Model (varsayılan `gemini-2.5-flash-lite`) | ❌ Hayır |
-| `CRON_SECRET` | Blog + günün ipucu cron koruması (Vercel otomatik Bearer) | ❌ Hayır |
+| `CRON_SECRET` | Blog + günün ipucu + eko-renew cron koruması | ❌ Hayır |
 | `VITE_AI_VISION_ENABLED` | Foto analizi (varsayılan açık; `false` ile kapat) | ✅ Evet |
 | `VITE_AI_CHAT_ENABLED` | Chat kalori analizi bayrağı | ✅ Evet |
 
 ### Davranış (2026-06-25 güncellemesi)
-- Kalori chat/foto **her zaman API'yi dener**; sunucuda `GEMINI_API_KEY` olmalı.
+- Kalori chat/foto **her zaman API'yi dener**; sunucuda `OPENAI_API_KEY` olmalı.
+- Basic/Eko program üretimi **OpenAI gpt-4.1** (`OPENAI_PROGRAM_MODEL`); maliyet `ai_usage_logs` endpoint `program-basic` / `program-eko` ile admin YZ Gider’e yansır.
 - `isCalorieAiEnabled()` / `isAiVisionEnabled()` → yalnızca `VITE_AI_*=false` ile kapatılır.
 - Blog cron: günde 1 yazı; aynı gün tekrar üretmez (`force=true` ile test).
 - Günün ipucu cron: günde 1 cümle; `site_content` cache; aynı gün tekrar üretmez (`force=true` ile test). **Yeni env yok** — blog ile aynı Gemini anahtarı.
@@ -3008,6 +3018,8 @@ Aşağıdaki tablolar bir yapay zekanın "X özelliği nerede?" sorusuna doğrud
 | `CRON_SECRET` | Blog cron + manuel tetikleme |
 | `VITE_AI_CHAT_ENABLED` | Chat kalori bayrağı |
 | `GEMINI_MODEL` | Önerilen: `gemini-2.5-flash-lite` |
+| `OPENAI_MODEL` | Kalori: `gpt-4o` |
+| `OPENAI_PROGRAM_MODEL` | Basic/Eko program: `gpt-4.1` |
 
 ### 38.7 Değiştirilen / eklenen dosyalar
 

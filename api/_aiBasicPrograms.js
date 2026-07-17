@@ -240,7 +240,7 @@ export function toCandidateRows(exercises = []) {
 }
 
 /**
- * Gemini çıktısını doğrula; kütüphaneden hydrate et; program data payload’ları üret.
+ * AI program JSON çıktısını doğrula; kütüphaneden hydrate et; program data payload’ları üret.
  */
 export function buildValidatedProgramPayloads({
   aiJson,

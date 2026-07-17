@@ -14,6 +14,8 @@ const ENDPOINT_LABELS = {
   'food-text-cache': 'Metin kalori (öğün cache)',
   'food-text-dictionary': 'Metin kalori (sözlük)',
   'food-vision': 'Fotoğraf kalori',
+  'program-basic': 'AI program (Basic)',
+  'program-eko': 'AI program (Eko)',
   'blog-generate': 'Blog üretimi',
   'daily-tip': 'Günün ipucu',
   'nutrition-tips': 'Beslenme ipucu',
