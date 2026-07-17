@@ -183,11 +183,13 @@ export function syncMemberPackages(member) {
 
   let membership = active.length ? primary : 'free'
   let membershipStatus = member.membershipStatus || 'active'
+  const adminHeld = membershipStatus === 'paused' || membershipStatus === 'cancelled'
+  const wasPaid = isPaidMembership(member.membership)
 
-  if (!active.length && isPaidMembership(member.membership)) {
+  if (!active.length && wasPaid) {
     membership = 'free'
-    membershipStatus = 'active'
-  } else if (latestExpiry) {
+    if (!adminHeld) membershipStatus = 'active'
+  } else if (latestExpiry && !adminHeld) {
     const remaining = Math.ceil((new Date(latestExpiry) - new Date(now)) / (1000 * 60 * 60 * 24))
     if (remaining <= 0) {
       membership = active.length ? primary : 'free'
@@ -196,6 +198,17 @@ export function syncMemberPackages(member) {
     } else if (membershipStatus === 'expiring') {
       membershipStatus = 'active'
     }
+  } else if (adminHeld) {
+    membershipStatus = member.membershipStatus
+  }
+
+  // Ücretli geçmişi olan üyede eski 48s deneme kilidi kalmasın
+  let freeTrialExpiresAt = member.freeTrialExpiresAt ?? null
+  const hadPaidHistory = wasPaid
+    || Boolean(member.premiumStartedAt)
+    || packages.some((p) => isPaidMembership(p.planId))
+  if (membership === 'free' && hadPaidHistory && !active.length) {
+    freeTrialExpiresAt = null
   }
 
   const synced = {
@@ -206,8 +219,21 @@ export function syncMemberPackages(member) {
     membershipStatus,
     premiumExpiresAt: latestExpiry ?? (active.length ? member.premiumExpiresAt : null),
     premiumStartedAt: member.premiumStartedAt || packages[0]?.startedAt || null,
+    freeTrialExpiresAt,
   }
   return sanitizeStaffForPackage(merged, synced)
+}
+
+export function memberExpirySyncNeedsPersist(before, after) {
+  if (!before || !after) return false
+  if (before.membership !== after.membership) return true
+  if (before.membershipStatus !== after.membershipStatus) return true
+  if (before.assignedCoachId !== after.assignedCoachId) return true
+  if (before.assignedDietitianId !== after.assignedDietitianId) return true
+  if (before.assignedDoctorId !== after.assignedDoctorId) return true
+  if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
+  if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
+  return false
 }
 
 export function packageIncludesDoctor(pkg = {}) {
@@ -237,8 +263,26 @@ export function sanitizeStaffForPackage(packageConfig, data = {}) {
     assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
     assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
     assignedDoctorId: includeDoctor ? (data.assignedDoctorId ?? null) : null,
-    coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
-    dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
-    doctorSessions: includeDoctor ? (data.doctorSessions ?? []) : [],
+    coachSessions: sanitizeSessionsForRole(data.coachSessions, includeCoach),
+    dietitianSessions: sanitizeSessionsForRole(data.dietitianSessions, includeDiet),
+    doctorSessions: sanitizeSessionsForRole(data.doctorSessions, includeDoctor),
   }
+}
+
+export function sanitizeSessionsForRole(sessions = [], keepRole) {
+  if (keepRole) return Array.isArray(sessions) ? sessions : []
+  const now = Date.now()
+  return (Array.isArray(sessions) ? sessions : []).map((s) => {
+    if (!s || typeof s !== 'object') return s
+    const status = s.status || 'scheduled'
+    if (status === 'completed' || status === 'cancelled') return s
+    const t = new Date(s.date || s.start || 0).getTime()
+    if (!t || Number.isNaN(t) || t < now) return s
+    return {
+      ...s,
+      status: 'cancelled',
+      cancelledReason: s.cancelledReason || 'package_ended',
+      cancelledAt: s.cancelledAt || new Date().toISOString(),
+    }
+  })
 }

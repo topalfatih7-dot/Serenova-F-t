@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 const root = process.cwd()
 
@@ -64,7 +63,8 @@ function localApiPlugin() {
         }
 
         try {
-          const mod = await import(`${pathToFileURL(handlerPath).href}?t=${Date.now()}`)
+          // Vite SSR loader — native import()+query cache-bust named export hatalarına yol açabiliyor
+          const mod = await server.ssrLoadModule(handlerPath)
           const handler = mod.default
           if (typeof handler !== 'function') throw new Error('Handler bulunamadı')
 
@@ -96,6 +96,7 @@ function localApiPlugin() {
 
           await handler(vercelReq, vercelRes)
         } catch (e) {
+          console.error('[local-api]', apiPath, e)
           res.statusCode = 500
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ ok: false, error: String(e.message || e) }))

@@ -151,7 +151,7 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
   )
 }
 
-function EditPremiumModal({ member, staff, members, onClose, onSave, onStatusChange, busy }) {
+function EditPremiumModal({ member, staff, members, programs = [], onClose, onSave, onStatusChange, busy }) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
   const doctors = staff.filter((s) => s.role === 'doctor' && s.active !== false)
@@ -202,6 +202,9 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, onStatusCha
   const dietitianName = dietitians.find((s) => s.id === dietitianId)?.name || ''
   const doctorName = doctors.find((s) => s.id === doctorId)?.name || ''
   const planChanged = membership !== member.membership
+  const hasEkoAiPrograms = (programs || []).some(
+    (p) => p.memberId === member.id && p.source === 'ai_eko',
+  )
 
   const submit = () => {
     const payload = {
@@ -213,7 +216,10 @@ function EditPremiumModal({ member, staff, members, onClose, onSave, onStatusCha
       doctorSessions: showDoctor ? doctorSessions : [],
     }
 
-    if (planChanged || addPackage) {
+    // Eko seçili + AI program yoksa tekrar tetikle (önceki sessiz hata sonrası kurtarma)
+    const needEkoAi = membership === 'eko' && (planChanged || !hasEkoAiPrograms)
+
+    if (planChanged || addPackage || needEkoAi) {
       payload.membership = membership
       payload.durationMonths = durationMonths
       if (addPackage) payload.addPackage = true
@@ -451,6 +457,7 @@ export default function AdminPremiumPage() {
   const [busy, setBusy] = useState(false)
 
   const staff = platform.staff || EMPTY_LIST
+  const programs = platform.programs || EMPTY_LIST
   const members = useMemo(() => platform.members ?? EMPTY_LIST, [platform.members])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || 'Atanmadı'
 
@@ -502,6 +509,17 @@ export default function AdminPremiumPage() {
       const r = await adminUpdatePremium(selected.id, options)
       if (r.success) {
         toast('Premium ayarları kaydedildi', 'success')
+        if (options?.membership === 'eko') {
+          if (r.aiSync?.synced) {
+            toast('Eko AI diyet (15g) ve antrenman (30g) programları oluşturuldu', 'success')
+          } else if (r.aiSync && !r.aiSync.ok) {
+            toast(r.aiSync.error || 'Eko AI programları oluşturulamadı', 'error')
+          } else if (r.aiSync?.skipped) {
+            toast(r.aiSync.error || 'Eko AI program üretimi atlandı', 'error')
+          } else if (!r.aiSync) {
+            toast('Eko AI program tetiklenemedi — tekrar kaydedin', 'error')
+          }
+        }
         setSelected(null)
       } else {
         toast(r.error || 'Kaydedilemedi', 'error')
@@ -600,6 +618,7 @@ export default function AdminPremiumPage() {
         member={selected}
         staff={staff}
         members={members}
+        programs={programs}
         onClose={() => setSelected(null)}
         onSave={handleSave}
         onStatusChange={handleStatusChange}

@@ -45,21 +45,28 @@ export default function HealthTestSectionPage() {
       if (allSectionsDone) {
         toast(`${section.title} tamamlandı. Tüm testler kaydedildi.`, 'success')
 
-        if (user.membership === 'free') {
+        if (user.membership === 'free' || user.membership === 'eko') {
           const profile = { ...user, healthTest }
-          const sync = await syncMemberHealthAssets(profile, { programs: myPrograms })
+          const sync = await syncMemberHealthAssets(profile, {
+            programs: myPrograms,
+            force: user.membership === 'eko' && !myPrograms?.some((p) => p.source === 'ai_eko'),
+          })
           if (sync.synced) {
             try { await refresh?.() } catch { /* ignore */ }
-            toast('14 günlük antrenman ve beslenme programınız hazır. Takvimden takip edebilirsiniz.', 'success')
+            const msg = user.membership === 'eko'
+              ? 'Eko paket antrenman (30 gün) ve beslenme (15 gün) programınız hazır.'
+              : 'Deneme süreniz boyunca geçerli antrenman ve beslenme programınız hazır.'
+            toast(msg, 'success')
             navigate('/programs')
             return
           }
           if (sync.skipped === 'window_closed') {
-            toast('Kayıt tarihinden itibaren 14 günlük program penceresi dolmuş; otomatik program oluşturulamadı.', 'error')
+            toast('Ücretsiz deneme süreniz dolmuş; otomatik program oluşturulamadı.', 'error')
+          } else if (sync.skipped === 'package_expired') {
+            toast('Eko paket süreniz dolmuş; otomatik program oluşturulamadı.', 'error')
           } else if (sync.reason === 'ai_error') {
             toast(sync.error || 'Otomatik program şu an oluşturulamadı. Daha sonra tekrar deneyebilirsiniz.', 'error')
           }
-          // already_exists / not_free / incomplete → sessiz
         }
 
         navigate('/health-test')

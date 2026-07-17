@@ -192,8 +192,9 @@ export function syncMemberPackages(member) {
   let membership = active.length ? primary : 'free'
   let membershipStatus = member.membershipStatus || 'active'
   const adminHeld = membershipStatus === 'paused' || membershipStatus === 'cancelled'
+  const wasPaid = isPaidMembership(member.membership)
 
-  if (!active.length && isPaidMembership(member.membership)) {
+  if (!active.length && wasPaid) {
     membership = 'free'
     if (!adminHeld) membershipStatus = 'active'
   } else if (latestExpiry && !adminHeld) {
@@ -209,6 +210,16 @@ export function syncMemberPackages(member) {
     membershipStatus = member.membershipStatus
   }
 
+  // Ücretli geçmişi olan üyede eski 48s deneme kilidi kalmasın
+  // (DB membership zaten free olsa bile premiumStartedAt / paket geçmişi yeter)
+  let freeTrialExpiresAt = member.freeTrialExpiresAt ?? null
+  const hadPaidHistory = wasPaid
+    || Boolean(member.premiumStartedAt)
+    || packages.some((p) => isPaidMembership(p.planId))
+  if (membership === 'free' && hadPaidHistory && !active.length) {
+    freeTrialExpiresAt = null
+  }
+
   const synced = {
     ...member,
     activePackages: packages,
@@ -217,6 +228,7 @@ export function syncMemberPackages(member) {
     membershipStatus,
     premiumExpiresAt: latestExpiry ?? (active.length ? member.premiumExpiresAt : null),
     premiumStartedAt: member.premiumStartedAt || packages[0]?.startedAt || null,
+    freeTrialExpiresAt,
   }
   return sanitizeStaffForPackage(merged, synced)
 }
@@ -229,6 +241,12 @@ export function memberExpirySyncNeedsPersist(before, after) {
   if (before.assignedCoachId !== after.assignedCoachId) return true
   if (before.assignedDietitianId !== after.assignedDietitianId) return true
   if (before.assignedDoctorId !== after.assignedDoctorId) return true
+  if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
+  if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
+  // Gelecek seans iptalleri (paket bitişi) de yazılsın
+  for (const key of ['coachSessions', 'dietitianSessions', 'doctorSessions']) {
+    if (JSON.stringify(before[key] || []) !== JSON.stringify(after[key] || [])) return true
+  }
   return false
 }
 

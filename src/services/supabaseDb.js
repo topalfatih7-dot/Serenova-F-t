@@ -1930,6 +1930,11 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   draft = syncMemberPackages(draft)
 
+  // Ücretli pakete geçince eski Basic deneme kilidini kaldır
+  if (isPaidMembership(draft.membership)) {
+    draft.freeTrialExpiresAt = null
+  }
+
   if (options.membership && options.membership !== prevMembership) {
     draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   }

@@ -105,7 +105,7 @@ export const NUTRITION_CONFIG = {
 // ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
 export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
 ${BRAND_CONTEXT}
-Üyenin sağlık testi cevaplarına göre 14 günlük uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+Üyenin sağlık testi cevaplarına göre uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
 KURALLAR:
 - Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId olarak listedeki id’yi kullan.
 - Kütüphane dışı hareket UYDURMA.
@@ -119,6 +119,7 @@ export function buildBasicProgramInstruction({
   healthTestSummary = '',
   dailyCalories = null,
   candidates = [],
+  cycleLength = 2,
 }) {
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
   const candidateLines = candidates
@@ -134,6 +135,7 @@ export function buildBasicProgramInstruction({
 - Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
 - Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
 - Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
+- Program süresi: ${cycleLength} gün (ücretsiz deneme bitişine kadar)
 
 SAĞLIK TESTİ ÖZETİ:
 ${healthTestSummary || '—'}
@@ -173,6 +175,95 @@ SADECE şu JSON şemasında yanıt ver:
 export const BASIC_PROGRAM_CONFIG = {
   temperature: 0.35,
   maxOutputTokens: 2500,
+  responseMimeType: 'application/json',
+}
+
+// ─── Eko paket: 15g diyet + 30g antrenman ────────────────────────────
+export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen AI asistanısın.
+${BRAND_CONTEXT}
+Eko paket üyesi için uygulanabilir antrenman ve/veya beslenme listesi hazırla.
+KURALLAR:
+- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
+- Kütüphane dışı hareket UYDURMA.
+- Sağlık kısıtlarına göre konservatif seç.
+- Beslenme: Türk mutfağı; önceki diyet listesi varsa çeşitlendir ama süreklilik koru.
+- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
+
+export function buildEkoProgramInstruction({
+  profile,
+  healthTestSummary = '',
+  dailyCalories = null,
+  candidates = [],
+  dietDays = 15,
+  workoutDays = 30,
+  buildNutrition = true,
+  buildWorkout = true,
+  previousDietSummary = '',
+}) {
+  const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
+  const candidateLines = candidates
+    .slice(0, 60)
+    .map((c) => `- ${c.id} | ${c.name} | ${c.bodyPart || '—'} | ${c.difficulty || 'beginner'} | ${c.equipment || '—'} | ${c.targetMuscle || '—'}`)
+    .join('\n')
+
+  const parts = []
+  if (buildWorkout) {
+    parts.push(`ANTRENMAN (${workoutDays} gün): 5–8 kütüphane hareketi seç.`)
+  }
+  if (buildNutrition) {
+    parts.push(`BESLENME (${dietDays} gün): kahvaltı/ara/öğle/ara/akşam/gece ara; kalori hedefine uyumlu.`)
+    if (previousDietSummary) {
+      parts.push(`ÖNCEKİ DİYET LİSTESİ (çeşitlendir, tamamen kopyalama):\n${previousDietSummary}`)
+    }
+  }
+
+  return `ÜYE PROFİLİ:
+- Ad: ${profile.name || '—'}
+- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
+- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
+- Hedefler: ${(profile.goals || []).join(', ') || '—'}
+- Beslenme tercihleri: ${(profile.nutritionPrefs || []).join(', ') || '—'}
+- Fitness seviyesi: ${profile.fitnessLevel || 'beginner'}
+- Günlük kalori hedefi: ${cal ? `${cal} kcal (${dailyCalories?.goal || ''})` : 'hesaplanamadı'}
+
+SAĞLIK TESTİ ÖZETİ:
+${healthTestSummary || '—'}
+
+HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
+${candidateLines || '(liste boş)'}
+
+GÖREV:
+${parts.join('\n')}
+
+SADECE şu JSON şemasında yanıt ver (üretmeyeceğin bölümü boş obje veya null bırakma; ilgili alanları doldur):
+{
+  "workout": ${buildWorkout ? `{
+    "title": "kısa program başlığı",
+    "description": "1-2 cümle",
+    "sessionDuration": 35,
+    "sessionStart": "09:00",
+    "exercises": [
+      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "" }
+    ]
+  }` : 'null'},
+  "nutrition": ${buildNutrition ? `{
+    "title": "kısa liste başlığı",
+    "description": "1 cümle + kalori",
+    "meals": [
+      { "mealType": "breakfast", "name": "öğün içeriği", "start": "08:00", "note": "" },
+      { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
+      { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
+      { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
+      { "mealType": "dinner", "name": "...", "start": "19:00", "note": "" },
+      { "mealType": "snack_evening", "name": "...", "start": "21:30", "note": "" }
+    ]
+  }` : 'null'}
+}`
+}
+
+export const EKO_PROGRAM_CONFIG = {
+  temperature: 0.35,
+  maxOutputTokens: 2800,
   responseMimeType: 'application/json',
 }
 

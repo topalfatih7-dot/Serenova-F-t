@@ -10,6 +10,10 @@
     {
       "path": "/api/ai-blog-generate",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/ai-blog-generate?task=eko-renew",
+      "schedule": "0 6 * * *"
     }
   ],
   "rewrites": [

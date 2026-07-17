@@ -4,6 +4,7 @@
  * ?task=blog (varsayılan) — günlük blog makalesi (CRON_SECRET, cron 05:00)
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
+ * ?task=eko-renew — süre dolumu (free + ai_eko temizliği) + Eko AI dilim yenileme (CRON_SECRET, cron 06:00)
  */
 
 import {
@@ -119,7 +120,42 @@ export default async function handler(req, res) {
   if (task === 'supabase-health' || task === 'supabase_health' || task === 'health') {
     return handleSupabaseHealth(req, res)
   }
+  if (task === 'eko-renew' || task === 'eko_renew' || task === 'eko-programs') {
+    return handleEkoRenew(req, res)
+  }
   return handleBlogGenerate(req, res)
+}
+
+async function handleEkoRenew(req, res) {
+  setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
+  if (handleOptions(req, res)) return
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Yalnızca GET/POST desteklenir' })
+  }
+
+  const cronGuard = requireCronSecret(req)
+  if (!cronGuard.ok) {
+    return res.status(cronGuard.status).json({ ok: false, error: cronGuard.error })
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
+  }
+
+  try {
+    const { runEkoRenewBatch, runMembershipExpiryBatch } = await import('./_aiEkoPrograms.js')
+    const admin = getSupabaseAdmin()
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+    const limit = Math.min(20, Math.max(1, Number(body.limit || req.query?.limit) || 8))
+    const expiryLimit = Math.min(60, Math.max(1, Number(body.expiryLimit || req.query?.expiryLimit) || 40))
+    // Önce süresi dolan paketleri free'ye indir + ai_eko temizle
+    const expiry = await runMembershipExpiryBatch(admin, { limit: expiryLimit })
+    const renew = await runEkoRenewBatch(admin, { limit })
+    return res.status(200).json({ ok: true, expiry, renew })
+  } catch (e) {
+    console.error('[eko-renew]', e)
+    return res.status(500).json({ ok: false, error: e.message || 'Eko yenileme hatası' })
+  }
 }
 
 async function handleBlogGenerate(req, res) {

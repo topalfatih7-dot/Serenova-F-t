@@ -85,6 +85,54 @@ export function isStaffProgramVisibleOnDate(program, date, member) {
   return isDateInPackageWindows(date, windows)
 }
 
+/**
+ * AI programlar paket/deneme hakkına bağlıdır (staffId yok → personel kapısından geçmez).
+ * ai_eko → yalnızca aktif eko; ai_basic → free + deneme penceresi (varsa).
+ */
+export function isAiProgramVisibleOnDate(program, date, member) {
+  if (!member) return true
+  const source = program?.source
+  if (source !== 'ai_eko' && source !== 'ai_basic') return true
+
+  const d = toDateStr(date)
+  if (!d) return false
+
+  if (source === 'ai_eko') {
+    if (member.membership !== 'eko') return false
+    const end = toDateStr(member.premiumExpiresAt)
+    if (end && d > end) return false
+    return true
+  }
+
+  // ai_basic
+  if (member.membership !== 'free') return false
+  const trialEnd = toDateStr(member.freeTrialExpiresAt)
+  if (trialEnd && d > trialEnd) return false
+  return true
+}
+
+/** Takvim / ilerleme: personel + AI paket kapsamı */
+export function isProgramVisibleOnDate(program, date, member) {
+  if (!program) return false
+  if (!member) return true
+  if (program.source === 'ai_eko' || program.source === 'ai_basic') {
+    return isAiProgramVisibleOnDate(program, date, member)
+  }
+  return isStaffProgramVisibleOnDate(program, date, member)
+}
+
+/** Program listesi: üyenin şu an görme hakkı var mı? */
+export function isProgramListedForMember(program, member) {
+  if (!program || !member) return Boolean(program)
+  if (program.source === 'ai_eko') return member.membership === 'eko'
+  if (program.source === 'ai_basic') {
+    if (member.membership !== 'free') return false
+    if (!member.freeTrialExpiresAt) return true
+    return new Date() <= new Date(member.freeTrialExpiresAt)
+  }
+  return true
+}
+
 /** Program oluşturma UI — min/max tarih */
 export function getMemberPackageDateRange(member, programType) {
   const windows = getPackageWindowsForProgramType(member, programType)

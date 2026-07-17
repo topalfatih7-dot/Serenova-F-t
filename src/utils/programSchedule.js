@@ -1,5 +1,5 @@
 import { format, getDay, parseISO, isValid, differenceInCalendarDays, startOfDay } from 'date-fns'
-import { isStaffProgramVisibleOnDate } from './programPackageScope'
+import { isProgramVisibleOnDate } from './programPackageScope'
 import { isWorkoutAllowedOnDate } from './memberAvailability'
 
 export const CYCLE_PLAN_LENGTH = 14
@@ -143,7 +143,7 @@ export function getProgramEntriesForDate(programs, date, member = null) {
   const result = []
   ;(programs || []).forEach((prog) => {
     if (!prog.entries?.length) return
-    if (member && !isStaffProgramVisibleOnDate(prog, date, member)) return
+    if (member && !isProgramVisibleOnDate(prog, date, member)) return
     const programType = prog.type || (prog.entries.some((e) => e.mealType) ? 'nutrition' : 'workout')
     if (
       member

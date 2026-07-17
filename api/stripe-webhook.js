@@ -250,6 +250,26 @@ async function activateMembership(admin, meta, session) {
     },
   })
 
+  // Eko: mevcut sağlık testi ile AI program üret (fire-and-forget)
+  if (planId === 'eko') {
+    try {
+      const { generateEkoProgramsInitial } = await import('./_aiEkoPrograms.js')
+      const { data: fresh } = await admin
+        .from('members')
+        .select('id, name, membership, data')
+        .eq('id', memberId)
+        .maybeSingle()
+      if (fresh?.data?.healthTest && typeof fresh.data.healthTest === 'object') {
+        const aiResult = await generateEkoProgramsInitial(admin, fresh)
+        if (!aiResult.ok && !aiResult.skipped) {
+          console.warn('[stripe-webhook] eko AI programs', aiResult.error)
+        }
+      }
+    } catch (e) {
+      console.warn('[stripe-webhook] eko AI programs', e?.message || e)
+    }
+  }
+
   return { ok: true }
 }
 

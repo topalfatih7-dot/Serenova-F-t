@@ -154,14 +154,14 @@ export const FREE_PLAN = {
     { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Video Kütüphanesi (Temel)', included: true },
     { text: 'Program Takibi', included: true },
-    { text: 'Otomatik Beslenme Programı', included: true },
-    { text: 'Otomatik Antrenman Programı', included: true },
+    { text: 'Otomatik Beslenme Programı (deneme süresi)', included: true },
+    { text: 'Otomatik Antrenman Programı (deneme süresi)', included: true },
     { text: 'Birebir Koç Görüşmesi', included: false },
     { text: 'Diyetisyen Randevusu', included: false },
     { text: 'Manuel Kalori Hesaplama', included: false },
     { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Sağlık analizi', 'Temel video erişimi', 'Standart destek'],
+  limits: ['48 saat deneme', 'Deneme süresi programları', 'Temel video erişimi', 'Standart destek'],
 }
 
 export const EKO_PLAN = {
@@ -173,8 +173,8 @@ export const EKO_PLAN = {
   pricingTiers: buildPricingTiers('eko'),
   features: [
     { text: 'Manuel Kalori Hesaplama', included: true },
-    { text: 'Diyet Programı Ayda 2 Kere', included: true },
-    { text: 'Spor Programı Ayda 1 Kere', included: true },
+    { text: 'Diyet Programı (15 günde bir, paket boyunca)', included: true },
+    { text: 'Spor Programı (30 günde bir, paket boyunca)', included: true },
     { text: 'Video Kütüphanesi (Sınırlı)', included: true },
     { text: 'İlerleme Raporları', included: true },
     { text: 'Takip Programı', included: true },
@@ -182,7 +182,7 @@ export const EKO_PLAN = {
     { text: 'Diyetisyen Randevusu', included: false },
     { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Sınırlı video erişimi', 'Program güncellemeleri', 'Standart destek'],
+  limits: ['Sınırlı video erişimi', 'AI program yenilemeleri', 'Standart destek'],
 }
 
 export const DIYET_PLAN = {
@@ -387,7 +387,7 @@ export function memberNeedsStaffAssignment(member) {
   return needsCoach || needsDiet || needsDoctor
 }
 
-/** Paket kapsamı dışındaki atama ve randevuları temizler (plan değişiminde) */
+/** Paket kapsamı dışındaki atamaları temizler; seans geçmişini korur (gelecek randevuları iptal eder). */
 export function sanitizeStaffForPackage(packageConfig, data = {}) {
   const includeCoach = packageIncludesCoach(packageConfig)
   const includeDiet = packageIncludesDietitian(packageConfig)
@@ -397,8 +397,27 @@ export function sanitizeStaffForPackage(packageConfig, data = {}) {
     assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
     assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
     assignedDoctorId: includeDoctor ? (data.assignedDoctorId ?? null) : null,
-    coachSessions: includeCoach ? (data.coachSessions ?? []) : [],
-    dietitianSessions: includeDiet ? (data.dietitianSessions ?? []) : [],
-    doctorSessions: includeDoctor ? (data.doctorSessions ?? []) : [],
+    coachSessions: sanitizeSessionsForRole(data.coachSessions, includeCoach),
+    dietitianSessions: sanitizeSessionsForRole(data.dietitianSessions, includeDiet),
+    doctorSessions: sanitizeSessionsForRole(data.doctorSessions, includeDoctor),
   }
+}
+
+/** Rol kaybında geçmiş seanslar kalır; gelecekteki scheduled/rescheduled iptal edilir. */
+export function sanitizeSessionsForRole(sessions = [], keepRole) {
+  if (keepRole) return Array.isArray(sessions) ? sessions : []
+  const now = Date.now()
+  return (Array.isArray(sessions) ? sessions : []).map((s) => {
+    if (!s || typeof s !== 'object') return s
+    const status = s.status || 'scheduled'
+    if (status === 'completed' || status === 'cancelled') return s
+    const t = new Date(s.date || s.start || 0).getTime()
+    if (!t || Number.isNaN(t) || t < now) return s
+    return {
+      ...s,
+      status: 'cancelled',
+      cancelledReason: s.cancelledReason || 'package_ended',
+      cancelledAt: s.cancelledAt || new Date().toISOString(),
+    }
+  })
 }

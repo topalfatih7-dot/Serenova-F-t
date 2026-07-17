@@ -19,6 +19,7 @@ import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { clearIncomingChatSoundState } from '../hooks/useIncomingChatSound'
 import { clearNotificationAlertState } from '../hooks/useNotificationAlerts'
 import { completionKey, mealCompletionKey } from '../utils/programSchedule'
+import { isProgramListedForMember } from '../utils/programPackageScope'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
 import { registerActiveSession, verifyActiveSessionOrSignOut } from '../services/singleSession'
@@ -779,7 +780,18 @@ export function AppProvider({ children }) {
   const changePlan = useCallback(async (planId, planPrice = 0, durationMonths = 1) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
     const r = await sb.changeMemberPlan(currentMember, planId, planPrice, durationMonths)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      await reloadRemote()
+      if (planId === 'eko' && r.member) {
+        try {
+          const { syncEkoProgramsIfNeeded } = await import('../services/memberHealthSync')
+          await syncEkoProgramsIfNeeded(r.member, { force: true })
+          await reloadRemote()
+        } catch (e) {
+          console.warn('[changePlan] eko AI sync', e)
+        }
+      }
+    }
     return r
   }, [currentMember, reloadRemote])
 
@@ -824,8 +836,21 @@ export function AppProvider({ children }) {
 
   const adminUpdatePremium = useCallback(async (memberId, options) => {
     const r = await sb.adminUpdatePremiumMembership(memberId, options)
-    if (r.success) await reloadRemote()
-    return r
+    if (!r.success) return r
+
+    await reloadRemote()
+
+    // Eko'ya geçiş veya admin Eko paket kaydı → AI diyet/antrenman üret
+    const toEko = (options?.membership === 'eko' || options?.planId === 'eko')
+      && r.member?.membership === 'eko'
+    if (!toEko || !memberId) return r
+
+    const { fetchAiEkoProgramsAdmin } = await import('../services/aiBasicPrograms')
+    const aiSync = await fetchAiEkoProgramsAdmin(memberId, { force: true })
+    if (aiSync.synced || aiSync.ok) {
+      try { await reloadRemote() } catch { /* ignore */ }
+    }
+    return { ...r, aiSync }
   }, [reloadRemote])
 
   const adminSetMembershipStatus = useCallback(async (memberId, options) => {
@@ -1172,8 +1197,11 @@ export function AppProvider({ children }) {
   const myPrograms = useMemo(() => {
     const memberId = currentMember?.id
     if (!memberId) return []
-    return (db.programs || []).filter((p) => p.memberId === memberId)
-  }, [currentMember?.id, db.programs])
+    return (db.programs || []).filter((p) => {
+      if (p.memberId !== memberId) return false
+      return isProgramListedForMember(p, currentMember)
+    })
+  }, [currentMember, db.programs])
 
   const myTickets = useMemo(() => {
     const memberId = currentMember?.id
@@ -1190,6 +1218,8 @@ export function AppProvider({ children }) {
     payments: db.payments,
   }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
 
+  // Yalnızca gerçek Basic denemesi: free + freeTrialExpiresAt geçmiş.
+  // Ücretli paket bitince freeTrialExpiresAt temizlenir → bu duvar açılmaz.
   const isFreeTrialExpired = useMemo(
     () => Boolean(
       currentMember?.membership === 'free'

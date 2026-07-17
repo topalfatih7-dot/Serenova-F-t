@@ -1,40 +1,22 @@
 /**
  * Üye AI uçları (Vercel Hobby 12-fn limiti — tek route):
- * - POST task=nutrition-tips (default) → beslenme ipuçları
- * - POST task=basic-programs → Basic paket AI diyet + antrenman
+ * - POST task=nutrition-tips (default)
+ * - POST task=basic-programs → Basic deneme süresi programları
+ * - POST task=eko-programs → Eko 15g diyet + 30g antrenman
  */
-
-export const config = {
-  maxDuration: 60,
-}
 
 import {
   NUTRITION_SYSTEM,
   buildNutritionInstruction,
   NUTRITION_CONFIG,
-  BASIC_PROGRAM_SYSTEM,
-  buildBasicProgramInstruction,
-  BASIC_PROGRAM_CONFIG,
 } from './_ai-prompts.js'
-import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
+import { setCorsHeaders, handleOptions, requireAuth, requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
-import {
-  AI_BASIC_SOURCE,
-  appendProgramNotifications,
-  buildHealthTestSummary,
-  buildValidatedProgramPayloads,
-  enrichProfileBasics,
-  estimateDailyCalories,
-  isBasicProgramWindowOpen,
-  programInsertRow,
-  toCandidateRows,
-  toDateStr,
-} from './_aiBasicPrograms.js'
+import { AI_BASIC_SOURCE, AI_EKO_SOURCE } from './_aiBasicPrograms.js'
+import { callGemini, parseJsonResponse, isGeminiConfigured } from './_gemini.js'
 
-async function loadGemini() {
-  const href = new URL('./_gemini.js', import.meta.url).href
-  const url = process.env.NODE_ENV === 'production' ? href : `${href}?t=${Date.now()}`
-  return import(url)
+export const config = {
+  maxDuration: 60,
 }
 
 function filterTips(tips) {
@@ -45,12 +27,12 @@ function filterTips(tips) {
     .slice(0, 6)
 }
 
-function rowToProgram(row) {
-  return { ...(row.data || {}), id: row.id, memberId: row.member_id, staffId: row.staff_id }
+function hasHealthTest(data) {
+  const ht = data?.healthTest
+  return ht && typeof ht === 'object' && Object.keys(ht).length > 0
 }
 
 async function handleNutritionTips(req, res, auth) {
-  const { callGemini, parseJsonResponse, isGeminiConfigured } = await loadGemini()
   if (!isGeminiConfigured()) {
     return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)' })
   }
@@ -77,87 +59,42 @@ async function handleNutritionTips(req, res, auth) {
   })
 }
 
-async function loadExerciseCandidates(admin) {
-  // Tercihen video hazır, beginner, makinesiz
-  let { data, error } = await admin
-    .from('exercises')
-    .select('id, name, description, body_part, category, difficulty, equipment, target_muscle, locations, video_url, video_pending, requires_machine, metadata')
-    .eq('video_pending', false)
-    .eq('requires_machine', false)
-    .eq('difficulty', 'beginner')
-    .neq('metadata->>importStatus', 'deferred')
-    .order('name', { ascending: true })
-    .limit(50)
-
-  if (error || !data?.length) {
-    const fallback = await admin
-      .from('exercises')
-      .select('id, name, description, body_part, category, difficulty, equipment, target_muscle, locations, video_url, video_pending, requires_machine, metadata')
-      .eq('video_pending', false)
-      .neq('metadata->>importStatus', 'deferred')
-      .order('name', { ascending: true })
-      .limit(50)
-    data = fallback.data || []
-    error = fallback.error
-  }
-
-  if (error) throw new Error(error.message || 'Egzersiz kütüphanesi okunamadı')
-  if (!data?.length) throw new Error('Hareket kütüphanesi boş')
-  return data
-}
-
 async function handleBasicPrograms(req, res, auth) {
   if (!isSupabaseAdminConfigured()) {
     return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
   }
 
-  const { callGemini, parseJsonResponse, isGeminiConfigured } = await loadGemini()
-  if (!isGeminiConfigured()) {
-    return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)' })
-  }
-
   const admin = getSupabaseAdmin()
-  const memberId = auth.user.id
-
   const { data: memberRow, error: memberErr } = await admin
     .from('members')
     .select('id, name, membership, data, created_at')
-    .eq('id', memberId)
+    .eq('id', auth.user.id)
     .maybeSingle()
 
   if (memberErr || !memberRow) {
     return res.status(404).json({ ok: false, error: 'Üye bulunamadı' })
   }
-
   if (memberRow.membership !== 'free') {
     return res.status(403).json({
       ok: false,
       skipped: 'not_free',
-      error: 'AI program üretimi yalnızca Basic (ücretsiz) paket içindir',
+      error: 'AI Basic programları yalnızca ücretsiz paket içindir',
     })
   }
-
-  const memberData = memberRow.data || {}
-  const joinedAt = toDateStr(memberData.joinedAt) || toDateStr(memberRow.created_at)
-  if (!isBasicProgramWindowOpen(joinedAt)) {
+  if (!hasHealthTest(memberRow.data)) {
     return res.status(200).json({
       ok: true,
       synced: false,
-      skipped: 'window_closed',
-      error: 'Kayıt tarihinden itibaren 14 günlük program penceresi dolmuş',
+      skipped: 'no_health_test',
+      error: 'Sağlık testi tamamlanmalı',
     })
   }
 
-  const { data: existingPrograms, error: progErr } = await admin
+  const { data: existing } = await admin
     .from('programs')
     .select('id, data')
-    .eq('member_id', memberId)
-
-  if (progErr) {
-    return res.status(500).json({ ok: false, error: progErr.message || 'Programlar okunamadı' })
-  }
-
-  const hasAiBasic = (existingPrograms || []).some((p) => p.data?.source === AI_BASIC_SOURCE)
+    .eq('member_id', memberRow.id)
+  const hasAiBasic = (existing || []).some((p) => p.data?.source === AI_BASIC_SOURCE)
   if (hasAiBasic) {
     return res.status(200).json({
       ok: true,
@@ -167,79 +104,121 @@ async function handleBasicPrograms(req, res, auth) {
     })
   }
 
-  const exercises = await loadExerciseCandidates(admin)
-  const candidates = toCandidateRows(exercises)
-  const candidateIds = new Set(candidates.map((c) => c.id))
-  const exercisesById = Object.fromEntries(exercises.map((ex) => [ex.id, ex]))
+  const { generateBasicPrograms } = await import('./_aiEkoPrograms.js')
+  const result = await generateBasicPrograms(admin, memberRow)
+  if (result.status) {
+    return res.status(result.status).json(result)
+  }
+  return res.status(200).json(result)
+}
 
-  const profile = enrichProfileBasics({
-    ...memberData,
-    name: memberRow.name,
-    gender: memberData.gender,
-  })
-  const dailyCalories = estimateDailyCalories(profile)
-  const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
-
-  const instruction = buildBasicProgramInstruction({
-    profile,
-    healthTestSummary,
-    dailyCalories,
-    candidates,
-  })
-
-  const raw = await callGemini([{ text: instruction }], BASIC_PROGRAM_SYSTEM, BASIC_PROGRAM_CONFIG)
-  let aiJson
-  try {
-    aiJson = parseJsonResponse(raw)
-  } catch {
-    return res.status(502).json({ ok: false, error: 'AI program yanıtı ayrıştırılamadı' })
+async function handleEkoPrograms(req, res, auth) {
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
   }
 
-  let payloads
-  try {
-    payloads = buildValidatedProgramPayloads({
-      aiJson,
-      exercisesById,
-      candidateIds,
-      memberName: memberRow.name || profile.name || 'Üye',
-      cycleStartDate: joinedAt,
-      availability: memberData.availability || {},
-      dailyCalories,
+  const admin = getSupabaseAdmin()
+  const { data: memberRow, error: memberErr } = await admin
+    .from('members')
+    .select('id, name, membership, data')
+    .eq('id', auth.user.id)
+    .maybeSingle()
+
+  if (memberErr || !memberRow) {
+    return res.status(404).json({ ok: false, error: 'Üye bulunamadı' })
+  }
+  if (memberRow.membership !== 'eko') {
+    return res.status(403).json({
+      ok: false,
+      skipped: 'not_eko',
+      error: 'AI Eko programları yalnızca Eko paket içindir',
     })
-  } catch (e) {
-    return res.status(502).json({ ok: false, error: e.message || 'Program doğrulanamadı' })
+  }
+  if (!hasHealthTest(memberRow.data)) {
+    return res.status(200).json({
+      ok: true,
+      synced: false,
+      skipped: 'no_health_test',
+      error: 'Sağlık testi tamamlanmalı',
+    })
   }
 
-  const rows = [
-    programInsertRow(memberId, payloads.workoutPayload),
-    programInsertRow(memberId, payloads.nutritionPayload),
-  ]
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+  const force = body.force === true
 
-  const { data: inserted, error: insertErr } = await admin
-    .from('programs')
-    .insert(rows)
-    .select()
-
-  if (insertErr || !inserted?.length) {
-    console.error('[ai-basic-programs] insert', insertErr)
-    return res.status(500).json({ ok: false, error: insertErr?.message || 'Programlar kaydedilemedi' })
+  if (!force) {
+    const { data: existing } = await admin
+      .from('programs')
+      .select('id, data')
+      .eq('member_id', memberRow.id)
+    const hasEko = (existing || []).some((p) => p.data?.source === AI_EKO_SOURCE)
+    if (hasEko) {
+      return res.status(200).json({
+        ok: true,
+        synced: false,
+        skipped: 'already_exists',
+        error: 'AI Eko programları zaten oluşturulmuş',
+      })
+    }
   }
 
-  const programs = inserted.map(rowToProgram)
-  try {
-    await appendProgramNotifications(admin, memberId, programs)
-  } catch (e) {
-    console.warn('[ai-basic-programs] notify', e?.message || e)
+  const { generateEkoProgramsInitial } = await import('./_aiEkoPrograms.js')
+  const result = await generateEkoProgramsInitial(admin, memberRow)
+  if (result.status) {
+    return res.status(result.status).json(result)
+  }
+  return res.status(200).json(result)
+}
+
+async function handleEkoProgramsAdmin(req, res) {
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
   }
 
-  return res.status(200).json({
-    ok: true,
-    synced: true,
-    programs,
-    cycleStartDate: joinedAt,
-    cycleEndDate: payloads.endStr,
-    dailyCalories,
-  })
+  const adminAuth = await requireAdmin(req)
+  if (!adminAuth.ok) {
+    return res.status(adminAuth.status).json({ ok: false, error: adminAuth.error })
+  }
+
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+  const memberId = String(body.memberId || '').trim()
+  if (!memberId) {
+    return res.status(400).json({ ok: false, error: 'memberId gerekli' })
+  }
+
+  const admin = getSupabaseAdmin()
+  const { data: memberRow, error: memberErr } = await admin
+    .from('members')
+    .select('id, name, membership, data')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (memberErr || !memberRow) {
+    return res.status(404).json({ ok: false, error: 'Üye bulunamadı' })
+  }
+  if (memberRow.membership !== 'eko') {
+    return res.status(200).json({
+      ok: true,
+      synced: false,
+      skipped: 'not_eko',
+      error: 'Üye Eko pakette değil',
+    })
+  }
+  if (!hasHealthTest(memberRow.data)) {
+    return res.status(200).json({
+      ok: true,
+      synced: false,
+      skipped: 'no_health_test',
+      error: 'Sağlık testi tamamlanmalı',
+    })
+  }
+
+  const { generateEkoProgramsInitial } = await import('./_aiEkoPrograms.js')
+  const result = await generateEkoProgramsInitial(admin, memberRow)
+  if (result.status) {
+    return res.status(result.status).json(result)
+  }
+  return res.status(200).json(result)
 }
 
 export default async function handler(req, res) {
@@ -249,21 +228,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
   }
 
-  const auth = await requireAuth(req)
-  if (!auth.ok) {
-    return res.status(auth.status).json({ ok: false, error: auth.error })
-  }
-
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
     const task = String(body.task || 'nutrition-tips').trim()
+    req.body = body
+
+    // Admin task — kendi auth zinciri
+    if (task === 'eko-programs-admin') {
+      return await handleEkoProgramsAdmin(req, res)
+    }
+
+    const auth = await requireAuth(req)
+    if (!auth.ok) {
+      return res.status(auth.status).json({ ok: false, error: auth.error })
+    }
 
     if (task === 'basic-programs') {
       return await handleBasicPrograms(req, res, auth)
     }
+    if (task === 'eko-programs') {
+      return await handleEkoPrograms(req, res, auth)
+    }
 
-    // Varsayılan: nutrition-tips (gövdeyi yeniden parse etmeden handleNutritionTips body okur)
-    req.body = body
     return await handleNutritionTips(req, res, auth)
   } catch (e) {
     console.error('[ai-nutrition-tips]', e)
