@@ -1,50 +1,17 @@
-# Member — health-test-finish
+# Member — Health Test Finish (IMPLEMENTATION LOCK)
 
-- **Expo:** `/(member)/health/test/finish`
-- **Web:** `/health-test/finish` → redirects to hub (`HealthTestFinishPage.jsx`)
+- **Expo:** `/(member)/health-test/finish`
+- **Web:** `/health-test/finish` → `HealthTestFinishPage.jsx`
 - **Priority:** P1
 
-## Purpose
+## Behavior
 
-Bitir ve sync; 360 skor hub üzerinde gösterilir.
-
-## Preconditions
-
-Authenticated member + ProfileCompletionGate passed. Apply plan gates where noted in domains/membership-entitlements.md.
-
-## Layout
-
-1. Prefer hub completion state (web): progress + **360° Sağlık Analizi** (`HealthRadarScores`)
-2. Mobile finish may mirror hub summary: overall + 7 boyut çubukları
-3. Sticky CTA if needed (dashboard’a dön)
-
-## Data
-
-- `members.data.healthTest`
-- `healthAnalysis.radarScores`: metabolic, nutrition, activity, sleep, stress, digestion, lifestyle, overall
-
-## Key interactions
-
-finish sync; show radar when complete
-
-## Plan gates
-
-See membership-entitlements + feature-specific skills (calorie, library full access).
-
-## Empty / loading / error / offline
-
-- Loading: skeleton/spinner
-- Empty: incomplete sections CTA
-- Error: retry
-- Offline: banner; disable mutating actions
-
-## Native
-
-Permissions as needed.
+- Sync profile / run analysis via web’s finish path (`memberHealthSync` / `aiAnalysis` triggers as in page)
+- Consent already on hub — do not re-ask unless web does
+- Success → navigate dashboard or hub with toast (copy from web page strings — read file at implement)
+- Staff sees answers later; analysis visibility: admin yes, staff no (`showHealthAnalysis={false}`)
 
 ## Acceptance
 
-- [ ] Parity with web primary actions
-- [ ] Gates enforced
-- [ ] 360 scores render when test complete
-- [ ] No crash on empty datasets
+- [ ] Matches HealthTestFinishPage side effects  
+- [ ] No duplicate consent UX if hub already saved  

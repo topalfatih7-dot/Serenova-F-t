@@ -1,49 +1,31 @@
-# Member — health-test-section
+# Member — Health Test Section (IMPLEMENTATION LOCK)
 
-- **Expo:** `/(member)/health/test/section`
-- **Web:** `/health-test/:sectionId` → `HealthTestSectionPage.jsx`
+- **Expo:** `/(member)/health-test/[sectionId]`
+- **Web:** `/health-test/:sectionId` → `HealthTestSectionPage.jsx` + `HealthTestFlow`
 - **Priority:** P1
 
-## Purpose
-
-Soru formu
-
-## Preconditions
-
-Authenticated member + ProfileCompletionGate passed. Apply plan gates where noted in domains/membership-entitlements.md.
-
-## Layout
-
-1. PanelPageHeader (title + optional photo)
-2. Primary content list/form
-3. Sticky CTA if needed
-4. Empty / error states
+---
 
 ## Data
 
-Section questions from catalog — types: emoji, single, multi, text, time, scale, file; followUps/detail/softWarning
+- Load questions: `getSectionQuestions(sectionId, gender, packageConfig)` from web `healthTest.js`
+- Persist answers into `user.healthTest[sectionId]` (shape used by web — copy save path from HealthTestSectionPage / hub save helpers)
+- Use intermediate save that **does not** full `reloadRemote` if web uses lightweight patch (`updateHealthTestPartial` / equivalent in AppContext)
 
-## Key interactions
+## Question types to support (from catalog)
 
-save answers; conditional follow-ups
+`emoji | single | multi | text | time | scale | file` (+ engine extras: detail, followUps, softWarning, exclusive multi — see catalog header).  
+**Options arrays:** [domains/health-test-options.md](../../domains/health-test-options.md).  
+**Lab uploads:** private bucket `health-lab-results`, path `{userId}/…` via web `uploadHealthLabResult` parity.
 
-## Plan gates
+## Navigation
 
-See membership-entitlements + feature-specific skills (calorie, library full access).
-
-## Empty / loading / error / offline
-
-- Loading: skeleton/spinner
-- Empty: explanatory copy + CTA
-- Error: retry
-- Offline: banner; disable mutating actions
-
-## Native
-
-Permissions as needed (camera for calorie vision; mic/camera for call).
+- Back → hub  
+- Complete section → hub or next incomplete  
+- Invalid sectionId → hub  
 
 ## Acceptance
 
-- [ ] Parity with web primary actions
-- [ ] Gates enforced
-- [ ] No crash on empty datasets
+- [ ] required fields enforced per question.required  
+- [ ] No invented options  
+- [ ] gender-gated sections (women/men)  
