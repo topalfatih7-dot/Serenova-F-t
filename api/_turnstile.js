@@ -1,0 +1,46 @@
+/**
+ * Cloudflare Turnstile doğrulama.
+ * Production'da TURNSTILE_SECRET_KEY zorunlu; local'de yoksa atlanır.
+ */
+
+const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+
+export function isTurnstileConfigured() {
+  return Boolean(process.env.TURNSTILE_SECRET_KEY?.trim())
+}
+
+export async function verifyTurnstile(token, remoteip) {
+  const secret = process.env.TURNSTILE_SECRET_KEY?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+
+  if (!secret) {
+    if (isProd) {
+      return { ok: false, status: 503, error: 'TURNSTILE_SECRET_KEY production ortamında zorunludur.' }
+    }
+    return { ok: true, skipped: true }
+  }
+
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return { ok: false, status: 400, error: 'Bot doğrulaması gerekli. Sayfayı yenileyip tekrar deneyin.' }
+  }
+
+  try {
+    const body = new URLSearchParams()
+    body.set('secret', secret)
+    body.set('response', token)
+    if (remoteip) body.set('remoteip', remoteip)
+
+    const res = await fetch(VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!data?.success) {
+      return { ok: false, status: 403, error: 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.' }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, status: 502, error: 'Bot doğrulama servisine ulaşılamadı.' }
+  }
+}

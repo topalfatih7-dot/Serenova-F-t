@@ -1004,7 +1004,11 @@ Kaynak: `.env.example`
 | `TELEGRAM_PAYMENT_CHAT_ID` | Sunucu | **Stripe ödeme (başarılı/başarısız) bildirimleri**; boşsa `TELEGRAM_CHAT_ID`'ye düşer |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Sunucu (GİZLİ) | Stripe Checkout + webhook |
 | `VITE_STRIPE_ENABLED` / `VITE_STRIPE_PUBLISHABLE_KEY` | İstemci | Stripe akışı on/off + (ops.) publishable key |
-| `TELEGRAM_NOTIFY_SECRET` / `VITE_TELEGRAM_NOTIFY_SECRET` | Sunucu + istemci | API spam koruması |
+| `TELEGRAM_NOTIFY_SECRET` / `FORM_SESSION_SECRET` | Yalnızca sunucu | Form oturumu HMAC (istemciye asla `VITE_` ile koyma) |
+| `TURNSTILE_SECRET_KEY` / `VITE_TURNSTILE_SITE_KEY` | Sunucu / istemci | Cloudflare Turnstile bot koruması |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Sunucu | API rate limit (yoksa bellek içi yedek) |
+| `AI_DAILY_USER_LIMIT` | Sunucu | Kullanıcı başına günlük AI kotası (varsayılan 50) |
+| `CORS_ALLOWED_ORIGINS` | Sunucu | Ek CORS origin listesi (virgülle) |
 | `VITE_DAILY_DOMAIN` | İstemci | Daily.co subdomain |
 | `VITE_DAILY_ROOM_PREFIX` | İstemci | Oda adı öneki (varsayılan: donusum) |
 | `VITE_DAILY_API_KEY` | İstemci (opsiyonel) | İleride REST API |
@@ -2687,7 +2691,8 @@ Legacy planlar (`gumus`, `altin`, `platinum`, `premium`) `coachMeetingsPerWeek` 
 | `ai-food-vision.js` | `requireAuth` |
 | `daily-room.js` | `requireAuth` |
 | `calorie-chat-notify.js` | `requireAuth` + `requireNotifySecret` |
-| `telegram-notify.js`, `contact.js` | `requireNotifySecret` (production'da `TELEGRAM_NOTIFY_SECRET` zorunlu) |
+| `telegram-notify.js` | `requireAuth` + IP rate limit (client secret yok) |
+| `contact.js` (forms hub) | Turnstile + rate limit + service-role RPC; Telegram sunucu içi |
 
 ---
 

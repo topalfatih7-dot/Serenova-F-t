@@ -61,8 +61,8 @@ async function createToken(roomName, userName, isOwner) {
 }
 
 export default async function handler(req, res) {
-  setCorsHeaders(res)
   if (handleOptions(req, res)) return
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST bekleniyor' })
 
   const auth = await requireAuth(req)

@@ -14,7 +14,6 @@ import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths,
 import { notifyTelegram } from './telegramNotify'
 import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
 import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
-import { notifyStaffApplicationTelegram, notifyCorporateApplicationTelegram } from './applicationNotify'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { coverForCategory } from '../utils/blogImages.js'
@@ -1371,9 +1370,10 @@ export async function submitSuccessStory(member, data) {
     kind: 'success_story', sort: 0,
     data: {
       name: member?.name || data.name || 'Üye',
+      memberId: member?.id || null,
       duration: data.duration || '',
       highlight: data.highlight || '',
-      story: data.story || '',
+      story: String(data.story || '').slice(0, 2000),
       consent: true,
       approved: false,
     },
@@ -1641,44 +1641,77 @@ export async function reassignExerciseCategory(fromCategory, toCategory) {
 }
 
 // --------------------------- staff applications ---------------------------
-export async function uploadStaffApplicationDoc(file) {
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = String(reader.result || '')
+      const base64 = result.includes(',') ? result.split(',')[1] : result
+      resolve(base64)
+    }
+    reader.onerror = () => reject(new Error('Dosya okunamadı'))
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function uploadStaffApplicationDoc(file, { turnstileToken = '', formSessionToken = '' } = {}) {
   if (!file) return { success: false, error: 'Dosya seçilmedi' }
   const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
   const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
   if (!allowed.includes(ext)) return { success: false, error: 'Yalnızca PDF veya görsel yükleyebilirsiniz' }
   if (file.size > 8 * 1024 * 1024) return { success: false, error: 'Dosya en fazla 8 MB olabilir' }
 
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`
-  const { error } = await supabase.storage.from('staff-application-docs').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
-  })
-  if (error) return { success: false, error: error.message }
-  const { data } = supabase.storage.from('staff-application-docs').getPublicUrl(path)
-  return { success: true, url: data.publicUrl, path }
+  try {
+    const dataBase64 = await fileToBase64(file)
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'staff_doc_upload',
+        fileName: file.name,
+        contentType: file.type || '',
+        dataBase64,
+        turnstileToken: turnstileToken || '',
+        formSessionToken: formSessionToken || '',
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      return { success: false, error: data.error || 'Yükleme başarısız' }
+    }
+    return { success: true, url: data.url, path: data.path, formSessionToken: data.formSessionToken || formSessionToken }
+  } catch (e) {
+    return { success: false, error: e.message || 'Yükleme başarısız' }
+  }
 }
 
-export async function submitStaffApplication(form) {
+export async function submitStaffApplication(form, { turnstileToken = '', formSessionToken = '' } = {}) {
   const payload = buildStaffApplicationPayload(form)
 
-  const { data, error } = await supabase.rpc('submit_staff_application', {
-    p_role: form.role,
-    p_email: form.email?.trim().toLowerCase(),
-    p_name: form.name?.trim(),
-    p_phone: form.phone?.trim() || '',
-    p_data: payload,
-  })
-
-  if (error) return { success: false, error: error.message }
-  await addActivity('staff_apply', `${form.name} (${staffRoleLabel(form.role)}) kadro başvurusu gönderdi`)
-  notifyStaffApplicationTelegram({
-    name: form.name?.trim(),
-    email: form.email?.trim().toLowerCase(),
-    phone: form.phone?.trim() || '',
-    role: form.role,
-    roleLabel: staffRoleLabel(form.role),
-  })
-  return { success: true, id: data }
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'staff_application',
+        role: form.role,
+        email: form.email?.trim().toLowerCase(),
+        name: form.name?.trim(),
+        phone: form.phone?.trim() || '',
+        roleLabel: staffRoleLabel(form.role),
+        data: payload,
+        turnstileToken: turnstileToken || '',
+        formSessionToken: formSessionToken || '',
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      return { success: false, error: data.error || 'Başvuru gönderilemedi' }
+    }
+    return { success: true, id: data.id, formSessionToken: data.formSessionToken || formSessionToken }
+  } catch (e) {
+    return { success: false, error: e.message || 'Başvuru gönderilemedi' }
+  }
 }
 
 function generateTempPassword() {
@@ -1718,7 +1751,7 @@ export async function resolveStaffApplication(application, approve, adminNote = 
   return { success: true, staffId: created.id, tempPassword }
 }
 
-export async function submitCorporateApplication(form) {
+export async function submitCorporateApplication(form, turnstileToken = '') {
   const payload = {
     city: form.city || '',
     industry: form.industry || '',
@@ -1727,35 +1760,34 @@ export async function submitCorporateApplication(form) {
     message: form.message || '',
     preferredStart: form.preferredStart || '',
   }
-  const { data, error } = await supabase.rpc('submit_corporate_application', {
-    p_company_name: form.companyName?.trim(),
-    p_contact_name: form.contactName?.trim(),
-    p_email: form.email?.trim().toLowerCase(),
-    p_phone: form.phone?.trim() || '',
-    p_data: payload,
-  })
-  if (error) return { success: false, error: error.message }
-  await addActivity('corporate_apply', `${form.companyName} kurumsal başvuru gönderdi`)
-  notifyCorporateApplicationTelegram({
-    companyName: form.companyName?.trim(),
-    contactName: form.contactName?.trim(),
-    email: form.email?.trim().toLowerCase(),
-    phone: form.phone?.trim() || '',
-  })
-  return { success: true, id: data }
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'corporate_application',
+        companyName: form.companyName?.trim(),
+        contactName: form.contactName?.trim(),
+        email: form.email?.trim().toLowerCase(),
+        phone: form.phone?.trim() || '',
+        data: payload,
+        turnstileToken: turnstileToken || '',
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      return { success: false, error: data.error || 'Başvuru gönderilemedi' }
+    }
+    return { success: true, id: data.id }
+  } catch (e) {
+    return { success: false, error: e.message || 'Başvuru gönderilemedi' }
+  }
 }
 
-export async function submitContactInquiry(form) {
-  const { data, error } = await supabase.rpc('submit_contact_inquiry', {
-    p_name: form.name?.trim(),
-    p_email: form.email?.trim().toLowerCase(),
-    p_phone: form.phone?.trim() || '',
-    p_subject: form.subject || 'general',
-    p_message: form.message?.trim(),
-    p_source: form.source || 'landing',
-  })
-  if (error) return { success: false, error: error.message }
-  return { success: true, id: data }
+export async function submitContactInquiry(form, turnstileToken = '') {
+  const { submitContactForm } = await import('./contactForm')
+  const r = await submitContactForm({ ...form, turnstileToken })
+  return r.ok ? { success: true, id: r.id } : { success: false, error: r.error }
 }
 
 export async function resolveCorporateApplication(application, status, adminNote = '') {

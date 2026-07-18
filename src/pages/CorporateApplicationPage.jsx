@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Building2, CheckCircle, Send, ArrowLeft } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
+import TurnstileWidget from '../components/security/TurnstileWidget'
+import { isTurnstileEnabled } from '../config/turnstile'
 import { useToast } from '../context/ToastContext'
 import { submitCorporateApplication } from '../services/supabaseDb'
 import {
@@ -22,6 +24,7 @@ export default function CorporateApplicationPage() {
   const [form, setForm] = useState(EMPTY_CORPORATE_APPLICATION)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
 
@@ -32,9 +35,13 @@ export default function CorporateApplicationPage() {
       toast(errors[0], 'error')
       return
     }
+    if (isTurnstileEnabled() && !turnstileToken) {
+      toast('Bot doğrulamasını tamamlayın', 'error')
+      return
+    }
     setSubmitting(true)
     try {
-      const r = await submitCorporateApplication(form)
+      const r = await submitCorporateApplication(form, turnstileToken)
       if (!r.success) {
         toast(r.error || 'Başvuru gönderilemedi', 'error')
         return
@@ -99,6 +106,7 @@ export default function CorporateApplicationPage() {
           <textarea value={form.message} onChange={(e) => update({ message: e.target.value })} rows={4} placeholder="Şirketinizin ihtiyaçları, hedefler, mevcut programlar… *" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" required />
           <input type="date" value={form.preferredStart} onChange={(e) => update({ preferredStart: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
           <p className="text-xs text-cream-800/45">Tercih edilen başlangıç tarihi (opsiyonel)</p>
+          <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center py-2" />
           <button type="submit" disabled={submitting} className="btn-wellness w-full !py-3 disabled:opacity-60">
             <Send className="h-4 w-4" />
             {submitting ? 'Gönderiliyor…' : 'Kurumsal Başvuruyu Gönder'}

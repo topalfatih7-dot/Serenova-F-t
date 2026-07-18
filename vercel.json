@@ -2,6 +2,16 @@
   "buildCommand": "npm run build",
   "devCommand": "vite --port 5173",
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ],
   "crons": [
     {
       "path": "/api/ai-blog-generate?task=membership-expiry",

@@ -553,8 +553,8 @@ begin
   return v_id;
 end;
 $$;
-revoke all on function public.submit_staff_application(text, text, text, text, jsonb) from public;
-grant execute on function public.submit_staff_application(text, text, text, text, jsonb) to anon, authenticated;
+revoke all on function public.submit_staff_application(text, text, text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.submit_staff_application(text, text, text, text, jsonb) to service_role;
 
 create or replace function public.submit_corporate_application(
   p_company_name text,
@@ -580,8 +580,8 @@ begin
   return v_id;
 end;
 $$;
-revoke all on function public.submit_corporate_application(text, text, text, text, jsonb) from public;
-grant execute on function public.submit_corporate_application(text, text, text, text, jsonb) to anon, authenticated;
+revoke all on function public.submit_corporate_application(text, text, text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.submit_corporate_application(text, text, text, text, jsonb) to service_role;
 
 create or replace function public.submit_contact_inquiry(
   p_name text,
@@ -608,8 +608,8 @@ begin
   return v_id;
 end;
 $$;
-revoke all on function public.submit_contact_inquiry(text, text, text, text, text, text) from public;
-grant execute on function public.submit_contact_inquiry(text, text, text, text, text, text) to anon, authenticated;
+revoke all on function public.submit_contact_inquiry(text, text, text, text, text, text) from public, anon, authenticated;
+grant execute on function public.submit_contact_inquiry(text, text, text, text, text, text) to service_role;
 
 -- Telefon numarası başka bir üyede kayıtlı mı? (kayıt sırasında çift numara engeli)
 -- Numaralar sadece rakamlara indirgenip karşılaştırılır.

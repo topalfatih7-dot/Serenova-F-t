@@ -44,6 +44,8 @@
     "@daily-co/daily-js": "^0.91.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.3.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
     "html2pdf.js": "^0.14.0",

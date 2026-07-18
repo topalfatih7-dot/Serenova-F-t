@@ -3,6 +3,7 @@
  */
 import { getUserFromRequest, getBearerToken } from './_apiAuth.js'
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
+import { getAppUrl } from './_appUrl.js'
 
 const DEFAULT_ADMIN_EMAIL = 'admin@yeniform.com'
 
@@ -10,14 +11,42 @@ export function getAdminEmail() {
   return (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
 }
 
-export function setCorsHeaders(res, methods = 'POST, OPTIONS', extraHeaders = 'Content-Type, Authorization') {
-  res.setHeader('Access-Control-Allow-Origin', '*')
+function allowedCorsOrigins() {
+  const origins = new Set()
+  try {
+    origins.add(new URL(getAppUrl()).origin)
+  } catch {
+    /* ignore */
+  }
+  const extra = process.env.CORS_ALLOWED_ORIGINS || ''
+  for (const part of extra.split(',')) {
+    const o = part.trim().replace(/\/$/, '')
+    if (o) origins.add(o)
+  }
+  if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+    origins.add('http://localhost:5173')
+    origins.add('http://127.0.0.1:5173')
+    origins.add('http://localhost:3000')
+  }
+  return origins
+}
+
+export function setCorsHeaders(res, methods = 'POST, OPTIONS', extraHeaders = 'Content-Type, Authorization', req = null) {
+  const origins = allowedCorsOrigins()
+  const requestOrigin = String(req?.headers?.origin || '').trim()
+  const allowOrigin = requestOrigin && origins.has(requestOrigin)
+    ? requestOrigin
+    : [...origins][0] || getAppUrl()
+
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin)
+  res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Methods', methods)
   res.setHeader('Access-Control-Allow-Headers', extraHeaders)
 }
 
-export function handleOptions(req, res) {
+export function handleOptions(req, res, methods = 'POST, OPTIONS', extraHeaders = 'Content-Type, Authorization') {
   if (req.method === 'OPTIONS') {
+    setCorsHeaders(res, methods, extraHeaders, req)
     res.status(200).end()
     return true
   }

@@ -1,12 +1,16 @@
 /**
- * Telegram bildirimi — Vercel API route (/api/telegram-notify) üzerinden gönderilir.
- * Bot token sunucuda tutulur; `.env.example` (`TELEGRAM_*`) + AI_PROJE_REHBERI açık checklist.
+ * Telegram bildirimi — /api/telegram-notify (Bearer oturum zorunlu, secret yok).
  */
+import { supabase } from './supabaseClient'
+
 export async function notifyTelegram(event, payload = {}) {
   try {
     const headers = { 'Content-Type': 'application/json' }
-    const secret = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET
-    if (secret) headers['X-Notify-Secret'] = secret
+    if (supabase) {
+      const { data } = await supabase.auth.getSession()
+      const token = data?.session?.access_token
+      if (token) headers.Authorization = `Bearer ${token}`
+    }
 
     await fetch('/api/telegram-notify', {
       method: 'POST',

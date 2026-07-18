@@ -1,38 +1,30 @@
-import { submitContactInquiry } from './supabaseDb'
-
 /**
- * Bize Ulaşın formu — Supabase'e kaydedilir + Telegram bildirimi (/api/contact).
+ * Bize Ulaşın — sunucu kapısı (/api/contact): Turnstile + DB + Telegram.
  */
+
 export async function submitContactForm(payload) {
-  const db = await submitContactInquiry({
-    name: payload.name,
-    email: payload.email,
-    phone: payload.phone,
-    subject: payload.subject,
-    message: payload.message,
-    source: payload.source || 'landing',
-  })
-  if (!db.success) {
-    return { ok: false, error: db.error || 'Mesaj kaydedilemedi' }
-  }
-
   try {
-    const headers = { 'Content-Type': 'application/json' }
-    const secret = import.meta.env.VITE_TELEGRAM_NOTIFY_SECRET
-    if (secret) headers['X-Notify-Secret'] = secret
-
     const res = await fetch('/api/contact', {
       method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'contact',
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        subject: payload.subject,
+        message: payload.message,
+        source: payload.source || 'landing',
+        turnstileToken: payload.turnstileToken || '',
+        website: payload.website || '',
+      }),
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      console.warn('Telegram notify failed:', data.error)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error || 'Mesaj kaydedilemedi' }
     }
+    return { ok: true, id: data.id }
   } catch {
-    // DB kaydı başarılı; Telegram ikincil kanal
+    return { ok: false, error: 'Bağlantı hatası. Lütfen tekrar deneyin.' }
   }
-
-  return { ok: true }
 }

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { Mail, Phone, User, MessageSquare, Send, Loader2, CheckCircle2 } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { submitContactForm } from '../../services/contactForm'
+import TurnstileWidget from '../security/TurnstileWidget'
+import { isTurnstileEnabled } from '../../config/turnstile'
 
 const SUBJECTS = [
   { value: 'general', label: 'Genel bilgi' },
@@ -21,6 +23,7 @@ export default function ContactSection() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
 
@@ -31,6 +34,7 @@ export default function ContactSection() {
     if (form.phone && form.phone.replace(/\D/g, '').length < 10) e.phone = 'Geçerli telefon girin'
     if (!form.message.trim() || form.message.trim().length < 10) e.message = 'Mesaj en az 10 karakter olmalı'
     if (!form.consent) e.consent = 'Devam etmek için onay gerekli'
+    if (isTurnstileEnabled() && !turnstileToken) e.turnstile = 'Bot doğrulamasını tamamlayın'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -48,6 +52,8 @@ export default function ContactSection() {
         phone: form.phone.trim(),
         subject: form.subject,
         message: form.message.trim(),
+        turnstileToken,
+        website: form.website,
       })
       if (!result.ok) {
         toast(result.error || 'Mesaj gönderilemedi', 'error')
@@ -212,6 +218,9 @@ export default function ContactSection() {
                   </span>
                 </label>
                 {errors.consent && <p className="text-xs text-red-500">{errors.consent}</p>}
+
+                <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />
+                {errors.turnstile && <p className="text-xs text-red-500">{errors.turnstile}</p>}
 
                 <button
                   type="submit"

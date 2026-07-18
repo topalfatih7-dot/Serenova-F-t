@@ -15,6 +15,8 @@ import { handleGa4Report } from './_ga4Report.js'
 import { handleAiUsageReport } from './_aiUsageReport.js'
 import { claimActiveSession, isActiveSession } from './_singleSession.js'
 import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
+import { setCorsHeaders, handleOptions } from './_guards.js'
+import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -401,11 +403,9 @@ async function handleVerifyActiveSession(req, res) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type, Authorization')) return
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
 
-  if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
 
   if (!isSupabaseAdminConfigured()) {
@@ -418,6 +418,20 @@ export default async function handler(req, res) {
   try {
     const body = parseBody(req)
     const action = resolveAction(body, req)
+
+    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-reset', 'email-send'])
+    if (sensitiveAuth.has(action)) {
+      const rl = await enforceRateLimit({
+        req,
+        prefix: `auth-${action}`,
+        limit: action === 'signup' ? 8 : 15,
+        windowMs: 60 * 60 * 1000,
+      })
+      applyRateLimitHeaders(res, rl.headers)
+      if (!rl.ok) {
+        return res.status(rl.status).json({ ok: false, error: rl.error })
+      }
+    }
 
     if (action === 'signup') return handleSignup(res, body)
     if (action === 'unlock-signup') return handleUnlockSignup(res, body)

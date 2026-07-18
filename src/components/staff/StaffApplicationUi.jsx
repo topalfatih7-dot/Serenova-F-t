@@ -363,7 +363,7 @@ export function FederationCertEditor({ federationCerts, noOfficialCoachingCert, 
   )
 }
 
-export function ApplicationSummaryModal({ open, onClose, form, submitting, onSubmit }) {
+export function ApplicationSummaryModal({ open, onClose, form, submitting, onSubmit, turnstileSlot = null }) {
   const isCoach = form.role === 'coach'
   const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
   const EDU = { lise: 'Lise', onlisans: 'Önlisans', lisans: 'Lisans' }
@@ -418,6 +418,8 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
             <SummaryRow label="Hizmet alanları" value={[...(form.serviceAreas || []), form.serviceAreaOther].filter(Boolean).join(', ')} />
           </SummarySection>
         )}
+
+        {turnstileSlot}
 
         <button
           type="button"

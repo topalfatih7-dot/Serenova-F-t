@@ -11,6 +11,8 @@ import {
   NUTRITION_CONFIG,
 } from './_ai-prompts.js'
 import { setCorsHeaders, handleOptions, requireAuth, requireAdmin } from './_guards.js'
+import { checkAiDailyQuota } from './_aiQuota.js'
+import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { AI_BASIC_SOURCE, AI_EKO_SOURCE } from './_aiBasicPrograms.js'
 import { callGemini, parseJsonResponse, isGeminiConfigured } from './_gemini.js'
@@ -222,8 +224,8 @@ async function handleEkoProgramsAdmin(req, res) {
 }
 
 export default async function handler(req, res) {
-  setCorsHeaders(res)
   if (handleOptions(req, res)) return
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
   }
@@ -241,6 +243,23 @@ export default async function handler(req, res) {
     const auth = await requireAuth(req)
     if (!auth.ok) {
       return res.status(auth.status).json({ ok: false, error: auth.error })
+    }
+
+    const rl = await enforceRateLimit({
+      req,
+      prefix: `ai-nutrition-${task}`,
+      limit: 40,
+      windowMs: 60 * 60 * 1000,
+      extraKey: auth.user.id,
+    })
+    applyRateLimitHeaders(res, rl.headers)
+    if (!rl.ok) {
+      return res.status(rl.status).json({ ok: false, error: rl.error })
+    }
+
+    const quota = await checkAiDailyQuota(auth.user.id)
+    if (!quota.ok) {
+      return res.status(quota.status).json({ ok: false, error: quota.error })
     }
 
     if (task === 'basic-programs') {

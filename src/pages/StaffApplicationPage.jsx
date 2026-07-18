@@ -12,6 +12,8 @@ import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import { useToast } from '../context/ToastContext'
+import TurnstileWidget from '../components/security/TurnstileWidget'
+import { isTurnstileEnabled } from '../config/turnstile'
 import { submitStaffApplication, uploadStaffApplicationDoc } from '../services/supabaseDb'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 import {
@@ -73,6 +75,8 @@ export default function StaffApplicationPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadingCerts, setUploadingCerts] = useState(false)
   const [done, setDone] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [formSessionToken, setFormSessionToken] = useState('')
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
   const dietitianGroups = useMemo(() => [{ id: 'all', label: 'Uzmanlık Alanları', tone: 'sage', items: DIETITIAN_SPECIALTIES }], [])
@@ -108,9 +112,13 @@ export default function StaffApplicationPage() {
       toast(errors[0], 'error')
       return
     }
+    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
+      toast('Bot doğrulamasını tamamlayın', 'error')
+      return
+    }
     setSubmitting(true)
     try {
-      const r = await submitStaffApplication(form)
+      const r = await submitStaffApplication(form, { turnstileToken, formSessionToken })
       if (!r.success) {
         toast(r.error || 'Başvuru gönderilemedi', 'error')
         return
@@ -125,14 +133,23 @@ export default function StaffApplicationPage() {
 
   const handleBulkCertUpload = async (fileList) => {
     if (!fileList.length) return
+    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
+      toast('Belge yüklemeden önce bot doğrulamasını tamamlayın', 'error')
+      return
+    }
     setUploadingCerts(true)
     try {
       const uploaded = []
+      let session = formSessionToken
       for (const file of fileList) {
-        const r = await uploadStaffApplicationDoc(file)
+        const r = await uploadStaffApplicationDoc(file, { turnstileToken: session ? '' : turnstileToken, formSessionToken: session })
         if (!r.success) {
           toast(r.error || `${file.name} yüklenemedi`, 'error')
           continue
+        }
+        if (r.formSessionToken) {
+          session = r.formSessionToken
+          setFormSessionToken(r.formSessionToken)
         }
         uploaded.push({ name: file.name, url: r.url })
       }
@@ -320,6 +337,7 @@ export default function StaffApplicationPage() {
                     <FlatChipSelect items={BRANCH_CERTIFICATES} selected={form.branchCerts} onChange={(branchCerts) => update({ branchCerts })} tone="emerald" otherValue={form.certOtherNotes?.branch} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, branch: v } })} otherPlaceholder="Diğer branş sertifikası" />
                   </AccordionSection>
                   <AccordionSection id="cert-files" title="Belge Yükleme" subtitle="Tüm sertifikalarınızı toplu yükleyin" icon={Upload} tone="sage" open={openSection === 'cert-files'} onToggle={toggleSection} count={form.certificateFiles?.length || 0}>
+                    <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
                     <BulkCertUpload files={form.certificateFiles} uploading={uploadingCerts} onUpload={handleBulkCertUpload} onRemove={(i) => update({ certificateFiles: form.certificateFiles.filter((_, idx) => idx !== i) })} />
                   </AccordionSection>
                 </>
@@ -388,7 +406,14 @@ export default function StaffApplicationPage() {
         </div>
       </div>
 
-      <ApplicationSummaryModal open={summaryOpen} onClose={() => setSummaryOpen(false)} form={form} submitting={submitting} onSubmit={submit} />
+      <ApplicationSummaryModal
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        form={form}
+        submitting={submitting}
+        onSubmit={submit}
+        turnstileSlot={<TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />}
+      />
     </div>
   )
 }
