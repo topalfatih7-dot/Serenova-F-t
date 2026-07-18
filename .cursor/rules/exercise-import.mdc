@@ -39,9 +39,10 @@ alwaysApply: false
 
 `office` paketi aktif: `npm run import:pack:office` (metadata + encode + thumb)
 
-## Türkçe
+## İsim / Türkçe
 
-Import sırasında isimler `exerciseTurkish.js` ile Türkçeleştirilir; açıklama ve talimatlar `scripts/lib/exercise-translate-tr.mjs` ile İngilizce kaynaktan çevrilir.
+- **İsimler:** JSON’daki İngilizce `name` Türkçeleştirilmez; Title Case uygulanır (`Cable Crunch (Kneeling)`). Senkron: `npm run sync:exercise-names`
+- Açıklama ve talimatlar: `scripts/lib/exercise-translate-tr.mjs` ile İngilizce kaynaktan çevrilebilir; kas/ekipman etiketleri `exerciseTurkish.js` ile Türkçe kalabilir.
 
 ## Konum / makine metadata (1600exercisedbpro)
 

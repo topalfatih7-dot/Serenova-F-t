@@ -85,8 +85,29 @@ export function mapDifficulty(difficulty) {
   return key || 'beginner'
 }
 
+/**
+ * JSON ismi — Türkçeleştirmeden Title Case.
+ * Örn: "cable crunch (kneeling)" → "Cable Crunch (Kneeling)"
+ */
+export function originalExerciseName(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return ''
+  return raw
+    .split(/(\s+)/)
+    .map((part) => {
+      if (/^\s+$/.test(part)) return part
+      return part.replace(/[A-Za-zÀ-ÿ0-9']+/g, (word) => {
+        if (word === word.toUpperCase() && /[A-Z]/.test(word) && word.length <= 4) {
+          return word
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      })
+    })
+    .join('')
+}
+
 export function titleCaseName(name) {
-  return translateExerciseRecord({ name }, {}).name
+  return originalExerciseName(name)
 }
 
 export function buildDescription(exercise) {
@@ -96,7 +117,7 @@ export function buildDescription(exercise) {
 export function localizeExerciseFields(exercise, pack) {
   const tr = translateExerciseRecord(exercise, pack)
   return {
-    name: tr.name,
+    name: originalExerciseName(exercise.name),
     target_muscle: tr.targetMuscleTr,
     secondary_muscles: tr.secondaryMusclesTr,
     movement_category: exercise.category || 'strength',

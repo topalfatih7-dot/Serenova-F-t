@@ -17,6 +17,7 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "import:exercises": "node scripts/import-exercises.mjs",
     "import:exercises:dry": "node scripts/import-exercises.mjs --dry-run --upsert-taxonomy",
+    "sync:exercise-names": "node scripts/sync-exercise-names-from-json.mjs",
     "thumbs:generate": "node scripts/generate-exercise-thumbs.mjs",
     "thumbs:generate:dry": "node scripts/generate-exercise-thumbs.mjs --dry-run --limit=5",
     "videos:faststart": "node scripts/faststart-exercise-videos.mjs",
