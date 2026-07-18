@@ -25,7 +25,7 @@ Section questions from catalog — types: emoji, single, multi, text, time, scal
 
 ## Key interactions
 
-save answers; conditional follow-ups; lab file upload when medical blood-work intent = yes
+save answers; conditional follow-ups
 
 ## Plan gates
 

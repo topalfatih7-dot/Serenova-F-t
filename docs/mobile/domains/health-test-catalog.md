@@ -36,26 +36,25 @@ Audience: shared
 Removed from general: `moodCheckin`, `selfConfidence`, `weightChange` (moved).
 
 ### `medical` — Tıbbi Geçmiş
-Hastalıklar, ilaçlar, tahlil ve takviyeler
+Hastalıklar, ilaçlar ve tıbbi takip (önceki katalog; 360 revizyonundaki tıbbi genişletmeler geri alındı)
 
 Audience: shared
 
 | # | key | type | label |
 |---|-----|------|-------|
-| 1 | chronicConditions | multi | Tanı almış kronik rahatsızlıklarınız var mı? (geniş liste + other detail) |
-| 2 | medications | single | Düzenli veya gerektiğinde kullandığınız ilaçlar var mı? (+ detail; softWarning if thyroid + none) |
-| 3 | familyHistory | multi | Birinci derece yakınlarında hastalık (+ other detail; footerNote) |
-| 4 | surgeries | single | Daha önce ameliyat geçirdiniz mi? (+ detail) |
-| 5 | hospitalVisits | single | Son 12 ay hastanede yatış? (+ detail) |
-| 6 | lastBloodWork | single | Son kan tahlili ne zaman? |
-| 6a | bloodWorkUploadIntent | single followUp | Yüklemek ister misiniz? (when last_3_months / 3_12_months) |
-| 6b | bloodWorkFiles | file followUp | PDF/foto yükle (when intent=yes) |
-| 7 | supplements | multi | Vitamin/takviye listesi (+ other detail) |
-| 7a–c | supplementsRecommendedBy / Duration / Frequency | single followUps | Takviye varsa cascade |
-| 8 | mentalHealthSupport | single | Son 12 ay ruh sağlığı desteği |
-| 9 | digestiveSymptoms | multi | Sık sindirim şikayetleri |
-| 10 | doctorClearance | single | Doktor onayı |
-| 11 | currentComplaints | text | İsteğe bağlı şikayet |
+| 1 | chronicConditions | multi | Tanı almis kronik rahatsızlıklarınız var mi? |
+| 2 | medications | single | Düzenli kullandiginiz ilaç var mi? |
+| 3 | familyHistory | multi | Ailenizde aşağıdaki rahatsızlıklardan hangileri var? |
+| 4 | surgeries | single | Gecirdiginiz ameliyat var mi? |
+| 5 | hospitalVisits | single | Son 12 ayda hastane aciline basvurdunuz mu? |
+| 6 | lastBloodWork | single | Son kapsamli kan tahlilinizi ne zaman yaptırdınız? |
+| 7 | supplements | multi | Düzenli kullandiginiz takviyeler hangileri? |
+| 8 | mentalHealthDiagnosis | single | Bir ruh sagligi tanı veya tedavi geçmişiniz var mi? |
+| 9 | doctorClearance | single | Egzersiz veya kilo yonetimi programi icin doktor onayi |
+| 10 | bloodPressureIssues | single | Tansiyon dalgalanmasi |
+| 11 | digestiveDisorders | single | Tanı almis sindirim sistemi rahatsizligi |
+| 12 | thyroidStatus | single | Tiroid durumu |
+| 13 | currentComplaints | text | Şikayet (opsiyonel) |
 
 Moved out: `injuries` → `physical` (coach).
 

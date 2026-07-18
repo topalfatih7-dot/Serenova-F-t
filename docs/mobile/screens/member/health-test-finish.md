@@ -22,7 +22,6 @@ Authenticated member + ProfileCompletionGate passed. Apply plan gates where note
 
 - `members.data.healthTest`
 - `healthAnalysis.radarScores`: metabolic, nutrition, activity, sleep, stress, digestion, lifestyle, overall
-- Lab paths: `healthTest.bloodWorkFiles[]` → storage `health-lab-results`
 
 ## Key interactions
 
@@ -41,7 +40,7 @@ See membership-entitlements + feature-specific skills (calorie, library full acc
 
 ## Native
 
-File picker for lab PDF/photo when upload intent = yes. Camera optional.
+Permissions as needed.
 
 ## Acceptance
 

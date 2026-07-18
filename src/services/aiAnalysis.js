@@ -233,6 +233,7 @@ export function calculateRadarScores(profile, bmi = null, fitnessScore = null) {
     ? raw.digestiveSymptoms.filter((v) => v !== 'none')
     : []
   digestion -= Math.min(36, digSymptoms.length * 8)
+  if (raw.digestiveDisorders && raw.digestiveDisorders !== 'no') digestion -= 12
   const digDiet = Array.isArray(raw.dietDigestiveSymptoms)
     ? raw.dietDigestiveSymptoms.filter((v) => v !== 'none' && v !== 'yok')
     : []
