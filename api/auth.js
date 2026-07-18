@@ -430,12 +430,16 @@ export default async function handler(req, res) {
       })
       applyRateLimitHeaders(res, rl.headers)
       if (!rl.ok) {
-        reportFormAttack(req, {
-          action,
-          reason: 'auth_rate_limit',
-          status: rl.status,
-          path: '/api/auth',
-        }).catch(() => {})
+        try {
+          await reportFormAttack(req, {
+            action,
+            reason: 'auth_rate_limit',
+            status: rl.status,
+            path: '/api/auth',
+          })
+        } catch {
+          /* ignore */
+        }
         return res.status(rl.status).json({ ok: false, error: rl.error })
       }
     }

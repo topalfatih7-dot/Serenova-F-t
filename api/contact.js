@@ -68,29 +68,38 @@ async function guardBotAndRate(req, { prefix, limit, email = '', kind = 'public'
   return { ok: true, formSessionToken, headers: rl.headers }
 }
 
-function applyGuardFailure(res, guard, req, action) {
+async function applyGuardFailure(res, guard, req, action) {
   applyRateLimitHeaders(res, guard.headers)
   const reason = mapGuardToAttackReason(guard)
   if (reason) {
-    reportFormAttack(req, {
-      action,
-      reason,
-      status: guard.status,
-      path: '/api/contact',
-    }).catch(() => {})
+    /* await: Vercel lambda fire-and-forget Telegram’ı kesmesin */
+    try {
+      await reportFormAttack(req, {
+        action,
+        reason,
+        status: guard.status,
+        path: '/api/contact',
+      })
+    } catch {
+      /* alert asla yanıtı bozmasın */
+    }
   }
   return res.status(guard.status).json({ ok: false, error: guard.error })
 }
 
 async function handleContact(req, res, body) {
   if (body.website || body.company_url || body.hp) {
-    reportFormAttack(req, {
-      action: 'contact',
-      reason: 'honeypot',
-      status: 200,
-      email: trimStr(body.email, 80),
-      path: '/api/contact',
-    }).catch(() => {})
+    try {
+      await reportFormAttack(req, {
+        action: 'contact',
+        reason: 'honeypot',
+        status: 200,
+        email: trimStr(body.email, 80),
+        path: '/api/contact',
+      })
+    } catch {
+      /* ignore */
+    }
     return res.status(200).json({ ok: true })
   }
 
