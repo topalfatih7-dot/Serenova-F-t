@@ -1,50 +1,50 @@
-# Member — health-test-hub
+# Member — Health Test Hub (IMPLEMENTATION LOCK)
 
-- **Expo:** `/(member)/health/test/hub`
-- **Web:** `/health-test` → `HealthTestPage.jsx`
+- **Expo:** `/(member)/health-test`
+- **Web:** `/health-test` → `HealthTestPage.jsx` + `HealthTestHub`
 - **Priority:** P1
+- **Flow:** F04
+- **Catalog:** `domains/health-test-catalog.md`
 
-## Purpose
+---
 
-Bölüm kartları ve ilerleme
+## Early exits
 
-## Preconditions
+- No user → login  
+- `isFreeTrialExpired` → `FreeTrialExpiredGate` only  
 
-Authenticated member + ProfileCompletionGate passed. Apply plan gates where noted in domains/membership-entitlements.md.
+## Header
 
-## Layout
+- title: **Sağlık Testleri**
+- subtitle if needs consent (`!healthAck || !disclaimer`):  
+  **Testlere başlamadan önce onayları işaretleyin**  
+- else:  
+  **Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz**
 
-1. PanelPageHeader (title + optional photo)
-2. Overall progress + section cards
-3. When fully complete: 360° `HealthRadarScores` (7 dims + overall)
-4. Empty / error states
+## Consent
 
-## Data
+Props to hub: `healthAck`, `disclaimer`.  
+On save: `updateProfile({ healthAck, disclaimer })`  
+Toast: **Onaylar kaydedildi. Testlere başlayabilirsiniz.**
 
-- `healthTest` in members.data
-- `healthAnalysis.radarScores` (or client `calculateRadarScores`)
+## Hub props (pass-through)
 
-## Key interactions
+```
+gender, packageConfig, healthTest, healthAck, disclaimer,
+onConsentSave, consentSaving, profile, healthAnalysis
+```
 
-navigate section; view 360 scores when complete
+Section cards from `getApplicableSections(gender, packageConfig)` — **all sections for everyone**; only gender-only sections filtered. **Do not hardcode section list**; use healthTest.js logic.
 
-## Plan gates
+Navigate → `/health-test/{sectionId}`.
 
-See membership-entitlements + feature-specific skills (calorie, library full access).
+## Finish
 
-## Empty / loading / error / offline
-
-- Loading: skeleton/spinner
-- Empty: explanatory copy + CTA
-- Error: retry
-- Offline: banner; disable mutating actions
-
-## Native
-
-Permissions as needed (camera for calorie vision; mic/camera for call).
+When all required complete → `/health-test/finish`.
 
 ## Acceptance
 
-- [ ] Parity with web primary actions
-- [ ] Gates enforced
-- [ ] No crash on empty datasets
+- [ ] Consent gate before tests  
+- [ ] Subtitles exact  
+- [ ] Sections respect gender only (not package)  
+- [ ] diet_activity skip when coach package  

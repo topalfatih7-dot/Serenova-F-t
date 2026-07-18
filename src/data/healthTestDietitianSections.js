@@ -1,6 +1,6 @@
 /**
- * Diyetisyen ilk görüşme anamnez formu — yalnızca diyetisyen içeren paketlerde (audience: dietitian).
- * Kişisel bilgiler profilden alınır; burada sorulmaz.
+ * Beslenme / anamnez bölümleri — tüm üyelere sorulur (paket kilidi yok).
+ * audience: 'dietitian' yalnızca kategori etiketi. Kişisel bilgiler profilden alınır.
  */
 export const DIETITIAN_HEALTH_SECTIONS = [
   {
@@ -274,10 +274,9 @@ export const DIETITIAN_HEALTH_SECTIONS = [
   {
     id: 'diet_activity',
     title: 'Fiziksel Aktivite',
-    subtitle: 'Egzersiz alışkanlıklarınız (koç paketiniz varsa Fiziksel Kapasite bölümünde yanıtlanır)',
+    subtitle: 'Egzersiz alışkanlıklarınız',
     icon: 'Activity',
     audience: 'dietitian',
-    skipWhenCoach: true,
     questions: [
       {
         type: 'single',

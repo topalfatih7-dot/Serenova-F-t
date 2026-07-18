@@ -2,6 +2,8 @@
 
 Self-contained question list extracted for mobile handoff.
 
+**Full option tables (LOCK):** [health-test-options.md](health-test-options.md) — do not invent values/labels.
+
 **Question types:** `emoji | single | multi | text | time | scale | file`
 
 **Engine extras:** `detail`, `followUps[]` (conditional), `softWarning`, `footerNote`, `infoNote` / `infoNoteWhen`, exclusive multi options (`exclusive: true`).
@@ -93,12 +95,12 @@ Audience: dietitian
 | 5 | dietGoal | text | Hedefiniz nedir? |
 
 ### Other diet sections
-`diet_health`, `diet_lifestyle`, `diet_activity` (skipWhenCoach), `diet_nutrition`, `diet_women`, `diet_extra` — see source file for full keys.
+`diet_health`, `diet_lifestyle`, `diet_activity`, `diet_nutrition`, `diet_women`, `diet_extra` — see source file for full keys. All asked to every member (except `diet_women` → female only).
 
 
 ## Notes
 
 - Full option lists live in web source; copy from `healthTestSections.js` / `healthTestDietitianSections.js`.
-- `diet_activity` skipped when coach package (`skipWhenCoach`).
+- **No package gating:** coach/dietitian `audience` is a UI category label only; every member gets every non-gender section.
 - Gender-specific: `women` / `men` / `diet_women`.
-- Storage: `health-lab-results` private; RLS folder = `auth.uid()`.
+- Analysis: `describeHealthTest` + `buildHealthTestSummary` + `radarScores` use the full answer set.

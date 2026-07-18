@@ -1,15 +1,14 @@
-// Detaylı sağlık testi — paket (koç/diyetisyen) + cinsiyete göre filtrelenir.
-// audience: 'shared' | 'coach' | 'dietitian'
+// Detaylı sağlık testi — tüm bölümler herkese; yalnızca genderOnly (women/men) filtrelenir.
+// audience: bölüm kategorisi etiketi (paket kilidi değil) — 'shared' | 'coach' | 'dietitian'
 
-import { packageIncludesCoach, packageIncludesDietitian } from './membershipPlans'
 import { HEALTH_SECTIONS } from './healthTestSections'
 
 export { HEALTH_SECTIONS }
 
 export const HEALTH_AUDIENCE_META = {
   shared: { label: 'Genel', chip: 'bg-amber-100 text-amber-800 ring-amber-200', border: 'border-amber-100 bg-amber-50/50' },
-  coach: { label: 'Koç', chip: 'bg-brand-100 text-brand-800 ring-brand-200', border: 'border-brand-100 bg-brand-50/40' },
-  dietitian: { label: 'Diyetisyen', chip: 'bg-sage-100 text-sage-800 ring-sage-200', border: 'border-sage-100 bg-sage-50/40' },
+  coach: { label: 'Hareket', chip: 'bg-brand-100 text-brand-800 ring-brand-200', border: 'border-brand-100 bg-brand-50/40' },
+  dietitian: { label: 'Beslenme', chip: 'bg-sage-100 text-sage-800 ring-sage-200', border: 'border-sage-100 bg-sage-50/40' },
 }
 
 function emptyValueForType(type) {
@@ -176,27 +175,20 @@ export function normalizeHealthTestForAnalysis(ht) {
   return n
 }
 
-export function getHealthPackageContext(packageConfig = {}) {
-  return {
-    hasCoach: packageIncludesCoach(packageConfig),
-    hasDietitian: packageIncludesDietitian(packageConfig),
-  }
+/** @deprecated Paket artık bölümleri kilitlemez; geriye uyumluluk için boş bağlam. */
+export function getHealthPackageContext(_packageConfig = {}) {
+  return { hasCoach: true, hasDietitian: true }
 }
 
-function sectionApplies(section, gender, ctx) {
+/** Yalnızca cinsiyet özel bölümleri filtreler (women / men / diet_women). */
+function sectionApplies(section, gender) {
   if (section.genderOnly && section.genderOnly !== gender) return false
-  if (section.skipWhenCoach && ctx.hasCoach) return false
-  const aud = section.audience || 'shared'
-  if (aud === 'shared') return true
-  if (aud === 'coach') return ctx.hasCoach
-  if (aud === 'dietitian') return ctx.hasDietitian
   return true
 }
 
-// Cinsiyet + pakete göre uygulanabilir bölümler.
-export function getApplicableSections(gender, packageConfig = null) {
-  const ctx = getHealthPackageContext(packageConfig || {})
-  return HEALTH_SECTIONS.filter((s) => sectionApplies(s, gender, ctx))
+// Cinsiyete göre uygulanabilir bölümler (paket fark etmez).
+export function getApplicableSections(gender, _packageConfig = null) {
+  return HEALTH_SECTIONS.filter((s) => sectionApplies(s, gender))
 }
 
 // Tüm soruları düz liste olarak döndürür (kayıt akışında soru-soru gösterim için).
@@ -393,13 +385,11 @@ function formatAnswerDisplay(q, v, healthTest) {
   return q.options?.find((o) => o.value === v)?.label || String(v)
 }
 
-// Admin/panel görünümü — cevaplanmış sorular; pakette olmayan bölümler de yanıt varsa gösterilir.
-export function describeHealthTest(healthTest, gender, packageConfig = null) {
+// Admin/panel görünümü — cevaplanmış sorular (cinsiyet filtresi + dolu yanıtlar).
+export function describeHealthTest(healthTest, gender, _packageConfig = null) {
   if (!healthTest) return []
-  const ctx = getHealthPackageContext(packageConfig || {})
   const sections = HEALTH_SECTIONS.filter((section) => {
-    if (section.genderOnly && section.genderOnly !== gender) return false
-    if (sectionApplies(section, gender, ctx)) return true
+    if (!sectionApplies(section, gender)) return false
     return section.questions.some((q) => {
       const v = healthTest[q.key]
       if (q.type === 'multi' || q.type === 'file') return Array.isArray(v) && v.length > 0

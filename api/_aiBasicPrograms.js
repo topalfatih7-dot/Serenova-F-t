@@ -188,17 +188,19 @@ export function enrichProfileBasics(memberData = {}) {
   }
 }
 
-export function buildHealthTestSummary(healthTest = {}, maxLen = 2800) {
+export function buildHealthTestSummary(healthTest = {}, maxLen = 6000) {
   if (!healthTest || typeof healthTest !== 'object') return ''
   const lines = Object.entries(healthTest)
-    .filter(([, v]) => {
+    .filter(([k, v]) => {
+      if (k === 'bloodWorkFiles') return false
       if (v == null || v === '') return false
       if (Array.isArray(v)) return v.length > 0
+      if (typeof v === 'object') return false
       return true
     })
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`)
   let out = lines.join('\n')
-  if (out.length > maxLen) out = out.slice(0, maxLen)
+  if (out.length > maxLen) out = `${out.slice(0, maxLen)}\n…`
   return out
 }
 

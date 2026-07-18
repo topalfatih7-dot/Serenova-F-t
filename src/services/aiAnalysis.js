@@ -5,7 +5,7 @@ import { describeHealthTest, normalizeHealthTestForAnalysis } from '../data/heal
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 7
+export const HEALTH_ANALYSIS_VERSION = 8
 
 export const RADAR_SCORE_LABELS = {
   metabolic: 'Metabolik Sağlık',
@@ -86,9 +86,9 @@ export function generateHealthAnalysis(profile, exercises = []) {
 function buildHealthTestInsights(healthTest = {}, gender, packageConfig = null) {
   if (!healthTest || typeof healthTest !== 'object') return []
   return describeHealthTest(healthTest, gender, packageConfig)
-    .flatMap((section) => section.items.map((item) => `${item.label}: ${item.value}`))
+    .flatMap((section) => section.items.map((item) => `${section.title} · ${item.label}: ${item.value}`))
     .filter((line) => !/su\s*tüketim|günlük\s*su|water\s*intake/i.test(line))
-    .slice(0, 12)
+    .slice(0, 40)
 }
 
 function calculateBmi(weight, height) {
