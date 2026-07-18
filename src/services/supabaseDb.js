@@ -551,23 +551,64 @@ async function addActivity(type, text, memberId = null) {
 }
 
 // --------------------------- auth flows ---------------------------
-export async function login(email, password, remember = false) {
+export async function login(email, password, remember = false, turnstileToken = '') {
   setRememberMe(remember)
   if (!remember) {
     clearAllAuthTokens()
   }
   syncAutoRefresh(remember)
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: sanitizeEmailInput(email), password,
-  })
-  if (error) return { success: false, error: 'E-posta veya şifre hatalı.' }
+  const cleanEmail = sanitizeEmailInput(email)
+  let user = null
+
+  try {
+    const loginRes = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'password-login',
+        email: cleanEmail,
+        password,
+        turnstileToken: turnstileToken || '',
+      }),
+    })
+    const loginData = await loginRes.json().catch(() => ({}))
+    if (!loginRes.ok || !loginData.ok || !loginData.session?.access_token) {
+      if (loginRes.status === 429) {
+        return { success: false, error: loginData.error || 'Çok fazla deneme. Lütfen sonra tekrar deneyin.' }
+      }
+      if (loginData.error && /bot|doğrulama|turnstile/i.test(loginData.error)) {
+        return { success: false, error: loginData.error }
+      }
+      return { success: false, error: loginData.error || 'E-posta veya şifre hatalı.' }
+    }
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: loginData.session.access_token,
+      refresh_token: loginData.session.refresh_token,
+    })
+    if (sessionError || !sessionData?.user) {
+      return { success: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
+    }
+    user = sessionData.user
+  } catch {
+    /* API yoksa (yalnızca Vite) klasik girişe düş — production’da /api/auth zorunlu */
+    if (import.meta.env.PROD) {
+      return { success: false, error: 'Giriş servisine ulaşılamadı. Sayfayı yenileyip tekrar deneyin.' }
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+      options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
+    })
+    if (error || !data?.user) return { success: false, error: 'E-posta veya şifre hatalı.' }
+    user = data.user
+  }
 
   const { data: staffRows } = await supabase.from('staff').select('*')
   const staffList = (staffRows || []).map(rowToStaff)
-  const role = roleForUser(data.user, staffList)
-  const displayName = await resolveActorName(data.user, role, staffList)
-  const staffMember = findStaffMatch(data.user, staffList)
+  const role = roleForUser(user, staffList)
+  const displayName = await resolveActorName(user, role, staffList)
+  const staffMember = findStaffMatch(user, staffList)
 
   const loginText = role === 'admin'
     ? `${displayName} (Admin) giriş yaptı`
@@ -575,18 +616,18 @@ export async function login(email, password, remember = false) {
       ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
       : `${displayName} giriş yaptı`
 
-  await addActivity('login', loginText, role === 'member' ? data.user.id : null)
+  await addActivity('login', loginText, role === 'member' ? user.id : null)
 
   if (role === 'admin') {
-    notifyTelegram('admin_login', { name: displayName, email: data.user.email })
+    notifyTelegram('admin_login', { name: displayName, email: user.email })
   } else if (role === 'staff') {
     notifyTelegram('staff_login', {
       name: displayName,
-      email: data.user.email,
+      email: user.email,
       role: staffRoleLabel(staffMember?.role),
     })
   } else {
-    notifyTelegram('member_login', { name: displayName, email: data.user.email })
+    notifyTelegram('member_login', { name: displayName, email: user.email })
   }
 
   return { success: true, role, remember }
@@ -718,16 +759,25 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   return { success: true, member }
 }
 
-async function unlockSignupSession(email, password) {
+async function unlockSignupSession(email, password, { turnstileToken = '', authSessionToken = '' } = {}) {
   try {
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'unlock-signup', email, password }),
+      body: JSON.stringify({
+        action: 'unlock-signup',
+        email,
+        password,
+        turnstileToken: turnstileToken || '',
+        authSessionToken: authSessionToken || '',
+      }),
     })
     const data = await res.json().catch(() => ({}))
     if (res.ok && data.ok) return { success: true }
     if (res.status === 503) {
+      return { success: false, error: data.error, unlockUnavailable: true }
+    }
+    if (data.error && /bot|doğrulama/i.test(data.error)) {
       return { success: false, error: data.error, unlockUnavailable: true }
     }
   } catch {
@@ -736,27 +786,74 @@ async function unlockSignupSession(email, password) {
   return { success: false }
 }
 
-async function signInAfterSignup(email, password) {
-  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-  if (!signInError) return { success: true }
+async function setSessionFromApiLogin(email, password, { turnstileToken = '', authSessionToken = '' } = {}) {
+  const res = await fetch('/api/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'password-login',
+      email,
+      password,
+      turnstileToken: turnstileToken || '',
+      authSessionToken: authSessionToken || '',
+    }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.session?.access_token) {
+    return { ok: false, status: res.status, error: data.error || '' }
+  }
+  const { error } = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  })
+  if (error) return { ok: false, status: 500, error: error.message }
+  return { ok: true }
+}
 
-  if (/not confirmed|confirm/i.test(signInError.message)) {
-    const unlocked = await unlockSignupSession(email, password)
+async function signInAfterSignup(email, password, { turnstileToken = '', authSessionToken = '' } = {}) {
+  const creds = { turnstileToken, authSessionToken }
+  try {
+    const viaApi = await setSessionFromApiLogin(email, password, creds)
+    if (viaApi.ok) return { success: true }
+
+    if (/bot|doğrulama/i.test(viaApi.error || '') && !authSessionToken) {
+      return { success: false, error: viaApi.error }
+    }
+
+    const unlocked = await unlockSignupSession(email, password, creds)
     if (unlocked.success) {
-      const retry = await supabase.auth.signInWithPassword({ email, password })
-      if (!retry.error) return { success: true }
-      return { success: false, error: retry.error.message }
+      const retry = await setSessionFromApiLogin(email, password, creds)
+      if (retry.ok) return { success: true }
+      return { success: false, error: retry.error || 'Oturum açılamadı.' }
     }
     if (unlocked.unlockUnavailable) {
       return { success: false, error: unlocked.error }
     }
+
+    if (!import.meta.env.PROD) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (!signInError) return { success: true }
+      if (/not confirmed|confirm/i.test(signInError.message)) {
+        return {
+          success: false,
+          error: 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin veya destek ile iletişime geçin.',
+        }
+      }
+      return { success: false, error: signInError.message }
+    }
+
     return {
       success: false,
-      error: 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin veya destek ile iletişime geçin.',
+      error: viaApi.error || 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin.',
     }
+  } catch {
+    if (!import.meta.env.PROD) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (!signInError) return { success: true }
+      return { success: false, error: signInError.message }
+    }
+    return { success: false, error: 'Giriş servisine ulaşılamadı.' }
   }
-
-  return { success: false, error: signInError.message }
 }
 
 // Kayıt için auth kullanıcısını hazırlar ve oturumu açar (members kaydı oluşturmaz).
@@ -777,6 +874,8 @@ export async function ensureAuthForRegistration(profile) {
 
   try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
 
+  const turnstileToken = profile.turnstileToken || ''
+
   // GoTrue HIBP (sızmış şifre) kaydı engellemesin diye service-role RPC ile oluştur
   try {
     const signupRes = await fetch('/api/auth', {
@@ -787,23 +886,33 @@ export async function ensureAuthForRegistration(profile) {
         email,
         password,
         name: profile.name || '',
+        turnstileToken,
       }),
     })
     const signupData = await signupRes.json().catch(() => ({}))
     if (signupRes.ok && signupData.ok) {
-      const signIn = await signInAfterSignup(email, password)
+      const signIn = await signInAfterSignup(email, password, {
+        turnstileToken,
+        authSessionToken: signupData.authSessionToken || '',
+      })
       if (signIn.success) return { success: true }
       return { success: false, error: signIn.error || 'Kayıt oluştu ancak giriş yapılamadı. Lütfen giriş sayfasından deneyin.' }
     }
     if (signupData.error === 'already_registered' || signupRes.status === 409) {
-      const signIn = await signInAfterSignup(email, password)
+      const signIn = await signInAfterSignup(email, password, { turnstileToken })
       if (signIn.success) return { success: true }
       return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
     }
     if (signupData.error) {
       return { success: false, error: signupData.error }
     }
+    if (import.meta.env.PROD) {
+      return { success: false, error: 'Kayıt servisine ulaşılamadı. Sayfayı yenileyip tekrar deneyin.' }
+    }
   } catch {
+    if (import.meta.env.PROD) {
+      return { success: false, error: 'Kayıt servisine ulaşılamadı. Sayfayı yenileyip tekrar deneyin.' }
+    }
     /* API yoksa (yalnızca Vite) klasik signUp’a düş */
   }
 
@@ -813,6 +922,7 @@ export async function ensureAuthForRegistration(profile) {
     options: {
       data: { name: profile.name },
       emailRedirectTo,
+      ...(turnstileToken ? { captchaToken: turnstileToken } : {}),
     },
   })
 
@@ -821,7 +931,7 @@ export async function ensureAuthForRegistration(profile) {
       return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
     }
     if (/registered|already|exists/i.test(signUpError.message)) {
-      const signIn = await signInAfterSignup(email, password)
+      const signIn = await signInAfterSignup(email, password, { turnstileToken })
       if (signIn.success) return { success: true }
       return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
     }
@@ -835,7 +945,7 @@ export async function ensureAuthForRegistration(profile) {
   }
 
   if (!signUpData?.session) {
-    const signIn = await signInAfterSignup(email, password)
+    const signIn = await signInAfterSignup(email, password, { turnstileToken })
     if (!signIn.success) return signIn
   }
 

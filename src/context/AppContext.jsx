@@ -727,8 +727,8 @@ export function AppProvider({ children }) {
     }
   }, [flushNotificationReads])
 
-  const login = useCallback(async (email, password, remember = false) => {
-    const r = await sb.login(email, password, remember)
+  const login = useCallback(async (email, password, remember = false, turnstileToken = '') => {
+    const r = await sb.login(email, password, remember, turnstileToken)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
     await reloadRemote()
     return { success: true, role: r.role, isAdmin: r.role === 'admin' }

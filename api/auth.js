@@ -2,8 +2,8 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
- * Geriye dönük: { email, password } → unlock-signup; { evt } → email-confirm
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
+ * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
@@ -16,8 +16,11 @@ import { handleAiUsageReport } from './_aiUsageReport.js'
 import { claimActiveSession, isActiveSession } from './_singleSession.js'
 import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
 import { setCorsHeaders, handleOptions } from './_guards.js'
-import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
-import { reportFormAttack } from './_attackAlert.js'
+import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
+import { reportFormAttack, mapGuardToAttackReason } from './_attackAlert.js'
+import { verifyTurnstile } from './_turnstile.js'
+import { isDisposableEmail, disposableEmailError } from './_disposableEmail.js'
+import { issueFormSession, verifyFormSession } from './_formSession.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -32,9 +35,29 @@ function parseBody(req) {
 function resolveAction(body, req) {
   if (body.action) return body.action
   if (body.evt) return 'email-confirm'
-  if (body.email && body.password) return 'unlock-signup'
+  /* email+password artık otomatik unlock değil — botlar bu yolu suistimal ediyordu */
   if (getBearerToken(req)) return 'email-send'
   return ''
+}
+
+async function requireTurnstile(req, token) {
+  const result = await verifyTurnstile(token, getClientIp(req))
+  if (result.ok) return { ok: true }
+  return {
+    ok: false,
+    status: result.status || 403,
+    error: result.error || 'Bot doğrulaması gerekli.',
+  }
+}
+
+/** Turnstile veya kayıt sonrası kısa ömürlü auth oturumu */
+async function requireBotGuard(req, body, { allowAuthSession = false } = {}) {
+  const ip = getClientIp(req)
+  if (allowAuthSession && body.authSessionToken) {
+    const session = verifyFormSession(body.authSessionToken, { ip, kind: 'auth-signup' })
+    if (session.ok) return { ok: true, via: 'auth-session' }
+  }
+  return requireTurnstile(req, body.turnstileToken || body.cfTurnstileResponse || body.captchaToken || '')
 }
 
 async function sendOtpEmail(email, redirectTo) {
@@ -100,13 +123,27 @@ async function sendRecoveryEmail(email, redirectTo) {
   return { ok: true }
 }
 
-async function handleSignup(res, body) {
+async function handleSignup(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   const name = String(body.name || '').trim()
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta adresi girin.' })
+  }
+  if (isDisposableEmail(email)) {
+    try {
+      await reportFormAttack(req, {
+        action: 'signup',
+        reason: 'disposable_email',
+        status: 400,
+        email,
+        path: '/api/auth',
+      })
+    } catch {
+      /* ignore */
+    }
+    return res.status(400).json({ ok: false, error: disposableEmailError() })
   }
   if (!isPasswordValid(password)) {
     return res.status(400).json({ ok: false, error: passwordRequirementsMessage() })
@@ -134,7 +171,46 @@ async function handleSignup(res, body) {
     })
   }
 
-  return res.status(200).json({ ok: true, userId: payload.user_id })
+  const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
+  return res.status(200).json({ ok: true, userId: payload.user_id, authSessionToken })
+}
+
+async function handlePasswordLogin(req, res, body) {
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = String(body.password || '')
+  if (!email || !password) {
+    return res.status(400).json({ ok: false, error: 'E-posta ve şifre gerekli.' })
+  }
+  if (isDisposableEmail(email)) {
+    return res.status(400).json({ ok: false, error: disposableEmailError() })
+  }
+
+  const url = getSupabaseUrl()
+  const anonKey = getAnonKey()
+  if (!url || !anonKey) {
+    return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
+  }
+
+  const anon = createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+
+  const { data, error: signInErr } = await anon.auth.signInWithPassword({ email, password })
+  if (signInErr || !data?.session) {
+    return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
+  }
+
+  const session = data.session
+  return res.status(200).json({
+    ok: true,
+    session: {
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_in: session.expires_in,
+      expires_at: session.expires_at,
+      token_type: session.token_type || 'bearer',
+    },
+  })
 }
 
 async function handleUnlockSignup(res, body) {
@@ -142,6 +218,9 @@ async function handleUnlockSignup(res, body) {
   const password = String(body.password || '')
   if (!email || !password) {
     return res.status(400).json({ ok: false, error: 'E-posta ve şifre gerekli.' })
+  }
+  if (isDisposableEmail(email)) {
+    return res.status(400).json({ ok: false, error: disposableEmailError() })
   }
 
   const url = getSupabaseUrl()
@@ -420,13 +499,46 @@ export default async function handler(req, res) {
     const body = parseBody(req)
     const action = resolveAction(body, req)
 
-    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-reset', 'email-send'])
+    const botGuarded = new Set(['signup', 'unlock-signup', 'password-login', 'password-reset'])
+    if (botGuarded.has(action)) {
+      const guard = await requireBotGuard(req, body, {
+        allowAuthSession: action === 'password-login' || action === 'unlock-signup',
+      })
+      if (!guard.ok) {
+        const reason = mapGuardToAttackReason(guard) || 'turnstile_failed'
+        try {
+          await reportFormAttack(req, {
+            action,
+            reason,
+            status: guard.status,
+            email: String(body.email || '').slice(0, 80),
+            path: '/api/auth',
+          })
+        } catch {
+          /* ignore */
+        }
+        return res.status(guard.status).json({ ok: false, error: guard.error })
+      }
+    }
+
+    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-login', 'password-reset', 'email-send'])
     if (sensitiveAuth.has(action)) {
+      const emailKey = String(body.email || '').trim().toLowerCase()
+      const limits = {
+        signup: 3,
+        'unlock-signup': 5,
+        'password-login': 12,
+        'password-reset': 5,
+        'email-send': 10,
+      }
       const rl = await enforceRateLimit({
         req,
         prefix: `auth-${action}`,
-        limit: action === 'signup' ? 8 : 15,
+        limit: limits[action] ?? 8,
         windowMs: 60 * 60 * 1000,
+        extraKey: emailKey && ['signup', 'password-login', 'password-reset', 'unlock-signup'].includes(action)
+          ? emailKey
+          : '',
       })
       applyRateLimitHeaders(res, rl.headers)
       if (!rl.ok) {
@@ -435,6 +547,7 @@ export default async function handler(req, res) {
             action,
             reason: 'auth_rate_limit',
             status: rl.status,
+            email: emailKey.slice(0, 80),
             path: '/api/auth',
           })
         } catch {
@@ -444,8 +557,9 @@ export default async function handler(req, res) {
       }
     }
 
-    if (action === 'signup') return handleSignup(res, body)
+    if (action === 'signup') return handleSignup(req, res, body)
     if (action === 'unlock-signup') return handleUnlockSignup(res, body)
+    if (action === 'password-login') return handlePasswordLogin(req, res, body)
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(res, body)

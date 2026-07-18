@@ -10,9 +10,16 @@
 ## Saldırı Telegram uyarısı (OPS chat)
 
 - Kanal: `TELEGRAM_OPS_CHAT_ID` (yoksa `TELEGRAM_CHAT_ID`) — supabase-health ile aynı.
-- Tetikleyenler: Turnstile fail/eksik (≥3/10dk), rate limit (ilk 429), honeypot, auth rate limit.
+- Tetikleyenler: Turnstile fail/eksik (≥3/10dk), rate limit (ilk 429), honeypot, auth rate limit, disposable email.
 - Cooldown: aynı neden için 10 dakika (Upstash key `serenova:attack-cooldown:*`).
 - Kod: `api/_attackAlert.js` ← `api/contact.js` + `api/auth.js`.
+
+## Auth bot koruması (signup / login)
+
+- UI giriş/kayıt → Turnstile; `POST /api/auth` (`password-login` / `signup`) sunucuda doğrular.
+- Signup 3/saat, login 12/saat (IP+email); disposable domain engeli (`api/_disposableEmail.js`).
+- Production’da client doğrudan `signUp` / `signInWithPassword` kullanmaz.
+- **Dashboard (zorunlu sıfıra yaklaşmak için):** Authentication → Bot and Abuse Protection → CAPTCHA = Cloudflare Turnstile + aynı `TURNSTILE_SECRET_KEY`. Bu, anon key ile doğrudan `/auth/v1/token` brute-force’unu keser.
 
 ## Vercel / WAF (manuel)
 

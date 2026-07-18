@@ -32,6 +32,8 @@ import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import { supabase } from '../services/supabaseClient'
 import { ensureAuthForRegistration, savePendingRegistrationMetadata } from '../services/supabaseDb'
+import TurnstileWidget from '../components/security/TurnstileWidget'
+import { isTurnstileEnabled } from '../config/turnstile'
 
 /** Eski URL plan parametrelerini güncel plan id'lerine eşler */
 const LEGACY_PLAN_MAP = {
@@ -198,6 +200,8 @@ export default function OnboardingPage() {
     confirmPassword: '',
     membership: preselectedPlan,
   })
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [prevRegDurationKey, setPrevRegDurationKey] = useState(
     `${preselectedPlan}|${searchParams.toString()}`,
   )
@@ -357,10 +361,17 @@ export default function OnboardingPage() {
     phoneCountry: data.phoneCountry,
     gender: data.gender,
     password: isOAuthFlow ? undefined : data.password,
+    turnstileToken: isOAuthFlow ? undefined : turnstileToken,
     fitnessLevel: 'beginner',
     goals: [],
     nutritionPrefs: [],
   })
+
+  const requireTurnstileOrError = () => {
+    if (isOAuthFlow || !isTurnstileEnabled()) return null
+    if (!turnstileToken) return 'Bot doğrulamasını tamamlayın.'
+    return null
+  }
 
   const persistRegistration = async (membership, paymentAmount = 0) => {
     const profile = buildProfile()
@@ -380,10 +391,17 @@ export default function OnboardingPage() {
 
   const finishFree = async () => {
     if (submitting) return
+    const turnstileErr = requireTurnstileOrError()
+    if (turnstileErr) {
+      showFormError(turnstileErr)
+      return
+    }
     setSubmitting(true)
     try {
       const result = await persistRegistration('free')
       if (!result.success) {
+        setTurnstileToken('')
+        setTurnstileKey((k) => k + 1)
         showFormError(result.error || 'Kayıt tamamlanamadı.')
         return
       }
@@ -402,6 +420,11 @@ export default function OnboardingPage() {
       showFormError(getValidationError())
       return
     }
+    const turnstileErr = requireTurnstileOrError()
+    if (turnstileErr) {
+      showFormError(turnstileErr)
+      return
+    }
     if (!isStripeEnabled()) {
       showFormError(STRIPE_REQUIRED_MESSAGE)
       return
@@ -412,6 +435,8 @@ export default function OnboardingPage() {
     if (!isOAuthFlow) {
       const auth = await ensureAuthForRegistration(profile)
       if (!auth.success) {
+        setTurnstileToken('')
+        setTurnstileKey((k) => k + 1)
         showFormError(auth.error || 'Hesap oluşturulamadı.')
         setSubmitting(false)
         return
@@ -696,6 +721,15 @@ export default function OnboardingPage() {
                 onChange={setTermsAccepted}
                 error={showErrors && !termsAccepted}
               />
+            )}
+
+            {step === 1 && !isOAuthFlow && isTurnstileEnabled() && (
+              <div className="mt-4 flex justify-center">
+                <TurnstileWidget
+                  key={turnstileKey}
+                  onToken={setTurnstileToken}
+                />
+              </div>
             )}
 
             {step === 1 && <div className="mt-6 shrink-0 md:mt-8" aria-hidden />}

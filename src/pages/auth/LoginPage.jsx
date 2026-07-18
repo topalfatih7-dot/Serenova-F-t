@@ -16,6 +16,8 @@ import SocialAuthButtons from '../../components/auth/SocialAuthButtons'
 import FormErrorModal from '../../components/ui/FormErrorModal'
 import AuthFormShell, { AuthFormCard } from '../../components/auth/AuthFormShell'
 import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
+import TurnstileWidget from '../../components/security/TurnstileWidget'
+import { isTurnstileEnabled } from '../../config/turnstile'
 
 const FEATURES = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman programları' },
@@ -30,6 +32,8 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(() => getRememberMe())
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [errorModal, setErrorModal] = useState({ open: false, message: '' })
   const { login, isAuthenticated, isAdmin, isStaff } = useApp()
   const { toast } = useToast()
@@ -89,10 +93,16 @@ export default function LoginPage() {
       showFormError(msg)
       return
     }
+    if (isTurnstileEnabled() && !turnstileToken) {
+      showFormError('Bot doğrulamasını tamamlayın.')
+      return
+    }
     setLoading(true)
     try {
-      const result = await login(cleanEmail, password, remember)
+      const result = await login(cleanEmail, password, remember, turnstileToken)
       if (!result.success) {
+        setTurnstileToken('')
+        setTurnstileKey((k) => k + 1)
         showFormError(result.error || 'Giriş başarısız. E-posta veya şifreyi kontrol edin.')
         return
       }
@@ -247,6 +257,14 @@ export default function LoginPage() {
                   Şifremi unuttum
                 </Link>
               </div>
+
+              {isTurnstileEnabled() && (
+                <TurnstileWidget
+                  key={turnstileKey}
+                  onToken={setTurnstileToken}
+                  className="flex justify-center"
+                />
+              )}
 
               <motion.button
                 type="submit"

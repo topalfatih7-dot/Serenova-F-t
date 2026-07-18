@@ -46,7 +46,9 @@ function reasonLabel(reason) {
     case 'invalid_session':
       return 'Geçersiz form oturumu'
     case 'auth_rate_limit':
-      return 'Auth rate limit (signup/reset)'
+      return 'Auth rate limit (signup/login/reset)'
+    case 'disposable_email':
+      return 'Tek kullanımlık e-posta (bot)'
     default:
       return reason || 'Bilinmeyen'
   }
@@ -154,6 +156,7 @@ export async function reportFormAttack(req, {
     reason === 'rate_limit' ||
     reason === 'auth_rate_limit' ||
     reason === 'honeypot' ||
+    reason === 'disposable_email' ||
     force
   const hitThreshold = count >= ALERT_THRESHOLD || (urgent && count >= 1)
   if (!hitThreshold) {
