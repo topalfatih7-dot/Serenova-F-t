@@ -50,14 +50,34 @@ async function requireTurnstile(req, token) {
   }
 }
 
-/** Turnstile veya kayıt sonrası kısa ömürlü auth oturumu */
-async function requireBotGuard(req, body, { allowAuthSession = false } = {}) {
+function readCaptchaToken(body) {
+  return String(body.turnstileToken || body.cfTurnstileResponse || body.captchaToken || '').trim()
+}
+
+/**
+ * Turnstile koruması.
+ * deferToSupabaseCaptcha: token’ı Cloudflare’de BİZ doğrulamayız (tek kullanımlık);
+ * Supabase /token CAPTCHA’sına iletilir. Aksi halde siteverify burada yapılır.
+ */
+async function requireBotGuard(req, body, { allowAuthSession = false, deferToSupabaseCaptcha = false } = {}) {
   const ip = getClientIp(req)
   if (allowAuthSession && body.authSessionToken) {
     const session = verifyFormSession(body.authSessionToken, { ip, kind: 'auth-signup' })
     if (session.ok) return { ok: true, via: 'auth-session' }
   }
-  return requireTurnstile(req, body.turnstileToken || body.cfTurnstileResponse || body.captchaToken || '')
+  const token = readCaptchaToken(body)
+  if (deferToSupabaseCaptcha) {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+    if ((!token || token.length < 10) && (isProd || process.env.TURNSTILE_SECRET_KEY)) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'Bot doğrulaması gerekli. Sayfayı yenileyip tekrar deneyin.',
+      }
+    }
+    return { ok: true, via: 'supabase-captcha', captchaToken: token }
+  }
+  return requireTurnstile(req, token)
 }
 
 async function sendOtpEmail(email, redirectTo) {
@@ -191,12 +211,24 @@ async function handlePasswordLogin(req, res, body) {
     return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
   }
 
+  const captchaToken = readCaptchaToken(body)
   const anon = createClient(url, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data, error: signInErr } = await anon.auth.signInWithPassword({ email, password })
+  const { data, error: signInErr } = await anon.auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  })
   if (signInErr || !data?.session) {
+    const msg = String(signInErr?.message || '')
+    if (/captcha/i.test(msg)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
+      })
+    }
     return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
   }
 
@@ -213,7 +245,7 @@ async function handlePasswordLogin(req, res, body) {
   })
 }
 
-async function handleUnlockSignup(res, body) {
+async function handleUnlockSignup(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   if (!email || !password) {
@@ -223,31 +255,49 @@ async function handleUnlockSignup(res, body) {
     return res.status(400).json({ ok: false, error: disposableEmailError() })
   }
 
-  const url = getSupabaseUrl()
-  const anonKey = getAnonKey()
-  if (!url || !anonKey) {
-    return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
-  }
-
-  const anon = createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  const { error: signInErr } = await anon.auth.signInWithPassword({ email, password })
-  if (signInErr) {
-    const unconfirmed = /not confirmed|confirm/i.test(signInErr.message)
-    if (!unconfirmed) {
-      return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
-    }
-  } else {
-    await anon.auth.signOut()
-  }
-
   const admin = getSupabaseAdmin()
-  const { data: listData, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const authSession = body.authSessionToken
+    ? verifyFormSession(body.authSessionToken, { ip: getClientIp(req), kind: 'auth-signup' })
+    : { ok: false }
+
+  /* Kayıt sonrası kısa oturum: şifre zaten register_email_user ile doğrulandı */
+  if (!authSession.ok) {
+    const url = getSupabaseUrl()
+    const anonKey = getAnonKey()
+    if (!url || !anonKey) {
+      return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
+    }
+
+    const captchaToken = readCaptchaToken(body)
+    const anon = createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const { error: signInErr } = await anon.auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    })
+    if (signInErr) {
+      const unconfirmed = /not confirmed|confirm/i.test(signInErr.message)
+      if (!unconfirmed) {
+        if (/captcha/i.test(signInErr.message)) {
+          return res.status(403).json({
+            ok: false,
+            error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
+          })
+        }
+        return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
+      }
+    } else {
+      await anon.auth.signOut()
+    }
+  }
+
+  const { data: listed, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 })
   if (listErr) throw listErr
 
-  const user = (listData?.users || []).find((u) => (u.email || '').toLowerCase() === email)
+  const user = (listed?.users || []).find((u) => (u.email || '').toLowerCase() === email)
   if (!user) return res.status(404).json({ ok: false, error: 'Kullanıcı bulunamadı.' })
 
   const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, { email_confirm: true })
@@ -503,6 +553,8 @@ export default async function handler(req, res) {
     if (botGuarded.has(action)) {
       const guard = await requireBotGuard(req, body, {
         allowAuthSession: action === 'password-login' || action === 'unlock-signup',
+        /* login/unlock: token Supabase CAPTCHA’ya gider; çift doğrulama token’ı yakar */
+        deferToSupabaseCaptcha: action === 'password-login' || action === 'unlock-signup',
       })
       if (!guard.ok) {
         const reason = mapGuardToAttackReason(guard) || 'turnstile_failed'
@@ -558,7 +610,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'signup') return handleSignup(req, res, body)
-    if (action === 'unlock-signup') return handleUnlockSignup(res, body)
+    if (action === 'unlock-signup') return handleUnlockSignup(req, res, body)
     if (action === 'password-login') return handlePasswordLogin(req, res, body)
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
