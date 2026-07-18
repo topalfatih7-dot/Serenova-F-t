@@ -56,6 +56,8 @@ export default function HealthTestPage() {
         disclaimer={user.disclaimer}
         onConsentSave={handleConsentSave}
         consentSaving={consentSaving}
+        profile={user}
+        healthAnalysis={user.healthAnalysis}
       />
     </PanelPageShell>
   )

@@ -36,10 +36,12 @@ export function AnalysisBlock({ analysis }) {
             </p>
           </div>
         )}
-        {analysis.fitnessScore != null && (
+        {(analysis.radarScores?.overall != null || analysis.fitnessScore != null) && (
           <div className="rounded-xl bg-white/80 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-cream-800/50">Form Skoru</p>
-            <p className="text-sm font-semibold text-cream-900">{analysis.fitnessScore}/100</p>
+            <p className="text-[10px] uppercase tracking-wide text-cream-800/50">360 Skor</p>
+            <p className="text-sm font-semibold text-cream-900">
+              {analysis.radarScores?.overall ?? analysis.fitnessScore}/100
+            </p>
           </div>
         )}
         {cal?.recommended != null && (

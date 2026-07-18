@@ -12,28 +12,42 @@ export const HEALTH_AUDIENCE_META = {
   dietitian: { label: 'Diyetisyen', chip: 'bg-sage-100 text-sage-800 ring-sage-200', border: 'border-sage-100 bg-sage-50/40' },
 }
 
+function emptyValueForType(type) {
+  if (type === 'multi' || type === 'file') return []
+  return ''
+}
+
+function registerQuestionKeys(obj, q) {
+  if (!q?.key) return
+  obj[q.key] = emptyValueForType(q.type)
+  if (q.detail) obj[q.detail.key] = ''
+  ;(q.followUps || []).forEach((fu) => registerQuestionKeys(obj, fu))
+}
+
 // Boş test nesnesi (tüm anahtarlar tanımlı olsun ki kontrollü inputlar uyarı vermesin).
 export const EMPTY_HEALTH_TEST = (() => {
   const obj = {}
   HEALTH_SECTIONS.forEach((s) => {
-    s.questions.forEach((q) => {
-      obj[q.key] = q.type === 'multi' ? [] : ''
-      if (q.detail) obj[q.detail.key] = ''
-    })
+    s.questions.forEach((q) => registerQuestionKeys(obj, q))
   })
   return obj
 })()
 
-/** Koşullu detay alanı gösterilsin mi? */
+/** Koşullu detay / follow-up gösterilsin mi? */
 export function isDetailVisible(detail, parentValue) {
   if (!detail) return false
   const when = detail.when
+  if (when == null) return true
   if (Array.isArray(parentValue)) {
     if (Array.isArray(when)) return when.some((w) => parentValue.includes(w))
     return parentValue.includes(when)
   }
   if (Array.isArray(when)) return when.includes(parentValue)
   return parentValue === when
+}
+
+export function isFollowUpVisible(followUp, parentValue) {
+  return isDetailVisible(followUp, parentValue)
 }
 
 /** Koşullu detay alanı doldurulmuş mu? */
@@ -43,21 +57,61 @@ export function isDetailFilled(detail, healthTest) {
   return typeof val === 'string' && val.trim().length > 0
 }
 
-/** Soru (ve varsa koşullu detay) geçerli şekilde cevaplanmış mı? */
+function isFollowUpFilled(followUp, healthTest) {
+  if (!followUp) return true
+  return hasStoredAnswer(followUp, healthTest)
+    && isQuestionFullyAnswered(followUp, healthTest)
+}
+
+/** Soft uyarı mesajı (bloklamaz). */
+export function getSoftWarningMessage(q, healthTest) {
+  const sw = q?.softWarning
+  if (!sw?.message) return null
+  const ht = healthTest || {}
+
+  if (typeof sw.when === 'function') {
+    return sw.when(ht) ? sw.message : null
+  }
+
+  const rules = sw.requireAll || []
+  const ok = rules.every((rule) => {
+    const val = ht[rule.key]
+    if (rule.equals != null) return val === rule.equals
+    if (Array.isArray(rule.includes)) {
+      if (!Array.isArray(val)) return false
+      return rule.includes.some((v) => val.includes(v))
+    }
+    return false
+  })
+  return ok ? sw.message : null
+}
+
+/** Soru (ve varsa koşullu detay / follow-up) geçerli şekilde cevaplanmış mı? */
 export function isQuestionFullyAnswered(q, healthTest) {
   if (!q) return false
   const parentVal = healthTest?.[q.key]
   const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
+  const visibleFollowUps = (q.followUps || []).filter((fu) => isFollowUpVisible(fu, parentVal))
 
-  if (!q.required) {
-    if (!hasStoredAnswer(q, healthTest)) return true
-    if (detailVisible) return isDetailFilled(q.detail, healthTest)
+  const dependentsOk = () => {
+    if (detailVisible && !isDetailFilled(q.detail, healthTest)) return false
+    for (const fu of visibleFollowUps) {
+      if (fu.required === false) {
+        if (hasStoredAnswer(fu, healthTest) && !isFollowUpFilled(fu, healthTest)) return false
+        continue
+      }
+      if (!isFollowUpFilled(fu, healthTest)) return false
+    }
     return true
   }
 
+  if (!q.required) {
+    if (!hasStoredAnswer(q, healthTest)) return true
+    return dependentsOk()
+  }
+
   if (!hasStoredAnswer(q, healthTest)) return false
-  if (detailVisible) return isDetailFilled(q.detail, healthTest)
-  return true
+  return dependentsOk()
 }
 
 /** AI analizi ve eski kayıtlar için yeni cevapları kanonik değerlere çevirir. */
@@ -68,9 +122,21 @@ export function normalizeHealthTestForAnalysis(ht) {
   const wellbeingMap = { very_low: '1', low: '2', medium: '3', good: '4', excellent: '5' }
   if (wellbeingMap[n.wellbeing]) n.wellbeing = wellbeingMap[n.wellbeing]
 
-  if (n.injuries === 'yes_ongoing' || n.injuries === 'yes_recovered') n.injuries = 'yes'
+  if (
+    n.injuries === 'yes_ongoing'
+    || n.injuries === 'yes_recovered'
+    || n.injuries === 'yes_partial'
+  ) {
+    n.injuries = 'yes'
+  }
 
-  if (n.medications === 'regular' || n.medications === 'occasional') n.medications = 'yes'
+  if (
+    n.medications === 'regular'
+    || n.medications === 'occasional'
+    || n.medications === 'both'
+  ) {
+    n.medications = 'yes'
+  }
   if (n.medications === 'none') n.medications = 'no'
 
   const activityMap = { '0': 'sedentary', '1_2': 'light', '3_4': 'moderate', '5_plus': 'active' }
@@ -98,9 +164,14 @@ export function normalizeHealthTestForAnalysis(ht) {
     }
   }
 
-  if (Array.isArray(n.familyHistory) && n.familyHistory.includes('heartDisease')) {
-    n.familyHistory = [...new Set([...n.familyHistory.filter((v) => v !== 'heartDisease'), 'heart'])]
+  if (Array.isArray(n.familyHistory)) {
+    n.familyHistory = n.familyHistory.filter((v) => v !== 'none' && v !== 'unknown')
+    if (n.familyHistory.includes('heartDisease')) {
+      n.familyHistory = [...new Set([...n.familyHistory.filter((v) => v !== 'heartDisease'), 'heart'])]
+    }
   }
+
+  if (n.energy === 'very_high') n.energy = 'high'
 
   return n
 }
@@ -145,7 +216,12 @@ export function getApplicableQuestions(gender, packageConfig = null) {
 export function hasStoredAnswer(q, healthTest) {
   if (!q) return false
   const val = healthTest?.[q.key]
-  if (q.type === 'multi') return Array.isArray(val) && val.length > 0
+  if (q.type === 'multi' || q.type === 'file') return Array.isArray(val) && val.length > 0
+  if (q.type === 'scale') {
+    if (val === '' || val == null) return false
+    const num = Number(val)
+    return Number.isFinite(num)
+  }
   if (q.type === 'text' || q.type === 'time') return typeof val === 'string' && val.trim().length > 0
   return val !== '' && val != null
 }
@@ -230,7 +306,8 @@ export function getSectionProgress(section, healthTest) {
       : hasStoredAnswer(q, ht)
   )).length
   const started = section.questions.some((q) => hasStoredAnswer(q, ht)
-    || (q.detail && isDetailFilled(q.detail, ht)))
+    || (q.detail && isDetailFilled(q.detail, ht))
+    || (q.followUps || []).some((fu) => hasStoredAnswer(fu, ht)))
   const complete = isSectionComplete(section, ht)
   return {
     requiredTotal: tracked.length,
@@ -295,6 +372,27 @@ export function isHealthTestComplete(healthTest, gender, packageConfig = null) {
   return getApplicableSections(gender, packageConfig).every((s) => isSectionComplete(s, healthTest))
 }
 
+function formatAnswerDisplay(q, v, healthTest) {
+  if (q.type === 'multi') {
+    if (!Array.isArray(v) || v.length === 0) return null
+    return v.map((val) => q.options?.find((o) => o.value === val)?.label || val).join(', ')
+  }
+  if (q.type === 'file') {
+    if (!Array.isArray(v) || v.length === 0) return null
+    return `${v.length} dosya yüklendi`
+  }
+  if (q.type === 'scale') {
+    if (v === '' || v == null) return null
+    return `${v} / 10`
+  }
+  if (q.type === 'text' || q.type === 'time') {
+    if (!v) return null
+    return q.type === 'time' ? String(v).replace(':', '.') : v
+  }
+  if (v === '' || v == null) return null
+  return q.options?.find((o) => o.value === v)?.label || String(v)
+}
+
 // Admin/panel görünümü — cevaplanmış sorular; pakette olmayan bölümler de yanıt varsa gösterilir.
 export function describeHealthTest(healthTest, gender, packageConfig = null) {
   if (!healthTest) return []
@@ -304,7 +402,7 @@ export function describeHealthTest(healthTest, gender, packageConfig = null) {
     if (sectionApplies(section, gender, ctx)) return true
     return section.questions.some((q) => {
       const v = healthTest[q.key]
-      if (q.type === 'multi') return Array.isArray(v) && v.length > 0
+      if (q.type === 'multi' || q.type === 'file') return Array.isArray(v) && v.length > 0
       return v !== '' && v != null
     })
   })
@@ -313,23 +411,52 @@ export function describeHealthTest(healthTest, gender, packageConfig = null) {
       const items = []
       section.questions.forEach((q) => {
         const v = healthTest[q.key]
-        let display
-        if (q.type === 'multi') {
-          if (!Array.isArray(v) || v.length === 0) return
-          display = v.map((val) => q.options.find((o) => o.value === val)?.label || val).join(', ')
-        } else if (q.type === 'text' || q.type === 'time') {
-          if (!v) return
-          display = q.type === 'time' ? v.replace(':', '.') : v
-        } else {
-          if (v === '' || v == null) return
-          display = q.options?.find((o) => o.value === v)?.label || v
-        }
+        const display = formatAnswerDisplay(q, v, healthTest)
+        if (display == null) return
         items.push({ label: q.label, value: display })
         if (q.detail && isDetailVisible(q.detail, v) && healthTest[q.detail.key]) {
           items.push({ label: 'Açıklama', value: healthTest[q.detail.key] })
         }
+        ;(q.followUps || []).forEach((fu) => {
+          if (!isFollowUpVisible(fu, v)) return
+          const fuDisplay = formatAnswerDisplay(fu, healthTest[fu.key], healthTest)
+          if (fuDisplay == null) return
+          items.push({ label: fu.label, value: fuDisplay })
+          if (fu.detail && isDetailVisible(fu.detail, healthTest[fu.key]) && healthTest[fu.detail.key]) {
+            items.push({ label: 'Açıklama', value: healthTest[fu.detail.key] })
+          }
+        })
       })
       return { id: section.id, title: section.title, audience: section.audience || 'shared', items }
     })
     .filter((s) => s.items.length > 0)
+}
+
+/** Exclusive multi seçenekleri temizler (örn. Yok). */
+export function toggleExclusiveMulti(current, value, options = []) {
+  const arr = Array.isArray(current) ? current : []
+  const exclusiveValues = options.filter((o) => o.exclusive).map((o) => o.value)
+  const isExclusive = exclusiveValues.includes(value)
+
+  if (arr.includes(value)) {
+    return arr.filter((x) => x !== value)
+  }
+  if (isExclusive) return [value]
+  return [...arr.filter((x) => !exclusiveValues.includes(x)), value]
+}
+
+/** Follow-up alanlarını parent görünür değilse temizle. */
+export function clearHiddenFollowUps(q, parentValue, patch = {}) {
+  const next = { ...patch }
+  ;(q.followUps || []).forEach((fu) => {
+    if (!isFollowUpVisible(fu, parentValue)) {
+      next[fu.key] = emptyValueForType(fu.type)
+      if (fu.detail) next[fu.detail.key] = ''
+      Object.assign(next, clearHiddenFollowUps(fu, next[fu.key] ?? '', {}))
+    }
+  })
+  if (q.detail && !isDetailVisible(q.detail, parentValue)) {
+    next[q.detail.key] = ''
+  }
+  return next
 }

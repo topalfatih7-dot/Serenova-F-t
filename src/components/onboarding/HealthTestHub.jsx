@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, Moon, Clock3,
   CheckCircle2, Circle, Sparkles,
 } from 'lucide-react'
 import HealthTestConsentForm from './HealthTestConsentForm'
+import HealthRadarScores from './HealthRadarScores'
 import {
   HEALTH_AUDIENCE_META,
   getHealthTestHubSections,
   getOverallHealthTestProgress,
   isHealthTestComplete,
 } from '../../data/healthTest'
+import { calculateRadarScores } from '../../services/aiAnalysis'
 
 const ICONS = {
   HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, Moon, Clock3,
@@ -45,6 +47,8 @@ export default function HealthTestHub({
   disclaimer,
   onConsentSave,
   consentSaving = false,
+  profile = null,
+  healthAnalysis = null,
 }) {
   const [localAck, setLocalAck] = useState(!!healthAck)
   const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
@@ -55,6 +59,17 @@ export default function HealthTestHub({
   const needsConsent = !healthAck || !disclaimer
   const fullyComplete = isHealthTestComplete(healthTest, gender, packageConfig)
     && healthAck && disclaimer
+
+  const radarScores = useMemo(() => {
+    if (!fullyComplete) return null
+    if (healthAnalysis?.radarScores) return healthAnalysis.radarScores
+    return calculateRadarScores({
+      ...(profile || {}),
+      healthTest,
+      gender,
+      packageConfig,
+    })
+  }, [fullyComplete, healthAnalysis, profile, healthTest, gender, packageConfig])
 
   const handleConsentSubmit = () => {
     if (!localAck || !localDisclaimer) {
@@ -104,15 +119,18 @@ export default function HealthTestHub({
       </div>
 
       {fullyComplete && (
-        <div className="rounded-2xl border border-sage-200 bg-sage-50/60 px-4 py-3 text-sm text-sage-900">
-          <span className="flex items-center gap-2 font-semibold">
-            <CheckCircle2 className="h-4 w-4 text-sage-600" />
-            Tüm sağlık testleri kaydedildi
-          </span>
-          <p className="mt-1 text-xs text-sage-800/75">
-            Cevaplarınız profilinizde saklanır; koç, diyetisyen ve doktor panelinde görünür.
-            İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.
-          </p>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-sage-200 bg-sage-50/60 px-4 py-3 text-sm text-sage-900">
+            <span className="flex items-center gap-2 font-semibold">
+              <CheckCircle2 className="h-4 w-4 text-sage-600" />
+              Tüm sağlık testleri kaydedildi
+            </span>
+            <p className="mt-1 text-xs text-sage-800/75">
+              Cevaplarınız profilinizde saklanır; koç, diyetisyen ve doktor panelinde görünür.
+              İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.
+            </p>
+          </div>
+          {radarScores && <HealthRadarScores radarScores={radarScores} />}
         </div>
       )}
 

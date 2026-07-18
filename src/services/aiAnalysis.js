@@ -5,7 +5,18 @@ import { describeHealthTest, normalizeHealthTestForAnalysis } from '../data/heal
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 6
+export const HEALTH_ANALYSIS_VERSION = 7
+
+export const RADAR_SCORE_LABELS = {
+  metabolic: 'Metabolik Sağlık',
+  nutrition: 'Beslenme Kalitesi',
+  activity: 'Aktivite Düzeyi',
+  sleep: 'Uyku Kalitesi',
+  stress: 'Stres Yönetimi',
+  digestion: 'Sindirim Sağlığı',
+  lifestyle: 'Yaşam Tarzı Skoru',
+  overall: 'Genel Değerlendirme',
+}
 
 const GENERIC_WEEKLY_FOCUS =
   /\(\d+\s*dk\)|HIIT|Full Body|Üst Vücut|Alt Vücut|Vücut Ağırlığı|Esneklik\s*&\s*Yoga|Kardiyo\s*&|İtme Hareketi|Çekme Hareketi|Olimpik/i
@@ -19,6 +30,7 @@ export function isGenericWeeklyPlanDay(day) {
 export function isHealthAnalysisStale(analysis, libraryCount = 0) {
   if (!analysis?.generatedAt) return true
   if ((analysis.version || 0) < HEALTH_ANALYSIS_VERSION) return true
+  if (analysis.radarScores?.overall == null) return true
   if (analysis.dietitianRecommendations?.hydration != null) return true
   if ((analysis.dietitianRecommendations?.mealPlan || []).length > 0) return true
 
@@ -51,6 +63,9 @@ export function generateHealthAnalysis(profile, exercises = []) {
   const coachRecommendations = generateCoachList(enriched, exercises, goalCategories, healthTestInsights)
   const dietitianRecommendations = { tips: [], focus: '', aiGenerated: false }
 
+  const fitnessScore = calculateFitnessScore(enriched)
+  const radarScores = calculateRadarScores(enriched, bmi, fitnessScore)
+
   return {
     version: HEALTH_ANALYSIS_VERSION,
     generatedAt: new Date().toISOString().split('T')[0],
@@ -60,7 +75,8 @@ export function generateHealthAnalysis(profile, exercises = []) {
     dailyCalories: estimateDailyCalories(enriched),
     coachRecommendations,
     dietitianRecommendations,
-    fitnessScore: calculateFitnessScore(enriched),
+    fitnessScore,
+    radarScores,
     priorityGoal: getPriorityGoal(enriched.goals || []),
     healthTestInsights,
     estimatedMetrics: enriched.estimatedMetrics === true,
@@ -129,6 +145,142 @@ function estimateDailyCalories(profile) {
   return { maintenance: total, recommended: total, goal: 'Form koruma' }
 }
 
+function clampScore(n) {
+  return Math.max(0, Math.min(100, Math.round(n)))
+}
+
+function scaleMap(value, map, fallback = 50) {
+  if (value == null || value === '') return fallback
+  if (Object.prototype.hasOwnProperty.call(map, value)) return map[value]
+  return fallback
+}
+
+/** 360° sağlık boyut skorları — mevcut healthTest + profil üzerinden. */
+export function calculateRadarScores(profile, bmi = null, fitnessScore = null) {
+  const raw = profile?.healthTest || {}
+  const ht = normalizeHealthTestForAnalysis(raw)
+  const bmiVal = bmi ?? calculateBmi(profile?.weight, profile?.height)
+
+  let metabolic = 62
+  if (bmiVal) {
+    if (bmiVal >= 18.5 && bmiVal < 25) metabolic += 18
+    else if (bmiVal >= 25 && bmiVal < 30) metabolic += 4
+    else if (bmiVal < 18.5) metabolic -= 8
+    else metabolic -= 16
+  }
+  const chronic = Array.isArray(ht.chronicConditions) ? ht.chronicConditions : []
+  metabolic -= Math.min(24, chronic.length * 5)
+  if (raw.lastBloodWork === 'last_3_months') metabolic += 8
+  else if (raw.lastBloodWork === '3_12_months') metabolic += 3
+  else if (raw.lastBloodWork === 'never' || raw.lastBloodWork === 'over_year') metabolic -= 6
+  if (raw.weightChange === 'stable') metabolic += 4
+  else if (raw.weightChange === 'gained' || raw.weightChange === 'lost') metabolic -= 2
+
+  let nutrition = 58
+  nutrition += scaleMap(raw.dietMealsPerDay, { '1_2': -8, '3': 6, '4_5': 10, '6_plus': 2 }, 0)
+  nutrition += scaleMap(raw.dietSweetIntake, { rarely: 10, sometimes: 4, often: -8, daily: -14 }, 0)
+  nutrition += scaleMap(raw.dietEmotionalEating, { never: 8, rarely: 4, sometimes: -2, often: -10 }, 0)
+  nutrition += scaleMap(raw.dietWaterIntake, { under_1: -8, '1_2': 0, '2_3': 6, over_3: 10 }, 0)
+  const supplements = Array.isArray(raw.supplements) ? raw.supplements.filter((v) => v !== 'none') : []
+  if (supplements.length > 0 && supplements.length <= 4) nutrition += 4
+  if ((profile?.nutritionPrefs || []).length >= 1) nutrition += 6
+
+  let activity = 55
+  activity += scaleMap(ht.activityFrequency, {
+    sedentary: -18, light: -4, moderate: 12, active: 22,
+  }, 0)
+  activity += scaleMap(raw.trainingHistoryYears, {
+    none: -8, under_6m: 0, '6m_2y': 8, '2y_plus': 14,
+  }, 0)
+  activity += scaleMap(raw.dailySteps, {
+    under_3000: -10, '3000_6000': 0, '6000_9000': 8, '9000_plus': 14,
+  }, 0)
+  if (ht.injuries === 'yes') activity -= 10
+  if (raw.injuryLimitation === 'severe') activity -= 8
+  else if (raw.injuryLimitation === 'moderate') activity -= 4
+
+  let sleep = 60
+  sleep += scaleMap(raw.dietSleepQuality, {
+    poor: -20, fair: -6, good: 12, excellent: 18,
+  }, 0)
+  sleep += scaleMap(raw.dietSleepHours, {
+    under_5: -16, '5_6': -6, '6_7': 4, '7_8': 14, over_8: 10,
+  }, 0)
+  if (raw.shiftWork === 'yes') sleep -= 10
+  else if (raw.shiftWork === 'sometimes') sleep -= 4
+  if (chronic.includes('sleep_apnea')) sleep -= 12
+
+  let stress = 58
+  stress += scaleMap(raw.anxiety, {
+    never: 14, rarely: 8, sometimes: 0, often: -12, always: -20,
+    none: 14, mild: 6, moderate: -4, high: -16,
+  }, 0)
+  stress += scaleMap(raw.dailyStressImpact, {
+    none: 14, low: 8, moderate: 0, high: -12, very_high: -18,
+  }, 0)
+  stress += scaleMap(raw.stressCoping, {
+    always: 14, often: 8, sometimes: 0, rarely: -10, never: -16,
+  }, 0)
+  stress += scaleMap(raw.socialSupport, {
+    strong: 10, partial: 4, limited: -4, none: -10,
+  }, 0)
+  stress += scaleMap(raw.dietStressLevel, {
+    low: 10, moderate: 0, high: -12, very_high: -18,
+  }, 0)
+
+  let digestion = 68
+  const digSymptoms = Array.isArray(raw.digestiveSymptoms)
+    ? raw.digestiveSymptoms.filter((v) => v !== 'none')
+    : []
+  digestion -= Math.min(36, digSymptoms.length * 8)
+  const digDiet = Array.isArray(raw.dietDigestiveSymptoms)
+    ? raw.dietDigestiveSymptoms.filter((v) => v !== 'none' && v !== 'yok')
+    : []
+  digestion -= Math.min(20, digDiet.length * 5)
+  if (chronic.includes('ibs') || chronic.includes('reflux') || chronic.includes('celiac')) {
+    digestion -= 10
+  }
+
+  let lifestyle = 55
+  lifestyle += scaleMap(raw.wellbeing, {
+    very_low: -16, low: -8, medium: 0, good: 10, excellent: 16,
+    '1': -16, '2': -8, '3': 0, '4': 10, '5': 16,
+  }, 0)
+  lifestyle += scaleMap(raw.energy, {
+    very_low: -12, low: -6, moderate: 2, high: 10, very_high: 14,
+  }, 0)
+  const motivation = Number(raw.motivation)
+  if (Number.isFinite(motivation)) lifestyle += Math.round((motivation - 5) * 2.2)
+  lifestyle += scaleMap(raw.lifeQuality, {
+    '1': -14, '2': -6, '3': 2, '4': 10, '5': 16,
+  }, 0)
+  lifestyle += scaleMap(raw.readinessToChange, {
+    not_ready: -10, thinking: -2, ready: 6, started: 12, maintaining: 16,
+  }, 0)
+  lifestyle += scaleMap(raw.smoking, {
+    never: 8, former: 2, occasional: -8, daily: -16,
+  }, 0)
+  lifestyle += scaleMap(raw.alcohol, {
+    none: 6, monthly: 2, weekly: -4, frequent: -12,
+  }, 0)
+  if (raw.biggestBarrier === 'time' || raw.biggestBarrier === 'motivation') lifestyle -= 4
+
+  const dims = {
+    metabolic: clampScore(metabolic),
+    nutrition: clampScore(nutrition),
+    activity: clampScore(activity),
+    sleep: clampScore(sleep),
+    stress: clampScore(stress),
+    digestion: clampScore(digestion),
+    lifestyle: clampScore(lifestyle),
+  }
+  const avg = Object.values(dims).reduce((a, b) => a + b, 0) / Object.keys(dims).length
+  const fit = fitnessScore != null ? fitnessScore : calculateFitnessScore(profile)
+  const overall = clampScore(avg * 0.7 + fit * 0.3)
+
+  return { ...dims, overall }
+}
+
 function calculateFitnessScore(profile) {
   let score = 50
   const bmi = calculateBmi(profile.weight, profile.height)
@@ -144,14 +296,17 @@ function calculateFitnessScore(profile) {
   const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
   if (Number(ht.wellbeing) >= 4) score += 5
   if (ht.energy === 'high') score += 5
-  if (ht.sleepQuality === 'good') score += 5
-  if (ht.stressLevel === 'low') score += 5
+  if (ht.sleepQuality === 'good' || ht.dietSleepQuality === 'good') score += 5
+  if (ht.stressLevel === 'low' || ht.dietStressLevel === 'low') score += 5
   if (ht.injuries === 'yes' || ht.painAreas?.length) score -= 8
   if (ht.chronicConditions?.length) score -= 5
   if (ht.teaCoffee === 'high') score -= 3
   if (ht.substanceUse === 'regular') score -= 10
   if (ht.substanceUse === 'occasional') score -= 5
   if (ht.travelFrequency === 'weekly') score -= 2
+
+  const pain = Number(ht.painScale ?? profile.healthTest?.painScale)
+  if (Number.isFinite(pain) && pain >= 7) score -= 6
 
   return Math.max(0, Math.min(100, score))
 }

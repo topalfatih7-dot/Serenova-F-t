@@ -3,364 +3,452 @@ import { DIETITIAN_HEALTH_SECTIONS } from './healthTestDietitianSections'
 export const HEALTH_SECTIONS = [
   {
     id: 'general',
-    title: 'Genel Durum',
-    subtitle: 'Ruh hali, enerji ve genel iyilik hali',
+    title: 'Genel Değerlendirme',
+    subtitle: 'Ruh hali, enerji, motivasyon ve stres yönetimi',
     icon: 'HeartPulse',
     audience: 'shared',
     questions: [
       {
         type: 'emoji',
         key: 'wellbeing',
-        label: 'Son 2 haftada kendinizi genel olarak nasıl hissettiniz?',
+        label: 'Son 2 hafta içinde kendinizi genel olarak nasıl hissettiniz?',
         required: true,
         options: [
           { value: 'very_low', label: 'Çok kötü', emoji: '😞' },
-          { value: 'low', label: 'Düşük', emoji: '🙁' },
-          { value: 'medium', label: 'Orta', emoji: '😐' },
+          { value: 'low', label: 'Kötü', emoji: '🙁' },
+          { value: 'medium', label: 'Ne iyi ne kötü', emoji: '😐' },
           { value: 'good', label: 'İyi', emoji: '🙂' },
-          { value: 'excellent', label: 'Harika', emoji: '😄' }
-        ]
+          { value: 'excellent', label: 'Çok iyi', emoji: '😁' },
+        ],
       },
       {
-        type: 'single',
+        type: 'emoji',
         key: 'energy',
-        label: 'Gün içinde enerji seviyeniz nasıl?',
+        label: 'Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz?',
         required: true,
         options: [
-          { value: 'very_low', label: 'Çok düşük' },
-          { value: 'low', label: 'Düşük' },
-          { value: 'moderate', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' }
-        ]
+          { value: 'very_low', label: 'Çok düşük', emoji: '🔋' },
+          { value: 'low', label: 'Düşük', emoji: '🔋' },
+          { value: 'moderate', label: 'Orta', emoji: '🔋' },
+          { value: 'high', label: 'Yüksek', emoji: '🔋' },
+          { value: 'very_high', label: 'Çok yüksek', emoji: '🔋' },
+        ],
+      },
+      {
+        type: 'scale',
+        key: 'motivation',
+        label: 'Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz?',
+        required: true,
+        min: 0,
+        max: 10,
+        minLabel: '0',
+        maxLabel: '10',
       },
       {
         type: 'single',
-        key: 'motivation',
-        label: 'Sağlık hedeflerinize baslama motivasyonunuz ne düzeyde?',
+        key: 'biggestBarrier',
+        label: 'Sağlık hedeflerinize ulaşmanızın önündeki en büyük engel nedir?',
         required: true,
         options: [
-          { value: 'very_low', label: 'Çok düşük' },
-          { value: 'low', label: 'Düşük' },
-          { value: 'medium', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' },
-          { value: 'very_high', label: 'Çok yüksek' }
-        ]
+          { value: 'time', label: 'Zaman bulamıyorum.' },
+          { value: 'motivation', label: 'Motivasyonumu koruyamıyorum.' },
+          { value: 'how_to_start', label: 'Nasıl başlayacağımı bilmiyorum.' },
+          { value: 'nutrition', label: 'Düzenli beslenemiyorum.' },
+          { value: 'exercise', label: 'Egzersiz yapamıyorum.' },
+          { value: 'stress_eating', label: 'Stres veya duygusal yeme yaşıyorum.' },
+          { value: 'health_issues', label: 'Sağlık sorunlarım var.' },
+          { value: 'other', label: 'Diğer.' },
+        ],
+        detail: {
+          key: 'biggestBarrierDetail',
+          when: ['other'],
+          placeholder: 'Engelizi kısaca yazınız',
+        },
       },
       {
         type: 'single',
         key: 'concentration',
-        label: 'Gündelik islerde odaklanma güçlüğü yasiyor musunuz?',
+        label: 'Günlük yaşamınızda dikkatinizi toplamakta zorlanıyor musunuz?',
         required: true,
         options: [
           { value: 'never', label: 'Hiç' },
           { value: 'rarely', label: 'Nadiren' },
           { value: 'sometimes', label: 'Bazen' },
           { value: 'often', label: 'Sık' },
-          { value: 'always', label: 'Çok sık' }
-        ]
+          { value: 'always', label: 'Çok sık' },
+        ],
       },
       {
         type: 'single',
         key: 'anxiety',
-        label: 'Kaygı seviyenizi nasıl değerlendirirsiniz?',
+        label: 'Son 2 hafta içinde kendinizi ne kadar endişeli hissettiniz?',
         required: true,
         options: [
-          { value: 'none', label: 'Yok' },
-          { value: 'mild', label: 'Hafif' },
-          { value: 'moderate', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'socialSupport',
-        label: 'Aile veya arkadas desteği hissediyor musunuz?',
-        required: true,
-        options: [
-          { value: 'strong', label: 'Güçlü destek var' },
-          { value: 'partial', label: 'Kısmen destek var' },
-          { value: 'limited', label: 'Çok sınırlı destek var' },
-          { value: 'none', label: 'Destek yok' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'weightChange',
-        label: 'Son 3 ayda kilonuzda belirgin değişim oldu mu?',
-        required: true,
-        options: [
-          { value: 'lost', label: 'Kilo verdim' },
-          { value: 'gained', label: 'Kilo aldim' },
-          { value: 'stable', label: 'Stabil kaldi' },
-          { value: 'unknown', label: 'Takip etmedim' }
+          { value: 'never', label: 'Hiç' },
+          { value: 'rarely', label: 'Nadiren' },
+          { value: 'sometimes', label: 'Bazen' },
+          { value: 'often', label: 'Sık' },
+          { value: 'always', label: 'Çok sık' },
         ],
-        detail: {
-          key: 'weightChangeDetail',
-          when: ['lost', 'gained'],
-          placeholder: 'Yaklasık kaç kg değişim oldu?'
-        }
-      },
-      {
-        type: 'single',
-        key: 'painScale',
-        label: 'Bugünku ağrı seviyeniz kaç/10?',
-        required: true,
-        options: [
-          { value: '0-1', label: '0-1 (yok denecek kadar az)' },
-          { value: '2-3', label: '2-3 (hafif)' },
-          { value: '4-6', label: '4-6 (orta)' },
-          { value: '7-8', label: '7-8 (yüksek)' },
-          { value: '9-10', label: '9-10 (çok şiddetli)' }
-        ]
-      },
-      {
-        type: 'emoji',
-        key: 'moodCheckin',
-        label: 'Bu hafta ruh halinizi hangi emoji en iyi anlatir?',
-        required: true,
-        options: [
-          { value: 'very_sad', label: 'Çok uzgün', emoji: '😢' },
-          { value: 'stressed', label: 'Gergin', emoji: '😣' },
-          { value: 'neutral', label: 'Nötr', emoji: '😐' },
-          { value: 'calm', label: 'Sakin', emoji: '🙂' },
-          { value: 'happy', label: 'Mutlu', emoji: '😄' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'selfConfidence',
-        label: 'Bedeninizle ilgili özgüven düzeyiniz nasıl?',
-        required: false,
-        options: [
-          { value: 'very_low', label: 'Çok düşük' },
-          { value: 'low', label: 'Düşük' },
-          { value: 'medium', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' }
-        ]
       },
       {
         type: 'single',
         key: 'dailyStressImpact',
-        label: 'Stres günluk kararlarinizi ne kadar etkiliyor?',
+        label: 'Son 2 hafta içinde stresin günlük yaşamınızı ne kadar etkilediğini düşünüyorsunuz?',
         required: true,
         options: [
-          { value: 'none', label: 'Etkilemiyor' },
+          { value: 'none', label: 'Hiç etkilemiyor' },
           { value: 'low', label: 'Az etkiliyor' },
           { value: 'moderate', label: 'Orta düzeyde etkiliyor' },
-          { value: 'high', label: 'Çok etkiliyor' }
-        ]
+          { value: 'high', label: 'Oldukça etkiliyor' },
+          { value: 'very_high', label: 'Çok fazla etkiliyor' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'stressCoping',
+        label: 'Stresle başa çıkabildiğinizi düşünüyor musunuz?',
+        required: true,
+        options: [
+          { value: 'always', label: 'Her zaman' },
+          { value: 'often', label: 'Çoğu zaman' },
+          { value: 'sometimes', label: 'Bazen' },
+          { value: 'rarely', label: 'Nadiren' },
+          { value: 'never', label: 'Hiç' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'socialSupport',
+        label: 'Sağlıklı yaşam hedefleriniz konusunda ailenizden veya yakın çevrenizden destek görüyor musunuz?',
+        required: true,
+        options: [
+          { value: 'strong', label: 'Güçlü destek var' },
+          { value: 'partial', label: 'Kısmi destek var' },
+          { value: 'limited', label: 'Sınırlı destek var' },
+          { value: 'none', label: 'Destek yok' },
+        ],
       },
       {
         type: 'single',
         key: 'readinessToChange',
-        label: 'Hayat tarzı degisıkliklerine hazirlik düzeyiniz nedir?',
+        label: 'Yaşam tarzı değişikliklerine ne kadar hazırsınız?',
+        required: true,
+        hint: 'Size en uygun destek planını oluşturabilmemiz için, kendinizi en iyi ifade eden seçeneği işaretleyin.',
+        options: [
+          { value: 'not_ready', label: 'Henüz değişime hazır değilim.' },
+          { value: 'thinking', label: 'Değişmeyi düşünüyorum.' },
+          { value: 'ready', label: 'Hazırım, yakında başlayacağım.' },
+          { value: 'started', label: 'Değişime başladım.' },
+          { value: 'maintaining', label: 'Değişiklikleri düzenli olarak sürdürüyorum.' },
+        ],
+      },
+      {
+        type: 'scale',
+        key: 'painScale',
+        label: 'Son bir hafta içindeki genel ağrı seviyenizi nasıl değerlendirirsiniz?',
+        required: true,
+        min: 0,
+        max: 10,
+        minLabel: '0 — ağrı yok',
+        maxLabel: '10 — çok şiddetli',
+      },
+      {
+        type: 'emoji',
+        key: 'lifeQuality',
+        label: 'Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz?',
         required: true,
         options: [
-          { value: 'not_ready', label: 'Henüz hazir değilim' },
-          { value: 'thinking', label: 'Düşünme asamasindayim' },
-          { value: 'ready', label: 'Hazirim' },
-          { value: 'started', label: 'Basladim' }
-        ]
-      }
-    ]
+          { value: '1', label: 'Çok düşük', emoji: '★' },
+          { value: '2', label: 'Düşük', emoji: '★★' },
+          { value: '3', label: 'Orta', emoji: '★★★' },
+          { value: '4', label: 'İyi', emoji: '★★★★' },
+          { value: '5', label: 'Çok iyi', emoji: '★★★★★' },
+        ],
+      },
+    ],
   },
   {
     id: 'medical',
     title: 'Tıbbi Geçmiş',
-    subtitle: 'Hastalıklar, ilaçlar ve tıbbi takip',
+    subtitle: 'Hastalıklar, ilaçlar, tahlil ve takviyeler',
     icon: 'Stethoscope',
     audience: 'shared',
     questions: [
       {
         type: 'multi',
         key: 'chronicConditions',
-        label: 'Tanı almis kronik rahatsızlıklarınız var mi?',
+        label: 'Tanı almış kronik rahatsızlıklarınız var mı?',
         required: true,
         options: [
-          { value: 'none', label: 'Yok' },
-          { value: 'hypertension', label: 'Yüksek tansiyon' },
+          { value: 'none', label: 'Yok', exclusive: true },
           { value: 'diabetes', label: 'Diyabet' },
+          { value: 'prediabetes', label: 'Prediyabet' },
+          { value: 'hypertension', label: 'Yüksek tansiyon (Hipertansiyon)' },
           { value: 'thyroid', label: 'Tiroid hastalığı' },
-          { value: 'pcos', label: 'PKOS' },
+          { value: 'pcos', label: 'Polikistik Over Sendromu (PKOS)' },
           { value: 'asthma', label: 'Astım' },
-          { value: 'other', label: 'Diğer' }
+          { value: 'copd', label: 'KOAH' },
+          { value: 'heartDisease', label: 'Kalp hastalığı' },
+          { value: 'kidney', label: 'Böbrek hastalığı' },
+          { value: 'liver', label: 'Karaciğer hastalığı' },
+          { value: 'reflux', label: 'Reflü' },
+          { value: 'ibs', label: 'İrritabl Bağırsak Sendromu (IBS)' },
+          { value: 'celiac', label: 'Çölyak hastalığı' },
+          { value: 'rheumatic', label: 'Romatizmal hastalık' },
+          { value: 'cancer', label: 'Kanser öyküsü' },
+          { value: 'depression', label: 'Depresyon' },
+          { value: 'anxiety_disorder', label: 'Anksiyete bozukluğu' },
+          { value: 'sleep_apnea', label: 'Uyku apnesi' },
+          { value: 'other', label: 'Diğer' },
         ],
         detail: {
           key: 'chronicConditionsDetail',
           when: ['other'],
-          placeholder: 'Diğer kronik durumlari yaziniz'
-        }
+          placeholder: 'Diğer kronik durumları yazınız',
+        },
       },
       {
         type: 'single',
         key: 'medications',
-        label: 'Düzenli kullandiginiz ilaç var mi?',
+        label: 'Düzenli veya gerektiğinde kullandığınız ilaçlar var mı?',
         required: true,
         options: [
           { value: 'none', label: 'Hayır' },
-          { value: 'regular', label: 'Evet, düzenli' },
-          { value: 'occasional', label: 'Ara sira' }
+          { value: 'regular', label: 'Düzenli kullanıyorum' },
+          { value: 'occasional', label: 'Gerektiğinde kullanıyorum' },
+          { value: 'both', label: 'Hem düzenli hem gerektiğinde kullanıyorum' },
         ],
         detail: {
           key: 'medicationsDetail',
-          when: ['regular', 'occasional'],
-          placeholder: 'İlaç adini ve kullanim sıkligini yaziniz'
-        }
+          when: ['regular', 'occasional', 'both'],
+          placeholder: 'Lütfen ilaç adlarını ve kullanım nedenlerini yazınız',
+        },
+        softWarning: {
+          requireAll: [
+            { key: 'chronicConditions', includes: ['thyroid'] },
+            { key: 'medications', equals: 'none' },
+          ],
+          message: 'Tiroid hastalığı seçtiniz. Bu rahatsızlık için ilaç kullanmıyor musunuz?',
+        },
       },
       {
         type: 'multi',
         key: 'familyHistory',
-        label: 'Ailenizde aşağıdaki rahatsızlıklardan hangileri var?',
+        label: 'Birinci derece yakınlarınızda (anne, baba, kardeş) aşağıdaki hastalıklardan tanı almış olan var mı?',
         required: true,
         options: [
-          { value: 'none', label: 'Bilinmiyor / Yok' },
+          { value: 'none', label: 'Yok', exclusive: true },
+          { value: 'unknown', label: 'Bilmiyorum', exclusive: true },
           { value: 'diabetes', label: 'Diyabet' },
-          { value: 'obesity', label: 'Obezite' },
+          { value: 'hypertension', label: 'Hipertansiyon' },
           { value: 'heartDisease', label: 'Kalp hastalığı' },
           { value: 'stroke', label: 'İnme' },
-          { value: 'cancer', label: 'Kanser' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'injuries',
-        label: 'Son 2 yılda hareketi etkileyen sakatlık yasadiniz mi?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'yes_recovered', label: 'Evet, iyileştim' },
-          { value: 'yes_ongoing', label: 'Evet, halen devam ediyor' }
+          { value: 'obesity', label: 'Obezite' },
+          { value: 'thyroid', label: 'Tiroid hastalığı' },
+          { value: 'high_cholesterol', label: 'Yüksek kolesterol' },
+          { value: 'cancer', label: 'Kanser' },
+          { value: 'kidney', label: 'Böbrek hastalığı' },
+          { value: 'rheumatic', label: 'Romatizmal hastalık' },
+          { value: 'celiac', label: 'Çölyak' },
+          { value: 'other', label: 'Diğer' },
         ],
         detail: {
-          key: 'injuriesDetail',
-          when: ['yes_recovered', 'yes_ongoing'],
-          placeholder: 'Sakatligin bölgesi ve tarihi'
-        }
+          key: 'familyHistoryDetail',
+          when: ['other'],
+          placeholder: 'Diğer aile öyküsünü yazınız',
+        },
+        footerNote: 'Bu bilgi, genetik risk faktörlerini değerlendirmemize yardımcı olur. Tanı amacıyla kullanılmaz.',
       },
       {
         type: 'single',
         key: 'surgeries',
-        label: 'Gecirdiginiz ameliyat var mi?',
+        label: 'Daha önce ameliyat geçirdiniz mi?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'yes', label: 'Evet' }
+          { value: 'yes', label: 'Evet' },
         ],
         detail: {
           key: 'surgeriesDetail',
           when: ['yes'],
-          placeholder: 'Ameliyat turu ve yılini yaziniz'
-        }
+          placeholder: 'Ameliyat türü ve yılını yazınız',
+        },
       },
       {
         type: 'single',
         key: 'hospitalVisits',
-        label: 'Son 12 ayda hastane aciline basvurdunuz mu?',
-        required: false,
+        label: 'Son 12 ay içinde sağlık durumunuz nedeniyle hastanede yatış gerektiren bir tedavi gördünüz mü?',
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'once', label: '1 kez' },
-          { value: 'multiple', label: 'Birden fazla' }
-        ]
+          { value: 'yes', label: 'Evet' },
+        ],
+        detail: {
+          key: 'hospitalVisitsDetail',
+          when: ['yes'],
+          placeholder: 'Yatış nedenini kısaca yazınız',
+        },
       },
       {
         type: 'single',
         key: 'lastBloodWork',
-        label: 'Son kapsamli kan tahlilinizi ne zaman yaptırdınız?',
+        label: 'Son kan tahlilinizi ne zaman yaptırdınız?',
         required: true,
         options: [
           { value: 'last_3_months', label: 'Son 3 ay içinde' },
-          { value: '3_12_months', label: '3-12 ay once' },
-          { value: 'over_year', label: '1 yıldan uzun' },
-          { value: 'never', label: 'Hiç yaptirmadim' }
-        ]
+          { value: '3_12_months', label: '3–12 ay önce' },
+          { value: 'over_year', label: '1 yıldan uzun süre önce' },
+          { value: 'never', label: 'Hiç yaptırmadım / Hatırlamıyorum' },
+        ],
+        infoNoteWhen: ['over_year', 'never'],
+        infoNote: 'Güncel sağlık durumunuzun daha doğru değerlendirilmesi için kan tahlillerinizi güncellemeniz faydalı olabilir.',
+        followUps: [
+          {
+            type: 'single',
+            key: 'bloodWorkUploadIntent',
+            label: 'Kan tahlili sonuçlarınızı sisteme yüklemek ister misiniz?',
+            when: ['last_3_months', '3_12_months'],
+            required: true,
+            options: [
+              { value: 'yes', label: 'Evet' },
+              { value: 'later', label: 'Daha sonra' },
+              { value: 'no', label: 'Hayır' },
+            ],
+            followUps: [
+              {
+                type: 'file',
+                key: 'bloodWorkFiles',
+                label: 'Kan tahlili sonuçlarınızı yükleyin (PDF, fotoğraf veya görüntü)',
+                when: ['yes'],
+                required: true,
+              },
+            ],
+          },
+        ],
       },
       {
         type: 'multi',
         key: 'supplements',
-        label: 'Düzenli kullandiginiz takviyeler hangileri?',
-        required: false,
+        label: 'Düzenli olarak kullandığınız vitamin veya besin takviyeleri hangileridir?',
+        required: true,
         options: [
-          { value: 'none', label: 'Kullanmiyorum' },
-          { value: 'vitaminD', label: 'D vitamini' },
-          { value: 'omega3', label: 'Omega-3' },
+          { value: 'none', label: 'Kullanmıyorum', exclusive: true },
+          { value: 'vitaminD', label: 'D Vitamini' },
+          { value: 'b12', label: 'B12 Vitamini' },
+          { value: 'multivitamin', label: 'Multivitamin' },
+          { value: 'vitaminC', label: 'C Vitamini' },
+          { value: 'iron', label: 'Demir' },
+          { value: 'calcium', label: 'Kalsiyum' },
+          { value: 'zinc', label: 'Çinko' },
           { value: 'magnesium', label: 'Magnezyum' },
-          { value: 'proteinPowder', label: 'Protein tozu' },
+          { value: 'omega3', label: 'Omega-3 (Balık Yağı)' },
+          { value: 'collagen', label: 'Kolajen' },
           { value: 'probiotic', label: 'Probiyotik' },
-          { value: 'other', label: 'Diğer' }
+          { value: 'fiber', label: 'Lif Takviyesi (Psyllium vb.)' },
+          { value: 'creatine', label: 'Kreatin' },
+          { value: 'electrolytes', label: 'Elektrolit' },
+          { value: 'preworkout', label: 'Pre-workout' },
+          { value: 'proteinPowder', label: 'Protein Tozu' },
+          { value: 'amino', label: 'Amino Asit (BCAA/EAA)' },
+          { value: 'glucosamine', label: 'Glukozamin' },
+          { value: 'other', label: 'Diğer' },
         ],
         detail: {
           key: 'supplementsDetail',
           when: ['other'],
-          placeholder: 'Diğer takviyeleri yaziniz'
-        }
+          placeholder: 'Diğer takviyeleri yazınız',
+        },
+        followUps: [
+          {
+            type: 'single',
+            key: 'supplementsRecommendedBy',
+            label: 'Bu takviyeleri kim önerdi?',
+            when: ['vitaminD', 'b12', 'multivitamin', 'vitaminC', 'iron', 'calcium', 'zinc', 'magnesium', 'omega3', 'collagen', 'probiotic', 'fiber', 'creatine', 'electrolytes', 'preworkout', 'proteinPowder', 'amino', 'glucosamine', 'other'],
+            required: true,
+            options: [
+              { value: 'doctor', label: 'Doktor' },
+              { value: 'dietitian', label: 'Diyetisyen' },
+              { value: 'trainer', label: 'Antrenör' },
+              { value: 'self', label: 'Kendi kararımla' },
+              { value: 'pharmacist', label: 'Eczacı' },
+              { value: 'relative', label: 'Yakınım önerdi' },
+            ],
+          },
+          {
+            type: 'single',
+            key: 'supplementsDuration',
+            label: 'Ne kadar süredir kullanıyorsunuz?',
+            when: ['vitaminD', 'b12', 'multivitamin', 'vitaminC', 'iron', 'calcium', 'zinc', 'magnesium', 'omega3', 'collagen', 'probiotic', 'fiber', 'creatine', 'electrolytes', 'preworkout', 'proteinPowder', 'amino', 'glucosamine', 'other'],
+            required: true,
+            options: [
+              { value: 'under_1m', label: '1 aydan az' },
+              { value: '1_3m', label: '1-3 ay' },
+              { value: '3_12m', label: '3-12 ay' },
+              { value: 'over_1y', label: '1 yıldan uzun' },
+            ],
+          },
+          {
+            type: 'single',
+            key: 'supplementsFrequency',
+            label: 'Düzenli kullanıyor musunuz?',
+            when: ['vitaminD', 'b12', 'multivitamin', 'vitaminC', 'iron', 'calcium', 'zinc', 'magnesium', 'omega3', 'collagen', 'probiotic', 'fiber', 'creatine', 'electrolytes', 'preworkout', 'proteinPowder', 'amino', 'glucosamine', 'other'],
+            required: true,
+            options: [
+              { value: 'daily', label: 'Her gün' },
+              { value: 'few_weekly', label: 'Haftada birkaç kez' },
+              { value: 'occasional', label: 'Ara sıra' },
+            ],
+          },
+        ],
       },
       {
         type: 'single',
-        key: 'mentalHealthDiagnosis',
-        label: 'Bir ruh sagligi tanı veya tedavi geçmişiniz var mi?',
-        required: false,
+        key: 'mentalHealthSupport',
+        label: 'Son 12 ay içinde ruh sağlığınız için profesyonel destek aldınız mı?',
+        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'past', label: 'Geçmişte vardi' },
-          { value: 'ongoing', label: 'Şu anda devam ediyor' }
-        ]
+          { value: 'psychologist', label: 'Psikolog' },
+          { value: 'psychiatrist', label: 'Psikiyatrist' },
+          { value: 'both', label: 'Her ikisi de' },
+        ],
+      },
+      {
+        type: 'multi',
+        key: 'digestiveSymptoms',
+        label: 'Aşağıdaki sindirim şikayetlerinden hangilerini sık yaşıyorsunuz?',
+        required: true,
+        options: [
+          { value: 'none', label: 'Yok', exclusive: true },
+          { value: 'bloating', label: 'Şişkinlik' },
+          { value: 'gas', label: 'Gaz' },
+          { value: 'constipation', label: 'Kabızlık' },
+          { value: 'diarrhea', label: 'İshal' },
+          { value: 'heartburn', label: 'Mide yanması' },
+          { value: 'indigestion', label: 'Hazımsızlık' },
+          { value: 'abdominal_pain', label: 'Karın ağrısı' },
+        ],
       },
       {
         type: 'single',
         key: 'doctorClearance',
-        label: 'Egzersiz veya kilo yonetimi programi icin doktor onayi aldiniz mi?',
+        label: 'Egzersiz veya kilo yönetimi programı için doktor onayı aldınız mı?',
         required: true,
         options: [
           { value: 'yes', label: 'Evet' },
-          { value: 'no_need', label: 'Gerek gormedim' },
-          { value: 'not_yet', label: 'Henüz almadim' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'bloodPressureIssues',
-        label: 'Tansiyon dalgalanmasi sorunu yasiyor musunuz?',
-        required: false,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'sometimes', label: 'Ara sira' },
-          { value: 'yes', label: 'Evet, sık' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'digestiveDisorders',
-        label: 'Tanı almis sindirim sistemi rahatsizliginiz var mi?',
-        required: false,
-        options: [
-          { value: 'no', label: 'Yok' },
-          { value: 'ibs', label: 'IBS' },
-          { value: 'reflux', label: 'Reflu' },
-          { value: 'gastritis', label: 'Gastrit' },
-          { value: 'other', label: 'Diğer' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'thyroidStatus',
-        label: 'Tiroid degerlerinizle ilgili bilinen bir durum var mi?',
-        required: false,
-        options: [
-          { value: 'normal', label: 'Bilinen sorun yok' },
-          { value: 'hypo', label: 'Hipotiroidi' },
-          { value: 'hyper', label: 'Hipertiroidi' },
-          { value: 'unknown', label: 'Bilmiyorum' }
-        ]
+          { value: 'no_need', label: 'Gerek görmedim' },
+          { value: 'not_yet', label: 'Henüz almadım' },
+        ],
       },
       {
         type: 'text',
         key: 'currentComplaints',
-        label: 'Şu an sizi en çok zorlayan sağlık sıkayetini kisaça yaziniz',
+        label: 'Şu an sizi en çok zorlayan sağlık şikayetini kısaca yazınız',
         required: false,
-        hint: 'Örnek: bel ağrısi, nefes darligi, surekli yorgünluk'
-      }
-    ]
+        hint: 'Örnek: bel ağrısı, nefes darlığı, sürekli yorgunluk',
+      },
+    ],
   },
   {
     id: 'physical',
@@ -369,6 +457,90 @@ export const HEALTH_SECTIONS = [
     icon: 'Dumbbell',
     audience: 'coach',
     questions: [
+      {
+        type: 'single',
+        key: 'injuries',
+        label: 'Son 2 yıl içinde hareket etmenizi kısıtlayan bir sakatlık veya ortopedik sorun yaşadınız mı?',
+        required: true,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'yes_recovered', label: 'Evet, tamamen iyileşti.' },
+          { value: 'yes_partial', label: 'Evet, kısmen devam ediyor.' },
+          { value: 'yes_ongoing', label: 'Evet, hâlâ devam ediyor.' },
+        ],
+        followUps: [
+          {
+            type: 'multi',
+            key: 'injuryRegions',
+            label: 'Sakatlık hangi bölgedeydi?',
+            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            required: true,
+            options: [
+              { value: 'neck', label: 'Boyun' },
+              { value: 'shoulder', label: 'Omuz' },
+              { value: 'elbow', label: 'Dirsek' },
+              { value: 'hand_wrist', label: 'El / Bilek' },
+              { value: 'upper_back', label: 'Sırt' },
+              { value: 'low_back', label: 'Bel' },
+              { value: 'hip', label: 'Kalça' },
+              { value: 'knee', label: 'Diz' },
+              { value: 'ankle', label: 'Ayak bileği' },
+              { value: 'foot', label: 'Ayak' },
+              { value: 'other', label: 'Diğer' },
+            ],
+            detail: {
+              key: 'injuryRegionsDetail',
+              when: ['other'],
+              placeholder: 'Diğer bölgeyi yazınız',
+            },
+          },
+          {
+            type: 'single',
+            key: 'injuryCause',
+            label: 'Sakatlığın nedeni neydi?',
+            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            required: true,
+            options: [
+              { value: 'sport', label: 'Spor' },
+              { value: 'fall', label: 'Düşme' },
+              { value: 'traffic', label: 'Trafik kazası' },
+              { value: 'work', label: 'İş kazası' },
+              { value: 'post_surgery', label: 'Ameliyat sonrası' },
+              { value: 'unknown', label: 'Bilinmiyor' },
+              { value: 'other', label: 'Diğer' },
+            ],
+            detail: {
+              key: 'injuryCauseDetail',
+              when: ['other'],
+              placeholder: 'Nedeni yazınız',
+            },
+          },
+          {
+            type: 'single',
+            key: 'injuryLimitation',
+            label: 'Şu anda hareketlerinizi kısıtlıyor mu?',
+            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            required: true,
+            options: [
+              { value: 'no', label: 'Hayır' },
+              { value: 'mild', label: 'Biraz' },
+              { value: 'moderate', label: 'Orta düzeyde' },
+              { value: 'severe', label: 'Çok' },
+            ],
+          },
+          {
+            type: 'single',
+            key: 'injuryDoctorRestriction',
+            label: 'Doktor tarafından egzersiz kısıtlamanız var mı?',
+            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            required: true,
+            options: [
+              { value: 'no', label: 'Hayır' },
+              { value: 'yes', label: 'Evet' },
+            ],
+          },
+        ],
+      },
       {
         type: 'single',
         key: 'activityFrequency',

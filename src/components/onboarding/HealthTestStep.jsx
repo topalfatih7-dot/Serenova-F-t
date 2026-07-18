@@ -1,9 +1,22 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
-  Sunrise, Sunset, UtensilsCrossed, BedDouble, Dumbbell, Clock3, MoonStar, Venus, Mars,
+  Sunrise, Sunset, UtensilsCrossed, BedDouble, Dumbbell, Clock3, MoonStar, Venus, Mars, Upload, X, FileText,
 } from 'lucide-react'
-import { isDetailVisible, isDetailFilled, isQuestionFullyAnswered, HEALTH_AUDIENCE_META } from '../../data/healthTest'
+import {
+  isDetailVisible,
+  isDetailFilled,
+  isFollowUpVisible,
+  isQuestionFullyAnswered,
+  getSoftWarningMessage,
+  toggleExclusiveMulti,
+  clearHiddenFollowUps,
+  hasStoredAnswer,
+  HEALTH_AUDIENCE_META,
+} from '../../data/healthTest'
+import { uploadHealthLabResult } from '../../services/supabaseDb'
+import { useApp } from '../../context/AppContext'
 
 const ICONS = {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Clock,
@@ -33,46 +46,7 @@ function themeFor(sectionId) {
   return THEME[sectionId] || THEME.general
 }
 
-export default function HealthTestStep({
-  question,
-  questionIndex,
-  totalQuestions,
-  sectionTitle,
-  healthTest,
-  updateHealthTest,
-  showErrors,
-}) {
-  if (!question) return null
-
-  const theme = themeFor(question.sectionId)
-  const SectionIcon = ICONS[question.sectionIcon] || HeartPulse
-  const audienceMeta = HEALTH_AUDIENCE_META[question.audience] || HEALTH_AUDIENCE_META.shared
-  const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
-  const q = question
-  const parentVal = healthTest?.[q.key]
-  const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
-
-  const missing = showErrors && !isQuestionFullyAnswered(q, healthTest)
-  const detailMissing = showErrors && detailVisible && !isDetailFilled(q.detail, healthTest)
-
-  const toggleMulti = (value) => {
-    const arr = Array.isArray(healthTest[q.key]) ? healthTest[q.key] : []
-    const next = arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]
-    const patch = { [q.key]: next }
-    if (q.detail && !isDetailVisible(q.detail, next)) {
-      patch[q.detail.key] = ''
-    }
-    updateHealthTest(patch)
-  }
-
-  const pickSingle = (value) => {
-    const patch = { [q.key]: value }
-    if (q.detail && !isDetailVisible(q.detail, value)) {
-      patch[q.detail.key] = ''
-    }
-    updateHealthTest(patch)
-  }
-
+function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
   const optionCount = q.options?.length || 0
   const gridClass =
     q.type === 'emoji'
@@ -83,9 +57,339 @@ export default function HealthTestStep({
           ? 'grid grid-cols-1 gap-3 sm:grid-cols-3'
           : 'grid grid-cols-1 gap-3 sm:grid-cols-2'
 
+  if (q.type === 'emoji') {
+    return (
+      <div className={gridClass}>
+        {q.options.map((o) => {
+          const sel = healthTest[q.key] === o.value
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onPick(o.value)}
+              className={`flex min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-5 transition-all sm:min-h-[8.5rem] ${
+                sel
+                  ? `${theme.solid} scale-[1.02] text-white ring-4 ${theme.ring}`
+                  : 'border-cream-200 bg-cream-50/50 hover:border-cream-300 hover:bg-white hover:shadow-md'
+              }`}
+            >
+              <span className="text-4xl sm:text-5xl">{o.emoji}</span>
+              <span className={`text-sm font-bold sm:text-base ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (q.type === 'single') {
+    return (
+      <div className={gridClass}>
+        {q.options.map((o) => {
+          const sel = healthTest[q.key] === o.value
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onPick(o.value)}
+              className={`flex min-h-[4.5rem] flex-col items-start justify-center rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[5.25rem] sm:px-6 sm:py-5 ${
+                sel
+                  ? `${theme.solid} scale-[1.01] text-white shadow-lg ring-4 ${theme.ring}`
+                  : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-md'
+              }`}
+            >
+              <span className={`text-base font-bold sm:text-lg ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
+              {o.desc && (
+                <span className={`mt-1 text-sm leading-snug ${sel ? 'text-white/85' : 'text-cream-800/60'}`}>{o.desc}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (q.type === 'multi') {
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {q.options.map((o) => {
+          const sel = (healthTest[q.key] || []).includes(o.value)
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onToggle(o.value)}
+              className={`flex min-h-[3.75rem] items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[4.25rem] ${
+                sel
+                  ? `${theme.chip} ring-2 ${theme.ring} font-semibold`
+                  : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-sm'
+              }`}
+            >
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition ${
+                sel ? `${theme.solid} border-transparent text-white` : 'border-cream-300 bg-white'
+              }`}>
+                {sel && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+              </span>
+              <span className="text-base font-semibold text-cream-900 sm:text-[1.05rem]">{o.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return null
+}
+
+function ScaleInput({ q, value, onChange, theme }) {
+  const min = q.min ?? 0
+  const max = q.max ?? 10
+  const num = value === '' || value == null ? min : Number(value)
+  return (
+    <div className={`rounded-2xl border-2 border-cream-200 ${theme.soft} px-5 py-6`}>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+          {min} – {max}
+        </p>
+        <p className={`font-display text-4xl font-bold ${theme.text}`}>{Number.isFinite(num) ? num : min}</p>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={Number.isFinite(num) ? num : min}
+        onPointerDown={() => {
+          if (value === '' || value == null) onChange(min)
+        }}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-brand-600"
+      />
+      <div className="mt-2 flex justify-between text-xs text-cream-800/45">
+        <span>{q.minLabel || min}</span>
+        <span>{q.maxLabel || max}</span>
+      </div>
+    </div>
+  )
+}
+
+function FileUploadInput({ q, value, onChange, theme, userId }) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+  const files = Array.isArray(value) ? value : []
+
+  const handleFiles = async (fileList) => {
+    if (!fileList?.length) return
+    setError('')
+    setUploading(true)
+    try {
+      const next = [...files]
+      for (const file of Array.from(fileList)) {
+        const res = await uploadHealthLabResult(file, userId)
+        if (!res.success) {
+          setError(res.error || 'Yükleme başarısız')
+          break
+        }
+        next.push({ path: res.path, name: file.name, contentType: file.type || '' })
+      }
+      onChange(next)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeAt = (idx) => {
+    onChange(files.filter((_, i) => i !== idx))
+  }
+
+  return (
+    <div className="space-y-3">
+      <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cream-300 ${theme.soft} px-5 py-8 transition hover:border-brand-400`}>
+        <Upload className={`h-6 w-6 ${theme.text}`} />
+        <span className="text-sm font-semibold text-cream-900">
+          {uploading ? 'Yükleniyor…' : 'PDF veya fotoğraf yükleyin'}
+        </span>
+        <span className="text-xs text-cream-800/50">En fazla 8 MB · PDF, JPG, PNG, WEBP</span>
+        <input
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          disabled={uploading || !userId}
+          onChange={(e) => {
+            handleFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </label>
+      {error && (
+        <p className="flex items-center gap-2 text-sm text-red-600">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </p>
+      )}
+      {files.length > 0 && (
+        <ul className="space-y-2">
+          {files.map((f, idx) => (
+            <li key={`${f.path}-${idx}`} className="flex items-center justify-between gap-2 rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <FileText className="h-4 w-4 shrink-0 text-cream-800/50" />
+                <span className="truncate font-medium text-cream-900">{f.name || f.path}</span>
+              </span>
+              <button type="button" onClick={() => removeAt(idx)} className="rounded-lg p-1 text-cream-800/50 hover:bg-cream-100 hover:text-cream-900">
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FollowUpBlock({
+  followUp,
+  healthTest,
+  updateHealthTest,
+  theme,
+  showErrors,
+  userId,
+}) {
+  const parentVal = healthTest?.[followUp.key]
+  const detailVisible = followUp.detail && isDetailVisible(followUp.detail, parentVal)
+  const missing = showErrors && followUp.required !== false && !isQuestionFullyAnswered(followUp, healthTest)
+  const detailMissing = showErrors && detailVisible && !isDetailFilled(followUp.detail, healthTest)
+
+  const pickSingle = (value) => {
+    const patch = { [followUp.key]: value, ...clearHiddenFollowUps(followUp, value) }
+    updateHealthTest(patch)
+  }
+
+  const toggleMulti = (value) => {
+    const next = toggleExclusiveMulti(healthTest[followUp.key], value, followUp.options)
+    const patch = { [followUp.key]: next, ...clearHiddenFollowUps(followUp, next) }
+    updateHealthTest(patch)
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-cream-200 bg-cream-50/40 p-4 sm:p-5">
+      <h3 className="text-base font-bold text-cream-900">
+        {followUp.label}
+        {followUp.required !== false && <span className="ml-1 text-red-500">*</span>}
+      </h3>
+      {followUp.hint && <p className="mt-1 text-sm text-cream-800/60">{followUp.hint}</p>}
+      <div className="mt-3">
+        {(followUp.type === 'emoji' || followUp.type === 'single' || followUp.type === 'multi') && (
+          <OptionGrid
+            q={followUp}
+            theme={theme}
+            healthTest={healthTest}
+            onPick={pickSingle}
+            onToggle={toggleMulti}
+          />
+        )}
+        {followUp.type === 'text' && (
+          <textarea
+            rows={3}
+            placeholder={followUp.placeholder}
+            value={healthTest[followUp.key] || ''}
+            onChange={(e) => updateHealthTest({ [followUp.key]: e.target.value })}
+            className="w-full rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-base focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
+          />
+        )}
+        {followUp.type === 'scale' && (
+          <ScaleInput
+            q={followUp}
+            value={healthTest[followUp.key]}
+            onChange={(v) => updateHealthTest({ [followUp.key]: v })}
+            theme={theme}
+          />
+        )}
+        {followUp.type === 'file' && (
+          <FileUploadInput
+            q={followUp}
+            value={healthTest[followUp.key]}
+            onChange={(v) => updateHealthTest({ [followUp.key]: v })}
+            theme={theme}
+            userId={userId}
+          />
+        )}
+        {followUp.detail && detailVisible && (
+          <input
+            type="text"
+            placeholder={followUp.detail.placeholder}
+            value={healthTest[followUp.detail.key] || ''}
+            onChange={(e) => updateHealthTest({ [followUp.detail.key]: e.target.value })}
+            className={`mt-3 w-full rounded-2xl border-2 px-4 py-3 text-base focus:outline-none focus:ring-4 ${
+              detailMissing
+                ? 'border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-100'
+                : 'border-cream-200 focus:border-brand-400 focus:ring-brand-100'
+            }`}
+          />
+        )}
+      </div>
+      {missing && (
+        <p className="mt-3 flex items-center gap-2 text-sm font-medium text-red-600">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          Lütfen bu alanı tamamlayın
+        </p>
+      )}
+      {(followUp.followUps || [])
+        .filter((fu) => isFollowUpVisible(fu, parentVal))
+        .map((fu) => (
+          <FollowUpBlock
+            key={fu.key}
+            followUp={fu}
+            healthTest={healthTest}
+            updateHealthTest={updateHealthTest}
+            theme={theme}
+            showErrors={showErrors}
+            userId={userId}
+          />
+        ))}
+    </div>
+  )
+}
+
+export default function HealthTestStep({
+  question,
+  questionIndex,
+  totalQuestions,
+  sectionTitle,
+  healthTest,
+  updateHealthTest,
+  showErrors,
+}) {
+  const { user } = useApp()
+  if (!question) return null
+
+  const theme = themeFor(question.sectionId)
+  const SectionIcon = ICONS[question.sectionIcon] || HeartPulse
+  const audienceMeta = HEALTH_AUDIENCE_META[question.audience] || HEALTH_AUDIENCE_META.shared
+  const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
+  const q = question
+  const parentVal = healthTest?.[q.key]
+  const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
+  const visibleFollowUps = (q.followUps || []).filter((fu) => isFollowUpVisible(fu, parentVal))
+  const softWarning = getSoftWarningMessage(q, healthTest)
+
+  const missing = showErrors && !isQuestionFullyAnswered(q, healthTest)
+  const detailMissing = showErrors && detailVisible && !isDetailFilled(q.detail, healthTest)
+  const infoNote = typeof q.infoNote === 'function'
+    ? q.infoNote(healthTest)
+    : (q.infoNoteWhen && isDetailVisible({ when: q.infoNoteWhen }, parentVal) ? q.infoNote : null)
+
+  const toggleMulti = (value) => {
+    const next = toggleExclusiveMulti(healthTest[q.key], value, q.options)
+    updateHealthTest({ [q.key]: next, ...clearHiddenFollowUps(q, next) })
+  }
+
+  const pickSingle = (value) => {
+    updateHealthTest({ [q.key]: value, ...clearHiddenFollowUps(q, value) })
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl">
-      {/* İlerleme */}
       <div className="mb-6">
         <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-cream-800/50">
           <span>{sectionTitle || question.sectionTitle || 'Sağlık Profili'}</span>
@@ -110,7 +414,6 @@ export default function HealthTestStep({
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="overflow-hidden rounded-3xl border border-white/80 bg-white/95 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm"
         >
-          {/* Üst renk bandı */}
           <div className={`bg-gradient-to-r ${theme.grad} px-5 py-4 sm:px-7 sm:py-5`}>
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur">
@@ -144,79 +447,14 @@ export default function HealthTestStep({
             )}
 
             <div className="mt-6 sm:mt-8">
-              {q.type === 'emoji' && (
-                <div className={gridClass}>
-                  {q.options.map((o) => {
-                    const sel = healthTest[q.key] === o.value
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        onClick={() => pickSingle(o.value)}
-                        className={`flex min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-5 transition-all sm:min-h-[8.5rem] ${
-                          sel
-                            ? `${theme.solid} scale-[1.02] text-white ring-4 ${theme.ring}`
-                            : 'border-cream-200 bg-cream-50/50 hover:border-cream-300 hover:bg-white hover:shadow-md'
-                        }`}
-                      >
-                        <span className="text-4xl sm:text-5xl">{o.emoji}</span>
-                        <span className={`text-sm font-bold sm:text-base ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {q.type === 'single' && (
-                <div className={gridClass}>
-                  {q.options.map((o) => {
-                    const sel = healthTest[q.key] === o.value
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        onClick={() => pickSingle(o.value)}
-                        className={`flex min-h-[4.5rem] flex-col items-start justify-center rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[5.25rem] sm:px-6 sm:py-5 ${
-                          sel
-                            ? `${theme.solid} scale-[1.01] text-white shadow-lg ring-4 ${theme.ring}`
-                            : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-md'
-                        }`}
-                      >
-                        <span className={`text-base font-bold sm:text-lg ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
-                        {o.desc && (
-                          <span className={`mt-1 text-sm leading-snug ${sel ? 'text-white/85' : 'text-cream-800/60'}`}>{o.desc}</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {q.type === 'multi' && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {q.options.map((o) => {
-                    const sel = (healthTest[q.key] || []).includes(o.value)
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        onClick={() => toggleMulti(o.value)}
-                        className={`flex min-h-[3.75rem] items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[4.25rem] ${
-                          sel
-                            ? `${theme.chip} ring-2 ${theme.ring} font-semibold`
-                            : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-sm'
-                        }`}
-                      >
-                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition ${
-                          sel ? `${theme.solid} border-transparent text-white` : 'border-cream-300 bg-white'
-                        }`}>
-                          {sel && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
-                        </span>
-                        <span className="text-base font-semibold text-cream-900 sm:text-[1.05rem]">{o.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+              {(q.type === 'emoji' || q.type === 'single' || q.type === 'multi') && (
+                <OptionGrid
+                  q={q}
+                  theme={theme}
+                  healthTest={healthTest}
+                  onPick={pickSingle}
+                  onToggle={toggleMulti}
+                />
               )}
 
               {q.type === 'text' && (
@@ -245,6 +483,27 @@ export default function HealthTestStep({
                 />
               )}
 
+              {q.type === 'scale' && (
+                <ScaleInput
+                  q={q}
+                  value={healthTest[q.key]}
+                  onChange={(v) => {
+                    updateHealthTest({ [q.key]: v, ...clearHiddenFollowUps(q, v) })
+                  }}
+                  theme={theme}
+                />
+              )}
+
+              {q.type === 'file' && (
+                <FileUploadInput
+                  q={q}
+                  value={healthTest[q.key]}
+                  onChange={(v) => updateHealthTest({ [q.key]: v })}
+                  theme={theme}
+                  userId={user?.id}
+                />
+              )}
+
               {q.detail && detailVisible && (
                 <input
                   type="text"
@@ -258,7 +517,36 @@ export default function HealthTestStep({
                   }`}
                 />
               )}
+
+              {visibleFollowUps.map((fu) => (
+                <FollowUpBlock
+                  key={fu.key}
+                  followUp={fu}
+                  healthTest={healthTest}
+                  updateHealthTest={updateHealthTest}
+                  theme={theme}
+                  showErrors={showErrors}
+                  userId={user?.id}
+                />
+              ))}
             </div>
+
+            {infoNote && (
+              <p className="mt-4 rounded-xl bg-cream-100/80 px-4 py-3 text-sm leading-relaxed text-cream-800/70">
+                {infoNote}
+              </p>
+            )}
+
+            {softWarning && (
+              <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                {softWarning}
+              </p>
+            )}
+
+            {q.footerNote && (
+              <p className="mt-4 text-xs leading-relaxed text-cream-800/45">{q.footerNote}</p>
+            )}
 
             {missing && (
               <motion.p
@@ -269,7 +557,7 @@ export default function HealthTestStep({
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 {detailMissing
                   ? 'Lütfen açıklama alanını doldurun'
-                  : (q.required ? 'Lütfen bir seçenek belirleyin' : 'Lütfen seçiminizi tamamlayın')}
+                  : (q.required || hasStoredAnswer(q, healthTest) ? 'Lütfen seçiminizi tamamlayın' : 'Lütfen bir seçenek belirleyin')}
               </motion.p>
             )}
           </div>

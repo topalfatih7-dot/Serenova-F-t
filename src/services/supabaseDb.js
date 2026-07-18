@@ -1764,6 +1764,25 @@ function fileToBase64(file) {
   })
 }
 
+/** Üye kan tahlili / lab sonucu — private bucket, path: {userId}/{timestamp}-{rand}.ext */
+export async function uploadHealthLabResult(file, userId) {
+  if (!file) return { success: false, error: 'Dosya seçilmedi' }
+  if (!userId) return { success: false, error: 'Oturum gerekli' }
+  if (!supabase) return { success: false, error: 'Depolama kullanılamıyor' }
+  const ext = (file.name?.split('.').pop() || 'bin').toLowerCase()
+  const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
+  if (!allowed.includes(ext)) return { success: false, error: 'Yalnızca PDF veya görsel yükleyebilirsiniz' }
+  if (file.size > 8 * 1024 * 1024) return { success: false, error: 'Dosya en fazla 8 MB olabilir' }
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const { error } = await supabase.storage.from('health-lab-results').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type || 'application/octet-stream',
+  })
+  if (error) return { success: false, error: error.message }
+  return { success: true, path }
+}
+
 export async function uploadStaffApplicationDoc(file, { turnstileToken = '', formSessionToken = '' } = {}) {
   if (!file) return { success: false, error: 'Dosya seçilmedi' }
   const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
