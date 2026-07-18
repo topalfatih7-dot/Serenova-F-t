@@ -7,6 +7,13 @@
 - Rate limit: Upstash (`UPSTASH_REDIS_REST_*`) tercih; yoksa bellek içi yedek + Postgres RPC limitleri.
 - `submit_*` RPC’leri yalnızca `service_role` ile çağrılır.
 
+## Saldırı Telegram uyarısı (OPS chat)
+
+- Kanal: `TELEGRAM_OPS_CHAT_ID` (yoksa `TELEGRAM_CHAT_ID`) — supabase-health ile aynı.
+- Tetikleyenler: Turnstile fail/eksik (≥3/10dk), rate limit (ilk 429), honeypot, auth rate limit.
+- Cooldown: aynı neden için 10 dakika (Upstash key `serenova:attack-cooldown:*`).
+- Kod: `api/_attackAlert.js` ← `api/contact.js` + `api/auth.js`.
+
 ## Vercel / WAF (manuel)
 
 Vercel Dashboard → Project → Firewall / Attack Challenge:

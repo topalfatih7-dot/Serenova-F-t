@@ -15,6 +15,7 @@ import {
   notifyCorporateApplicationTelegram,
 } from './_formNotify.js'
 import { issueFormSession, verifyFormSession } from './_formSession.js'
+import { reportFormAttack, mapGuardToAttackReason } from './_attackAlert.js'
 
 const MAX_MESSAGE = 2000
 const MAX_NAME = 120
@@ -67,13 +68,29 @@ async function guardBotAndRate(req, { prefix, limit, email = '', kind = 'public'
   return { ok: true, formSessionToken, headers: rl.headers }
 }
 
-function applyGuardFailure(res, guard) {
+function applyGuardFailure(res, guard, req, action) {
   applyRateLimitHeaders(res, guard.headers)
+  const reason = mapGuardToAttackReason(guard)
+  if (reason) {
+    reportFormAttack(req, {
+      action,
+      reason,
+      status: guard.status,
+      path: '/api/contact',
+    }).catch(() => {})
+  }
   return res.status(guard.status).json({ ok: false, error: guard.error })
 }
 
 async function handleContact(req, res, body) {
   if (body.website || body.company_url || body.hp) {
+    reportFormAttack(req, {
+      action: 'contact',
+      reason: 'honeypot',
+      status: 200,
+      email: trimStr(body.email, 80),
+      path: '/api/contact',
+    }).catch(() => {})
     return res.status(200).json({ ok: true })
   }
 
@@ -89,7 +106,7 @@ async function handleContact(req, res, body) {
   }
 
   const guard = await guardBotAndRate(req, { prefix: 'form-contact', limit: 5, email, kind: 'contact' })
-  if (!guard.ok) return applyGuardFailure(res, guard)
+  if (!guard.ok) return applyGuardFailure(res, guard, req, 'contact')
   applyRateLimitHeaders(res, guard.headers)
 
   const admin = getSupabaseAdmin()
@@ -132,7 +149,7 @@ async function handleStaffApplication(req, res, body) {
     kind: 'staff',
     allowFormSession: true,
   })
-  if (!guard.ok) return applyGuardFailure(res, guard)
+  if (!guard.ok) return applyGuardFailure(res, guard, req, 'staff_application')
   applyRateLimitHeaders(res, guard.headers)
 
   const admin = getSupabaseAdmin()
@@ -167,7 +184,7 @@ async function handleCorporateApplication(req, res, body) {
   }
 
   const guard = await guardBotAndRate(req, { prefix: 'form-corporate', limit: 3, email, kind: 'corporate' })
-  if (!guard.ok) return applyGuardFailure(res, guard)
+  if (!guard.ok) return applyGuardFailure(res, guard, req, 'corporate_application')
   applyRateLimitHeaders(res, guard.headers)
 
   const admin = getSupabaseAdmin()
@@ -193,7 +210,7 @@ async function handleStaffDocUpload(req, res, body) {
     kind: 'staff',
     allowFormSession: true,
   })
-  if (!guard.ok) return applyGuardFailure(res, guard)
+  if (!guard.ok) return applyGuardFailure(res, guard, req, 'staff_doc_upload')
   applyRateLimitHeaders(res, guard.headers)
 
   const fileName = trimStr(body.fileName || body.name, 180)

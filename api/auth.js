@@ -17,6 +17,7 @@ import { claimActiveSession, isActiveSession } from './_singleSession.js'
 import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
 import { setCorsHeaders, handleOptions } from './_guards.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
+import { reportFormAttack } from './_attackAlert.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -429,6 +430,12 @@ export default async function handler(req, res) {
       })
       applyRateLimitHeaders(res, rl.headers)
       if (!rl.ok) {
+        reportFormAttack(req, {
+          action,
+          reason: 'auth_rate_limit',
+          status: rl.status,
+          path: '/api/auth',
+        }).catch(() => {})
         return res.status(rl.status).json({ ok: false, error: rl.error })
       }
     }
