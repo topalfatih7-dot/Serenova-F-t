@@ -142,7 +142,10 @@ export async function reportFormAttack(req, {
   force = false,
 } = {}) {
   const chatId = getOpsChatId()
-  if (!chatId) return { ok: false, skipped: true, error: 'ops_chat_missing' }
+  if (!chatId) {
+    console.info('[attack-alert]', { reason, skipped: true, error: 'ops_chat_missing' })
+    return { ok: false, skipped: true, error: 'ops_chat_missing' }
+  }
 
   const ip = getClientIp(req)
   const count = await getBlockCount(reason, ip)
@@ -154,11 +157,13 @@ export async function reportFormAttack(req, {
     force
   const hitThreshold = count >= ALERT_THRESHOLD || (urgent && count >= 1)
   if (!hitThreshold) {
+    console.info('[attack-alert]', { reason, alerted: false, count, skip: 'below_threshold' })
     return { ok: true, alerted: false, count, reason: 'below_threshold' }
   }
 
   const fingerprint = `form:${reason}`
   if (!force && !(await cooldownOk(fingerprint))) {
+    console.info('[attack-alert]', { reason, alerted: false, count, skip: 'cooldown' })
     return { ok: true, alerted: false, count, reason: 'cooldown' }
   }
 
@@ -173,12 +178,22 @@ export async function reportFormAttack(req, {
   })
 
   const result = await sendTelegramMessage({ chatId, text })
-  return {
+  const out = {
     ok: result.ok,
     alerted: result.ok,
     count,
     error: result.error,
   }
+  console.info('[attack-alert]', {
+    reason,
+    action,
+    status,
+    count,
+    alerted: out.alerted,
+    error: out.error || null,
+    chatConfigured: Boolean(chatId),
+  })
+  return out
 }
 
 export function mapGuardToAttackReason(guard) {

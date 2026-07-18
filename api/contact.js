@@ -68,39 +68,52 @@ async function guardBotAndRate(req, { prefix, limit, email = '', kind = 'public'
   return { ok: true, formSessionToken, headers: rl.headers }
 }
 
+function attackDebugEnabled(req) {
+  const secret = process.env.CRON_SECRET || ''
+  if (!secret) return false
+  const hdr = String(req.headers['x-serenova-attack-debug'] || '')
+  return hdr && hdr === secret
+}
+
 async function applyGuardFailure(res, guard, req, action) {
   applyRateLimitHeaders(res, guard.headers)
   const reason = mapGuardToAttackReason(guard)
+  let attackAlert = null
   if (reason) {
     /* await: Vercel lambda fire-and-forget Telegram’ı kesmesin */
     try {
-      await reportFormAttack(req, {
+      attackAlert = await reportFormAttack(req, {
         action,
         reason,
         status: guard.status,
         path: '/api/contact',
       })
-    } catch {
-      /* alert asla yanıtı bozmasın */
+    } catch (e) {
+      attackAlert = { ok: false, error: String(e?.message || e) }
     }
   }
-  return res.status(guard.status).json({ ok: false, error: guard.error })
+  const payload = { ok: false, error: guard.error }
+  if (attackDebugEnabled(req) && attackAlert) payload._attackAlert = attackAlert
+  return res.status(guard.status).json(payload)
 }
 
 async function handleContact(req, res, body) {
   if (body.website || body.company_url || body.hp) {
+    let attackAlert = null
     try {
-      await reportFormAttack(req, {
+      attackAlert = await reportFormAttack(req, {
         action: 'contact',
         reason: 'honeypot',
         status: 200,
         email: trimStr(body.email, 80),
         path: '/api/contact',
       })
-    } catch {
-      /* ignore */
+    } catch (e) {
+      attackAlert = { ok: false, error: String(e?.message || e) }
     }
-    return res.status(200).json({ ok: true })
+    const payload = { ok: true }
+    if (attackDebugEnabled(req) && attackAlert) payload._attackAlert = attackAlert
+    return res.status(200).json(payload)
   }
 
   const name = trimStr(body.name, MAX_NAME)
@@ -137,6 +150,17 @@ async function handleContact(req, res, body) {
 
 async function handleStaffApplication(req, res, body) {
   if (body.website || body.hp) {
+    try {
+      await reportFormAttack(req, {
+        action: 'staff_application',
+        reason: 'honeypot',
+        status: 200,
+        email: trimStr(body.email, 80),
+        path: '/api/contact',
+      })
+    } catch {
+      /* ignore */
+    }
     return res.status(200).json({ ok: true })
   }
 
@@ -179,6 +203,17 @@ async function handleStaffApplication(req, res, body) {
 
 async function handleCorporateApplication(req, res, body) {
   if (body.website || body.hp) {
+    try {
+      await reportFormAttack(req, {
+        action: 'corporate_application',
+        reason: 'honeypot',
+        status: 200,
+        email: trimStr(body.email, 80),
+        path: '/api/contact',
+      })
+    } catch {
+      /* ignore */
+    }
     return res.status(200).json({ ok: true })
   }
 
