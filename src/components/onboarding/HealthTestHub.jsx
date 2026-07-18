@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, Moon, Clock3,
-  CheckCircle2, Circle, Sparkles,
+  HeartPulse, Stethoscope, Dumbbell, Apple,
+  CheckCircle2, Circle,
 } from 'lucide-react'
 import HealthTestConsentForm from './HealthTestConsentForm'
 import HealthRadarScores from './HealthRadarScores'
 import {
-  HEALTH_AUDIENCE_META,
   getHealthTestHubSections,
   getOverallHealthTestProgress,
   isHealthTestComplete,
@@ -15,24 +14,15 @@ import {
 import { calculateRadarScores } from '../../services/aiAnalysis'
 
 const ICONS = {
-  HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, Moon, Clock3,
-  Flower2: Sparkles,
+  HeartPulse, Stethoscope, Dumbbell, Apple,
 }
 
 const CARD_THEME = {
+  safety: 'from-rose-500/10 to-rose-600/5 border-rose-200 hover:border-rose-300',
+  movement: 'from-amber-500/10 to-orange-600/5 border-amber-200 hover:border-amber-300',
+  nutrition: 'from-sage-500/10 to-emerald-600/5 border-sage-200 hover:border-sage-300',
+  context: 'from-brand-500/10 to-brand-600/5 border-brand-200 hover:border-brand-300',
   general: 'from-brand-500/10 to-brand-600/5 border-brand-200 hover:border-brand-300',
-  medical: 'from-rose-500/10 to-rose-600/5 border-rose-200 hover:border-rose-300',
-  physical: 'from-amber-500/10 to-orange-600/5 border-amber-200 hover:border-amber-300',
-  lifestyle: 'from-sky-500/10 to-blue-600/5 border-sky-200 hover:border-sky-300',
-  women: 'from-pink-500/10 to-fuchsia-600/5 border-pink-200 hover:border-pink-300',
-  men: 'from-slate-500/10 to-slate-700/5 border-slate-200 hover:border-slate-300',
-  diet_reason: 'from-sage-500/10 to-emerald-600/5 border-sage-200 hover:border-sage-300',
-  diet_health: 'from-rose-500/10 to-rose-600/5 border-rose-200 hover:border-rose-300',
-  diet_lifestyle: 'from-sky-500/10 to-blue-600/5 border-sky-200 hover:border-sky-300',
-  diet_activity: 'from-amber-500/10 to-orange-600/5 border-amber-200 hover:border-amber-300',
-  diet_nutrition: 'from-sage-500/10 to-emerald-600/5 border-sage-200 hover:border-sage-300',
-  diet_women: 'from-pink-500/10 to-fuchsia-600/5 border-pink-200 hover:border-pink-300',
-  diet_extra: 'from-brand-500/10 to-brand-600/5 border-brand-200 hover:border-brand-300',
 }
 
 function cardTheme(id) {
@@ -49,15 +39,16 @@ export default function HealthTestHub({
   consentSaving = false,
   profile = null,
   healthAnalysis = null,
+  healthTestSchema = null,
 }) {
   const [localAck, setLocalAck] = useState(!!healthAck)
   const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
   const [showErrors, setShowErrors] = useState(false)
 
-  const sections = getHealthTestHubSections(gender, packageConfig, healthTest)
-  const overall = getOverallHealthTestProgress(healthTest, gender, packageConfig)
+  const sections = getHealthTestHubSections(gender, packageConfig, healthTest, healthTestSchema)
+  const overall = getOverallHealthTestProgress(healthTest, gender, packageConfig, healthTestSchema)
   const needsConsent = !healthAck || !disclaimer
-  const fullyComplete = isHealthTestComplete(healthTest, gender, packageConfig)
+  const fullyComplete = isHealthTestComplete(healthTest, gender, packageConfig, healthTestSchema)
     && healthAck && disclaimer
 
   const radarScores = useMemo(() => {
@@ -100,10 +91,10 @@ export default function HealthTestHub({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">Toplam ilerleme</p>
             <p className="mt-1 font-display text-2xl font-bold text-cream-900">
-              {overall.completed} / {overall.total} test
+              {overall.completed} / {overall.total} kategori
             </p>
             <p className="mt-1 text-sm text-cream-800/60">
-              Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz.
+              {overall.total} kategori — istediğiniz sırayla tamamlayın.
             </p>
           </div>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
@@ -134,10 +125,9 @@ export default function HealthTestHub({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
         {sections.map(({ section, progress }) => {
           const Icon = ICONS[section.icon] || HeartPulse
-          const audienceMeta = HEALTH_AUDIENCE_META[section.audience || 'shared']
           const theme = cardTheme(section.id)
 
           let statusLabel = 'Başla'
@@ -164,8 +154,8 @@ export default function HealthTestHub({
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/80 text-cream-900 shadow-sm">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${audienceMeta.chip}`}>
-                  {audienceMeta.label}
+                <span className="rounded-full bg-cream-100 px-2.5 py-0.5 text-[10px] font-bold text-cream-800 ring-1 ring-cream-200">
+                  {progress.requiredTotal} soru
                 </span>
               </div>
 

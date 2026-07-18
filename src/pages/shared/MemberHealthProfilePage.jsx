@@ -5,13 +5,17 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import MemberHealthProfilePanel from '../../components/member/MemberHealthProfilePanel'
 import { getStaffClients } from '../../utils/chatAccess'
+import { migrateLegacyHealthTestKeys } from '../../data/healthTest'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 
 export default function MemberHealthProfilePage({ audience = 'staff' }) {
   const { memberId } = useParams()
-  const { platform, staffUser, adminPatchMember, staffPatchMember, isAdmin } = useApp()
+  const { platform, staffUser, adminPatchMember, staffPatchMember, isAdmin, healthTestSchema } = useApp()
   const { toast } = useToast()
   const [savingNotes, setSavingNotes] = useState(false)
+  const [savingHealthTest, setSavingHealthTest] = useState(false)
+  const [editMode, setEditMode] = useState('view')
+  const [editorDirty, setEditorDirty] = useState(false)
 
   const member = useMemo(
     () => (platform?.members || []).find((m) => m.id === memberId) || null,
@@ -49,6 +53,27 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
     }
   }, [member, audience, adminPatchMember, staffPatchMember, toast])
 
+  const handleSaveHealthTest = useCallback(async (healthTest) => {
+    if (!member) return
+    setSavingHealthTest(true)
+    try {
+      const payload = migrateLegacyHealthTestKeys(healthTest)
+      if (audience === 'admin') {
+        await adminPatchMember(member.id, { healthTest: payload })
+      } else {
+        await staffPatchMember(member.id, { healthTest: payload })
+      }
+      toast('Sağlık testi kaydedildi', 'success')
+      setEditorDirty(false)
+      setEditMode('view')
+    } catch (err) {
+      toast('Sağlık testi kaydedilemedi', 'error')
+      throw err
+    } finally {
+      setSavingHealthTest(false)
+    }
+  }, [member, audience, adminPatchMember, staffPatchMember, toast])
+
   if (!member) {
     return (
       <PanelPageShell>
@@ -83,9 +108,10 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
         accent="brand"
       />
 
-      {savingNotes && (
+      {(savingNotes || savingHealthTest) && (
         <p className="mb-4 flex items-center gap-2 text-xs text-cream-800/50">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Not kaydediliyor…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {savingHealthTest ? 'Sağlık testi kaydediliyor…' : 'Not kaydediliyor…'}
         </p>
       )}
 
@@ -96,6 +122,14 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
         onSaveNotes={handleSaveNotes}
         notesSaving={savingNotes}
         showHealthAnalysis={false}
+        canEditHealthTest
+        editMode={editMode}
+        onEditModeChange={setEditMode}
+        onSaveHealthTest={handleSaveHealthTest}
+        healthTestSaving={savingHealthTest}
+        editorDirty={editorDirty}
+        onEditorDirtyChange={setEditorDirty}
+        healthTestSchema={healthTestSchema}
       />
     </PanelPageShell>
   )

@@ -78,9 +78,9 @@ export function AnalysisBlock({ analysis }) {
   )
 }
 
-export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = false }) {
+export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = false, healthTestSchema = null }) {
   if (!member) return null
-  const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
+  const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig, healthTestSchema)
 
   return (
     <div className="space-y-4">

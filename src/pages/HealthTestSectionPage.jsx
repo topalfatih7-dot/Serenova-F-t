@@ -17,12 +17,12 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 export default function HealthTestSectionPage() {
   const { sectionId } = useParams()
   const navigate = useNavigate()
-  const { user, packageConfig, saveHealthTestProgress, myPrograms, refresh, isFreeTrialExpired } = useApp()
+  const { user, packageConfig, saveHealthTestProgress, myPrograms, refresh, isFreeTrialExpired, healthTestSchema } = useApp()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
   const section = user?.id
-    ? getApplicableSections(user.gender, packageConfig).find((s) => s.id === sectionId)
+    ? getApplicableSections(user.gender, packageConfig, healthTestSchema).find((s) => s.id === sectionId)
     : null
 
   const handleProgressSave = useCallback(async ({ healthTest }) => {
@@ -35,14 +35,14 @@ export default function HealthTestSectionPage() {
   }, [saveHealthTestProgress, saving])
 
   const handleSectionComplete = useCallback(async ({ healthTest }) => {
-    if (!section || !isSectionComplete(section, healthTest)) {
+    if (!section || !isSectionComplete(section, healthTest, healthTestSchema)) {
       toast('Lütfen tüm soruları eksiksiz cevaplayın (açıklama alanları dahil).', 'error')
       return
     }
     setSaving(true)
     try {
       await saveHealthTestProgress(healthTest)
-      const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig)
+      const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig, healthTestSchema)
       if (allSectionsDone) {
         toast(`${section.title} tamamlandı. Tüm testler kaydedildi.`, 'success')
 
@@ -78,7 +78,7 @@ export default function HealthTestSectionPage() {
     } finally {
       setSaving(false)
     }
-  }, [saveHealthTestProgress, user, packageConfig, section, toast, navigate, myPrograms, refresh])
+  }, [saveHealthTestProgress, user, packageConfig, healthTestSchema, section, toast, navigate, myPrograms, refresh])
 
   if (!user?.id) return <Navigate to="/login" replace />
 
@@ -121,6 +121,7 @@ export default function HealthTestSectionPage() {
         sectionId={sectionId}
         gender={user.gender || ''}
         packageConfig={packageConfig}
+        healthTestSchema={healthTestSchema}
         initialHealthTest={user.healthTest}
         onProgressSave={handleProgressSave}
         onSectionComplete={handleSectionComplete}

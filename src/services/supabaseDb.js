@@ -289,13 +289,14 @@ async function hydrateOnce() {
   const exerciseCount = exercisesRes.count ?? 0
   const exercises = []
   const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
-  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
+  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null, healthTestSchema: null }
   ;(contentRes.data || []).forEach((r) => {
     const item = { id: r.id, ...(r.data || {}) }
     if (r.kind === 'testimonial') content.testimonials.push(item)
     else if (r.kind === 'faq') content.faqs.push(item)
     else if (r.kind === 'success_story') content.successStories.push(item)
     else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
+    else if (r.kind === 'health_test_schema') content.healthTestSchema = { id: r.id, ...(r.data || {}) }
   })
 
   if (!user) {
@@ -399,7 +400,7 @@ export async function fetchAdminSessionSummaries() {
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
   tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
-  content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
+  content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null, healthTestSchema: null },
 }
 
 export function rowToExercise(row) {
@@ -1641,6 +1642,37 @@ export async function upsertExerciseTaxonomy(taxonomy) {
     return { success: true, id: taxonomy.id }
   }
   const { data, error } = await supabase.from('site_content').insert({ kind: 'exercise_taxonomy', sort: 0, data: payload }).select('id').single()
+  if (error) return { success: false, error: error.message }
+  return { success: true, id: data.id }
+}
+
+/** Sağlık testi soru/kategori şeması (tek site_content satırı). */
+export async function upsertHealthTestSchema(schema) {
+  const payload = {
+    version: schema.version || 1,
+    sections: Array.isArray(schema.sections) ? schema.sections : [],
+  }
+  if (schema.id) {
+    const { error } = await supabase.from('site_content').update({ data: payload, sort: 0 }).eq('id', schema.id)
+    if (error) return { success: false, error: error.message }
+    return { success: true, id: schema.id }
+  }
+  const { data: existing } = await supabase
+    .from('site_content')
+    .select('id')
+    .eq('kind', 'health_test_schema')
+    .limit(1)
+    .maybeSingle()
+  if (existing?.id) {
+    const { error } = await supabase.from('site_content').update({ data: payload, sort: 0 }).eq('id', existing.id)
+    if (error) return { success: false, error: error.message }
+    return { success: true, id: existing.id }
+  }
+  const { data, error } = await supabase
+    .from('site_content')
+    .insert({ kind: 'health_test_schema', sort: 0, data: payload })
+    .select('id')
+    .single()
   if (error) return { success: false, error: error.message }
   return { success: true, id: data.id }
 }

@@ -71,6 +71,7 @@ const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
+const AdminHealthTestSchemaPage = lazy(() => import('./pages/admin/AdminHealthTestSchemaPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
 const AdminAccountPage = lazy(() => import('./pages/admin/AdminAccountPage'))
@@ -187,6 +188,7 @@ export default function App() {
                 <Route path="admin/staff" element={<AdminStaffPage />} />
                 <Route path="admin/blog" element={<AdminBlogPage />} />
                 <Route path="admin/content" element={<AdminContentPage />} />
+                <Route path="admin/health-test" element={<AdminHealthTestSchemaPage />} />
                 <Route path="admin/subscriptions" element={<AdminSubscriptionsPage />} />
                 <Route path="admin/payments" element={<PaymentManagementPage audience="admin" />} />
                 <Route path="admin/sessions" element={<AdminSessionsPage />} />

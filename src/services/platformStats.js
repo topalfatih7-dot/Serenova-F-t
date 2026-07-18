@@ -54,7 +54,8 @@ import { isHealthTestComplete } from '../data/healthTest'
 export function computeOnboardingFunnel(db) {
   const members = db.members || []
   const total = members.length
-  const withHealthTest = members.filter((m) => isHealthTestComplete(m.healthTest, m.gender, m.packageConfig)).length
+  const schema = db.content?.healthTestSchema || null
+  const withHealthTest = members.filter((m) => isHealthTestComplete(m.healthTest, m.gender, m.packageConfig, schema)).length
   const premium = members.filter((m) => isPaidMembership(m.membership)).length
   const paidActive = members.filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active').length
 

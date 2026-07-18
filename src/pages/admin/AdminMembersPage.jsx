@@ -99,7 +99,7 @@ export default function AdminMembersPage() {
         <EmptyState title="Üye bulunamadı" description="Kayıt oluşturduğunuzda burada görünecek." />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white">
-          <table className="w-full min-w-[880px] text-left text-sm">
+          <table className="w-full min-w-[960px] text-left text-sm">
             <thead>
               <tr className="border-b border-cream-100 bg-cream-50">
                 <th className="px-4 py-3 font-semibold">Üye</th>
@@ -110,6 +110,7 @@ export default function AdminMembersPage() {
                 <th className="px-4 py-3 font-semibold">Seri</th>
                 <th className="px-4 py-3 font-semibold">Kayıt</th>
                 <th className="px-4 py-3 font-semibold">Son Aktif</th>
+                <th className="px-4 py-3 font-semibold">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -148,6 +149,17 @@ export default function AdminMembersPage() {
                   <td className="px-4 py-3">{m.streak || 0} gün</td>
                   <td className="px-4 py-3 text-cream-800/60">{m.joinedAt}</td>
                   <td className="px-4 py-3 text-cream-800/60">{m.lastActiveAt}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      to={`/admin/members/${m.id}/health`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-bold text-brand-700 ring-1 ring-brand-100 transition hover:bg-brand-500 hover:text-white"
+                      title="Sağlık testi & notlar"
+                    >
+                      <HeartPulse className="h-3.5 w-3.5" />
+                      Sağlık
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -261,14 +273,20 @@ export default function AdminMembersPage() {
 
             <MemberHealthInsights member={selected} showLocation={false} />
 
-            <Link
-              to={`/admin/members/${selected.id}/health`}
-              onClick={() => setSelectedId(null)}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
-            >
-              <HeartPulse className="h-4 w-4" />
-              Sağlık Profili & Notlar
-            </Link>
+            <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
+              <p className="text-sm font-semibold text-cream-900">Sağlık testi (30 soru)</p>
+              <p className="mt-1 text-xs text-cream-800/60">
+                Üyenin kilitli sağlık testini görüntüle, doldur veya düzenle; klinik not ekle.
+              </p>
+              <Link
+                to={`/admin/members/${selected.id}/health`}
+                onClick={() => setSelectedId(null)}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+              >
+                <HeartPulse className="h-4 w-4" />
+                Sağlık profiline git · Testi düzenle
+              </Link>
+            </div>
 
             {(selected.healthAck || selected.disclaimer) && (
               <div className="rounded-xl border border-cream-100 bg-cream-50 px-4 py-3 text-xs text-cream-800/70">

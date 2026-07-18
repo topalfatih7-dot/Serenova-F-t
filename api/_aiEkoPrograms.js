@@ -17,6 +17,7 @@ import {
   EKO_WORKOUT_DAYS,
   appendProgramNotifications,
   buildHealthTestSummary,
+  loadHealthTestSchemaLabels,
   buildValidatedProgramPayloads,
   clampCycleLength,
   deleteProgramsBySourceAndType,
@@ -126,7 +127,8 @@ export async function generateBasicPrograms(admin, memberRow) {
     gender: memberData.gender,
   })
   const dailyCalories = estimateDailyCalories(profile)
-  const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
+  const schemaLabels = await loadHealthTestSchemaLabels(admin)
+  const healthTestSummary = buildHealthTestSummary(memberData.healthTest, 3800, schemaLabels)
 
   const instruction = buildBasicProgramInstruction({
     profile,
@@ -283,7 +285,8 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
     gender: memberData.gender,
   })
   const dailyCalories = estimateDailyCalories(profile)
-  const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
+  const schemaLabels = await loadHealthTestSchemaLabels(admin)
+  const healthTestSummary = buildHealthTestSummary(memberData.healthTest, 3800, schemaLabels)
   const previousDietSummary = lastDiet ? summarizeNutritionProgram(lastDiet) : ''
 
   // Tek OpenAI (gpt-4.1) çağrısı — her iki tip isteniyorsa; aksi halde ilgili alanlar
