@@ -294,16 +294,52 @@ async function handleUnlockSignup(req, res, body) {
     }
   }
 
-  const { data: listed, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  if (listErr) throw listErr
-
-  const user = (listed?.users || []).find((u) => (u.email || '').toLowerCase() === email)
+  const userIdHint = String(body.userId || '').trim()
+  let user = null
+  if (userIdHint) {
+    const { data: byId, error: byIdErr } = await admin.auth.admin.getUserById(userIdHint)
+    if (!byIdErr && byId?.user && (byId.user.email || '').toLowerCase() === email) {
+      user = byId.user
+    }
+  }
+  if (!user) user = await findAuthUserByEmail(admin, email)
   if (!user) return res.status(404).json({ ok: false, error: 'Kullanıcı bulunamadı.' })
 
   const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, { email_confirm: true })
   if (updateErr) throw updateErr
 
   return res.status(200).json({ ok: true })
+}
+
+/** E-posta ile auth kullanıcısı — listUsers(1000) taraması yerine. */
+async function findAuthUserByEmail(admin, email) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized) return null
+
+  const base = getSupabaseUrl()
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  if (base && key) {
+    try {
+      const url = `${base.replace(/\/$/, '')}/auth/v1/admin/users?email=${encodeURIComponent(normalized)}`
+      const resp = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${key}`,
+          apikey: key,
+        },
+      })
+      if (resp.ok) {
+        const payload = await resp.json().catch(() => ({}))
+        const users = Array.isArray(payload?.users) ? payload.users : []
+        const match = users.find((u) => (u.email || '').toLowerCase() === normalized)
+        if (match) return match
+        if (payload?.id && (payload.email || '').toLowerCase() === normalized) return payload
+      }
+    } catch {
+      /* yedek yok — çağıran 404 döner */
+    }
+  }
+
+  return null
 }
 
 async function handleEmailSend(req, res) {

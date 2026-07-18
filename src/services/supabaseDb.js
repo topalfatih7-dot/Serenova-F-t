@@ -194,6 +194,14 @@ export const AUTH_EVENTS_REQUIRING_HYDRATE = new Set([
 ])
 
 let hydrateInFlight = null
+/** Kısa ömürlü cache — SIGNED_IN hydrate ile login reloadRemote çift turunu önler. */
+let hydrateCache = null
+const HYDRATE_CACHE_TTL_MS = 2500
+const MEMBER_ACTIVITIES_HYDRATE_LIMIT = 50
+
+export function invalidateHydrateCache() {
+  hydrateCache = null
+}
 
 async function fetchAuthenticatedBundle(user, staff) {
   const role = roleForUser(user, staff)
@@ -214,7 +222,7 @@ async function fetchAuthenticatedBundle(user, staff) {
       supabase.from('members').select('*').eq('id', memberId).maybeSingle(),
       supabase.from('programs').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
       supabase.from('tickets').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
-      supabase.from('activities').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+      supabase.from('activities').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(MEMBER_ACTIVITIES_HYDRATE_LIMIT),
       supabase.from('payments').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
     ])
     members = membersRes.data ? [rowToMember(membersRes.data)] : []
@@ -363,10 +371,30 @@ async function hydrateOnce() {
   }
 }
 
-export async function hydrate() {
-  if (!hydrateInFlight) {
-    hydrateInFlight = hydrateOnce().finally(() => { hydrateInFlight = null })
+/**
+ * @param {{ force?: boolean }} [opts]
+ * force=true: cache atlanır (mutasyon / logout sonrası).
+ * force=false: uçuştaki hydrate’e katılır veya kısa TTL cache döner.
+ */
+export async function hydrate({ force = false } = {}) {
+  if (hydrateInFlight) {
+    const shared = await hydrateInFlight
+    if (!force) return shared
+  } else if (!force && hydrateCache && (Date.now() - hydrateCache.at) < HYDRATE_CACHE_TTL_MS) {
+    return hydrateCache.data
   }
+
+  if (force) invalidateHydrateCache()
+
+  if (hydrateInFlight) return hydrateInFlight
+
+  hydrateInFlight = hydrateOnce()
+    .then((data) => {
+      hydrateCache = { data, at: Date.now(), userId: data?.authUser?.id || null }
+      return data
+    })
+    .finally(() => { hydrateInFlight = null })
+
   return hydrateInFlight
 }
 
@@ -559,8 +587,17 @@ export async function login(email, password, remember = false, turnstileToken = 
   syncAutoRefresh(remember)
 
   const cleanEmail = sanitizeEmailInput(email)
-  let user = null
+  const user = await authenticatePasswordUser(cleanEmail, password, turnstileToken)
+  if (!user.ok) return { success: false, error: user.error }
 
+  /* Role için hafif sorgu; activity/telegram UI dönüşünü bloklamaz */
+  const role = await resolveLoginRole(user.user)
+  void recordLoginSideEffects(user.user, role)
+
+  return { success: true, role, remember }
+}
+
+async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
   try {
     const loginRes = await fetch('/api/auth', {
       method: 'POST',
@@ -575,65 +612,85 @@ export async function login(email, password, remember = false, turnstileToken = 
     const loginData = await loginRes.json().catch(() => ({}))
     if (!loginRes.ok || !loginData.ok || !loginData.session?.access_token) {
       if (loginRes.status === 429) {
-        return { success: false, error: loginData.error || 'Çok fazla deneme. Lütfen sonra tekrar deneyin.' }
+        return { ok: false, error: loginData.error || 'Çok fazla deneme. Lütfen sonra tekrar deneyin.' }
       }
       if (loginData.error && /bot|doğrulama|turnstile/i.test(loginData.error)) {
-        return { success: false, error: loginData.error }
+        return { ok: false, error: loginData.error }
       }
-      return { success: false, error: loginData.error || 'E-posta veya şifre hatalı.' }
+      return { ok: false, error: loginData.error || 'E-posta veya şifre hatalı.' }
     }
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
       access_token: loginData.session.access_token,
       refresh_token: loginData.session.refresh_token,
     })
     if (sessionError || !sessionData?.user) {
-      return { success: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
+      return { ok: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
     }
-    user = sessionData.user
+    return { ok: true, user: sessionData.user }
   } catch {
     /* API yoksa (yalnızca Vite) klasik girişe düş — production’da /api/auth zorunlu */
     if (import.meta.env.PROD) {
-      return { success: false, error: 'Giriş servisine ulaşılamadı. Sayfayı yenileyip tekrar deneyin.' }
+      return { ok: false, error: 'Giriş servisine ulaşılamadı. Sayfayı yenileyip tekrar deneyin.' }
     }
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password,
       options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
     })
-    if (error || !data?.user) return { success: false, error: 'E-posta veya şifre hatalı.' }
-    user = data.user
+    if (error || !data?.user) return { ok: false, error: 'E-posta veya şifre hatalı.' }
+    return { ok: true, user: data.user }
   }
+}
 
-  const { data: staffRows } = await supabase.from('staff').select('*')
-  const staffList = (staffRows || []).map(rowToStaff)
-  const role = roleForUser(user, staffList)
-  const displayName = await resolveActorName(user, role, staffList)
-  const staffMember = findStaffMatch(user, staffList)
+/** Admin e-posta veya kendi staff satırı — tam staff tablosu çekmez. */
+async function resolveLoginRole(user) {
+  if (!user) return 'member'
+  const e = (user.email || '').toLowerCase()
+  if (e === ADMIN_EMAIL) return 'admin'
+  const [byIdRes, byEmailRes] = await Promise.all([
+    supabase.from('staff').select('id').eq('id', user.id).maybeSingle(),
+    e
+      ? supabase.from('staff').select('id').eq('email', e).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+  if (byIdRes.data || byEmailRes.data) return 'staff'
+  return 'member'
+}
 
-  const loginText = role === 'admin'
-    ? `${displayName} (Admin) giriş yaptı`
-    : role === 'staff'
-      ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
-      : `${displayName} giriş yaptı`
+async function recordLoginSideEffects(user, role) {
+  try {
+    const { data: staffRows } = await supabase.from('staff').select('*')
+    const staffList = (staffRows || []).map(rowToStaff)
+    const resolvedRole = role || roleForUser(user, staffList)
+    const displayName = await resolveActorName(user, resolvedRole, staffList)
+    const staffMember = findStaffMatch(user, staffList)
 
-  await addActivity('login', loginText, role === 'member' ? user.id : null)
+    const loginText = resolvedRole === 'admin'
+      ? `${displayName} (Admin) giriş yaptı`
+      : resolvedRole === 'staff'
+        ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
+        : `${displayName} giriş yaptı`
 
-  if (role === 'admin') {
-    notifyTelegram('admin_login', { name: displayName, email: user.email })
-  } else if (role === 'staff') {
-    notifyTelegram('staff_login', {
-      name: displayName,
-      email: user.email,
-      role: staffRoleLabel(staffMember?.role),
-    })
-  } else {
-    notifyTelegram('member_login', { name: displayName, email: user.email })
+    await addActivity('login', loginText, resolvedRole === 'member' ? user.id : null)
+
+    if (resolvedRole === 'admin') {
+      notifyTelegram('admin_login', { name: displayName, email: user.email })
+    } else if (resolvedRole === 'staff') {
+      notifyTelegram('staff_login', {
+        name: displayName,
+        email: user.email,
+        role: staffRoleLabel(staffMember?.role),
+      })
+    } else {
+      notifyTelegram('member_login', { name: displayName, email: user.email })
+    }
+  } catch {
+    /* yan etki — giriş başarısını etkilemez */
   }
-
-  return { success: true, role, remember }
 }
 
 export async function logout() {
+  invalidateHydrateCache()
   const user = await getUser()
   if (user) {
     const { data: staffRows } = await supabase.from('staff').select('*')
@@ -767,7 +824,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   return { success: true, member }
 }
 
-async function unlockSignupSession(email, password, { turnstileToken = '', authSessionToken = '' } = {}) {
+async function unlockSignupSession(email, password, { turnstileToken = '', authSessionToken = '', userId = '' } = {}) {
   try {
     const res = await fetch('/api/auth', {
       method: 'POST',
@@ -778,6 +835,7 @@ async function unlockSignupSession(email, password, { turnstileToken = '', authS
         password,
         turnstileToken: turnstileToken || '',
         authSessionToken: authSessionToken || '',
+        userId: userId || '',
       }),
     })
     const data = await res.json().catch(() => ({}))
@@ -818,8 +876,8 @@ async function setSessionFromApiLogin(email, password, { turnstileToken = '', au
   return { ok: true }
 }
 
-async function signInAfterSignup(email, password, { turnstileToken = '', authSessionToken = '' } = {}) {
-  const creds = { turnstileToken, authSessionToken }
+async function signInAfterSignup(email, password, { turnstileToken = '', authSessionToken = '', userId = '' } = {}) {
+  const creds = { turnstileToken, authSessionToken, userId }
   try {
     const viaApi = await setSessionFromApiLogin(email, password, creds)
     if (viaApi.ok) return { success: true }
@@ -902,6 +960,7 @@ export async function ensureAuthForRegistration(profile) {
       const signIn = await signInAfterSignup(email, password, {
         turnstileToken,
         authSessionToken: signupData.authSessionToken || '',
+        userId: signupData.userId || '',
       })
       if (signIn.success) return { success: true }
       return { success: false, error: signIn.error || 'Kayıt oluştu ancak giriş yapılamadı. Lütfen giriş sayfasından deneyin.' }

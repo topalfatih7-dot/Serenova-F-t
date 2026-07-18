@@ -73,8 +73,8 @@ export function AppProvider({ children }) {
   }, [staffCollabThreads])
 
   /** Sessiz yenileme — tam ekran LoadingScreen göstermez (panel mutasyonları / poll). */
-  const reloadRemote = useCallback(async () => {
-    const d = await sb.hydrate()
+  const reloadRemote = useCallback(async ({ force = true } = {}) => {
+    const d = await sb.hydrate({ force })
     setRemoteDb(d)
     return d
   }, [])
@@ -86,7 +86,7 @@ export function AppProvider({ children }) {
     let active = true
     ;(async () => {
       try {
-        const d = await sb.hydrate()
+        const d = await sb.hydrate({ force: true })
         if (active) setRemoteDb(d)
       } finally {
         if (active) setLoading(false)
@@ -94,13 +94,17 @@ export function AppProvider({ children }) {
     })()
     const unsub = sb.onAuthChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        await registerActiveSession()
+        /* Kritik yolu bloklama — hydrate ile paralel çalışsın */
+        void registerActiveSession()
       }
       if (event === 'TOKEN_REFRESHED' && session) {
         await verifyActiveSessionOrSignOut()
       }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
-      const d = await sb.hydrate()
+      if (event === 'SIGNED_OUT') sb.invalidateHydrateCache()
+      const d = await sb.hydrate({
+        force: event === 'SIGNED_OUT' || event === 'USER_UPDATED',
+      })
       if (active) setRemoteDb(d)
     })
     return () => { active = false; unsub?.() }
@@ -731,7 +735,8 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password, remember = false, turnstileToken = '') => {
     const r = await sb.login(email, password, remember, turnstileToken)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
-    await reloadRemote()
+    /* SIGNED_IN hydrate ile birleş / kısa cache — ikinci tam tur yok */
+    await reloadRemote({ force: false })
     return { success: true, role: r.role, isAdmin: r.role === 'admin' }
   }, [reloadRemote])
 
