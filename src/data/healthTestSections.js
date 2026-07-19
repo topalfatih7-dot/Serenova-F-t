@@ -62,7 +62,7 @@ export const HEALTH_SECTIONS = [
         detail: {
           key: 'biggestBarrierDetail',
           when: ['other'],
-          placeholder: 'Engelizi kısaca yazınız',
+          placeholder: 'Engelinizi kısaca yazınız',
         },
       },
       {
@@ -186,14 +186,14 @@ export const HEALTH_SECTIONS = [
           { value: 'prediabetes', label: 'Prediyabet' },
           { value: 'hypertension', label: 'Yüksek tansiyon (Hipertansiyon)' },
           { value: 'thyroid', label: 'Tiroid hastalığı' },
-          { value: 'pcos', label: 'Polikistik Over Sendromu (PKOS)' },
+          { value: 'pcos', label: 'Polikistik over sendromu (PKOS)' },
           { value: 'asthma', label: 'Astım' },
           { value: 'copd', label: 'KOAH' },
           { value: 'heartDisease', label: 'Kalp hastalığı' },
           { value: 'kidney', label: 'Böbrek hastalığı' },
           { value: 'liver', label: 'Karaciğer hastalığı' },
           { value: 'reflux', label: 'Reflü' },
-          { value: 'ibs', label: 'İrritabl Bağırsak Sendromu (IBS)' },
+          { value: 'ibs', label: 'İrritabl bağırsak sendromu (IBS)' },
           { value: 'celiac', label: 'Çölyak hastalığı' },
           { value: 'rheumatic', label: 'Romatizmal hastalık' },
           { value: 'cancer', label: 'Kanser öyküsü' },
@@ -342,15 +342,15 @@ export const HEALTH_SECTIONS = [
           { value: 'calcium', label: 'Kalsiyum' },
           { value: 'zinc', label: 'Çinko' },
           { value: 'magnesium', label: 'Magnezyum' },
-          { value: 'omega3', label: 'Omega-3 (Balık Yağı)' },
+          { value: 'omega3', label: 'Omega-3 (balık yağı)' },
           { value: 'collagen', label: 'Kolajen' },
           { value: 'probiotic', label: 'Probiyotik' },
-          { value: 'fiber', label: 'Lif Takviyesi (Psyllium vb.)' },
+          { value: 'fiber', label: 'Lif takviyesi (psyllium vb.)' },
           { value: 'creatine', label: 'Kreatin' },
           { value: 'electrolytes', label: 'Elektrolit' },
           { value: 'preworkout', label: 'Pre-workout' },
-          { value: 'proteinPowder', label: 'Protein Tozu' },
-          { value: 'amino', label: 'Amino Asit (BCAA/EAA)' },
+          { value: 'proteinPowder', label: 'Protein tozu' },
+          { value: 'amino', label: 'Amino asit (BCAA/EAA)' },
           { value: 'glucosamine', label: 'Glukozamin' },
           { value: 'other', label: 'Diğer' },
         ],
@@ -383,8 +383,8 @@ export const HEALTH_SECTIONS = [
             required: true,
             options: [
               { value: 'under_1m', label: '1 aydan az' },
-              { value: '1_3m', label: '1-3 ay' },
-              { value: '3_12m', label: '3-12 ay' },
+              { value: '1_3m', label: '1–3 ay' },
+              { value: '3_12m', label: '3–12 ay' },
               { value: 'over_1y', label: '1 yıldan uzun' },
             ],
           },
@@ -417,7 +417,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'multi',
         key: 'digestiveSymptoms',
-        label: 'Aşağıdaki sindirim şikayetlerinden hangilerini sık yaşıyorsunuz?',
+        label: 'Aşağıdaki sindirim şikâyetlerinden hangilerini sık yaşıyorsunuz?',
         required: true,
         options: [
           { value: 'none', label: 'Yok', exclusive: true },
@@ -444,7 +444,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'text',
         key: 'currentComplaints',
-        label: 'Şu an sizi en çok zorlayan sağlık şikayetini kısaca yazınız',
+        label: 'Şu an sizi en çok zorlayan sağlık şikâyetini kısaca yazınız',
         required: false,
         hint: 'Örnek: bel ağrısı, nefes darlığı, sürekli yorgunluk',
       },
@@ -544,7 +544,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'activityFrequency',
-        label: 'Haftada kaç gün düzenli fiziksel aktivite yapiyorsunuz?',
+        label: 'Haftada kaç gün düzenli fiziksel aktivite yapıyorsunuz?',
         required: true,
         options: [
           { value: '0', label: '0 gün' },
@@ -568,12 +568,12 @@ export const HEALTH_SECTIONS = [
       {
         type: 'multi',
         key: 'currentActivityTypes',
-        label: 'Şu anda yaptiginiz aktiviteler hangileri?',
+        label: 'Şu anda yaptığınız aktiviteler hangileri?',
         required: true,
         options: [
           { value: 'walking', label: 'Yürüyüş' },
           { value: 'running', label: 'Koşu' },
-          { value: 'strength', label: 'Kuvvet antrenmani' },
+          { value: 'strength', label: 'Kuvvet antrenmanı' },
           { value: 'pilates', label: 'Pilates/Yoga' },
           { value: 'cycling', label: 'Bisıklet' },
           { value: 'none', label: 'Düzenli aktivitem yok' }
@@ -585,7 +585,7 @@ export const HEALTH_SECTIONS = [
         label: 'Temel hareketlerde koordinasyonunuzu nasıl değerlendirirsiniz?',
         required: false,
         options: [
-          { value: 'weak', label: 'Zayif' },
+          { value: 'weak', label: 'Zayıf' },
           { value: 'fair', label: 'Gelişmeye açık' },
           { value: 'good', label: 'İyi' },
           { value: 'very_good', label: 'Çok iyi' }
@@ -609,8 +609,8 @@ export const HEALTH_SECTIONS = [
         label: '10-15 dk tempolu yürüyüşte nefes durumunuz nasıl?',
         required: true,
         options: [
-          { value: 'very_hard', label: 'Çok zorlaniyorum' },
-          { value: 'hard', label: 'Zorlaniyorum' },
+          { value: 'very_hard', label: 'Çok zorlanıyorum' },
+          { value: 'hard', label: 'Zorlanıyorum' },
           { value: 'manageable', label: 'İdare ediyorum' },
           { value: 'easy', label: 'Rahatim' }
         ]
@@ -618,13 +618,13 @@ export const HEALTH_SECTIONS = [
       {
         type: 'multi',
         key: 'sportsHistory',
-        label: 'Geçmişte düzenli yaptiginiz sporlar hangileri?',
+        label: 'Geçmişte düzenli yaptığınız sporlar hangileri?',
         required: false,
         options: [
           { value: 'football', label: 'Futbol' },
           { value: 'basketball', label: 'Basketbol' },
           { value: 'swimming', label: 'Yüzme' },
-          { value: 'martialArts', label: 'Dövüş sporlari' },
+          { value: 'martialArts', label: 'Dövüş sporları' },
           { value: 'athletics', label: 'Atletizm' },
           { value: 'none', label: 'Yok' }
         ]
@@ -632,20 +632,20 @@ export const HEALTH_SECTIONS = [
       {
         type: 'multi',
         key: 'equipmentAccess',
-        label: 'Antrenman icin hangi ekipmanlara erisiminiz var?',
+        label: 'Antrenman için hangi ekipmanlara erişiminiz var?',
         required: true,
         options: [
-          { value: 'bodyweight', label: 'Sadece vücut agirligi' },
-          { value: 'dumbbells', label: 'Dambil' },
-          { value: 'bands', label: 'Direnc bandi' },
-          { value: 'cardioMachine', label: 'Kondisyon cihazi' },
-          { value: 'gym', label: 'Tam donanimli spor salonu' }
+          { value: 'bodyweight', label: 'Sadece vücut ağırlığı' },
+          { value: 'dumbbells', label: 'Dambıl' },
+          { value: 'bands', label: 'Direnç bandı' },
+          { value: 'cardioMachine', label: 'Kondisyon cihazı' },
+          { value: 'gym', label: 'Tam donanımlı spor salonu' }
         ]
       },
       {
         type: 'multi',
         key: 'preferredTrainingDays',
-        label: 'Antrenman icin uygün günleriniz hangileri?',
+        label: 'Antrenman için uygun günleriniz hangileri?',
         required: true,
         options: [
           { value: 'monday', label: 'Pazartesi' },
@@ -660,7 +660,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'sessionDurationGoal',
-        label: 'Tek bir antrenmana ayirabileceginiz sure ne kadar?',
+        label: 'Tek bir antrenmana ayırabileceğiniz süre ne kadar?',
         required: true,
         options: [
           { value: '15_25', label: '15-25 dk' },
@@ -672,7 +672,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'trainingLocation',
-        label: 'Nerede antrenman yapmayi tercih edersiniz?',
+        label: 'Nerede antrenman yapmayı tercih edersiniz?',
         required: true,
         options: [
           { value: 'home', label: 'Evde' },
@@ -684,7 +684,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'previousCoachExperience',
-        label: 'Daha once bir antrenörle calistiniz mi?',
+        label: 'Daha önce bir antrenörle çalıştınız mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -695,7 +695,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'exerciseContraindications',
-        label: 'Yapmanız önerilen hareket/egzersiz var mi?',
+        label: 'Kaçınmanız gereken hareket veya egzersiz var mı?',
         required: true,
         options: [
           { value: 'no', label: 'Yok' },
@@ -704,7 +704,7 @@ export const HEALTH_SECTIONS = [
         detail: {
           key: 'exerciseContraindicationsDetail',
           when: ['yes'],
-          placeholder: 'Kaçinmaniz gereken hareketleri yaziniz'
+          placeholder: 'Kaçınmanız gereken hareketleri yazınız'
         }
       },
       {
@@ -726,23 +726,23 @@ export const HEALTH_SECTIONS = [
       {
         type: 'text',
         key: 'performanceGoal',
-        label: 'Önümüzdeki 3 ay icin en öncelikli fiziksel hedefiniz nedir?',
+        label: 'Önümüzdeki 3 ay için en öncelikli fiziksel hedefiniz nedir?',
         required: true,
-        hint: 'Örnek: 5 km kosabilmek, duzgün squat ogrenmek, 6 kg vermek'
+        hint: 'Örnek: 5 km koşabilmek, düzgün squat öğrenmek, 6 kg vermek'
       }
     ]
   },
   {
     id: 'lifestyle',
-    title: 'Yaşam Tarzi',
-    subtitle: 'Günluk alışkanlıklar ve davranislar',
+    title: 'Yaşam Tarzı',
+    subtitle: 'Günlük alışkanlıklar ve davranışlar',
     icon: 'Activity',
     audience: 'coach',
     questions: [
       {
         type: 'single',
         key: 'sittingHours',
-        label: 'Günluk ortalama kaç saat oturuyorsunuz?',
+        label: 'Günlük ortalama kaç saat oturuyorsunuz?',
         required: true,
         options: [
           { value: 'under_4', label: '4 saatten az' },
@@ -757,16 +757,16 @@ export const HEALTH_SECTIONS = [
         label: 'Sigara kullanıyor musunuz?',
         required: true,
         options: [
-          { value: 'never', label: 'Hiç kullanmadim' },
-          { value: 'former', label: 'Biraktim' },
-          { value: 'occasional', label: 'Ara sira' },
+          { value: 'never', label: 'Hiç kullanmadım' },
+          { value: 'former', label: 'Bıraktım' },
+          { value: 'occasional', label: 'Ara sıra' },
           { value: 'daily', label: 'Her gün' }
         ]
       },
       {
         type: 'single',
         key: 'alcohol',
-        label: 'Alkol tüketim sıkliginiz nasıl?',
+        label: 'Alkol tüketim sıklığınız nasıl?',
         required: true,
         options: [
           { value: 'none', label: 'Hiç' },
@@ -778,7 +778,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'teaCoffee',
-        label: 'Günluk cay/kahve tüketiminiz ne kadar?',
+        label: 'Günlük çay/kahve tüketiminiz ne kadar?',
         required: true,
         options: [
           { value: '0_1', label: '0-1 fincan' },
@@ -790,30 +790,30 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'travelFrequency',
-        label: 'Is veya ozel nedenlerle şehir dışı seyahat sıkliginiz?',
+        label: 'İş veya özel nedenlerle şehir dışı seyahat sıklığınız?',
         required: false,
         options: [
           { value: 'rare', label: 'Çok nadir' },
-          { value: 'monthly', label: 'Ayda 1 civari' },
+          { value: 'monthly', label: 'Ayda 1 civarı' },
           { value: 'biweekly', label: 'Ayda 2-3' },
-          { value: 'weekly', label: 'Haftalik' }
+          { value: 'weekly', label: 'Haftalık' }
         ]
       },
       {
         type: 'single',
         key: 'substanceUse',
-        label: 'Sigara dışında madde kullaniminiz var mi?',
+        label: 'Sigara dışında madde kullanımınız var mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'past', label: 'Geçmişte vardi' },
+          { value: 'past', label: 'Geçmişte vardı' },
           { value: 'yes', label: 'Evet' }
         ]
       },
       {
         type: 'single',
         key: 'shiftWork',
-        label: 'Vardiyali veya duzensiz saatlerde calisiyor musunuz?',
+        label: 'Vardiyalı veya düzensiz saatlerde çalışıyor musunuz?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -824,7 +824,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'dailySteps',
-        label: 'Günluk ortalama adim sayiniz nedir?',
+        label: 'Günlük ortalama adım sayınız nedir?',
         required: false,
         options: [
           { value: 'under_3000', label: '3000 altı' },
@@ -836,7 +836,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'screenTime',
-        label: 'Günluk ekran başında geçirdiğiniz toplam sure ne kadar?',
+        label: 'Günlük ekran başında geçirdiğiniz toplam süre ne kadar?',
         required: false,
         options: [
           { value: 'under_3', label: '3 saatten az' },
@@ -848,33 +848,33 @@ export const HEALTH_SECTIONS = [
       {
         type: 'multi',
         key: 'exercisePreferences',
-        label: 'Hangi egzersiz turleri size daha keyifli geliyor?',
+        label: 'Hangi egzersiz türleri size daha keyifli geliyor?',
         required: true,
         options: [
           { value: 'walking', label: 'Yürüyüş' },
           { value: 'strength', label: 'Kuvvet' },
           { value: 'group', label: 'Grup dersleri' },
           { value: 'mindBody', label: 'Yoga/Pilates' },
-          { value: 'shortHome', label: 'Kisa ev antrenmani' }
+          { value: 'shortHome', label: 'Kısa ev antrenmanı' }
         ]
       },
       {
         type: 'multi',
         key: 'exerciseBarriers',
-        label: 'Düzenli egzersiz yapmanizi en çok zorlayan etkenler neler?',
+        label: 'Düzenli egzersiz yapmanızı en çok zorlayan etkenler neler?',
         required: true,
         options: [
-          { value: 'time', label: 'Zaman yetersizligi' },
-          { value: 'motivation', label: 'Motivasyon düşüklugu' },
+          { value: 'time', label: 'Zaman yetersizliği' },
+          { value: 'motivation', label: 'Motivasyon düşüklüğü' },
           { value: 'pain', label: 'Ağrı/sakatlık korkusu' },
-          { value: 'knowledge', label: 'Nasıl yapacagimi bilmiyorum' },
-          { value: 'environment', label: 'Uygün ortam yok' }
+          { value: 'knowledge', label: 'Nasıl yapacağımı bilmiyorum' },
+          { value: 'environment', label: 'Uygun ortam yok' }
         ]
       },
       {
         type: 'single',
         key: 'commuteType',
-        label: 'Günluk ulaşım sekli en çok hangisi?',
+        label: 'Günlük ulaşım şekli en çok hangisi?',
         required: false,
         options: [
           { value: 'car', label: 'Araç' },
@@ -888,8 +888,8 @@ export const HEALTH_SECTIONS = [
   ...DIETITIAN_HEALTH_SECTIONS,
   {
     id: 'women',
-    title: 'Kadin Sagligi',
-    subtitle: 'Hormonel dongu ve kadin sagligi ozel sorulari',
+    title: 'Kadın Sağlığı',
+    subtitle: 'Hormonal döngü ve kadın sağlığı özel soruları',
     icon: 'Venus',
     audience: 'shared',
     genderOnly: 'female',
@@ -897,49 +897,49 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'pregnancy',
-        label: 'Şu an hamilelik durumu var mi?',
+        label: 'Şu an hamilelik durumu var mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'yes', label: 'Evet' },
-          { value: 'planning', label: 'Planliyorum' }
+          { value: 'planning', label: 'Planlıyorum' }
         ]
       },
       {
         type: 'single',
         key: 'menstrualRegular',
-        label: 'Adet dongünuz genellikle düzenli mi?',
+        label: 'Adet döngünüz genellikle düzenli mi?',
         required: true,
         options: [
           { value: 'regular', label: 'Düzenli' },
-          { value: 'irregular', label: 'Duzensiz' },
-          { value: 'absent', label: 'Uzun suredir olmuyor' }
+          { value: 'irregular', label: 'Düzensiz' },
+          { value: 'absent', label: 'Uzun süredir olmuyor' }
         ]
       },
       {
         type: 'multi',
         key: 'pmsSymptoms',
-        label: 'Adet oncesi donemde hangi belirtileri sık yasiyorsunuz?',
+        label: 'Adet öncesi dönemde hangi belirtileri sık yaşıyorsunuz?',
         required: false,
         options: [
           { value: 'none', label: 'Belirgin yok' },
-          { value: 'bloating', label: 'Sislik' },
-          { value: 'cravings', label: 'Yeme ataklari' },
+          { value: 'bloating', label: 'Şişlik' },
+          { value: 'cravings', label: 'Yeme atakları' },
           { value: 'mood_swings', label: 'Ruh hali değişimi' },
-          { value: 'fatigue', label: 'Yorgünluk' },
-          { value: 'headache', label: 'Bas ağrısi' }
+          { value: 'fatigue', label: 'Yorgunluk' },
+          { value: 'headache', label: 'Baş ağrısı' }
         ]
       },
       {
         type: 'single',
         key: 'contraceptionMethod',
-        label: 'Dogum kontrol yontemi kullanıyor musunuz?',
+        label: 'Doğum kontrol yöntemi kullanıyor musunuz?',
         required: false,
         options: [
-          { value: 'none', label: 'Kullanmiyorum' },
-          { value: 'barrier', label: 'Bariyer yontemleri' },
-          { value: 'hormonal', label: 'Hormonal yontem' },
-          { value: 'iud', label: 'Spiral (Ria)' },
+          { value: 'none', label: 'Kullanmıyorum' },
+          { value: 'barrier', label: 'Bariyer yöntemleri' },
+          { value: 'hormonal', label: 'Hormonal yöntem' },
+          { value: 'iud', label: 'Spiral (RIA)' },
           { value: 'other', label: 'Diğer' }
         ]
       },
@@ -949,7 +949,7 @@ export const HEALTH_SECTIONS = [
         label: 'Menopoz durumunuz nedir?',
         required: false,
         options: [
-          { value: 'not_applicable', label: 'Uygün degil' },
+          { value: 'not_applicable', label: 'Uygun değil' },
           { value: 'premenopause', label: 'Premenopoz' },
           { value: 'perimenopause', label: 'Perimenopoz' },
           { value: 'postmenopause', label: 'Postmenopoz' }
@@ -958,30 +958,30 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'ironDeficiencyHistory',
-        label: 'Demir eksıkligi veya anemi geçmişiniz var mi?',
+        label: 'Demir eksikliği veya anemi geçmişiniz var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Yok' },
-          { value: 'past', label: 'Geçmişte vardi' },
+          { value: 'past', label: 'Geçmişte vardı' },
           { value: 'ongoing', label: 'Şu an devam ediyor' }
         ]
       },
       {
         type: 'single',
         key: 'cyclePain',
-        label: 'Adet doneminde ağrılariniz ne düzeyde olur?',
+        label: 'Adet döneminde ağrılarınız ne düzeyde olur?',
         required: false,
         options: [
           { value: 'none', label: 'Yok' },
           { value: 'mild', label: 'Hafif' },
           { value: 'moderate', label: 'Orta' },
-          { value: 'severe', label: 'Siddetli' }
+          { value: 'severe', label: 'Şiddetli' }
         ]
       },
       {
         type: 'single',
         key: 'fertilityPlan',
-        label: 'Önümüzdeki 12 ay içinde gebelik plani var mi?',
+        label: 'Önümüzdeki 12 ay içinde gebelik planı var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -993,8 +993,8 @@ export const HEALTH_SECTIONS = [
   },
   {
     id: 'men',
-    title: 'Erkek Sagligi',
-    subtitle: 'Erkek sagligina ozel tarama ve belirtiler',
+    title: 'Erkek Sağlığı',
+    subtitle: 'Erkek sağlığına özel tarama ve belirtiler',
     icon: 'Mars',
     audience: 'shared',
     genderOnly: 'male',
@@ -1002,7 +1002,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'prostateSymptoms',
-        label: 'İdrar yapma duzeniyle ilgili prostat kaynakli sıkayetiniz var mi?',
+        label: 'İdrar yapma düzeniyle ilgili prostat kaynaklı şikâyetiniz var mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -1014,22 +1014,22 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'testosteroneConcerns',
-        label: 'Düşük testosteronla iliskili belirtiler yasiyor musunuz?',
+        label: 'Düşük testosteronla ilişkili belirtiler yaşıyor musunuz?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'suspect', label: 'Şüpheleniyorum' },
-          { value: 'diagnosed', label: 'Tanı aldim' }
+          { value: 'diagnosed', label: 'Tanı aldım' }
         ]
       },
       {
         type: 'single',
         key: 'maleScreening',
-        label: 'Son erkek sagligi kontrolunuzu ne zaman yaptırdınız?',
+        label: 'Son erkek sağlığı kontrolünüzü ne zaman yaptırdınız?',
         required: true,
         options: [
           { value: 'last_year', label: 'Son 1 yıl içinde' },
-          { value: '1_3_years', label: '1-3 yıl once' },
+          { value: '1_3_years', label: '1–3 yıl önce' },
           { value: 'over_3_years', label: '3 yıldan uzun' },
           { value: 'never', label: 'Hiç' }
         ]
@@ -1037,18 +1037,18 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'erectionQuality',
-        label: 'Cinsel fonksiyonla ilgili zorlanma yasiyor musunuz?',
+        label: 'Cinsel fonksiyonla ilgili zorlanma yaşıyor musunuz?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'sometimes', label: 'Ara sira' },
+          { value: 'sometimes', label: 'Ara sıra' },
           { value: 'often', label: 'Sık' }
         ]
       },
       {
         type: 'single',
         key: 'waistCircumferenceRisk',
-        label: 'Bel cevresi olcumu konusunda risk oldugünu dusunuyor musunuz?',
+        label: 'Bel çevresi ölçümü konusunda risk olduğunu düşünüyor musunuz?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -1059,18 +1059,18 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'snoring',
-        label: 'Yüksek sesle horlama veya uykuda nefes durması şüpheleri var mi?',
+        label: 'Yüksek sesle horlama veya uykuda nefes durması şüpheleri var mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'occasionally', label: 'Ara sira' },
+          { value: 'occasionally', label: 'Ara sıra' },
           { value: 'frequent', label: 'Sık' }
         ]
       },
       {
         type: 'single',
         key: 'hairLossConcerns',
-        label: 'Saç dökülmesi ile ilgili belirgin bir kaygınız var mi?',
+        label: 'Saç dökülmesi ile ilgili belirgin bir kaygınız var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
@@ -1081,7 +1081,7 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'maleFertilityPlan',
-        label: 'Önümüzdeki 12 ay içinde cocuk sahibi olma planiniz var mi?',
+        label: 'Önümüzdeki 12 ay içinde çocuk sahibi olma planınız var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
