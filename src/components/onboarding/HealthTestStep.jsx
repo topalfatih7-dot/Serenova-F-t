@@ -46,11 +46,71 @@ function themeFor(sectionId) {
   return THEME[sectionId] || THEME.general
 }
 
+function BatteryLevelIcon({ level = 1, selected }) {
+  const clamped = Math.min(5, Math.max(1, Number(level) || 1))
+  const fillClass =
+    clamped <= 2 ? (selected ? 'bg-rose-200' : 'bg-rose-400')
+      : clamped === 3 ? (selected ? 'bg-amber-200' : 'bg-amber-400')
+        : selected ? 'bg-emerald-200' : 'bg-emerald-500'
+  const emptyClass = selected ? 'bg-white/25' : 'bg-cream-200'
+  const frameClass = selected ? 'bg-white/80' : 'bg-cream-400'
+  return (
+    <span className="inline-flex flex-col items-center" aria-hidden>
+      <span className={`mb-px h-1.5 w-3 rounded-t-sm ${frameClass}`} />
+      <span className={`flex h-11 w-7 flex-col-reverse gap-0.5 rounded-md border-2 p-0.5 sm:h-12 sm:w-8 ${
+        selected ? 'border-white/80' : 'border-cream-400'
+      }`}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <span
+            key={n}
+            className={`min-h-0 flex-1 rounded-[2px] ${n <= clamped ? fillClass : emptyClass}`}
+          />
+        ))}
+      </span>
+    </span>
+  )
+}
+
+function StarLevelIcon({ count = 1, selected }) {
+  const filled = Math.min(5, Math.max(1, Number(count) || 1))
+  return (
+    <span className="grid w-full max-w-[7.5rem] grid-cols-5 place-items-center gap-x-0.5" aria-hidden>
+      {Array.from({ length: 5 }, (_, i) => {
+        const on = i < filled
+        return (
+          <span
+            key={i}
+            className={`text-[0.95rem] leading-none sm:text-base ${
+              on
+                ? selected ? 'text-amber-200' : 'text-amber-400'
+                : selected ? 'text-white/25' : 'text-cream-200'
+            }`}
+          >
+            ★
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
+function EmojiOptionVisual({ option, selected }) {
+  if (option.batteryLevel != null) {
+    return <BatteryLevelIcon level={option.batteryLevel} selected={selected} />
+  }
+  if (option.stars != null) {
+    return <StarLevelIcon count={option.stars} selected={selected} />
+  }
+  return <span className="text-4xl sm:text-5xl">{option.emoji}</span>
+}
+
 function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
   const optionCount = q.options?.length || 0
   const gridClass =
     q.type === 'emoji'
-      ? 'grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4'
+      ? optionCount === 5
+        ? 'grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-3'
+        : 'grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4'
       : optionCount <= 2
         ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
         : optionCount === 3
@@ -67,14 +127,14 @@ function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
               key={o.value}
               type="button"
               onClick={() => onPick(o.value)}
-              className={`flex min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-5 transition-all sm:min-h-[8.5rem] ${
+              className={`flex min-h-[7.5rem] flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 px-2 py-4 transition-all sm:min-h-[8.5rem] sm:px-2.5 sm:py-5 ${
                 sel
                   ? `${theme.solid} scale-[1.02] text-white ring-4 ${theme.ring}`
                   : 'border-cream-200 bg-cream-50/50 hover:border-cream-300 hover:bg-white hover:shadow-md'
               }`}
             >
-              <span className="text-4xl sm:text-5xl">{o.emoji}</span>
-              <span className={`text-sm font-bold sm:text-base ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
+              <EmojiOptionVisual option={o} selected={sel} />
+              <span className={`text-center text-xs font-bold leading-tight sm:text-sm ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
             </button>
           )
         })}

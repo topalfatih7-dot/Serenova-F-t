@@ -20,13 +20,13 @@ Son 2 hafta içinde kendinizi genel olarak nasıl hissettiniz?
 ### energy (`emoji`, required)
 Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz?
 
-| value | label | emoji |
-|-------|-------|-------|
-| very_low | Çok düşük | 🔋 |
-| low | Düşük | 🔋 |
-| moderate | Orta | 🔋 |
-| high | Yüksek | 🔋 |
-| very_high | Çok yüksek | 🔋 |
+| value | label | emoji | batteryLevel |
+|-------|-------|-------|--------------|
+| very_low | Çok düşük | 🪫 | 1 |
+| low | Düşük | 🪫 | 2 |
+| moderate | Orta | 🔋 | 3 |
+| high | Yüksek | 🔋 | 4 |
+| very_high | Çok yüksek | 🔋 | 5 |
 
 ### motivation (`scale`, required)
 Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz?
@@ -120,13 +120,13 @@ _No options (free text / time / etc.)_
 ### lifeQuality (`emoji`, required)
 Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz?
 
-| value | label | emoji |
-|-------|-------|-------|
-| 1 | Çok düşük | ★ |
-| 2 | Düşük | ★★ |
-| 3 | Orta | ★★★ |
-| 4 | İyi | ★★★★ |
-| 5 | Çok iyi | ★★★★★ |
+| value | label | emoji | stars |
+|-------|-------|-------|-------|
+| 1 | Çok düşük | ★ | 1 |
+| 2 | Düşük | ★ | 2 |
+| 3 | Orta | ★ | 3 |
+| 4 | İyi | ★ | 4 |
+| 5 | Çok iyi | ★ | 5 |
 
 ## `medical` — Tıbbi Geçmiş
 
