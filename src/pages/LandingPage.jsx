@@ -122,7 +122,7 @@ export default function LandingPage() {
               custom={1}
               className="mt-5 font-display text-[2rem] font-bold leading-[1.15] text-white sm:text-[2.75rem] lg:text-5xl"
             >
-              Size özel antrenman ve beslenme programı —{' '}
+              Online koçluk ve diyetisyen ile size özel program —{' '}
               <RotatingHeroText />
             </motion.h1>
 
@@ -133,7 +133,7 @@ export default function LandingPage() {
               custom={2}
               className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-white/85 sm:text-base lg:mx-0"
             >
-              Uzman koçunuz ve diyetisyeniniz hedefinize göre programınızı hazırlar,
+              Online diyetisyen ve online spor koçunuz hedefinize göre programınızı hazırlar,
               video görüşmelerle her adımda yanınızda olur. Evde veya salonda —
               ücretsiz başlayın, kendi hızınızda ilerleyin.
             </motion.p>
@@ -164,6 +164,21 @@ export default function LandingPage() {
                 </Link>
               </motion.div>
             </motion.div>
+
+            <motion.p
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              custom={4}
+              className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-white/70 lg:justify-start"
+            >
+              <Link to="/online-diyetisyen" className="underline-offset-2 hover:text-white hover:underline">
+                Online diyetisyen
+              </Link>
+              <Link to="/online-kocluk" className="underline-offset-2 hover:text-white hover:underline">
+                Online koçluk
+              </Link>
+            </motion.p>
 
             <motion.p
               variants={fadeUp}

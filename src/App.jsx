@@ -42,6 +42,7 @@ const CorporatePage = lazy(() => import('./pages/CorporatePage'))
 const CorporateApplicationPage = lazy(() => import('./pages/CorporateApplicationPage'))
 const StaffApplicationPage = lazy(() => import('./pages/StaffApplicationPage'))
 const TeamListPage = lazy(() => import('./pages/TeamListPage'))
+const ServiceLandingPage = lazy(() => import('./pages/services/ServiceLandingPage'))
 const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
@@ -109,6 +110,8 @@ export default function App() {
               <Route path="reset-password" element={<ResetPasswordPage />} />
               <Route path="onboarding" element={<OnboardingPage />} />
               <Route path="membership" element={<MembershipComparisonPage />} />
+              <Route path="online-diyetisyen" element={<ServiceLandingPage path="/online-diyetisyen" />} />
+              <Route path="online-kocluk" element={<ServiceLandingPage path="/online-kocluk" />} />
               <Route path="hakkimizda" element={<AboutPage />} />
               <Route path="about" element={<Navigate to="/hakkimizda" replace />} />
               <Route path="builder" element={<Navigate to="/membership" replace />} />

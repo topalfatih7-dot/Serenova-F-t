@@ -1,0 +1,58 @@
+{
+  "updatedAt": "2026-07-19",
+  "purpose": "Faz 5–6: on-page dışı aksiyonlar ve GSC KPI takibi (kod dışı)",
+  "offpageActions": [
+    {
+      "id": "gsc-resubmit-sitemap",
+      "action": "Search Console’da https://www.yeniform.com/sitemap.xml yeniden gönder; Coverage’da yeni URL’leri izle",
+      "owner": "ops"
+    },
+    {
+      "id": "url-inspection",
+      "action": "URL Inspection: /online-diyetisyen, /online-kocluk, / — “Google’ın gördüğü HTML”de H1 ve canonical doğrula; gerekirse İndekslemeyi iste",
+      "owner": "ops"
+    },
+    {
+      "id": "staff-social",
+      "action": "Kadro üyeleri LinkedIn/Instagram’da /online-diyetisyen ve /online-kocluk linklerini paylaşsın",
+      "owner": "ops"
+    },
+    {
+      "id": "guest-mentions",
+      "action": "10–20 kaliteli TR wellness/sağlık sitesinde mention veya konuk içerik (spam dizin yok)",
+      "owner": "ops"
+    },
+    {
+      "id": "brand-search",
+      "action": "Sosyal + PR ile “Yeni Form” marka aramasını büyüt (generic sıralamayı destekler)",
+      "owner": "ops"
+    },
+    {
+      "id": "profile-eeat",
+      "action": "Admin’den kadro bio, eğitim, sertifika alanlarını doldur; placeholder isimleri düzelt",
+      "owner": "ops"
+    }
+  ],
+  "kpiWeekly": {
+    "queries": [
+      "online diyetisyen",
+      "online koçluk",
+      "online diyet",
+      "online spor koçu",
+      "yeni form"
+    ],
+    "metrics": [
+      "impressions",
+      "averagePosition",
+      "ctr",
+      "indexStatus for /online-diyetisyen and /online-kocluk"
+    ],
+    "horizonWeeks": "4-8",
+    "softGoal": "Önce impression + pozisyon iyileşmesi; 1. sayfa gecikmeli beklenti"
+  },
+  "technicalVerifyAfterDeploy": [
+    "curl -A Googlebot https://www.yeniform.com/online-diyetisyen | grep -i 'Online Diyetisyen'",
+    "curl -sS https://www.yeniform.com/sitemap.xml | grep online-diyetisyen",
+    "Rich Results Test: FAQ + Service on service pages"
+  ]
+}

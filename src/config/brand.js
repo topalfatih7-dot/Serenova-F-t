@@ -37,7 +37,7 @@ export const BRAND = {
   siteUrl: 'https://www.yeniform.com',
   instagram: BRAND_SOCIAL_LINKS[0]?.url || '',
   socialLinks: BRAND_SOCIAL_LINKS,
-  tagline: 'Herkes için çevrimiçi koçluk ve wellness',
+  tagline: 'Online koçluk ve online diyetisyen ile sürdürülebilir wellness',
   initials: 'YF',
   /** Statik marka görselleri — kaynak: public/brand-logo-alt.png → npm run og:image */
   assets: {

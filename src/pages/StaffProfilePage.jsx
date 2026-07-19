@@ -37,10 +37,20 @@ export default function StaffProfilePage() {
   return (
     <>
       <SeoHead
-        title={`${profile.name} — ${meta.label}`}
+        title={
+          member.role === 'dietitian'
+            ? `${profile.name} — Online Diyetisyen`
+            : member.role === 'coach'
+              ? `${profile.name} — Online Fitness Koçu`
+              : `${profile.name} — ${meta.label}`
+        }
         description={truncateDescription(
           profile.bio
-            || `${profile.name}, Yeni Form ${meta.label.toLowerCase()} kadrosu. Evde ve salonda kişisel antrenman desteği.`
+            || (member.role === 'dietitian'
+              ? `${profile.name}, Yeni Form online diyetisyen kadrosu. Video görüşme ve kişiye özel beslenme programı.`
+              : member.role === 'coach'
+                ? `${profile.name}, Yeni Form online koçluk kadrosu. Video görüşme ve kişiye özel antrenman programı.`
+                : `${profile.name}, Yeni Form ${meta.label.toLowerCase()} kadrosu.`)
         )}
         keywords={buildStaffProfileKeywords(profile, meta.label)}
         canonicalPath={profilePath}

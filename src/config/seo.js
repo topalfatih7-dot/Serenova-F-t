@@ -59,8 +59,11 @@ export const BRAND_SEARCH_TERMS = [
 
 const CORE_KEYWORDS = [
   'online koçluk',
+  'online diyetisyen',
+  'online spor koçu',
+  'online fitness koçu',
+  'online diyet',
   'fitness koçu',
-  'diyetisyen online',
   'wellness platformu',
   'beslenme programı',
   'antrenman programı',
@@ -77,7 +80,15 @@ const CORE_KEYWORDS = [
 export const STATIC_BRAND_FAQS = [
   {
     q: 'Yeni Form nedir?',
-    a: 'Yeni Form (yeniform.com), Türkiye\'nin çevrimiçi koçluk, diyetisyen ve wellness platformudur. Kişisel sağlık analizi, uzman görüşmeleri ve otomatik beslenme-antrenman programları sunar.',
+    a: 'Yeni Form (yeniform.com), Türkiye\'nin online koçluk, online diyetisyen ve wellness platformudur. Kişisel sağlık analizi, video görüşmeler ve beslenme-antrenman programları sunar.',
+  },
+  {
+    q: 'Online diyetisyen hizmeti var mı?',
+    a: 'Evet. Diyet ve VIP paketlerinde ayda 2 online diyetisyen görüşmesi yapılır. Ayrıntılar için yeniform.com/online-diyetisyen sayfasına bakın.',
+  },
+  {
+    q: 'Online koçluk nasıl çalışır?',
+    a: 'Spor ve VIP paketlerinde ayda 2 video koç görüşmesi ve kişiye özel antrenman programı sunulur. Detay: yeniform.com/online-kocluk',
   },
   {
     q: 'Yeni Form sitesine nasıl ulaşırım?',
@@ -123,7 +134,7 @@ export const SEO = {
   siteName: BRAND.name,
   locale: 'tr_TR',
   language: 'tr',
-  defaultTitle: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
+  defaultTitle: `${BRAND.name} — Online Koçluk ve Online Diyetisyen Platformu`,
   titleSuffix: BRAND.name,
   defaultDescription:
     'Yeni Form (yeniform.com) ile kişisel sağlık analizi, uzman koç ve diyetisyen desteği, video görüşme randevuları ve beslenme programları. Türkiye\'nin çevrimiçi wellness platformu.',
@@ -167,6 +178,15 @@ export function staffPublicSlug(member) {
   const namePart = slugifyTurkish(member?.name)
   if (!namePart) return member?.id || ''
   const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
+  // "Doktor" gibi isimlerde doktor-doktor oluşmasını engelle
+  if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
+    const specialty = slugifyTurkish(member?.specialty || member?.title || '')
+    if (specialty && specialty !== namePart && specialty !== rolePrefix) {
+      return `${rolePrefix}-${specialty}`
+    }
+    const shortId = String(member?.id || '').replace(/-/g, '').slice(0, 8)
+    return shortId ? `${rolePrefix}-${shortId}` : rolePrefix
+  }
   return `${rolePrefix}-${namePart}`
 }
 
@@ -190,6 +210,12 @@ export function buildStaffProfileKeywords(member, roleLabel) {
   const first = name.split(/\s+/)[0] || ''
   const roleLower = (roleLabel || '').toLowerCase()
   const brand = BRAND.name
+  const roleExtras =
+    member?.role === 'dietitian'
+      ? ['online diyetisyen', 'online diyet']
+      : member?.role === 'coach'
+        ? ['online koçluk', 'online spor koçu', 'online fitness koçu']
+        : []
   const keywords = new Set([
     name,
     `${roleLower} ${first}`.toLowerCase(),
@@ -203,6 +229,7 @@ export function buildStaffProfileKeywords(member, roleLabel) {
     BRAND_DOMAIN,
     member?.specialty,
     member?.title,
+    ...roleExtras,
     ...(member?.specialties || []),
   ].filter(Boolean))
   return mergeKeywords([...keywords])
@@ -212,6 +239,8 @@ export function buildStaffProfileKeywords(member, roleLabel) {
 export const STATIC_PUBLIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
+  { path: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95' },
+  { path: '/online-kocluk', changefreq: 'weekly', priority: '0.95' },
   { path: '/membership', changefreq: 'weekly', priority: '0.9' },
   { path: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { path: '/stories', changefreq: 'weekly', priority: '0.8' },
@@ -227,10 +256,10 @@ export const STATIC_PUBLIC_ROUTES = [
 
 export const PAGE_SEO = {
   '/': {
-    title: `${BRAND.name} — Online Koçluk, Diyetisyen & Wellness Platformu`,
+    title: `${BRAND.name} — Online Koçluk ve Online Diyetisyen Platformu`,
     description:
-      'Yeni Form (yeniform.com) — evde veya spor salonunda antrenman, kişisel sağlık analizi, uzman koç ve diyetisyen görüşmeleri, otomatik beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
-    keywords: buildBrandKeywords('online koçluk, fitness koçu, spor salonu programı, evde antrenman, diyetisyen, wellness, beslenme programı, antrenman, ücretsiz fitness'),
+      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
+    keywords: buildBrandKeywords('online koçluk, online diyetisyen, fitness koçu, spor salonu programı, evde antrenman, wellness, beslenme programı, ücretsiz fitness'),
   },
   '/hakkimizda': {
     title: 'Hakkımızda — Misyonumuz, Değerlerimiz ve Uzman Kadromuz',
@@ -238,11 +267,23 @@ export const PAGE_SEO = {
       'Yeni Form (yeniform.com) kimdir? Online koçluk, diyetisyen ve wellness platformumuzun misyonu, değerleri, uzman kadrosu ve güvenlik yaklaşımı hakkında bilgi edinin.',
     keywords: buildBrandKeywords('hakkımızda, yeni form kimdir, wellness platformu, online koçluk şirketi, misyon, vizyon, güvenilir diyetisyen platformu'),
   },
-  '/membership': {
-    title: 'Üyelik Planları — Basic, Eko, Diyet, Spor, Doktor & VIP',
+  '/online-diyetisyen': {
+    title: 'Online Diyetisyen — Video Görüşmeli Beslenme Danışmanlığı',
     description:
-      'Basic (ücretsiz), Eko, Diyet, Spor, Doktor Paketi ve VIP paketlerini karşılaştırın. Koç, diyetisyen ve doktor görüşmeleri, kalori hesaplama, video kütüphanesi ve kişisel programlar.',
-    keywords: buildBrandKeywords('üyelik planları, eko paket, diyet paketi, spor paketi, doktor paketi, vip paket, online koçluk fiyat'),
+      'Online diyetisyen ile kişiye özel beslenme programı, video görüşme ve ilerleme takibi. Yeni Form Diyet ve VIP paketleriyle evinizden uzman desteği alın.',
+    keywords: buildBrandKeywords('online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat'),
+  },
+  '/online-kocluk': {
+    title: 'Online Koçluk — Video Görüşmeli Fitness Koçu',
+    description:
+      'Online koçluk ve online spor koçu desteği ile kişiye özel antrenman, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
+    keywords: buildBrandKeywords('online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi'),
+  },
+  '/membership': {
+    title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları',
+    description:
+      'Basic (ücretsiz), Eko, Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
+    keywords: buildBrandKeywords('üyelik planları, online diyetisyen fiyat, online koçluk fiyat, eko paket, diyet paketi, spor paketi, vip paket'),
   },
   '/onboarding': {
     title: 'Kayıt Ol — Ücretsiz Hesap Oluştur',
@@ -273,16 +314,16 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('fitness blog, beslenme ipuçları, antrenman rehberi, sağlıklı yaşam, motivasyon'),
   },
   '/team/coaches': {
-    title: 'Koçlarımız — Uzman Fitness Koçları',
+    title: 'Online Fitness Koçlarımız — Uzman Kadro',
     description:
-      'Deneyimli fitness koçlarımızla tanışın. Kişisel antrenman programları ve video görüşme desteği.',
-    keywords: buildBrandKeywords('fitness koçu, online koç, antrenör, kişisel antrenman'),
+      'Online koçluk için sertifikalı fitness koçlarımızla tanışın. Kişisel antrenman programları ve video görüşme desteği.',
+    keywords: buildBrandKeywords('online fitness koçu, online koçluk, online spor koçu, antrenör, kişisel antrenman'),
   },
   '/team/dietitians': {
-    title: 'Diyetisyenlerimiz — Uzman Beslenme Danışmanları',
+    title: 'Online Diyetisyenlerimiz — Uzman Beslenme Kadrosu',
     description:
-      'Uzman diyetisyenlerimizle sağlıklı ve sürdürülebilir beslenme alışkanlıkları kazanın.',
-    keywords: buildBrandKeywords('online diyetisyen, beslenme danışmanı, diyet programı'),
+      'Online diyetisyen kadromuzla sağlıklı ve sürdürülebilir beslenme alışkanlıkları kazanın. Video görüşme ve kişiye özel program.',
+    keywords: buildBrandKeywords('online diyetisyen, online diyet, beslenme danışmanı, diyet programı'),
   },
   '/team/doctors': {
     title: 'Doktorlarımız — Sağlık Sürecinizde Yanınızda',
@@ -482,4 +523,39 @@ export function buildBreadcrumbSchema(items) {
       item: absoluteUrl(item.path),
     })),
   }
+}
+
+/** Hizmet (para) sayfaları — Service + Offer JSON-LD */
+export function buildServiceSchema({
+  name,
+  description,
+  path,
+  serviceType,
+  offers = [],
+}) {
+  if (!name || !path) return null
+  const url = absoluteUrl(path)
+  const orgId = `${absoluteUrl('/')}#organization`
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name,
+    description: description || SEO.defaultDescription,
+    url,
+    serviceType: serviceType || name,
+    provider: { '@id': orgId },
+    areaServed: { '@type': 'Country', name: 'Türkiye' },
+    inLanguage: SEO.language,
+  }
+  if (offers.length) {
+    schema.offers = offers.map((o) => ({
+      '@type': 'Offer',
+      name: o.name,
+      url: absoluteUrl(o.path || '/membership'),
+      priceCurrency: 'TRY',
+      availability: 'https://schema.org/InStock',
+      description: o.description,
+    }))
+  }
+  return schema
 }

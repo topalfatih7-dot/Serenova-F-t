@@ -11,25 +11,37 @@ import { TEAM_HERO_IMAGES } from '../utils/teamHeroImages'
 const roleConfig = {
   coaches: {
     key: 'coach',
-    label: 'Koçlarımız',
-    sub: 'Sertifikalı fitness koçlarımızla hedefinize güvenle ulaşın',
+    label: 'Online Fitness Koçlarımız',
+    sub: 'Online koçluk için sertifikalı fitness koçlarımızla hedefinize güvenle ulaşın',
     icon: Dumbbell,
     placeholder: 'from-brand-700 to-brand-900',
     gradient: 'from-brand-900/75 via-brand-800/55 to-brand-700/70',
     light: 'from-brand-50 to-white',
     badge: 'bg-brand-500',
     accent: 'text-brand-600',
+    servicePath: '/online-kocluk',
+    serviceLabel: 'Online koçluk nasıl çalışır?',
+    intro: [
+      'Yeni Form online koçluk kadrosu; video görüşmeli seanslar, kişiye özel antrenman programı ve egzersiz videosu kütüphanesiyle çalışır. Spor veya VIP paketle eşleştiğiniz koç, ev veya salon tercihinize göre planı uyarlar.',
+      'Aşağıdaki uzmanlarımızdan biriyle tanışmadan önce sürecin tamamını online koçluk hizmet sayfamızda okuyabilirsiniz. Ücretsiz Basic ile platforma girip ardından Spor paketine yükseltmek de mümkündür.',
+    ],
   },
   dietitians: {
     key: 'dietitian',
-    label: 'Diyetisyenlerimiz',
-    sub: 'Uzman diyetisyenlerle sürdürülebilir beslenme alışkanlıkları kazanın',
+    label: 'Online Diyetisyenlerimiz',
+    sub: 'Online diyetisyen desteğiyle sürdürülebilir beslenme alışkanlıkları kazanın',
     icon: Apple,
     placeholder: 'from-sage-600 to-sage-900',
     gradient: 'from-sage-900/75 via-sage-800/55 to-sage-700/70',
     light: 'from-sage-50 to-white',
     badge: 'bg-sage-500',
     accent: 'text-sage-600',
+    servicePath: '/online-diyetisyen',
+    serviceLabel: 'Online diyetisyen nasıl çalışır?',
+    intro: [
+      'Online diyetisyen kadromuz; görüntülü görüşme, kişiye özel beslenme programı ve panel üzerinden ilerleme takibi sunar. Diyet veya VIP paket üyeleri ayda planlanan seanslarla diyetisyenlerine bağlanır.',
+      'Tek seferlik liste yerine düzenli takip arıyorsanız hizmet sayfamızdaki süreç ve paket özetine göz atın; ardından aşağıdaki uzman profillerini inceleyebilirsiniz.',
+    ],
   },
   doctors: {
     key: 'doctor',
@@ -41,6 +53,12 @@ const roleConfig = {
     light: 'from-cream-50 to-white',
     badge: 'bg-cream-800',
     accent: 'text-cream-700',
+    servicePath: '/membership',
+    serviceLabel: 'Doktor paketi ve üyelikler',
+    intro: [
+      'Doktor kadromuz wellness sürecinizde sağlık danışmanlığı sunar. Tıbbi teşhis veya tedavi yerine geçmez; gerekli görülen durumlarda kendi hekiminize yönlendirilirsiniz.',
+      'Online doktor görüşmesi Doktor paketi veya VIP kapsamında değerlendirilir. Güncel paketleri üyelik sayfasından inceleyebilirsiniz.',
+    ],
   },
 }
 
@@ -122,10 +140,44 @@ export default function TeamListPage({ role: roleProp }) {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+        {config.intro?.length > 0 && (
+          <div className="mx-auto mb-10 max-w-3xl">
+            {config.intro.map((p) => (
+              <p key={p.slice(0, 40)} className="mt-3 text-[15px] leading-relaxed text-cream-800/90 first:mt-0">
+                {p}
+              </p>
+            ))}
+            {config.servicePath && (
+              <p className="mt-4">
+                <Link
+                  to={config.servicePath}
+                  className={`text-sm font-semibold underline-offset-2 hover:underline ${config.accent}`}
+                >
+                  {config.serviceLabel}
+                </Link>
+                {' · '}
+                <Link to="/membership" className="text-sm font-semibold text-cream-800 underline-offset-2 hover:underline">
+                  Üyelik paketleri
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
         {members.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 text-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center">
             <RoleIcon className={`mx-auto h-16 w-16 opacity-20 ${config.accent}`} />
             <p className="mt-4 text-cream-800/50">Henüz kayıtlı uzman bulunmuyor.</p>
+            <p className="mx-auto mt-3 max-w-md text-sm text-cream-700/70">
+              Süreç ve paketler aktif; kadro güncellemeleri yakında yansır. Bu arada hizmet sayfasından nasıl çalıştığımızı okuyabilirsiniz.
+            </p>
+            {config.servicePath && (
+              <Link
+                to={config.servicePath}
+                className="mt-5 inline-flex text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
+              >
+                {config.serviceLabel}
+              </Link>
+            )}
           </motion.div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">

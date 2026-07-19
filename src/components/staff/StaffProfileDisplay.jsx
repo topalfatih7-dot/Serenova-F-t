@@ -101,9 +101,18 @@ export default function StaffProfileDisplay({ member }) {
             </div>
           )}
 
-          {profile.bio && (
+          {profile.bio ? (
             <Section title="Hakkında" icon={BookOpen}>
               <p className="text-sm leading-relaxed text-cream-800/75 whitespace-pre-line">{profile.bio}</p>
+            </Section>
+          ) : (
+            <Section title="Hakkında" icon={BookOpen}>
+              <p className="text-sm leading-relaxed text-cream-800/75">
+                {profile.name}, Yeni Form {meta.label.toLowerCase()} kadrosunda yer alır.
+                {member.role === 'dietitian' && ' Online diyetisyen görüşmeleri video üzerinden yürütülür; kişiye özel beslenme programı üye panelinde takip edilir.'}
+                {member.role === 'coach' && ' Online koçluk seansları video üzerinden yapılır; kişiye özel antrenman programı ve egzersiz kütüphanesi panelde sunulur.'}
+                {member.role === 'doctor' && ' Online sağlık danışmanlığı wellness sürecinizi destekler; tıbbi teşhis veya tedavi yerine geçmez.'}
+              </p>
             </Section>
           )}
 
@@ -179,6 +188,22 @@ export default function StaffProfileDisplay({ member }) {
             >
               Üyelik Seçenekleri
             </Link>
+            {member.role === 'dietitian' && (
+              <Link
+                to="/online-diyetisyen"
+                className="inline-flex items-center justify-center rounded-xl border border-sage-200 px-6 py-3 text-sm font-semibold text-sage-800 hover:border-sage-400"
+              >
+                Online Diyetisyen
+              </Link>
+            )}
+            {member.role === 'coach' && (
+              <Link
+                to="/online-kocluk"
+                className="inline-flex items-center justify-center rounded-xl border border-brand-200 px-6 py-3 text-sm font-semibold text-brand-800 hover:border-brand-400"
+              >
+                Online Koçluk
+              </Link>
+            )}
           </div>
         </div>
       </motion.div>

@@ -41,6 +41,8 @@ const HOW_IT_WORKS_MEMBER = [
 
 const MEMBERSHIP_FAQ = [
   { q: 'Ücretsiz Basic paketle başlayabilir miyim?', a: 'Evet. Basic paket ücretsizdir; kişisel sağlık analizi ile başlayabilirsiniz. Antrenman ve beslenme programları ücretli paketlerde koç / diyetisyen tarafından hazırlanır.' },
+  { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 2 online diyetisyen görüşmesi Diyet ve VIP paketlerindedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
+  { q: 'Online koçluk hangi pakette?', a: 'Ayda 2 online koç görüşmesi Spor ve VIP paketlerindedir. Ayrıntılar online koçluk hizmet sayfasında.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
   { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket satın alabilirsiniz.' },
 ]
@@ -70,15 +72,27 @@ export default function MembershipComparisonPage() {
       <div aria-hidden className="membership-page-dots" />
       <JsonLd data={buildFaqSchema(MEMBERSHIP_FAQ)} />
       <MembershipHero
-        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Size en uygun planı seçin'}
+        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Online diyetisyen ve online koçluk paketleri'}
         subtitle={
           isMember
             ? 'Giriş yapmış hesabınızla plan değiştirebilir veya ek paket (ör. Doktor) satın alabilirsiniz. Yeni kayıt gerekmez.'
-            : 'Ücretsiz başlayın veya uzman destekli paketlerden birini seçin. Gizli ücret yok, süre seçimi sizde.'
+            : 'Ücretsiz başlayın veya video görüşmeli diyetisyen / koç paketlerinden birini seçin. Gizli ücret yok, süre seçimi sizde.'
         }
       />
 
       <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6">
+        {!isMember && (
+          <p className="mb-6 text-center text-sm text-cream-800/75">
+            Hizmet detayı:{' '}
+            <Link to="/online-diyetisyen" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
+              Online diyetisyen
+            </Link>
+            {' · '}
+            <Link to="/online-kocluk" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
+              Online koçluk
+            </Link>
+          </p>
+        )}
         {/* Nasıl üye olunur */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port 5173",
     "dev:vercel": "node scripts/dev-local.mjs",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-seo.mjs",
+    "prerender:seo": "node scripts/prerender-seo.mjs",
     "lint": "eslint .",
     "test:ai": "node scripts/test-ai.mjs",
     "test:stripe": "node scripts/test-stripe-webhook.mjs",

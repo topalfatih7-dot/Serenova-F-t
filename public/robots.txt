@@ -3,12 +3,15 @@
 
 User-agent: *
 Allow: /
+Allow: /online-diyetisyen
+Allow: /online-kocluk
 Allow: /membership
 Allow: /onboarding
 Allow: /stories
 Allow: /blog
 Allow: /team/
 Allow: /corporate
+Allow: /hakkimizda
 
 Disallow: /reset-password
 Disallow: /admin

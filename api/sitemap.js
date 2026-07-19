@@ -1,13 +1,17 @@
 /**
  * Dinamik sitemap.xml — blog yazıları ve kadro profilleri Supabase'den eklenir.
  * URL: /sitemap.xml (vercel.json rewrite)
+ * Supabase hatası olsa bile static route'lar 200 döner.
  */
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseUrl, isSupabaseAdminConfigured, getSupabaseAdmin } from './_supabaseAdmin.js'
 
+/** Canonical public URL'ler — redirect duplicate'ler (/kvkk, /privacy, /terms) yok */
 const STATIC_ROUTES = [
   { loc: '/', changefreq: 'weekly', priority: '1.0' },
   { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95' },
+  { loc: '/online-kocluk', changefreq: 'weekly', priority: '0.95' },
   { loc: '/membership', changefreq: 'weekly', priority: '0.9' },
   { loc: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { loc: '/stories', changefreq: 'weekly', priority: '0.8' },
@@ -32,9 +36,6 @@ const STATIC_ROUTES = [
   { loc: '/legal/saglik-sorumluluk-reddi', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/antrenor-hizmet-standartlari', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/diyetisyen-hizmet-standartlari', changefreq: 'yearly', priority: '0.4' },
-  { loc: '/kvkk', changefreq: 'yearly', priority: '0.3' },
-  { loc: '/privacy', changefreq: 'yearly', priority: '0.3' },
-  { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
 ]
 
 function slugifyTurkish(text) {
@@ -58,6 +59,14 @@ function staffPublicSlug(member) {
   const namePart = slugifyTurkish(member?.name)
   if (!namePart) return member?.id || ''
   const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
+  if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
+    const specialty = slugifyTurkish(member?.specialty || member?.title || '')
+    if (specialty && specialty !== namePart && specialty !== rolePrefix) {
+      return `${rolePrefix}-${specialty}`
+    }
+    const shortId = String(member?.id || '').replace(/-/g, '').slice(0, 8)
+    return shortId ? `${rolePrefix}-${shortId}` : rolePrefix
+  }
   return `${rolePrefix}-${namePart}`
 }
 
@@ -89,75 +98,116 @@ function urlEntry(base, path, { changefreq = 'weekly', priority = '0.5', lastmod
 
 async function fetchDynamicUrls() {
   const urls = []
-  const url = getSupabaseUrl()
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY
+  let url
+  let key
+  try {
+    url = getSupabaseUrl()
+    key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY
+  } catch (err) {
+    console.error('[sitemap] env/url', err?.message || err)
+    return urls
+  }
 
   if (!url || !key) return urls
 
-  const client = isSupabaseAdminConfigured()
-    ? getSupabaseAdmin()
-    : createClient(url, key)
+  let client
+  try {
+    client = isSupabaseAdminConfigured()
+      ? getSupabaseAdmin()
+      : createClient(url, key)
+  } catch (err) {
+    console.error('[sitemap] client', err?.message || err)
+    return urls
+  }
 
   try {
-    const { data: posts } = await client
+    const { data: posts, error } = await client
       .from('posts')
       .select('id, data, created_at')
       .eq('published', true)
 
-    for (const post of posts || []) {
-      const title = post.data?.title || ''
-      const slug = post.data?.slug || slugifyTurkish(title) || post.id
-      urls.push({
-        path: `/blog/${slug}`,
-        changefreq: 'monthly',
-        priority: '0.6',
-        lastmod: (post.created_at || '').slice(0, 10),
-      })
+    if (error) {
+      console.error('[sitemap] posts', error.message)
+    } else {
+      for (const post of posts || []) {
+        const title = post.data?.title || ''
+        const slug = post.data?.slug || slugifyTurkish(title) || post.id
+        urls.push({
+          path: `/blog/${slug}`,
+          changefreq: 'monthly',
+          priority: '0.6',
+          lastmod: (post.created_at || '').slice(0, 10),
+        })
+      }
     }
-  } catch {
-    /* posts tablosu yoksa devam */
+  } catch (err) {
+    console.error('[sitemap] posts fetch', err?.message || err)
   }
 
   try {
-    const { data: staff } = await client
+    const { data: staff, error } = await client
       .from('staff')
-      .select('id, name, role, created_at')
+      .select('id, name, role, created_at, data')
       .eq('active', true)
 
-    for (const member of staff || []) {
-      urls.push({
-        path: `/team/${staffPublicSlug(member)}`,
-        changefreq: 'monthly',
-        priority: '0.6',
-        lastmod: (member.created_at || '').slice(0, 10),
-      })
+    if (error) {
+      console.error('[sitemap] staff', error.message)
+    } else {
+      for (const member of staff || []) {
+        const specialty = member.data?.specialty || member.data?.title || ''
+        urls.push({
+          path: `/team/${staffPublicSlug({ ...member, specialty, title: specialty })}`,
+          changefreq: 'monthly',
+          priority: '0.6',
+          lastmod: (member.created_at || '').slice(0, 10),
+        })
+      }
     }
-  } catch {
-    /* staff tablosu yoksa devam */
+  } catch (err) {
+    console.error('[sitemap] staff fetch', err?.message || err)
   }
 
   return urls
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return res.status(405).end()
-  }
-
-  const base = siteBase()
-  const dynamic = await fetchDynamicUrls()
-  const all = [...STATIC_ROUTES, ...dynamic]
-
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+function buildXml(base, routes) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${all.map((r) => urlEntry(base, r.loc || r.path, r)).join('\n')}
+${routes.map((r) => urlEntry(base, r.loc || r.path, r)).join('\n')}
 </urlset>`
+}
 
-  res.setHeader('Content-Type', 'application/xml; charset=utf-8')
-  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
-  if (req.method === 'HEAD') return res.status(200).end()
-  return res.status(200).end(body)
+export default async function handler(req, res) {
+  try {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return res.status(405).end()
+    }
+
+    const base = siteBase()
+    let dynamic = []
+    try {
+      dynamic = await fetchDynamicUrls()
+    } catch (err) {
+      console.error('[sitemap] dynamic', err?.message || err)
+    }
+
+    const all = [...STATIC_ROUTES, ...dynamic]
+    const body = buildXml(base, all)
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+    if (req.method === 'HEAD') return res.status(200).end()
+    return res.status(200).end(body)
+  } catch (err) {
+    console.error('[sitemap] fatal', err?.message || err)
+    // Son çare: yalnızca static — asla 500 ile crawl'ı kırma
+    const body = buildXml(siteBase(), STATIC_ROUTES)
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
+    if (req.method === 'HEAD') return res.status(200).end()
+    return res.status(200).end(body)
+  }
 }

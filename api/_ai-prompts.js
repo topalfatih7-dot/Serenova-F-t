@@ -332,10 +332,11 @@ Yapı (zorunlu):
 1. Giriş — 2-3 paragraf (konuyu bağlamla tanıt, okuyucuyu çek)
 2. En az 4 alt başlık (## ile başlasın) — her bölümde 2-3 paragraf
 3. En az bir madde işaretli pratik ipuçları listesi
-4. Özet/kapanış — 1-2 paragraf
+4. Özet/kapanış — 1-2 paragraf; burada doğal şekilde şu sayfalardan EN AZ BİRİNE metin içi referans ver (URL'yi olduğu gibi yaz): https://www.yeniform.com/online-diyetisyen veya https://www.yeniform.com/online-kocluk veya https://www.yeniform.com/membership
 5. "Bu içerik genel bilgilendirme amaçlıdır" notu
 
 Paragraflar arasında boş satır bırak. Kısa özet yazma; okuyucuya gerçek değer sun.
+Konu online diyet / koçluk / paket ile ilgiliyse başlıkta veya girişte ilgili anahtar kelimeyi doğal kullan.
 
 SADECE şu JSON şemasında yanıt ver:
 {
@@ -354,12 +355,56 @@ export const BLOG_CONFIG = {
   responseMimeType: 'application/json',
 }
 
-/** Günlük konu rotasyonu — kategori + odak */
+/** Günlük konu rotasyonu — pillar (online diyetisyen/koçluk) + cluster */
 export const BLOG_TOPIC_ROTATION = [
-  { category: 'Beslenme', topics: ['protein alımı ve kas onarımı', 'lifli beslenmenin metabolizma etkisi', 'sağlıklı yağlar ve omega-3', 'öğün zamanlaması ve kan şekeri', 'hidrasyon ve performans', 'mikrobesinler ve enerji', 'bitkisel protein kaynakları'] },
-  { category: 'Antrenman', topics: ['kuvvet antrenmanının metabolik faydaları', 'HIIT vs LISS karşılaştırması', 'esneklik ve mobilite', 'evde vücut ağırlığı antrenmanı', 'toparlanma ve dinlenme günleri', 'kardiyo ve kalp sağlığı', 'core stabilite egzersizleri'] },
-  { category: 'Motivasyon', topics: ['alışkanlık oluşturma bilimi', 'hedef belirleme ve SMART kriterler', 'motivasyon düşüşüyle başa çıkma', 'sosyal destek ve hesap verebilirlik', 'küçük kazanımları kutlama', 'öz disiplin ve öz şefkat dengesi', 'sürdürülebilir dönüşüm zihniyeti'] },
-  { category: 'Yaşam', topics: ['uyku kalitesi ve kilo yönetimi', 'stres ve kortizol ilişkisi', 'masa başı çalışanlar için hareket', 'dijital detoks ve zihinsel sağlık', 'mevsimsel beslenme', 'sosyal yaşamda sağlıklı seçimler', 'work-life balance ve wellness'] },
+  {
+    category: 'Beslenme',
+    topics: [
+      'online diyetisyen ile kilo verme süreci nasıl işler',
+      'online diyet fiyatlarını etkileyen faktörler ve paket seçimi',
+      'video görüşmeli diyetisyen desteğinin avantajları',
+      'protein alımı ve kas onarımı',
+      'öğün zamanlaması ve kan şekeri dengesi',
+      'lifli beslenmenin metabolizma etkisi',
+      'online beslenme danışmanlığı kimler için uygundur',
+    ],
+  },
+  {
+    category: 'Antrenman',
+    topics: [
+      'online koçluk nedir ve yüz yüze koçluktan farkı',
+      'online spor koçu ile evde antrenman programı',
+      'online fitness koçu seçerken dikkat edilecekler',
+      'kuvvet antrenmanının metabolik faydaları',
+      'evde vücut ağırlığı antrenmanı',
+      'toparlanma ve dinlenme günleri',
+      'video koçluk seansına nasıl hazırlanılır',
+    ],
+  },
+  {
+    category: 'Motivasyon',
+    topics: [
+      'online diyetisyen ve koçla hesap verebilirlik',
+      'alışkanlık oluşturma bilimi',
+      'motivasyon düşüşüyle başa çıkma',
+      'küçük kazanımları kutlama',
+      'öz disiplin ve öz şefkat dengesi',
+      'sürdürülebilir dönüşüm zihniyeti',
+      'hedef belirleme ve SMART kriterler',
+    ],
+  },
+  {
+    category: 'Yaşam',
+    topics: [
+      'masa başı çalışanlar için online koçluk ve hareket',
+      'uyku kalitesi ve kilo yönetimi',
+      'stres ve kortizol ilişkisi',
+      'mevsimsel beslenme',
+      'sosyal yaşamda sağlıklı seçimler',
+      'work-life balance ve wellness',
+      'online wellness platformunda ilk 30 gün',
+    ],
+  },
 ]
 
 // ─── Günün İpucu (Dashboard — günlük motivasyon) ───────────────────
