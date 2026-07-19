@@ -21,7 +21,20 @@ import {
 } from '../../config/seo'
 import { BRAND } from '../../config/brand'
 import { SERVICE_PAGES } from '../../data/seoServiceContent'
-import { TEAM_HERO_IMAGES } from '../../utils/teamHeroImages'
+
+/** Bu sayfalara özel hero görselleri — kadro / About görselleriyle paylaşılmaz */
+const SERVICE_HERO_IMAGES = {
+  '/online-diyetisyen': {
+    src: '/services/online-diyetisyen.webp',
+    srcSm: '/services/online-diyetisyen-sm.webp',
+    alt: 'Renkli sağlıklı beslenme kasesi — online diyetisyen hizmeti',
+  },
+  '/online-kocluk': {
+    src: '/services/online-kocluk.webp',
+    srcSm: '/services/online-kocluk-sm.webp',
+    alt: 'Stüdyoda grup fitness antrenmanı — online koçluk hizmeti',
+  },
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -34,7 +47,6 @@ const fadeUp = {
 
 const THEMES = {
   '/online-diyetisyen': {
-    role: 'dietitians',
     gradientFrom: 'from-sage-900/95',
     gradientVia: 'via-sage-900/75',
     meshA: 'service-mesh-sage',
@@ -44,7 +56,6 @@ const THEMES = {
     badgeIcon: Apple,
   },
   '/online-kocluk': {
-    role: 'coaches',
     gradientFrom: 'from-brand-950/95',
     gradientVia: 'via-brand-900/75',
     meshA: 'service-mesh-brand',
@@ -60,7 +71,7 @@ export default function ServiceLandingPage({ path }) {
   const theme = THEMES[path]
   if (!page || !theme) return null
 
-  const hero = TEAM_HERO_IMAGES[theme.role]
+  const hero = SERVICE_HERO_IMAGES[path]
   const ThemeIcon = theme.badgeIcon
 
   const schemas = [
@@ -102,7 +113,9 @@ export default function ServiceLandingPage({ path }) {
             sizes="100vw"
             alt=""
             aria-hidden
-            className="h-full w-full object-cover object-center"
+            className={`h-full w-full object-cover ${
+              path === '/online-diyetisyen' ? 'object-[55%_center]' : 'object-[60%_center]'
+            }`}
             fetchPriority="high"
             decoding="async"
           />
