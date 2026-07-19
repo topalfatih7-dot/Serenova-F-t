@@ -34,9 +34,9 @@ import {
   classifyGoals,
   coachingQueryHints,
   runCoachingEngine,
-} from './coaching/index.js'
-import { buildNutritionConstraints } from './coaching/nutritionConstraints.js'
-import { logCoachingDecision, persistCoachingState } from './coaching/observability.js'
+} from './_coaching/index.js'
+import { buildNutritionConstraints } from './_coaching/nutritionConstraints.js'
+import { logCoachingDecision, persistCoachingState } from './_coaching/observability.js'
 import {
   isPaidMembership,
   memberExpirySyncNeedsPersist,

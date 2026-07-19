@@ -2,10 +2,10 @@
  * Coaching Engine smoke test (OpenAI / DB yok).
  * node scripts/test-coaching-engine.mjs
  */
-import { runCoachingEngine } from '../api/coaching/index.js'
-import { guardNutritionMeals } from '../api/coaching/nutritionGuard.js'
-import { buildCoachingStatePatch, logCoachingDecision } from '../api/coaching/observability.js'
-import { planVolume } from '../api/coaching/volume.js'
+import { runCoachingEngine } from '../api/_coaching/index.js'
+import { guardNutritionMeals } from '../api/_coaching/nutritionGuard.js'
+import { buildCoachingStatePatch, logCoachingDecision } from '../api/_coaching/observability.js'
+import { planVolume } from '../api/_coaching/volume.js'
 
 const fakeExercises = [
   { id: 'e1', name: 'Goblet Squat', body_part: 'Bacak', target_muscle: 'quads', equipment: 'dumbbell', difficulty: 'beginner', locations: ['home', 'gym'], video_pending: false, requires_machine: false },

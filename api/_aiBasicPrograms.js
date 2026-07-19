@@ -3,7 +3,7 @@
  * Basic süre: bugün → freeTrialExpiresAt (48s deneme).
  */
 
-import { guardNutritionMeals } from './coaching/nutritionGuard.js'
+import { guardNutritionMeals } from './_coaching/nutritionGuard.js'
 
 export const AI_BASIC_SOURCE = 'ai_basic'
 export const AI_EKO_SOURCE = 'ai_eko'
