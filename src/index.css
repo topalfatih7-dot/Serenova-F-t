@@ -1313,6 +1313,108 @@ body {
   transform: rotate(10deg);
 }
 
+/* Online diyetisyen / online koçluk — About mesh dilinde hizmet sayfaları */
+.service-page-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 50% 36% at 100% 0%, rgba(68, 150, 100, 0.08), transparent 55%),
+    radial-gradient(ellipse 42% 30% at 0% 40%, rgba(45, 143, 196, 0.07), transparent 50%),
+    #fafaf8;
+}
+
+.service-mesh-sage {
+  background:
+    radial-gradient(ellipse 48% 55% at 0% 20%, rgba(68, 150, 100, 0.16), transparent 58%),
+    radial-gradient(ellipse 42% 48% at 100% 80%, rgba(45, 143, 196, 0.1), transparent 55%),
+    linear-gradient(165deg, #ffffff 0%, #f7faf8 45%, #f0fdf4 100%);
+}
+
+.service-mesh-sage::before {
+  content: "";
+  position: absolute;
+  top: -16%;
+  right: -10%;
+  width: min(50vw, 26rem);
+  height: min(50vw, 26rem);
+  border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%;
+  background: linear-gradient(135deg, rgba(68, 150, 100, 0.12), rgba(45, 143, 196, 0.06));
+  transform: rotate(12deg);
+}
+
+.service-mesh-sage::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: -12%;
+  width: min(44vw, 22rem);
+  height: min(44vw, 22rem);
+  border-radius: 58% 42% 48% 52% / 45% 55% 45% 55%;
+  background: linear-gradient(210deg, rgba(20, 184, 166, 0.08), transparent 65%);
+  transform: rotate(-10deg);
+}
+
+.service-mesh-brand {
+  background:
+    radial-gradient(ellipse 50% 50% at 95% 15%, rgba(45, 143, 196, 0.15), transparent 55%),
+    radial-gradient(ellipse 40% 48% at 5% 85%, rgba(68, 150, 100, 0.11), transparent 52%),
+    linear-gradient(195deg, #ffffff 0%, #f8fafc 48%, #eff6ff 100%);
+}
+
+.service-mesh-brand::before {
+  content: "";
+  position: absolute;
+  top: 10%;
+  left: -10%;
+  width: min(42vw, 22rem);
+  height: min(42vw, 22rem);
+  border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+  background: linear-gradient(160deg, rgba(45, 143, 196, 0.12), transparent 70%);
+  transform: rotate(-14deg);
+}
+
+.service-mesh-brand::after {
+  content: "";
+  position: absolute;
+  right: -8%;
+  bottom: 8%;
+  width: min(48vw, 26rem);
+  height: min(36vw, 20rem);
+  border-radius: 40% 60% 50% 50% / 55% 40% 60% 45%;
+  background: linear-gradient(320deg, rgba(45, 143, 196, 0.1), rgba(68, 150, 100, 0.06));
+  transform: rotate(8deg);
+}
+
+.service-mesh-cream {
+  background:
+    radial-gradient(ellipse 45% 50% at 10% 30%, rgba(232, 137, 79, 0.08), transparent 55%),
+    radial-gradient(ellipse 48% 42% at 95% 70%, rgba(68, 150, 100, 0.1), transparent 52%),
+    linear-gradient(155deg, #ffffff 0%, #fffbeb 40%, #f8faf8 100%);
+}
+
+.service-mesh-cream::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: 40%;
+  width: min(52vw, 28rem);
+  height: min(38vw, 20rem);
+  border-radius: 48% 52% 60% 40% / 42% 58% 42% 58%;
+  background: linear-gradient(120deg, rgba(232, 137, 79, 0.07), rgba(45, 143, 196, 0.05));
+  transform: rotate(6deg);
+}
+
+.service-mesh-cream::after {
+  content: "";
+  position: absolute;
+  bottom: -16%;
+  right: 15%;
+  width: min(40vw, 20rem);
+  height: min(40vw, 20rem);
+  border-radius: 55% 45% 40% 60% / 50% 45% 55% 50%;
+  background: linear-gradient(240deg, rgba(68, 150, 100, 0.09), transparent 65%);
+}
+
 .section-blog-vivid {
   position: relative;
   overflow: hidden;
