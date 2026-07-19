@@ -19,7 +19,7 @@ const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎',
 export default function AppShell() {
   const {
     isAdmin, isStaff, membership, notifications, user, logout, loggingOut, settings, updateSettings,
-    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig, healthTestSchema,
+    chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig,
   } = useApp()
 
   const handleTutorialComplete = () => {
@@ -38,7 +38,7 @@ export default function AppShell() {
 
   const unread = (notifications || []).filter((n) => !n.read).length
   const healthTestIncomplete = user?.id
-    && !isHealthTestComplete(user.healthTest, user.gender, packageConfig, healthTestSchema)
+    && !isHealthTestComplete(user.healthTest, user.gender, packageConfig)
 
   const navItems = buildMemberNavItems({
     membership,

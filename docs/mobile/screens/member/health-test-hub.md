@@ -47,4 +47,4 @@ When all required complete → `/health-test/finish`.
 - [ ] Consent gate before tests  
 - [ ] Subtitles exact  
 - [ ] Sections respect gender only (not package)  
-- [ ] diet_activity skip when coach package  
+

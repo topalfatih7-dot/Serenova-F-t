@@ -6,7 +6,7 @@ import { normalizeHealthTestForAnalysis } from '../data/healthTest'
 export function inferGoalsFromHealthTest(healthTest = {}) {
   const ht = normalizeHealthTestForAnalysis(healthTest)
   const goals = new Set()
-  const habits = Array.isArray(ht.eatingHabits) ? ht.eatingHabits : []
+  const habits = ht.eatingHabits || []
 
   if (habits.includes('fast_food') || habits.includes('night_snack') || habits.includes('skip_meals')) {
     goals.add('weight')
@@ -36,9 +36,17 @@ export function inferGoalsFromHealthTest(healthTest = {}) {
     goals.add('confidence')
     goals.add('habit')
   }
-  const goalText = String(ht.primaryGoal || '').toLowerCase()
-  if (goalText.includes('kas') || goalText.includes('güç') || goalText.includes('guc')) goals.add('muscle')
-  if (goalText.includes('kilo') || goalText.includes('yağ') || goalText.includes('yag')) goals.add('weight')
+  if (ht.teaCoffee === 'high') {
+    goals.add('sleep')
+    goals.add('habit')
+  }
+  if (ht.travelFrequency === 'weekly' || ht.travelFrequency === 'monthly') {
+    goals.add('habit')
+  }
+  if (ht.substanceUse === 'regular' || ht.substanceUse === 'occasional') {
+    goals.add('habit')
+    goals.add('sleep')
+  }
 
   if (goals.size === 0) goals.add('habit')
   return [...goals]
@@ -59,19 +67,13 @@ export function inferNutritionPrefsFromHealthTest(healthTest = {}) {
   const ht = normalizeHealthTestForAnalysis(healthTest)
   const prefs = []
   const allergyText = [
-    ht.foodAllergies === 'yes' ? 'yes' : '',
-    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : '',
+    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : ht.foodAllergies,
     ht.foodAllergiesDetail,
     ht.dietFoodAllergiesDetail,
   ].filter(Boolean).join(' ').toLowerCase()
   if (allergyText.includes('gluten')) prefs.push('gluten-free')
-  if (allergyText.includes('laktoz') || allergyText.includes('süt') || allergyText.includes('sut')) {
-    prefs.push('lactose-aware')
-  }
-  if (allergyText.includes('vejet') || allergyText.includes('vegan')) prefs.push('plant-based')
-  if (ht.mealsPerDay === '3' || ht.mealsPerDay === '4' || (ht.eatingHabits || []).includes('regular')) {
-    prefs.push('balanced')
-  }
+  if (allergyText.includes('laktoz') || allergyText.includes('süt')) prefs.push('balanced')
+  if ((ht.eatingHabits || []).includes('regular')) prefs.push('balanced')
   if (prefs.length === 0) prefs.push('balanced')
   return prefs
 }

@@ -9,11 +9,11 @@ import { useApp } from '../../context/AppContext'
 const DISMISS_KEY = (userId) => `health_test_dismissed_${userId}`
 
 export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) {
-  const { packageConfig, healthTestSchema } = useApp()
+  const { packageConfig } = useApp()
   const navigate = useNavigate()
   const [showFab, setShowFab] = useState(() => {
     if (!user?.id) return false
-    if (isHealthTestComplete(user.healthTest, user.gender, packageConfig, healthTestSchema)) return false
+    if (isHealthTestComplete(user.healthTest, user.gender, packageConfig)) return false
     try {
       return localStorage.getItem(DISMISS_KEY(user.id)) === '1'
     } catch {
@@ -22,7 +22,7 @@ export default function HealthTestWidget({ user, promptOpen, onPromptHandled }) 
   })
   const [morphing, setMorphing] = useState(false)
 
-  const testComplete = isHealthTestComplete(user?.healthTest, user?.gender, packageConfig, healthTestSchema)
+  const testComplete = isHealthTestComplete(user?.healthTest, user?.gender, packageConfig)
     && user?.healthAck && user?.disclaimer
 
   const goToHub = useCallback(() => {

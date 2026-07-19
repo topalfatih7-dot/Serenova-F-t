@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2 } from 'lucide-react'
 import HealthTestStep from './HealthTestStep'
 import HealthTestConsentForm from './HealthTestConsentForm'
 import {
-  emptyHealthTest,
+  EMPTY_HEALTH_TEST,
   getApplicableQuestions,
   getSectionQuestions,
   getSectionResumeState,
@@ -13,12 +13,7 @@ import {
   hasHealthTestProgress,
   isQuestionAnswered,
   isQuestionFullyAnswered,
-  migrateLegacyHealthTestKeys,
 } from '../../data/healthTest'
-
-function mergeHealthTest(initial, schema) {
-  return { ...emptyHealthTest(schema), ...migrateLegacyHealthTestKeys(initial || {}) }
-}
 
 function isLastHealthQuestion(index, questions) {
   return index >= questions.length - 1
@@ -31,7 +26,6 @@ export default function HealthTestFlow({
   sectionId = null,
   gender = '',
   packageConfig = null,
-  healthTestSchema = null,
   initialHealthTest,
   initialHealthAck = false,
   initialDisclaimer = false,
@@ -40,33 +34,27 @@ export default function HealthTestFlow({
   onSectionComplete,
   saving = false,
 }) {
-  const schema = healthTestSchema
-
-  const section = useMemo(
-    () => (sectionId
-      ? getApplicableSections(gender, packageConfig, schema).find((s) => s.id === sectionId)
-      : null),
-    [sectionId, gender, packageConfig, schema],
-  )
+  const section = sectionId
+    ? getApplicableSections(gender, packageConfig).find((s) => s.id === sectionId)
+    : null
 
   const resume = sectionId && section
-    ? getSectionResumeState(section, initialHealthTest, schema)
+    ? getSectionResumeState(section, initialHealthTest)
     : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
         healthAck: initialHealthAck,
         disclaimer: initialDisclaimer,
-        schema,
       })
 
   const [questionIndex, setQuestionIndex] = useState(resume.questionIndex)
   const [showErrors, setShowErrors] = useState(false)
-  const [healthTest, setHealthTest] = useState(() => mergeHealthTest(initialHealthTest, schema))
+  const [healthTest, setHealthTest] = useState(() => ({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
   const [healthAck, setHealthAck] = useState(initialHealthAck)
   const [disclaimer, setDisclaimer] = useState(initialDisclaimer)
   const [phase, setPhase] = useState(resume.phase)
   const healthTestRef = useRef(healthTest)
   const prevOpenRef = useRef(open)
   const onProgressSaveRef = useRef(onProgressSave)
-  const lastPersistedRef = useRef(JSON.stringify(mergeHealthTest(initialHealthTest, schema)))
+  const lastPersistedRef = useRef(JSON.stringify({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
 
   useEffect(() => {
     healthTestRef.current = healthTest
@@ -79,13 +67,12 @@ export default function HealthTestFlow({
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       const next = sectionId && section
-        ? getSectionResumeState(section, initialHealthTest, schema)
+        ? getSectionResumeState(section, initialHealthTest)
         : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
             healthAck: initialHealthAck,
             disclaimer: initialDisclaimer,
-            schema,
           })
-      const merged = mergeHealthTest(initialHealthTest, schema)
+      const merged = { ...EMPTY_HEALTH_TEST, ...initialHealthTest }
       setQuestionIndex(next.questionIndex)
       setPhase(next.phase)
       setHealthTest(merged)
@@ -95,18 +82,18 @@ export default function HealthTestFlow({
       lastPersistedRef.current = JSON.stringify(merged)
     }
     prevOpenRef.current = open
-  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer, sectionId, section, schema])
+  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer, sectionId, section])
 
   const persistProgress = useCallback(() => {
     const save = onProgressSaveRef.current
     if (!save) return
     const snapshot = healthTestRef.current
-    if (!hasHealthTestProgress(snapshot, gender, packageConfig, schema)) return
+    if (!hasHealthTestProgress(snapshot, gender, packageConfig)) return
     const serialized = JSON.stringify(snapshot)
     if (serialized === lastPersistedRef.current) return
     lastPersistedRef.current = serialized
     save({ healthTest: snapshot })
-  }, [gender, packageConfig, schema])
+  }, [gender, packageConfig])
 
   useEffect(() => {
     if (!onProgressSave) return undefined
@@ -119,17 +106,17 @@ export default function HealthTestFlow({
       const save = onProgressSaveRef.current
       if (!save) return
       const snapshot = healthTestRef.current
-      if (!hasHealthTestProgress(snapshot, gender, packageConfig, schema)) return
+      if (!hasHealthTestProgress(snapshot, gender, packageConfig)) return
       const serialized = JSON.stringify(snapshot)
       if (serialized === lastPersistedRef.current) return
       lastPersistedRef.current = serialized
       save({ healthTest: snapshot })
     }
-  }, [gender, packageConfig, schema])
+  }, [gender, packageConfig])
 
   const questions = sectionId
-    ? getSectionQuestions(sectionId, gender, packageConfig, schema)
-    : getApplicableQuestions(gender, packageConfig, schema)
+    ? getSectionQuestions(sectionId, gender, packageConfig)
+    : getApplicableQuestions(gender, packageConfig)
   const currentQuestion = questions[questionIndex]
   const lastQuestion = isLastHealthQuestion(questionIndex, questions)
   const sectionMode = Boolean(sectionId)
@@ -208,7 +195,7 @@ export default function HealthTestFlow({
                   question={currentQuestion}
                   questionIndex={questionIndex}
                   totalQuestions={questions.length}
-                  sectionTitle={currentQuestion?.sectionTitle}
+                  sectionTitle={section?.title}
                   healthTest={healthTest}
                   updateHealthTest={updateHealthTest}
                   showErrors={showErrors}
@@ -217,21 +204,20 @@ export default function HealthTestFlow({
             )}
           </AnimatePresence>
 
-          <div className={`mt-6 flex gap-3 ${layout === 'page' ? 'mx-auto max-w-2xl' : ''}`}>
-            {(phase === 'questions' && questionIndex > 0) || (phase === 'questions' && !sectionMode) ? (
-              <button
-                type="button"
-                onClick={goBack}
-                className="rounded-2xl border border-cream-200 px-5 py-3 text-sm font-semibold text-cream-800 hover:bg-cream-50"
-              >
-                Geri
-              </button>
-            ) : null}
+          <div className="mt-6 flex justify-between gap-3">
             <button
               type="button"
-              disabled={saving}
+              onClick={goBack}
+              disabled={(phase === 'questions' && questionIndex === 0 && sectionMode) || phase === 'ack'}
+              className="text-sm font-medium text-cream-800 disabled:opacity-30"
+            >
+              Geri
+            </button>
+            <button
+              type="button"
               onClick={goNext}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-brand-500 px-5 py-3 text-sm font-bold text-white hover:bg-brand-600 disabled:opacity-60"
+              disabled={saving}
+              className="flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {nextLabel}
@@ -241,22 +227,41 @@ export default function HealthTestFlow({
   )
 
   if (layout === 'page') {
-    return <div className="w-full">{body}</div>
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-cream-200 bg-white p-4 shadow-sm sm:p-6">
+        {body}
+      </div>
+    )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-cream-900/40 p-0 sm:items-center sm:p-4">
-      <div className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-full bg-cream-100 p-2 text-cream-800 hover:bg-cream-200"
-          aria-label="Kapat"
-        >
-          <X className="h-4 w-4" />
-        </button>
-        <div className="overflow-y-auto">{body}</div>
-      </div>
-    </div>
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[112] bg-black/60 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="fixed inset-x-0 bottom-0 z-[113] mx-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-cream-50 shadow-2xl sm:inset-x-4 sm:top-1/2 sm:bottom-auto sm:max-h-[88dvh] sm:-translate-y-1/2 sm:rounded-3xl"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+          <p className="text-sm font-semibold text-cream-900">Sağlık Profili Testi</p>
+          {onClose && (
+            <button
+              type="button"
+              onClick={() => { persistProgress(); onClose() }}
+              className="rounded-full p-2 text-cream-800/50 hover:bg-cream-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+        {body}
+      </motion.div>
+    </>
   )
 }

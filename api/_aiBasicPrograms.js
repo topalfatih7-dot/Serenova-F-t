@@ -3,8 +3,6 @@
  * Basic süre: bugün → freeTrialExpiresAt (48s deneme).
  */
 
-import { collectSchemaLabels } from '../src/data/healthTestSchema.js'
-
 export const AI_BASIC_SOURCE = 'ai_basic'
 export const AI_EKO_SOURCE = 'ai_eko'
 export const STAFF_NAME = 'Yeni Form'
@@ -138,77 +136,46 @@ const DAY_LABELS = {
 }
 
 const HEALTH_PRIORITY_FIELDS = [
-  ['cvRiskFlags', 'KV risk bayrakları'],
   ['chronicConditions', 'Kronik durumlar'],
   ['chronicConditionsDetail', 'Kronik durum detayı'],
-  ['medications', 'İlaç kullanımı'],
-  ['medicationsDetail', 'İlaç detayı'],
-  ['jointBoneIssue', 'Kemik/eklem sorunu'],
-  ['jointBoneIssueDetail', 'Kemik/eklem detayı'],
   ['injuries', 'Yaralanmalar'],
   ['injuriesDetail', 'Yaralanma detayı'],
   ['painAreas', 'Ağrı bölgeleri'],
+  ['painScale', 'Ağrı şiddeti'],
   ['exerciseContraindications', 'Egzersiz kontrendikasyonları'],
   ['exerciseContraindicationsDetail', 'Kontrendikasyon detayı'],
-  ['otherExerciseRestriction', 'Diğer egzersiz kısıtı'],
-  ['otherExerciseRestrictionDetail', 'Kısıt detayı'],
+  ['medications', 'İlaç kullanımı'],
+  ['medicationsDetail', 'İlaç detayı'],
   ['foodAllergies', 'Besin alerjileri'],
   ['foodAllergiesDetail', 'Alerji detayı'],
+  ['dietFoodAllergiesDetail', 'Diyet alerji notu'],
+  ['eatingHabits', 'Yeme alışkanlıkları'],
   ['activityFrequency', 'Aktivite sıklığı'],
-  ['cardioCapacity', 'Kardiyo kapasitesi'],
-  ['equipmentAccess', 'Ekipman erişimi'],
-  ['trainingLocation', 'Antrenman yeri tercihi'],
-  ['sessionDurationGoal', 'Hedef antrenman süresi'],
   ['sittingHours', 'Günlük oturma süresi'],
-  ['exerciseBarriers', 'Egzersiz engelleri'],
-  ['smoking', 'Sigara'],
-  ['alcohol', 'Alkol'],
-  ['waterIntake', 'Su tüketimi'],
+  ['trainingLocation', 'Antrenman yeri tercihi'],
+  ['equipmentAccess', 'Ekipman erişimi'],
+  ['currentActivityTypes', 'Mevcut aktivite türleri'],
+  ['sessionDurationGoal', 'Hedef antrenman süresi'],
+  ['performanceGoal', 'Performans hedefi'],
   ['sleepQuality', 'Uyku kalitesi'],
   ['stressLevel', 'Stres seviyesi'],
-  ['mealsPerDay', 'Öğün sayısı'],
-  ['breakfastHabit', 'Kahvaltı'],
-  ['nightOrEmotionalEating', 'Gece/duygusal yeme'],
-  ['eatOutFrequency', 'Dışarı yemek'],
-  ['sweetIntake', 'Tatlı/şekerli içecek'],
-  ['wellbeing', 'Genel iyilik hali'],
   ['energy', 'Enerji'],
+  ['wellbeing', 'Genel iyilik hali'],
   ['motivation', 'Motivasyon'],
-  ['primaryGoal', 'Öncelikli hedef'],
+  ['pregnancy', 'Gebelik'],
+  ['doctorClearance', 'Doktor onayı'],
+  ['bloodPressureIssues', 'Tansiyon sorunları'],
+  ['digestiveDisorders', 'Sindirim sorunları'],
+  ['thyroidStatus', 'Tiroid durumu'],
+  ['currentComplaints', 'Güncel şikayetler'],
+  ['supplements', 'Takviyeler'],
+  ['supplementsDetail', 'Takviye detayı'],
+  ['targetWeight', 'Hedef kilo'],
+  ['weight', 'Test kilosu'],
+  ['height', 'Test boyu'],
+  ['weightChange', 'Kilo değişimi'],
+  ['weightChangeDetail', 'Kilo değişim detayı'],
 ]
-
-/** Eski diyet/koç key'lerini yeni 30 soruluk sete taşı (sunucu). */
-function migrateLegacyHealthTestKeys(ht = {}) {
-  if (!ht || typeof ht !== 'object') return {}
-  const out = { ...ht }
-  const empty = (v) => v == null || v === '' || (Array.isArray(v) && v.length === 0)
-  const copy = (from, to, map) => {
-    if (!empty(out[to]) || empty(out[from])) return
-    out[to] = map ? map(out[from]) : out[from]
-  }
-  copy('dietSmoking', 'smoking', (v) => (v === 'yes' ? 'daily' : v === 'no' ? 'never' : v))
-  copy('dietAlcohol', 'alcohol', (v) => (v === 'yes' ? 'weekly' : v === 'no' ? 'none' : v))
-  copy('dietSleepQuality', 'sleepQuality')
-  copy('dietStressLevel', 'stressLevel')
-  copy('dietWaterIntake', 'waterIntake')
-  copy('dietMealsPerDay', 'mealsPerDay')
-  copy('dietBreakfast', 'breakfastHabit')
-  copy('dietEatOut', 'eatOutFrequency')
-  copy('dietSweetIntake', 'sweetIntake')
-  copy('dietFoodAllergies', 'foodAllergies')
-  copy('dietFoodAllergiesDetail', 'foodAllergiesDetail')
-  copy('dietGoal', 'primaryGoal')
-  copy('performanceGoal', 'primaryGoal')
-  if (empty(out.nightOrEmotionalEating)) {
-    const night = out.dietNightEating === 'yes'
-    const emotional = out.dietEmotionalEating === 'yes'
-    if (night && emotional) out.nightOrEmotionalEating = 'both'
-    else if (night) out.nightOrEmotionalEating = 'night'
-    else if (emotional) out.nightOrEmotionalEating = 'emotional'
-    else if (out.dietNightEating === 'no' && out.dietEmotionalEating === 'no') out.nightOrEmotionalEating = 'none'
-  }
-  return out
-}
 
 function formatHealthValue(v) {
   if (Array.isArray(v)) return v.join(', ')
@@ -222,52 +189,40 @@ function hasHealthValue(v) {
   return true
 }
 
-function inferGoalsFromHealthTest(raw = {}) {
-  const ht = migrateLegacyHealthTestKeys(raw)
+function inferGoalsFromHealthTest(ht = {}) {
   const goals = new Set()
-  const night = ht.nightOrEmotionalEating
-  if (night === 'night' || night === 'both' || night === 'emotional') {
-    goals.add('weight')
-    goals.add('habit')
-  }
-  if (ht.breakfastHabit === 'no') goals.add('habit')
-  if (ht.eatOutFrequency === '3_5' || ht.eatOutFrequency === '5_plus') {
+  const habits = Array.isArray(ht.eatingHabits) ? ht.eatingHabits : []
+  if (habits.includes('fast_food') || habits.includes('night_snack') || habits.includes('skip_meals')) {
     goals.add('weight')
     goals.add('habit')
   }
   if (ht.stressLevel === 'high' || ht.sleepQuality === 'poor') goals.add('sleep')
-  const activity = ht.activityFrequency
-  const sitting = ht.sittingHours
-  if (activity === '0' || activity === 'sedentary' || sitting === '7_9' || sitting === '10_plus' || sitting === '8+') {
+  if (ht.activityFrequency === 'sedentary' || ht.sittingHours === '8+') {
     goals.add('habit')
     goals.add('heart')
   }
-  if (activity === '5_plus' || activity === '3_4' || activity === 'active' || activity === 'moderate') {
-    goals.add('endurance')
-  }
+  if (ht.activityFrequency === 'active' || ht.activityFrequency === 'moderate') goals.add('endurance')
   const chronic = Array.isArray(ht.chronicConditions) ? ht.chronicConditions : []
   if (chronic.includes('heart') || chronic.includes('hypertension')) goals.add('heart')
   if (chronic.includes('diabetes')) goals.add('weight')
-  const goalText = String(ht.primaryGoal || '').toLowerCase()
-  if (goalText.includes('kas') || goalText.includes('güç') || goalText.includes('guc')) goals.add('muscle')
-  if (goalText.includes('kilo') || goalText.includes('yağ') || goalText.includes('yag')) goals.add('weight')
+  if (ht.performanceGoal === 'muscle' || ht.performanceGoal === 'strength') goals.add('muscle')
+  if (ht.performanceGoal === 'fat_loss' || ht.performanceGoal === 'weight_loss') goals.add('weight')
   if (goals.size === 0) goals.add('habit')
   return [...goals]
 }
 
-function inferNutritionPrefsFromHealthTest(raw = {}) {
-  const ht = migrateLegacyHealthTestKeys(raw)
+function inferNutritionPrefsFromHealthTest(ht = {}) {
   const prefs = []
   const allergyText = [
-    ht.foodAllergies === 'yes' ? 'yes' : '',
-    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : (ht.foodAllergies !== 'yes' && ht.foodAllergies !== 'no' ? ht.foodAllergies : ''),
+    Array.isArray(ht.foodAllergies) ? ht.foodAllergies.join(' ') : ht.foodAllergies,
     ht.foodAllergiesDetail,
     ht.dietFoodAllergiesDetail,
   ].filter(Boolean).join(' ').toLowerCase()
   if (allergyText.includes('gluten')) prefs.push('gluten-free')
   if (allergyText.includes('laktoz') || allergyText.includes('süt') || allergyText.includes('sut')) prefs.push('lactose-aware')
   if (allergyText.includes('vejet') || allergyText.includes('vegan')) prefs.push('plant-based')
-  if (ht.mealsPerDay === '3' || ht.mealsPerDay === '4') prefs.push('balanced')
+  const habits = Array.isArray(ht.eatingHabits) ? ht.eatingHabits : []
+  if (habits.includes('regular')) prefs.push('balanced')
   if (prefs.length === 0) prefs.push('balanced')
   return prefs
 }
@@ -338,7 +293,7 @@ export function estimateDailyCalories(profile = {}) {
 }
 
 export function enrichProfileBasics(memberData = {}) {
-  const ht = migrateLegacyHealthTestKeys(memberData.healthTest || {})
+  const ht = memberData.healthTest || {}
   const weight = parseFloat(memberData.weight) || parseFloat(ht.weight) || 70
   const height = parseFloat(memberData.height) || parseFloat(ht.height) || 170
   let age = parseFloat(memberData.age)
@@ -352,10 +307,6 @@ export function enrichProfileBasics(memberData = {}) {
   if (!age) age = parseFloat(ht.age) || 30
 
   const fitnessMap = {
-    '0': 'beginner',
-    '1_2': 'beginner',
-    '3_4': 'intermediate',
-    '5_plus': 'advanced',
     sedentary: 'beginner',
     light: 'beginner',
     moderate: 'intermediate',
@@ -394,48 +345,27 @@ export function enrichProfileBasics(memberData = {}) {
     trainingLocation: ht.trainingLocation || memberData.trainingLocation || '',
     equipmentAccess: Array.isArray(ht.equipmentAccess) ? ht.equipmentAccess.join(', ') : (ht.equipmentAccess || ''),
     sessionDurationGoal: ht.sessionDurationGoal || '',
-    performanceGoal: ht.primaryGoal || ht.performanceGoal || '',
+    performanceGoal: ht.performanceGoal || '',
   }
 }
 
-/** site_content health_test_schema → label map (yoksa seed). */
-export async function loadHealthTestSchemaLabels(admin) {
-  try {
-    const { data } = await admin
-      .from('site_content')
-      .select('data')
-      .eq('kind', 'health_test_schema')
-      .limit(1)
-      .maybeSingle()
-    return collectSchemaLabels(data?.data || null)
-  } catch {
-    return collectSchemaLabels(null)
-  }
-}
-
-/** Yapılandırılmış sağlık testi özeti — öncelikli alanlar + şema etiketleri. */
-export function buildHealthTestSummary(healthTest = {}, maxLen = 3800, schemaLabels = null) {
+/** Yapılandırılmış sağlık testi özeti — öncelikli alanlar Türkçe etiketli. */
+export function buildHealthTestSummary(healthTest = {}, maxLen = 3800) {
   if (!healthTest || typeof healthTest !== 'object') return ''
 
-  const ht = migrateLegacyHealthTestKeys(healthTest)
-  const labels = schemaLabels && typeof schemaLabels === 'object'
-    ? schemaLabels
-    : collectSchemaLabels(null)
   const used = new Set()
   const lines = []
 
-  for (const [key, fallbackLabel] of HEALTH_PRIORITY_FIELDS) {
-    const v = ht[key]
+  for (const [key, label] of HEALTH_PRIORITY_FIELDS) {
+    const v = healthTest[key]
     if (!hasHealthValue(v)) continue
     used.add(key)
-    lines.push(`${labels[key] || fallbackLabel}: ${formatHealthValue(v)}`)
+    lines.push(`${label}: ${formatHealthValue(v)}`)
   }
 
-  for (const [key, v] of Object.entries(ht)) {
+  for (const [key, v] of Object.entries(healthTest)) {
     if (used.has(key) || !hasHealthValue(v)) continue
-    // Eski diyet kopyalarını özetten çıkar
-    if (String(key).startsWith('diet') && key !== 'dietitian') continue
-    lines.push(`${labels[key] || key}: ${formatHealthValue(v)}`)
+    lines.push(`${key}: ${formatHealthValue(v)}`)
   }
 
   let out = lines.join('\n')

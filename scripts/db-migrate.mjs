@@ -289,34 +289,6 @@ async function syncPlans() {
   await migrateKurucuMembers()
 }
 
-/** Sağlık testi soru şeması — yoksa seed (30 soru) insert. */
-async function seedHealthTestSchema() {
-  console.log('health_test_schema seed…')
-  const { data: existing, error: selErr } = await supabase
-    .from('site_content')
-    .select('id')
-    .eq('kind', 'health_test_schema')
-    .limit(1)
-    .maybeSingle()
-  if (selErr) throw selErr
-  if (existing?.id) {
-    console.log('  ✓ health_test_schema zaten var')
-    return
-  }
-  const { DEFAULT_HEALTH_TEST_SCHEMA } = await import('../src/data/healthTestSchema.js')
-  const payload = {
-    version: DEFAULT_HEALTH_TEST_SCHEMA.version || 1,
-    sections: DEFAULT_HEALTH_TEST_SCHEMA.sections || [],
-  }
-  const { error } = await supabase.from('site_content').insert({
-    kind: 'health_test_schema',
-    sort: 0,
-    data: payload,
-  })
-  if (error) throw error
-  console.log('  ✓ health_test_schema seed eklendi')
-}
-
 async function verify() {
   const { data, error } = await supabase.from('plans').select('id, name, sort_order, is_active').order('sort_order')
   if (error) throw error
@@ -333,11 +305,6 @@ async function main() {
     await runPendingSqlMigrations()
   } catch (e) {
     console.warn('SQL migration uyarısı:', e.message)
-  }
-  try {
-    await seedHealthTestSchema()
-  } catch (e) {
-    console.warn('health_test_schema seed uyarısı:', e.message)
   }
   await verify()
   console.log('\nTamamlandı.')

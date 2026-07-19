@@ -30,7 +30,6 @@ import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads,
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
-import { migrateLegacyHealthTestKeys } from '../data/healthTest'
 
 const AuthContext = createContext(null)
 const DataContext = createContext(null)
@@ -39,7 +38,7 @@ const ActionsContext = createContext(null)
 const EMPTY_DB = {
   version: 2, members: [], staff: [], programs: [], posts: [],
   tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, plans: ALL_PLANS, session: null,
-  content: { testimonials: [], faqs: [], successStories: [], healthTestSchema: null },
+  content: { testimonials: [], faqs: [], successStories: [] },
 }
 
 export function AppProvider({ children }) {
@@ -1001,12 +1000,6 @@ export function AppProvider({ children }) {
     return r
   }, [reloadRemote])
 
-  const saveHealthTestSchema = useCallback(async (schema) => {
-    const r = await sb.upsertHealthTestSchema(schema)
-    if (r.success) await reloadRemote()
-    return r
-  }, [reloadRemote])
-
   const submitSuccessStory = useCallback(async (data) => {
     const r = await sb.submitSuccessStory(currentMember, data)
     if (r.success) await reloadRemote()
@@ -1138,21 +1131,19 @@ export function AppProvider({ children }) {
     const member = memberRef.current
     if (!member) return
 
-    const nextHealthTest = migrateLegacyHealthTestKeys(healthTest)
-
-    memberRef.current = { ...member, healthTest: nextHealthTest }
+    memberRef.current = { ...member, healthTest }
     setRemoteDb((prev) => {
       if (!prev) return prev
       return {
         ...prev,
         members: prev.members.map((m) => (
-          m.id === member.id ? { ...m, healthTest: nextHealthTest } : m
+          m.id === member.id ? { ...m, healthTest } : m
         )),
       }
     })
 
     try {
-      await sb.saveMemberPatch(member, { healthTest: nextHealthTest })
+      await sb.saveMemberPatch(member, { healthTest })
     } catch {
       await reloadRemote()
     }
@@ -1324,7 +1315,6 @@ export function AppProvider({ children }) {
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],
     exerciseTaxonomy: db.content?.exerciseTaxonomy || null,
-    healthTestSchema: db.content?.healthTestSchema || null,
     platform,
     adminStats,
     onboardingFunnel,
@@ -1432,7 +1422,6 @@ export function AppProvider({ children }) {
     editContent,
     removeContent,
     saveExerciseTaxonomy,
-    saveHealthTestSchema,
     submitSuccessStory,
     markNotificationRead,
     markAllNotificationsRead,
@@ -1511,7 +1500,6 @@ export function AppProvider({ children }) {
     editContent,
     removeContent,
     saveExerciseTaxonomy,
-    saveHealthTestSchema,
     submitSuccessStory,
     markNotificationRead,
     markAllNotificationsRead,

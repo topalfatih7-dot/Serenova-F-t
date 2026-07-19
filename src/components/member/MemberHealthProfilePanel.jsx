@@ -1,5 +1,5 @@
 import {
-  HeartPulse, Activity, Target, Salad, Sparkles, CheckCircle2, AlertCircle, Pencil, Eye,
+  HeartPulse, Activity, Target, Salad, Sparkles, CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import {
   describeHealthTest,
@@ -9,7 +9,6 @@ import {
 } from '../../data/healthTest'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
-import AdminHealthTestEditor, { confirmLeaveHealthTestEditor } from './AdminHealthTestEditor'
 
 function Chips({ values, map, tone = 'cream' }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -115,175 +114,93 @@ export default function MemberHealthProfilePanel({
   onSaveNotes,
   notesSaving = false,
   showHealthAnalysis = false,
-  canEditHealthTest = false,
-  editMode = 'view',
-  onEditModeChange,
-  onSaveHealthTest,
-  healthTestSaving = false,
-  editorDirty = false,
-  onEditorDirtyChange,
-  healthTestSchema = null,
 }) {
   if (!member) return null
 
-  const complete = isHealthTestComplete(member.healthTest, member.gender, member.packageConfig, healthTestSchema)
-  const hasProgress = hasHealthTestProgress(member.healthTest, member.gender, member.packageConfig, healthTestSchema)
-  const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig, healthTestSchema)
-  const isEditing = canEditHealthTest && editMode === 'edit'
-
-  const switchToView = () => {
-    if (isEditing && !confirmLeaveHealthTestEditor(editorDirty)) return
-    onEditModeChange?.('view')
-  }
-
-  const switchToEdit = () => {
-    onEditModeChange?.('edit')
-  }
+  const complete = isHealthTestComplete(member.healthTest, member.gender, member.packageConfig)
+  const hasProgress = hasHealthTestProgress(member.healthTest, member.gender, member.packageConfig)
+  const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
 
   return (
     <div className="space-y-6">
-      <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+      <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 ${
         complete ? 'border-sage-200 bg-sage-50/50' : hasProgress ? 'border-amber-200 bg-amber-50/40' : 'border-cream-200 bg-cream-50'
       }`}>
-        <div className="flex min-w-0 items-center gap-3">
-          {complete ? (
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-sage-600" />
-          ) : (
-            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600" />
-          )}
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-cream-900">
-              {complete ? 'Sağlık testi tamamlandı' : hasProgress ? 'Sağlık testi devam ediyor' : 'Sağlık testi başlanmadı'}
-            </p>
-            <p className="text-xs text-cream-800/55">
-              {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : 'Cinsiyet belirtilmemiş'}
-              {' · '}
-              {member.age ? `${member.age} yaş` : 'Yaş —'}
-              {member.weight ? ` · ${member.weight} kg` : ''}
-              {member.height ? ` · ${member.height} cm` : ''}
-            </p>
-          </div>
+        {complete ? (
+          <CheckCircle2 className="h-5 w-5 text-sage-600" />
+        ) : (
+          <AlertCircle className="h-5 w-5 text-amber-600" />
+        )}
+        <div>
+          <p className="text-sm font-semibold text-cream-900">
+            {complete ? 'Sağlık testi tamamlandı' : hasProgress ? 'Sağlık testi devam ediyor' : 'Sağlık testi başlanmadı'}
+          </p>
+          <p className="text-xs text-cream-800/55">
+            {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : 'Cinsiyet belirtilmemiş'}
+            {' · '}
+            {member.age ? `${member.age} yaş` : 'Yaş —'}
+            {member.weight ? ` · ${member.weight} kg` : ''}
+            {member.height ? ` · ${member.height} cm` : ''}
+          </p>
         </div>
+      </div>
 
-        {canEditHealthTest && (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-xl bg-white/80 p-1 ring-1 ring-cream-200">
-              <button
-                type="button"
-                onClick={switchToView}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  !isEditing ? 'bg-cream-900 text-white' : 'text-cream-800/60 hover:text-cream-900'
-                }`}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Özet
-              </button>
-              <button
-                type="button"
-                onClick={switchToEdit}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  isEditing ? 'bg-brand-500 text-white' : 'text-cream-800/60 hover:text-cream-900'
-                }`}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Düzenle
-              </button>
-            </div>
-          </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-cream-200 bg-white p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+            <Activity className="h-3.5 w-3.5 text-brand-500" /> Spor Seviyesi
+          </p>
+          <p className="text-sm font-semibold text-cream-900">{FITNESS_LABELS[member.fitnessLevel] || '—'}</p>
+        </div>
+        <div className="rounded-2xl border border-cream-200 bg-white p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+            <Target className="h-3.5 w-3.5 text-brand-500" /> Hedefler
+          </p>
+          <Chips values={member.goals} map={GOAL_LABELS} tone="brand" />
+        </div>
+        <div className="rounded-2xl border border-cream-200 bg-white p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+            <Salad className="h-3.5 w-3.5 text-sage-500" /> Beslenme
+          </p>
+          <Chips values={member.nutritionPrefs} map={NUTRITION_LABELS} tone="sage" />
+        </div>
+      </div>
+
+      {showHealthAnalysis && <AnalysisSummary analysis={member.healthAnalysis} />}
+
+      <div className="space-y-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">
+          <HeartPulse className="h-4 w-4 text-amber-600" />
+          Sağlık Testi Cevapları
+        </p>
+
+        {sections.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-cream-200 py-10 text-center text-sm text-cream-800/45">
+            Henüz cevaplanmış soru yok.
+          </p>
+        ) : (
+          sections.map((sec) => {
+            const aud = HEALTH_AUDIENCE_META[sec.audience] || HEALTH_AUDIENCE_META.shared
+            return (
+              <section key={sec.id} className={`overflow-hidden rounded-2xl border shadow-sm ${aud.border}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 bg-white/70 px-4 py-3">
+                  <h3 className="font-display text-base font-bold text-cream-900">{sec.title}</h3>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${aud.chip}`}>
+                    {aud.label}
+                  </span>
+                </div>
+                <div className="grid gap-3 bg-white/50 p-4 sm:grid-cols-2">
+                  {sec.items.map((it, i) => (
+                    <AnswerCard key={`${sec.id}-${i}`} label={it.label} value={it.value} audience={sec.audience} />
+                  ))}
+                </div>
+              </section>
+            )
+          })
         )}
       </div>
 
-      {!isEditing && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-cream-200 bg-white p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
-              <Activity className="h-3.5 w-3.5 text-brand-500" /> Spor Seviyesi
-            </p>
-            <p className="text-sm font-semibold text-cream-900">{FITNESS_LABELS[member.fitnessLevel] || '—'}</p>
-          </div>
-          <div className="rounded-2xl border border-cream-200 bg-white p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
-              <Target className="h-3.5 w-3.5 text-brand-500" /> Hedefler
-            </p>
-            <Chips values={member.goals} map={GOAL_LABELS} tone="brand" />
-          </div>
-          <div className="rounded-2xl border border-cream-200 bg-white p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
-              <Salad className="h-3.5 w-3.5 text-sage-500" /> Beslenme
-            </p>
-            <Chips values={member.nutritionPrefs} map={NUTRITION_LABELS} tone="sage" />
-          </div>
-        </div>
-      )}
-
-      {showHealthAnalysis && !isEditing && <AnalysisSummary analysis={member.healthAnalysis} />}
-
-      {isEditing ? (
-        <AdminHealthTestEditor
-          key={`${member.id}-health-edit`}
-          member={member}
-          onSave={onSaveHealthTest}
-          saving={healthTestSaving}
-          onDirtyChange={onEditorDirtyChange}
-          healthTestSchema={healthTestSchema}
-        />
-      ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">
-              <HeartPulse className="h-4 w-4 text-amber-600" />
-              Sağlık Testi Cevapları
-            </p>
-            {canEditHealthTest && (
-              <button
-                type="button"
-                onClick={switchToEdit}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-cream-200 bg-white px-3 py-1.5 text-xs font-bold text-brand-700 transition hover:border-brand-200 hover:bg-brand-50"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Testi düzenle
-              </button>
-            )}
-          </div>
-
-          {sections.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-cream-200 py-10 text-center">
-              <p className="text-sm text-cream-800/45">Henüz cevaplanmış soru yok.</p>
-              {canEditHealthTest && (
-                <button
-                  type="button"
-                  onClick={switchToEdit}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold text-white hover:bg-brand-600"
-                >
-                  <Pencil className="h-4 w-4" />
-                  30 soruyu doldur
-                </button>
-              )}
-            </div>
-          ) : (
-            sections.map((sec) => {
-              const aud = HEALTH_AUDIENCE_META[sec.audience] || HEALTH_AUDIENCE_META.shared
-              return (
-                <section key={sec.id} className={`overflow-hidden rounded-2xl border shadow-sm ${aud.border}`}>
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 bg-white/70 px-4 py-3">
-                    <h3 className="font-display text-base font-bold text-cream-900">{sec.title}</h3>
-                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${aud.chip}`}>
-                      {aud.label}
-                    </span>
-                  </div>
-                  <div className="grid gap-3 bg-white/50 p-4 sm:grid-cols-2">
-                    {sec.items.map((it, i) => (
-                      <AnswerCard key={`${sec.id}-${i}`} label={it.label} value={it.value} audience={sec.audience} />
-                    ))}
-                  </div>
-                </section>
-              )
-            })
-          )}
-        </div>
-      )}
-
-      {(member.healthAck || member.disclaimer) && !isEditing && (
+      {(member.healthAck || member.disclaimer) && (
         <div className="rounded-2xl border border-sage-100 bg-sage-50/40 px-4 py-3 text-xs text-sage-900/80">
           {member.healthAck && <p>✓ Sağlık bilgisi doğruluğu onayı</p>}
           {member.disclaimer && <p>✓ Tıbbi feragat onayı</p>}

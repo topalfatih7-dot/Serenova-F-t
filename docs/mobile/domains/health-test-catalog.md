@@ -2,8 +2,6 @@
 
 Self-contained question list extracted for mobile handoff.
 
-**Full option tables (LOCK):** [health-test-options.md](health-test-options.md) — do not invent values/labels.
-
 **Question types:** `emoji | single | multi | text | time | scale | file`
 
 **Engine extras:** `detail`, `followUps[]` (conditional), `softWarning`, `footerNote`, `infoNote` / `infoNoteWhen`, exclusive multi options (`exclusive: true`).
@@ -38,25 +36,26 @@ Audience: shared
 Removed from general: `moodCheckin`, `selfConfidence`, `weightChange` (moved).
 
 ### `medical` — Tıbbi Geçmiş
-Hastalıklar, ilaçlar ve tıbbi takip (önceki katalog; 360 revizyonundaki tıbbi genişletmeler geri alındı)
+Hastalıklar, ilaçlar, tahlil ve takviyeler
 
 Audience: shared
 
 | # | key | type | label |
 |---|-----|------|-------|
-| 1 | chronicConditions | multi | Tanı almis kronik rahatsızlıklarınız var mi? |
-| 2 | medications | single | Düzenli kullandiginiz ilaç var mi? |
-| 3 | familyHistory | multi | Ailenizde aşağıdaki rahatsızlıklardan hangileri var? |
-| 4 | surgeries | single | Gecirdiginiz ameliyat var mi? |
-| 5 | hospitalVisits | single | Son 12 ayda hastane aciline basvurdunuz mu? |
-| 6 | lastBloodWork | single | Son kapsamli kan tahlilinizi ne zaman yaptırdınız? |
-| 7 | supplements | multi | Düzenli kullandiginiz takviyeler hangileri? |
-| 8 | mentalHealthDiagnosis | single | Bir ruh sagligi tanı veya tedavi geçmişiniz var mi? |
-| 9 | doctorClearance | single | Egzersiz veya kilo yonetimi programi icin doktor onayi |
-| 10 | bloodPressureIssues | single | Tansiyon dalgalanmasi |
-| 11 | digestiveDisorders | single | Tanı almis sindirim sistemi rahatsizligi |
-| 12 | thyroidStatus | single | Tiroid durumu |
-| 13 | currentComplaints | text | Şikayet (opsiyonel) |
+| 1 | chronicConditions | multi | Tanı almış kronik rahatsızlıklarınız var mı? (geniş liste + other detail) |
+| 2 | medications | single | Düzenli veya gerektiğinde kullandığınız ilaçlar var mı? (+ detail; softWarning if thyroid + none) |
+| 3 | familyHistory | multi | Birinci derece yakınlarında hastalık (+ other detail; footerNote) |
+| 4 | surgeries | single | Daha önce ameliyat geçirdiniz mi? (+ detail) |
+| 5 | hospitalVisits | single | Son 12 ay hastanede yatış? (+ detail) |
+| 6 | lastBloodWork | single | Son kan tahlili ne zaman? |
+| 6a | bloodWorkUploadIntent | single followUp | Yüklemek ister misiniz? (when last_3_months / 3_12_months) |
+| 6b | bloodWorkFiles | file followUp | PDF/foto yükle (when intent=yes) |
+| 7 | supplements | multi | Vitamin/takviye listesi (+ other detail) |
+| 7a–c | supplementsRecommendedBy / Duration / Frequency | single followUps | Takviye varsa cascade |
+| 8 | mentalHealthSupport | single | Son 12 ay ruh sağlığı desteği |
+| 9 | digestiveSymptoms | multi | Sık sindirim şikayetleri |
+| 10 | doctorClearance | single | Doktor onayı |
+| 11 | currentComplaints | text | İsteğe bağlı şikayet |
 
 Moved out: `injuries` → `physical` (coach).
 
@@ -95,12 +94,13 @@ Audience: dietitian
 | 5 | dietGoal | text | Hedefiniz nedir? |
 
 ### Other diet sections
-`diet_health`, `diet_lifestyle`, `diet_activity`, `diet_nutrition`, `diet_women`, `diet_extra` — see source file for full keys. All asked to every member (except `diet_women` → female only).
+`diet_health`, `diet_lifestyle`, `diet_activity`, `diet_nutrition`, `diet_women`, `diet_extra` — see source file for full keys.
 
 
 ## Notes
 
 - Full option lists live in web source; copy from `healthTestSections.js` / `healthTestDietitianSections.js`.
-- **No package gating:** coach/dietitian `audience` is a UI category label only; every member gets every non-gender section.
+- All sections apply to every member; only `women` / `men` / `diet_women` are gender-gated (`genderOnly`).
+- Audience labels (`shared` / `coach` / `dietitian`) are category chips only — not package locks.
 - Gender-specific: `women` / `men` / `diet_women`.
-- Analysis: `describeHealthTest` + `buildHealthTestSummary` + `radarScores` use the full answer set.
+- Storage: `health-lab-results` private; RLS folder = `auth.uid()`.
