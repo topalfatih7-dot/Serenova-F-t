@@ -4,12 +4,12 @@
 > **Proje kökü:** repo kökü (`Serenova-F-t`)  
 > **Vercel proje:** `topalfatih7-3924s-projects/serenova-f-t`  
 > **Marka adı:** Yeni Form (`src/config/brand.js`)  
-> **Son güncelleme:** 2026-07-16 · Proje temizlik (docs/setup + RN + ölü kod) · tek klavuz bu dosya  
-> **Son oturum özeti:** Tamamlanmış blueprint/setup silindi · açık checklist buraya taşındı · ölü schedule sayfaları / mock exportlar temizlendi
+> **Son güncelleme:** 2026-07-19 · SEO para sayfaları + prerender + kadro intro kaldırıldı  
+> **Son oturum özeti:** `/online-diyetisyen` + `/online-kocluk` canlı · build prerender · GSC indeks/ops checklist açık · `TeamListPage` SEO intro metni kaldırıldı
 
 ---
 
-## Son Durum Özeti (2026-07-16)
+## Son Durum Özeti (2026-07-19)
 
 **Canlı:** `https://www.yeniform.com` · Vercel `serenova-f-t` · Supabase Auth + PostgreSQL + Storage
 
@@ -48,6 +48,10 @@
 | GA4 Consent Mode | ✅ | `ga4Loader.js` + `ConsentBanner` — onay sonrası yükleme |
 | Admin GA4 hunisi | Kısmi | Platform hunisi + opsiyonel `api/ga4-report` (service account) |
 | Blog slug SEO | ✅ | `blogSlug.js` — `/blog/baslik-slug` (+ UUID uyumluluk) |
+| SEO para sayfaları | ✅ | `/online-diyetisyen`, `/online-kocluk` — `ServiceLandingPage` + `seoServiceContent.js` · özel hero WebP (`public/services/`) · Service/FAQ JSON-LD · §23–§24 |
+| SEO prerender | ✅ | `npm run build` → `scripts/prerender-seo.mjs` — bot HTML’de title/canonical/H1 |
+| Sitemap dayanıklılık | ✅ | `api/sitemap.js` — hata olsa bile static 200; service URL’ler + legal canonical; `/kvkk` `/privacy` `/terms` duplicate yok |
+| Blog AI keyword cluster | ✅ | `api/_ai-prompts.js` `BLOG_TOPIC_ROTATION` — online diyetisyen/koçluk pillar + iç link |
 | Çıkış UX | ✅ | `loggingOut` — Sidebar, Profile, Staff/Admin shell, mobil menü |
 | Paket süre gösterimi | ✅ | `getPlanDurationLabel()` — landing, onboarding, süre seçici |
 | Admin → Premium Yönetimi | ✅ | **Tüm üyeler** (Basic dahil) listelenir; paket/süre/atama değiştirilebilir |
@@ -66,8 +70,11 @@ OAuth callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
 | Öncelik | Durum | Konu | Not |
 |---------|-------|------|-----|
 | P0 | ✅ | Üyelik güvenlik (Faz 1) | Privileged kolon trigger + payments insert + istemci ücretli plan kapalı + AI food plan guard — `docs/ROADMAP_DENETIM.md` |
+| P0 | ⬜ | GSC — service URL indeks | Search Console → URL Inspection: `/online-diyetisyen`, `/online-kocluk` → indekslemeyi iste · §24 |
+| P0 | ⬜ | GSC — sitemap yenile | Site haritaları → `sitemap.xml` yeniden gönder / “Başarılı” doğrula · §24 |
 | P1 | ⬜ | Admin içerik doldur | SSS, yorumlar, başarı hikâyeleri — `/admin/content`, blog `/admin/blog` |
-| P1 | ⬜ | Kadro fotoğraf + biyografi | `/admin/staff` |
+| P1 | ⬜ | Kadro fotoğraf + biyografi | `/admin/staff` — E-E-A-T (bio, eğitim, sertifika); placeholder isimleri düzelt |
+| P1 | ⬜ | SEO off-page | Instagram/LinkedIn’de service URL paylaşımı; kaliteli mention; haftalık GSC KPI · `scripts/seo-offpage-checklist.json` |
 | P1 | ⬜ | Leaked Password Protection | Supabase Dashboard → Auth → Password Security |
 | P1 | ⬜ | Yasal metin hukuk onayı | `/kvkk`, `/privacy`, `/terms` — kaynak `src/data/legalDocuments.js` |
 | P2 | ⬜ | Personel hakediş modülü | 500₺/görüşme, video katılım, Cuma ödeme — §40 · `sessionAttendance` |
@@ -78,6 +85,7 @@ OAuth callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`
 | P2 | ⬜ | Apple Sign In | Ertelendi; UI kaldırıldı |
 | P2 | ⬜ | Telegram eksik chat ID | Eksik kanal/chat ID varsa Dashboard/env tamamla |
 | P2 | ⬜ | Denetim Faz 2–5 | Trial gate, video/pazarlama, hakediş, aktivasyon — `docs/ROADMAP_DENETIM.md` |
+| P2 | ⬜ | OG debugger testi | Facebook + LinkedIn → `https://www.yeniform.com` |
 | — | ❌ | React Native migration | Yok / planlanmadı |
 
 ---
@@ -584,8 +592,10 @@ Bu sistem projeye sonradan eklenmiş tam entegre video görüşme modülüdür.
 | Blog listesi | `/blog` | `BlogPage.jsx` | Supabase `posts` + kapak görselleri |
 | Blog yazısı | `/blog/:id` | `BlogPostPage.jsx` | Hero kapak + içerik |
 | Ana sayfa blog | `/` | `LatestBlogPosts.jsx` | Son 3 yayınlanmış yazı |
+| Online diyetisyen | `/online-diyetisyen` | `services/ServiceLandingPage.jsx` |
+| Online koçluk | `/online-kocluk` | `services/ServiceLandingPage.jsx` |
 | Kadro profili | `/team/:id` | `StaffProfilePage.jsx` |
-| Kadro listeleri | `/team/coaches`, `/team/dietitians`, `/team/doctors` | `TeamListPage.jsx` (role prop) |
+| Kadro listeleri | `/team/coaches`, `/team/dietitians`, `/team/doctors` | `TeamListPage.jsx` (role prop; SEO intro yok) |
 | Kadro başvurusu | `/team/apply` | `StaffApplicationPage.jsx` |
 | Kurumsal tanıtım | `/corporate` | `CorporatePage.jsx` |
 | Kurumsal başvuru | `/corporate/apply` | `CorporateApplicationPage.jsx` |
@@ -639,6 +649,8 @@ Kaynak: `src/App.jsx` satır 56–117
 /stories             → SuccessStoriesPage
 /blog                → BlogPage
 /blog/:id            → BlogPostPage
+/online-diyetisyen   → ServiceLandingPage (para sayfası — SEO)
+/online-kocluk       → ServiceLandingPage (para sayfası — SEO)
 /team/coaches        → TeamListPage (koçlar)
 /team/dietitians     → TeamListPage (diyetisyenler)
 /team/doctors        → TeamListPage (doktorlar)
@@ -659,7 +671,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Ana Sayfa | doğrudan | `/` |
 | Üyelikler | doğrudan | `/membership` |
 | Kurumsal | doğrudan | `/corporate` — başvuru sayfada CTA |
-| **Keşfet** | dropdown | Hakkımızda (`/hakkimizda`), Başarı Hikayeleri (`/stories`), Blog (`/blog`) |
+| **Keşfet** | dropdown | Online Diyetisyen, Online Koçluk, Hakkımızda, Başarı Hikayeleri, Blog |
 | Kadromuz | dropdown | Koçlar, Diyetisyenler, Doktorlar + **Kadromuza Katıl** footer |
 | Destek | doğrudan | yalnız giriş yapmış üyeler |
 
@@ -815,7 +827,7 @@ Kaynak: `src/App.jsx` satır 56–117
 | Dosya | Export |
 |-------|--------|
 | `brand.js` | `BRAND`, `ADMIN_CREDENTIALS`, `BRAND.assets` (logo, logoWebp, mark, ogImage) |
-| `seo.js` | `SEO`, `PAGE_SEO`, `getSiteUrl`, JSON-LD builder'ları |
+| `seo.js` | `SEO`, `PAGE_SEO`, `getSiteUrl`, JSON-LD builder'ları (`buildServiceSchema` dahil) |
 | `videoCall.js` | `VIDEO_CALL_CONFIG`, `buildRoomUrl`, `memberCallPath`, `staffCallPath`, `SESSION_TYPE_META` |
 | `testPayment.js` | `TEST_CARD`, `validateTestPayment` |
 
@@ -916,6 +928,8 @@ BlogPage.jsx
 BlogPostPage.jsx
 StaffProfilePage.jsx
 TeamListPage.jsx                ← /team/coaches|dietitians|doctors (role prop ile)
+ServiceLandingPage.jsx          ← /online-diyetisyen|online-kocluk (`src/pages/services/`)
+seoServiceContent.js            ← para sayfası metin + FAQ + prerender gövdesi
 StaffApplicationPage.jsx        ← /team/apply (kadro başvurusu)
 CorporatePage.jsx               ← /corporate
 CorporateApplicationPage.jsx    ← /corporate/apply
@@ -1117,8 +1131,11 @@ Kaynak: `.env.example`
 | Rol kontrolü | `src/components/auth/RequireAuth.jsx` |
 | SEO meta / canonical | `src/components/seo/SeoHead.jsx` + `src/config/seo.js` |
 | Sayfa bazlı SEO | `src/config/seo.js` → `PAGE_SEO` |
+| Para sayfaları (ticari SEO) | `/online-diyetisyen`, `/online-kocluk` → `ServiceLandingPage.jsx` + `seoServiceContent.js` |
+| SEO prerender (build) | `scripts/prerender-seo.mjs` — `npm run build` sonrası |
 | Dinamik SEO (blog/kadro) | `BlogPostPage.jsx`, `StaffProfilePage.jsx` |
 | Sitemap | `api/sitemap.js` → `/sitemap.xml` |
+| SEO ops checklist | `scripts/seo-offpage-checklist.json`, `scripts/seo-baseline.json` |
 | robots.txt | `public/robots.txt` |
 | Open Graph görseli | `public/og-image.png` — `npm run og:image` |
 | Site logosu | `public/brand-logo.png` — `BrandLogo.jsx` |
@@ -1703,47 +1720,52 @@ bilgisi taşınır). Telegram hatası ödeme akışını **etkilemez** (try/catc
 
 ---
 
-## 23. SEO Altyapısı (2026-06-22)
+## 23. SEO Altyapısı (2026-06-22 · güncel 2026-07-19)
 
 ### Genel
-React SPA olduğu için meta etiketleri istemci tarafında `SeoHead` bileşeni ile güncellenir. Google JS render destekler; ilk HTML'de de temel meta `index.html` içinde mevcuttur.
+React SPA: meta etiketleri istemci tarafında `SeoHead` ile güncellenir. **2026-07-19:** kritik public sayfalar build sonrası `scripts/prerender-seo.mjs` ile HTML shell alır — Googlebot JS’siz ilk yanıtta doğru title / canonical / H1 görür. Vercel static dosyayı rewrite’tan önce servis eder.
 
 ### Dosyalar
 
 | Dosya | Görev |
 |-------|-------|
-| `src/config/seo.js` | Site URL, varsayılan meta, `PAGE_SEO` rotaları, JSON-LD builder'ları |
-| `src/components/seo/SeoHead.jsx` | title, description, keywords, canonical, OG, Twitter Card, robots |
-| `src/components/seo/PublicRouteSeo.jsx` | PublicLayout'ta statik rotalar için otomatik meta |
-| `src/components/seo/JsonLd.jsx` | Yapılandırılmış veri script enjeksiyonu |
-| `src/components/seo/NoIndexHead.jsx` | Üye/staff/admin/video panelleri → `noindex, nofollow` |
-| `public/robots.txt` | Crawler kuralları + sitemap referansı |
-| `public/og-image.png` | Sosyal paylaşım görseli (1200×630) — `og:image` meta |
-| `public/brand-logo.png` | Yatay logo — navbar, giriş (`BrandLogo.jsx`) |
-| `public/brand-mark.png` | İkon karesi — favicon, manifest, JSON-LD |
-| `public/brand-logo-alt.png` | Logo kaynağı — değiştir → `npm run og:image` |
-| `scripts/generate-og-image.mjs` | Tüm marka PNG'lerini üretir |
-| `§24 SEO + .env.example` | Search Console + sitemap + OG kurulum rehberi |
-| `public/site.webmanifest` | PWA-lite manifest |
-| `api/sitemap.js` | Dinamik XML sitemap (blog + kadro profilleri Supabase'den) |
+| `src/config/seo.js` | Site URL, `PAGE_SEO`, JSON-LD (`buildServiceSchema`, FAQ, Organization, …) |
+| `src/data/seoServiceContent.js` | Para sayfası metin + FAQ (prerender da import eder) |
+| `src/pages/services/ServiceLandingPage.jsx` | `/online-diyetisyen`, `/online-kocluk` UI |
+| `public/services/*.webp` | Para sayfası özel hero görselleri (kadro hero’larından ayrı) |
+| `src/components/seo/SeoHead.jsx` | title, description, keywords, canonical, OG, Twitter, robots |
+| `src/components/seo/PublicRouteSeo.jsx` | PublicLayout statik rota meta |
+| `src/components/seo/JsonLd.jsx` | Yapılandırılmış veri |
+| `src/components/seo/NoIndexHead.jsx` | Panel → `noindex` |
+| `public/robots.txt` | Allow service URL’ler + sitemap |
+| `api/sitemap.js` | Dinamik XML — static her zaman 200; blog + kadro eklenir |
+| `scripts/prerender-seo.mjs` | Build sonrası SEO HTML shell |
+| `scripts/seo-offpage-checklist.json` | GSC / off-page ops checklist |
+| `scripts/seo-baseline.json` | 2026-07-19 crawl baseline |
+| `public/og-image.png` | OG 1200×630 |
+| `scripts/generate-og-image.mjs` | Marka PNG üretimi |
 
 ### Sayfa SEO eşlemesi
 
 | Rota | Meta kaynağı | JSON-LD |
 |------|--------------|---------|
-| `/` | `PAGE_SEO['/']` + `PublicRouteSeo` | Organization, WebSite, FAQPage (`LandingPage`) |
-| `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/*` | `PAGE_SEO` | ItemList (`BlogPage`, `TeamListPage`) |
-| `/hakkimizda` | `PAGE_SEO['/hakkimizda']` | Organization + AboutPage (`AboutPage.jsx`) |
-| `/blog/:id` | `BlogPostPage` → `SeoHead` | Article + BreadcrumbList |
-| `/team/:id` | `StaffProfilePage` → `SeoHead` | Person + BreadcrumbList |
+| `/` | `PAGE_SEO['/']` + `PublicRouteSeo` | Organization, WebSite, FAQPage |
+| `/online-diyetisyen`, `/online-kocluk` | `PAGE_SEO` + `ServiceLandingPage` | Service + Offer, FAQPage, BreadcrumbList |
+| `/membership`, `/onboarding`, `/stories`, `/blog`, `/team/coaches|dietitians|doctors` | `PAGE_SEO` | ItemList (blog/kadro listeleri) |
+| `/hakkimizda` | `PAGE_SEO` | Organization + AboutPage |
+| `/blog/:id` | `BlogPostPage` | Article + BreadcrumbList |
+| `/team/:slug` | `StaffProfilePage` | Person + BreadcrumbList |
 | `/login`, `/forgot-password` | `PAGE_SEO` | `noindex` |
-| `*` (404) | `NotFoundPage` | `noindex` |
-| `/dashboard`, `/admin/*`, `/staff/*`, `/call/*` | `NoIndexHead` | `noindex` |
+| Panel (`/dashboard`, `/admin/*`, `/staff/*`, `/call/*`) | `NoIndexHead` | `noindex` |
+
+**Not:** `TeamListPage` yalnızca kadro kart grid’i gösterir — uzun SEO intro paragrafı **yok** (2026-07-19 kaldırıldı). Ticari içerik para sayfalarında.
 
 ### Sitemap & robots
-- **URL:** `https://ALANADINIZ.com/sitemap.xml` (`vercel.json` rewrite → `api/sitemap.js`)
-- Statik rotalar + Supabase `posts` (published) + `staff` (active) otomatik eklenir.
-- `robots.txt` panel rotalarını `Disallow` eder.
+- **URL:** `https://www.yeniform.com/sitemap.xml`
+- Static: `/`, service URL’ler, membership, blog, team listeleri, legal canonical’ler
+- Dynamic: `posts` (published) + `staff` (active); slug `staffPublicSlug` (placeholder `doktor-doktor` engelli)
+- Redirect duplicate (`/kvkk`, `/privacy`, `/terms`) sitemap’te **yok**
+- `robots.txt` panel + `/api/` Disallow; service URL Allow
 
 ### Gerekli env
 ```
@@ -1751,94 +1773,61 @@ VITE_SITE_URL=https://www.yeniform.com   # canonical + OG (sonunda / yok)
 APP_URL=https://www.yeniform.com         # sitemap sunucu yedeği
 ```
 
-**Canlı site:** https://www.yeniform.com (`yeniform.com` → `www` yönlendirmesi)
+**Canlı:** https://www.yeniform.com
 
-### Production checklist (manuel)
-1. ~~Vercel'e `VITE_SITE_URL` ve `APP_URL` ekleyin~~ ✅ `www.yeniform.com` (3 ortam)
-2. ~~Google Search Console property + sitemap~~ ✅ 2026-06-23
-3. ~~Ana sayfa dizine ekleme isteği~~ ✅ 2026-06-23
-4. ~~Blog seed (5 yazı)~~ ✅ sitemap'te doğrulandı
-5. OG debugger testi (Facebook + LinkedIn) — **bekliyor**
-6. Search Console sitemap “Başarılı” — **24–48 saat bekle**
-7. GA4 measurement ID → `index.html` (opsiyonel — ID gerekli)
-8. `src/config/brand.js` → `socialUrls` (opsiyonel — URL'ler gerekli)
-9. Kadro fotoğrafları + blog içerik kalitesi (devam eden)
+### Build
+```
+npm run build   # vite build && node scripts/prerender-seo.mjs
+```
+Prerender rotaları: `/`, `/online-diyetisyen`, `/online-kocluk`, `/membership`, `/hakkimizda`, `/team/dietitians`, `/team/coaches`, `/blog`
 
 ### Erişilebilirlik (SEO ile ilişkili)
-- `PublicLayout`: skip link (`#main-content`), `<main>`, nav `aria-label`
-- Hero fallback görseline anlamlı `alt` metni
-
-### Değiştirilen/Eklenen Dosyalar (§23)
-- `src/config/seo.js`, `src/components/seo/*` (4 dosya)
-- `index.html`, `vercel.json`, `vite.config.js` (sitemap dev rewrite)
-- `public/robots.txt`, `public/site.webmanifest` (not: `og-image.svg` §35.4'te silindi — OG artık programatik üretiliyor)
-- `api/sitemap.js`
-- `src/components/layout/PublicLayout.jsx`, `AppShell.jsx`, `AdminShell.jsx`, `StaffShell.jsx`
-- `src/pages/LandingPage.jsx`, `BlogPostPage.jsx`, `StaffProfilePage.jsx`, `NotFoundPage.jsx`, `VideoCallPage.jsx`
-- `.env.example`
+- `PublicLayout`: skip link, `<main>`, nav `aria-label`
+- Service hero: `sr-only` alt; görsel `aria-hidden` + dekoratif
 
 ---
 
-## 24. SEO Operasyon Durumu (2026-06-23 — canlı denetim)
+## 24. SEO Operasyon Durumu (2026-07-19)
 
-### Tamamlanan (teknik + manuel + doğrulandı)
+### Tamamlanan (kod + deploy)
 
 | Alan | Durum | Not |
 |------|--------|-----|
-| Meta / canonical / OG | ✅ Kod + canlı | `www.yeniform.com` |
-| `robots.txt` + `sitemap.xml` | ✅ Canlı | **15 URL** (8 statik + 5 blog + 2 kadro) |
-| Vercel `VITE_SITE_URL` + `APP_URL` | ✅ | Production, Preview, Development |
-| Yerel `.env.local` SEO env | ✅ | Aynı canonical URL |
-| Search Console doğrulama | ✅ | Turhost DNS TXT |
-| Sitemap gönderimi | ✅ | Durum “Başarılı” için 24–48 saat bekle |
-| Ana sayfa dizin isteği | ✅ | URL denetimi |
-| Panel `noindex` | ✅ | dashboard, admin, staff, call |
-| JSON-LD | ✅ | Organization, WebSite, FAQ, Article, Person, Breadcrumb, ItemList |
-| `public/favicon.svg` | ⚠️ Eski YF ikonu — artık `favicon-32.png` kullanılıyor |
-| `public/og-image.png` | ✅ | Sosyal paylaşım (1200×630, sade logo) |
-| `public/brand-logo.png` | ✅ | Navbar + JSON-LD Organization logo |
-| `public/brand-mark.png` | ✅ | Favicon + manifest |
-| BrandLogo bileşeni | ✅ | `brand-logo.png` kullanıyor |
-| Blog seed (5 yazı) | ✅ | Supabase + sitemap |
-| `yeniform.com` → `www` | ✅ | 308 redirect |
+| Para sayfaları | ✅ Canlı | `/online-diyetisyen`, `/online-kocluk` |
+| Özel hero WebP | ✅ | `public/services/online-*.webp` |
+| Prerender shells | ✅ | Build pipeline |
+| Sitemap service URL + dayanıklılık | ✅ | 500 yerine static fallback |
+| Internal link (nav/footer/landing/membership) | ✅ | Keşfet + footer |
+| Blog AI cluster | ✅ | `_ai-prompts.js` |
+| Search Console property | ✅ | DNS TXT (2026-06) |
+| Panel `noindex` | ✅ | |
+| JSON-LD Service/FAQ | ✅ | Para sayfaları |
+| GA4 Consent Mode | ✅ | `ga4Loader.js` — ID: `brand.js` / env |
 
-### Acil — yapılacaklar (öncelik sırası)
+### Sizin yapılacaklar (öncelik)
 
-| # | Görev | Kim | Dosya / yer |
-|---|--------|-----|-------------|
-| 1 | OG debugger testi | Siz (manuel) | Facebook + LinkedIn → `https://www.yeniform.com` |
-| 2 | Sitemap “Başarılı” bekle / kontrol | Siz | Search Console → Site haritaları |
-| 3 | Kadro fotoğrafları (eksik profiller) | Admin | `/admin/staff` |
-| 4 | Haftalık Search Console kontrolü | Siz | Sayfalar, site haritaları |
-| 5 | GA4 Measurement ID verin | Siz → agent | `index.html` |
-| 6 | Sosyal medya URL'leri verin | Siz → agent | `src/config/brand.js` → `socialUrls` |
+| # | Görev | Nerede |
+|---|--------|--------|
+| 1 | Sitemap yeniden gönder / “Başarılı” | GSC → Site haritaları → `sitemap.xml` |
+| 2 | İndekslemeyi iste | GSC URL Inspection → `/online-diyetisyen`, `/online-kocluk` |
+| 3 | Baseline not | GSC Performans: `online diyetisyen`, `online koçluk`, `online diyet`, `online spor koçu`, `yeni form` |
+| 4 | Kadro E-E-A-T | Admin → Staff — bio, eğitim, sertifika, foto |
+| 5 | Sosyal paylaşım | Instagram/LinkedIn → iki service URL |
+| 6 | Haftalık KPI (4–8 hafta) | Impression / konum / indeks durumu |
+| 7 | OG debugger (opsiyonel) | Facebook + LinkedIn |
 
-### Opsiyonel / iyileştirme
+Checklist dosyası: `scripts/seo-offpage-checklist.json`
+
+### Opsiyonel
 
 | Görev | Nerede |
 |-------|--------|
-| `public/brand-logo.png` + `npm run og:image` | Script `favicon.svg` yedek kullanır |
-| Blog içerik kalitesi (800+ kelime) | `/admin/blog` |
-| Başarı hikayesi artırma | `/admin/content` |
-| Backlink / sosyal medya paylaşımı | Dış kanal |
-| SSR / prerender (ileri seviye) | Vite SSR veya prerender plugin — şu an SPA |
+| Blog pillar iç link kontrolü | `/admin/blog` — özellikle `online-kocluk-ve-diyetisyen-destegi-neden-ise-yarar` |
+| Başarı hikâyesi artırma | `/admin/content` |
+| Kaliteli backlink / mention | Dış kanal (spam dizin yok) |
 
-### Supabase içerik snapshot (2026-06-23 — sitemap doğrulaması)
-
-| Kaynak | Sayı | SEO notu |
-|--------|------|----------|
-| Yayınlanmış blog | 5 | Seed uygulandı — içerik uzunluğu/anahtar kelime optimizasyonu devam |
-| Aktif kadro | 2 | Sitemap'te profil URL'leri mevcut |
-| FAQ | 6 | Landing JSON-LD'de kullanılıyor |
-| Onaylı başarı hikayesi | 5 | `/stories` sayfasında |
-
-### Kod değişiklikleri (2026-06-23 SEO denetimi)
-
-- `public/og-image.png` — canlı siteden repoya eklendi (deploy kaybı riski giderildi)
-- `scripts/generate-og-image.mjs` — `brand-logo.png` yoksa `favicon.svg` yedek
-- `§24 SEO + .env.example`, `bastaki Acik checklist` — canlı denetim sonuçları
-
-Detaylı kurulum: `§24 SEO + .env.example`
+### Gerçekçi beklenti
+“Online diyetisyen / online koçluk” rekabetçi; meta tek başına 1. sayfa getirmez. Sıra: indeks → E-E-A-T → off-page → 4–8 hafta GSC.
 
 ---
 
