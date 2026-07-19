@@ -3,6 +3,8 @@
  * Basic süre: bugün → freeTrialExpiresAt (48s deneme).
  */
 
+import { guardNutritionMeals } from './coaching/nutritionGuard.js'
+
 export const AI_BASIC_SOURCE = 'ai_basic'
 export const AI_EKO_SOURCE = 'ai_eko'
 export const STAFF_NAME = 'Yeni Form'
@@ -410,8 +412,57 @@ export function toCandidateRows(exercises = []) {
   }))
 }
 
+function normalizeExerciseSpecs(rawList, exercisesById, candidateIds) {
+  return (Array.isArray(rawList) ? rawList : [])
+    .map((e) => ({
+      exerciseId: String(e.exerciseId || e.id || '').trim(),
+      amountType: e.amountType === 'duration' ? 'duration' : 'reps',
+      amount: Math.min(120, Math.max(1, Number(e.amount) || (e.amountType === 'duration' ? 30 : 12))),
+      durationUnit: e.durationUnit === 'dk' ? 'dk' : 'sn',
+      note: String(e.note || '').slice(0, 120),
+      block: e.block || '',
+      pattern: e.pattern || '',
+    }))
+    .filter((e) => e.exerciseId && (candidateIds.has(e.exerciseId) || exercisesById[e.exerciseId]))
+    .slice(0, 10)
+}
+
+function hydrateEntries(specs, exercisesById, sessionStart, sessionEnd) {
+  return specs.map((spec, i) => {
+    const ex = exercisesById[spec.exerciseId]
+    if (!ex) return null
+    return {
+      id: uid('w'),
+      exerciseId: ex.id,
+      exerciseName: ex.name,
+      videoUrl: ex.video_url || ex.videoUrl || '',
+      description: ex.description || '',
+      amountType: spec.amountType,
+      amount: spec.amount,
+      durationUnit: spec.durationUnit,
+      note: spec.note,
+      block: spec.block || undefined,
+      pattern: spec.pattern || undefined,
+      start: sessionStart,
+      end: sessionEnd,
+      order: i,
+    }
+  }).filter(Boolean)
+}
+
+function isDateAllowedForWorkout(d, availability, workoutWeekdays) {
+  if (memberHasWorkoutAvailability(availability)) {
+    return isWorkoutAllowedOnDate(d, availability)
+  }
+  if (Array.isArray(workoutWeekdays) && workoutWeekdays.length) {
+    return workoutWeekdays.includes(d.getDay())
+  }
+  return true
+}
+
 /**
  * AI program JSON çıktısını doğrula; kütüphaneden hydrate et; program data payload’ları üret.
+ * `coachedWorkout` varsa egzersiz seçimi Coaching Engine’den gelir (LLM seçmez).
  */
 export function buildValidatedProgramPayloads({
   aiJson,
@@ -426,6 +477,8 @@ export function buildValidatedProgramPayloads({
   buildNutrition = true,
   buildWorkout = true,
   previousDietSummary = '',
+  coachedWorkout = null,
+  healthTest = null,
 }) {
   const len = Math.max(1, Number(cycleLength) || 1)
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
@@ -441,73 +494,76 @@ export function buildValidatedProgramPayloads({
   const endStr = toDateStr(addDaysLocal(parseLocalDate(cycleStartDate), len - 1))
 
   if (buildWorkout) {
-    const sessionDuration = Math.min(90, Math.max(20, Number(workoutRaw.sessionDuration) || 30))
-    const sessionStart = /^\d{2}:\d{2}$/.test(String(workoutRaw.sessionStart || ''))
-      ? workoutRaw.sessionStart
+    const sessionDuration = Math.min(
+      90,
+      Math.max(20, Number(coachedWorkout?.sessionDuration || workoutRaw.sessionDuration) || 30),
+    )
+    const sessionStart = /^\d{2}:\d{2}$/.test(String(coachedWorkout?.sessionStart || workoutRaw.sessionStart || ''))
+      ? String(coachedWorkout?.sessionStart || workoutRaw.sessionStart)
       : '09:00'
     const sessionEnd = addMinutesToTime(sessionStart, sessionDuration)
+    const workoutWeekdays = Array.isArray(coachedWorkout?.workoutWeekdays)
+      ? coachedWorkout.workoutWeekdays
+      : getWorkoutWeekdays(availability)
 
-    let exerciseSpecs = (Array.isArray(workoutRaw.exercises) ? workoutRaw.exercises : [])
-      .map((e) => ({
-        exerciseId: String(e.exerciseId || e.id || '').trim(),
-        amountType: e.amountType === 'duration' ? 'duration' : 'reps',
-        amount: Math.min(120, Math.max(1, Number(e.amount) || (e.amountType === 'duration' ? 30 : 12))),
-        durationUnit: e.durationUnit === 'dk' ? 'dk' : 'sn',
-        note: String(e.note || '').slice(0, 120),
-      }))
-      .filter((e) => e.exerciseId && (candidateIds.has(e.exerciseId) || exercisesById[e.exerciseId]))
+    /** @type {Map<string, object[]>} */
+    const templateEntries = new Map()
+    const templates = Array.isArray(coachedWorkout?.templates) ? coachedWorkout.templates : []
+    const mapping = Array.isArray(coachedWorkout?.mapping) ? coachedWorkout.mapping : []
 
-    if (exerciseSpecs.length < 4) {
-      const fallbackIds = [...candidateIds].slice(0, 6)
-      const have = new Set(exerciseSpecs.map((e) => e.exerciseId))
-      for (const id of fallbackIds) {
-        if (have.has(id)) continue
-        exerciseSpecs.push({
-          exerciseId: id,
-          amountType: 'reps',
-          amount: 12,
-          durationUnit: 'sn',
-          note: '',
-        })
-        if (exerciseSpecs.length >= 6) break
+    if (templates.length) {
+      for (const tpl of templates) {
+        const specs = normalizeExerciseSpecs(tpl.exercises, exercisesById, candidateIds)
+        const entries = hydrateEntries(specs, exercisesById, sessionStart, sessionEnd)
+        if (entries.length) templateEntries.set(tpl.id, entries)
       }
     }
-    exerciseSpecs = exerciseSpecs.slice(0, 10)
 
-    const baseEntries = exerciseSpecs.map((spec, i) => {
-      const ex = exercisesById[spec.exerciseId]
-      if (!ex) return null
-      return {
-        id: uid('w'),
-        exerciseId: ex.id,
-        exerciseName: ex.name,
-        videoUrl: ex.video_url || ex.videoUrl || '',
-        description: ex.description || '',
-        amountType: spec.amountType,
-        amount: spec.amount,
-        durationUnit: spec.durationUnit,
-        note: spec.note,
-        start: sessionStart,
-        end: sessionEnd,
-        order: i,
-      }
-    }).filter(Boolean)
+    let primarySpecs = normalizeExerciseSpecs(
+      coachedWorkout?.exercises || workoutRaw.exercises,
+      exercisesById,
+      candidateIds,
+    )
+    // Not polish from LLM for same ids
+    if (coachedWorkout?.exercises?.length && Array.isArray(workoutRaw.exerciseNotes)) {
+      const noteById = new Map(
+        workoutRaw.exerciseNotes
+          .filter((n) => n?.exerciseId && n?.note)
+          .map((n) => [String(n.exerciseId), String(n.note).slice(0, 120)]),
+      )
+      primarySpecs = primarySpecs.map((s) => ({
+        ...s,
+        note: noteById.get(s.exerciseId) || s.note,
+      }))
+    }
+
+    const baseEntries = templateEntries.size
+      ? (templateEntries.get(templates[0]?.id) || hydrateEntries(primarySpecs, exercisesById, sessionStart, sessionEnd))
+      : hydrateEntries(primarySpecs, exercisesById, sessionStart, sessionEnd)
 
     if (baseEntries.length < 4) {
-      throw new Error('Geçerli kütüphane hareketi yetersiz')
+      throw new Error('Geçerli kütüphane hareketi yetersiz — coaching havuzu veya seçim başarısız')
     }
 
-    const hasAvail = memberHasWorkoutAvailability(availability)
+    const weekdayToTemplate = new Map(
+      mapping.map((m) => [Number(m.weekday), m.templateId]),
+    )
+
+    const canDateFilter = memberHasWorkoutAvailability(availability)
+      || (Array.isArray(workoutWeekdays) && workoutWeekdays.length > 0)
+
     let workoutEntries
     let cycleSameDaily
 
-    if (hasAvail) {
+    if (canDateFilter) {
       cycleSameDaily = false
       workoutEntries = []
       eachDateInCycle(cycleStartDate, len).forEach((d) => {
-        if (!isWorkoutAllowedOnDate(d, availability)) return
+        if (!isDateAllowedForWorkout(d, availability, workoutWeekdays)) return
         const dateStr = toDateStr(d)
-        baseEntries.forEach((base, i) => {
+        const tplId = weekdayToTemplate.get(d.getDay()) || templates[0]?.id
+        const dayEntries = (tplId && templateEntries.get(tplId)) || baseEntries
+        dayEntries.forEach((base, i) => {
           workoutEntries.push({
             ...base,
             id: uid('w'),
@@ -525,10 +581,11 @@ export function buildValidatedProgramPayloads({
       workoutEntries = baseEntries
     }
 
-    const workoutTitle = String(workoutRaw.title || '').trim()
+    const hintDesc = coachedWorkout?.descriptionHints || ''
+    const workoutTitle = String(workoutRaw.title || coachedWorkout?.title || '').trim()
       || `${memberName} — ${len} Günlük Antrenman`
     const workoutDesc = [
-      String(workoutRaw.description || '').trim(),
+      String(workoutRaw.description || '').trim() || hintDesc,
       DISCLAIMER,
     ].filter(Boolean).join(' ')
 
@@ -547,6 +604,16 @@ export function buildValidatedProgramPayloads({
       entries: workoutEntries,
       items: (cycleSameDaily ? baseEntries : workoutEntries.slice(0, baseEntries.length)).map(entryDisplayText),
       source,
+      coaching: coachedWorkout ? {
+        splitType: coachedWorkout.splitType || null,
+        riskLevel: coachedWorkout.riskLevel || null,
+        poolSize: coachedWorkout.poolSize || null,
+        adaptationMode: coachedWorkout.adaptationMode || null,
+        adherenceRate: coachedWorkout.adherenceRate ?? null,
+        volumeScale: coachedWorkout.volumeScale ?? null,
+        deload: coachedWorkout.deload ?? false,
+        explain: coachedWorkout.explain || null,
+      } : null,
     }
   }
 
@@ -581,24 +648,37 @@ export function buildValidatedProgramPayloads({
       }
     })
 
-    const nutritionEntries = MEAL_TYPE_IDS
+    let nutritionMeals = MEAL_TYPE_IDS
       .filter((id) => id !== 'note' && mealByType.has(id))
-      .map((id) => {
-        const m = mealByType.get(id)
-        return {
-          id: uid('n'),
-          mealType: m.mealType,
-          name: m.name,
-          note: m.note,
-          start: m.start,
-        }
-      })
+      .map((id) => mealByType.get(id))
+
+    const guarded = guardNutritionMeals(nutritionMeals, {
+      healthTest: healthTest || {},
+      dailyCalories,
+    })
+    nutritionMeals = guarded.meals
+
+    const nutritionEntries = nutritionMeals.map((m) => ({
+      id: uid('n'),
+      mealType: m.mealType,
+      name: m.name,
+      note: m.note,
+      start: m.start,
+    }))
 
     const nutritionTitle = String(nutritionRaw.title || '').trim()
       || `${memberName} — ${len} Günlük Beslenme Listesi`
+    const kcalNote = guarded.targetKcal && guarded.dailyKcal
+      ? `Günlük tahmini ~${guarded.dailyKcal} kcal (hedef ~${guarded.targetKcal}).`
+      : ''
+    const proteinHint = coachedWorkout?.proteinGDay
+      ? `Protein hedefi ~${coachedWorkout.proteinGDay} g/gün.`
+      : ''
     const nutritionDesc = [
-      calLine,
+      calLine || kcalNote,
+      proteinHint,
       previousDietSummary ? 'Önceki liste dikkate alındı.' : '',
+      guarded.allergyFlags?.length ? 'Alerji/kısıtlara göre öğünler güvenli alternatiflerle uyumlu hale getirildi.' : '',
       String(nutritionRaw.description || '').trim(),
       DISCLAIMER,
     ].filter(Boolean).join(' ')
@@ -617,6 +697,12 @@ export function buildValidatedProgramPayloads({
       entries: nutritionEntries,
       items: nutritionEntries.map((e) => mealDisplayText(e, len)),
       source,
+      nutritionGuard: {
+        dailyKcal: guarded.dailyKcal || null,
+        targetKcal: guarded.targetKcal || null,
+        inBand: guarded.inBand,
+        allergyFlags: guarded.allergyFlags || [],
+      },
     }
   }
 
@@ -630,26 +716,30 @@ export function buildValidatedProgramPayloads({
 }
 
 export function programInsertRow(memberId, payload) {
+  const data = {
+    type: payload.type,
+    memberName: payload.memberName || '',
+    staffName: payload.staffName || STAFF_NAME,
+    title: payload.title,
+    description: payload.description || '',
+    items: payload.items || [],
+    entries: payload.entries || [],
+    scheduleType: payload.scheduleType || null,
+    cycleStartDate: payload.cycleStartDate || null,
+    cycleLength: payload.cycleLength || null,
+    cycleLoop: payload.cycleLoop ?? null,
+    cycleSameDaily: payload.cycleSameDaily ?? null,
+    sessionDuration: payload.sessionDuration || null,
+    source: payload.source || AI_BASIC_SOURCE,
+    createdAt: new Date().toISOString(),
+  }
+  // Opsiyonel motor meta — UI kırılmaz; progresyon/debug için
+  if (payload.coaching) data.coaching = payload.coaching
+  if (payload.nutritionGuard) data.nutritionGuard = payload.nutritionGuard
   return {
     member_id: memberId,
     staff_id: null,
-    data: {
-      type: payload.type,
-      memberName: payload.memberName || '',
-      staffName: payload.staffName || STAFF_NAME,
-      title: payload.title,
-      description: payload.description || '',
-      items: payload.items || [],
-      entries: payload.entries || [],
-      scheduleType: payload.scheduleType || null,
-      cycleStartDate: payload.cycleStartDate || null,
-      cycleLength: payload.cycleLength || null,
-      cycleLoop: payload.cycleLoop ?? null,
-      cycleSameDaily: payload.cycleSameDaily ?? null,
-      sessionDuration: payload.sessionDuration || null,
-      source: payload.source || AI_BASIC_SOURCE,
-      createdAt: new Date().toISOString(),
-    },
+    data,
   }
 }
 

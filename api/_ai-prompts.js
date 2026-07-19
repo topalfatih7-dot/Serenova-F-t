@@ -131,68 +131,70 @@ function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines
   return lines.join('\n')
 }
 
-const PROGRAM_ANALYSIS_RULES = `ANALİZ (önce tüm üye verisini değerlendir, sonra JSON yaz):
-1) Boy, kilo, BMI, hedef kilo, yaş, cinsiyet ve kalori bandını birlikte yorumla; eksik alanda uydurma yapma — güvenli beginner varsay.
-2) Sağlık testi özetindeki yaralanma, ağrı bölgeleri, kronik durum, ilaç, kontrendikasyon, gebelik ve doktor onayı kısıtlarını çıkar; bunlara aykırı hareket seçme.
-3) Fitness seviyesi, aktivite sıklığı, ekipman/yer tercihi ve müsaitliğe göre volume, seans süresi ve zorluk ayarla (beginner → düşük volume).
-4) Hedefler (kilo/kas/dayanıklılık/alışkanlık) + BMI kategorisine göre antrenman odağı ve kalori bandını hizala.
-5) Beslenme: alerji, yeme alışkanlıkları ve tercihlere uy; öğün kcal toplamı önerilen kaloriye ±15% yakın olsun.
-6) Uyku/stres/enerji düşükse volume ve tempo agresif olmasın; toparlanmayı gözet.`
+const PROGRAM_ANALYSIS_RULES = `ANALİZ (metin üretirken dikkate al; hareket SEÇME):
+1) Boy, kilo, BMI, hedef kilo, yaş, cinsiyet ve kalori bandını birlikte yorumla; eksik alanda uydurma yapma.
+2) Sağlık kısıtlarını description’da nazikçe yansıt; tıbbi teşhis koyma.
+3) Beslenme: alerji, yeme alışkanlıkları ve tercihlere uy; öğün kcal toplamı önerilen kaloriye ±15% yakın olsun.
+4) Antrenman hareketleri ZATEN seçilmiştir — exerciseId ekleme/değiştirme/uydurma.`
 
 // ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
-export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
+export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen metin asistanısın.
 ${BRAND_CONTEXT}
-Üyenin profili, sağlık testi ve varsa analiz özetindeki TÜM bilgileri kullanarak uygulanabilir bir antrenman ve bir beslenme listesi hazırla.
+Antrenman hareketleri Coaching Engine tarafından seçilmiştir. Senin görevin: başlık/açıklama yazmak, isteğe bağlı kısa form notları ve beslenme listesi üretmek.
 
 ${PROGRAM_ANALYSIS_RULES}
 
 KURALLAR:
-- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
-- Kütüphane dışı hareket UYDURMA.
-- Her hareket için note alanında kısa form/tempo veya dikkat notu yaz (max ~80 karakter).
-- Beslenme: Türk mutfağı, pratik ev yemekleri; kahvaltı + sabah ara + öğle + öğleden sonra ara + akşam + gece ara.
-- Her öğün name alanında: yiyecekler + yaklaşık porsiyon + o öğünün tahmini kcal (ör. "2 yumurta, 40g yulaf, domates (~350 kcal)").
-- Günlük öğün kcal toplamı kalori hedefine yaklaşık (±15%) uyumlu olsun.
+- Verilen FIXED_WORKOUT listesine yeni hareket EKLEME; id değiştirme.
+- exerciseNotes yalnızca listedeki exerciseId’ler için; max ~80 karakter.
+- Beslenme: Türk mutfağı, pratik ev yemekleri; 6 öğün tipi.
+- Her öğün name: yiyecekler + porsiyon + tahmini kcal.
 - Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildBasicProgramInstruction({
   profile,
   healthTestSummary = '',
   dailyCalories = null,
-  candidates = [],
   cycleLength = 2,
+  fixedWorkout = null,
+  coachingSummary = '',
+  nutritionConstraintsBlock = '',
 }) {
-  const candidateLines = candidates
-    .slice(0, 60)
-    .map((c) => `- ${c.id} | ${c.name} | ${c.bodyPart || '—'} | ${c.difficulty || 'beginner'} | ${c.equipment || '—'} | ${c.targetMuscle || '—'}`)
+  const fixedLines = (fixedWorkout?.exercises || [])
+    .map((e, i) => `${i + 1}. ${e.exerciseId} | ${e.exerciseName || ''} | ${e.amountType}/${e.amount} | ${e.note || ''}`)
     .join('\n')
 
-  return `ÜYE PROFİLİ (bu verilerin tamamını analize al):
+  return `ÜYE PROFİLİ:
 ${formatMemberProfileBlock(profile, dailyCalories, [
     `- Program süresi: ${cycleLength} gün (ücretsiz deneme bitişine kadar)`,
   ])}
 
-SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir; boş alanları yok say):
+SAĞLIK TESTİ ÖZETİ:
 ${healthTestSummary || '—'}
 
-HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
-${candidateLines || '(liste boş)'}
+COACHING ENGINE ÖZETİ:
+${coachingSummary || '—'}
+
+${nutritionConstraintsBlock || ''}
+
+FIXED_WORKOUT (değiştirme; yalnızca metin zenginleştir):
+sessionDuration=${fixedWorkout?.sessionDuration || 30}
+sessionStart=${fixedWorkout?.sessionStart || '09:00'}
+${fixedLines || '(liste boş)'}
 
 GÖREV:
-- Önce profil + sağlık özetini içsel olarak sentezle; sonra 5–8 güvenli hareket seç; vücut bölgelerini dengeli dağıt.
-- description: 2–3 cümle — hedef, BMI/kalori yaklaşımı ve kısıtlara nasıl uyulduğu.
-- Beslenmede 6 öğün tipi doldur; name içinde porsiyon + ~kcal yaz; alerji/tercihlere uy.
-- Öğün notlarında (note) kısa pratik ipucu verebilirsin.
+- workout.title kısa ve profesyonel (örn. "3 Günlük Ev Antrenmanı — Yağ Kaybı Odaklı").
+- description: 2–3 cümle; hedef, neden bu yapı, güvenlik/kısıt notu; abartılı vaat yok.
+- İstersen exerciseNotes ile form ipucu (aynı exerciseId; set/RPE zaten notta olabilir — çelişme).
+- Beslenmede 6 öğün; name içinde porsiyon + ~kcal; protein hedefine yaklaş; alerji/tercihlere uy; pratik Türk mutfağı.
 
 SADECE şu JSON şemasında yanıt ver:
 {
   "workout": {
     "title": "kısa program başlığı",
     "description": "2-3 cümle: hedef + güvenlik notu",
-    "sessionDuration": 30,
-    "sessionStart": "09:00",
-    "exercises": [
-      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "kısa form notu" }
+    "exerciseNotes": [
+      { "exerciseId": "uuid", "note": "kısa form notu" }
     ]
   },
   "nutrition": {
@@ -211,78 +213,73 @@ SADECE şu JSON şemasında yanıt ver:
 }
 
 export const BASIC_PROGRAM_CONFIG = {
-  temperature: 0.35,
+  temperature: 0.25,
   maxOutputTokens: 3500,
   responseMimeType: 'application/json',
 }
 
 // ─── Eko paket: 15g diyet + 30g antrenman ────────────────────────────
-export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun deneyimli koç + diyetisyen AI asistanısın.
+export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen metin asistanısın.
 ${BRAND_CONTEXT}
-Eko paket üyesi için profil, sağlık testi ve varsa analiz özetindeki TÜM bilgileri kullanarak uygulanabilir antrenman ve/veya beslenme listesi hazırla.
+Eko paket için antrenman hareketleri Coaching Engine tarafından seçilmiş olabilir. Senin görevin metin ve/veya beslenme üretmek.
 
 ${PROGRAM_ANALYSIS_RULES}
-7) Önceki diyet listesi varsa aynı kalori bandında çeşitlendir; süreklilik ve tercih/alerji uyumunu koru, birebir kopyalama.
+7) Önceki diyet listesi varsa aynı kalori bandında çeşitlendir; birebir kopyalama.
 
 KURALLAR:
-- Antrenman hareketlerini YALNIZCA verilen kütüphane listesinden seç; exerciseId listedeki id olsun.
-- Kütüphane dışı hareket UYDURMA.
-- Her hareket için note alanında kısa form/tempo veya dikkat notu yaz.
-- Beslenme: Türk mutfağı; pratik ev yemekleri; 6 öğün tipi.
-- Her öğün name: yiyecekler + porsiyon + tahmini kcal; günlük toplam kalori hedefine (±15%) yakın olsun.
+- FIXED_WORKOUT varsa hareket ekleme/id değiştirme.
+- Beslenme: Türk mutfağı; 6 öğün; porsiyon + ~kcal; kalori ±15%.
 - Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildEkoProgramInstruction({
   profile,
   healthTestSummary = '',
   dailyCalories = null,
-  candidates = [],
   dietDays = 15,
   workoutDays = 30,
   buildNutrition = true,
   buildWorkout = true,
   previousDietSummary = '',
+  fixedWorkout = null,
+  coachingSummary = '',
+  nutritionConstraintsBlock = '',
 }) {
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
-  const candidateLines = candidates
-    .slice(0, 60)
-    .map((c) => `- ${c.id} | ${c.name} | ${c.bodyPart || '—'} | ${c.difficulty || 'beginner'} | ${c.equipment || '—'} | ${c.targetMuscle || '—'}`)
+  const fixedLines = (fixedWorkout?.exercises || [])
+    .map((e, i) => `${i + 1}. ${e.exerciseId} | ${e.exerciseName || ''} | ${e.amountType}/${e.amount} | ${e.note || ''}`)
     .join('\n')
 
   const parts = []
   if (buildWorkout) {
-    parts.push(`ANTRENMAN (${workoutDays} gün tekrarlanacak şablon): 5–8 kütüphane hareketi; BMI/hedef/kısıtlara uygun; dengeli vücut bölgeleri; her harekette note.`)
+    parts.push(`ANTRENMAN METNİ (${workoutDays} gün): title + description; FIXED_WORKOUT’u değiştirme; isteğe bağlı exerciseNotes.`)
+    parts.push(`COACHING: ${coachingSummary || '—'}`)
+    parts.push(`FIXED_WORKOUT:\n${fixedLines || '(yok)'}`)
   }
   if (buildNutrition) {
-    parts.push(`BESLENME (${dietDays} gün her gün aynı şablon): 6 öğün; name içinde porsiyon + ~kcal; günlük toplam ~${cal || 'hedef'} kcal; alerji/tercihlere uy.`)
+    parts.push(`BESLENME (${dietDays} gün): 6 öğün; ~${cal || 'hedef'} kcal; protein hedefine ve kısıtlara uy.`)
+    if (nutritionConstraintsBlock) parts.push(nutritionConstraintsBlock)
     if (previousDietSummary) {
-      parts.push(`ÖNCEKİ DİYET LİSTESİ (aynı kalori bandında çeşitlendir, birebir kopyalama):\n${previousDietSummary}`)
+      parts.push(`ÖNCEKİ DİYET (çeşitlendir):\n${previousDietSummary}`)
     }
   }
 
-  return `ÜYE PROFİLİ (bu verilerin tamamını analize al):
+  return `ÜYE PROFİLİ:
 ${formatMemberProfileBlock(profile, dailyCalories)}
 
-SAĞLIK TESTİ ÖZETİ (kısıt ve riskleri önceliklendir; boş alanları yok say):
+SAĞLIK TESTİ ÖZETİ:
 ${healthTestSummary || '—'}
-
-HAREKET KÜTÜPHANESİ (yalnızca bunlardan seç):
-${candidateLines || '(liste boş)'}
 
 GÖREV:
 ${parts.join('\n')}
-- Önce profil + sağlık özetini sentezle; description alanlarında 2–3 cümle ile hedef, kalori/BMI yaklaşımı ve güvenlik notunu özetle.
-- Üretmeyeceğin bölümü null bırak; üreteceğin bölümü eksiksiz doldur.
+- Üretmeyeceğin bölümü null bırak.
 
 SADECE şu JSON şemasında yanıt ver:
 {
   "workout": ${buildWorkout ? `{
     "title": "kısa program başlığı",
     "description": "2-3 cümle: hedef + güvenlik",
-    "sessionDuration": 35,
-    "sessionStart": "09:00",
-    "exercises": [
-      { "exerciseId": "kütüphane-uuid", "amountType": "reps", "amount": 12, "note": "kısa form notu" }
+    "exerciseNotes": [
+      { "exerciseId": "uuid", "note": "kısa form notu" }
     ]
   }` : 'null'},
   "nutrition": ${buildNutrition ? `{
@@ -301,7 +298,7 @@ SADECE şu JSON şemasında yanıt ver:
 }
 
 export const EKO_PROGRAM_CONFIG = {
-  temperature: 0.35,
+  temperature: 0.25,
   maxOutputTokens: 4000,
   responseMimeType: 'application/json',
 }

@@ -27,9 +27,16 @@ import {
   programInsertRow,
   resolveBasicCycleWindow,
   summarizeNutritionProgram,
-  toCandidateRows,
   toDateStr,
 } from './_aiBasicPrograms.js'
+import {
+  buildAthleteProfile,
+  classifyGoals,
+  coachingQueryHints,
+  runCoachingEngine,
+} from './coaching/index.js'
+import { buildNutritionConstraints } from './coaching/nutritionConstraints.js'
+import { logCoachingDecision, persistCoachingState } from './coaching/observability.js'
 import {
   isPaidMembership,
   memberExpirySyncNeedsPersist,
@@ -43,25 +50,43 @@ import {
   OpenAiApiError,
 } from './_openai.js'
 
-export async function loadExerciseCandidates(admin) {
-  let { data, error } = await admin
+const EXERCISE_SELECT = 'id, name, description, body_part, category, difficulty, equipment, target_muscle, locations, video_url, video_pending, requires_machine, metadata'
+
+/**
+ * Profil/coaching ipuçlarına göre geniş aday havuzu (filtreleme engine’de).
+ * @param {object} [profileOrHints] — AthleteProfile veya { difficulties, excludeMachines }
+ */
+export async function loadExerciseCandidates(admin, profileOrHints = null) {
+  const profile = profileOrHints?.experienceLevel
+    ? profileOrHints
+    : null
+  const hints = profile
+    ? coachingQueryHints(profile)
+    : (profileOrHints || { difficulties: ['beginner'], excludeMachines: true })
+
+  let q = admin
     .from('exercises')
-    .select('id, name, description, body_part, category, difficulty, equipment, target_muscle, locations, video_url, video_pending, requires_machine, metadata')
+    .select(EXERCISE_SELECT)
     .eq('video_pending', false)
-    .eq('requires_machine', false)
-    .eq('difficulty', 'beginner')
     .neq('metadata->>importStatus', 'deferred')
+    .in('difficulty', hints.difficulties?.length ? hints.difficulties : ['beginner'])
     .order('name', { ascending: true })
-    .limit(50)
+    .limit(220)
+
+  if (hints.excludeMachines !== false) {
+    q = q.eq('requires_machine', false)
+  }
+
+  let { data, error } = await q
 
   if (error || !data?.length) {
     const fallback = await admin
       .from('exercises')
-      .select('id, name, description, body_part, category, difficulty, equipment, target_muscle, locations, video_url, video_pending, requires_machine, metadata')
+      .select(EXERCISE_SELECT)
       .eq('video_pending', false)
       .neq('metadata->>importStatus', 'deferred')
       .order('name', { ascending: true })
-      .limit(50)
+      .limit(220)
     data = fallback.data || []
     error = fallback.error
   }
@@ -69,6 +94,33 @@ export async function loadExerciseCandidates(admin) {
   if (error) throw new Error(error.message || 'Egzersiz kütüphanesi okunamadı')
   if (!data?.length) throw new Error('Hareket kütüphanesi boş')
   return data
+}
+
+function toCoachedWorkoutPayload(coached) {
+  if (!coached) return null
+  return {
+    sessionDuration: coached.sessionDuration,
+    sessionStart: coached.sessionStart,
+    exercises: coached.primaryExercises,
+    templates: coached.templates.map((t) => ({
+      id: t.id,
+      focus: t.focus,
+      exercises: t.exercises,
+    })),
+    mapping: coached.split.mapping,
+    workoutWeekdays: coached.profile.schedule.workoutWeekdays,
+    descriptionHints: coached.descriptionHints,
+    splitType: coached.split.splitType,
+    riskLevel: coached.risk.level,
+    poolSize: coached.poolSize,
+    adaptationMode: coached.adaptation?.mode || null,
+    adherenceRate: coached.adherence?.rate ?? null,
+    volumeScale: coached.volume?.volumeScale ?? null,
+    deload: coached.volume?.deload ?? false,
+    proteinGDay: coached.nutritionConstraints?.proteinGDay || null,
+    explain: (coached.explain || []).slice(0, 20),
+    title: null,
+  }
 }
 
 function rowToProgram(row) {
@@ -115,25 +167,71 @@ export async function generateBasicPrograms(admin, memberRow) {
     }
   }
 
-  const exercises = await loadExerciseCandidates(admin)
-  const candidates = toCandidateRows(exercises)
-  const candidateIds = new Set(candidates.map((c) => c.id))
-  const exercisesById = Object.fromEntries(exercises.map((ex) => [ex.id, ex]))
-
-  const profile = enrichProfileBasics({
+  const athleteSeed = {
     ...memberData,
     name: memberRow.name,
     gender: memberData.gender,
-  })
-  const dailyCalories = estimateDailyCalories(profile)
+  }
+  const athleteProfile = buildAthleteProfile(athleteSeed)
+  let exercises
+  try {
+    exercises = await loadExerciseCandidates(admin, athleteProfile)
+  } catch (e) {
+    return { ok: false, error: e.message || 'Egzersiz kütüphanesi okunamadı', status: 500 }
+  }
+
+  // Varsa önceki AI antrenman (aynı tablodan) — progresyon için; yeni alan yok
+  const { data: priorRows } = await admin
+    .from('programs')
+    .select('id, data')
+    .eq('member_id', memberRow.id)
+  const priorBasicWorkout = (priorRows || [])
+    .map(rowToProgram)
+    .filter((p) => p.source === AI_BASIC_SOURCE && p.type === 'workout')
+    .sort((a, b) => String(b.cycleStartDate || '').localeCompare(String(a.cycleStartDate || '')))[0]
+
+  const profileEarly = enrichProfileBasics(athleteSeed)
+  const dailyCalories = estimateDailyCalories(profileEarly)
+
+  let coached
+  try {
+    coached = runCoachingEngine(athleteSeed, exercises, {
+      previousWorkout: priorBasicWorkout || null,
+      completedActivities: memberData.completedActivities || {},
+      dailyCalories,
+    })
+  } catch (e) {
+    return { ok: false, error: e.message || 'Coaching engine başarısız', status: 502 }
+  }
+  logCoachingDecision(memberRow.id, coached, { endpoint: 'program-basic' })
+
+  const candidateIds = new Set(exercises.map((ex) => ex.id))
+  const exercisesById = Object.fromEntries(exercises.map((ex) => [ex.id, ex]))
+  // Engine’in seçtiği id’lerin hepsi hydrate edilebilsin
+  for (const ex of coached.primaryExercises || []) {
+    candidateIds.add(ex.exerciseId)
+  }
+  for (const tpl of coached.templates || []) {
+    for (const ex of tpl.exercises || []) candidateIds.add(ex.exerciseId)
+  }
+
+  const profile = enrichProfileBasics(athleteSeed)
+  profile.fitnessLevel = coached.fitnessLevel || profile.fitnessLevel
   const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
+  const coachedWorkout = toCoachedWorkoutPayload(coached)
 
   const instruction = buildBasicProgramInstruction({
     profile,
     healthTestSummary,
     dailyCalories,
-    candidates,
     cycleLength: window.cycleLength,
+    fixedWorkout: {
+      sessionDuration: coached.sessionDuration,
+      sessionStart: coached.sessionStart,
+      exercises: coached.primaryExercises,
+    },
+    coachingSummary: coached.explain.slice(0, 12).join(' · '),
+    nutritionConstraintsBlock: coached.nutritionConstraints?.promptBlock || '',
   })
 
   let raw
@@ -177,6 +275,8 @@ export async function generateBasicPrograms(admin, memberRow) {
       source: AI_BASIC_SOURCE,
       buildNutrition: true,
       buildWorkout: true,
+      coachedWorkout,
+      healthTest: memberData.healthTest || {},
     })
   } catch (e) {
     return { ok: false, error: e.message || 'Program doğrulanamadı', status: 502 }
@@ -199,6 +299,11 @@ export async function generateBasicPrograms(admin, memberRow) {
   } catch (e) {
     console.warn('[ai-basic] notify', e?.message || e)
   }
+  try {
+    await persistCoachingState(admin, memberRow.id, memberData, coached, AI_BASIC_SOURCE)
+  } catch (e) {
+    console.warn('[ai-basic] coachingState', e?.message || e)
+  }
 
   return {
     ok: true,
@@ -207,6 +312,11 @@ export async function generateBasicPrograms(admin, memberRow) {
     cycleStartDate: window.startStr,
     cycleEndDate: payloads.endStr,
     dailyCalories,
+    coaching: {
+      split: coached.split?.splitType,
+      adaptation: coached.adaptation?.mode,
+      explain: coached.explain?.slice(0, 12),
+    },
   }
 }
 
@@ -272,21 +382,62 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
     return { ok: true, synced: false, skipped: 'package_ending', error: 'Paket bitişine yeterli gün kalmadı' }
   }
 
-  const exercises = await loadExerciseCandidates(admin)
-  const candidates = toCandidateRows(exercises)
-  const candidateIds = new Set(candidates.map((c) => c.id))
-  const exercisesById = Object.fromEntries(exercises.map((ex) => [ex.id, ex]))
-
-  const profile = enrichProfileBasics({
+  const athleteSeed = {
     ...memberData,
     name: memberRow.name,
     gender: memberData.gender,
-  })
+  }
+  const athleteProfile = buildAthleteProfile(athleteSeed)
+  const profile = enrichProfileBasics(athleteSeed)
   const dailyCalories = estimateDailyCalories(profile)
+
+  let exercises = []
+  let coached = null
+  let coachedWorkout = null
+  if (renewWorkout) {
+    try {
+      exercises = await loadExerciseCandidates(admin, athleteProfile)
+      coached = runCoachingEngine(athleteSeed, exercises, {
+        previousWorkout: lastWorkout || null,
+        completedActivities: memberData.completedActivities || {},
+        dailyCalories,
+      })
+      coachedWorkout = toCoachedWorkoutPayload(coached)
+      logCoachingDecision(memberRow.id, coached, { endpoint: 'program-eko' })
+    } catch (e) {
+      return { ok: false, error: e.message || 'Coaching engine / kütüphane hatası', status: 502 }
+    }
+  } else {
+    exercises = []
+  }
+
+  const candidateIds = new Set(exercises.map((ex) => ex.id))
+  const exercisesById = Object.fromEntries(exercises.map((ex) => [ex.id, ex]))
+  if (coached) {
+    for (const ex of coached.primaryExercises || []) candidateIds.add(ex.exerciseId)
+    for (const tpl of coached.templates || []) {
+      for (const ex of tpl.exercises || []) candidateIds.add(ex.exerciseId)
+    }
+    if (coached.fitnessLevel) profile.fitnessLevel = coached.fitnessLevel
+  }
+
   const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
   const previousDietSummary = lastDiet ? summarizeNutritionProgram(lastDiet) : ''
 
-  // Tek OpenAI (gpt-4.1) çağrısı — her iki tip isteniyorsa; aksi halde ilgili alanlar
+  // Beslenme-only yenilemede de protein/alerji kısıtı üret
+  let nutritionConstraintsBlock = coached?.nutritionConstraints?.promptBlock || ''
+  let nutritionMeta = coached?.nutritionConstraints || null
+  if (renewDiet && !nutritionConstraintsBlock) {
+    const goals = classifyGoals(athleteProfile)
+    nutritionMeta = buildNutritionConstraints(
+      athleteProfile,
+      goals,
+      dailyCalories,
+      { sessionStart: '09:00' },
+    )
+    nutritionConstraintsBlock = nutritionMeta.promptBlock
+  }
+
   const needBoth = renewDiet && renewWorkout
   const maxLenForPrompt = Math.max(dietLen || 0, workoutLen || 0) || EKO_WORKOUT_DAYS
 
@@ -294,12 +445,18 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
     profile,
     healthTestSummary,
     dailyCalories,
-    candidates,
     dietDays: dietLen || EKO_DIET_DAYS,
     workoutDays: workoutLen || EKO_WORKOUT_DAYS,
     buildNutrition: renewDiet,
     buildWorkout: renewWorkout,
     previousDietSummary: renewDiet ? previousDietSummary : '',
+    fixedWorkout: coached ? {
+      sessionDuration: coached.sessionDuration,
+      sessionStart: coached.sessionStart,
+      exercises: coached.primaryExercises,
+    } : null,
+    coachingSummary: coached ? coached.explain.slice(0, 12).join(' · ') : '',
+    nutritionConstraintsBlock: renewDiet ? nutritionConstraintsBlock : '',
   })
 
   let raw
@@ -347,6 +504,10 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
         buildNutrition: true,
         buildWorkout: false,
         previousDietSummary,
+        healthTest: memberData.healthTest || {},
+        coachedWorkout: nutritionMeta?.proteinGDay
+          ? { proteinGDay: nutritionMeta.proteinGDay }
+          : null,
       })
     } catch (e) {
       return { ok: false, error: e.message || 'Diyet doğrulanamadı', status: 502 }
@@ -367,7 +528,7 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
   }
 
   if (renewWorkout) {
-    // Workout için ayrı cycleLength — aiJson aynı
+    // Workout için ayrı cycleLength — aiJson aynı; egzersizler Coaching Engine’den
     let workoutPayloads
     try {
       workoutPayloads = buildValidatedProgramPayloads({
@@ -382,6 +543,8 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
         source: AI_EKO_SOURCE,
         buildNutrition: false,
         buildWorkout: true,
+        coachedWorkout,
+        healthTest: memberData.healthTest || {},
       })
     } catch (e) {
       return { ok: false, error: e.message || 'Antrenman doğrulanamadı', status: 502 }
@@ -404,6 +567,13 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
     await appendProgramNotifications(admin, memberRow.id, programsOut)
   } catch (e) {
     console.warn('[ai-eko] notify', e?.message || e)
+  }
+  if (coached) {
+    try {
+      await persistCoachingState(admin, memberRow.id, memberData, coached, AI_EKO_SOURCE)
+    } catch (e) {
+      console.warn('[ai-eko] coachingState', e?.message || e)
+    }
   }
 
   return {

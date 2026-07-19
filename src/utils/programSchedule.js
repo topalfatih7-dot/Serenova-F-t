@@ -145,10 +145,22 @@ export function getProgramEntriesForDate(programs, date, member = null) {
     if (!prog.entries?.length) return
     if (member && !isProgramVisibleOnDate(prog, date, member)) return
     const programType = prog.type || (prog.entries.some((e) => e.mealType) ? 'nutrition' : 'workout')
+    // Koç (staffId) ve AI (ai_basic / ai_eko) workout’larında müsaitlik günü filtresi.
+    // availability boşsa filtre uygulanmaz (tarihli entry’ler veya cycleSameDaily akışı kalır).
+    const isCoachedOrAiWorkout = Boolean(
+      prog.staffId
+      || prog.source === 'ai_basic'
+      || prog.source === 'ai_eko',
+    )
+    const hasAvailDays = Boolean(
+      member?.availability
+      && Object.values(member.availability).some((h) => Array.isArray(h) && h.length > 0),
+    )
     if (
       member
       && programType === 'workout'
-      && prog.staffId
+      && isCoachedOrAiWorkout
+      && hasAvailDays
       && !isWorkoutAllowedOnDate(date, member.availability)
     ) {
       return

@@ -78,6 +78,28 @@ export function inferNutritionPrefsFromHealthTest(healthTest = {}) {
   return prefs
 }
 
+/**
+ * Analiz / AI program için profilde gerçekten girilmiş olması gereken alanlar.
+ * Eksikse varsayılan (70 kg / 170 cm / 30 yaş) kullanılır — bu yüzden uyarı gösterilir.
+ */
+export function getMissingAnalysisProfileFields(profile = {}) {
+  const missing = []
+  const hasAge = Boolean(profile.birthDate) || (profile.age != null && Number(profile.age) > 0)
+  const weight = parseFloat(profile.weight)
+  const height = parseFloat(profile.height)
+
+  if (!hasAge) missing.push({ key: 'birthDate', label: 'Doğum tarihi' })
+  if (!weight || weight < 30) missing.push({ key: 'weight', label: 'Kilo' })
+  if (!height || height < 120) missing.push({ key: 'height', label: 'Boy' })
+  if (!profile.gender) missing.push({ key: 'gender', label: 'Cinsiyet' })
+
+  return missing
+}
+
+export function hasCompleteAnalysisProfile(profile) {
+  return getMissingAnalysisProfileFields(profile).length === 0
+}
+
 /** Analiz için eksik profil alanlarını sağlık testinden tamamlar. */
 export function enrichProfileForAnalysis(profile) {
   const ht = profile?.healthTest || {}
@@ -93,7 +115,12 @@ export function enrichProfileForAnalysis(profile) {
   const age = profile?.birthDate ? ageFromBirthDate(profile.birthDate) : profile?.age
   const weight = profile?.weight || 70
   const height = profile?.height || 170
-  const estimatedMetrics = !((profile?.birthDate || profile?.age) && profile?.weight && profile?.height)
+  const estimatedMetrics = !hasCompleteAnalysisProfile({
+    ...profile,
+    age,
+    weight: profile?.weight,
+    height: profile?.height,
+  })
 
   return {
     ...profile,

@@ -5,6 +5,7 @@ import {
   CheckCircle2, Circle, Sparkles,
 } from 'lucide-react'
 import HealthTestConsentForm from './HealthTestConsentForm'
+import HealthTestProfilePrepBanner from './HealthTestProfilePrepBanner'
 import HealthRadarScores from './HealthRadarScores'
 import {
   HEALTH_AUDIENCE_META,
@@ -81,20 +82,24 @@ export default function HealthTestHub({
 
   if (needsConsent) {
     return (
-      <HealthTestConsentForm
-        healthAck={localAck}
-        disclaimer={localDisclaimer}
-        onHealthAckChange={setLocalAck}
-        onDisclaimerChange={setLocalDisclaimer}
-        onSubmit={handleConsentSubmit}
-        submitting={consentSaving}
-        showErrors={showErrors}
-      />
+      <div className="w-full space-y-5">
+        <HealthTestProfilePrepBanner profile={profile} />
+        <HealthTestConsentForm
+          healthAck={localAck}
+          disclaimer={localDisclaimer}
+          onHealthAckChange={setLocalAck}
+          onDisclaimerChange={setLocalDisclaimer}
+          onSubmit={handleConsentSubmit}
+          submitting={consentSaving}
+          showErrors={showErrors}
+        />
+      </div>
     )
   }
 
   return (
     <div className="w-full space-y-6">
+      <HealthTestProfilePrepBanner profile={profile} />
       <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
