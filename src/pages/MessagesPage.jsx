@@ -27,7 +27,19 @@ const CHAT_ROLES = ['coach', 'dietitian', 'doctor']
 const AVATAR_IDLE = {
   coach: 'bg-brand-100 text-brand-700',
   dietitian: 'bg-sage-100 text-sage-700',
-  doctor: 'bg-amber-100 text-amber-700',
+  doctor: 'bg-teal-100 text-teal-700',
+}
+
+const CONTACT_ACTIVE = {
+  coach: 'border-brand-400 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-200/50',
+  dietitian: 'border-sage-400 bg-gradient-to-br from-sage-500 to-emerald-600 text-white shadow-lg shadow-sage-200/50',
+  doctor: 'border-teal-400 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200/50',
+}
+
+const CONTACT_IDLE = {
+  coach: 'border-brand-100 bg-gradient-to-br from-brand-50/90 via-white to-sky-50/50 hover:border-brand-300 hover:shadow-md',
+  dietitian: 'border-sage-100 bg-gradient-to-br from-sage-50/90 via-white to-emerald-50/50 hover:border-sage-300 hover:shadow-md',
+  doctor: 'border-teal-100 bg-gradient-to-br from-teal-50/90 via-white to-cyan-50/50 hover:border-teal-300 hover:shadow-md',
 }
 
 export default function MessagesPage() {
@@ -113,8 +125,11 @@ export default function MessagesPage() {
 
   const inbox = (
     <>
-      <p className="shrink-0 px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-widest text-cream-800/45">Sohbetler</p>
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain p-2 sm:p-3">
+      <div className="shrink-0 border-b border-cream-100 bg-gradient-to-r from-brand-50/80 via-white to-sage-50/50 px-3 pb-2.5 pt-3 sm:px-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-600/70">Sohbetler</p>
+        <p className="mt-0.5 text-xs text-cream-800/50">Atanmış uzmanlarınız</p>
+      </div>
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2 sm:p-3">
         {contacts.map((c) => {
           const thread = sortedThreads.find((t) => t.staffRole === c.role)
           const unread = threadUnreadCount(thread, 'member')
@@ -127,15 +142,17 @@ export default function MessagesPage() {
               type="button"
               whileTap={{ scale: 0.98 }}
               onClick={() => openThread(c.role)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
-                isActive ? 'bg-gradient-to-r from-brand-500 to-violet-600 text-white shadow-md' : 'hover:bg-cream-50'
+              className={`flex w-full items-center gap-3 rounded-2xl border-2 px-3 py-3.5 text-left transition ${
+                isActive
+                  ? (CONTACT_ACTIVE[c.role] || CONTACT_ACTIVE.coach)
+                  : (CONTACT_IDLE[c.role] || CONTACT_IDLE.coach)
               }`}
             >
               <AvatarWithPresence
                 lastSeenAt={lastSeenAt(c.staffId)}
                 online={isOnline(c.staffId)}
               >
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : idleAvatar}`}>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isActive ? 'bg-white/20' : idleAvatar}`}>
                   {RoleIcon ? <RoleIcon className="h-5 w-5" /> : null}
                 </span>
               </AvatarWithPresence>
@@ -144,7 +161,7 @@ export default function MessagesPage() {
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>{c.title}</p>
               </div>
               {unread > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white shadow-sm">
                   {unread}
                 </span>
               )}
@@ -156,10 +173,14 @@ export default function MessagesPage() {
   )
 
   const thread = !activeRole || !activeContact ? (
-    <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-      <MessageCircle className="h-12 w-12 text-cream-200" />
-      <p className="mt-3 font-medium text-cream-800/70">Bir sohbet seçin</p>
-      <p className="mt-1 text-xs text-cream-800/45">Listeden uzmanınızı seçin</p>
+    <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-b from-brand-50/40 via-white to-sage-50/30 p-6 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-sage-500 text-white shadow-lg shadow-brand-200/40">
+        <MessageCircle className="h-8 w-8" />
+      </span>
+      <p className="mt-4 font-display text-base font-bold text-cream-900">Bir sohbet seçin</p>
+      <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-cream-800/55">
+        Soldaki listeden koç, diyetisyen veya doktorunuzla mesajlaşmaya başlayın
+      </p>
     </div>
   ) : (
     <>

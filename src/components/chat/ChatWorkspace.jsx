@@ -27,7 +27,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
     <div className="flex h-0 min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid h-full min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
         <aside
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white/95 shadow-sm backdrop-blur-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-brand-100/80 bg-gradient-to-b from-white via-brand-50/20 to-sage-50/30 shadow-sm backdrop-blur-sm md:rounded-2xl ${
             showThread ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -35,7 +35,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
         </aside>
 
         <section
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-brand-100/70 bg-white shadow-sm md:rounded-2xl ${
             showThread ? 'flex' : 'hidden md:flex'
           }`}
         >

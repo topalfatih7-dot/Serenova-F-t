@@ -150,6 +150,8 @@ export default function HealthSummarySection({ user }) {
             value={form.weight}
             onChange={(e) => setForm({ ...form, weight: e.target.value })}
             error={errors.weight}
+            emphasis
+            className="border-orange-200/80 bg-gradient-to-br from-white to-orange-50/50"
           />
           <FormField
             label="Boy (cm)"
@@ -158,6 +160,8 @@ export default function HealthSummarySection({ user }) {
             value={form.height}
             onChange={(e) => setForm({ ...form, height: e.target.value })}
             error={errors.height}
+            emphasis
+            className="border-amber-200/80 bg-gradient-to-br from-white to-amber-50/50"
           />
           <FormField
             label="Bel çevresi (cm)"
@@ -166,17 +170,27 @@ export default function HealthSummarySection({ user }) {
             value={form.waist}
             onChange={(e) => setForm({ ...form, waist: e.target.value })}
             error={errors.waist}
+            emphasis
+            className="border-rose-200/80 bg-gradient-to-br from-white to-rose-50/50"
           />
           {form.weight && form.height && (
-            <p className="rounded-xl bg-orange-50 px-3 py-2 text-sm text-orange-800">
-              Tahmini VKİ: <strong>{calculateBMI(form.weight, form.height) ?? '—'}</strong>
-            </p>
+            <div className="flex items-center gap-3 rounded-2xl border border-orange-200/80 bg-gradient-to-r from-orange-50 via-amber-50/80 to-white px-4 py-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm">
+                <Gauge className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-orange-700/70">Tahmini VKİ</p>
+                <p className="font-display text-xl font-bold text-orange-900">
+                  {calculateBMI(form.weight, form.height) ?? '—'}
+                </p>
+              </div>
+            </div>
           )}
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-sm font-semibold text-white hover:brightness-105 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-200/50 transition hover:brightness-105 disabled:opacity-60"
           >
             <Check className="h-4 w-4" />
             {saving ? 'Kaydediliyor…' : 'Kaydet'}

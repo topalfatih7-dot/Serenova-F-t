@@ -96,7 +96,8 @@ export default function ContactSection() {
           <span className="inline-block rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur">İletişim</span>
           <h2 className="mt-4 font-display text-3xl font-bold text-white sm:text-4xl">Bize Ulaşın</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-white/70 sm:text-base">
-            Sorularınız, önerileriniz veya destek talepleriniz için formu doldurun — size en kısa sürede dönüş yapalım.
+            Üyelik, paket veya teknik konular için yazın. Mesajınız ekibimize ulaşır;
+            en kısa sürede size dönüş yaparız.
           </p>
         </motion.div>
 

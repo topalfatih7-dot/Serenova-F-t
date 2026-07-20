@@ -632,7 +632,7 @@ export function AppProvider({ children }) {
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
-  const patchCurrentRemote = useCallback(async (patch) => {
+  const patchCurrentRemote = useCallback(async (patch, { throwOnError = false } = {}) => {
     if (!currentMember) return null
     const member = memberRef.current || currentMember
     const optimistic = { ...member, ...patch }
@@ -655,8 +655,11 @@ export function AppProvider({ children }) {
         }
       })
       return updated
-    } catch {
+    } catch (err) {
       await reloadRemote()
+      if (throwOnError) {
+        throw err instanceof Error ? err : new Error(String(err?.message || err || 'Profil güncellenemedi.'))
+      }
       return null
     }
   }, [currentMember, reloadRemote])
@@ -1123,7 +1126,7 @@ export function AppProvider({ children }) {
 
   const updateProfile = useCallback(async (profile) => {
     if (!currentMember) return
-    await patchCurrentRemote(profile)
+    await patchCurrentRemote(profile, { throwOnError: true })
   }, [currentMember, patchCurrentRemote])
 
   /** Sağlık testi ara kaydı — tam reloadRemote yapmaz (loading döngüsünü önler). */

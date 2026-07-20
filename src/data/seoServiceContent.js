@@ -1,6 +1,7 @@
 /**
  * Online diyetisyen / online koçluk para sayfaları — içerik + prerender metni.
  * React bağımlılığı yok; build script de import edebilir.
+ * Paragraflarda **kalın** vurgu desteklenir (görsel + prerender).
  */
 
 export const ONLINE_DIYETISYEN = {
@@ -12,7 +13,7 @@ export const ONLINE_DIYETISYEN = {
     'online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat, diyet paketi',
   h1: 'Online Diyetisyen ile Size Özel Beslenme Programı',
   lead:
-    'Yeni Form’da online diyetisyen desteği; WhatsApp listesi değil, video görüşme, kişisel program ve panel üzerinden takip demektir. Hedefinize uygun Diyet veya VIP paketle başlayın.',
+    'Yeni Form’da online diyetisyen desteği; WhatsApp listesi değil, **video görüşme**, kişisel program ve panel üzerinden takip demektir. Hedefinize uygun **Diyet veya VIP** paketle başlayın.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadromuzu inceleyin' },
@@ -23,8 +24,8 @@ export const ONLINE_DIYETISYEN = {
     {
       h2: 'Online diyetisyen nedir?',
       paragraphs: [
-        'Online diyetisyen, yüz yüze kliniğe gitmeden uzman bir beslenme danışmanıyla planlı görüşmeler yapmanızı sağlar. Yeni Form’da süreç; sağlık profiliniz, hedefleriniz ve yaşam ritminize göre kişiselleştirilmiş beslenme programı, ayda planlanan video görüşmeler ve panel üzerinden ilerleme takibi şeklinde ilerler.',
-        'Arama motorlarında sık sorulan “online diyet” veya “online beslenme danışmanlığı” ihtiyacı; pratikte aynı niyeti taşır: sürdürülebilir kilo yönetimi, daha iyi enerji ve alışkanlık değişimi. Farkımız, tek seferlik PDF liste yerine koçluk platformuyla entegre bir sistem sunmamızdır.',
+        '**Online diyetisyen**, yüz yüze kliniğe gitmeden uzman bir beslenme danışmanıyla planlı görüşmeler yapmanızı sağlar. Yeni Form’da süreç; sağlık profiliniz, hedefleriniz ve yaşam ritminize göre **kişiselleştirilmiş beslenme programı**, ayda planlanan **video görüşmeler** ve panel üzerinden ilerleme takibi şeklinde ilerler.',
+        'Arama motorlarında sık sorulan “online diyet” veya “online beslenme danışmanlığı” ihtiyacı; pratikte aynı niyeti taşır: sürdürülebilir kilo yönetimi, daha iyi enerji ve alışkanlık değişimi. Farkımız, tek seferlik PDF liste yerine **koçluk platformuyla entegre** bir sistem sunmamızdır.',
       ],
     },
     {
@@ -51,15 +52,15 @@ export const ONLINE_DIYETISYEN = {
     {
       h2: 'Kimler için uygun?',
       paragraphs: [
-        'Yoğun tempolu çalışanlar, şehir dışında yaşayanlar, yüz yüze randevuya vakit ayıramayanlar ve düzenli takip isteyenler için online diyetisyen güçlü bir alternatiftir. Evde veya ofiste, randevu saatinde görüşmeye katılmanız yeterlidir.',
-        'Kronik hastalık, gebelik veya özel klinik durumlarınız varsa önce hekiminize danışın. Yeni Form bir wellness ve koçluk platformudur; tıbbi teşhis veya tedavi yerine geçmez.',
+        '**Yoğun tempolu çalışanlar**, şehir dışında yaşayanlar, yüz yüze randevuya vakit ayıramayanlar ve **düzenli takip** isteyenler için online diyetisyen güçlü bir alternatiftir. Evde veya ofiste, randevu saatinde görüşmeye katılmanız yeterlidir.',
+        'Kronik hastalık, gebelik veya özel klinik durumlarınız varsa önce **hekiminize danışın**. Yeni Form bir wellness ve koçluk platformudur; **tıbbi teşhis veya tedavi yerine geçmez**.',
       ],
     },
     {
       h2: 'Paketler ve fiyat yönü',
       paragraphs: [
-        'Online diyetisyen görüşmeleri Diyet paketinde (ayda 2 seans) ve VIP pakette (ayda 2 diyetisyen + 2 koç) sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin; Basic ile ücretsiz sisteme girip sonra yükseltmek de mümkündür.',
-        'Tek diyetisyen kliniklerinden farkımız: aynı hesapta antrenman programı, video kütüphanesi ve isteğe bağlı online koçluk bir arada yönetilir.',
+        'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin; **Basic ile ücretsiz** sisteme girip sonra yükseltmek de mümkündür.',
+        'Tek diyetisyen kliniklerinden farkımız: aynı hesapta **antrenman programı**, video kütüphanesi ve isteğe bağlı online koçluk bir arada yönetilir.',
       ],
     },
   ],
@@ -92,7 +93,7 @@ export const ONLINE_KOCLUK = {
     'online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi, online antrenör',
   h1: 'Online Koçluk ile Size Özel Antrenman Programı',
   lead:
-    'Yeni Form online koçluk; PDF program satışı değil. Sertifikalı fitness koçuyla video görüşme, size özel antrenman planı, egzersiz videosu kütüphanesi ve panel takibi bir arada.',
+    'Yeni Form’da online koçluk; PDF program satışı değil — **video görüşme**, kişiye özel antrenman planı, egzersiz kütüphanesi ve panel takibi bir arada. Hedefinize uygun **Spor veya VIP** paketle başlayın.',
   primaryCta: { to: '/onboarding?plan=spor', label: 'Spor Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/coaches', label: 'Koç kadromuzu inceleyin' },
@@ -103,8 +104,8 @@ export const ONLINE_KOCLUK = {
     {
       h2: 'Online koçluk nedir?',
       paragraphs: [
-        'Online koçluk (veya online spor koçu / online fitness koçu), antrenörünüzle aynı salonda olmadan kişiye özel program ve düzenli geri bildirim almanızdır. Yeni Form’da koçunuz hedeflerinize, ekipmanınıza ve antrenman yerinize (ev veya salon) göre plan hazırlar; ayda planlanan video görüşmelerle formu ve ilerlemeyi birlikte gözden geçirirsiniz.',
-        'Uzaktan eğitim veya online antrenman programı arayanlar için kritik nokta takiptir. Bizde program panelde kalır, hareketler video kütüphanesiyle desteklenir ve randevularınız tek yerden yönetilir.',
+        '**Online koçluk**, antrenörünüzle aynı salonda olmadan kişiye özel program ve düzenli geri bildirim almanızdır. Yeni Form’da süreç; hedefleriniz, ekipmanınız ve antrenman yerinize (ev veya salon) göre **kişiselleştirilmiş antrenman programı**, ayda planlanan **video görüşmeler** ve panel üzerinden ilerleme takibi şeklinde ilerler.',
+        '“Online spor koçu” veya “uzaktan antrenman” arayanlar için kritik nokta **sürdürülebilir takiptir**. Farkımız, tek seferlik PDF yerine **koçluk platformuyla entegre** bir sistem sunmamızdır: program panelde kalır, hareketler video kütüphanesiyle desteklenir.',
       ],
     },
     {
@@ -131,15 +132,15 @@ export const ONLINE_KOCLUK = {
     {
       h2: 'Kimler için uygun?',
       paragraphs: [
-        'Salon üyeliği olsa da rehberlik isteyenler, evde çalışanlar, seyahat edenler ve ilk kez düzenli antrenmana başlayanlar online koçluktan faydalanır. Programınız yaşam ritminize göre uyarlanır.',
-        'Ağır sakatlık veya hekim kısıtı varsa önce sağlık uzmanınıza danışın. Platform wellness ve performans koçluğu sunar; fizyoterapi veya tıbbi rehabilitasyon yerine geçmez.',
+        '**Salon üyeliği olsa da rehberlik isteyenler**, evde çalışanlar, seyahat edenler ve **ilk kez düzenli antrenmana** başlayanlar için online koçluk güçlü bir alternatiftir. Programınız yaşam ritminize göre uyarlanır.',
+        'Ağır sakatlık veya hekim kısıtı varsa önce **sağlık uzmanınıza danışın**. Yeni Form bir wellness ve performans koçluğu platformudur; **fizyoterapi veya tıbbi rehabilitasyon yerine geçmez**.',
       ],
     },
     {
       h2: 'Paketler ve fiyat yönü',
       paragraphs: [
-        'Online koç görüşmeleri Spor paketinde (ayda 2) ve VIP pakette (ayda 2 koç + 2 diyetisyen) yer alır. Eko paket otomatik program sunar; birebir koç seansı Spor/VIP’tedir. Güncel fiyatlar üyelik sayfasındadır.',
-        'Beslenmeyi de aynı çatı altında yönetmek isterseniz online diyetisyen sayfamıza veya VIP pakete göz atın.',
+        'Online koç görüşmeleri **Spor paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 koç + 2 diyetisyen)** sunulur. Eko paket otomatik program verir; birebir koç seansı Spor/VIP’tedir. Güncel fiyatlar için üyelik sayfasını inceleyin; **Basic ile ücretsiz** başlamak da mümkündür.',
+        'Beslenmeyi de aynı çatı altında yönetmek isterseniz **online diyetisyen** hizmetimize veya **VIP pakete** göz atın — antrenman ve beslenme tek hesapta ilerler.',
       ],
     },
   ],
@@ -168,14 +169,19 @@ export const SERVICE_PAGES = {
   [ONLINE_KOCLUK.path]: ONLINE_KOCLUK,
 }
 
+/** **kalın** işaretlerini <strong> ile HTML’e çevirir */
+export function emphasizeToHtml(str) {
+  return escapeHtml(str).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
 /** Prerender gövdesi — H1 dışarıda eklenir (includeLead ile lead paragrafı) */
 export function servicePagePlainHtml(page, { includeLead = true } = {}) {
   const parts = []
-  if (includeLead) parts.push(`<p>${escapeHtml(page.lead)}</p>`)
+  if (includeLead) parts.push(`<p>${emphasizeToHtml(page.lead)}</p>`)
   for (const section of page.sections) {
     parts.push(`<h2>${escapeHtml(section.h2)}</h2>`)
     for (const p of section.paragraphs || []) {
-      parts.push(`<p>${escapeHtml(p)}</p>`)
+      parts.push(`<p>${emphasizeToHtml(p)}</p>`)
     }
     if (section.steps) {
       parts.push('<ol>')

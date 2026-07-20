@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Camera, Flame, BarChart3,
   CheckCircle, RefreshCw, AlertCircle,
-  Send, Sparkles, MessageSquare, Trash2, ScanLine,
+  Send, Sparkles, Keyboard, Trash2, ScanLine,
+  ImagePlus, Lock,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
@@ -50,6 +51,33 @@ function appendCalorieHistory(existing = [], entry) {
   return [entry, ...existing].slice(0, 100)
 }
 
+const MODE_OPTIONS = [
+  {
+    id: 'chat',
+    icon: Keyboard,
+    label: 'Yazarak Analiz',
+    hint: 'Öğünü metin olarak yazın',
+    tone: {
+      active: 'border-orange-500 bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200/60',
+      idle: 'border-orange-200/80 bg-gradient-to-br from-orange-50 to-amber-50/80 text-orange-950 hover:border-orange-300 hover:shadow-md',
+      iconActive: 'bg-white/20 text-white',
+      iconIdle: 'bg-orange-100 text-orange-600',
+    },
+  },
+  {
+    id: 'photo',
+    icon: Camera,
+    label: 'Fotoğrafla Analiz',
+    hint: 'Tablo fotoğrafı yükleyin',
+    tone: {
+      active: 'border-sage-500 bg-gradient-to-br from-sage-500 to-teal-500 text-white shadow-lg shadow-sage-200/60',
+      idle: 'border-sage-200/80 bg-gradient-to-br from-sage-50 to-teal-50/80 text-sage-950 hover:border-sage-300 hover:shadow-md',
+      iconActive: 'bg-white/20 text-white',
+      iconIdle: 'bg-sage-100 text-sage-600',
+    },
+  },
+]
+
 export default function CalorieCalculatorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -91,6 +119,10 @@ export default function CalorieCalculatorPage() {
   const handleChatSend = async () => {
     const text = chatInput.trim()
     if (!text || chatProcessing) return
+    if (text.length > 2000) {
+      toast('Metin çok uzun (max 2000 karakter).', 'warning')
+      return
+    }
     setChatInput('')
     setChatMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: 'user', content: text }])
     setChatProcessing(true)
@@ -169,6 +201,8 @@ export default function CalorieCalculatorPage() {
       ? itemsTotalCal(lastAnalysis.items)
       : 0
 
+  const visibleModes = MODE_OPTIONS.filter((m) => m.id === 'chat' || isPlatinum)
+
   if (!isPaid) {
     return (
       <PanelPageShell>
@@ -181,7 +215,7 @@ export default function CalorieCalculatorPage() {
           </div>
           <h1 className="mt-4 font-display text-xl font-bold text-cream-900">Kalori Hesaplayıcı</h1>
           <p className="mt-2 text-sm text-cream-800/70">Bu özellik Gümüş ve üzeri paketlerde kullanılabilir.</p>
-          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:scale-105">
+          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-105">
             Planları İncele
           </Link>
         </div>
@@ -203,22 +237,55 @@ export default function CalorieCalculatorPage() {
         image={PANEL_IMAGES.calorie}
       />
 
-      <div className="flex glass-card-solid p-1.5">
-        {[
-          { id: 'chat', icon: MessageSquare, label: 'Yazarak Analiz' },
-          ...(isPlatinum ? [{ id: 'photo', icon: Camera, label: 'Fotoğrafla Analiz' }] : []),
-        ].map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setMode(id)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition ${
-              mode === id ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md' : 'text-cream-800/60 hover:text-cream-900'
-            }`}
-          >
-            <Icon className="h-4 w-4" /> {label}
-          </button>
-        ))}
+      {/* Mod seçimi — modern, responsive kartlar */}
+      <div className={`grid gap-2.5 sm:gap-3 ${visibleModes.length > 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+        {MODE_OPTIONS.map(({ id, icon: Icon, label, hint, tone }) => {
+          const available = id === 'chat' || isPlatinum
+          const selected = mode === id
+          if (!available && !isPlatinum && id === 'photo') {
+            return (
+              <Link
+                key={id}
+                to="/membership"
+                className="group flex items-center gap-3 rounded-2xl border-2 border-dashed border-cream-300 bg-cream-50/80 px-3.5 py-3.5 transition hover:border-sage-300 hover:bg-sage-50/50 sm:px-4 sm:py-4"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cream-200 text-cream-800/50 sm:h-12 sm:w-12">
+                  <Lock className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block text-sm font-bold text-cream-800/70">{label}</span>
+                  <span className="mt-0.5 block text-[11px] text-cream-800/45 sm:text-xs">Paket yükseltmesi gerekir</span>
+                </span>
+              </Link>
+            )
+          }
+          if (!available) return null
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setMode(id)}
+              className={`flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3.5 text-left transition duration-200 sm:px-4 sm:py-4 ${
+                selected ? tone.active : tone.idle
+              }`}
+            >
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${selected ? tone.iconActive : tone.iconIdle}`}>
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold leading-tight sm:text-[15px]">{label}</span>
+                <span className={`mt-0.5 block text-[11px] leading-tight sm:text-xs ${selected ? 'text-white/80' : 'opacity-60'}`}>
+                  {hint}
+                </span>
+              </span>
+              {selected ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
       </div>
 
       {activeTotal > 0 && (
@@ -228,22 +295,22 @@ export default function CalorieCalculatorPage() {
       <AnimatePresence mode="wait">
         {mode === 'chat' ? (
           <motion.div key="chat" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
-            <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white shadow-sm">
-              <div className="flex items-center gap-2.5 border-b border-cream-100 bg-gradient-to-r from-brand-50 to-white px-5 py-4">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500 text-white">
-                  <MessageSquare className="h-4 w-4" />
+            <div className="overflow-hidden rounded-2xl border border-orange-100/80 bg-white shadow-sm sm:rounded-3xl">
+              <div className="flex items-center gap-3 border-b border-orange-100/70 bg-gradient-to-r from-orange-50 via-amber-50/80 to-white px-4 py-3.5 sm:gap-3.5 sm:px-5 sm:py-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200/50 sm:h-11 sm:w-11">
+                  <Keyboard className="h-5 w-5" />
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-cream-900">Ne Yediniz?</p>
-                  <p className="text-xs text-cream-800/50">Yazdığınız öğün için tahmini kalori değerleri hesaplanır</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-cream-900 sm:text-base">Ne Yediniz?</p>
+                  <p className="text-[11px] text-cream-800/55 sm:text-xs">Yazdığınız öğün için tahmini kalori değerleri hesaplanır</p>
                 </div>
               </div>
 
-              <div className="max-h-[min(420px,50dvh)] space-y-2 overflow-y-auto p-4">
+              <div className="max-h-[min(420px,50dvh)] space-y-2.5 overflow-y-auto p-3 sm:p-4">
                 {chatMessages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      msg.role === 'user' ? 'rounded-br-sm bg-brand-500 text-white'
+                    <div className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed sm:max-w-[85%] sm:px-4 ${
+                      msg.role === 'user' ? 'rounded-br-sm bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-sm'
                         : msg.type === 'success' ? 'rounded-bl-sm border border-sage-200 bg-sage-50 text-sage-800'
                         : msg.type === 'error' ? 'rounded-bl-sm border border-red-200 bg-red-50 text-red-700'
                         : msg.type === 'warning' ? 'rounded-bl-sm border border-amber-200 bg-amber-50 text-amber-800'
@@ -255,61 +322,76 @@ export default function CalorieCalculatorPage() {
                 ))}
                 {chatProcessing && (
                   <div className="flex justify-start">
-                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-cream-100 px-4 py-2.5 text-sm text-cream-600">
-                      <Sparkles className="h-3.5 w-3.5 animate-pulse text-brand-500" /> Analiz ediliyor…
+                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-orange-50 px-4 py-2.5 text-sm text-orange-800/80">
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse text-orange-500" /> Analiz ediliyor…
                     </div>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="border-t border-cream-100 p-3">
-                <div className="flex items-center gap-2">
+              <div className="border-t border-orange-100/70 bg-gradient-to-b from-white to-orange-50/30 p-3 sm:p-3.5">
+                <div className="flex items-end gap-2 sm:gap-2.5">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSend()}
                     disabled={chatProcessing}
+                    maxLength={2000}
                     placeholder="Örn: 2 yumurta, 1 dilim ekmek, 200g tavuk"
-                    className="flex-1 rounded-xl border border-cream-200 px-4 py-2.5 text-sm focus:border-brand-400 focus:outline-none disabled:opacity-50"
+                    className="min-w-0 flex-1 rounded-xl border border-orange-200/80 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:opacity-50 sm:rounded-2xl sm:px-4 sm:py-3"
                   />
                   <button
                     type="button"
                     onClick={handleChatSend}
                     disabled={!chatInput.trim() || chatProcessing}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Gönder"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200/50 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
                   </button>
                 </div>
               </div>
             </div>
           </motion.div>
         ) : (
-          <motion.div key="photo" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-6">
+          <motion.div key="photo" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4 sm:space-y-5">
             {!photo ? (
-              <div
+              <button
+                type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-brand-200 bg-gradient-to-br from-brand-50/50 to-white py-16 sm:py-20 transition hover:border-brand-400 hover:bg-brand-50/70"
+                className="group flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-sage-300 bg-gradient-to-br from-sage-50 via-teal-50/40 to-white px-4 py-14 transition hover:border-sage-400 hover:shadow-md sm:rounded-3xl sm:py-20"
               >
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-brand-500">
-                  <Camera className="h-10 w-10" />
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sage-500 to-teal-500 text-white shadow-lg shadow-sage-200/60 transition group-hover:scale-105 sm:h-20 sm:w-20 sm:rounded-3xl">
+                  <ImagePlus className="h-8 w-8 sm:h-10 sm:w-10" />
+                </span>
+                <div className="text-center">
+                  <p className="font-display text-lg font-bold text-cream-900 sm:text-xl">Yemek Fotoğrafı Yükle</p>
+                  <p className="mt-1 max-w-sm text-sm text-cream-800/55">Tabağınızın fotoğrafını çekin veya galeriden seçin</p>
                 </div>
-                <div className="text-center px-4">
-                  <p className="font-display text-lg font-bold text-cream-900">Yemek Fotoğrafı Yükle</p>
-                  <p className="mt-1 text-sm text-cream-800/55">Tabağınızın fotoğrafını çekin veya galeriden seçin</p>
-                </div>
-                <span className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Fotoğraf Seç</span>
-              </div>
+                <span className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sage-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md">
+                  <Camera className="h-4 w-4" /> Fotoğraf Seç
+                </span>
+              </button>
             ) : (
-              <div className="overflow-hidden rounded-3xl border border-cream-200 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-2xl border border-sage-100 bg-white shadow-sm sm:rounded-3xl">
+                <div className="flex items-center gap-3 border-b border-sage-100 bg-gradient-to-r from-sage-50 via-teal-50/50 to-white px-4 py-3.5 sm:px-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sage-500 to-teal-500 text-white shadow-md">
+                    <Camera className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-cream-900">Fotoğrafla Analiz</p>
+                    <p className="text-[11px] text-cream-800/55 sm:text-xs">Görseli kontrol edip analizi başlatın</p>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <img src={photo} alt="Yüklenen yemek" className="max-h-[min(360px,45dvh)] w-full object-cover" />
                   {analyzing && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
-                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-500">
-                        <Flame className="h-8 w-8 text-white" />
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sage-500 to-teal-500">
+                        <ScanLine className="h-8 w-8 text-white" />
                       </motion.div>
                       <p className="mt-4 font-semibold text-white">Analiz ediliyor…</p>
                     </div>
@@ -317,10 +399,10 @@ export default function CalorieCalculatorPage() {
                 </div>
 
                 {!photoResult && !analyzing && (
-                  <div className="space-y-4 border-t border-cream-100 p-5">
-                    <div className="flex items-start gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-                      <p className="text-xs leading-relaxed text-brand-800">
+                  <div className="space-y-3 border-t border-sage-100 p-4 sm:space-y-4 sm:p-5">
+                    <div className="flex items-start gap-2 rounded-xl border border-sage-200 bg-sage-50 px-3 py-2.5">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
+                      <p className="text-xs leading-relaxed text-sage-800">
                         Fotoğraf yüklendi. Analizi başlatmadan önce görseli kontrol edin; isterseniz silebilirsiniz.
                       </p>
                     </div>
@@ -328,7 +410,7 @@ export default function CalorieCalculatorPage() {
                       <button
                         type="button"
                         onClick={handlePhotoAnalyze}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sage-500 to-teal-500 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105"
                       >
                         <ScanLine className="h-4 w-4" /> Analiz Et
                       </button>
@@ -345,13 +427,13 @@ export default function CalorieCalculatorPage() {
 
                 <AnimatePresence>
                   {photoResult && (
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 border-t border-cream-100 p-5">
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 border-t border-sage-100 p-4 sm:p-5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-5 w-5 text-sage-500" />
                           <p className="font-semibold text-cream-900">{photoResult.label}</p>
                         </div>
-                        <button type="button" onClick={resetPhoto} className="flex items-center gap-1.5 text-xs text-cream-800/50 hover:text-brand-600">
+                        <button type="button" onClick={resetPhoto} className="flex items-center gap-1.5 text-xs text-cream-800/50 hover:text-sage-700">
                           <RefreshCw className="h-3.5 w-3.5" /> Yeni Fotoğraf
                         </button>
                       </div>
@@ -362,12 +444,12 @@ export default function CalorieCalculatorPage() {
                       {photoResult.items?.length > 0 && (
                         <div className="divide-y divide-cream-100 rounded-2xl border border-cream-200">
                           {photoResult.items.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between px-4 py-3">
-                              <div>
-                                <p className="text-sm font-medium text-cream-900">{item.name}</p>
+                            <div key={i} className="flex items-center justify-between gap-3 px-3.5 py-3 sm:px-4">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-cream-900">{item.name}</p>
                                 <p className="text-xs text-cream-800/50">{item.amount} {item.unit}</p>
                               </div>
-                              <span className="font-bold text-brand-600">{item.cal} kcal</span>
+                              <span className="shrink-0 font-bold text-sage-600">{item.cal} kcal</span>
                             </div>
                           ))}
                         </div>
@@ -377,7 +459,7 @@ export default function CalorieCalculatorPage() {
                 </AnimatePresence>
               </div>
             )}
-            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoSelect} className="hidden" />
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoSelect} className="hidden" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -389,15 +471,15 @@ function CalorieSummaryCard({ totalCal, macros }) {
   const level = totalCal < 300 ? 'Az' : totalCal < 600 ? 'Orta' : totalCal < 900 ? 'Yüksek' : 'Çok Yüksek'
 
   return (
-    <motion.div layout className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-500/30">
-      <div className="p-5">
+    <motion.div layout className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-500/30 sm:rounded-3xl">
+      <div className="p-4 sm:p-5">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-sm font-medium text-white/75">Toplam Kalori</p>
             <p className="font-display text-4xl font-bold sm:text-5xl">{totalCal}</p>
             <p className="text-sm text-white/75">kcal · {level}</p>
           </div>
-          <Flame className="h-10 w-10 text-white/30" />
+          <Flame className="h-9 w-9 text-white/30 sm:h-10 sm:w-10" />
         </div>
         {totalCal > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-2">
@@ -406,16 +488,16 @@ function CalorieSummaryCard({ totalCal, macros }) {
               { label: 'Karb.', value: macros.carb, unit: 'g' },
               { label: 'Yağ', value: macros.fat, unit: 'g' },
             ].map((m) => (
-              <div key={m.label} className="rounded-xl bg-white/15 px-3 py-2 text-center">
-                <p className="text-lg font-bold">{m.value}{m.unit}</p>
-                <p className="text-xs text-white/70">{m.label}</p>
+              <div key={m.label} className="rounded-xl bg-white/15 px-2 py-2 text-center sm:px-3">
+                <p className="text-base font-bold sm:text-lg">{m.value}{m.unit}</p>
+                <p className="text-[10px] text-white/70 sm:text-xs">{m.label}</p>
               </div>
             ))}
           </div>
         )}
       </div>
       {totalCal > 0 && (
-        <div className="border-t border-white/10 bg-black/10 px-5 py-3">
+        <div className="border-t border-white/10 bg-black/10 px-4 py-3 sm:px-5">
           <p className="flex items-center gap-2 text-xs text-white/60">
             <BarChart3 className="h-3.5 w-3.5" />
             Günlük 2000 kcal hedefinin <strong className="text-white">{Math.round((totalCal / 2000) * 100)}%</strong>&apos;i

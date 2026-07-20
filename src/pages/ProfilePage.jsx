@@ -65,10 +65,19 @@ export default function ProfilePage() {
     { icon: Stethoscope, label: 'Doktor', name: assignedDoctor?.name, to: '/schedule?tab=doctor', iconClass: 'text-teal-600' },
   ]
 
-  const handleSave = () => {
-    updateProfile(form)
-    setEditOpen(false)
-    toast('Profil güncellendi', 'success')
+  const handleSave = async () => {
+    try {
+      await updateProfile({
+        name: form.name,
+        city: form.city,
+        district: form.district,
+        photo: form.photo,
+      })
+      setEditOpen(false)
+      toast('Profil güncellendi', 'success')
+    } catch (err) {
+      toast(err?.message || 'Profil güncellenemedi.', 'error')
+    }
   }
 
   const activePackages = useMemo(
@@ -428,8 +437,26 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <PhotoUpload label="" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
           <FormField label="Ad Soyad" icon={User} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ad Soyad" />
-          <FormField label="E-posta" icon={Mail} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="E-posta" />
-          <FormField label="Telefon" icon={Phone} type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="05XX XXX XX XX" />
+          <FormField
+            label="E-posta"
+            icon={Mail}
+            type="email"
+            value={form.email}
+            readOnly
+            disabled
+            className="cursor-not-allowed opacity-80"
+            hint="Kayıt e-postası değiştirilemez."
+          />
+          <FormField
+            label="Telefon"
+            icon={Phone}
+            type="tel"
+            value={form.phone}
+            readOnly
+            disabled
+            className="cursor-not-allowed opacity-80"
+            hint="Telefon numarası kayıt sonrası değiştirilemez."
+          />
           <FormField label="Şehir" icon={MapPin} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
           <FormField label="İlçe" icon={MapPin} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="İlçe" />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>

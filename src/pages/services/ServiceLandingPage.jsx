@@ -1,10 +1,7 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
-  CheckCircle2,
-  ChevronDown,
   Apple,
   Dumbbell,
   ShieldCheck,
@@ -12,6 +9,10 @@ import {
   BadgeCheck,
   Sparkles,
   Video,
+  ClipboardList,
+  UserRound,
+  CalendarCheck,
+  LineChart,
 } from 'lucide-react'
 import JsonLd from '../../components/seo/JsonLd'
 import {
@@ -34,6 +35,77 @@ const SERVICE_HERO_IMAGES = {
     srcSm: '/services/online-kocluk-sm.webp',
     alt: 'Stüdyoda grup fitness antrenmanı — online koçluk hizmeti',
   },
+}
+
+const STEP_ICONS = [ClipboardList, UserRound, Video, LineChart]
+const STEP_ACCENTS = [
+  { card: 'from-brand-50 to-white border-brand-200/80', badge: 'from-brand-500 to-brand-700', glow: 'bg-brand-200/40' },
+  { card: 'from-sage-50 to-white border-sage-200/80', badge: 'from-sage-500 to-sage-700', glow: 'bg-sage-200/40' },
+  { card: 'from-warm-50 to-white border-warm-200/80', badge: 'from-warm-400 to-warm-500', glow: 'bg-warm-200/40' },
+  { card: 'from-mint-50 to-white border-sage-200/70', badge: 'from-brand-400 to-sage-600', glow: 'bg-brand-100/50' },
+]
+
+const WHY_BY_PATH = {
+  '/online-diyetisyen': [
+    {
+      icon: Video,
+      title: 'Platform içi video görüşme',
+      text: 'Ayrı uygulama gerekmez — diyetisyen seanslarınız panelden başlar.',
+      accent: 'from-brand-500 to-brand-700',
+      card: 'border-brand-200/70 bg-gradient-to-br from-brand-50 via-white to-white',
+    },
+    {
+      icon: CalendarCheck,
+      title: 'Kişiye özel beslenme programı',
+      text: 'Programınız üye panelinde takip edilir, seanslarla güncellenir.',
+      accent: 'from-sage-500 to-sage-700',
+      card: 'border-sage-200/70 bg-gradient-to-br from-sage-50 via-white to-white',
+    },
+    {
+      icon: Sparkles,
+      title: 'VIP ile birleşik destek',
+      text: 'İsterseniz koç ve diyetisyeni aynı pakette birleştirin.',
+      accent: 'from-warm-400 to-warm-500',
+      card: 'border-warm-200/70 bg-gradient-to-br from-warm-50 via-white to-white',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Güvenli altyapı',
+      text: 'KVKK uyumlu sistem ve uzman onaylı kadro.',
+      accent: 'from-brand-400 to-sage-600',
+      card: 'border-cream-200 bg-gradient-to-br from-cream-50 via-white to-white',
+    },
+  ],
+  '/online-kocluk': [
+    {
+      icon: Video,
+      title: 'Platform içi video görüşme',
+      text: 'Ayrı uygulama gerekmez — koç seanslarınız panelden başlar.',
+      accent: 'from-brand-500 to-brand-700',
+      card: 'border-brand-200/70 bg-gradient-to-br from-brand-50 via-white to-white',
+    },
+    {
+      icon: CalendarCheck,
+      title: 'Kişiye özel antrenman programı',
+      text: 'Programınız panelde kalır; egzersiz kütüphanesiyle teknik netleşir.',
+      accent: 'from-sage-500 to-sage-700',
+      card: 'border-sage-200/70 bg-gradient-to-br from-sage-50 via-white to-white',
+    },
+    {
+      icon: Sparkles,
+      title: 'VIP ile birleşik destek',
+      text: 'İsterseniz koç ve diyetisyeni aynı pakette birleştirin.',
+      accent: 'from-warm-400 to-warm-500',
+      card: 'border-warm-200/70 bg-gradient-to-br from-warm-50 via-white to-white',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Güvenli altyapı',
+      text: 'KVKK uyumlu sistem ve uzman onaylı koç kadrosu.',
+      accent: 'from-brand-400 to-sage-600',
+      card: 'border-cream-200 bg-gradient-to-br from-cream-50 via-white to-white',
+    },
+  ],
 }
 
 const fadeUp = {
@@ -66,6 +138,21 @@ const THEMES = {
   },
 }
 
+/** **kalın** işaretlerini React düğümlerine çevirir */
+function EmphasizedText({ text }) {
+  const parts = String(text || '').split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-cream-950">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
 export default function ServiceLandingPage({ path }) {
   const page = SERVICE_PAGES[path]
   const theme = THEMES[path]
@@ -73,6 +160,8 @@ export default function ServiceLandingPage({ path }) {
 
   const hero = SERVICE_HERO_IMAGES[path]
   const ThemeIcon = theme.badgeIcon
+  const whyItems = WHY_BY_PATH[path] || WHY_BY_PATH['/online-diyetisyen']
+  const isCoach = path === '/online-kocluk'
 
   const schemas = [
     buildServiceSchema({
@@ -84,7 +173,7 @@ export default function ServiceLandingPage({ path }) {
         {
           name: path === '/online-diyetisyen' ? 'Diyet Paketi' : 'Spor Paketi',
           path: '/membership',
-          description: page.lead,
+          description: page.lead.replace(/\*\*/g, ''),
         },
         {
           name: 'VIP Paket',
@@ -104,7 +193,7 @@ export default function ServiceLandingPage({ path }) {
     <div className="service-page-shell overflow-x-hidden">
       <JsonLd data={schemas} />
 
-      {/* ═══ HERO — full-bleed, About / Team dilinde ═══ */}
+      {/* ═══ HERO — açık panelli koyu metin (aydınlık görsellerde okunur) ═══ */}
       <section className="relative isolate min-h-[min(88svh,720px)] overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -119,12 +208,12 @@ export default function ServiceLandingPage({ path }) {
             fetchPriority="high"
             decoding="async"
           />
-          <div className={`absolute inset-0 bg-gradient-to-r ${theme.gradientFrom} ${theme.gradientVia} to-cream-900/35`} />
-          <div className="absolute inset-0 bg-gradient-to-t from-cream-950/80 via-transparent to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-cream-50/95 via-cream-50/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-cream-100/90 via-transparent to-cream-50/40" />
         </div>
 
-        <div aria-hidden className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-brand-400/25 blur-3xl" />
-        <div aria-hidden className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-sage-400/20 blur-3xl" />
+        <div aria-hidden className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-brand-200/35 blur-3xl" />
+        <div aria-hidden className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-sage-200/30 blur-3xl" />
 
         <div className="relative mx-auto flex min-h-[min(88svh,720px)] max-w-6xl flex-col justify-end px-4 pb-14 pt-28 sm:px-6 sm:pb-20 lg:justify-center lg:pb-24 lg:pt-32">
           <motion.div
@@ -132,45 +221,45 @@ export default function ServiceLandingPage({ path }) {
             initial="hidden"
             animate="show"
             custom={0}
-            className="max-w-2xl lg:ml-0 lg:mr-auto"
+            className="max-w-2xl rounded-3xl border border-cream-200/80 bg-white/90 p-6 shadow-xl shadow-cream-900/10 backdrop-blur-md sm:p-8 lg:ml-0 lg:mr-auto"
           >
-            <p className="font-display text-sm font-bold tracking-wide text-white/90 sm:text-base">
+            <p className="font-display text-sm font-bold tracking-wide text-cream-900 sm:text-base">
               {BRAND.name}
             </p>
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur sm:text-xs">
-              <ThemeIcon className="h-3.5 w-3.5 text-brand-300" />
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cream-200 bg-cream-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-cream-800 sm:text-xs">
+              <ThemeIcon className={`h-3.5 w-3.5 ${path === '/online-diyetisyen' ? 'text-sage-600' : 'text-brand-600'}`} />
               {page.serviceName}
             </span>
-            <h1 className="mt-5 font-display text-[1.85rem] font-bold leading-[1.15] text-white sm:text-4xl lg:text-[2.75rem]">
+            <h1 className="mt-5 font-display text-[1.85rem] font-bold leading-[1.15] tracking-tight text-cream-950 sm:text-4xl lg:text-[2.75rem]">
               {page.h1}
             </h1>
-            <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
-              {page.lead}
+            <p className="mt-5 max-w-xl text-sm leading-relaxed text-cream-800 sm:text-base">
+              <EmphasizedText text={page.lead} />
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to={page.primaryCta.to}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-900/25 transition hover:brightness-110"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-900/20 transition hover:brightness-110"
               >
                 {page.primaryCta.label}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 to={page.secondaryCta.to}
-                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-full border border-cream-300 bg-white px-6 py-3.5 text-sm font-semibold text-cream-900 transition hover:border-brand-300 hover:bg-brand-50"
               >
-                <Sparkles className="h-4 w-4 text-brand-300" />
+                <Sparkles className="h-4 w-4 text-brand-600" />
                 {page.secondaryCta.label}
               </Link>
             </div>
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-white/15 pt-5">
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-cream-200 pt-5">
               {[
                 { icon: ShieldCheck, label: 'KVKK uyumlu' },
                 { icon: Lock, label: '256-bit SSL' },
                 { icon: Video, label: 'Video görüşme' },
               ].map((t) => (
-                <span key={t.label} className="inline-flex items-center gap-1.5 text-xs font-medium text-white/75">
-                  <t.icon className="h-4 w-4 text-sage-300" />
+                <span key={t.label} className="inline-flex items-center gap-1.5 text-xs font-medium text-cream-800">
+                  <t.icon className="h-4 w-4 text-sage-600" />
                   {t.label}
                 </span>
               ))}
@@ -195,7 +284,7 @@ export default function ServiceLandingPage({ path }) {
         </div>
       </div>
 
-      {/* ═══ İçerik bölümleri — orijinal sıra, asimetrik mesh ═══ */}
+      {/* ═══ İçerik bölümleri ═══ */}
       {page.sections.map((section, idx) => {
         if (section.steps?.length) {
           return (
@@ -212,33 +301,51 @@ export default function ServiceLandingPage({ path }) {
                 >
                   <span className="section-badge">Süreç</span>
                   <h2 className="section-title mt-4 text-left">{section.h2}</h2>
-                  <p className="section-subtitle mt-3 max-w-xl text-left">
-                    Kayıttan ilk görüşmeye kadar net adımlar — paneli ve video seansları tek yerde.
+                  <p className="section-subtitle mt-3 max-w-xl text-left text-base sm:text-lg">
+                    {isCoach
+                      ? 'Kayıttan ilk koç görüşmesine kadar net adımlar — program, kütüphane ve video seansları tek yerde.'
+                      : 'Kayıttan ilk görüşmeye kadar net adımlar — panel ve video seansları tek yerde.'}
                   </p>
                 </motion.div>
 
-                <ol className="mt-12 grid gap-6 sm:grid-cols-2">
-                  {section.steps.map((step, i) => (
-                    <motion.li
-                      key={step.title}
-                      variants={fadeUp}
-                      initial="hidden"
-                      whileInView="show"
-                      custom={i}
-                      viewport={{ once: true, margin: '-40px' }}
-                      className={`relative flex gap-4 ${i % 2 === 1 ? 'sm:mt-8' : ''}`}
-                    >
-                      <span
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.iconGrad} font-display text-sm font-bold text-white shadow-md`}
+                <ol className="mt-12 grid gap-5 sm:grid-cols-2 sm:gap-6">
+                  {section.steps.map((step, i) => {
+                    const Icon = STEP_ICONS[i] || ClipboardList
+                    const accent = STEP_ACCENTS[i % STEP_ACCENTS.length]
+                    return (
+                      <motion.li
+                        key={step.title}
+                        variants={fadeUp}
+                        initial="hidden"
+                        whileInView="show"
+                        custom={i}
+                        viewport={{ once: true, margin: '-40px' }}
+                        className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6 ${accent.card}`}
                       >
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <div className="min-w-0 pt-0.5">
-                        <p className="font-display text-lg font-bold text-cream-950">{step.title}</p>
-                        <p className="mt-2 text-sm leading-relaxed text-cream-800/80">{step.text}</p>
-                      </div>
-                    </motion.li>
-                  ))}
+                        <div aria-hidden className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full ${accent.glow} blur-2xl`} />
+                        <div className="relative flex items-start gap-4">
+                          <span
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accent.badge} text-white shadow-md`}
+                          >
+                            <Icon className="h-5 w-5" strokeWidth={2.2} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="font-display text-lg font-bold tracking-tight text-cream-950">
+                                {step.title}
+                              </p>
+                              <span className="font-display text-xl font-bold tabular-nums text-cream-200">
+                                {String(i + 1).padStart(2, '0')}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm leading-relaxed text-cream-800/80 sm:text-[15px]">
+                              {step.text}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.li>
+                    )
+                  })}
                 </ol>
               </div>
             </section>
@@ -273,9 +380,9 @@ export default function ServiceLandingPage({ path }) {
                   {(section.paragraphs || []).map((p) => (
                     <p
                       key={p.slice(0, 40)}
-                      className="mt-4 text-[15px] leading-relaxed text-cream-800/85 first:mt-0 sm:text-base"
+                      className="mt-5 text-base leading-relaxed text-cream-800 first:mt-0 sm:text-lg sm:leading-[1.7]"
                     >
-                      {p}
+                      <EmphasizedText text={p} />
                     </p>
                   ))}
                 </motion.div>
@@ -290,42 +397,52 @@ export default function ServiceLandingPage({ path }) {
         <div aria-hidden className={`about-mesh ${theme.meshA}`} />
         <div aria-hidden className="about-mesh-dot" />
         <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="lg:col-span-5"
-            >
-              <span className="section-badge">Fark</span>
-              <h2 className="section-title mt-4 text-left">Neden {BRAND.name}?</h2>
-              <p className="section-subtitle mt-3 max-w-md text-left">
-                WhatsApp listesi veya tek seferlik PDF değil — video görüşme, panel ve program tek sistemde.
-              </p>
-            </motion.div>
-            <ul className="space-y-4 lg:col-span-6 lg:col-start-7">
-              {[
-                'Platform içi video görüşme — ayrı uygulama gerekmez',
-                'Kişiye özel program üye panelinde takip edilir',
-                'İsterseniz koç ve diyetisyeni VIP ile birleştirin',
-                'KVKK uyumlu altyapı ve uzman onaylı kadro',
-              ].map((item, i) => (
-                <motion.li
-                  key={item}
-                  variants={fadeUp}
-                  initial="hidden"
-                  whileInView="show"
-                  custom={i}
-                  viewport={{ once: true }}
-                  className="flex items-start gap-3 border-b border-cream-200/70 pb-4 last:border-0"
-                >
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sage-600" />
-                  <span className="text-[15px] leading-relaxed text-cream-900/90">{item}</span>
-                </motion.li>
-              ))}
-            </ul>
-          </div>
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="max-w-2xl"
+          >
+            <span className="section-badge">Fark</span>
+            <h2 className="section-title mt-4 text-left">Neden {BRAND.name}?</h2>
+            <p className="section-subtitle mt-3 max-w-xl text-left text-base sm:text-lg">
+              {isCoach ? (
+                <>
+                  Tek seferlik PDF veya mesaj listesi değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, antrenman programı ve kütüphane tek sistemde.
+                </>
+              ) : (
+                <>
+                  WhatsApp listesi veya tek seferlik PDF değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, panel ve program tek sistemde.
+                </>
+              )}
+            </p>
+          </motion.div>
+
+          <ul className="mt-10 grid gap-4 sm:grid-cols-2 sm:gap-5">
+            {whyItems.map((item, i) => (
+              <motion.li
+                key={item.title}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                custom={i}
+                viewport={{ once: true }}
+                className={`group relative overflow-hidden rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6 ${item.card}`}
+              >
+                <span className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-md transition group-hover:scale-105`}>
+                  <item.icon className="h-5 w-5" strokeWidth={2.2} />
+                </span>
+                <h3 className="mt-4 font-display text-base font-bold tracking-tight text-cream-950 sm:text-lg">
+                  {item.title}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-cream-800/80 sm:text-[15px]">
+                  {item.text}
+                </p>
+              </motion.li>
+            ))}
+          </ul>
+
           <p className="relative z-[1] mt-10 text-sm text-cream-700/75">
             <BadgeCheck className="mr-1.5 inline h-4 w-4 text-brand-600" />
             Hizmet standartları:{' '}
@@ -348,32 +465,6 @@ export default function ServiceLandingPage({ path }) {
         </div>
       </section>
 
-      {/* ═══ SSS ═══ */}
-      <section className="about-section-asymmetric relative py-16 sm:py-20">
-        <div aria-hidden className="about-mesh about-mesh-values" />
-        <div aria-hidden className="about-mesh-dot" />
-        <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-10 lg:grid-cols-12">
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="lg:col-span-4 lg:sticky lg:top-28 lg:self-start"
-            >
-              <span className="section-badge">SSS</span>
-              <h2 className="section-title mt-4 text-left">Sık sorulan sorular</h2>
-              <p className="section-subtitle mt-3 text-left">
-                Paket, görüşme formatı ve süreç hakkında net yanıtlar.
-              </p>
-            </motion.div>
-            <div className="lg:col-span-7 lg:col-start-6">
-              <ServiceFaqList faqs={page.faqs} />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ═══ CTA band ═══ */}
       <section className="relative overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${theme.ctaGrad}`} />
@@ -385,7 +476,9 @@ export default function ServiceLandingPage({ path }) {
               Hazır mısınız?
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/85 sm:text-base">
-              Ücretsiz Basic ile başlayın veya doğrudan uzman destekli pakete geçin.
+              {isCoach
+                ? 'Ücretsiz Basic ile başlayın veya doğrudan Spor / VIP paketle koç desteğine geçin.'
+                : 'Ücretsiz Basic ile başlayın veya doğrudan uzman destekli pakete geçin.'}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -405,40 +498,6 @@ export default function ServiceLandingPage({ path }) {
           </motion.div>
         </div>
       </section>
-    </div>
-  )
-}
-
-function ServiceFaqList({ faqs = [] }) {
-  const [open, setOpen] = useState(0)
-  return (
-    <div className="space-y-3">
-      {faqs.map((faq, i) => {
-        const isOpen = open === i
-        return (
-          <div
-            key={faq.q}
-            className="overflow-hidden rounded-2xl border border-cream-200/90 bg-white/90 shadow-sm shadow-cream-900/5 backdrop-blur"
-          >
-            <button
-              type="button"
-              onClick={() => setOpen(isOpen ? -1 : i)}
-              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-cream-50/50"
-              aria-expanded={isOpen}
-            >
-              <span className="text-sm font-semibold text-cream-950 sm:text-[15px]">{faq.q}</span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 text-cream-500 transition duration-300 ${isOpen ? 'rotate-180 text-brand-600' : ''}`}
-              />
-            </button>
-            {isOpen && (
-              <p className="border-t border-cream-100 px-5 py-4 text-sm leading-relaxed text-cream-800/85">
-                {faq.a}
-              </p>
-            )}
-          </div>
-        )
-      })}
     </div>
   )
 }

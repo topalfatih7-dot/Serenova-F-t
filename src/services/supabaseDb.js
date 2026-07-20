@@ -1194,11 +1194,20 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 
 // --------------------------- member mutations ---------------------------
 // Çoğu mutasyon: bellekteki member nesnesini düzenle + upsert et.
+// E-posta / telefon / cinsiyet kayıt sonrası istemciden değiştirilemez.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
 
-  if (patch.phone != null && patch.phone !== '') {
+  // Kimlik alanları kilitli
+  updated.email = member.email
+  if (member.phone) {
+    updated.phone = member.phone
+    if (member.phoneCountry) updated.phoneCountry = member.phoneCountry
+  } else if (patch.phone != null && patch.phone !== '') {
     updated.phone = normalizeE164(patch.phone)
+  }
+  if (member.gender) {
+    updated.gender = member.gender
   }
 
   if (patch.calorieHistory) {

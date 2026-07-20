@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
+/** Hero vurgusu — kontrol, süreklilik ve kişiselleştirme sinyalleri */
 const PHRASES = [
   'sizin ritminizde',
-  'sizin elinizde',
+  'sizin temposunuzda',
   'sizin kontrolünüzde',
-  'sizin yolunuzda',
-  'sizin hızınızda',
+  'sizin hedeflerinizle',
+  'sizin yolculuğunuzda',
+  'evde veya salonda',
+  'adım adım',
+  'güvenle ilerleyin',
+  'ilk günden itibaren',
+  'sizin programınızla',
+  'sürekli destekle',
+  'ölçülebilir ilerlemeyle',
 ]
 
-const HOLD_MS = 3200
+const HOLD_MS = 2800
 const TRANSITION = { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
 
 export default function RotatingHeroText({ className = '' }) {
@@ -27,8 +35,6 @@ export default function RotatingHeroText({ className = '' }) {
   return (
     <span className={`relative inline-block min-h-[1.2em] align-bottom ${className}`}>
       <AnimatePresence mode="wait">
-        {/* filter:blur metinde pahalı stencil/rasterization tetikler — kaldırıldı.
-            Sadece opacity + y kullanılır; aynı estetik, çok daha az GPU yükü. */}
         <motion.span
           key={phrase}
           initial={{ opacity: 0, y: 18 }}

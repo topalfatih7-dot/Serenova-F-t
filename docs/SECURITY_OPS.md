@@ -4,6 +4,7 @@
 
 - Tüm public formlar `/api/contact` üzerinden gider (`action`: `contact` | `staff_application` | `corporate_application` | `staff_doc_upload`).
 - Production: `TURNSTILE_SECRET_KEY` + `VITE_TURNSTILE_SITE_KEY` zorunlu.
+- Localhost (`npm run dev` / host `localhost`): bot kontrolü otomatik atlanır; giriş CAPTCHA’sız service-role password grant kullanır.
 - Rate limit: Upstash (`UPSTASH_REDIS_REST_*`) tercih; yoksa bellek içi yedek + Postgres RPC limitleri.
 - `submit_*` RPC’leri yalnızca `service_role` ile çağrılır.
 

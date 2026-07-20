@@ -7,18 +7,18 @@ import { DIFFICULTY_LABELS, EXERCISE_LOCATION_LABELS, EXERCISE_LOCATION_OPTIONS,
 const DIFFICULTY_ALL = 'Tümü'
 const FILTER_ALL = ''
 
-const FILTER_LABEL_BASE = 'mb-2 block text-sm font-bold uppercase tracking-wide sm:mb-2.5 sm:text-base'
+const FILTER_LABEL_BASE = 'mb-1.5 block text-xs font-bold uppercase tracking-wide sm:mb-2 sm:text-sm'
 const SELECT_BASE =
-  'w-full min-h-[3rem] cursor-pointer appearance-none rounded-2xl border-2 px-4 py-3 pr-11 text-base font-semibold outline-none transition sm:min-h-[3.25rem] sm:px-4 sm:py-3.5 sm:text-lg'
+  'w-full min-h-[2.5rem] cursor-pointer appearance-none rounded-xl border-2 px-3 py-2 pr-9 text-sm font-semibold outline-none transition sm:min-h-[2.75rem] sm:px-3.5 sm:py-2.5 sm:text-base'
 
 const FILTER_THEMES = {
   search: {
     label: `${FILTER_LABEL_BASE} text-violet-800`,
     wrap:
-      'relative w-full overflow-hidden rounded-2xl border-2 border-violet-400 bg-gradient-to-r from-violet-100/90 via-white to-purple-50 shadow-md shadow-violet-200/40 transition hover:border-violet-500 hover:shadow-lg hover:shadow-violet-200/50 focus-within:border-violet-600 focus-within:ring-4 focus-within:ring-violet-200/80 min-h-[3rem] sm:min-h-[3.25rem]',
+      'relative w-full overflow-hidden rounded-xl border-2 border-violet-400 bg-gradient-to-r from-violet-100/90 via-white to-purple-50 shadow-md shadow-violet-200/40 transition hover:border-violet-500 hover:shadow-lg hover:shadow-violet-200/50 focus-within:border-violet-600 focus-within:ring-4 focus-within:ring-violet-200/80 min-h-[2.5rem] sm:min-h-[2.75rem]',
     iconBar: 'from-violet-500 to-purple-600',
     input:
-      `${SELECT_BASE} w-full min-w-0 border-0 bg-transparent py-3 pl-14 pr-4 text-violet-950 shadow-none placeholder:text-violet-500/70 focus:border-0 focus:bg-white/70 focus:ring-0 sm:pl-16`,
+      `${SELECT_BASE} w-full min-w-0 border-0 bg-transparent py-2 pl-12 pr-3 text-violet-950 shadow-none placeholder:text-violet-500/70 focus:border-0 focus:bg-white/70 focus:ring-0 sm:pl-14`,
   },
   category: {
     label: `${FILTER_LABEL_BASE} text-brand-800`,
@@ -50,7 +50,7 @@ function FilterSelect({ className, chevronClassName = 'text-violet-500', childre
   return (
     <div className="relative">
       <select className={className} {...props}>{children}</select>
-      <ChevronDown className={`pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 sm:right-4 sm:h-6 sm:w-6 ${chevronClassName}`} />
+      <ChevronDown className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 sm:right-3.5 sm:h-5 sm:w-5 ${chevronClassName}`} />
     </div>
   )
 }
@@ -86,20 +86,20 @@ export default function ExerciseLibraryFilters({
   const hasActiveFilters = Boolean(location || requiresMachine)
 
   return (
-    <div className={`rounded-2xl border-2 border-violet-200/60 bg-gradient-to-br from-violet-50/70 via-white to-purple-50/40 p-5 shadow-md shadow-violet-100/30 sm:rounded-3xl sm:p-6 lg:p-7 ${className}`}>
+    <div className={`rounded-2xl border-2 border-violet-200/60 bg-gradient-to-br from-violet-50/70 via-white to-purple-50/40 p-3 shadow-md shadow-violet-100/30 sm:rounded-2xl sm:p-4 ${className}`}>
       <button
         type="button"
         onClick={() => setFiltersOpen((v) => !v)}
         aria-expanded={filtersOpen}
         className="mb-0 flex w-full items-center justify-between gap-3 rounded-xl text-left transition active:scale-[0.99] sm:hidden"
       >
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm">
-            <Search className="h-5 w-5" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm">
+            <Search className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold uppercase tracking-wide text-violet-800">Hareket Ara</p>
-            <p className="mt-0.5 truncate text-xs font-medium text-violet-700/65">
+            <p className="text-xs font-bold uppercase tracking-wide text-violet-800">Hareket Ara</p>
+            <p className="mt-0.5 truncate text-[11px] font-medium text-violet-700/65">
               {filtersOpen
                 ? 'Filtreleri gizle'
                 : activeFilterCount > 0
@@ -108,17 +108,17 @@ export default function ExerciseLibraryFilters({
             </p>
           </div>
         </div>
-        <ChevronDown className={`h-5 w-5 shrink-0 text-violet-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-violet-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      <div className={`flex flex-col gap-5 sm:gap-6 ${filtersOpen ? 'mt-4' : 'hidden sm:flex'}`}>
+      <div className={`flex flex-col gap-3 sm:gap-4 ${filtersOpen ? 'mt-3' : 'hidden sm:flex'}`}>
         <div className="w-full min-w-0">
           <label htmlFor="exercise-library-search" className={FILTER_THEMES.search.label}>
             Hareket Ara
           </label>
           <div className={FILTER_THEMES.search.wrap}>
-            <span className={`pointer-events-none absolute inset-y-0 left-0 z-10 flex w-12 shrink-0 items-center justify-center bg-gradient-to-br sm:w-14 ${FILTER_THEMES.search.iconBar}`}>
-              <Search className="h-5 w-5 text-white sm:h-6 sm:w-6" />
+            <span className={`pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 shrink-0 items-center justify-center bg-gradient-to-br sm:w-12 ${FILTER_THEMES.search.iconBar}`}>
+              <Search className="h-4 w-4 text-white sm:h-5 sm:w-5" />
             </span>
             <input
               id="exercise-library-search"
@@ -131,8 +131,8 @@ export default function ExerciseLibraryFilters({
           </div>
         </div>
 
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:gap-4">
-          <div className="space-y-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <div className="space-y-1.5">
             <label className={FILTER_THEMES.category.label}>Hareket Tipi</label>
             <ExerciseCategorySelect
               value={category}
@@ -141,7 +141,7 @@ export default function ExerciseLibraryFilters({
               chevronClassName={FILTER_THEMES.category.chevron}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className={FILTER_THEMES.difficulty.label}>Zorluk</label>
             <FilterSelect
               value={difficulty}
@@ -155,7 +155,7 @@ export default function ExerciseLibraryFilters({
               ))}
             </FilterSelect>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className={FILTER_THEMES.location.label}>Konum</label>
             <FilterSelect
               value={location}
@@ -169,7 +169,7 @@ export default function ExerciseLibraryFilters({
               ))}
             </FilterSelect>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className={FILTER_THEMES.machine.label}>Makine</label>
             <FilterSelect
               value={requiresMachine}
@@ -186,15 +186,15 @@ export default function ExerciseLibraryFilters({
         </div>
 
         {hasActiveFilters && (
-          <p className="flex flex-wrap items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-purple-50/60 px-3 py-2.5 text-sm sm:text-base">
+          <p className="flex flex-wrap items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-purple-50/60 px-2.5 py-2 text-xs sm:text-sm">
             <span className="font-medium text-cream-800/60">Aktif filtreler:</span>
             {location && (
-              <span className="rounded-full bg-rose-100 px-3 py-0.5 text-sm font-bold text-rose-900 ring-1 ring-rose-200">
+              <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-900 ring-1 ring-rose-200">
                 {EXERCISE_LOCATION_LABELS[location] || location}
               </span>
             )}
             {requiresMachine && (
-              <span className="rounded-full bg-slate-100 px-3 py-0.5 text-sm font-bold text-slate-900 ring-1 ring-slate-200">
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-900 ring-1 ring-slate-200">
                 {REQUIRES_MACHINE_LABELS[requiresMachine] || requiresMachine}
               </span>
             )}

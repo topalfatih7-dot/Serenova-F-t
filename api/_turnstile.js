@@ -1,6 +1,7 @@
 /**
  * Cloudflare Turnstile doğrulama.
- * Production'da TURNSTILE_SECRET_KEY zorunlu; local'de yoksa atlanır.
+ * Production'da TURNSTILE_SECRET_KEY zorunlu.
+ * Localhost / Vite dev'de atlanır (Supabase CAPTCHA için service-role login kullanılır).
  */
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
@@ -9,7 +10,29 @@ export function isTurnstileConfigured() {
   return Boolean(process.env.TURNSTILE_SECRET_KEY?.trim())
 }
 
-export async function verifyTurnstile(token, remoteip) {
+/** Vite / vercel dev / localhost — production dışı test. */
+export function isLocalDevAuth(req) {
+  if (process.env.ALLOW_LOCAL_AUTH_BYPASS === '1') return true
+  if (process.env.ALLOW_LOCAL_AUTH_BYPASS === '0') return false
+
+  const host = String(req?.headers?.host || req?.headers?.Host || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase()
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return true
+
+  // Vercel prod / preview: asla otomatik bypass
+  if (process.env.VERCEL === '1' || process.env.VERCEL_ENV) return false
+  if (process.env.NODE_ENV === 'production') return false
+
+  return true
+}
+
+export async function verifyTurnstile(token, remoteip, req) {
+  if (isLocalDevAuth(req)) {
+    return { ok: true, skipped: true, reason: 'local-dev' }
+  }
+
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim()
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Dumbbell, Apple, Stethoscope } from 'lucide-react'
+import { Dumbbell, Apple, Stethoscope, CheckCircle } from 'lucide-react'
 import MemberScheduleView from '../components/calendar/MemberScheduleView'
 import { coachMonthlyLimit, dietitianMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
@@ -11,9 +11,36 @@ import {
 } from '../data/membershipPlans'
 
 const TABS = [
-  { id: 'coach', label: 'Koç', icon: Dumbbell },
-  { id: 'dietitian', label: 'Diyetisyen', icon: Apple },
-  { id: 'doctor', label: 'Doktor', icon: Stethoscope },
+  {
+    id: 'coach',
+    label: 'Koç',
+    hint: 'Antrenman seansı',
+    icon: Dumbbell,
+    active: 'border-brand-500 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-200/50',
+    idle: 'border-brand-200/80 bg-gradient-to-br from-brand-50 to-sky-50/70 text-brand-950 hover:border-brand-300 hover:shadow-md',
+    iconActive: 'bg-white/20 text-white',
+    iconIdle: 'bg-brand-100 text-brand-600',
+  },
+  {
+    id: 'dietitian',
+    label: 'Diyetisyen',
+    hint: 'Beslenme görüşmesi',
+    icon: Apple,
+    active: 'border-sage-500 bg-gradient-to-br from-sage-500 to-emerald-600 text-white shadow-lg shadow-sage-200/50',
+    idle: 'border-sage-200/80 bg-gradient-to-br from-sage-50 to-emerald-50/70 text-sage-950 hover:border-sage-300 hover:shadow-md',
+    iconActive: 'bg-white/20 text-white',
+    iconIdle: 'bg-sage-100 text-sage-600',
+  },
+  {
+    id: 'doctor',
+    label: 'Doktor',
+    hint: 'Sağlık görüşmesi',
+    icon: Stethoscope,
+    active: 'border-teal-500 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200/50',
+    idle: 'border-teal-200/80 bg-gradient-to-br from-teal-50 to-cyan-50/70 text-teal-950 hover:border-teal-300 hover:shadow-md',
+    iconActive: 'bg-white/20 text-white',
+    iconIdle: 'bg-teal-100 text-teal-700',
+  },
 ]
 
 export default function AppointmentsPage() {
@@ -35,23 +62,36 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-cream-200 bg-white p-1.5 shadow-sm">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition min-w-[7rem] ${
-              activeTab === id
-                ? 'bg-brand-500 text-white shadow-md'
-                : 'text-cream-800 hover:bg-cream-50'
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+        {TABS.map(({ id, label, hint, icon: Icon, active, idle, iconActive, iconIdle }) => {
+          const selected = activeTab === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={`flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3.5 text-left transition duration-200 sm:px-4 sm:py-4 ${
+                selected ? active : idle
+              }`}
+            >
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${selected ? iconActive : iconIdle}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold leading-tight sm:text-[15px]">{label}</span>
+                <span className={`mt-0.5 block text-[11px] leading-tight sm:text-xs ${selected ? 'text-white/80' : 'opacity-60'}`}>
+                  {hint}
+                </span>
+              </span>
+              {selected ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
       </div>
 
       {activeTab === 'coach' && (

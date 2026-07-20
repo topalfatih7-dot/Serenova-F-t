@@ -18,7 +18,7 @@ import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError }
 import { setCorsHeaders, handleOptions } from './_guards.js'
 import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
 import { reportFormAttack, mapGuardToAttackReason } from './_attackAlert.js'
-import { verifyTurnstile } from './_turnstile.js'
+import { verifyTurnstile, isLocalDevAuth } from './_turnstile.js'
 import { isDisposableEmail, disposableEmailError } from './_disposableEmail.js'
 import { issueFormSession, verifyFormSession } from './_formSession.js'
 
@@ -41,7 +41,7 @@ function resolveAction(body, req) {
 }
 
 async function requireTurnstile(req, token) {
-  const result = await verifyTurnstile(token, getClientIp(req))
+  const result = await verifyTurnstile(token, getClientIp(req), req)
   if (result.ok) return { ok: true }
   return {
     ok: false,
@@ -58,12 +58,16 @@ function readCaptchaToken(body) {
  * Turnstile koruması.
  * deferToSupabaseCaptcha: token’ı Cloudflare’de BİZ doğrulamayız (tek kullanımlık);
  * Supabase /token CAPTCHA’sına iletilir. Aksi halde siteverify burada yapılır.
+ * Localhost: zorunluluk yok (Supabase CAPTCHA için service-role login kullanılır).
  */
 async function requireBotGuard(req, body, { allowAuthSession = false, deferToSupabaseCaptcha = false } = {}) {
   const ip = getClientIp(req)
   if (allowAuthSession && body.authSessionToken) {
     const session = verifyFormSession(body.authSessionToken, { ip, kind: 'auth-signup' })
     if (session.ok) return { ok: true, via: 'auth-session' }
+  }
+  if (isLocalDevAuth(req)) {
+    return { ok: true, via: 'local-dev', captchaToken: readCaptchaToken(body) }
   }
   const token = readCaptchaToken(body)
   if (deferToSupabaseCaptcha) {
@@ -78,6 +82,76 @@ async function requireBotGuard(req, body, { allowAuthSession = false, deferToSup
     return { ok: true, via: 'supabase-captcha', captchaToken: token }
   }
   return requireTurnstile(req, token)
+}
+
+/** Localhost: anon CAPTCHA engelini service-role password grant ile aş. */
+async function passwordGrant(email, password, captchaToken, { localBypass = false } = {}) {
+  const url = getSupabaseUrl()
+  const anonKey = getAnonKey()
+  if (!url || !anonKey) {
+    return { ok: false, status: 503, error: 'Supabase URL veya anon anahtarı eksik.' }
+  }
+
+  const anon = createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error: signInErr } = await anon.auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  })
+  if (!signInErr && data?.session) {
+    return { ok: true, session: data.session }
+  }
+
+  const msg = String(signInErr?.message || '')
+  const captchaBlocked = /captcha/i.test(msg)
+  const unconfirmed = /not confirmed|confirm/i.test(msg)
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (localBypass && serviceKey && (captchaBlocked || !captchaToken || unconfirmed)) {
+    const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ email, password }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json?.access_token) {
+      return {
+        ok: true,
+        session: {
+          access_token: json.access_token,
+          refresh_token: json.refresh_token,
+          expires_in: json.expires_in,
+          expires_at: json.expires_at,
+          token_type: json.token_type || 'bearer',
+        },
+      }
+    }
+    const svcMsg = String(json?.error_description || json?.msg || json?.error || '')
+    if (/not confirmed|confirm/i.test(svcMsg)) {
+      return { ok: false, status: 401, error: svcMsg || msg, unconfirmed: true }
+    }
+    if (res.status === 400 || res.status === 401) {
+      return { ok: false, status: 401, error: 'E-posta veya şifre hatalı.' }
+    }
+  }
+
+  if (unconfirmed) {
+    return { ok: false, status: 401, error: msg, unconfirmed: true }
+  }
+  if (captchaBlocked) {
+    return {
+      ok: false,
+      status: 403,
+      error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
+    }
+  }
+  return { ok: false, status: 401, error: 'E-posta veya şifre hatalı.' }
 }
 
 async function sendOtpEmail(email, redirectTo) {
@@ -205,34 +279,15 @@ async function handlePasswordLogin(req, res, body) {
     return res.status(400).json({ ok: false, error: disposableEmailError() })
   }
 
-  const url = getSupabaseUrl()
-  const anonKey = getAnonKey()
-  if (!url || !anonKey) {
-    return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
-  }
-
   const captchaToken = readCaptchaToken(body)
-  const anon = createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  const result = await passwordGrant(email, password, captchaToken, {
+    localBypass: isLocalDevAuth(req),
   })
-
-  const { data, error: signInErr } = await anon.auth.signInWithPassword({
-    email,
-    password,
-    options: captchaToken ? { captchaToken } : undefined,
-  })
-  if (signInErr || !data?.session) {
-    const msg = String(signInErr?.message || '')
-    if (/captcha/i.test(msg)) {
-      return res.status(403).json({
-        ok: false,
-        error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
-      })
-    }
-    return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
+  if (!result.ok) {
+    return res.status(result.status || 401).json({ ok: false, error: result.error })
   }
 
-  const session = data.session
+  const session = result.session
   return res.status(200).json({
     ok: true,
     session: {
@@ -262,35 +317,12 @@ async function handleUnlockSignup(req, res, body) {
 
   /* Kayıt sonrası kısa oturum: şifre zaten register_email_user ile doğrulandı */
   if (!authSession.ok) {
-    const url = getSupabaseUrl()
-    const anonKey = getAnonKey()
-    if (!url || !anonKey) {
-      return res.status(503).json({ ok: false, error: 'Supabase URL veya anon anahtarı eksik.' })
-    }
-
     const captchaToken = readCaptchaToken(body)
-    const anon = createClient(url, anonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
+    const grant = await passwordGrant(email, password, captchaToken, {
+      localBypass: isLocalDevAuth(req),
     })
-
-    const { error: signInErr } = await anon.auth.signInWithPassword({
-      email,
-      password,
-      options: captchaToken ? { captchaToken } : undefined,
-    })
-    if (signInErr) {
-      const unconfirmed = /not confirmed|confirm/i.test(signInErr.message)
-      if (!unconfirmed) {
-        if (/captcha/i.test(signInErr.message)) {
-          return res.status(403).json({
-            ok: false,
-            error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
-          })
-        }
-        return res.status(401).json({ ok: false, error: 'E-posta veya şifre hatalı.' })
-      }
-    } else {
-      await anon.auth.signOut()
+    if (!grant.ok && !grant.unconfirmed) {
+      return res.status(grant.status || 401).json({ ok: false, error: grant.error })
     }
   }
 

@@ -18,6 +18,8 @@ export default function HealthTestPage() {
     try {
       await updateProfile({ healthAck, disclaimer })
       toast('Onaylar kaydedildi. Testlere başlayabilirsiniz.', 'success')
+    } catch (err) {
+      toast(err?.message || 'Onaylar kaydedilemedi.', 'error')
     } finally {
       setConsentSaving(false)
     }

@@ -167,6 +167,8 @@ export default function CalendarPage() {
       await updateProfile({ availability: availForm })
       toast('Müsaitlik bilgileriniz kaydedildi', 'success')
       setAvailOpen(false)
+    } catch (err) {
+      toast(err?.message || 'Müsaitlik kaydedilemedi.', 'error')
     } finally {
       setAvailSaving(false)
     }
@@ -682,9 +684,9 @@ function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete 
   return (
     <motion.div
       layout
-      className={`px-6 py-4 transition-colors ${done ? 'bg-sage-50/60' : 'bg-white hover:bg-cream-50/50'}`}
+      className={`px-5 py-5 transition-colors sm:px-6 sm:py-5 ${done ? 'bg-sage-50/60' : 'bg-white hover:bg-cream-50/50'}`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3.5 sm:gap-4">
         {canComplete ? (
           <button
             type="button"
@@ -696,17 +698,17 @@ function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete 
             <AnimatePresence mode="wait">
               {done ? (
                 <motion.div key="done" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
-                  <CheckCircle className="h-6 w-6 text-sage-500" />
+                  <CheckCircle className="h-7 w-7 text-sage-500" />
                 </motion.div>
               ) : (
                 <motion.div key="undone" initial={{ scale: 0.5 }} animate={{ scale: 1 }} exit={{ scale: 0.5 }}>
-                  <Circle className="h-6 w-6 text-cream-300" />
+                  <Circle className="h-7 w-7 text-cream-300" />
                 </motion.div>
               )}
             </AnimatePresence>
           </button>
         ) : (
-          <Circle className="mt-0.5 h-6 w-6 shrink-0 text-cream-300" />
+          <Circle className="mt-0.5 h-7 w-7 shrink-0 text-cream-300" />
         )}
 
         {hasVideo && !isNutrition && (
@@ -716,13 +718,13 @@ function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete 
             onPointerEnter={() => prefetchExerciseVideo(entry.videoUrl)}
             onPointerDown={() => prefetchExerciseVideo(entry.videoUrl)}
             onFocus={() => prefetchExerciseVideo(entry.videoUrl)}
-            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
             title="Hareket detayı"
           >
             <ExerciseVideoThumbnail
               url={entry.videoUrl}
               videoPending={entry.videoPending}
-              size="xs"
+              size="sm"
               accent="brand"
             />
           </button>
@@ -732,19 +734,19 @@ function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete 
           {isNutrition && entry.mealType && (
             <p className="text-[10px] font-bold uppercase tracking-wide text-sage-600">{mealLabel(entry.mealType)}</p>
           )}
-          <p className={`font-semibold leading-snug ${done ? 'text-cream-800/40 line-through' : 'text-cream-900'}`}>
+          <p className={`text-[15px] font-semibold leading-snug sm:text-base ${done ? 'text-cream-800/40 line-through' : 'text-cream-900'}`}>
             {displayName}
           </p>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             {(entry.start || entry.end) && (
-              <span className="flex items-center gap-1 text-xs text-cream-800/55">
-                <Clock className="h-3 w-3" />
+              <span className="flex items-center gap-1 text-xs text-cream-800/55 sm:text-[13px]">
+                <Clock className="h-3.5 w-3.5" />
                 {entry.start}{entry.end ? `–${entry.end}` : ''}
               </span>
             )}
             {(entry.amount || entry.amountType) && (
-              <span className="rounded-full bg-cream-100 px-2 py-0.5 text-xs font-medium text-cream-800">
+              <span className="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-cream-800 sm:text-[13px]">
                 {entry.sets ? `${entry.sets} set × ` : ''}{amountText(entry)}
               </span>
             )}
@@ -760,9 +762,9 @@ function ActivityRow({ entry, done, onToggle, onOpenDetail, saving, canComplete 
             onClick={onOpenDetail}
             onPointerEnter={() => entry.videoUrl && prefetchExerciseVideo(entry.videoUrl)}
             onPointerDown={() => entry.videoUrl && prefetchExerciseVideo(entry.videoUrl)}
-            className="shrink-0 flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
+            className="shrink-0 flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-100 sm:text-sm"
           >
-            <PlayCircle className="h-3.5 w-3.5" />
+            <PlayCircle className="h-4 w-4" />
             İzle
           </button>
         )}

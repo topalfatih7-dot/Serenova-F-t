@@ -49,7 +49,7 @@ async function guardBotAndRate(req, { prefix, limit, email = '', kind = 'public'
       return { ok: false, status: 403, error: session.error }
     }
   } else {
-    const turnstile = await verifyTurnstile(req._formTurnstileToken, ip)
+    const turnstile = await verifyTurnstile(req._formTurnstileToken, ip, req)
     if (!turnstile.ok) {
       return { ok: false, status: turnstile.status, error: turnstile.error }
     }

@@ -6,22 +6,22 @@ const STEPS = [
   {
     step: '01',
     icon: ClipboardList,
-    title: 'Kayıt ol & sağlık testini tamamla',
-    desc: 'Hedeflerinizi, yaşam tarzınızı ve sağlık profilinizi birkaç dakikada paylaşın.',
+    title: 'Profilinizi netleştirin',
+    desc: 'Hedef, yaşam tarzı ve sağlık bilgilerinizi paylaşın. Birkaç dakikada size özel başlangıç için sağlam bir temel oluşur.',
     accent: 'from-brand-500 to-brand-600',
   },
   {
     step: '02',
     icon: Sparkles,
-    title: 'Size özel programınız hazırlansın',
-    desc: 'Ücretsiz sağlık analizi veya premium planda koç ve diyetisyen eşleşmesi.',
+    title: 'Planınız şekillensin',
+    desc: 'Ücretsiz sağlık analiziyle başlayın. Premium planda koç ve diyetisyen eşleşmesiyle programınız netleşir.',
     accent: 'from-sage-500 to-sage-600',
   },
   {
     step: '03',
     icon: Video,
-    title: 'Takip edin & görüşmelerinize katılın',
-    desc: 'Panelden ilerlemenizi izleyin, randevularınıza video görüşme ile katılın.',
+    title: 'Takip edin, görüşün, güncelleyin',
+    desc: 'Panelden ilerlemenizi görün. Randevularınıza video ile katılın; planınız ihtiyaçlarınıza göre birlikte güncellenir.',
     accent: 'from-brand-400 to-sage-500',
   },
 ]
@@ -99,7 +99,7 @@ export default function HowItWorksSection() {
               <span className="section-badge hidden md:inline-flex">Süreç</span>
               <h2 className="section-title mt-4">Nasıl Çalışır?</h2>
               <p className="section-subtitle mx-auto max-w-xl md:mx-0">
-                Üç basit adımda dönüşüm yolculuğunuza başlayın — evden, güvenle, kendi ritminizde.
+                Üç net adım. Karmaşık süreç yok — kayıt, plan ve takip; her aşamada ne yapacağınız belli.
               </p>
             </motion.div>
 
@@ -134,12 +134,12 @@ export default function HowItWorksSection() {
                       />
                       <div className="rounded-2xl border border-cream-200/80 bg-white p-5 pt-9 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:p-6 sm:pt-10 md:pt-6">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="font-display text-base font-bold leading-snug text-cream-900 sm:text-lg">
+                          <h3 className="font-display text-base font-bold leading-snug tracking-tight text-cream-900 sm:text-lg">
                             {s.title}
                           </h3>
-                          <span className="font-display text-2xl font-bold text-cream-100">{s.step}</span>
+                          <span className="font-display text-2xl font-bold tabular-nums text-cream-100">{s.step}</span>
                         </div>
-                        <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+                        <p className="mt-2 text-sm leading-relaxed text-cream-800/70">
                           {s.desc}
                         </p>
                       </div>
