@@ -96,8 +96,6 @@ export default function HealthTestSectionPage() {
 
   if (!section) return <Navigate to="/health-test" replace />
 
-  const sectionDone = isSectionComplete(section, user.healthTest)
-
   return (
     <PanelPageShell>
       <div className="mb-5">
@@ -110,11 +108,6 @@ export default function HealthTestSectionPage() {
         accent="brand"
         image={PANEL_IMAGES.healthTest}
       />
-      {sectionDone ? (
-        <p className="mx-auto mb-4 max-w-2xl rounded-xl border border-sage-200 bg-sage-50/60 px-4 py-2.5 text-xs text-sage-800">
-          Bu kategori daha önce tamamlanmış. Cevaplarınızı güncelleyebilir veya değiştirebilirsiniz.
-        </p>
-      ) : null}
       <HealthTestFlow
         key={sectionId}
         layout="page"
