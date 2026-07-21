@@ -55,7 +55,7 @@ const member = {
     wellbeing: 'good',
     flexibilityLevel: 'low',
     sittingHours: '7_9',
-    doctorClearance: 'yes',
+    doctorClearance: 'no',
     chronicConditions: [],
     exerciseContraindications: 'no',
   },

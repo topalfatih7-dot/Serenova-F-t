@@ -113,12 +113,12 @@ export function analyzeRisk(profile) {
 
   const chronic = c.chronicConditions || []
   const serious = ['heart', 'hypertension', 'stroke', 'cancer', 'kidney']
-  if (c.doctorClearance === 'no' && chronic.some((x) => serious.includes(x))) {
+  if (c.doctorClearance === 'yes' && chronic.some((x) => serious.includes(x))) {
     referralSuggested = true
     redFlags.push({
-      code: 'no_clearance_with_chronic',
+      code: 'doctor_restriction_with_chronic',
       severity: 'high',
-      messageTR: 'Kronik durum ve doktor onayı yok; yalnızca çok düşük yoğunluk önerildi.',
+      messageTR: 'Doktor kısıtlaması ve kronik durum bildirildi; yalnızca çok düşük yoğunluk önerildi.',
     })
   }
 
@@ -128,7 +128,7 @@ export function analyzeRisk(profile) {
     bannedTags.add('valsalva_heavy')
     bannedTags.add('plyometric')
     warnings.push('Gebelik bildirildi; program muhafazakâr tutuldu (tıbbi tavsiye değildir).')
-    if (c.doctorClearance === 'no') referralSuggested = true
+    if (c.doctorClearance === 'yes' || c.doctorClearance === 'unsure') referralSuggested = true
   }
 
   if (c.painScale >= 7) {

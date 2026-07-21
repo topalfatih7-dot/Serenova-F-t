@@ -146,7 +146,8 @@ function scoreRisk(ht = {}, explain = []) {
   if (chronic.includes('sleep_apnea')) score += 6
 
   if (ht.pregnancy && ht.pregnancy !== 'no' && ht.pregnancy !== 'none') score += 20
-  if (ht.doctorClearance === 'no' && chronic.length) score += 20
+  if (ht.doctorClearance === 'yes' && chronic.length) score += 20
+  if (ht.doctorClearance === 'unsure' && chronic.length) score += 10
   if (ht.exerciseContraindications === 'yes') score += 10
 
   score = clamp(score)

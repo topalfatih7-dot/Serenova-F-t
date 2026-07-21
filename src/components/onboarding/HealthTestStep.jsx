@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   HeartPulse, Stethoscope, Bone, Activity, Moon, Apple, Flower2, Check, AlertCircle, SkipForward, Clock,
   Sunrise, Sunset, UtensilsCrossed, BedDouble, Dumbbell, Clock3, MoonStar, Venus, Mars, Upload, X, FileText,
@@ -462,22 +462,14 @@ export default function HealthTestStep({
         <div className="h-2 w-full overflow-hidden rounded-full bg-cream-100">
           <motion.div
             className={`h-full rounded-full ${theme.bar}`}
-            initial={{ width: 0 }}
+            initial={false}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.45, ease: 'easeOut' }}
           />
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={q.key}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden rounded-3xl border border-white/80 bg-white/95 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm"
-        >
+      <div className="overflow-hidden rounded-3xl border border-white/80 bg-white/95 shadow-xl shadow-brand-900/[0.06] backdrop-blur-sm">
           <div className={`bg-gradient-to-r ${theme.grad} px-5 py-4 sm:px-7 sm:py-5`}>
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur">
@@ -625,8 +617,7 @@ export default function HealthTestStep({
               </motion.p>
             )}
           </div>
-        </motion.div>
-      </AnimatePresence>
+        </div>
     </div>
   )
 }

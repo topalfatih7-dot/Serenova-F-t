@@ -246,13 +246,15 @@ Bir ruh sagligi tanı veya tedavi geçmişiniz var mi?
 | ongoing | Şu anda devam ediyor |  |
 
 ### doctorClearance (`single`, required)
-Egzersiz veya kilo yonetimi programi icin doktor onayi aldiniz mi?
+Doktorunuz tarafından egzersiz veya beslenme konusunda herhangi bir kısıtlama önerildi mi?
 
 | value | label | emoji |
 |-------|-------|-------|
+| no | Hayır |  |
 | yes | Evet |  |
-| no_need | Gerek gormedim |  |
-| not_yet | Henüz almadim |  |
+| unsure | Emin değilim |  |
+
+Detail (`doctorClearanceDetail`) when `yes`.
 
 ### bloodPressureIssues (`single`)
 Tansiyon dalgalanmasi sorunu yasiyor musunuz?

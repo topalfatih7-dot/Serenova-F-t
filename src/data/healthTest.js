@@ -156,6 +156,10 @@ export function normalizeHealthTestForAnalysis(ht) {
   const alcoholMap = { none: 'never', monthly: 'rarely', weekly: 'regularly', frequent: 'regularly' }
   if (alcoholMap[n.alcohol]) n.alcohol = alcoholMap[n.alcohol]
 
+  // Eski "doktor onayı" → yeni "doktor kısıtlaması" semantiği
+  const clearanceLegacy = { no_need: 'no', not_yet: 'unsure' }
+  if (clearanceLegacy[n.doctorClearance]) n.doctorClearance = clearanceLegacy[n.doctorClearance]
+
   if (Array.isArray(n.chronicConditions)) {
     n.chronicConditions = n.chronicConditions.filter((v) => v !== 'none')
     if (n.chronicConditions.includes('heartDisease')) {

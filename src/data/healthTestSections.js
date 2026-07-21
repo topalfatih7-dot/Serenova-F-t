@@ -473,13 +473,18 @@ export const HEALTH_SECTIONS = [
       {
         type: 'single',
         key: 'doctorClearance',
-        label: 'Egzersiz veya kilo yönetimi programı için doktor onayı aldınız mı?',
+        label: 'Doktorunuz tarafından egzersiz veya beslenme konusunda herhangi bir kısıtlama önerildi mi?',
         required: true,
         options: [
+          { value: 'no', label: 'Hayır' },
           { value: 'yes', label: 'Evet' },
-          { value: 'no_need', label: 'Gerek görmedim' },
-          { value: 'not_yet', label: 'Henüz almadım' },
+          { value: 'unsure', label: 'Emin değilim' },
         ],
+        detail: {
+          key: 'doctorClearanceDetail',
+          when: ['yes'],
+          placeholder: 'Önerilen kısıtlamayı kısaca yazınız',
+        },
       },
       {
         type: 'text',

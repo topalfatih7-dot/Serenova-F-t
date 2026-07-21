@@ -170,7 +170,7 @@ const HEALTH_PRIORITY_FIELDS = [
   ['readinessToChange', 'Değişime hazırlık'],
   ['biggestBarrier', 'En büyük engel'],
   ['pregnancy', 'Gebelik'],
-  ['doctorClearance', 'Doktor onayı'],
+  ['doctorClearance', 'Doktor kısıtlaması'],
   ['bloodPressureIssues', 'Tansiyon sorunları'],
   ['digestiveDisorders', 'Sindirim sorunları'],
   ['thyroidStatus', 'Tiroid durumu'],

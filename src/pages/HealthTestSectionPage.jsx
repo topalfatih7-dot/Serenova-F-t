@@ -110,12 +110,13 @@ export default function HealthTestSectionPage() {
         accent="brand"
         image={PANEL_IMAGES.healthTest}
       />
-      {sectionDone && (
+      {sectionDone ? (
         <p className="mx-auto mb-4 max-w-2xl rounded-xl border border-sage-200 bg-sage-50/60 px-4 py-2.5 text-xs text-sage-800">
           Bu kategori daha önce tamamlanmış. Cevaplarınızı güncelleyebilir veya değiştirebilirsiniz.
         </p>
-      )}
+      ) : null}
       <HealthTestFlow
+        key={sectionId}
         layout="page"
         open
         sectionId={sectionId}

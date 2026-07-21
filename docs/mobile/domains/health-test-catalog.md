@@ -56,7 +56,7 @@ Audience: shared
 | 7a–c | supplementsRecommendedBy / Duration / Frequency | single followUps | Takviye varsa cascade |
 | 8 | mentalHealthSupport | single | Son 12 ay ruh sağlığı desteği |
 | 9 | digestiveSymptoms | multi | Sık sindirim şikayetleri |
-| 10 | doctorClearance | single | Doktor onayı |
+| 10 | doctorClearance | single | Doktor egzersiz/beslenme kısıtlaması önerdi mi? (+ detail when yes) |
 | 11 | currentComplaints | text | İsteğe bağlı şikayet |
 
 Moved out: `injuries` → `physical` (coach).
