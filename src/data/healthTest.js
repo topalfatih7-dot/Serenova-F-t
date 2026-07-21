@@ -172,6 +172,11 @@ export function normalizeHealthTestForAnalysis(ht) {
 
   if (n.energy === 'very_high') n.energy = 'high'
 
+  // Eski tek seçimli cevapları çoklu diziye çevir
+  for (const key of ['primaryGoalReason', 'biggestBarrier']) {
+    if (typeof n[key] === 'string' && n[key]) n[key] = [n[key]]
+  }
+
   return n
 }
 
@@ -208,7 +213,10 @@ export function getApplicableQuestions(gender, packageConfig = null) {
 export function hasStoredAnswer(q, healthTest) {
   if (!q) return false
   const val = healthTest?.[q.key]
-  if (q.type === 'multi' || q.type === 'file') return Array.isArray(val) && val.length > 0
+  if (q.type === 'multi' || q.type === 'file') {
+    if (typeof val === 'string' && val.trim()) return true
+    return Array.isArray(val) && val.length > 0
+  }
   if (q.type === 'scale') {
     if (val === '' || val == null) return false
     const num = Number(val)
@@ -424,7 +432,9 @@ export function describeHealthTest(healthTest, gender, _packageConfig = null) {
 
 /** Exclusive multi seçenekleri temizler (örn. Yok). */
 export function toggleExclusiveMulti(current, value, options = []) {
-  const arr = Array.isArray(current) ? current : []
+  const arr = Array.isArray(current)
+    ? current
+    : (typeof current === 'string' && current ? [current] : [])
   const exclusiveValues = options.filter((o) => o.exclusive).map((o) => o.value)
   const isExclusive = exclusiveValues.includes(value)
 

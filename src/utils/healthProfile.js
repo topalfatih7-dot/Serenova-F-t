@@ -16,8 +16,21 @@ export function inferGoalsFromHealthTest(healthTest = {}) {
     goals.add('habit')
     goals.add('confidence')
   }
-  if (ht.stressLevel === 'high' || ht.sleepQuality === 'poor') {
+  if (
+    ht.stressLevel === 'high'
+    || ht.sleepQuality === 'poor'
+    || ht.sleepQuality === 'very_poor'
+  ) {
     goals.add('sleep')
+  }
+  const goalReasons = Array.isArray(ht.primaryGoalReason)
+    ? ht.primaryGoalReason
+    : (ht.primaryGoalReason ? [ht.primaryGoalReason] : [])
+  if (goalReasons.includes('weight_loss')) goals.add('weight')
+  if (goalReasons.includes('muscle')) goals.add('muscle')
+  if (goalReasons.includes('sport')) goals.add('performance')
+  if (goalReasons.includes('energy') || goalReasons.includes('feel_better')) {
+    goals.add('habit')
   }
   if (ht.activityFrequency === 'sedentary' || ht.sittingHours === '8+') {
     goals.add('habit')

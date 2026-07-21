@@ -160,10 +160,15 @@ const HEALTH_PRIORITY_FIELDS = [
   ['sessionDurationGoal', 'Hedef antrenman süresi'],
   ['performanceGoal', 'Performans hedefi'],
   ['sleepQuality', 'Uyku kalitesi'],
+  ['goalBelief', 'Hedefe inanma'],
+  ['primaryGoalReason', 'Hedef nedeni'],
   ['stressLevel', 'Stres seviyesi'],
   ['energy', 'Enerji'],
   ['wellbeing', 'Genel iyilik hali'],
   ['motivation', 'Motivasyon'],
+  ['lifeQuality', 'Yaşam kalitesi'],
+  ['readinessToChange', 'Değişime hazırlık'],
+  ['biggestBarrier', 'En büyük engel'],
   ['pregnancy', 'Gebelik'],
   ['doctorClearance', 'Doktor onayı'],
   ['bloodPressureIssues', 'Tansiyon sorunları'],
@@ -198,7 +203,19 @@ function inferGoalsFromHealthTest(ht = {}) {
     goals.add('weight')
     goals.add('habit')
   }
-  if (ht.stressLevel === 'high' || ht.sleepQuality === 'poor') goals.add('sleep')
+  if (
+    ht.stressLevel === 'high'
+    || ht.sleepQuality === 'poor'
+    || ht.sleepQuality === 'very_poor'
+  ) {
+    goals.add('sleep')
+  }
+  const goalReasons = Array.isArray(ht.primaryGoalReason)
+    ? ht.primaryGoalReason
+    : (ht.primaryGoalReason ? [ht.primaryGoalReason] : [])
+  if (goalReasons.includes('weight_loss')) goals.add('weight')
+  if (goalReasons.includes('muscle')) goals.add('muscle')
+  if (goalReasons.includes('sport')) goals.add('performance')
   if (ht.activityFrequency === 'sedentary' || ht.sittingHours === '8+') {
     goals.add('habit')
     goals.add('heart')

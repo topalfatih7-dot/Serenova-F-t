@@ -46,28 +46,6 @@ export const DIETITIAN_HEALTH_SECTIONS = [
       },
       {
         type: 'single',
-        key: 'primaryGoalReason',
-        label: 'Sağlıklı yaşam hedefinizin en önemli nedeni nedir?',
-        required: true,
-        options: [
-          { value: 'healthier', label: 'Daha sağlıklı olmak' },
-          { value: 'energy', label: 'Daha enerjik hissetmek' },
-          { value: 'weight_loss', label: 'Kilo vermek' },
-          { value: 'muscle', label: 'Kas yapmak' },
-          { value: 'feel_better', label: 'Kendimi daha iyi hissetmek' },
-          { value: 'appearance', label: 'Görünüşümden memnun olmak' },
-          { value: 'doctor', label: 'Doktor önerisi' },
-          { value: 'sport', label: 'Spor performansı' },
-          { value: 'other', label: 'Diğer' },
-        ],
-        detail: {
-          key: 'primaryGoalReasonDetail',
-          when: ['other'],
-          placeholder: 'Nedeninizi yazınız',
-        },
-      },
-      {
-        type: 'single',
         key: 'weightChange',
         label: 'Son 3 ayda kilonuzda belirgin değişim oldu mu?',
         required: true,

@@ -106,20 +106,19 @@ function EmojiOptionVisual({ option, selected }) {
 
 function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
   const optionCount = q.options?.length || 0
-  const gridClass =
-    q.type === 'emoji'
-      ? optionCount === 5
-        ? 'grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-3'
-        : 'grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4'
-      : optionCount <= 2
-        ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
-        : optionCount === 3
-          ? 'grid grid-cols-1 gap-3 sm:grid-cols-3'
-          : 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+  const emojiGridClass =
+    optionCount === 5
+      ? 'grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-3'
+      : 'grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4'
+  // Tek seçimli uzun şıklar dar sütunda kesilmesin: her zaman tam genişlik satır
+  const singleGridClass =
+    optionCount <= 2
+      ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+      : 'grid grid-cols-1 gap-3'
 
   if (q.type === 'emoji') {
     return (
-      <div className={gridClass}>
+      <div className={emojiGridClass}>
         {q.options.map((o) => {
           const sel = healthTest[q.key] === o.value
           return (
@@ -144,7 +143,7 @@ function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
 
   if (q.type === 'single') {
     return (
-      <div className={gridClass}>
+      <div className={singleGridClass}>
         {q.options.map((o) => {
           const sel = healthTest[q.key] === o.value
           return (
@@ -152,15 +151,17 @@ function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
               key={o.value}
               type="button"
               onClick={() => onPick(o.value)}
-              className={`flex min-h-[4.5rem] flex-col items-start justify-center rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[5.25rem] sm:px-6 sm:py-5 ${
+              className={`flex min-h-[3.25rem] w-full flex-col items-start justify-center rounded-2xl border-2 px-4 py-3.5 text-left transition-all sm:min-h-[3.75rem] sm:px-5 sm:py-4 ${
                 sel
                   ? `${theme.solid} scale-[1.01] text-white shadow-lg ring-4 ${theme.ring}`
                   : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-md'
               }`}
             >
-              <span className={`text-base font-bold sm:text-lg ${sel ? 'text-white' : 'text-cream-900'}`}>{o.label}</span>
+              <span className={`w-full text-sm font-semibold leading-snug break-words hyphens-auto sm:text-base ${sel ? 'text-white' : 'text-cream-900'}`}>
+                {o.label}
+              </span>
               {o.desc && (
-                <span className={`mt-1 text-sm leading-snug ${sel ? 'text-white/85' : 'text-cream-800/60'}`}>{o.desc}</span>
+                <span className={`mt-1 w-full text-sm leading-snug break-words ${sel ? 'text-white/85' : 'text-cream-800/60'}`}>{o.desc}</span>
               )}
             </button>
           )
@@ -171,15 +172,18 @@ function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
 
   if (q.type === 'multi') {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3">
         {q.options.map((o) => {
-          const sel = (healthTest[q.key] || []).includes(o.value)
+          const selected = Array.isArray(healthTest[q.key])
+            ? healthTest[q.key]
+            : (healthTest[q.key] ? [healthTest[q.key]] : [])
+          const sel = selected.includes(o.value)
           return (
             <button
               key={o.value}
               type="button"
               onClick={() => onToggle(o.value)}
-              className={`flex min-h-[3.75rem] items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-all sm:min-h-[4.25rem] ${
+              className={`flex min-h-[3.25rem] w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-all sm:min-h-[3.75rem] sm:px-5 sm:py-4 ${
                 sel
                   ? `${theme.chip} ring-2 ${theme.ring} font-semibold`
                   : 'border-cream-200 bg-cream-50/40 hover:border-cream-300 hover:bg-white hover:shadow-sm'
@@ -190,7 +194,7 @@ function OptionGrid({ q, theme, healthTest, onPick, onToggle }) {
               }`}>
                 {sel && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
               </span>
-              <span className="text-base font-semibold text-cream-900 sm:text-[1.05rem]">{o.label}</span>
+              <span className="min-w-0 flex-1 text-sm font-semibold leading-snug break-words text-cream-900 sm:text-base">{o.label}</span>
             </button>
           )
         })}

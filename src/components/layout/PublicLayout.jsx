@@ -13,6 +13,7 @@ import { BRAND } from '../../config/brand'
 import { useApp } from '../../context/AppContext'
 import { hasRegisteredMember } from '../../utils/memberProfile'
 import { scrollToContactSection } from '../../utils/scrollToContact'
+import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock'
 import { LEGAL_FOOTER_PARAGRAPHS } from '../../data/legalDocuments'
 import { LegalFooterParagraph } from '../legal/LegalFooterParagraph'
 import { preloadTeamHero } from '../../utils/teamHeroImages'
@@ -69,7 +70,9 @@ const teamDropdownFooter = {
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState(null)
+  const [overlayTop, setOverlayTop] = useState(64)
   const navRef = useRef(null)
+  const headerRef = useRef(null)
 
   const closeDropdown = useCallback(() => setOpenDropdown(null), [])
 
@@ -81,6 +84,28 @@ export default function PublicLayout() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return undefined
+    const sync = () => setOverlayTop(Math.ceil(el.getBoundingClientRect().bottom))
+    sync()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null
+    ro?.observe(el)
+    window.addEventListener('resize', sync)
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', sync)
+    }
+  }, [menuOpen])
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    lockPageScroll()
+    const el = headerRef.current
+    if (el) setOverlayTop(Math.ceil(el.getBoundingClientRect().bottom))
+    return () => unlockPageScroll()
+  }, [menuOpen])
+
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -88,6 +113,7 @@ export default function PublicLayout() {
   if (pathname !== prevPathname) {
     setPrevPathname(pathname)
     setOpenDropdown(null)
+    setMenuOpen(false)
   }
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
 
@@ -161,7 +187,12 @@ export default function PublicLayout() {
         Ana içeriğe atla
       </a>
       <PromoBanner />
-      <header className="sticky top-0 z-50 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl">
+      <header
+        ref={headerRef}
+        className={`sticky top-0 border-b border-white/40 bg-white/70 shadow-sm shadow-brand-900/[0.03] backdrop-blur-xl ${
+          menuOpen ? 'z-[70]' : 'z-50'
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <BrandLogo onNavigate={closeDropdown} />
           <nav ref={navRef} aria-label="Ana menü" className="hidden items-center gap-0.5 rounded-full border border-white/80 bg-white/50 p-1 shadow-inner shadow-brand-900/[0.02] backdrop-blur lg:flex xl:gap-1">
@@ -230,18 +261,39 @@ export default function PublicLayout() {
             }`}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Menü"
+            aria-expanded={menuOpen}
+            aria-controls="public-mobile-menu"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" strokeWidth={2.5} />}
           </button>
         </div>
-        <AnimatePresence>
-          {menuOpen && (
+      </header>
+      <AnimatePresence>
+        {menuOpen && (
+          <div
+            className="fixed inset-x-0 bottom-0 z-[60] lg:hidden"
+            style={{ top: overlayTop }}
+            role="presentation"
+          >
+            <motion.button
+              key="mobile-menu-backdrop"
+              type="button"
+              aria-label="Menüyü kapat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-cream-900/70"
+              onClick={() => setMenuOpen(false)}
+            />
             <motion.nav
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden border-t border-white/50 bg-white/90 px-4 backdrop-blur-xl lg:hidden"
+              key="mobile-menu-panel"
+              id="public-mobile-menu"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-x-0 top-0 z-10 max-h-full overflow-y-auto overscroll-contain border-b border-cream-200/80 bg-white px-4 shadow-xl shadow-cream-900/20"
             >
               <div className="py-3">
                 {publicLinks.map((l) => renderMobileLink(l))}
@@ -320,9 +372,9 @@ export default function PublicLayout() {
                 </div>
               </div>
             </motion.nav>
-          )}
-        </AnimatePresence>
-      </header>
+          </div>
+        )}
+      </AnimatePresence>
       <main id="main-content">
         <Outlet />
       </main>

@@ -21,19 +21,21 @@ Audience: shared
 | # | key | type | label |
 |---|-----|------|-------|
 | 1 | wellbeing | emoji | Son 2 hafta içinde kendinizi genel olarak nasıl hissettiniz? |
-| 2 | energy | emoji | Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz? |
-| 3 | motivation | scale | Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz? (0–10) |
-| 4 | biggestBarrier | single | Sağlık hedeflerinize ulaşmanızın önündeki en büyük engel nedir? (+ other detail) |
-| 5 | concentration | single | Günlük yaşamınızda dikkatinizi toplamakta zorlanıyor musunuz? |
-| 6 | anxiety | single | Son 2 hafta içinde kendinizi ne kadar endişeli hissettiniz? |
-| 7 | dailyStressImpact | single | Son 2 hafta içinde stresin günlük yaşamınızı ne kadar etkilediğini düşünüyorsunuz? |
-| 8 | stressCoping | single | Stresle başa çıkabildiğinizi düşünüyor musunuz? |
+| 2 | lifeQuality | emoji | Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz? (★) |
+| 3 | energy | emoji | Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz? |
+| 4 | sleepQuality | single | Son 2 hafta içinde uyku kalitenizi nasıl değerlendirirsiniz? |
+| 5 | anxiety | single | Son 2 hafta içinde kendinizi ne kadar endişeli hissettiniz? |
+| 6 | dailyStressImpact | single | Son 2 hafta içinde stresin günlük yaşamınızı ne kadar etkilediğini düşünüyorsunuz? |
+| 7 | stressCoping | single | Stresle başa çıkabildiğinizi düşünüyor musunuz? |
+| 8 | concentration | single | Günlük yaşamınızda dikkatinizi toplamakta ne sıklıkla zorlanıyorsunuz? |
 | 9 | socialSupport | single | Sağlıklı yaşam hedefleriniz konusunda ailenizden veya yakın çevrenizden destek görüyor musunuz? |
-| 10 | readinessToChange | single | Yaşam tarzı değişikliklerine ne kadar hazırsınız? (hint) |
-| 11 | painScale | scale | Son bir hafta içindeki genel ağrı seviyenizi nasıl değerlendirirsiniz? (0–10) |
-| 12 | lifeQuality | emoji | Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz? |
+| 10 | primaryGoalReason | multi | Sağlıklı yaşam hedefinizin en önemli nedenleri nelerdir? (+ other detail) |
+| 11 | biggestBarrier | multi | Sağlık hedeflerinize ulaşmanızın önündeki engeller nelerdir? (+ other detail) |
+| 12 | motivation | scale | Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz? (0–10) |
+| 13 | goalBelief | single | Sağlıklı yaşam hedeflerinize ulaşabileceğinize ne kadar inanıyorsunuz? |
+| 14 | readinessToChange | single | Yaşam tarzı değişikliklerine ne kadar hazırsınız? (hint) |
 
-Removed from general: `moodCheckin`, `selfConfidence`, `weightChange` (moved).
+Removed from general: `painScale` (ağrı artık genel bölümde yok). `primaryGoalReason` diyetisyen `diet_reason` bölümünden buraya taşındı.
 
 ### `medical` — Tıbbi Geçmiş
 Hastalıklar, ilaçlar, tahlil ve takviyeler
@@ -89,9 +91,8 @@ Audience: dietitian
 |---|-----|------|-------|
 | 1 | dietReason | multi | Diyetisyen desteği alma nedeniniz |
 | 2 | bodyAppearance | emoji | Fiziksel görünüm hissi (from general) |
-| 3 | primaryGoalReason | single | Sağlıklı yaşam hedefinin en önemli nedeni |
-| 4 | weightChange | single | Son 3 ay kilo değişimi (+ kg detail) |
-| 5 | dietGoal | text | Hedefiniz nedir? |
+| 3 | weightChange | single | Son 3 ay kilo değişimi (+ kg detail) |
+| 4 | dietGoal | text | Hedefiniz nedir? |
 
 ### Other diet sections
 `diet_health`, `diet_lifestyle`, `diet_activity`, `diet_nutrition`, `diet_women`, `diet_extra` — see source file for full keys.

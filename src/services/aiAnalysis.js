@@ -200,6 +200,9 @@ export function calculateRadarScores(profile, bmi = null, fitnessScore = null) {
   else if (raw.injuryLimitation === 'moderate') activity -= 4
 
   let sleep = 60
+  sleep += scaleMap(raw.sleepQuality, {
+    very_poor: -22, poor: -16, fair: -4, good: 12, excellent: 18,
+  }, 0)
   sleep += scaleMap(raw.dietSleepQuality, {
     poor: -20, fair: -6, good: 12, excellent: 18,
   }, 0)
@@ -258,13 +261,19 @@ export function calculateRadarScores(profile, bmi = null, fitnessScore = null) {
   lifestyle += scaleMap(raw.readinessToChange, {
     not_ready: -10, thinking: -2, ready: 6, started: 12, maintaining: 16,
   }, 0)
+  lifestyle += scaleMap(raw.goalBelief, {
+    none: -12, low: -6, unsure: 0, believe: 8, certain: 14,
+  }, 0)
   lifestyle += scaleMap(raw.smoking, {
     never: 8, former: 2, occasional: -8, daily: -16,
   }, 0)
   lifestyle += scaleMap(raw.alcohol, {
     none: 6, monthly: 2, weekly: -4, frequent: -12,
   }, 0)
-  if (raw.biggestBarrier === 'time' || raw.biggestBarrier === 'motivation') lifestyle -= 4
+  const barriers = Array.isArray(raw.biggestBarrier)
+    ? raw.biggestBarrier
+    : (raw.biggestBarrier ? [raw.biggestBarrier] : [])
+  if (barriers.includes('time') || barriers.includes('motivation')) lifestyle -= 4
 
   const dims = {
     metabolic: clampScore(metabolic),
@@ -297,7 +306,10 @@ function calculateFitnessScore(profile) {
   const ht = normalizeHealthTestForAnalysis(profile.healthTest || {})
   if (Number(ht.wellbeing) >= 4) score += 5
   if (ht.energy === 'high') score += 5
-  if (ht.sleepQuality === 'good' || ht.dietSleepQuality === 'good') score += 5
+  if (ht.sleepQuality === 'good' || ht.sleepQuality === 'excellent' || ht.dietSleepQuality === 'good') score += 5
+  if (ht.sleepQuality === 'poor' || ht.sleepQuality === 'very_poor') score -= 5
+  if (ht.goalBelief === 'certain' || ht.goalBelief === 'believe') score += 3
+  if (ht.goalBelief === 'none' || ht.goalBelief === 'low') score -= 3
   if (ht.stressLevel === 'low' || ht.dietStressLevel === 'low') score += 5
   if (ht.injuries === 'yes' || ht.painAreas?.length) score -= 8
   if (ht.chronicConditions?.length) score -= 5

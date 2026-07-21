@@ -17,6 +17,17 @@ Son 2 hafta içinde kendinizi genel olarak nasıl hissettiniz?
 | good | İyi | 🙂 |
 | excellent | Çok iyi | 😁 |
 
+### lifeQuality (`emoji`, required)
+Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz?
+
+| value | label | emoji | stars |
+|-------|-------|-------|-------|
+| 1 | Çok düşük | ★ | 1 |
+| 2 | Düşük | ★ | 2 |
+| 3 | Orta | ★ | 3 |
+| 4 | İyi | ★ | 4 |
+| 5 | Çok iyi | ★ | 5 |
+
 ### energy (`emoji`, required)
 Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz?
 
@@ -28,35 +39,16 @@ Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz?
 | high | Yüksek | 🔋 | 4 |
 | very_high | Çok yüksek | 🔋 | 5 |
 
-### motivation (`scale`, required)
-Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz?
-
-_No options (free text / time / etc.)_
-
-### biggestBarrier (`single`, required)
-Sağlık hedeflerinize ulaşmanızın önündeki en büyük engel nedir?
+### sleepQuality (`single`, required)
+Son 2 hafta içinde uyku kalitenizi nasıl değerlendirirsiniz?
 
 | value | label | emoji |
 |-------|-------|-------|
-| time | Zaman bulamıyorum. |  |
-| motivation | Motivasyonumu koruyamıyorum. |  |
-| how_to_start | Nasıl başlayacağımı bilmiyorum. |  |
-| nutrition | Düzenli beslenemiyorum. |  |
-| exercise | Egzersiz yapamıyorum. |  |
-| stress_eating | Stres veya duygusal yeme yaşıyorum. |  |
-| health_issues | Sağlık sorunlarım var. |  |
-| other | Diğer. |  |
-
-### concentration (`single`, required)
-Günlük yaşamınızda dikkatinizi toplamakta zorlanıyor musunuz?
-
-| value | label | emoji |
-|-------|-------|-------|
-| never | Hiç |  |
-| rarely | Nadiren |  |
-| sometimes | Bazen |  |
-| often | Sık |  |
-| always | Çok sık |  |
+| very_poor | Çok kötü |  |
+| poor | Kötü |  |
+| fair | Orta |  |
+| good | İyi |  |
+| excellent | Çok iyi |  |
 
 ### anxiety (`single`, required)
 Son 2 hafta içinde kendinizi ne kadar endişeli hissettiniz?
@@ -91,6 +83,17 @@ Stresle başa çıkabildiğinizi düşünüyor musunuz?
 | rarely | Nadiren |  |
 | never | Hiç |  |
 
+### concentration (`single`, required)
+Günlük yaşamınızda dikkatinizi toplamakta ne sıklıkla zorlanıyorsunuz?
+
+| value | label | emoji |
+|-------|-------|-------|
+| never | Hiç |  |
+| rarely | Nadiren |  |
+| sometimes | Bazen |  |
+| often | Sık |  |
+| always | Çok sık |  |
+
 ### socialSupport (`single`, required)
 Sağlıklı yaşam hedefleriniz konusunda ailenizden veya yakın çevrenizden destek görüyor musunuz?
 
@@ -101,32 +104,61 @@ Sağlıklı yaşam hedefleriniz konusunda ailenizden veya yakın çevrenizden de
 | limited | Sınırlı destek var |  |
 | none | Destek yok |  |
 
+### primaryGoalReason (`multi`, required)
+Sağlıklı yaşam hedefinizin en önemli nedenleri nelerdir?
+
+| value | label | emoji |
+|-------|-------|-------|
+| healthier | Daha sağlıklı olmak |  |
+| energy | Daha enerjik hissetmek |  |
+| weight_loss | Kilo vermek |  |
+| muscle | Kas yapmak |  |
+| feel_better | Kendimi daha iyi hissetmek |  |
+| appearance | Görünüşümden memnun olmak |  |
+| doctor | Doktor önerisi |  |
+| sport | Spor performansı |  |
+| other | Diğer |  |
+
+### biggestBarrier (`multi`, required)
+Sağlık hedeflerinize ulaşmanızın önündeki engeller nelerdir?
+
+| value | label | emoji |
+|-------|-------|-------|
+| time | Zaman bulamıyorum. |  |
+| motivation | Motivasyonumu koruyamıyorum. |  |
+| how_to_start | Nasıl başlayacağımı bilmiyorum. |  |
+| nutrition | Düzenli beslenemiyorum. |  |
+| exercise | Egzersiz yapamıyorum. |  |
+| stress_eating | Stres veya duygusal yeme yaşıyorum. |  |
+| health_issues | Sağlık sorunlarım var. |  |
+| other | Diğer. |  |
+
+### motivation (`scale`, required)
+Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz?
+
+_No options (free text / time / etc.)_
+
+### goalBelief (`single`, required)
+Sağlıklı yaşam hedeflerinize ulaşabileceğinize ne kadar inanıyorsunuz?
+
+| value | label | emoji |
+|-------|-------|-------|
+| none | Hiç inanmıyorum |  |
+| low | Az inanıyorum |  |
+| unsure | Kararsızım |  |
+| believe | İnanıyorum |  |
+| certain | Kesinlikle inanıyorum |  |
+
 ### readinessToChange (`single`, required)
 Yaşam tarzı değişikliklerine ne kadar hazırsınız?
 
 | value | label | emoji |
 |-------|-------|-------|
-| not_ready | Henüz değişime hazır değilim. |  |
-| thinking | Değişmeyi düşünüyorum. |  |
-| ready | Hazırım, yakında başlayacağım. |  |
-| started | Değişime başladım. |  |
-| maintaining | Değişiklikleri düzenli olarak sürdürüyorum. |  |
-
-### painScale (`scale`, required)
-Son bir hafta içindeki genel ağrı seviyenizi nasıl değerlendirirsiniz?
-
-_No options (free text / time / etc.)_
-
-### lifeQuality (`emoji`, required)
-Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz?
-
-| value | label | emoji | stars |
-|-------|-------|-------|-------|
-| 1 | Çok düşük | ★ | 1 |
-| 2 | Düşük | ★ | 2 |
-| 3 | Orta | ★ | 3 |
-| 4 | İyi | ★ | 4 |
-| 5 | Çok iyi | ★ | 5 |
+| not_ready | 🔴 Henüz değişime hazır değilim. |  |
+| thinking | 🟡 Değişmeyi düşünüyorum. |  |
+| ready | 🟠 Hazırım, yakında başlayacağım. |  |
+| started | 🟢 Değişime başladım. |  |
+| maintaining | 💚 Değişiklikleri düzenli olarak sürdürüyorum. |  |
 
 ## `medical` — Tıbbi Geçmiş
 
@@ -775,21 +807,6 @@ Fiziksel görünümünüz konusunda kendinizi nasıl hissediyorsunuz?
 | medium | Kararsızım | 😐 |
 | good | Memnunum | 🙂 |
 | excellent | Çok memnunum | 😄 |
-
-### primaryGoalReason (`single`, required)
-Sağlıklı yaşam hedefinizin en önemli nedeni nedir?
-
-| value | label | emoji |
-|-------|-------|-------|
-| healthier | Daha sağlıklı olmak |  |
-| energy | Daha enerjik hissetmek |  |
-| weight_loss | Kilo vermek |  |
-| muscle | Kas yapmak |  |
-| feel_better | Kendimi daha iyi hissetmek |  |
-| appearance | Görünüşümden memnun olmak |  |
-| doctor | Doktor önerisi |  |
-| sport | Spor performansı |  |
-| other | Diğer |  |
 
 ### weightChange (`single`, required)
 Son 3 ayda kilonuzda belirgin değişim oldu mu?
