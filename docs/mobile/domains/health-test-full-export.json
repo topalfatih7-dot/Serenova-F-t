@@ -1,0 +1,3250 @@
+{
+  "exportedAt": "2026-07-21T09:24:07.966Z",
+  "source": "src/data/healthTestSections.js + healthTestDietitianSections.js",
+  "audienceMeta": {
+    "shared": {
+      "label": "Genel",
+      "chip": "bg-amber-100 text-amber-800 ring-amber-200",
+      "border": "border-amber-100 bg-amber-50/50"
+    },
+    "coach": {
+      "label": "Hareket",
+      "chip": "bg-brand-100 text-brand-800 ring-brand-200",
+      "border": "border-brand-100 bg-brand-50/40"
+    },
+    "dietitian": {
+      "label": "Beslenme",
+      "chip": "bg-sage-100 text-sage-800 ring-sage-200",
+      "border": "border-sage-100 bg-sage-50/40"
+    }
+  },
+  "sectionCount": 13,
+  "topLevelQuestionCount": 110,
+  "totalQuestionAndFollowUpCount": 119,
+  "sections": [
+    {
+      "id": "general",
+      "title": "Genel Değerlendirme",
+      "subtitle": "Ruh hali, enerji, motivasyon ve stres yönetimi",
+      "icon": "HeartPulse",
+      "audience": "shared",
+      "genderOnly": null,
+      "topLevelQuestionCount": 14,
+      "totalQuestionAndFollowUpCount": 14,
+      "questions": [
+        {
+          "type": "emoji",
+          "key": "wellbeing",
+          "label": "Son 2 hafta içinde kendinizi genel olarak nasıl hissettiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_low",
+              "label": "Çok kötü",
+              "emoji": "😞"
+            },
+            {
+              "value": "low",
+              "label": "Kötü",
+              "emoji": "🙁"
+            },
+            {
+              "value": "medium",
+              "label": "Ne iyi ne kötü",
+              "emoji": "😐"
+            },
+            {
+              "value": "good",
+              "label": "İyi",
+              "emoji": "🙂"
+            },
+            {
+              "value": "excellent",
+              "label": "Çok iyi",
+              "emoji": "😁"
+            }
+          ]
+        },
+        {
+          "type": "emoji",
+          "key": "lifeQuality",
+          "label": "Son zamanlarda yaşam kalitenizi nasıl değerlendirirsiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "1",
+              "label": "Çok düşük",
+              "emoji": "★",
+              "stars": 1
+            },
+            {
+              "value": "2",
+              "label": "Düşük",
+              "emoji": "★",
+              "stars": 2
+            },
+            {
+              "value": "3",
+              "label": "Orta",
+              "emoji": "★",
+              "stars": 3
+            },
+            {
+              "value": "4",
+              "label": "İyi",
+              "emoji": "★",
+              "stars": 4
+            },
+            {
+              "value": "5",
+              "label": "Çok iyi",
+              "emoji": "★",
+              "stars": 5
+            }
+          ]
+        },
+        {
+          "type": "emoji",
+          "key": "energy",
+          "label": "Son 2 hafta içinde gün içindeki enerji seviyenizi nasıl değerlendirirsiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_low",
+              "label": "Çok düşük",
+              "emoji": "🪫",
+              "batteryLevel": 1
+            },
+            {
+              "value": "low",
+              "label": "Düşük",
+              "emoji": "🪫",
+              "batteryLevel": 2
+            },
+            {
+              "value": "moderate",
+              "label": "Orta",
+              "emoji": "🔋",
+              "batteryLevel": 3
+            },
+            {
+              "value": "high",
+              "label": "Yüksek",
+              "emoji": "🔋",
+              "batteryLevel": 4
+            },
+            {
+              "value": "very_high",
+              "label": "Çok yüksek",
+              "emoji": "🔋",
+              "batteryLevel": 5
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "sleepQuality",
+          "label": "Son 2 hafta içinde uyku kalitenizi nasıl değerlendirirsiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_poor",
+              "label": "Çok kötü"
+            },
+            {
+              "value": "poor",
+              "label": "Kötü"
+            },
+            {
+              "value": "fair",
+              "label": "Orta"
+            },
+            {
+              "value": "good",
+              "label": "İyi"
+            },
+            {
+              "value": "excellent",
+              "label": "Çok iyi"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "anxiety",
+          "label": "Son 2 hafta içinde kendinizi ne kadar endişeli hissettiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "never",
+              "label": "Hiç"
+            },
+            {
+              "value": "rarely",
+              "label": "Nadiren"
+            },
+            {
+              "value": "sometimes",
+              "label": "Bazen"
+            },
+            {
+              "value": "often",
+              "label": "Sık"
+            },
+            {
+              "value": "always",
+              "label": "Çok sık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dailyStressImpact",
+          "label": "Son 2 hafta içinde stresin günlük yaşamınızı ne kadar etkilediğini düşünüyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hiç etkilemiyor"
+            },
+            {
+              "value": "low",
+              "label": "Az etkiliyor"
+            },
+            {
+              "value": "moderate",
+              "label": "Orta düzeyde etkiliyor"
+            },
+            {
+              "value": "high",
+              "label": "Oldukça etkiliyor"
+            },
+            {
+              "value": "very_high",
+              "label": "Çok fazla etkiliyor"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "stressCoping",
+          "label": "Stresle başa çıkabildiğinizi düşünüyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "always",
+              "label": "Her zaman"
+            },
+            {
+              "value": "often",
+              "label": "Çoğu zaman"
+            },
+            {
+              "value": "sometimes",
+              "label": "Bazen"
+            },
+            {
+              "value": "rarely",
+              "label": "Nadiren"
+            },
+            {
+              "value": "never",
+              "label": "Hiç"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "concentration",
+          "label": "Günlük yaşamınızda dikkatinizi toplamakta ne sıklıkla zorlanıyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "never",
+              "label": "Hiç"
+            },
+            {
+              "value": "rarely",
+              "label": "Nadiren"
+            },
+            {
+              "value": "sometimes",
+              "label": "Bazen"
+            },
+            {
+              "value": "often",
+              "label": "Sık"
+            },
+            {
+              "value": "always",
+              "label": "Çok sık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "socialSupport",
+          "label": "Sağlıklı yaşam hedefleriniz konusunda ailenizden veya yakın çevrenizden destek görüyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "strong",
+              "label": "Güçlü destek var"
+            },
+            {
+              "value": "partial",
+              "label": "Kısmi destek var"
+            },
+            {
+              "value": "limited",
+              "label": "Sınırlı destek var"
+            },
+            {
+              "value": "none",
+              "label": "Destek yok"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "primaryGoalReason",
+          "label": "Sağlıklı yaşam hedefinizin en önemli nedenleri nelerdir?",
+          "required": true,
+          "hint": "Birden fazla seçenek işaretleyebilirsiniz.",
+          "options": [
+            {
+              "value": "healthier",
+              "label": "Daha sağlıklı olmak"
+            },
+            {
+              "value": "energy",
+              "label": "Daha enerjik hissetmek"
+            },
+            {
+              "value": "weight_loss",
+              "label": "Kilo vermek"
+            },
+            {
+              "value": "muscle",
+              "label": "Kas yapmak"
+            },
+            {
+              "value": "feel_better",
+              "label": "Kendimi daha iyi hissetmek"
+            },
+            {
+              "value": "appearance",
+              "label": "Görünüşümden memnun olmak"
+            },
+            {
+              "value": "doctor",
+              "label": "Doktor önerisi"
+            },
+            {
+              "value": "sport",
+              "label": "Spor performansı"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "primaryGoalReasonDetail",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Nedeninizi yazınız"
+          }
+        },
+        {
+          "type": "multi",
+          "key": "biggestBarrier",
+          "label": "Sağlık hedeflerinize ulaşmanızın önündeki engeller nelerdir?",
+          "required": true,
+          "hint": "Birden fazla seçenek işaretleyebilirsiniz.",
+          "options": [
+            {
+              "value": "time",
+              "label": "Zaman bulamıyorum."
+            },
+            {
+              "value": "motivation",
+              "label": "Motivasyonumu koruyamıyorum."
+            },
+            {
+              "value": "how_to_start",
+              "label": "Nasıl başlayacağımı bilmiyorum."
+            },
+            {
+              "value": "nutrition",
+              "label": "Düzenli beslenemiyorum."
+            },
+            {
+              "value": "exercise",
+              "label": "Egzersiz yapamıyorum."
+            },
+            {
+              "value": "stress_eating",
+              "label": "Stres veya duygusal yeme yaşıyorum."
+            },
+            {
+              "value": "health_issues",
+              "label": "Sağlık sorunlarım var."
+            },
+            {
+              "value": "other",
+              "label": "Diğer."
+            }
+          ],
+          "detail": {
+            "key": "biggestBarrierDetail",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Engelinizi kısaca yazınız"
+          }
+        },
+        {
+          "type": "scale",
+          "key": "motivation",
+          "label": "Sağlıklı yaşam hedeflerinize ulaşmak için kendinizi ne kadar motive hissediyorsunuz?",
+          "required": true,
+          "min": 0,
+          "max": 10,
+          "minLabel": "0",
+          "maxLabel": "10"
+        },
+        {
+          "type": "single",
+          "key": "goalBelief",
+          "label": "Sağlıklı yaşam hedeflerinize ulaşabileceğinize ne kadar inanıyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hiç inanmıyorum"
+            },
+            {
+              "value": "low",
+              "label": "Az inanıyorum"
+            },
+            {
+              "value": "unsure",
+              "label": "Kararsızım"
+            },
+            {
+              "value": "believe",
+              "label": "İnanıyorum"
+            },
+            {
+              "value": "certain",
+              "label": "Kesinlikle inanıyorum"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "readinessToChange",
+          "label": "Yaşam tarzı değişikliklerine ne kadar hazırsınız?",
+          "required": true,
+          "hint": "Size en uygun destek planını oluşturabilmemiz için, kendinizi en iyi ifade eden seçeneği işaretleyin.",
+          "options": [
+            {
+              "value": "not_ready",
+              "label": "🔴 Henüz değişime hazır değilim."
+            },
+            {
+              "value": "thinking",
+              "label": "🟡 Değişmeyi düşünüyorum."
+            },
+            {
+              "value": "ready",
+              "label": "🟠 Hazırım, yakında başlayacağım."
+            },
+            {
+              "value": "started",
+              "label": "🟢 Değişime başladım."
+            },
+            {
+              "value": "maintaining",
+              "label": "💚 Değişiklikleri düzenli olarak sürdürüyorum."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "medical",
+      "title": "Tıbbi Geçmiş",
+      "subtitle": "Hastalıklar, ilaçlar, tahlil ve takviyeler",
+      "icon": "Stethoscope",
+      "audience": "shared",
+      "genderOnly": null,
+      "topLevelQuestionCount": 11,
+      "totalQuestionAndFollowUpCount": 16,
+      "questions": [
+        {
+          "type": "multi",
+          "key": "chronicConditions",
+          "label": "Tanı almış kronik rahatsızlıklarınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Yok",
+              "exclusive": true
+            },
+            {
+              "value": "diabetes",
+              "label": "Diyabet"
+            },
+            {
+              "value": "prediabetes",
+              "label": "Prediyabet"
+            },
+            {
+              "value": "hypertension",
+              "label": "Yüksek tansiyon (Hipertansiyon)"
+            },
+            {
+              "value": "thyroid",
+              "label": "Tiroid hastalığı"
+            },
+            {
+              "value": "pcos",
+              "label": "Polikistik over sendromu (PKOS)"
+            },
+            {
+              "value": "asthma",
+              "label": "Astım"
+            },
+            {
+              "value": "copd",
+              "label": "KOAH"
+            },
+            {
+              "value": "heartDisease",
+              "label": "Kalp hastalığı"
+            },
+            {
+              "value": "kidney",
+              "label": "Böbrek hastalığı"
+            },
+            {
+              "value": "liver",
+              "label": "Karaciğer hastalığı"
+            },
+            {
+              "value": "reflux",
+              "label": "Reflü"
+            },
+            {
+              "value": "ibs",
+              "label": "İrritabl bağırsak sendromu (IBS)"
+            },
+            {
+              "value": "celiac",
+              "label": "Çölyak hastalığı"
+            },
+            {
+              "value": "rheumatic",
+              "label": "Romatizmal hastalık"
+            },
+            {
+              "value": "cancer",
+              "label": "Kanser öyküsü"
+            },
+            {
+              "value": "depression",
+              "label": "Depresyon"
+            },
+            {
+              "value": "anxiety_disorder",
+              "label": "Anksiyete bozukluğu"
+            },
+            {
+              "value": "sleep_apnea",
+              "label": "Uyku apnesi"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "chronicConditionsDetail",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer kronik durumları yazınız"
+          }
+        },
+        {
+          "type": "single",
+          "key": "medications",
+          "label": "Düzenli veya gerektiğinde kullandığınız ilaçlar var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hayır"
+            },
+            {
+              "value": "regular",
+              "label": "Düzenli kullanıyorum"
+            },
+            {
+              "value": "occasional",
+              "label": "Gerektiğinde kullanıyorum"
+            },
+            {
+              "value": "both",
+              "label": "Hem düzenli hem gerektiğinde kullanıyorum"
+            }
+          ],
+          "detail": {
+            "key": "medicationsDetail",
+            "when": [
+              "regular",
+              "occasional",
+              "both"
+            ],
+            "placeholder": "Lütfen ilaç adlarını ve kullanım nedenlerini yazınız"
+          },
+          "softWarning": {
+            "requireAll": [
+              {
+                "key": "chronicConditions",
+                "includes": [
+                  "thyroid"
+                ]
+              },
+              {
+                "key": "medications",
+                "equals": "none"
+              }
+            ],
+            "message": "Tiroid hastalığı seçtiniz. Bu rahatsızlık için ilaç kullanmıyor musunuz?"
+          }
+        },
+        {
+          "type": "multi",
+          "key": "familyHistory",
+          "label": "Birinci derece yakınlarınızda (anne, baba, kardeş) aşağıdaki hastalıklardan tanı almış olan var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Yok",
+              "exclusive": true
+            },
+            {
+              "value": "unknown",
+              "label": "Bilmiyorum",
+              "exclusive": true
+            },
+            {
+              "value": "diabetes",
+              "label": "Diyabet"
+            },
+            {
+              "value": "hypertension",
+              "label": "Hipertansiyon"
+            },
+            {
+              "value": "heartDisease",
+              "label": "Kalp hastalığı"
+            },
+            {
+              "value": "stroke",
+              "label": "İnme"
+            },
+            {
+              "value": "obesity",
+              "label": "Obezite"
+            },
+            {
+              "value": "thyroid",
+              "label": "Tiroid hastalığı"
+            },
+            {
+              "value": "high_cholesterol",
+              "label": "Yüksek kolesterol"
+            },
+            {
+              "value": "cancer",
+              "label": "Kanser"
+            },
+            {
+              "value": "kidney",
+              "label": "Böbrek hastalığı"
+            },
+            {
+              "value": "rheumatic",
+              "label": "Romatizmal hastalık"
+            },
+            {
+              "value": "celiac",
+              "label": "Çölyak"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "familyHistoryDetail",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer aile öyküsünü yazınız"
+          },
+          "footerNote": "Bu bilgi, genetik risk faktörlerini değerlendirmemize yardımcı olur. Tanı amacıyla kullanılmaz."
+        },
+        {
+          "type": "single",
+          "key": "surgeries",
+          "label": "Daha önce ameliyat geçirdiniz mi?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "surgeriesDetail",
+            "when": [
+              "yes"
+            ],
+            "placeholder": "Ameliyat türü ve yılını yazınız"
+          }
+        },
+        {
+          "type": "single",
+          "key": "hospitalVisits",
+          "label": "Son 12 ay içinde sağlık durumunuz nedeniyle hastanede yatış gerektiren bir tedavi gördünüz mü?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "hospitalVisitsDetail",
+            "when": [
+              "yes"
+            ],
+            "placeholder": "Yatış nedenini kısaca yazınız"
+          }
+        },
+        {
+          "type": "single",
+          "key": "lastBloodWork",
+          "label": "Son kan tahlilinizi ne zaman yaptırdınız?",
+          "required": true,
+          "options": [
+            {
+              "value": "last_3_months",
+              "label": "Son 3 ay içinde"
+            },
+            {
+              "value": "3_12_months",
+              "label": "3–12 ay önce"
+            },
+            {
+              "value": "over_year",
+              "label": "1 yıldan uzun süre önce"
+            },
+            {
+              "value": "never",
+              "label": "Hiç yaptırmadım / Hatırlamıyorum"
+            }
+          ],
+          "infoNoteWhen": [
+            "over_year",
+            "never"
+          ],
+          "infoNote": "Güncel sağlık durumunuzun daha doğru değerlendirilmesi için kan tahlillerinizi güncellemeniz faydalı olabilir.",
+          "followUps": [
+            {
+              "type": "single",
+              "key": "bloodWorkUploadIntent",
+              "label": "Kan tahlili sonuçlarınızı sisteme yüklemek ister misiniz?",
+              "when": [
+                "last_3_months",
+                "3_12_months"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Evet"
+                },
+                {
+                  "value": "later",
+                  "label": "Daha sonra"
+                },
+                {
+                  "value": "no",
+                  "label": "Hayır"
+                }
+              ],
+              "followUps": [
+                {
+                  "type": "file",
+                  "key": "bloodWorkFiles",
+                  "label": "Kan tahlili sonuçlarınızı yükleyin (PDF, fotoğraf veya görüntü)",
+                  "when": [
+                    "yes"
+                  ],
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "supplements",
+          "label": "Düzenli olarak kullandığınız vitamin veya besin takviyeleri hangileridir?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Kullanmıyorum",
+              "exclusive": true
+            },
+            {
+              "value": "vitaminD",
+              "label": "D Vitamini"
+            },
+            {
+              "value": "b12",
+              "label": "B12 Vitamini"
+            },
+            {
+              "value": "multivitamin",
+              "label": "Multivitamin"
+            },
+            {
+              "value": "vitaminC",
+              "label": "C Vitamini"
+            },
+            {
+              "value": "iron",
+              "label": "Demir"
+            },
+            {
+              "value": "calcium",
+              "label": "Kalsiyum"
+            },
+            {
+              "value": "zinc",
+              "label": "Çinko"
+            },
+            {
+              "value": "magnesium",
+              "label": "Magnezyum"
+            },
+            {
+              "value": "omega3",
+              "label": "Omega-3 (balık yağı)"
+            },
+            {
+              "value": "collagen",
+              "label": "Kolajen"
+            },
+            {
+              "value": "probiotic",
+              "label": "Probiyotik"
+            },
+            {
+              "value": "fiber",
+              "label": "Lif takviyesi (psyllium vb.)"
+            },
+            {
+              "value": "creatine",
+              "label": "Kreatin"
+            },
+            {
+              "value": "electrolytes",
+              "label": "Elektrolit"
+            },
+            {
+              "value": "preworkout",
+              "label": "Pre-workout"
+            },
+            {
+              "value": "proteinPowder",
+              "label": "Protein tozu"
+            },
+            {
+              "value": "amino",
+              "label": "Amino asit (BCAA/EAA)"
+            },
+            {
+              "value": "glucosamine",
+              "label": "Glukozamin"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "supplementsDetail",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer takviyeleri yazınız"
+          },
+          "followUps": [
+            {
+              "type": "single",
+              "key": "supplementsRecommendedBy",
+              "label": "Bu takviyeleri kim önerdi?",
+              "when": [
+                "vitaminD",
+                "b12",
+                "multivitamin",
+                "vitaminC",
+                "iron",
+                "calcium",
+                "zinc",
+                "magnesium",
+                "omega3",
+                "collagen",
+                "probiotic",
+                "fiber",
+                "creatine",
+                "electrolytes",
+                "preworkout",
+                "proteinPowder",
+                "amino",
+                "glucosamine",
+                "other"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "doctor",
+                  "label": "Doktor"
+                },
+                {
+                  "value": "dietitian",
+                  "label": "Diyetisyen"
+                },
+                {
+                  "value": "trainer",
+                  "label": "Antrenör"
+                },
+                {
+                  "value": "self",
+                  "label": "Kendi kararımla"
+                },
+                {
+                  "value": "pharmacist",
+                  "label": "Eczacı"
+                },
+                {
+                  "value": "relative",
+                  "label": "Yakınım önerdi"
+                }
+              ]
+            },
+            {
+              "type": "single",
+              "key": "supplementsDuration",
+              "label": "Ne kadar süredir kullanıyorsunuz?",
+              "when": [
+                "vitaminD",
+                "b12",
+                "multivitamin",
+                "vitaminC",
+                "iron",
+                "calcium",
+                "zinc",
+                "magnesium",
+                "omega3",
+                "collagen",
+                "probiotic",
+                "fiber",
+                "creatine",
+                "electrolytes",
+                "preworkout",
+                "proteinPowder",
+                "amino",
+                "glucosamine",
+                "other"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "under_1m",
+                  "label": "1 aydan az"
+                },
+                {
+                  "value": "1_3m",
+                  "label": "1–3 ay"
+                },
+                {
+                  "value": "3_12m",
+                  "label": "3–12 ay"
+                },
+                {
+                  "value": "over_1y",
+                  "label": "1 yıldan uzun"
+                }
+              ]
+            },
+            {
+              "type": "single",
+              "key": "supplementsFrequency",
+              "label": "Düzenli kullanıyor musunuz?",
+              "when": [
+                "vitaminD",
+                "b12",
+                "multivitamin",
+                "vitaminC",
+                "iron",
+                "calcium",
+                "zinc",
+                "magnesium",
+                "omega3",
+                "collagen",
+                "probiotic",
+                "fiber",
+                "creatine",
+                "electrolytes",
+                "preworkout",
+                "proteinPowder",
+                "amino",
+                "glucosamine",
+                "other"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "daily",
+                  "label": "Her gün"
+                },
+                {
+                  "value": "few_weekly",
+                  "label": "Haftada birkaç kez"
+                },
+                {
+                  "value": "occasional",
+                  "label": "Ara sıra"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "mentalHealthSupport",
+          "label": "Son 12 ay içinde ruh sağlığınız için profesyonel destek aldınız mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "psychologist",
+              "label": "Psikolog"
+            },
+            {
+              "value": "psychiatrist",
+              "label": "Psikiyatrist"
+            },
+            {
+              "value": "both",
+              "label": "Her ikisi de"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "digestiveSymptoms",
+          "label": "Aşağıdaki sindirim şikâyetlerinden hangilerini sık yaşıyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Yok",
+              "exclusive": true
+            },
+            {
+              "value": "bloating",
+              "label": "Şişkinlik"
+            },
+            {
+              "value": "gas",
+              "label": "Gaz"
+            },
+            {
+              "value": "constipation",
+              "label": "Kabızlık"
+            },
+            {
+              "value": "diarrhea",
+              "label": "İshal"
+            },
+            {
+              "value": "heartburn",
+              "label": "Mide yanması"
+            },
+            {
+              "value": "indigestion",
+              "label": "Hazımsızlık"
+            },
+            {
+              "value": "abdominal_pain",
+              "label": "Karın ağrısı"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "doctorClearance",
+          "label": "Doktorunuz tarafından egzersiz veya beslenme konusunda herhangi bir kısıtlama önerildi mi?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "unsure",
+              "label": "Emin değilim"
+            }
+          ],
+          "detail": {
+            "key": "doctorClearanceDetail",
+            "when": [
+              "yes"
+            ],
+            "placeholder": "Önerilen kısıtlamayı kısaca yazınız"
+          }
+        },
+        {
+          "type": "text",
+          "key": "currentComplaints",
+          "label": "Şu an sizi en çok zorlayan sağlık şikâyetini kısaca yazınız",
+          "required": false,
+          "hint": "Örnek: bel ağrısı, nefes darlığı, sürekli yorgunluk"
+        }
+      ]
+    },
+    {
+      "id": "physical",
+      "title": "Fiziksel Kapasite",
+      "subtitle": "Hareket geçmişi ve antrenman hazırlığı",
+      "icon": "Dumbbell",
+      "audience": "coach",
+      "genderOnly": null,
+      "topLevelQuestionCount": 16,
+      "totalQuestionAndFollowUpCount": 20,
+      "questions": [
+        {
+          "type": "single",
+          "key": "injuries",
+          "label": "Son 2 yıl içinde hareket etmenizi kısıtlayan bir sakatlık veya ortopedik sorun yaşadınız mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes_recovered",
+              "label": "Evet, tamamen iyileşti."
+            },
+            {
+              "value": "yes_partial",
+              "label": "Evet, kısmen devam ediyor."
+            },
+            {
+              "value": "yes_ongoing",
+              "label": "Evet, hâlâ devam ediyor."
+            }
+          ],
+          "followUps": [
+            {
+              "type": "multi",
+              "key": "injuryRegions",
+              "label": "Sakatlık hangi bölgedeydi?",
+              "when": [
+                "yes_recovered",
+                "yes_partial",
+                "yes_ongoing"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "neck",
+                  "label": "Boyun"
+                },
+                {
+                  "value": "shoulder",
+                  "label": "Omuz"
+                },
+                {
+                  "value": "elbow",
+                  "label": "Dirsek"
+                },
+                {
+                  "value": "hand_wrist",
+                  "label": "El / Bilek"
+                },
+                {
+                  "value": "upper_back",
+                  "label": "Sırt"
+                },
+                {
+                  "value": "low_back",
+                  "label": "Bel"
+                },
+                {
+                  "value": "hip",
+                  "label": "Kalça"
+                },
+                {
+                  "value": "knee",
+                  "label": "Diz"
+                },
+                {
+                  "value": "ankle",
+                  "label": "Ayak bileği"
+                },
+                {
+                  "value": "foot",
+                  "label": "Ayak"
+                },
+                {
+                  "value": "other",
+                  "label": "Diğer"
+                }
+              ],
+              "detail": {
+                "key": "injuryRegionsDetail",
+                "when": [
+                  "other"
+                ],
+                "placeholder": "Diğer bölgeyi yazınız"
+              }
+            },
+            {
+              "type": "single",
+              "key": "injuryCause",
+              "label": "Sakatlığın nedeni neydi?",
+              "when": [
+                "yes_recovered",
+                "yes_partial",
+                "yes_ongoing"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "sport",
+                  "label": "Spor"
+                },
+                {
+                  "value": "fall",
+                  "label": "Düşme"
+                },
+                {
+                  "value": "traffic",
+                  "label": "Trafik kazası"
+                },
+                {
+                  "value": "work",
+                  "label": "İş kazası"
+                },
+                {
+                  "value": "post_surgery",
+                  "label": "Ameliyat sonrası"
+                },
+                {
+                  "value": "unknown",
+                  "label": "Bilinmiyor"
+                },
+                {
+                  "value": "other",
+                  "label": "Diğer"
+                }
+              ],
+              "detail": {
+                "key": "injuryCauseDetail",
+                "when": [
+                  "other"
+                ],
+                "placeholder": "Nedeni yazınız"
+              }
+            },
+            {
+              "type": "single",
+              "key": "injuryLimitation",
+              "label": "Şu anda hareketlerinizi kısıtlıyor mu?",
+              "when": [
+                "yes_recovered",
+                "yes_partial",
+                "yes_ongoing"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "no",
+                  "label": "Hayır"
+                },
+                {
+                  "value": "mild",
+                  "label": "Biraz"
+                },
+                {
+                  "value": "moderate",
+                  "label": "Orta düzeyde"
+                },
+                {
+                  "value": "severe",
+                  "label": "Çok"
+                }
+              ]
+            },
+            {
+              "type": "single",
+              "key": "injuryDoctorRestriction",
+              "label": "Doktor tarafından egzersiz kısıtlamanız var mı?",
+              "when": [
+                "yes_recovered",
+                "yes_partial",
+                "yes_ongoing"
+              ],
+              "required": true,
+              "options": [
+                {
+                  "value": "no",
+                  "label": "Hayır"
+                },
+                {
+                  "value": "yes",
+                  "label": "Evet"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "activityFrequency",
+          "label": "Haftada kaç gün düzenli fiziksel aktivite yapıyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "0 gün"
+            },
+            {
+              "value": "1_2",
+              "label": "1-2 gün"
+            },
+            {
+              "value": "3_4",
+              "label": "3-4 gün"
+            },
+            {
+              "value": "5_plus",
+              "label": "5+ gün"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "trainingHistoryYears",
+          "label": "Toplam düzenli antrenman geçmişiniz ne kadar?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Yok"
+            },
+            {
+              "value": "under_6m",
+              "label": "6 aydan az"
+            },
+            {
+              "value": "6m_2y",
+              "label": "6 ay - 2 yıl"
+            },
+            {
+              "value": "2y_plus",
+              "label": "2 yıl+"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "currentActivityTypes",
+          "label": "Şu anda yaptığınız aktiviteler hangileri?",
+          "required": true,
+          "options": [
+            {
+              "value": "walking",
+              "label": "Yürüyüş"
+            },
+            {
+              "value": "running",
+              "label": "Koşu"
+            },
+            {
+              "value": "strength",
+              "label": "Kuvvet antrenmanı"
+            },
+            {
+              "value": "pilates",
+              "label": "Pilates/Yoga"
+            },
+            {
+              "value": "cycling",
+              "label": "Bisıklet"
+            },
+            {
+              "value": "none",
+              "label": "Düzenli aktivitem yok"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "movementQuality",
+          "label": "Temel hareketlerde koordinasyonunuzu nasıl değerlendirirsiniz?",
+          "required": false,
+          "options": [
+            {
+              "value": "weak",
+              "label": "Zayıf"
+            },
+            {
+              "value": "fair",
+              "label": "Gelişmeye açık"
+            },
+            {
+              "value": "good",
+              "label": "İyi"
+            },
+            {
+              "value": "very_good",
+              "label": "Çok iyi"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "flexibilityLevel",
+          "label": "Esneklik seviyeniz nasıl?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_low",
+              "label": "Çok düşük"
+            },
+            {
+              "value": "low",
+              "label": "Düşük"
+            },
+            {
+              "value": "medium",
+              "label": "Orta"
+            },
+            {
+              "value": "high",
+              "label": "Yüksek"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "cardioCapacity",
+          "label": "10-15 dk tempolu yürüyüşte nefes durumunuz nasıl?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_hard",
+              "label": "Çok zorlanıyorum"
+            },
+            {
+              "value": "hard",
+              "label": "Zorlanıyorum"
+            },
+            {
+              "value": "manageable",
+              "label": "İdare ediyorum"
+            },
+            {
+              "value": "easy",
+              "label": "Rahatim"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "sportsHistory",
+          "label": "Geçmişte düzenli yaptığınız sporlar hangileri?",
+          "required": false,
+          "options": [
+            {
+              "value": "football",
+              "label": "Futbol"
+            },
+            {
+              "value": "basketball",
+              "label": "Basketbol"
+            },
+            {
+              "value": "swimming",
+              "label": "Yüzme"
+            },
+            {
+              "value": "martialArts",
+              "label": "Dövüş sporları"
+            },
+            {
+              "value": "athletics",
+              "label": "Atletizm"
+            },
+            {
+              "value": "none",
+              "label": "Yok"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "equipmentAccess",
+          "label": "Antrenman için hangi ekipmanlara erişiminiz var?",
+          "required": true,
+          "options": [
+            {
+              "value": "bodyweight",
+              "label": "Sadece vücut ağırlığı"
+            },
+            {
+              "value": "dumbbells",
+              "label": "Dambıl"
+            },
+            {
+              "value": "bands",
+              "label": "Direnç bandı"
+            },
+            {
+              "value": "cardioMachine",
+              "label": "Kondisyon cihazı"
+            },
+            {
+              "value": "gym",
+              "label": "Tam donanımlı spor salonu"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "preferredTrainingDays",
+          "label": "Antrenman için uygun günleriniz hangileri?",
+          "required": true,
+          "options": [
+            {
+              "value": "monday",
+              "label": "Pazartesi"
+            },
+            {
+              "value": "tuesday",
+              "label": "Salı"
+            },
+            {
+              "value": "wednesday",
+              "label": "Çarşamba"
+            },
+            {
+              "value": "thursday",
+              "label": "Perşembe"
+            },
+            {
+              "value": "friday",
+              "label": "Cuma"
+            },
+            {
+              "value": "saturday",
+              "label": "Cumartesi"
+            },
+            {
+              "value": "sunday",
+              "label": "Pazar"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "sessionDurationGoal",
+          "label": "Tek bir antrenmana ayırabileceğiniz süre ne kadar?",
+          "required": true,
+          "options": [
+            {
+              "value": "15_25",
+              "label": "15-25 dk"
+            },
+            {
+              "value": "30_40",
+              "label": "30-40 dk"
+            },
+            {
+              "value": "45_60",
+              "label": "45-60 dk"
+            },
+            {
+              "value": "60_plus",
+              "label": "60+ dk"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "trainingLocation",
+          "label": "Nerede antrenman yapmayı tercih edersiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "home",
+              "label": "Evde"
+            },
+            {
+              "value": "gym",
+              "label": "Spor salonunda"
+            },
+            {
+              "value": "outdoor",
+              "label": "Açık alanda"
+            },
+            {
+              "value": "mixed",
+              "label": "Karışık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "previousCoachExperience",
+          "label": "Daha önce bir antrenörle çalıştınız mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "online",
+              "label": "Evet, online"
+            },
+            {
+              "value": "face_to_face",
+              "label": "Evet, yüz yüze"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "exerciseContraindications",
+          "label": "Kaçınmanız gereken hareket veya egzersiz var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Yok"
+            },
+            {
+              "value": "yes",
+              "label": "Var"
+            }
+          ],
+          "detail": {
+            "key": "exerciseContraindicationsDetail",
+            "when": [
+              "yes"
+            ],
+            "placeholder": "Kaçınmanız gereken hareketleri yazınız"
+          }
+        },
+        {
+          "type": "multi",
+          "key": "painAreas",
+          "label": "Düzenli ağrı yaşadığınız bölgeler hangileri?",
+          "required": false,
+          "hint": "Yoksa boş bırakın.",
+          "options": [
+            {
+              "value": "lowback",
+              "label": "Bel"
+            },
+            {
+              "value": "neck",
+              "label": "Boyun"
+            },
+            {
+              "value": "knee",
+              "label": "Diz"
+            },
+            {
+              "value": "shoulder",
+              "label": "Omuz"
+            },
+            {
+              "value": "hip",
+              "label": "Kalça"
+            },
+            {
+              "value": "ankle",
+              "label": "Ayak bileği"
+            },
+            {
+              "value": "wrist",
+              "label": "El bileği"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "performanceGoal",
+          "label": "Önümüzdeki 3 ay için en öncelikli fiziksel hedefiniz nedir?",
+          "required": true,
+          "hint": "Örnek: 5 km koşabilmek, düzgün squat öğrenmek, 6 kg vermek"
+        }
+      ]
+    },
+    {
+      "id": "lifestyle",
+      "title": "Yaşam Tarzı",
+      "subtitle": "Günlük alışkanlıklar ve davranışlar",
+      "icon": "Activity",
+      "audience": "coach",
+      "genderOnly": null,
+      "topLevelQuestionCount": 12,
+      "totalQuestionAndFollowUpCount": 12,
+      "questions": [
+        {
+          "type": "single",
+          "key": "sittingHours",
+          "label": "Günlük ortalama kaç saat oturuyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "under_4",
+              "label": "4 saatten az"
+            },
+            {
+              "value": "4_6",
+              "label": "4-6 saat"
+            },
+            {
+              "value": "7_9",
+              "label": "7-9 saat"
+            },
+            {
+              "value": "10_plus",
+              "label": "10 saat+"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "smoking",
+          "label": "Sigara kullanıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "never",
+              "label": "Hiç kullanmadım"
+            },
+            {
+              "value": "former",
+              "label": "Bıraktım"
+            },
+            {
+              "value": "occasional",
+              "label": "Ara sıra"
+            },
+            {
+              "value": "daily",
+              "label": "Her gün"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "alcohol",
+          "label": "Alkol tüketim sıklığınız nasıl?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hiç"
+            },
+            {
+              "value": "monthly",
+              "label": "Ayda 1-2 kez"
+            },
+            {
+              "value": "weekly",
+              "label": "Haftada 1-2 kez"
+            },
+            {
+              "value": "frequent",
+              "label": "Haftada 3+ kez"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "teaCoffee",
+          "label": "Günlük çay/kahve tüketiminiz ne kadar?",
+          "required": true,
+          "options": [
+            {
+              "value": "0_1",
+              "label": "0-1 fincan"
+            },
+            {
+              "value": "2_3",
+              "label": "2-3 fincan"
+            },
+            {
+              "value": "4_5",
+              "label": "4-5 fincan"
+            },
+            {
+              "value": "6_plus",
+              "label": "6+ fincan"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "travelFrequency",
+          "label": "İş veya özel nedenlerle şehir dışı seyahat sıklığınız?",
+          "required": false,
+          "options": [
+            {
+              "value": "rare",
+              "label": "Çok nadir"
+            },
+            {
+              "value": "monthly",
+              "label": "Ayda 1 civarı"
+            },
+            {
+              "value": "biweekly",
+              "label": "Ayda 2-3"
+            },
+            {
+              "value": "weekly",
+              "label": "Haftalık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "substanceUse",
+          "label": "Sigara dışında madde kullanımınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "past",
+              "label": "Geçmişte vardı"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "shiftWork",
+          "label": "Vardiyalı veya düzensiz saatlerde çalışıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "sometimes",
+              "label": "Dönemsel"
+            },
+            {
+              "value": "yes",
+              "label": "Evet, düzenli"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dailySteps",
+          "label": "Günlük ortalama adım sayınız nedir?",
+          "required": false,
+          "options": [
+            {
+              "value": "under_3000",
+              "label": "3000 altı"
+            },
+            {
+              "value": "3000_6000",
+              "label": "3000-6000"
+            },
+            {
+              "value": "6000_9000",
+              "label": "6000-9000"
+            },
+            {
+              "value": "9000_plus",
+              "label": "9000+"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "screenTime",
+          "label": "Günlük ekran başında geçirdiğiniz toplam süre ne kadar?",
+          "required": false,
+          "options": [
+            {
+              "value": "under_3",
+              "label": "3 saatten az"
+            },
+            {
+              "value": "3_5",
+              "label": "3-5 saat"
+            },
+            {
+              "value": "6_8",
+              "label": "6-8 saat"
+            },
+            {
+              "value": "9_plus",
+              "label": "9 saat+"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "exercisePreferences",
+          "label": "Hangi egzersiz türleri size daha keyifli geliyor?",
+          "required": true,
+          "options": [
+            {
+              "value": "walking",
+              "label": "Yürüyüş"
+            },
+            {
+              "value": "strength",
+              "label": "Kuvvet"
+            },
+            {
+              "value": "group",
+              "label": "Grup dersleri"
+            },
+            {
+              "value": "mindBody",
+              "label": "Yoga/Pilates"
+            },
+            {
+              "value": "shortHome",
+              "label": "Kısa ev antrenmanı"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "exerciseBarriers",
+          "label": "Düzenli egzersiz yapmanızı en çok zorlayan etkenler neler?",
+          "required": true,
+          "options": [
+            {
+              "value": "time",
+              "label": "Zaman yetersizliği"
+            },
+            {
+              "value": "motivation",
+              "label": "Motivasyon düşüklüğü"
+            },
+            {
+              "value": "pain",
+              "label": "Ağrı/sakatlık korkusu"
+            },
+            {
+              "value": "knowledge",
+              "label": "Nasıl yapacağımı bilmiyorum"
+            },
+            {
+              "value": "environment",
+              "label": "Uygun ortam yok"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "commuteType",
+          "label": "Günlük ulaşım şekli en çok hangisi?",
+          "required": false,
+          "options": [
+            {
+              "value": "car",
+              "label": "Araç"
+            },
+            {
+              "value": "public",
+              "label": "Toplu taşıma"
+            },
+            {
+              "value": "walk",
+              "label": "Yürüyerek"
+            },
+            {
+              "value": "mixed",
+              "label": "Karışık"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diet_reason",
+      "title": "Başvuru Nedeni",
+      "subtitle": "Diyetisyen desteği alma amacınız ve hedefiniz",
+      "icon": "Apple",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 4,
+      "totalQuestionAndFollowUpCount": 4,
+      "questions": [
+        {
+          "type": "multi",
+          "key": "dietReason",
+          "label": "Diyetisyen desteği alma nedeniniz nedir?",
+          "required": true,
+          "options": [
+            {
+              "value": "weight_loss",
+              "label": "Kilo verme"
+            },
+            {
+              "value": "weight_gain",
+              "label": "Kilo alma"
+            },
+            {
+              "value": "healthy_eating",
+              "label": "Sağlıklı beslenme"
+            },
+            {
+              "value": "sport_performance",
+              "label": "Spor performansı"
+            },
+            {
+              "value": "medical_nutrition",
+              "label": "Hastalığa yönelik beslenme tedavisi"
+            },
+            {
+              "value": "pregnancy_lactation",
+              "label": "Gebelik / Emzirme"
+            },
+            {
+              "value": "child_teen",
+              "label": "Çocuk / Ergen beslenmesi"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "dietReasonOther",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer nedeninizi yazınız"
+          }
+        },
+        {
+          "type": "emoji",
+          "key": "bodyAppearance",
+          "label": "Fiziksel görünümünüz konusunda kendinizi nasıl hissediyorsunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "very_low",
+              "label": "Hiç memnun değilim",
+              "emoji": "😞"
+            },
+            {
+              "value": "low",
+              "label": "Pek memnun değilim",
+              "emoji": "🙁"
+            },
+            {
+              "value": "medium",
+              "label": "Kararsızım",
+              "emoji": "😐"
+            },
+            {
+              "value": "good",
+              "label": "Memnunum",
+              "emoji": "🙂"
+            },
+            {
+              "value": "excellent",
+              "label": "Çok memnunum",
+              "emoji": "😄"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "weightChange",
+          "label": "Son 3 ayda kilonuzda belirgin değişim oldu mu?",
+          "required": true,
+          "options": [
+            {
+              "value": "lost",
+              "label": "Kilo verdim"
+            },
+            {
+              "value": "gained",
+              "label": "Kilo aldım"
+            },
+            {
+              "value": "stable",
+              "label": "Stabil kaldı"
+            },
+            {
+              "value": "unknown",
+              "label": "Takip etmedim"
+            }
+          ],
+          "detail": {
+            "key": "weightChangeDetail",
+            "when": [
+              "lost",
+              "gained"
+            ],
+            "placeholder": "Yaklaşık kaç kg değişim oldu?"
+          }
+        },
+        {
+          "type": "text",
+          "key": "dietGoal",
+          "label": "Hedefiniz nedir?",
+          "required": true,
+          "hint": "Örn. 8 kg vermek, kan şekerini dengelemek, daha enerjik hissetmek"
+        }
+      ]
+    },
+    {
+      "id": "diet_health",
+      "title": "Sağlık Durumu",
+      "subtitle": "Tanı, ilaç, alerji, sindirim ve aile öyküsü",
+      "icon": "Stethoscope",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 7,
+      "totalQuestionAndFollowUpCount": 7,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietDiagnosed",
+          "label": "Doktor tarafından tanı konulmuş hastalığınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietDiagnosedDetail",
+            "when": "yes",
+            "placeholder": "Tanıları belirtiniz"
+          }
+        },
+        {
+          "type": "text",
+          "key": "dietSurgeries",
+          "label": "Geçirdiğiniz ameliyatlar",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietMedications",
+          "label": "Düzenli kullandığınız ilaçlar",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietSupplements",
+          "label": "Kullandığınız vitamin, mineral veya bitkisel takviyeler",
+          "required": false
+        },
+        {
+          "type": "single",
+          "key": "dietFoodAllergies",
+          "label": "Besin alerjiniz veya intoleransınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietFoodAllergiesDetail",
+            "when": "yes",
+            "placeholder": "Alerji veya intoleransları belirtiniz"
+          }
+        },
+        {
+          "type": "multi",
+          "key": "dietDigestiveSymptoms",
+          "label": "Sindirim sistemi ile ilgili şikâyetleriniz var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "bloating",
+              "label": "Şişkinlik"
+            },
+            {
+              "value": "gas",
+              "label": "Gaz"
+            },
+            {
+              "value": "constipation",
+              "label": "Kabızlık"
+            },
+            {
+              "value": "diarrhea",
+              "label": "İshal"
+            },
+            {
+              "value": "reflux",
+              "label": "Reflü"
+            },
+            {
+              "value": "heartburn",
+              "label": "Mide yanması"
+            },
+            {
+              "value": "nausea",
+              "label": "Bulantı"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "dietDigestiveOther",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer şikâyetleri yazınız"
+          }
+        },
+        {
+          "type": "multi",
+          "key": "dietFamilyHistory",
+          "label": "Aile öyküsü — ailenizde aşağıdaki hastalıklardan bulunan var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "diabetes",
+              "label": "Diyabet"
+            },
+            {
+              "value": "hypertension",
+              "label": "Hipertansiyon"
+            },
+            {
+              "value": "heart",
+              "label": "Kalp hastalığı"
+            },
+            {
+              "value": "thyroid",
+              "label": "Tiroid hastalığı"
+            },
+            {
+              "value": "obesity",
+              "label": "Obezite"
+            },
+            {
+              "value": "cancer",
+              "label": "Kanser"
+            },
+            {
+              "value": "cholesterol",
+              "label": "Kolesterol yüksekliği"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "dietFamilyHistoryOther",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer hastalıkları belirtiniz"
+          }
+        }
+      ]
+    },
+    {
+      "id": "diet_lifestyle",
+      "title": "Yaşam Tarzı",
+      "subtitle": "Sigara, alkol, su, uyku ve stres",
+      "icon": "MoonStar",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 6,
+      "totalQuestionAndFollowUpCount": 6,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietSmoking",
+          "label": "Sigara kullanıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietSmokingAmount",
+            "when": "yes",
+            "placeholder": "Günde kaç adet?"
+          }
+        },
+        {
+          "type": "single",
+          "key": "dietAlcohol",
+          "label": "Alkol kullanıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietAlcoholFrequency",
+            "when": "yes",
+            "placeholder": "Sıklığını belirtiniz"
+          }
+        },
+        {
+          "type": "single",
+          "key": "dietWaterIntake",
+          "label": "Su tüketiminiz",
+          "required": true,
+          "options": [
+            {
+              "value": "under_1l",
+              "label": "1 L'den az"
+            },
+            {
+              "value": "1_2l",
+              "label": "1–2 L"
+            },
+            {
+              "value": "2_3l",
+              "label": "2–3 L"
+            },
+            {
+              "value": "3l_plus",
+              "label": "3 L ve üzeri"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "dietSleepHours",
+          "label": "Uyku süreniz (saat)",
+          "required": true,
+          "hint": "Örn. 7"
+        },
+        {
+          "type": "single",
+          "key": "dietSleepQuality",
+          "label": "Uyku kaliteniz",
+          "required": true,
+          "options": [
+            {
+              "value": "good",
+              "label": "İyi"
+            },
+            {
+              "value": "fair",
+              "label": "Orta"
+            },
+            {
+              "value": "poor",
+              "label": "Kötü"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietStressLevel",
+          "label": "Stres düzeyiniz",
+          "required": true,
+          "options": [
+            {
+              "value": "low",
+              "label": "Düşük"
+            },
+            {
+              "value": "moderate",
+              "label": "Orta"
+            },
+            {
+              "value": "high",
+              "label": "Yüksek"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diet_activity",
+      "title": "Fiziksel Aktivite",
+      "subtitle": "Egzersiz alışkanlıklarınız",
+      "icon": "Activity",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 3,
+      "totalQuestionAndFollowUpCount": 3,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietExercise",
+          "label": "Egzersiz yapıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietExerciseType",
+            "when": "yes",
+            "placeholder": "Egzersiz türü (ör. yürüyüş, fitness, yüzme)"
+          }
+        },
+        {
+          "type": "text",
+          "key": "dietExerciseDays",
+          "label": "Haftada kaç gün egzersiz yapıyorsunuz?",
+          "required": false,
+          "hint": "Egzersiz yapmıyorsanız boş bırakabilirsiniz"
+        },
+        {
+          "type": "text",
+          "key": "dietExerciseDuration",
+          "label": "Egzersiz süreniz (dakika)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "diet_nutrition",
+      "title": "Beslenme Alışkanlıkları",
+      "subtitle": "Öğün düzeni, içecekler ve yeme davranışları",
+      "icon": "Apple",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 9,
+      "totalQuestionAndFollowUpCount": 9,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietMealsPerDay",
+          "label": "Günde kaç öğün tüketirsiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            },
+            {
+              "value": "5_plus",
+              "label": "5+"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietSnacking",
+          "label": "Ara öğün yapıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "no",
+              "label": "Hayır"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietBreakfast",
+          "label": "Kahvaltı yapar mısınız?",
+          "required": true,
+          "options": [
+            {
+              "value": "daily",
+              "label": "Her gün"
+            },
+            {
+              "value": "sometimes",
+              "label": "Bazen"
+            },
+            {
+              "value": "no",
+              "label": "Hayır"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "dietBeverages",
+          "label": "En çok tükettiğiniz içecekler",
+          "required": false,
+          "options": [
+            {
+              "value": "water",
+              "label": "Su"
+            },
+            {
+              "value": "tea",
+              "label": "Çay"
+            },
+            {
+              "value": "coffee",
+              "label": "Kahve"
+            },
+            {
+              "value": "soda",
+              "label": "Asitli içecek"
+            },
+            {
+              "value": "juice",
+              "label": "Meyve suyu"
+            },
+            {
+              "value": "energy",
+              "label": "Enerji içeceği"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ],
+          "detail": {
+            "key": "dietBeveragesOther",
+            "when": [
+              "other"
+            ],
+            "placeholder": "Diğer içecekleri yazınız"
+          }
+        },
+        {
+          "type": "single",
+          "key": "dietEatOut",
+          "label": "Haftada kaç kez dışarıdan yemek yersiniz?",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hiç"
+            },
+            {
+              "value": "1_2",
+              "label": "1–2"
+            },
+            {
+              "value": "3_5",
+              "label": "3–5"
+            },
+            {
+              "value": "5_plus",
+              "label": "5+"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietSweetIntake",
+          "label": "Tatlı tüketiminiz",
+          "required": true,
+          "options": [
+            {
+              "value": "none",
+              "label": "Hiç"
+            },
+            {
+              "value": "1_2_week",
+              "label": "Haftada 1–2"
+            },
+            {
+              "value": "3_plus_week",
+              "label": "Haftada 3+"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietNightEating",
+          "label": "Gece yeme alışkanlığınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "no",
+              "label": "Hayır"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietEmotionalEating",
+          "label": "Duygusal yeme yaşadığınızı düşünüyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "no",
+              "label": "Hayır"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "dietCravings",
+          "label": "Canınız en çok hangi besinleri çeker?",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "diet_women",
+      "title": "Kadın Danışanlar",
+      "subtitle": "Adet, gebelik ve hormonal sağlık",
+      "icon": "Venus",
+      "audience": "dietitian",
+      "genderOnly": "female",
+      "topLevelQuestionCount": 4,
+      "totalQuestionAndFollowUpCount": 4,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietMenstrual",
+          "label": "Adet düzeniniz",
+          "required": true,
+          "options": [
+            {
+              "value": "regular",
+              "label": "Düzenli"
+            },
+            {
+              "value": "irregular",
+              "label": "Düzensiz"
+            },
+            {
+              "value": "menopause",
+              "label": "Menopoz"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietPregnancy",
+          "label": "Gebelik durumu",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietBreastfeeding",
+          "label": "Emziriyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "dietPcos",
+          "label": "Polikistik over sendromu (PKOS) tanınız var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diet_extra",
+      "title": "Ek Bilgiler",
+      "subtitle": "Geçmiş diyet deneyimi, tercihler ve koşullar",
+      "icon": "Flower2",
+      "audience": "dietitian",
+      "genderOnly": null,
+      "topLevelQuestionCount": 8,
+      "totalQuestionAndFollowUpCount": 8,
+      "questions": [
+        {
+          "type": "single",
+          "key": "dietPastDiet",
+          "label": "Geçmiş diyet deneyimi — daha önce diyet yaptınız mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ],
+          "detail": {
+            "key": "dietPastDietDuration",
+            "when": "yes",
+            "placeholder": "Ne kadar süre?"
+          }
+        },
+        {
+          "type": "text",
+          "key": "dietMaxWeightLoss",
+          "label": "En fazla verdiğiniz kilo (kg)",
+          "required": false,
+          "hint": "Diyet yapmadıysanız boş bırakın"
+        },
+        {
+          "type": "single",
+          "key": "dietWeightRegain",
+          "label": "Tekrar kilo aldınız mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "no",
+              "label": "Hayır"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "dietDislikedFoods",
+          "label": "Sevmediğiniz besinler",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietAvoidFoods",
+          "label": "Tüketmek istemediğiniz besinler",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietWorkHours",
+          "label": "İş saatleriniz",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietBarriers",
+          "label": "Beslenmenizi zorlaştıran durumlar nelerdir?",
+          "required": false
+        },
+        {
+          "type": "text",
+          "key": "dietAdditionalInfo",
+          "label": "Eklemek istediğiniz başka bir bilgi var mı?",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "women",
+      "title": "Kadın Sağlığı",
+      "subtitle": "Hormonal döngü ve kadın sağlığı özel soruları",
+      "icon": "Venus",
+      "audience": "shared",
+      "genderOnly": "female",
+      "topLevelQuestionCount": 8,
+      "totalQuestionAndFollowUpCount": 8,
+      "questions": [
+        {
+          "type": "single",
+          "key": "pregnancy",
+          "label": "Şu an hamilelik durumu var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            },
+            {
+              "value": "planning",
+              "label": "Planlıyorum"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "menstrualRegular",
+          "label": "Adet döngünüz genellikle düzenli mi?",
+          "required": true,
+          "options": [
+            {
+              "value": "regular",
+              "label": "Düzenli"
+            },
+            {
+              "value": "irregular",
+              "label": "Düzensiz"
+            },
+            {
+              "value": "absent",
+              "label": "Uzun süredir olmuyor"
+            }
+          ]
+        },
+        {
+          "type": "multi",
+          "key": "pmsSymptoms",
+          "label": "Adet öncesi dönemde hangi belirtileri sık yaşıyorsunuz?",
+          "required": false,
+          "options": [
+            {
+              "value": "none",
+              "label": "Belirgin yok"
+            },
+            {
+              "value": "bloating",
+              "label": "Şişlik"
+            },
+            {
+              "value": "cravings",
+              "label": "Yeme atakları"
+            },
+            {
+              "value": "mood_swings",
+              "label": "Ruh hali değişimi"
+            },
+            {
+              "value": "fatigue",
+              "label": "Yorgunluk"
+            },
+            {
+              "value": "headache",
+              "label": "Baş ağrısı"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "contraceptionMethod",
+          "label": "Doğum kontrol yöntemi kullanıyor musunuz?",
+          "required": false,
+          "options": [
+            {
+              "value": "none",
+              "label": "Kullanmıyorum"
+            },
+            {
+              "value": "barrier",
+              "label": "Bariyer yöntemleri"
+            },
+            {
+              "value": "hormonal",
+              "label": "Hormonal yöntem"
+            },
+            {
+              "value": "iud",
+              "label": "Spiral (RIA)"
+            },
+            {
+              "value": "other",
+              "label": "Diğer"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "menopauseStatus",
+          "label": "Menopoz durumunuz nedir?",
+          "required": false,
+          "options": [
+            {
+              "value": "not_applicable",
+              "label": "Uygun değil"
+            },
+            {
+              "value": "premenopause",
+              "label": "Premenopoz"
+            },
+            {
+              "value": "perimenopause",
+              "label": "Perimenopoz"
+            },
+            {
+              "value": "postmenopause",
+              "label": "Postmenopoz"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "ironDeficiencyHistory",
+          "label": "Demir eksikliği veya anemi geçmişiniz var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "no",
+              "label": "Yok"
+            },
+            {
+              "value": "past",
+              "label": "Geçmişte vardı"
+            },
+            {
+              "value": "ongoing",
+              "label": "Şu an devam ediyor"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "cyclePain",
+          "label": "Adet döneminde ağrılarınız ne düzeyde olur?",
+          "required": false,
+          "options": [
+            {
+              "value": "none",
+              "label": "Yok"
+            },
+            {
+              "value": "mild",
+              "label": "Hafif"
+            },
+            {
+              "value": "moderate",
+              "label": "Orta"
+            },
+            {
+              "value": "severe",
+              "label": "Şiddetli"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "fertilityPlan",
+          "label": "Önümüzdeki 12 ay içinde gebelik planı var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "maybe",
+              "label": "Belki"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "men",
+      "title": "Erkek Sağlığı",
+      "subtitle": "Erkek sağlığına özel tarama ve belirtiler",
+      "icon": "Mars",
+      "audience": "shared",
+      "genderOnly": "male",
+      "topLevelQuestionCount": 8,
+      "totalQuestionAndFollowUpCount": 8,
+      "questions": [
+        {
+          "type": "single",
+          "key": "prostateSymptoms",
+          "label": "İdrar yapma düzeniyle ilgili prostat kaynaklı şikâyetiniz var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "mild",
+              "label": "Hafif"
+            },
+            {
+              "value": "moderate",
+              "label": "Orta"
+            },
+            {
+              "value": "severe",
+              "label": "Belirgin"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "testosteroneConcerns",
+          "label": "Düşük testosteronla ilişkili belirtiler yaşıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "suspect",
+              "label": "Şüpheleniyorum"
+            },
+            {
+              "value": "diagnosed",
+              "label": "Tanı aldım"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "maleScreening",
+          "label": "Son erkek sağlığı kontrolünüzü ne zaman yaptırdınız?",
+          "required": true,
+          "options": [
+            {
+              "value": "last_year",
+              "label": "Son 1 yıl içinde"
+            },
+            {
+              "value": "1_3_years",
+              "label": "1–3 yıl önce"
+            },
+            {
+              "value": "over_3_years",
+              "label": "3 yıldan uzun"
+            },
+            {
+              "value": "never",
+              "label": "Hiç"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "erectionQuality",
+          "label": "Cinsel fonksiyonla ilgili zorlanma yaşıyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "sometimes",
+              "label": "Ara sıra"
+            },
+            {
+              "value": "often",
+              "label": "Sık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "waistCircumferenceRisk",
+          "label": "Bel çevresi ölçümü konusunda risk olduğunu düşünüyor musunuz?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "not_sure",
+              "label": "Emin değilim"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "snoring",
+          "label": "Yüksek sesle horlama veya uykuda nefes durması şüpheleri var mı?",
+          "required": true,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "occasionally",
+              "label": "Ara sıra"
+            },
+            {
+              "value": "frequent",
+              "label": "Sık"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "hairLossConcerns",
+          "label": "Saç dökülmesi ile ilgili belirgin bir kaygınız var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "mild",
+              "label": "Hafif"
+            },
+            {
+              "value": "high",
+              "label": "Belirgin"
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "key": "maleFertilityPlan",
+          "label": "Önümüzdeki 12 ay içinde çocuk sahibi olma planınız var mı?",
+          "required": false,
+          "options": [
+            {
+              "value": "no",
+              "label": "Hayır"
+            },
+            {
+              "value": "maybe",
+              "label": "Belki"
+            },
+            {
+              "value": "yes",
+              "label": "Evet"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
