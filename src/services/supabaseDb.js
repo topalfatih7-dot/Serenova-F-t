@@ -28,6 +28,7 @@ import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
 import { normalizeE164 } from '../data/countryCodes'
 import { ageFromBirthDate } from '../utils/birthDate'
+import { stripEmbeddedInstructionBlock } from '../data/exerciseTurkish'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
 import { shouldSkipExpiryPersistDuringPayment } from '../utils/stripePaymentGrace'
@@ -434,7 +435,7 @@ export function rowToExercise(row) {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: stripEmbeddedInstructionBlock(row.description),
     category: row.body_part || row.category || 'Tüm Vücut',
     sportType: row.sport_type || 'Fitness',
     bodyPart: row.body_part || row.category || 'Tüm Vücut',

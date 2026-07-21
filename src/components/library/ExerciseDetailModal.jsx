@@ -1,6 +1,6 @@
 import Modal from '../ui/Modal'
 import VideoPlayer from '../ui/VideoPlayer'
-import { DIFFICULTY_LABELS, formatExerciseLocations } from '../../data/exerciseTurkish'
+import { DIFFICULTY_LABELS, formatExerciseLocations, stripEmbeddedInstructionBlock } from '../../data/exerciseTurkish'
 
 const CATEGORY_COLORS = {
   default: 'from-violet-500 to-purple-600',
@@ -28,6 +28,7 @@ function normalizeInstructions(instructions) {
 export default function ExerciseDetailModal({ open, onClose, exercise, zClass = 'z-50' }) {
   const name = exercise?.name || exercise?.exerciseName
   const steps = normalizeInstructions(exercise?.instructions)
+  const description = stripEmbeddedInstructionBlock(exercise?.description)
 
   return (
     <Modal open={open} onClose={onClose} title={name} size="lg" zClass={zClass}>
@@ -63,7 +64,7 @@ export default function ExerciseDetailModal({ open, onClose, exercise, zClass = 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/45">Açıklama</p>
             <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-cream-800/80">
-              {exercise.description || 'Açıklama eklenmemiş.'}
+              {description || 'Açıklama eklenmemiş.'}
             </p>
           </div>
           {steps.length > 0 && (

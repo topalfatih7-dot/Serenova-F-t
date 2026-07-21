@@ -347,18 +347,17 @@ export function translateSentence(sentence) {
     .trim()
 }
 
+/** description içine gömülen "Uygulama adımları" bloğunu kaldırır (UI'da ayrı listelenir). */
+export function stripEmbeddedInstructionBlock(description) {
+  return String(description || '')
+    .replace(/\s*Uygulama ad[ıi]mlar[ıi]:[\s\S]*$/i, '')
+    .trim()
+}
+
 export function buildTurkishDescription(exercise) {
-  const parts = []
-  if (exercise.description) {
-    parts.push(translateSentence(exercise.description))
-  }
-  const steps = Array.isArray(exercise.instructions) ? exercise.instructions : []
-  if (steps.length) {
-    parts.push('')
-    parts.push('Uygulama adımları:')
-    steps.forEach((step, i) => parts.push(`${i + 1}. ${translateSentence(step)}`))
-  }
-  return parts.join('\n').trim()
+  // Adımlar yalnızca instructions alanında tutulur; description'a gömülmez.
+  if (!exercise.description) return ''
+  return stripEmbeddedInstructionBlock(translateSentence(exercise.description))
 }
 
 export function translateExerciseRecord(exercise, _pack) {

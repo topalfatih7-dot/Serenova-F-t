@@ -20,9 +20,14 @@ const POLISH_REPLACEMENTS = [
   [/merkez bölgenizi/gi, 'karın kaslarınızı'],
   [/merkez bölge/gi, 'karın kasları'],
   [/çekirdek stabilitesine/gi, 'core stabilitesine'],
+  [/çekirdeğinizi/gi, 'core bölgenizi'],
   [/çekirdek/gi, 'core'],
   [/gövdenizi/gi, 'vücudunuzu'],
   [/gövde/gi, 'vücut'],
+  [/vücutnize/gi, 'vücudunuza'],
+  [/vücutnizi/gi, 'vücudunuzu'],
+  [/vücutnin/gi, 'vücudunuzun'],
+  [/vücutniz/gi, 'vücudunuz'],
   [/tekrarlar için/gi, 'tekrar için'],
   [/istediğiniz sayıda/gi, 'istediğiniz'],
   [/veya karın kasları egzersizidir/gi, 'veya ab tekerleği egzersizidir'],
@@ -34,6 +39,19 @@ const POLISH_REPLACEMENTS = [
   [/eşkenar dörtgenleri/gi, 'romboid kasları'],
   [/tuzakları/gi, 'trapez kaslarını'],
   [/arka sıradaki/gi, 'sırt'],
+  // Makine çevirisi artıkları (position / reps parçaları)
+  [/\s*konum\.?\s*$/gi, '.'],
+  [/\s*tekrarlar\.?\s*$/gi, '.'],
+  [/\s*tekrarlardan oluşuyor\.?\s*$/gi, '.'],
+  [/\s+tekrarlar\s*$/gi, ''],
+  [/İstediğiniz sayıda tekrar yapın\.\s*tekrarlar\.?/gi, 'İstediğiniz sayıda tekrar yapın.'],
+  [/İstediğiniz sayıda tekrarlayın\.\s*tekrarlar\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/İstediğiniz sayı için tekrarlayın\.\s*tekrarlardan oluşuyor\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/İstediğiniz sayı için tekrarlayın\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/Tekrarlayın\s+İstenilen sayıda tekrar\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/Bunu tekrarlayın\.\s*İstenilen sayıda tekrar\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/Tekrarlayın\.\s*İstenilen sayıda tekrar\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
+  [/İstenen tekrar sayısı için tekrarlayın\.?/gi, 'İstediğiniz sayıda tekrarlayın.'],
 ]
 
 function sleep(ms) {
@@ -45,7 +63,18 @@ export function polishTurkishFitnessText(text) {
   for (const [re, rep] of POLISH_REPLACEMENTS) {
     out = out.replace(re, rep)
   }
-  return out.replace(/\s+/g, ' ').trim()
+  return out
+    .replace(/\.\.+/g, '.')
+    .replace(/\s+\./g, '.')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** description içine gömülen "Uygulama adımları" bloğunu kaldırır (UI'da ayrı listelenir). */
+export function stripEmbeddedInstructionBlock(description) {
+  return String(description || '')
+    .replace(/\s*Uygulama ad[ıi]mlar[ıi]:[\s\S]*$/i, '')
+    .trim()
 }
 
 async function requestTranslate(text) {
@@ -98,16 +127,10 @@ export async function translateInstructions(steps, opts = {}) {
   return out
 }
 
-export function buildTurkishDescriptionBlock(description, instructions) {
-  const parts = []
-  if (description) parts.push(description)
-  const steps = Array.isArray(instructions) ? instructions.filter(Boolean) : []
-  if (steps.length) {
-    parts.push('')
-    parts.push('Uygulama adımları:')
-    steps.forEach((step, i) => parts.push(`${i + 1}. ${step}`))
-  }
-  return parts.join('\n').trim()
+export function buildTurkishDescriptionBlock(description, _instructions) {
+  // Adımlar yalnızca instructions alanında tutulur; description'a gömülmez
+  // (UI "Açıklama" + "Nasıl yapılır" olarak ayrı gösterir).
+  return stripEmbeddedInstructionBlock(description)
 }
 
 /** İngilizce kaynak metinden açıklama + talimatları Türkçeleştirir */
@@ -117,7 +140,7 @@ export async function translateExerciseContent({ description, instructions } = {
     : ''
   const stepsTr = await translateInstructions(instructions, opts)
   return {
-    description: buildTurkishDescriptionBlock(descTr, stepsTr),
-    instructions: stepsTr,
+    description: buildTurkishDescriptionBlock(descTr),
+    instructions: stepsTr.map(polishTurkishFitnessText),
   }
 }
