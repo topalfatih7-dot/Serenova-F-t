@@ -61,49 +61,42 @@ const NUTRITION_PREFS = [
   { value: 'low-carb', label: 'Düşük Karb.', icon: Nut, tone: 'rose' },
 ]
 
-const TONE_STYLES = {
+/** İkon rengi; seçilince ikon kutusu dolu renk alır — buton gövdesi nötr kalır */
+const ICON_TONES = {
   sky: {
-    idle: 'border-sky-200/80 bg-gradient-to-br from-sky-50 to-cyan-50/70 text-sky-900',
-    active: 'border-sky-500 bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-sky-200/70',
-    icon: 'bg-sky-100 text-sky-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-sky-600',
+    selectedBox: 'bg-sky-500 text-white shadow-sm shadow-sky-200/60',
   },
   coral: {
-    idle: 'border-orange-200/80 bg-gradient-to-br from-orange-50 to-rose-50/70 text-orange-950',
-    active: 'border-orange-500 bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-orange-200/70',
-    icon: 'bg-orange-100 text-orange-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-orange-500',
+    selectedBox: 'bg-orange-500 text-white shadow-sm shadow-orange-200/60',
   },
   brand: {
-    idle: 'border-brand-200/80 bg-gradient-to-br from-brand-50 to-sky-50/70 text-brand-900',
-    active: 'border-brand-500 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-brand-200/70',
-    icon: 'bg-brand-100 text-brand-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-brand-600',
+    selectedBox: 'bg-brand-500 text-white shadow-sm shadow-brand-200/60',
   },
   rose: {
-    idle: 'border-rose-200/80 bg-gradient-to-br from-rose-50 to-pink-50/70 text-rose-950',
-    active: 'border-rose-500 bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-rose-200/70',
-    icon: 'bg-rose-100 text-rose-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-rose-500',
+    selectedBox: 'bg-rose-500 text-white shadow-sm shadow-rose-200/60',
   },
   amber: {
-    idle: 'border-amber-200/80 bg-gradient-to-br from-amber-50 to-yellow-50/70 text-amber-950',
-    active: 'border-amber-500 bg-gradient-to-br from-amber-500 to-yellow-500 text-white shadow-amber-200/70',
-    icon: 'bg-amber-100 text-amber-700',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-amber-600',
+    selectedBox: 'bg-amber-500 text-white shadow-sm shadow-amber-200/60',
   },
   sage: {
-    idle: 'border-sage-200/80 bg-gradient-to-br from-sage-50 to-emerald-50/70 text-sage-900',
-    active: 'border-sage-500 bg-gradient-to-br from-sage-500 to-emerald-600 text-white shadow-sage-200/70',
-    icon: 'bg-sage-100 text-sage-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-sage-600',
+    selectedBox: 'bg-sage-500 text-white shadow-sm shadow-sage-200/60',
   },
   emerald: {
-    idle: 'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-50/70 text-emerald-950',
-    active: 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-emerald-200/70',
-    icon: 'bg-emerald-100 text-emerald-600',
-    iconActive: 'bg-white/20 text-white',
+    icon: 'text-emerald-600',
+    selectedBox: 'bg-emerald-500 text-white shadow-sm shadow-emerald-200/60',
   },
+}
+
+const SECTION_TONES = {
+  amber: 'text-amber-700',
+  brand: 'text-brand-700',
+  sage: 'text-sage-700',
 }
 
 const LIMITS = {
@@ -121,36 +114,51 @@ function rangeError(field, value) {
 }
 
 function ChoiceChip({ selected, tone, icon: Icon, label, hint, onClick }) {
-  const styles = TONE_STYLES[tone] || TONE_STYLES.brand
+  const styles = ICON_TONES[tone] || ICON_TONES.brand
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex items-center gap-2.5 rounded-2xl border-2 px-3 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-        selected ? `${styles.active} shadow-lg` : styles.idle
+      className={`group relative flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left transition duration-200 ${
+        selected
+          ? 'border-cream-900/20 bg-white shadow-sm ring-1 ring-cream-900/8'
+          : 'border-cream-200 bg-white hover:border-cream-300 hover:bg-cream-50/60'
       }`}
     >
       <span
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-          selected ? styles.iconActive : styles.icon
+          selected ? styles.selectedBox : `bg-cream-100/80 ${styles.icon}`
         }`}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className="h-4 w-4" strokeWidth={2.25} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-bold leading-tight">{label}</span>
+        <span className="block text-xs font-bold leading-tight text-cream-900">{label}</span>
         {hint ? (
-          <span className={`mt-0.5 block text-[10px] leading-tight ${selected ? 'text-white/80' : 'opacity-60'}`}>
+          <span className="mt-0.5 block text-[10px] leading-tight text-cream-800/50">
             {hint}
           </span>
         ) : null}
       </span>
       {selected ? (
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/25">
-          <Check className="h-3 w-3" />
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cream-900 text-white">
+          <Check className="h-3 w-3" strokeWidth={3} />
         </span>
       ) : null}
     </button>
+  )
+}
+
+function PreferenceSection({ title, icon: Icon, tone = 'brand', children }) {
+  const titleTone = SECTION_TONES[tone] || SECTION_TONES.brand
+  return (
+    <div className="rounded-2xl border border-cream-200/90 bg-cream-50/40 px-3.5 py-4 sm:px-4">
+      <p className={`mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold tracking-wide sm:text-base ${titleTone}`}>
+        <Icon className="h-5 w-5 shrink-0" strokeWidth={2.25} />
+        {title}
+      </p>
+      {children}
+    </div>
   )
 }
 
@@ -451,10 +459,7 @@ export default function PersonalInfoSection({ user }) {
             />
           </div>
 
-          <div>
-            <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/55">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Hedefler
-            </p>
+          <PreferenceSection title="Hedefler" icon={Sparkles} tone="amber">
             <div className="grid gap-2 sm:grid-cols-2">
               {GOALS.map((g) => (
                 <ChoiceChip
@@ -467,12 +472,9 @@ export default function PersonalInfoSection({ user }) {
                 />
               ))}
             </div>
-          </div>
+          </PreferenceSection>
 
-          <div>
-            <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/55">
-              <Activity className="h-3.5 w-3.5 text-brand-500" /> Spor Seviyesi
-            </p>
+          <PreferenceSection title="Spor Seviyesi" icon={Activity} tone="brand">
             <div className="grid gap-2 sm:grid-cols-3">
               {FITNESS_LEVELS.map((f) => (
                 <ChoiceChip
@@ -486,12 +488,9 @@ export default function PersonalInfoSection({ user }) {
                 />
               ))}
             </div>
-          </div>
+          </PreferenceSection>
 
-          <div>
-            <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/55">
-              <Apple className="h-3.5 w-3.5 text-sage-500" /> Beslenme Tercihleri
-            </p>
+          <PreferenceSection title="Beslenme Tercihleri" icon={Apple} tone="sage">
             <div className="grid gap-2 sm:grid-cols-2">
               {NUTRITION_PREFS.map((p) => (
                 <ChoiceChip
@@ -504,7 +503,7 @@ export default function PersonalInfoSection({ user }) {
                 />
               ))}
             </div>
-          </div>
+          </PreferenceSection>
 
           <button
             type="button"
