@@ -44,7 +44,7 @@ export default function HealthTestSectionPage() {
       await saveHealthTestProgress(healthTest)
       const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig)
       if (allSectionsDone) {
-        toast(`${section.title} tamamlandı. Tüm testler kaydedildi.`, 'success')
+        toast(`${section.title} tamamlandı. Tüm kategoriler kaydedildi.`, 'success')
 
         if (user.membership === 'free' || user.membership === 'eko') {
           const profile = { ...user, healthTest }
@@ -72,7 +72,7 @@ export default function HealthTestSectionPage() {
 
         navigate('/health-test')
       } else {
-        toast(`${section.title} testi kaydedildi.`, 'success')
+        toast(`${section.title} kaydedildi.`, 'success')
         navigate('/health-test')
       }
     } finally {
@@ -99,7 +99,7 @@ export default function HealthTestSectionPage() {
   return (
     <PanelPageShell>
       <div className="mb-5">
-        <PanelBackLink to="/health-test">Tüm testlere dön</PanelBackLink>
+        <PanelBackLink to="/health-test">Analize dön</PanelBackLink>
       </div>
       <PanelPageHeader
         title={section.title}

@@ -17,7 +17,7 @@ export default function HealthTestPage() {
     setConsentSaving(true)
     try {
       await updateProfile({ healthAck, disclaimer })
-      toast('Onaylar kaydedildi. Testlere başlayabilirsiniz.', 'success')
+      toast('Onaylar kaydedildi. Analize başlayabilirsiniz.', 'success')
     } catch (err) {
       toast(err?.message || 'Onaylar kaydedilemedi.', 'error')
     } finally {
@@ -40,10 +40,10 @@ export default function HealthTestPage() {
   return (
     <PanelPageShell>
       <PanelPageHeader
-        title="Sağlık Testleri"
+        title="Kişisel Sağlık Analizi"
         subtitle={
           needsConsent
-            ? 'Testlere başlamadan önce onayları işaretleyin'
+            ? 'Analize başlamadan önce onayları işaretleyin'
             : 'Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz'
         }
         icon={HeartPulse}
@@ -59,7 +59,6 @@ export default function HealthTestPage() {
         onConsentSave={handleConsentSave}
         consentSaving={consentSaving}
         profile={user}
-        healthAnalysis={user.healthAnalysis}
       />
     </PanelPageShell>
   )

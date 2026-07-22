@@ -18,10 +18,22 @@ function Chips({ values, map }) {
 export function AnalysisBlock({ analysis }) {
   if (!analysis) return null
   const cal = analysis.dailyCalories
+  const scores = analysis.scores || {}
+  const overall = analysis.overallScore ?? analysis.radarScores?.overall ?? analysis.fitnessScore
+  const dims = [
+    ['general', 'Genel'],
+    ['nutrition', 'Beslenme'],
+    ['movement', 'Hareket'],
+    ['sleep', 'Uyku'],
+    ['stress', 'Stres'],
+    ['lifestyle', 'Yaşam tarzı'],
+    ['motivation', 'Motivasyon'],
+    ['readiness', 'Hazır oluş'],
+  ]
   return (
     <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
       <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-cream-900">
-        <Sparkles className="h-4 w-4 text-brand-500" /> Sağlık Analizi
+        <Sparkles className="h-4 w-4 text-brand-500" /> YeniForm Sağlık Skoru
         {analysis.generatedAt && (
           <span className="text-xs font-normal text-cream-800/50">· {analysis.generatedAt}</span>
         )}
@@ -36,12 +48,10 @@ export function AnalysisBlock({ analysis }) {
             </p>
           </div>
         )}
-        {(analysis.radarScores?.overall != null || analysis.fitnessScore != null) && (
+        {overall != null && (
           <div className="rounded-xl bg-white/80 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-cream-800/50">360 Skor</p>
-            <p className="text-sm font-semibold text-cream-900">
-              {analysis.radarScores?.overall ?? analysis.fitnessScore}/100
-            </p>
+            <p className="text-[10px] uppercase tracking-wide text-cream-800/50">Genel Skor</p>
+            <p className="text-sm font-semibold text-cream-900">{overall}/100</p>
           </div>
         )}
         {cal?.recommended != null && (
@@ -54,6 +64,21 @@ export function AnalysisBlock({ analysis }) {
           </div>
         )}
       </div>
+      {analysis.summary && (
+        <p className="mt-3 text-xs leading-relaxed text-cream-800/75">{analysis.summary}</p>
+      )}
+      {Object.keys(scores).length > 0 && (
+        <div className="mt-3 grid gap-1.5 border-t border-brand-100/80 pt-3 sm:grid-cols-2">
+          {dims.map(([key, label]) => (
+            scores[key] != null ? (
+              <div key={key} className="flex justify-between rounded-lg bg-white/70 px-2.5 py-1.5 text-xs">
+                <span className="text-cream-800/55">{label}</span>
+                <span className="font-semibold text-cream-900">{scores[key]}</span>
+              </div>
+            ) : null
+          ))}
+        </div>
+      )}
       {analysis.coachRecommendations?.message && (
         <p className="mt-3 text-xs leading-relaxed text-cream-800/75">
           <span className="font-semibold text-cream-900">Antrenman: </span>

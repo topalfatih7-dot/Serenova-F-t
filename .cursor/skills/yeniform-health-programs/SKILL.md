@@ -11,9 +11,9 @@ description: >-
 
 ## Health test
 
-- Hub `/health-test` → section `/health-test/:sectionId` → `/health-test/finish`
-- Sections: all `general`, `medical`, `physical`, `lifestyle` + `diet_*` for every member; only `women` / `men` / `diet_women` gated by gender
-- Stored in `members.data.healthTest` JSONB; analysis via `aiAnalysis.js` / sync services (full HT → radarScores + AI summaries)
+- Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
+- Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
+- Stored in `members.data.healthTest` JSONB; scores via `healthScoreAnalysis.js` → `healthAnalysis` (8 boyut + overallScore)
 - Full question catalog must live in `docs/mobile/domains/health-test-catalog.md`
 
 ## Calendar / programs

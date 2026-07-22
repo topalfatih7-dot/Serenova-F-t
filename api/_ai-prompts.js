@@ -102,6 +102,75 @@ export const NUTRITION_CONFIG = {
   responseMimeType: 'application/json',
 }
 
+// ─── YeniForm Sağlık Skoru (8 boyut + genel) ────────────────────────
+export const HEALTH_SCORE_SYSTEM = `Sen Yeni Form platformunun deneyimli sağlık analizi AI asistanısın.
+${BRAND_CONTEXT}
+Üyenin kişisel sağlık analizi cevaplarına göre 0–100 arası skorlar üret.
+Skorlar tutarlı, gerçekçi ve dengeli olsun; aşırı iyimser veya aşırı kötümser olma.
+Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
+
+export function buildHealthScoreInstruction(profile = {}, categorySummaries = {}) {
+  const cats = categorySummaries || {}
+  return `ÜYE PROFİLİ:
+- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
+- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
+- Hedefler: ${(profile.goals || []).join(', ') || '—'}
+- Fitness seviyesi: ${profile.fitnessLevel || '—'}
+
+KATEGORİ CEVAP ÖZETLERİ:
+❤️ Genel Sağlık:
+${cats.general || '—'}
+
+🩺 Tıbbi Geçmiş:
+${cats.medical || '—'}
+
+🍎 Beslenme Profili:
+${cats.nutrition || '—'}
+
+🏋️ Hareket Profili:
+${cats.physical || '—'}
+
+🌙 Günlük Yaşam:
+${cats.lifestyle || '—'}
+
+👤 Size Özel Sorular:
+${cats.special || '—'}
+
+SKOR KURALLARI:
+- general: genel iyilik, enerji, anksiyete/stres etkisi
+- nutrition: beslenme düzeni, öğünler, sebze/meyve, yeme davranışları
+- movement: günlük hareket, kapasite, egzersiz isteği
+- sleep: uyku süresi/kalitesi, dinlenmiş uyanma
+- stress: stres/anksiyete yönetimi (yüksek skor = iyi yönetim)
+- lifestyle: sigara/alkol/ekran/çalışma düzeni ve yaşam kalitesi
+- motivation: motivasyon ölçeği ve hedef inancı
+- readiness: değişime hazır oluş
+- overallScore: 8 skorun dengeli birleşimi (basit ortalama değil; kritik düşük alanlar genel skoru aşağı çekebilir)
+- summary: 1–2 cümlelik kısa, destekleyici Türkçe özet
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "scores": {
+    "general": 0,
+    "nutrition": 0,
+    "movement": 0,
+    "sleep": 0,
+    "stress": 0,
+    "lifestyle": 0,
+    "motivation": 0,
+    "readiness": 0
+  },
+  "overallScore": 0,
+  "summary": "kısa özet"
+}`
+}
+
+export const HEALTH_SCORE_CONFIG = {
+  temperature: 0.3,
+  maxOutputTokens: 500,
+  responseMimeType: 'application/json',
+}
+
 function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines = []) {
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
   const calLine = cal

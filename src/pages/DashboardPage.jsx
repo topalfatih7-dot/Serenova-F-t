@@ -11,11 +11,13 @@ import MembershipBadge from '../components/ui/MembershipBadge'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
+import HealthScoreCard from '../components/dashboard/HealthScoreCard'
 import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
 import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
+import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
@@ -44,6 +46,13 @@ export default function DashboardPage() {
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
+  const {
+    analysis: healthAnalysis,
+    loading: healthScoreLoading,
+    error: healthScoreError,
+    complete: healthAnalysisComplete,
+    refresh: refreshHealthScore,
+  } = useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
 
@@ -112,11 +121,19 @@ export default function DashboardPage() {
               to="/health-test"
               className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/25 sm:text-sm"
             >
-              <HeartPulse className="h-4 w-4" /> Sağlık Testleri
+              <HeartPulse className="h-4 w-4" /> Kişisel Sağlık Analizi
             </Link>
           </div>
         </div>
       </div>
+
+      <HealthScoreCard
+        analysis={healthAnalysis}
+        loading={healthScoreLoading}
+        complete={healthAnalysisComplete}
+        error={healthScoreError}
+        onRefresh={refreshHealthScore}
+      />
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow ${dailyTipLoading ? 'animate-pulse' : ''}`}>
@@ -216,7 +233,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Sağlık testi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={goMembership} />
+        <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Kişisel sağlık analizi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={goMembership} />
         <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={goCoachSchedule} />
         <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={goDietitianSchedule} />
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />

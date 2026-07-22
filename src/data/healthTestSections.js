@@ -3,8 +3,9 @@ import { DIETITIAN_HEALTH_SECTIONS } from './healthTestDietitianSections'
 export const HEALTH_SECTIONS = [
   {
     id: 'general',
-    title: 'Genel Değerlendirme',
-    subtitle: 'Ruh hali, enerji, motivasyon ve stres yönetimi',
+    title: 'Genel Sağlık',
+    subtitle: 'Fiziksel ve ruhsal sağlığınızı bütüncül olarak değerlendirerek size özel öneriler sunabilmemiz için hazırlanmıştır.',
+    emoji: '❤️',
     icon: 'HeartPulse',
     audience: 'shared',
     questions: [
@@ -211,7 +212,8 @@ export const HEALTH_SECTIONS = [
   {
     id: 'medical',
     title: 'Tıbbi Geçmiş',
-    subtitle: 'Hastalıklar, ilaçlar, tahlil ve takviyeler',
+    subtitle: 'Geçmiş sağlık öykünüzü ve mevcut tıbbi durumunuzu değerlendirerek size özel ve güvenli bir sağlık planı oluşturabilmemizi sağlar.',
+    emoji: '🩺',
     icon: 'Stethoscope',
     audience: 'shared',
     questions: [
@@ -495,89 +497,750 @@ export const HEALTH_SECTIONS = [
       },
     ],
   },
+  ...DIETITIAN_HEALTH_SECTIONS,
   {
     id: 'physical',
-    title: 'Fiziksel Kapasite',
-    subtitle: 'Hareket geçmişi ve antrenman hazırlığı',
+    title: 'Hareket Profili',
+    subtitle: 'Günlük hareket alışkanlıklarınızı ve fiziksel kapasitenizi değerlendirerek size uygun egzersiz planını oluşturabilmemizi sağlar.',
     icon: 'Dumbbell',
+    emoji: '🏋️',
     audience: 'coach',
     questions: [
       {
         type: 'single',
-        key: 'injuries',
-        label: 'Son 2 yıl içinde hareket etmenizi kısıtlayan bir sakatlık veya ortopedik sorun yaşadınız mı?',
+        key: 'movementFeel',
+        label: 'Gün içinde kendinizi ne kadar hareketli hissediyorsunuz?',
+        required: true,
+        options: [
+          { value: 'very_sedentary', label: 'Çok hareketsizim' },
+          { value: 'mostly_sitting', label: 'Genellikle oturarak vakit geçiriyorum' },
+          { value: 'occasional', label: 'Gün içinde ara sıra hareket ediyorum' },
+          { value: 'mostly_active', label: 'Günümün büyük kısmı hareketli geçiyor' },
+          { value: 'very_active', label: 'Oldukça aktif bir yaşam sürüyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'dailyLifeType',
+        label: 'Günlük yaşamınız sizi en iyi nasıl tanımlar?',
+        required: true,
+        options: [
+          { value: 'desk', label: 'Çoğunlukla masa başında çalışıyorum' },
+          { value: 'standing', label: 'Çoğunlukla ayakta çalışıyorum' },
+          { value: 'mixed', label: 'Gün içinde hem oturuyor hem hareket ediyorum' },
+          { value: 'physical_job', label: 'Fiziksel güç gerektiren bir iş yapıyorum' },
+          { value: 'not_working', label: 'Çalışmıyorum / Ev hanımı / Emekliyim / Öğrenciyim' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'sittingHours',
+        label: 'Günlük ortalama oturma süreniz ne kadardır?',
+        required: true,
+        options: [
+          { value: 'under_2', label: '2 saatten az' },
+          { value: '2_4', label: '2–4 saat' },
+          { value: '4_6', label: '4–6 saat' },
+          { value: '6_8', label: '6–8 saat' },
+          { value: 'over_8', label: '8 saatten fazla' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'dailyWalk',
+        label: 'Gün içinde yürüyüş yapıyor musunuz?',
+        required: false,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'few_week', label: 'Haftada birkaç gün' },
+          { value: 'daily_short', label: 'Her gün kısa süre' },
+          { value: 'daily_regular', label: 'Her gün düzenli yürüyüş yapıyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'dailySteps',
+        label: 'Günlük ortalama adım sayınızı biliyor musunuz?',
+        required: false,
+        options: [
+          { value: 'unknown', label: 'Bilmiyorum' },
+          { value: 'under_3000', label: '3.000 adımın altında' },
+          { value: '3000_5000', label: '3.000–5.000 adım' },
+          { value: '5000_7500', label: '5.000–7.500 adım' },
+          { value: '7500_10000', label: '7.500–10.000 adım' },
+          { value: 'over_10000', label: '10.000 adımın üzerinde' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'stairsCapacity',
+        label: 'Bir kat merdiveni durmadan çıkabilir misiniz?',
+        required: true,
+        options: [
+          { value: 'easily', label: 'Rahatlıkla çıkabilirim' },
+          { value: 'mild', label: 'Hafif zorlanırım' },
+          { value: 'hard', label: 'Çok zorlanırım' },
+          { value: 'need_help', label: 'Yardım almam gerekir' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'briskWalk30',
+        label: '30 dakika tempolu yürüyüş yapabilir misiniz?',
+        required: true,
+        options: [
+          { value: 'easily', label: 'Rahatlıkla yapabilirim' },
+          { value: 'with_effort', label: 'Yapabilirim ama zorlanırım' },
+          { value: '10_15_only', label: 'En fazla 10–15 dakika yürüyebilirim' },
+          { value: 'cannot', label: 'Yapamam' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'dailyChoresDifficulty',
+        label: 'Günlük ev işleri veya alışveriş gibi aktivitelerde zorlanıyor musunuz?',
+        required: false,
+        options: [
+          { value: 'none', label: 'Hiç zorlanmıyorum' },
+          { value: 'mild', label: 'Hafif zorlanıyorum' },
+          { value: 'moderate', label: 'Orta düzeyde zorlanıyorum' },
+          { value: 'severe', label: 'Çok zorlanıyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'bendPickup',
+        label: 'Yerden bir eşyayı eğilerek alabilir misiniz?',
+        required: false,
+        options: [
+          { value: 'easily', label: 'Rahatlıkla alabilirim' },
+          { value: 'mild', label: 'Biraz zorlanıyorum' },
+          { value: 'hard', label: 'Çok zorlanıyorum' },
+          { value: 'need_help', label: 'Yardım almam gerekiyor' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'standFromChair',
+        label: 'Sandalyeden ellerinizi kullanmadan ayağa kalkabilir misiniz?',
+        required: false,
+        options: [
+          { value: 'easily', label: 'Rahatlıkla' },
+          { value: 'mild', label: 'Biraz zorlanıyorum' },
+          { value: 'hard', label: 'Çok zorlanıyorum' },
+          { value: 'cannot', label: 'Kalkamıyorum' },
+        ],
+      },
+      {
+        type: 'multi',
+        key: 'painAreas',
+        label: 'Günlük yaşamınızı etkileyen ağrılarınız var mı?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'neck', label: 'Boyun' },
+          { value: 'shoulder', label: 'Omuz' },
+          { value: 'back', label: 'Sırt' },
+          { value: 'low_back', label: 'Bel' },
+          { value: 'hip', label: 'Kalça' },
+          { value: 'knee', label: 'Diz' },
+          { value: 'ankle', label: 'Ayak bileği' },
+          { value: 'hand_wrist', label: 'El / Bilek' },
+          { value: 'none', label: 'Ağrım yok', exclusive: true },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'painAreasDetail',
+          when: ['other'],
+          placeholder: 'Diğer ağrı bölgesini yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'recentSurgeryInjury',
+        label: 'Son 12 ay içerisinde ameliyat veya ciddi bir sakatlık geçirdiniz mi?',
+        required: false,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'yes', label: 'Evet' },
+        ],
+        detail: {
+          key: 'recentSurgeryInjuryDetail',
+          when: ['yes'],
+          placeholder: 'Lütfen açıklayınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'exerciseDoctorRestriction',
+        label: 'Doktorunuzun egzersiz yapmanızla ilgili herhangi bir kısıtlaması var mı?',
+        required: false,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'yes', label: 'Evet' },
+          { value: 'unsure', label: 'Emin değilim' },
+        ],
+        detail: {
+          key: 'exerciseDoctorRestrictionDetail',
+          when: ['yes'],
+          placeholder: 'Lütfen açıklayınız',
+        },
+      },
+      {
+        type: 'multi',
+        key: 'painTriggers',
+        label: 'Ağrılarınız en çok hangi durumlarda artıyor?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'prolonged_sitting', label: 'Uzun süre oturunca' },
+          { value: 'prolonged_standing', label: 'Uzun süre ayakta kalınca' },
+          { value: 'walking', label: 'Yürürken' },
+          { value: 'stairs', label: 'Merdiven çıkarken' },
+          { value: 'bending', label: 'Eğilip kalkarken' },
+          { value: 'exercise', label: 'Egzersiz sırasında' },
+          { value: 'none', label: 'Ağrım yok', exclusive: true },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'painTriggersDetail',
+          when: ['other'],
+          placeholder: 'Diğer durumu yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'pastRegularExercise',
+        label: 'Daha önce düzenli egzersiz yaptınız mı?',
+        required: false,
+        options: [
+          { value: 'never', label: 'Hayır, hiç yapmadım' },
+          { value: 'short', label: 'Kısa süre yaptım' },
+          { value: 'past_regular', label: 'Geçmişte düzenli yaptım' },
+          { value: 'currently', label: 'Hâlen düzenli yapıyorum' },
+        ],
+      },
+      {
+        type: 'multi',
+        key: 'pastActivities',
+        label: 'Daha önce yaptığınız fiziksel aktiviteler hangileridir?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'walking', label: 'Yürüyüş' },
+          { value: 'fitness', label: 'Fitness' },
+          { value: 'weights', label: 'Ağırlık antrenmanı' },
+          { value: 'pilates', label: 'Pilates' },
+          { value: 'yoga', label: 'Yoga' },
+          { value: 'running', label: 'Koşu' },
+          { value: 'cycling', label: 'Bisiklet' },
+          { value: 'swimming', label: 'Yüzme' },
+          { value: 'home', label: 'Ev egzersizleri' },
+          { value: 'team', label: 'Takım sporları' },
+          { value: 'none', label: 'Hiç yapmadım', exclusive: true },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'pastActivitiesDetail',
+          when: ['other'],
+          placeholder: 'Diğer aktiviteleri yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'pastCoachExperience',
+        label: 'Daha önce kişisel antrenör veya spor eğitmeniyle çalıştınız mı?',
+        required: false,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'in_person', label: 'Evet, yüz yüze' },
+          { value: 'online', label: 'Evet, online' },
+          { value: 'both', label: 'Hem yüz yüze hem online' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'exerciseStopReason',
+        label: 'Eğer düzenli egzersiz yapmıyorsanız veya bıraktıysanız, bunun en önemli nedeni nedir?',
+        required: false,
+        options: [
+          { value: 'time', label: 'Zaman bulamıyorum' },
+          { value: 'motivation', label: 'Motivasyon eksikliği' },
+          { value: 'health', label: 'Sağlık sorunları' },
+          { value: 'pain', label: 'Ağrı' },
+          { value: 'financial', label: 'Maddi nedenler' },
+          { value: 'how_to_start', label: 'Nereden başlayacağımı bilmiyorum' },
+          { value: 'continuing', label: 'Devam ediyorum' },
+          { value: 'never_started', label: 'Hiç başlamadım' },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'exerciseStopReasonDetail',
+          when: ['other'],
+          placeholder: 'Nedeninizi yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'exerciseWillingness',
+        label: 'Düzenli egzersiz yapmaya ne kadar isteklisiniz?',
+        required: false,
+        options: [
+          { value: 'very_willing', label: 'Kesinlikle istekliyim' },
+          { value: 'willing', label: 'İstekliyim' },
+          { value: 'unsure', label: 'Kararsızım' },
+          { value: 'not_much', label: 'Pek istekli değilim' },
+          { value: 'not_at_all', label: 'Hiç istekli değilim' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'preferredExercisePlace',
+        label: 'Egzersiz yapmayı en çok nerede tercih edersiniz?',
+        required: false,
+        options: [
+          { value: 'home', label: 'Evde' },
+          { value: 'gym', label: 'Spor salonunda' },
+          { value: 'outdoor', label: 'Açık havada' },
+          { value: 'any', label: 'Fark etmez' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'exerciseDaysAvailable',
+        label: 'Haftada kaç gün egzersiz yapabilecek zaman ayırabilirsiniz?',
+        required: false,
+        options: [
+          { value: '1', label: '1 gün' },
+          { value: '2', label: '2 gün' },
+          { value: '3', label: '3 gün' },
+          { value: '4', label: '4 gün' },
+          { value: '5', label: '5 gün' },
+          { value: '6', label: '6 gün' },
+          { value: '7', label: '7 gün' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'exerciseSessionDuration',
+        label: 'Bir egzersiz için ortalama ne kadar süre ayırabilirsiniz?',
+        required: false,
+        options: [
+          { value: '15', label: '15 dakika' },
+          { value: '20', label: '20 dakika' },
+          { value: '30', label: '30 dakika' },
+          { value: '45', label: '45 dakika' },
+          { value: '60', label: '60 dakika' },
+          { value: 'over_60', label: '60 dakikadan fazla' },
+        ],
+      },
+      {
+        type: 'multi',
+        key: 'exerciseExpectations',
+        label: 'Egzersizden en önemli beklentiniz nedir?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'lose_weight', label: 'Kilo vermek' },
+          { value: 'gain_muscle', label: 'Kas kütlesini artırmak' },
+          { value: 'get_stronger', label: 'Güçlenmek' },
+          { value: 'more_energy', label: 'Daha enerjik hissetmek' },
+          { value: 'less_pain', label: 'Ağrılarımın azalması' },
+          { value: 'flexibility', label: 'Esnekliğimin artması' },
+          { value: 'posture', label: 'Duruşumun düzelmesi' },
+          { value: 'conditioning', label: 'Kondisyonumu artırmak' },
+          { value: 'daily_ease', label: 'Günlük yaşamımı daha rahat sürdürebilmek' },
+          { value: 'habit', label: 'Düzenli egzersiz alışkanlığı kazanmak' },
+          { value: 'healthy_aging', label: 'Sağlıklı yaş almak' },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'exerciseExpectationsDetail',
+          when: ['other'],
+          placeholder: 'Beklentinizi yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'exerciseBelief',
+        label: 'Düzenli egzersiz yapabileceğinize ne kadar inanıyorsunuz?',
+        required: false,
+        options: [
+          { value: 'none', label: 'Hiç inanmıyorum' },
+          { value: 'little', label: 'Biraz inanıyorum' },
+          { value: 'unsure', label: 'Kararsızım' },
+          { value: 'mostly', label: 'Büyük ölçüde inanıyorum' },
+          { value: 'certain', label: 'Kesinlikle inanıyorum' },
+        ],
+      },
+      {
+        type: 'multi',
+        key: 'exerciseConcerns',
+        label: 'Egzersiz yaparken sizi en çok endişelendiren konu nedir?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'injury_fear', label: 'Sakatlanmaktan korkuyorum' },
+          { value: 'wrong_form', label: 'Yanlış hareket yapmaktan çekiniyorum' },
+          { value: 'low_fitness', label: 'Kondisyonumun yetersiz olduğunu düşünüyorum' },
+          { value: 'being_watched', label: 'İnsanların beni izlemesinden rahatsız oluyorum' },
+          { value: 'how_to_start', label: 'Nereden başlayacağımı bilmiyorum' },
+          { value: 'health_hesitation', label: 'Sağlık durumum nedeniyle çekiniyorum' },
+          { value: 'none', label: 'Herhangi bir endişem yok', exclusive: true },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'exerciseConcernsDetail',
+          when: ['other'],
+          placeholder: 'Endişenizi yazınız',
+        },
+      },
+      {
+        type: 'multi',
+        key: 'sixMonthMovementGoals',
+        label: 'Önümüzdeki 6 ay içinde aşağıdaki hedeflerden hangilerine ulaşmak istersiniz?',
+        required: false,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'walk_easier', label: 'Daha rahat yürüyebilmek' },
+          { value: 'stairs_easier', label: 'Merdiven çıkarken zorlanmamak' },
+          { value: 'more_energy', label: 'Gün içinde daha enerjik olmak' },
+          { value: 'less_back_pain', label: 'Bel ve sırt ağrılarımın azalması' },
+          { value: 'stronger', label: 'Daha güçlü hissetmek' },
+          { value: 'more_flexible', label: 'Daha esnek olmak' },
+          { value: 'habit', label: 'Düzenli egzersiz alışkanlığı kazanmak' },
+          { value: 'lose_weight', label: 'Kilo vermek' },
+          { value: 'gain_muscle', label: 'Kas kütlesini artırmak' },
+          { value: 'sport_performance', label: 'Spor performansımı geliştirmek' },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'sixMonthMovementGoalsDetail',
+          when: ['other'],
+          placeholder: 'Hedefinizi yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'activitySelfRating',
+        label: 'Fiziksel aktivite düzeyinizi genel olarak nasıl değerlendirirsiniz?',
+        required: false,
+        options: [
+          { value: 'very_low', label: 'Çok düşük' },
+          { value: 'low', label: 'Düşük' },
+          { value: 'moderate', label: 'Orta' },
+          { value: 'good', label: 'İyi' },
+          { value: 'excellent', label: 'Çok iyi' },
+        ],
+      },
+      {
+        type: 'text',
+        key: 'movementExtraNotes',
+        label: 'Hareket ve egzersiz konusunda antrenörünüzün bilmesini istediğiniz başka bir durum var mı?',
+        required: false,
+        hint: 'İsteğe bağlı',
+      },
+    ],
+  },
+  {
+    id: 'lifestyle',
+    title: 'Günlük Yaşam',
+    subtitle: 'Uyku düzeniniz, stres seviyeniz ve günlük yaşam alışkanlıklarınızı değerlendirerek yaşam tarzınıza uygun kişiselleştirilmiş öneriler sunabilmemizi sağlar.',
+    icon: 'MoonStar',
+    emoji: '🌙',
+    audience: 'shared',
+    questions: [
+      {
+        type: 'single',
+        key: 'sleepHours',
+        label: 'Ortalama günde kaç saat uyuyorsunuz?',
+        required: true,
+        options: [
+          { value: 'under_5', label: '5 saatten az' },
+          { value: '5_6', label: '5–6 saat' },
+          { value: '6_7', label: '6–7 saat' },
+          { value: '7_8', label: '7–8 saat' },
+          { value: '8_9', label: '8–9 saat' },
+          { value: 'over_9', label: '9 saatten fazla' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'dailySleepQuality',
+        label: 'Uyku kalitenizi nasıl değerlendirirsiniz?',
+        required: true,
+        options: [
+          { value: 'very_poor', label: 'Çok kötü' },
+          { value: 'poor', label: 'Kötü' },
+          { value: 'fair', label: 'Orta' },
+          { value: 'good', label: 'İyi' },
+          { value: 'excellent', label: 'Çok iyi' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'morningRested',
+        label: 'Sabah uyandığınızda dinlenmiş hissediyor musunuz?',
+        required: true,
+        options: [
+          { value: 'never', label: 'Hiçbir zaman' },
+          { value: 'rarely', label: 'Nadiren' },
+          { value: 'sometimes', label: 'Bazen' },
+          { value: 'often', label: 'Çoğu zaman' },
+          { value: 'always', label: 'Her zaman' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'fallAsleepDifficulty',
+        label: 'Uykuya dalmakta zorlanıyor musunuz?',
+        required: true,
+        options: [
+          { value: 'never', label: 'Hiç' },
+          { value: 'rarely', label: 'Nadiren' },
+          { value: 'sometimes', label: 'Bazen' },
+          { value: 'often', label: 'Sık sık' },
+          { value: 'every_night', label: 'Her gece' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'nightWaking',
+        label: 'Geceleri sık sık uyanıyor musunuz?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'yes_recovered', label: 'Evet, tamamen iyileşti.' },
-          { value: 'yes_partial', label: 'Evet, kısmen devam ediyor.' },
-          { value: 'yes_ongoing', label: 'Evet, hâlâ devam ediyor.' },
+          { value: 'rarely', label: 'Nadiren' },
+          { value: 'sometimes', label: 'Bazen' },
+          { value: 'often', label: 'Sık sık' },
+          { value: 'every_night', label: 'Her gece' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'smoking',
+        label: 'Sigara veya tütün ürünü kullanıyor musunuz?',
+        required: true,
+        options: [
+          { value: 'never', label: 'Hiç kullanmadım' },
+          { value: 'former', label: 'Daha önce kullanıyordum, bıraktım' },
+          { value: 'occasional', label: 'Ara sıra kullanıyorum' },
+          { value: 'daily', label: 'Her gün kullanıyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'alcohol',
+        label: 'Alkol tüketim sıklığınız nedir?',
+        required: true,
+        options: [
+          { value: 'none', label: 'Hiç tüketmiyorum' },
+          { value: 'monthly', label: 'Ayda birkaç kez' },
+          { value: '1_2_week', label: 'Haftada 1–2 kez' },
+          { value: '3_plus_week', label: 'Haftada 3 veya daha fazla' },
+          { value: 'daily', label: 'Her gün' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'caffeine',
+        label: 'Günlük kafein tüketiminiz nasıldır? (Kahve, çay, enerji içeceği vb.)',
+        required: true,
+        options: [
+          { value: 'none', label: 'Hiç tüketmiyorum' },
+          { value: '1', label: 'Günde 1 fincan/bardak' },
+          { value: '2_3', label: 'Günde 2–3 fincan/bardak' },
+          { value: '4_plus', label: 'Günde 4 veya daha fazla' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'screenTime',
+        label: 'Günlük ortalama ekran süreniz ne kadardır?',
+        required: true,
+        options: [
+          { value: 'under_2', label: '2 saatten az' },
+          { value: '2_4', label: '2–4 saat' },
+          { value: '4_6', label: '4–6 saat' },
+          { value: '6_8', label: '6–8 saat' },
+          { value: 'over_8', label: '8 saatten fazla' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'workSchedule',
+        label: 'Çalışma veya günlük yaşam düzeniniz nasıldır?',
+        required: true,
+        options: [
+          { value: 'regular_day', label: 'Düzenli gündüz çalışıyorum' },
+          { value: 'shift', label: 'Vardiyalı çalışıyorum' },
+          { value: 'night', label: 'Gece çalışıyorum' },
+          { value: 'irregular', label: 'Çalışma saatlerim düzensiz' },
+          { value: 'not_working', label: 'Çalışmıyorum / Emekliyim / Öğrenciyim' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'lifestyleBiggestBarrier',
+        label: 'Sağlıklı yaşam hedeflerinize ulaşmanızın önündeki en büyük engel nedir?',
+        required: true,
+        options: [
+          { value: 'time', label: 'Zaman yetersizliği' },
+          { value: 'motivation', label: 'Motivasyon eksikliği' },
+          { value: 'workload', label: 'İş yoğunluğu' },
+          { value: 'family', label: 'Aile sorumlulukları' },
+          { value: 'health', label: 'Sağlık sorunları' },
+          { value: 'financial', label: 'Maddi nedenler' },
+          { value: 'how_to_start', label: 'Nereden başlayacağımı bilmiyorum' },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'lifestyleBiggestBarrierDetail',
+          when: ['other'],
+          placeholder: 'Engelinizi yazınız',
+        },
+      },
+      {
+        type: 'multi',
+        key: 'sixMonthHabitGoals',
+        label: 'Önümüzdeki 6 ay içinde hangi alışkanlıkları geliştirmek istersiniz?',
+        required: true,
+        hint: 'Birden fazla seçenek işaretleyebilirsiniz.',
+        options: [
+          { value: 'better_sleep', label: 'Daha kaliteli uyumak' },
+          { value: 'less_stress', label: 'Stresimi azaltmak' },
+          { value: 'more_movement', label: 'Daha fazla hareket etmek' },
+          { value: 'regular_nutrition', label: 'Daha düzenli beslenmek' },
+          { value: 'quit_smoking', label: 'Sigarayı bırakmak' },
+          { value: 'less_alcohol', label: 'Alkol tüketimini azaltmak' },
+          { value: 'less_screen', label: 'Ekran süresini azaltmak' },
+          { value: 'daily_routine', label: 'Günlük rutin oluşturmak' },
+          { value: 'me_time', label: 'Kendime daha fazla zaman ayırmak' },
+          { value: 'other', label: 'Diğer' },
+        ],
+        detail: {
+          key: 'sixMonthHabitGoalsDetail',
+          when: ['other'],
+          placeholder: 'Alışkanlığı yazınız',
+        },
+      },
+      {
+        type: 'single',
+        key: 'lifeQualityOverall',
+        label: 'Genel yaşam kalitenizi nasıl değerlendirirsiniz?',
+        required: true,
+        options: [
+          { value: 'very_poor', label: 'Çok kötü' },
+          { value: 'poor', label: 'Kötü' },
+          { value: 'fair', label: 'Orta' },
+          { value: 'good', label: 'İyi' },
+          { value: 'excellent', label: 'Çok iyi' },
+        ],
+      },
+      {
+        type: 'text',
+        key: 'lifestyleExtraNotes',
+        label: 'Günlük yaşamınızla ilgili ekibimizin bilmesini istediğiniz başka bir konu var mı?',
+        required: false,
+        hint: 'İsteğe bağlı',
+      },
+    ],
+  },
+  {
+    id: 'women',
+    title: 'Size Özel Sorular',
+    subtitle: 'Cinsiyetinize özel sağlık durumunuzu daha kapsamlı değerlendirebilmemiz için hazırlanmış ek soruları içerir.',
+    icon: 'Venus',
+    emoji: '👤',
+    audience: 'shared',
+    genderOnly: 'female',
+    questions: [
+      {
+        type: 'single',
+        key: 'pregnancy',
+        label: 'Şu anda hamile misiniz?',
+        required: true,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'yes', label: 'Evet' },
+          { value: 'suspect', label: 'Hamile olduğumu düşünüyorum' },
+          { value: 'prefer_not', label: 'Belirtmek istemiyorum' },
         ],
         followUps: [
           {
-            type: 'multi',
-            key: 'injuryRegions',
-            label: 'Sakatlık hangi bölgedeydi?',
-            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            type: 'text',
+            key: 'pregnancyWeek',
+            label: 'Kaçıncı haftadasınız?',
+            when: ['yes'],
             required: true,
-            options: [
-              { value: 'neck', label: 'Boyun' },
-              { value: 'shoulder', label: 'Omuz' },
-              { value: 'elbow', label: 'Dirsek' },
-              { value: 'hand_wrist', label: 'El / Bilek' },
-              { value: 'upper_back', label: 'Sırt' },
-              { value: 'low_back', label: 'Bel' },
-              { value: 'hip', label: 'Kalça' },
-              { value: 'knee', label: 'Diz' },
-              { value: 'ankle', label: 'Ayak bileği' },
-              { value: 'foot', label: 'Ayak' },
-              { value: 'other', label: 'Diğer' },
-            ],
-            detail: {
-              key: 'injuryRegionsDetail',
-              when: ['other'],
-              placeholder: 'Diğer bölgeyi yazınız',
-            },
+            hint: 'Örn. 12',
           },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'breastfeeding',
+        label: 'Emziriyor musunuz?',
+        required: true,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'yes', label: 'Evet' },
+          { value: 'prefer_not', label: 'Belirtmek istemiyorum' },
+        ],
+        followUps: [
+          {
+            type: 'text',
+            key: 'breastfeedingBabyAge',
+            label: 'Bebeğiniz kaç aylık?',
+            when: ['yes'],
+            required: true,
+            hint: 'Örn. 4',
+          },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'menstrualRegular',
+        label: 'Adet düzeninizi nasıl değerlendirirsiniz?',
+        required: true,
+        options: [
+          { value: 'regular', label: 'Düzenli' },
+          { value: 'mostly_regular', label: 'Genellikle düzenli' },
+          { value: 'irregular', label: 'Düzensiz' },
+          { value: 'absent', label: 'Adet görmüyorum' },
+          { value: 'prefer_not', label: 'Belirtmek istemiyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'menstrualImpact',
+        label: 'Adet döneminiz günlük yaşamınızı veya egzersizlerinizi ne kadar etkiliyor?',
+        required: true,
+        options: [
+          { value: 'none', label: 'Hiç etkilemiyor' },
+          { value: 'mild', label: 'Hafif etkiliyor' },
+          { value: 'moderate', label: 'Orta düzeyde etkiliyor' },
+          { value: 'severe', label: 'Çok etkiliyor' },
+          { value: 'prefer_not', label: 'Belirtmek istemiyorum' },
+        ],
+      },
+      {
+        type: 'single',
+        key: 'menopauseStatus',
+        label: 'Menopoz döneminde misiniz?',
+        required: false,
+        options: [
+          { value: 'no', label: 'Hayır' },
+          { value: 'perimenopause', label: 'Perimenopoz dönemindeyim' },
+          { value: 'yes', label: 'Evet' },
+          { value: 'unknown', label: 'Bilmiyorum' },
+        ],
+        followUps: [
           {
             type: 'single',
-            key: 'injuryCause',
-            label: 'Sakatlığın nedeni neydi?',
-            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
-            required: true,
-            options: [
-              { value: 'sport', label: 'Spor' },
-              { value: 'fall', label: 'Düşme' },
-              { value: 'traffic', label: 'Trafik kazası' },
-              { value: 'work', label: 'İş kazası' },
-              { value: 'post_surgery', label: 'Ameliyat sonrası' },
-              { value: 'unknown', label: 'Bilinmiyor' },
-              { value: 'other', label: 'Diğer' },
-            ],
-            detail: {
-              key: 'injuryCauseDetail',
-              when: ['other'],
-              placeholder: 'Nedeni yazınız',
-            },
-          },
-          {
-            type: 'single',
-            key: 'injuryLimitation',
-            label: 'Şu anda hareketlerinizi kısıtlıyor mu?',
-            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
-            required: true,
-            options: [
-              { value: 'no', label: 'Hayır' },
-              { value: 'mild', label: 'Biraz' },
-              { value: 'moderate', label: 'Orta düzeyde' },
-              { value: 'severe', label: 'Çok' },
-            ],
-          },
-          {
-            type: 'single',
-            key: 'injuryDoctorRestriction',
-            label: 'Doktor tarafından egzersiz kısıtlamanız var mı?',
-            when: ['yes_recovered', 'yes_partial', 'yes_ongoing'],
+            key: 'menopauseHormoneTherapy',
+            label: 'Hormon tedavisi kullanıyor musunuz?',
+            when: ['yes', 'perimenopause'],
             required: true,
             options: [
               { value: 'no', label: 'Hayır' },
@@ -588,552 +1251,120 @@ export const HEALTH_SECTIONS = [
       },
       {
         type: 'single',
-        key: 'activityFrequency',
-        label: 'Haftada kaç gün düzenli fiziksel aktivite yapıyorsunuz?',
-        required: true,
-        options: [
-          { value: '0', label: '0 gün' },
-          { value: '1_2', label: '1-2 gün' },
-          { value: '3_4', label: '3-4 gün' },
-          { value: '5_plus', label: '5+ gün' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'trainingHistoryYears',
-        label: 'Toplam düzenli antrenman geçmişiniz ne kadar?',
-        required: true,
-        options: [
-          { value: 'none', label: 'Yok' },
-          { value: 'under_6m', label: '6 aydan az' },
-          { value: '6m_2y', label: '6 ay - 2 yıl' },
-          { value: '2y_plus', label: '2 yıl+' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'currentActivityTypes',
-        label: 'Şu anda yaptığınız aktiviteler hangileri?',
-        required: true,
-        options: [
-          { value: 'walking', label: 'Yürüyüş' },
-          { value: 'running', label: 'Koşu' },
-          { value: 'strength', label: 'Kuvvet antrenmanı' },
-          { value: 'pilates', label: 'Pilates/Yoga' },
-          { value: 'cycling', label: 'Bisıklet' },
-          { value: 'none', label: 'Düzenli aktivitem yok' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'movementQuality',
-        label: 'Temel hareketlerde koordinasyonunuzu nasıl değerlendirirsiniz?',
+        key: 'pcosDiagnosed',
+        label: 'Doktor tarafından Polikistik Over Sendromu (PKOS) tanısı aldınız mı?',
         required: false,
-        options: [
-          { value: 'weak', label: 'Zayıf' },
-          { value: 'fair', label: 'Gelişmeye açık' },
-          { value: 'good', label: 'İyi' },
-          { value: 'very_good', label: 'Çok iyi' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'flexibilityLevel',
-        label: 'Esneklik seviyeniz nasıl?',
-        required: true,
-        options: [
-          { value: 'very_low', label: 'Çok düşük' },
-          { value: 'low', label: 'Düşük' },
-          { value: 'medium', label: 'Orta' },
-          { value: 'high', label: 'Yüksek' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'cardioCapacity',
-        label: '10-15 dk tempolu yürüyüşte nefes durumunuz nasıl?',
-        required: true,
-        options: [
-          { value: 'very_hard', label: 'Çok zorlanıyorum' },
-          { value: 'hard', label: 'Zorlanıyorum' },
-          { value: 'manageable', label: 'İdare ediyorum' },
-          { value: 'easy', label: 'Rahatim' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'sportsHistory',
-        label: 'Geçmişte düzenli yaptığınız sporlar hangileri?',
-        required: false,
-        options: [
-          { value: 'football', label: 'Futbol' },
-          { value: 'basketball', label: 'Basketbol' },
-          { value: 'swimming', label: 'Yüzme' },
-          { value: 'martialArts', label: 'Dövüş sporları' },
-          { value: 'athletics', label: 'Atletizm' },
-          { value: 'none', label: 'Yok' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'equipmentAccess',
-        label: 'Antrenman için hangi ekipmanlara erişiminiz var?',
-        required: true,
-        options: [
-          { value: 'bodyweight', label: 'Sadece vücut ağırlığı' },
-          { value: 'dumbbells', label: 'Dambıl' },
-          { value: 'bands', label: 'Direnç bandı' },
-          { value: 'cardioMachine', label: 'Kondisyon cihazı' },
-          { value: 'gym', label: 'Tam donanımlı spor salonu' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'preferredTrainingDays',
-        label: 'Antrenman için uygun günleriniz hangileri?',
-        required: true,
-        options: [
-          { value: 'monday', label: 'Pazartesi' },
-          { value: 'tuesday', label: 'Salı' },
-          { value: 'wednesday', label: 'Çarşamba' },
-          { value: 'thursday', label: 'Perşembe' },
-          { value: 'friday', label: 'Cuma' },
-          { value: 'saturday', label: 'Cumartesi' },
-          { value: 'sunday', label: 'Pazar' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'sessionDurationGoal',
-        label: 'Tek bir antrenmana ayırabileceğiniz süre ne kadar?',
-        required: true,
-        options: [
-          { value: '15_25', label: '15-25 dk' },
-          { value: '30_40', label: '30-40 dk' },
-          { value: '45_60', label: '45-60 dk' },
-          { value: '60_plus', label: '60+ dk' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'trainingLocation',
-        label: 'Nerede antrenman yapmayı tercih edersiniz?',
-        required: true,
-        options: [
-          { value: 'home', label: 'Evde' },
-          { value: 'gym', label: 'Spor salonunda' },
-          { value: 'outdoor', label: 'Açık alanda' },
-          { value: 'mixed', label: 'Karışık' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'previousCoachExperience',
-        label: 'Daha önce bir antrenörle çalıştınız mı?',
-        required: false,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'online', label: 'Evet, online' },
-          { value: 'face_to_face', label: 'Evet, yüz yüze' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'exerciseContraindications',
-        label: 'Kaçınmanız gereken hareket veya egzersiz var mı?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Yok' },
-          { value: 'yes', label: 'Var' }
-        ],
-        detail: {
-          key: 'exerciseContraindicationsDetail',
-          when: ['yes'],
-          placeholder: 'Kaçınmanız gereken hareketleri yazınız'
-        }
-      },
-      {
-        type: 'multi',
-        key: 'painAreas',
-        label: 'Düzenli ağrı yaşadığınız bölgeler hangileri?',
-        required: false,
-        hint: 'Yoksa boş bırakın.',
-        options: [
-          { value: 'lowback', label: 'Bel' },
-          { value: 'neck', label: 'Boyun' },
-          { value: 'knee', label: 'Diz' },
-          { value: 'shoulder', label: 'Omuz' },
-          { value: 'hip', label: 'Kalça' },
-          { value: 'ankle', label: 'Ayak bileği' },
-          { value: 'wrist', label: 'El bileği' }
-        ]
-      },
-      {
-        type: 'text',
-        key: 'performanceGoal',
-        label: 'Önümüzdeki 3 ay için en öncelikli fiziksel hedefiniz nedir?',
-        required: true,
-        hint: 'Örnek: 5 km koşabilmek, düzgün squat öğrenmek, 6 kg vermek'
-      }
-    ]
-  },
-  {
-    id: 'lifestyle',
-    title: 'Yaşam Tarzı',
-    subtitle: 'Günlük alışkanlıklar ve davranışlar',
-    icon: 'Activity',
-    audience: 'coach',
-    questions: [
-      {
-        type: 'single',
-        key: 'sittingHours',
-        label: 'Günlük ortalama kaç saat oturuyorsunuz?',
-        required: true,
-        options: [
-          { value: 'under_4', label: '4 saatten az' },
-          { value: '4_6', label: '4-6 saat' },
-          { value: '7_9', label: '7-9 saat' },
-          { value: '10_plus', label: '10 saat+' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'smoking',
-        label: 'Sigara kullanıyor musunuz?',
-        required: true,
-        options: [
-          { value: 'never', label: 'Hiç kullanmadım' },
-          { value: 'former', label: 'Bıraktım' },
-          { value: 'occasional', label: 'Ara sıra' },
-          { value: 'daily', label: 'Her gün' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'alcohol',
-        label: 'Alkol tüketim sıklığınız nasıl?',
-        required: true,
-        options: [
-          { value: 'none', label: 'Hiç' },
-          { value: 'monthly', label: 'Ayda 1-2 kez' },
-          { value: 'weekly', label: 'Haftada 1-2 kez' },
-          { value: 'frequent', label: 'Haftada 3+ kez' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'teaCoffee',
-        label: 'Günlük çay/kahve tüketiminiz ne kadar?',
-        required: true,
-        options: [
-          { value: '0_1', label: '0-1 fincan' },
-          { value: '2_3', label: '2-3 fincan' },
-          { value: '4_5', label: '4-5 fincan' },
-          { value: '6_plus', label: '6+ fincan' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'travelFrequency',
-        label: 'İş veya özel nedenlerle şehir dışı seyahat sıklığınız?',
-        required: false,
-        options: [
-          { value: 'rare', label: 'Çok nadir' },
-          { value: 'monthly', label: 'Ayda 1 civarı' },
-          { value: 'biweekly', label: 'Ayda 2-3' },
-          { value: 'weekly', label: 'Haftalık' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'substanceUse',
-        label: 'Sigara dışında madde kullanımınız var mı?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'past', label: 'Geçmişte vardı' },
-          { value: 'yes', label: 'Evet' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'shiftWork',
-        label: 'Vardiyalı veya düzensiz saatlerde çalışıyor musunuz?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'sometimes', label: 'Dönemsel' },
-          { value: 'yes', label: 'Evet, düzenli' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'dailySteps',
-        label: 'Günlük ortalama adım sayınız nedir?',
-        required: false,
-        options: [
-          { value: 'under_3000', label: '3000 altı' },
-          { value: '3000_6000', label: '3000-6000' },
-          { value: '6000_9000', label: '6000-9000' },
-          { value: '9000_plus', label: '9000+' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'screenTime',
-        label: 'Günlük ekran başında geçirdiğiniz toplam süre ne kadar?',
-        required: false,
-        options: [
-          { value: 'under_3', label: '3 saatten az' },
-          { value: '3_5', label: '3-5 saat' },
-          { value: '6_8', label: '6-8 saat' },
-          { value: '9_plus', label: '9 saat+' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'exercisePreferences',
-        label: 'Hangi egzersiz türleri size daha keyifli geliyor?',
-        required: true,
-        options: [
-          { value: 'walking', label: 'Yürüyüş' },
-          { value: 'strength', label: 'Kuvvet' },
-          { value: 'group', label: 'Grup dersleri' },
-          { value: 'mindBody', label: 'Yoga/Pilates' },
-          { value: 'shortHome', label: 'Kısa ev antrenmanı' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'exerciseBarriers',
-        label: 'Düzenli egzersiz yapmanızı en çok zorlayan etkenler neler?',
-        required: true,
-        options: [
-          { value: 'time', label: 'Zaman yetersizliği' },
-          { value: 'motivation', label: 'Motivasyon düşüklüğü' },
-          { value: 'pain', label: 'Ağrı/sakatlık korkusu' },
-          { value: 'knowledge', label: 'Nasıl yapacağımı bilmiyorum' },
-          { value: 'environment', label: 'Uygun ortam yok' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'commuteType',
-        label: 'Günlük ulaşım şekli en çok hangisi?',
-        required: false,
-        options: [
-          { value: 'car', label: 'Araç' },
-          { value: 'public', label: 'Toplu taşıma' },
-          { value: 'walk', label: 'Yürüyerek' },
-          { value: 'mixed', label: 'Karışık' }
-        ]
-      }
-    ]
-  },
-  ...DIETITIAN_HEALTH_SECTIONS,
-  {
-    id: 'women',
-    title: 'Kadın Sağlığı',
-    subtitle: 'Hormonal döngü ve kadın sağlığı özel soruları',
-    icon: 'Venus',
-    audience: 'shared',
-    genderOnly: 'female',
-    questions: [
-      {
-        type: 'single',
-        key: 'pregnancy',
-        label: 'Şu an hamilelik durumu var mı?',
-        required: true,
         options: [
           { value: 'no', label: 'Hayır' },
           { value: 'yes', label: 'Evet' },
-          { value: 'planning', label: 'Planlıyorum' }
-        ]
+          { value: 'suspected', label: 'Şüpheleniliyor' },
+          { value: 'unknown', label: 'Bilmiyorum' },
+        ],
+        followUps: [
+          {
+            type: 'single',
+            key: 'pcosTreatment',
+            label: 'Tedavi görüyor musunuz?',
+            when: ['yes'],
+            required: true,
+            options: [
+              { value: 'no', label: 'Hayır' },
+              { value: 'yes', label: 'Evet' },
+            ],
+          },
+        ],
       },
       {
         type: 'single',
-        key: 'menstrualRegular',
-        label: 'Adet döngünüz genellikle düzenli mi?',
-        required: true,
-        options: [
-          { value: 'regular', label: 'Düzenli' },
-          { value: 'irregular', label: 'Düzensiz' },
-          { value: 'absent', label: 'Uzun süredir olmuyor' }
-        ]
-      },
-      {
-        type: 'multi',
-        key: 'pmsSymptoms',
-        label: 'Adet öncesi dönemde hangi belirtileri sık yaşıyorsunuz?',
-        required: false,
-        options: [
-          { value: 'none', label: 'Belirgin yok' },
-          { value: 'bloating', label: 'Şişlik' },
-          { value: 'cravings', label: 'Yeme atakları' },
-          { value: 'mood_swings', label: 'Ruh hali değişimi' },
-          { value: 'fatigue', label: 'Yorgunluk' },
-          { value: 'headache', label: 'Baş ağrısı' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'contraceptionMethod',
-        label: 'Doğum kontrol yöntemi kullanıyor musunuz?',
-        required: false,
-        options: [
-          { value: 'none', label: 'Kullanmıyorum' },
-          { value: 'barrier', label: 'Bariyer yöntemleri' },
-          { value: 'hormonal', label: 'Hormonal yöntem' },
-          { value: 'iud', label: 'Spiral (RIA)' },
-          { value: 'other', label: 'Diğer' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'menopauseStatus',
-        label: 'Menopoz durumunuz nedir?',
-        required: false,
-        options: [
-          { value: 'not_applicable', label: 'Uygun değil' },
-          { value: 'premenopause', label: 'Premenopoz' },
-          { value: 'perimenopause', label: 'Perimenopoz' },
-          { value: 'postmenopause', label: 'Postmenopoz' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'ironDeficiencyHistory',
-        label: 'Demir eksikliği veya anemi geçmişiniz var mı?',
-        required: false,
-        options: [
-          { value: 'no', label: 'Yok' },
-          { value: 'past', label: 'Geçmişte vardı' },
-          { value: 'ongoing', label: 'Şu an devam ediyor' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'cyclePain',
-        label: 'Adet döneminde ağrılarınız ne düzeyde olur?',
-        required: false,
-        options: [
-          { value: 'none', label: 'Yok' },
-          { value: 'mild', label: 'Hafif' },
-          { value: 'moderate', label: 'Orta' },
-          { value: 'severe', label: 'Şiddetli' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'fertilityPlan',
-        label: 'Önümüzdeki 12 ay içinde gebelik planı var mı?',
+        key: 'womenSpecialCondition',
+        label: 'Kadın sağlığınız nedeniyle beslenme veya egzersiz planınızı etkileyebilecek özel bir durumunuz var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'maybe', label: 'Belki' },
-          { value: 'yes', label: 'Evet' }
-        ]
-      }
-    ]
+          { value: 'yes', label: 'Evet' },
+        ],
+        detail: {
+          key: 'womenSpecialConditionDetail',
+          when: ['yes'],
+          placeholder: 'Lütfen açıklayınız',
+        },
+      },
+      {
+        type: 'text',
+        key: 'womenExtraNotes',
+        label: 'Kadın sağlığınızla ilgili ekibimizin bilmesini istediğiniz başka bir konu var mı?',
+        required: false,
+        hint: 'İsteğe bağlı',
+      },
+    ],
   },
   {
     id: 'men',
-    title: 'Erkek Sağlığı',
-    subtitle: 'Erkek sağlığına özel tarama ve belirtiler',
+    title: 'Size Özel Sorular',
+    subtitle: 'Cinsiyetinize özel sağlık durumunuzu daha kapsamlı değerlendirebilmemiz için hazırlanmış ek soruları içerir.',
     icon: 'Mars',
+    emoji: '👤',
     audience: 'shared',
     genderOnly: 'male',
     questions: [
       {
         type: 'single',
-        key: 'prostateSymptoms',
-        label: 'İdrar yapma düzeniyle ilgili prostat kaynaklı şikâyetiniz var mı?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'mild', label: 'Hafif' },
-          { value: 'moderate', label: 'Orta' },
-          { value: 'severe', label: 'Belirgin' }
-        ]
-      },
-      {
-        type: 'single',
         key: 'testosteroneConcerns',
-        label: 'Düşük testosteronla ilişkili belirtiler yaşıyor musunuz?',
+        label: 'Doktor tarafından testosteron düşüklüğü veya hormon bozukluğu tanısı aldınız mı?',
         required: true,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'suspect', label: 'Şüpheleniyorum' },
-          { value: 'diagnosed', label: 'Tanı aldım' }
-        ]
+          { value: 'yes', label: 'Evet' },
+          { value: 'suspected', label: 'Şüpheleniliyor' },
+          { value: 'unknown', label: 'Bilmiyorum' },
+        ],
+        followUps: [
+          {
+            type: 'single',
+            key: 'testosteroneRegularTreatment',
+            label: 'Düzenli tedavi görüyor musunuz?',
+            when: ['yes'],
+            required: true,
+            options: [
+              { value: 'no', label: 'Hayır' },
+              { value: 'yes', label: 'Evet' },
+            ],
+          },
+        ],
       },
       {
         type: 'single',
-        key: 'maleScreening',
-        label: 'Son erkek sağlığı kontrolünüzü ne zaman yaptırdınız?',
-        required: true,
-        options: [
-          { value: 'last_year', label: 'Son 1 yıl içinde' },
-          { value: '1_3_years', label: '1–3 yıl önce' },
-          { value: 'over_3_years', label: '3 yıldan uzun' },
-          { value: 'never', label: 'Hiç' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'erectionQuality',
-        label: 'Cinsel fonksiyonla ilgili zorlanma yaşıyor musunuz?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'sometimes', label: 'Ara sıra' },
-          { value: 'often', label: 'Sık' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'waistCircumferenceRisk',
-        label: 'Bel çevresi ölçümü konusunda risk olduğunu düşünüyor musunuz?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'not_sure', label: 'Emin değilim' },
-          { value: 'yes', label: 'Evet' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'snoring',
-        label: 'Yüksek sesle horlama veya uykuda nefes durması şüpheleri var mı?',
-        required: true,
-        options: [
-          { value: 'no', label: 'Hayır' },
-          { value: 'occasionally', label: 'Ara sıra' },
-          { value: 'frequent', label: 'Sık' }
-        ]
-      },
-      {
-        type: 'single',
-        key: 'hairLossConcerns',
-        label: 'Saç dökülmesi ile ilgili belirgin bir kaygınız var mı?',
+        key: 'hormoneTherapy',
+        label: 'Testosteron veya hormon tedavisi görüyor musunuz?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'mild', label: 'Hafif' },
-          { value: 'high', label: 'Belirgin' }
-        ]
+          { value: 'yes', label: 'Evet' },
+          { value: 'past', label: 'Daha önce gördüm' },
+        ],
       },
       {
         type: 'single',
-        key: 'maleFertilityPlan',
-        label: 'Önümüzdeki 12 ay içinde çocuk sahibi olma planınız var mı?',
+        key: 'menSpecialCondition',
+        label: 'Erkek sağlığınız nedeniyle beslenme veya egzersiz planınızı etkileyebilecek özel bir durumunuz var mı?',
         required: false,
         options: [
           { value: 'no', label: 'Hayır' },
-          { value: 'maybe', label: 'Belki' },
-          { value: 'yes', label: 'Evet' }
-        ]
-      }
-    ]
-  }
+          { value: 'yes', label: 'Evet' },
+        ],
+        detail: {
+          key: 'menSpecialConditionDetail',
+          when: ['yes'],
+          placeholder: 'Lütfen açıklayınız',
+        },
+      },
+      {
+        type: 'text',
+        key: 'menExtraNotes',
+        label: 'Erkek sağlığınızla ilgili ekibimizin bilmesini istediğiniz başka bir konu var mı?',
+        required: false,
+        hint: 'İsteğe bağlı',
+      },
+    ],
+  },
 ];

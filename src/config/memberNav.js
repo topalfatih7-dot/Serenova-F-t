@@ -8,7 +8,7 @@ import {
 export const MEMBER_NAV = [
   { to: '/profile', icon: Settings, label: 'Profil' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
-  { to: '/health-test', icon: HeartPulse, label: 'Sağlık Testleri', healthTestBadge: true },
+  { to: '/health-test', icon: HeartPulse, label: 'Kişisel Sağlık Analizi', healthTestBadge: true },
   { to: '/calendar', icon: CalendarDays, label: 'Takvim' },
   { to: '/calorie', icon: Flame, label: 'Kalori Hesapla' },
   { to: '/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },

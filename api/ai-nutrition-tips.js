@@ -9,6 +9,9 @@ import {
   NUTRITION_SYSTEM,
   buildNutritionInstruction,
   NUTRITION_CONFIG,
+  HEALTH_SCORE_SYSTEM,
+  buildHealthScoreInstruction,
+  HEALTH_SCORE_CONFIG,
 } from './_ai-prompts.js'
 import { setCorsHeaders, handleOptions, requireAuth, requireAdmin } from './_guards.js'
 import { checkAiDailyQuota } from './_aiQuota.js'
@@ -56,6 +59,62 @@ async function handleNutritionTips(req, res, auth) {
     ok: true,
     tips,
     focus: String(parsed.focus || '').trim().slice(0, 200),
+    aiGenerated: true,
+    userId: auth.user.id,
+  })
+}
+
+const SCORE_KEYS = [
+  'general', 'nutrition', 'movement', 'sleep',
+  'stress', 'lifestyle', 'motivation', 'readiness',
+]
+
+function clampScore(n) {
+  const num = Number(n)
+  if (!Number.isFinite(num)) return null
+  return Math.max(0, Math.min(100, Math.round(num)))
+}
+
+function normalizeHealthScores(parsed = {}) {
+  const rawScores = parsed.scores && typeof parsed.scores === 'object' ? parsed.scores : parsed
+  const scores = {}
+  for (const key of SCORE_KEYS) {
+    const v = clampScore(rawScores?.[key])
+    if (v == null) return null
+    scores[key] = v
+  }
+  let overall = clampScore(parsed.overallScore ?? parsed.overall)
+  if (overall == null) {
+    overall = Math.round(SCORE_KEYS.reduce((s, k) => s + scores[k], 0) / SCORE_KEYS.length)
+  }
+  return {
+    scores,
+    overallScore: overall,
+    summary: String(parsed.summary || '').trim().slice(0, 400),
+  }
+}
+
+async function handleHealthScore(req, res, auth) {
+  if (!isGeminiConfigured()) {
+    return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (GEMINI_API_KEY)' })
+  }
+
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+  const profile = body?.profile || {}
+  const categorySummaries = body?.categorySummaries || {}
+
+  const instruction = buildHealthScoreInstruction(profile, categorySummaries)
+  const raw = await callGemini([{ text: instruction }], HEALTH_SCORE_SYSTEM, HEALTH_SCORE_CONFIG)
+  const parsed = parseJsonResponse(raw)
+  const normalized = normalizeHealthScores(parsed)
+
+  if (!normalized) {
+    return res.status(502).json({ ok: false, error: 'AI sağlık skoru üretilemedi' })
+  }
+
+  return res.status(200).json({
+    ok: true,
+    ...normalized,
     aiGenerated: true,
     userId: auth.user.id,
   })
@@ -267,6 +326,9 @@ export default async function handler(req, res) {
     }
     if (task === 'eko-programs') {
       return await handleEkoPrograms(req, res, auth)
+    }
+    if (task === 'health-score') {
+      return await handleHealthScore(req, res, auth)
     }
 
     return await handleNutritionTips(req, res, auth)

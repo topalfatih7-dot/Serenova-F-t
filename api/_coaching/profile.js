@@ -228,7 +228,13 @@ function scoreAdherence(ht = {}, dayCount, sessionMin, explain = []) {
  */
 export function buildAthleteProfile(memberData = {}) {
   const ht = memberData.healthTest || {}
-  const radar = memberData.healthAnalysis?.radarScores || {}
+  const radar = {
+    ...(memberData.healthAnalysis?.radarScores || {}),
+    ...(memberData.healthAnalysis?.scores || {}),
+  }
+  if (memberData.healthAnalysis?.overallScore != null && radar.overall == null) {
+    radar.overall = memberData.healthAnalysis.overallScore
+  }
   const explain = []
 
   const weight = parseFloat(memberData.weight) || parseFloat(ht.weight) || 70

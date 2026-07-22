@@ -144,7 +144,7 @@ export default function DraggableHealthFab({ userId, onOpen }) {
           }`}
         >
           <HeartPulse className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Sağlık Testini Tamamla</span>}
+          {!collapsed && <span>Kişisel Sağlık Analizini Tamamla</span>}
         </button>
       </div>
     </motion.div>

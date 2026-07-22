@@ -4420,3 +4420,50 @@ Dashboard’daki 12 haftalık bar grafikler → geçen hafta / bu hafta karşıl
 ### Ana dosyalar
 
 `src/services/supabaseDb.js` (`updateMemberRow`, `saveMemberPatch`), `src/utils/memberProgress.js` (`buildWeeklyAdherence`), `src/components/dashboard/WeeklyAdherenceTable.jsx`, `src/pages/DashboardPage.jsx`
+
+---
+
+## 59. Kişisel Sağlık Analizi — 6 Kategori & YeniForm Sağlık Skoru (2026-07-22)
+
+> Migration gerekmez — `members.data.healthTest` + `members.data.healthAnalysis` JSONB.
+
+### 59.1 Yeniden adlandırma
+
+Sidebar / hub / panel: **Sağlık Testleri** → **Kişisel Sağlık Analizi**. Route `/health-test` aynı.
+
+### 59.2 6 kategori
+
+| # | id | Başlık | Emoji | Not |
+|---|----|--------|-------|-----|
+| 1 | `general` | Genel Sağlık | ❤️ | Mevcut sorular korundu |
+| 2 | `medical` | Tıbbi Geçmiş | 🩺 | Dokunulmadı |
+| 3 | `nutrition` | Beslenme Profili | 🍎 | Eski `diet_*` birleşimi → tek bölüm |
+| 4 | `physical` | Hareket Profili | 🏋️ | Docx 28 soru |
+| 5 | `lifestyle` | Günlük Yaşam | 🌙 | Docx; audience `shared` |
+| 6 | `women` / `men` | Size Özel Sorular | 👤 | Cinsiyet filtresi |
+
+Dosyalar: `src/data/healthTestSections.js`, `src/data/healthTestDietitianSections.js`.
+
+### 59.3 YeniForm Sağlık Skoru (AI)
+
+**Şema** (`healthAnalysis`):
+```
+scores: { general, nutrition, movement, sleep, stress, lifestyle, motivation, readiness }
+overallScore: 0–100
+summary, aiGenerated, version (9+)
+```
+
+**Akış:**
+1. Üye 6 kategoriyi tamamlar → `healthTest` kaydedilir.
+2. Dashboard `useHealthAnalysisSync` → `POST /api/ai-nutrition-tips` `task=health-score` (Gemini).
+3. Başarısız/kota → `computeFallbackHealthScores` (kural tabanlı).
+4. Sonuç `updateProfile({ healthAnalysis })` ile yazılır.
+5. UI: `HealthScoreCard` (panel), eski `HealthRadarScores` kaldırıldı.
+
+**Prompt:** `api/_ai-prompts.js` → `HEALTH_SCORE_SYSTEM`, `buildHealthScoreInstruction`, `HEALTH_SCORE_CONFIG`.
+
+### 59.4 Değişen / eklenen dosyalar
+
+`healthTestSections.js`, `healthTestDietitianSections.js`, `HealthTestHub.jsx`, `HealthTestStep.jsx`, `memberNav.js`, `HealthTestPage.jsx`, `DashboardPage.jsx`, `DraggableHealthFab.jsx`, `aiAnalysis.js`, `api/_ai-prompts.js`, `api/ai-nutrition-tips.js`, `api/_coaching/profile.js`, `src/services/healthScoreAnalysis.js` (yeni), `src/hooks/useHealthAnalysisSync.js`, `src/components/dashboard/HealthScoreCard.jsx` (yeni), `MemberHealthInsights.jsx`, `MemberHealthProfilePanel.jsx`, `MemberHealthProfilePage.jsx`, `AI_PROJE_REHBERI.md`
+
+**Silinen:** `src/components/onboarding/HealthRadarScores.jsx`

@@ -31,11 +31,12 @@ function Chips({ values, map, tone = 'cream' }) {
 function AnalysisSummary({ analysis }) {
   if (!analysis) return null
   const cal = analysis.dailyCalories
-  const radar = analysis.radarScores
+  const scores = analysis.scores || analysis.radarScores || {}
+  const overall = analysis.overallScore ?? analysis.radarScores?.overall ?? analysis.fitnessScore
   return (
     <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/80 to-white p-5">
       <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
-        <Sparkles className="h-4 w-4 text-brand-500" /> Otomatik Sağlık Analizi
+        <Sparkles className="h-4 w-4 text-brand-500" /> YeniForm Sağlık Skoru
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {analysis.bmi != null && (
@@ -47,10 +48,10 @@ function AnalysisSummary({ analysis }) {
             </p>
           </div>
         )}
-        {(radar?.overall != null || analysis.fitnessScore != null) && (
+        {overall != null && (
           <div className="rounded-xl bg-white/90 px-3 py-2.5 ring-1 ring-brand-100/60">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">360 Skor</p>
-            <p className="mt-1 text-lg font-bold text-cream-900">{radar?.overall ?? analysis.fitnessScore}/100</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">Genel Skor</p>
+            <p className="mt-1 text-lg font-bold text-cream-900">{overall}/100</p>
           </div>
         )}
         {cal?.recommended != null && (
@@ -60,21 +61,28 @@ function AnalysisSummary({ analysis }) {
           </div>
         )}
       </div>
-      {radar && (
+      {analysis.summary && (
+        <p className="mt-3 text-xs leading-relaxed text-cream-800/70">{analysis.summary}</p>
+      )}
+      {scores && (
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {[
-            ['metabolic', 'Metabolik'],
+            ['general', 'Genel'],
             ['nutrition', 'Beslenme'],
+            ['movement', 'Hareket'],
             ['activity', 'Aktivite'],
             ['sleep', 'Uyku'],
             ['stress', 'Stres'],
-            ['digestion', 'Sindirim'],
             ['lifestyle', 'Yaşam tarzı'],
+            ['motivation', 'Motivasyon'],
+            ['readiness', 'Hazır oluş'],
+            ['metabolic', 'Metabolik'],
+            ['digestion', 'Sindirim'],
           ].map(([key, label]) => (
-            radar[key] != null ? (
+            scores[key] != null ? (
               <div key={key} className="flex items-center justify-between rounded-lg bg-white/80 px-3 py-1.5 text-xs ring-1 ring-brand-100/50">
                 <span className="text-cream-800/60">{label}</span>
-                <span className="font-semibold text-cream-900">{radar[key]}</span>
+                <span className="font-semibold text-cream-900">{scores[key]}</span>
               </div>
             ) : null
           ))}
@@ -133,7 +141,7 @@ export default function MemberHealthProfilePanel({
         )}
         <div>
           <p className="text-sm font-semibold text-cream-900">
-            {complete ? 'Sağlık testi tamamlandı' : hasProgress ? 'Sağlık testi devam ediyor' : 'Sağlık testi başlanmadı'}
+            {complete ? 'Kişisel sağlık analizi tamamlandı' : hasProgress ? 'Kişisel sağlık analizi devam ediyor' : 'Kişisel sağlık analizi başlanmadı'}
           </p>
           <p className="text-xs text-cream-800/55">
             {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : 'Cinsiyet belirtilmemiş'}
@@ -171,7 +179,7 @@ export default function MemberHealthProfilePanel({
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">
           <HeartPulse className="h-4 w-4 text-amber-600" />
-          Sağlık Testi Cevapları
+          Sağlık Analizi Cevapları
         </p>
 
         {sections.length === 0 ? (
