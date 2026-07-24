@@ -36,6 +36,17 @@ export async function loadFoodAllowlist(admin, opts = {}) {
     .order('usage_count', { ascending: false })
     .limit(limit)
 
+  // Eski şema / eksik kolon: makro alanları olmadan dene
+  if (error && /protein_g|fat_g|carb_g|tags/i.test(error.message || '')) {
+    const legacy = await admin
+      .from('food_dictionary')
+      .select('name, name_normalized, cal_per_unit, unit, source')
+      .order('usage_count', { ascending: false })
+      .limit(limit)
+    data = (legacy.data || []).map((row) => ({ ...row, protein_g: null, fat_g: null, carb_g: null, tags: [] }))
+    error = legacy.error
+  }
+
   if (error || !data?.length) {
     const fallback = await admin
       .from('food_dictionary')
@@ -44,6 +55,15 @@ export async function loadFoodAllowlist(admin, opts = {}) {
       .limit(limit)
     data = fallback.data || []
     error = fallback.error
+    if (error && /protein_g|fat_g|carb_g|tags/i.test(error.message || '')) {
+      const legacy = await admin
+        .from('food_dictionary')
+        .select('name, name_normalized, cal_per_unit, unit, source')
+        .order('usage_count', { ascending: false })
+        .limit(limit)
+      data = (legacy.data || []).map((row) => ({ ...row, protein_g: null, fat_g: null, carb_g: null, tags: [] }))
+      error = legacy.error
+    }
   }
 
   if (error) {

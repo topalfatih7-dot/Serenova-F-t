@@ -369,13 +369,13 @@ SADECE şu JSON şemasında yanıt ver:
     "description": "1-2 cümle + kalori/makro",
     "meals": ${MEALS_JSON_EXAMPLE},
     "mealDays": [
-      { "dayIndex": 0, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 1, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 2, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 3, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 4, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 5, "meals": ${MEALS_JSON_EXAMPLE} },
-      { "dayIndex": 6, "meals": ${MEALS_JSON_EXAMPLE} }
+      { "dayIndex": 0, "meals": [ /* breakfast…snack_evening — meals ile aynı şema, gün 0 menüsü */ ] },
+      { "dayIndex": 1, "meals": [ /* gün 1 — farklı menü */ ] },
+      { "dayIndex": 2, "meals": [ /* gün 2 */ ] },
+      { "dayIndex": 3, "meals": [ /* gün 3 */ ] },
+      { "dayIndex": 4, "meals": [ /* gün 4 */ ] },
+      { "dayIndex": 5, "meals": [ /* gün 5 */ ] },
+      { "dayIndex": 6, "meals": [ /* gün 6 */ ] }
     ]
   }` : 'null'}
 }`

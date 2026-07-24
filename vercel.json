@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "devCommand": "vite --port 5173",
   "framework": "vite",
+  "regions": ["iad1"],
   "headers": [
     {
       "source": "/api/(.*)",
