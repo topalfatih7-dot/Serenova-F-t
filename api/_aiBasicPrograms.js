@@ -3,7 +3,7 @@
  * Basic süre: bugün → freeTrialExpiresAt (48s deneme).
  */
 
-import { guardNutritionMeals } from './_coaching/nutritionGuard.js'
+import { guardNutritionMeals, guardNutritionDayPlans } from './_coaching/nutritionGuard.js'
 
 export const AI_BASIC_SOURCE = 'ai_basic'
 export const AI_EKO_SOURCE = 'ai_eko'
@@ -287,28 +287,98 @@ function summarizeHealthAnalysis(analysis) {
   return parts.join('. ').slice(0, 600)
 }
 
-export function estimateDailyCalories(profile = {}) {
+/**
+ * Mifflin–St Jeor BMR → TDEE → hedef kcal + P/F/C (LLM’e güvenilmez).
+ * @returns {{
+ *   bmr: number, maintenance: number, recommended: number, goal: string,
+ *   proteinG: number, fatG: number, carbG: number, method: string,
+ *   activityMultiplier: number, safety?: object,
+ * }}
+ */
+export function estimateDailyCalories(profile = {}, safety = null) {
   const w = parseFloat(profile.weight) || 70
   const h = parseFloat(profile.height) || 170
   const a = parseFloat(profile.age) || 30
-  let bmr
-  if (profile.gender === 'male') {
-    bmr = 88.362 + (13.397 * w) + (4.799 * h) - (5.677 * a)
-  } else {
-    bmr = 447.593 + (9.247 * w) + (3.098 * h) - (4.330 * a)
+  const isMale = profile.gender === 'male'
+  // Mifflin–St Jeor
+  const bmr = isMale
+    ? (10 * w) + (6.25 * h) - (5 * a) + 5
+    : (10 * w) + (6.25 * h) - (5 * a) - 161
+
+  const htActivity = profile.rawHealthTest?.activityFrequency
+    || profile.healthTest?.activityFrequency
+    || null
+  const activityFromHt = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725,
+    very_active: 1.9,
   }
-  const activityMultiplier = { beginner: 1.375, intermediate: 1.55, advanced: 1.725 }
-  const multiplier = activityMultiplier[profile.fitnessLevel] || 1.375
-  const total = Math.round(bmr * multiplier)
+  const activityFromFitness = { beginner: 1.375, intermediate: 1.55, advanced: 1.725 }
+  const multiplier = activityFromHt[htActivity]
+    || activityFromFitness[profile.fitnessLevel]
+    || 1.375
+
+  const maintenance = Math.round(bmr * multiplier)
   const roundedBmr = Math.round(bmr)
+  const floorKcal = Math.max(roundedBmr, isMale ? 1500 : 1200)
   const goals = profile.goals || []
-  if (goals.some((g) => g === 'weight' || g === 'fatburn')) {
-    return { bmr: roundedBmr, maintenance: total, recommended: total - 300, goal: 'Kilo verme' }
+  const wantFatLoss = goals.some((g) => g === 'weight' || g === 'fatburn')
+  const wantMuscle = goals.some((g) => g === 'muscle' || g === 'tone')
+  const blockDeficit = Boolean(safety?.blockDeficit || safety?.softMaintenanceOnly)
+  const bmi = profile.bmi != null ? Number(profile.bmi) : null
+
+  let recommended = maintenance
+  let goal = 'Form koruma'
+  if (wantFatLoss && !blockDeficit && !(bmi != null && bmi < 18.5)) {
+    // %15–20 açık (orta nokta ~%17.5)
+    recommended = Math.round(maintenance * 0.825)
+    goal = 'Kilo verme'
+  } else if (wantMuscle && !safety?.softMaintenanceOnly) {
+    recommended = Math.round(maintenance * 1.08)
+    goal = 'Kas kazanımı'
+  } else if (wantFatLoss && blockDeficit) {
+    recommended = maintenance
+    goal = 'Form koruma (güvenli)'
   }
-  if (goals.some((g) => g === 'muscle' || g === 'tone')) {
-    return { bmr: roundedBmr, maintenance: total, recommended: total + 200, goal: 'Kas kazanımı' }
+
+  recommended = Math.max(floorKcal, recommended)
+
+  // Protein bandı (g/kg) — deficit / yüksek BMI üst banda
+  let proteinPerKg = 1.6
+  if (goal.startsWith('Kilo verme') || (bmi != null && bmi >= 27 && wantFatLoss)) {
+    proteinPerKg = 2.1
+  } else if (wantMuscle) {
+    proteinPerKg = 1.9
+  } else if (a >= 65) {
+    proteinPerKg = 1.8
   }
-  return { bmr: roundedBmr, maintenance: total, recommended: total, goal: 'Form koruma' }
+  proteinPerKg = Math.max(1.6, Math.min(2.4, proteinPerKg))
+  const proteinG = Math.round(w * proteinPerKg)
+
+  // Yağ ≥ 0.6 g/kg
+  const fatPerKg = Math.max(0.6, wantFatLoss ? 0.7 : 0.8)
+  const fatG = Math.round(w * fatPerKg)
+  const proteinKcal = proteinG * 4
+  const fatKcal = fatG * 9
+  const carbKcal = Math.max(0, recommended - proteinKcal - fatKcal)
+  const carbG = Math.round(carbKcal / 4)
+
+  return {
+    bmr: roundedBmr,
+    maintenance,
+    recommended,
+    goal,
+    proteinG,
+    fatG,
+    carbG,
+    method: 'mifflin',
+    activityMultiplier: multiplier,
+    safety: safety
+      ? { flags: safety.flags || [], messagesTR: safety.messagesTR || [] }
+      : null,
+  }
 }
 
 export function enrichProfileBasics(memberData = {}) {
@@ -481,6 +551,40 @@ function isDateAllowedForWorkout(d, availability, workoutWeekdays) {
  * AI program JSON çıktısını doğrula; kütüphaneden hydrate et; program data payload’ları üret.
  * `coachedWorkout` varsa egzersiz seçimi Coaching Engine’den gelir (LLM seçmez).
  */
+function normalizeMealList(rawMeals = []) {
+  const mealByType = new Map()
+  ;(Array.isArray(rawMeals) ? rawMeals : []).forEach((m) => {
+    const mealType = MEAL_TYPE_IDS.includes(m.mealType) ? m.mealType : null
+    if (!mealType || mealType === 'note') return
+    const name = String(m.name || '').trim()
+    if (!name) return
+    mealByType.set(mealType, {
+      mealType,
+      name: name.slice(0, 400),
+      note: String(m.note || '').slice(0, 200),
+      start: /^\d{2}:\d{2}$/.test(String(m.start || '')) ? m.start : (DEFAULT_MEAL_TIMES[mealType] || '12:00'),
+    })
+  })
+  const defaults = {
+    breakfast: 'Yulaf ezmesi, 1 yumurta, domates-salatalık, bitki çayı (~320 kcal)',
+    lunch: 'Izgara tavuk veya mercimek, salata, pirinç (~450 kcal)',
+    dinner: 'Sebzeli ızgara balık veya yoğurtlu sebze yemeği, salata (~420 kcal)',
+  }
+  ;['breakfast', 'lunch', 'dinner'].forEach((mt) => {
+    if (!mealByType.has(mt)) {
+      mealByType.set(mt, {
+        mealType: mt,
+        name: defaults[mt],
+        note: '',
+        start: DEFAULT_MEAL_TIMES[mt],
+      })
+    }
+  })
+  return MEAL_TYPE_IDS
+    .filter((id) => id !== 'note' && mealByType.has(id))
+    .map((id) => mealByType.get(id))
+}
+
 export function buildValidatedProgramPayloads({
   aiJson,
   exercisesById,
@@ -496,6 +600,8 @@ export function buildValidatedProgramPayloads({
   previousDietSummary = '',
   coachedWorkout = null,
   healthTest = null,
+  foodIndex = null,
+  weeklyNutrition = false,
 }) {
   const len = Math.max(1, Number(cycleLength) || 1)
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
@@ -635,67 +741,102 @@ export function buildValidatedProgramPayloads({
   }
 
   if (buildNutrition) {
-    const mealByType = new Map()
-    ;(Array.isArray(nutritionRaw.meals) ? nutritionRaw.meals : []).forEach((m) => {
-      const mealType = MEAL_TYPE_IDS.includes(m.mealType) ? m.mealType : null
-      if (!mealType || mealType === 'note') return
-      const name = String(m.name || '').trim()
-      if (!name) return
-      mealByType.set(mealType, {
-        mealType,
-        name: name.slice(0, 400),
-        note: String(m.note || '').slice(0, 200),
-        start: /^\d{2}:\d{2}$/.test(String(m.start || '')) ? m.start : (DEFAULT_MEAL_TIMES[mealType] || '12:00'),
-      })
-    })
+    const useWeekly = weeklyNutrition || source === AI_EKO_SOURCE
+    const rawDayPlans = Array.isArray(nutritionRaw.mealDays) ? nutritionRaw.mealDays : []
+    const parsedDayPlans = rawDayPlans
+      .map((d, i) => ({
+        dayIndex: Number.isFinite(Number(d.dayIndex)) ? Number(d.dayIndex) : i,
+        meals: normalizeMealList(d.meals),
+      }))
+      .filter((d) => d.meals.length >= 3)
+      .slice(0, 7)
 
-    const defaults = {
-      breakfast: 'Yulaf ezmesi, 1 yumurta, domates-salatalık, bitki çayı',
-      lunch: 'Izgara tavuk veya mercimek, salata, tam buğday ekmek',
-      dinner: 'Sebzeli ızgara balık veya yoğurtlu sebze yemeği, salata',
-    }
-    ;['breakfast', 'lunch', 'dinner'].forEach((mt) => {
-      if (!mealByType.has(mt)) {
-        mealByType.set(mt, {
-          mealType: mt,
-          name: defaults[mt],
-          note: '',
-          start: DEFAULT_MEAL_TIMES[mt],
-        })
-      }
-    })
-
-    let nutritionMeals = MEAL_TYPE_IDS
-      .filter((id) => id !== 'note' && mealByType.has(id))
-      .map((id) => mealByType.get(id))
-
-    const guarded = guardNutritionMeals(nutritionMeals, {
+    const baseMeals = normalizeMealList(nutritionRaw.meals)
+    const guardOpts = {
       healthTest: healthTest || {},
       dailyCalories,
-    })
-    nutritionMeals = guarded.meals
+      foodIndex,
+    }
 
-    const nutritionEntries = nutritionMeals.map((m) => ({
-      id: uid('n'),
-      mealType: m.mealType,
-      name: m.name,
-      note: m.note,
-      start: m.start,
-    }))
+    let nutritionEntries
+    let cycleSameDaily
+    let guardedMeta
+
+    if (useWeekly && parsedDayPlans.length >= 3) {
+      const { dayPlans, explain, allergyFlags } = guardNutritionDayPlans(parsedDayPlans, guardOpts)
+      const byIndex = new Map(dayPlans.map((d) => [d.dayIndex % 7, d.meals]))
+      // Eksik günleri ilk güne doldur
+      const fallback = dayPlans[0]?.meals || baseMeals
+      nutritionEntries = []
+      eachDateInCycle(cycleStartDate, len).forEach((d, offset) => {
+        const dateStr = toDateStr(d)
+        const meals = byIndex.get(offset % 7) || byIndex.get(d.getDay()) || fallback
+        meals.forEach((m, i) => {
+          nutritionEntries.push({
+            id: uid('n'),
+            mealType: m.mealType,
+            name: m.name,
+            note: m.note,
+            start: m.start,
+            date: dateStr,
+            order: i,
+          })
+        })
+      })
+      cycleSameDaily = false
+      const avgKcal = Math.round(
+        dayPlans.reduce((s, d) => s + (d.dailyKcal || 0), 0) / Math.max(1, dayPlans.length),
+      )
+      guardedMeta = {
+        dailyKcal: avgKcal || null,
+        targetKcal: dailyCalories?.recommended || dailyCalories?.maintenance || null,
+        inBand: dayPlans.every((d) => d.inBand !== false),
+        allergyFlags: allergyFlags || [],
+        estimatedProteinG: dailyCalories?.proteinG || null,
+        weeklyDays: dayPlans.length,
+        explain,
+      }
+    } else {
+      const guarded = guardNutritionMeals(baseMeals, guardOpts)
+      nutritionEntries = guarded.meals.map((m) => ({
+        id: uid('n'),
+        mealType: m.mealType,
+        name: m.name,
+        note: m.note,
+        start: m.start,
+      }))
+      cycleSameDaily = true
+      guardedMeta = {
+        dailyKcal: guarded.dailyKcal || null,
+        targetKcal: guarded.targetKcal || null,
+        inBand: guarded.inBand,
+        allergyFlags: guarded.allergyFlags || [],
+        estimatedProteinG: guarded.estimatedProteinG || null,
+        proteinOk: guarded.proteinOk,
+        explain: guarded.explain,
+      }
+    }
 
     const nutritionTitle = String(nutritionRaw.title || '').trim()
       || `${memberName} — ${len} Günlük Beslenme Listesi`
-    const kcalNote = guarded.targetKcal && guarded.dailyKcal
-      ? `Günlük tahmini ~${guarded.dailyKcal} kcal (hedef ~${guarded.targetKcal}).`
+    const kcalNote = guardedMeta.targetKcal && guardedMeta.dailyKcal
+      ? `Günlük tahmini ~${guardedMeta.dailyKcal} kcal (hedef ~${guardedMeta.targetKcal}).`
       : ''
-    const proteinHint = coachedWorkout?.proteinGDay
-      ? `Protein hedefi ~${coachedWorkout.proteinGDay} g/gün.`
+    const proteinHint = (coachedWorkout?.proteinGDay || dailyCalories?.proteinG)
+      ? `Protein hedefi ~${coachedWorkout?.proteinGDay || dailyCalories.proteinG} g/gün.`
       : ''
+    const macroHint = dailyCalories?.fatG != null
+      ? `Makro ~ P${dailyCalories.proteinG}/Y${dailyCalories.fatG}/K${dailyCalories.carbG} g.`
+      : ''
+    const safetyHint = (dailyCalories?.safety?.messagesTR || []).slice(0, 1).join(' ')
     const nutritionDesc = [
       calLine || kcalNote,
       proteinHint,
+      macroHint,
+      cycleSameDaily ? '' : '7 günlük menü rotasyonu uygulandı.',
       previousDietSummary ? 'Önceki liste dikkate alındı.' : '',
-      guarded.allergyFlags?.length ? 'Alerji/kısıtlara göre öğünler güvenli alternatiflerle uyumlu hale getirildi.' : '',
+      guardedMeta.allergyFlags?.length ? 'Alerji/kısıtlara göre öğünler güvenli alternatiflerle uyumlu hale getirildi.' : '',
+      safetyHint,
       String(nutritionRaw.description || '').trim(),
       DISCLAIMER,
     ].filter(Boolean).join(' ')
@@ -705,20 +846,36 @@ export function buildValidatedProgramPayloads({
       memberName: memberName || '',
       staffName: STAFF_NAME,
       title: nutritionTitle.slice(0, 120),
-      description: nutritionDesc.slice(0, 800),
+      description: nutritionDesc.slice(0, 900),
       scheduleType: 'dateRange',
       cycleStartDate,
       cycleLength: len,
       cycleLoop: false,
-      cycleSameDaily: true,
+      cycleSameDaily,
       entries: nutritionEntries,
-      items: nutritionEntries.map((e) => mealDisplayText(e, len)),
+      items: (cycleSameDaily
+        ? nutritionEntries
+        : nutritionEntries.filter((e) => e.date === cycleStartDate)
+      ).map((e) => mealDisplayText(e, len)),
       source,
       nutritionGuard: {
-        dailyKcal: guarded.dailyKcal || null,
-        targetKcal: guarded.targetKcal || null,
-        inBand: guarded.inBand,
-        allergyFlags: guarded.allergyFlags || [],
+        dailyKcal: guardedMeta.dailyKcal || null,
+        targetKcal: guardedMeta.targetKcal || null,
+        inBand: guardedMeta.inBand,
+        allergyFlags: guardedMeta.allergyFlags || [],
+        estimatedProteinG: guardedMeta.estimatedProteinG || null,
+        proteinOk: guardedMeta.proteinOk,
+        weeklyDays: guardedMeta.weeklyDays || null,
+        calorieMethod: dailyCalories?.method || null,
+        macros: dailyCalories?.proteinG != null
+          ? {
+            proteinG: dailyCalories.proteinG,
+            fatG: dailyCalories.fatG,
+            carbG: dailyCalories.carbG,
+          }
+          : null,
+        safetyFlags: dailyCalories?.safety?.flags || null,
+        explain: (guardedMeta.explain || []).slice(0, 12),
       },
     }
   }

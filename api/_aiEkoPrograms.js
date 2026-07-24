@@ -36,6 +36,8 @@ import {
   runCoachingEngine,
 } from './_coaching/index.js'
 import { buildNutritionConstraints } from './_coaching/nutritionConstraints.js'
+import { evaluateNutritionSafety } from './_coaching/safetyGate.js'
+import { loadFoodAllowlist, buildFoodMacroIndex } from './_coaching/foodCatalog.js'
 import { logCoachingDecision, persistCoachingState } from './_coaching/observability.js'
 import {
   isPaidMembership,
@@ -191,7 +193,8 @@ export async function generateBasicPrograms(admin, memberRow) {
     .sort((a, b) => String(b.cycleStartDate || '').localeCompare(String(a.cycleStartDate || '')))[0]
 
   const profileEarly = enrichProfileBasics(athleteSeed)
-  const dailyCalories = estimateDailyCalories(profileEarly)
+  const nutritionSafety = evaluateNutritionSafety(profileEarly, memberData.healthTest || {})
+  const dailyCalories = estimateDailyCalories(profileEarly, nutritionSafety)
 
   let coached
   try {
@@ -220,6 +223,12 @@ export async function generateBasicPrograms(admin, memberRow) {
   const healthTestSummary = buildHealthTestSummary(memberData.healthTest)
   const coachedWorkout = toCoachedWorkoutPayload(coached)
 
+  const foodCatalog = await loadFoodAllowlist(admin, {
+    healthTest: memberData.healthTest || {},
+    nutritionPrefs: profile.nutritionPrefs || [],
+  })
+  const foodIndex = buildFoodMacroIndex(foodCatalog.foods)
+
   const instruction = buildBasicProgramInstruction({
     profile,
     healthTestSummary,
@@ -230,8 +239,9 @@ export async function generateBasicPrograms(admin, memberRow) {
       sessionStart: coached.sessionStart,
       exercises: coached.primaryExercises,
     },
-    coachingSummary: coached.explain.slice(0, 12).join(' · '),
+    coachingSummary: coached.explain.slice(0, 14).join(' · '),
     nutritionConstraintsBlock: coached.nutritionConstraints?.promptBlock || '',
+    foodAllowlistBlock: foodCatalog.promptBlock || '',
   })
 
   let raw
@@ -277,6 +287,8 @@ export async function generateBasicPrograms(admin, memberRow) {
       buildWorkout: true,
       coachedWorkout,
       healthTest: memberData.healthTest || {},
+      foodIndex,
+      weeklyNutrition: false,
     })
   } catch (e) {
     return { ok: false, error: e.message || 'Program doğrulanamadı', status: 502 }
@@ -389,7 +401,8 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
   }
   const athleteProfile = buildAthleteProfile(athleteSeed)
   const profile = enrichProfileBasics(athleteSeed)
-  const dailyCalories = estimateDailyCalories(profile)
+  const nutritionSafety = evaluateNutritionSafety(profile, memberData.healthTest || {})
+  const dailyCalories = estimateDailyCalories(profile, nutritionSafety)
 
   let exercises = []
   let coached = null
@@ -433,13 +446,18 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
       athleteProfile,
       goals,
       dailyCalories,
-      { sessionStart: '09:00' },
+      { sessionStart: '09:00', safety: nutritionSafety },
     )
     nutritionConstraintsBlock = nutritionMeta.promptBlock
   }
 
-  const needBoth = renewDiet && renewWorkout
-  const maxLenForPrompt = Math.max(dietLen || 0, workoutLen || 0) || EKO_WORKOUT_DAYS
+  const foodCatalog = renewDiet
+    ? await loadFoodAllowlist(admin, {
+      healthTest: memberData.healthTest || {},
+      nutritionPrefs: profile.nutritionPrefs || [],
+    })
+    : { foods: [], promptBlock: '' }
+  const foodIndex = buildFoodMacroIndex(foodCatalog.foods)
 
   const instruction = buildEkoProgramInstruction({
     profile,
@@ -455,8 +473,9 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
       sessionStart: coached.sessionStart,
       exercises: coached.primaryExercises,
     } : null,
-    coachingSummary: coached ? coached.explain.slice(0, 12).join(' · ') : '',
+    coachingSummary: coached ? coached.explain.slice(0, 14).join(' · ') : '',
     nutritionConstraintsBlock: renewDiet ? nutritionConstraintsBlock : '',
+    foodAllowlistBlock: renewDiet ? (foodCatalog.promptBlock || '') : '',
   })
 
   let raw
@@ -505,6 +524,8 @@ export async function generateEkoPrograms(admin, memberRow, opts = {}) {
         buildWorkout: false,
         previousDietSummary,
         healthTest: memberData.healthTest || {},
+        foodIndex,
+        weeklyNutrition: true,
         coachedWorkout: nutritionMeta?.proteinGDay
           ? { proteinGDay: nutritionMeta.proteinGDay }
           : null,

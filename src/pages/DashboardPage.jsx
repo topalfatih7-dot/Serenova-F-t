@@ -51,7 +51,6 @@ export default function DashboardPage() {
     loading: healthScoreLoading,
     error: healthScoreError,
     complete: healthAnalysisComplete,
-    refresh: refreshHealthScore,
   } = useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
@@ -132,7 +131,6 @@ export default function DashboardPage() {
         loading={healthScoreLoading}
         complete={healthAnalysisComplete}
         error={healthScoreError}
-        onRefresh={refreshHealthScore}
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">

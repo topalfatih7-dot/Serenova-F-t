@@ -2,6 +2,8 @@
  * Risk Analysis Engine — hard restrictions (prompt’a güvenmez).
  */
 
+import { evaluateNutritionSafety } from './safetyGate.js'
+
 const REGION_ALIASES = {
   neck: 'neck',
   shoulder: 'shoulder',
@@ -127,8 +129,15 @@ export function analyzeRisk(profile) {
     bannedTags.add('supine_prolonged')
     bannedTags.add('valsalva_heavy')
     bannedTags.add('plyometric')
+    bannedTags.add('failure_training')
+    bannedTags.add('axial_loading_heavy')
     warnings.push('Gebelik bildirildi; program muhafazakâr tutuldu (tıbbi tavsiye değildir).')
-    if (c.doctorClearance === 'yes' || c.doctorClearance === 'unsure') referralSuggested = true
+    referralSuggested = true
+    redFlags.push({
+      code: 'pregnancy',
+      severity: 'high',
+      messageTR: 'Gebelik: yoğunluk düşük tutuldu; obstetrik onay olmadan agresif antrenman uygulanmamalı.',
+    })
   }
 
   if (c.painScale >= 7) {
@@ -142,6 +151,40 @@ export function analyzeRisk(profile) {
     warnings.push(`Kaçınılacak hareket notu dikkate alındı: ${String(c.exerciseContraindicationsDetail).slice(0, 120)}`)
   }
 
+  const nutritionSafety = evaluateNutritionSafety({
+    bmi: profile?.bmi,
+    goals: profile?.goals,
+    constraints: c,
+  }, profile?.rawHealthTest || {})
+
+  if (nutritionSafety.flags.includes('ed_signal') || nutritionSafety.flags.includes('very_low_bmi')) {
+    bannedTags.add('failure_training')
+    bannedTags.add('plyometric')
+    referralSuggested = true
+    redFlags.push({
+      code: nutritionSafety.flags.includes('ed_signal') ? 'ed_signal' : 'very_low_bmi',
+      severity: 'high',
+      messageTR: nutritionSafety.messagesTR[0]
+        || 'Riskli beslenme / kilo profili; program muhafazakâr tutuldu.',
+    })
+    warnings.push(...nutritionSafety.messagesTR.slice(0, 2))
+  } else if (nutritionSafety.flags.includes('low_bmi')) {
+    warnings.push(...nutritionSafety.messagesTR.slice(0, 1))
+  }
+
+  const chronicLower = (c.chronicConditions || []).map((x) => String(x).toLowerCase())
+  const meds = String(profile?.rawHealthTest?.medications
+    || profile?.rawHealthTest?.medicationDetail
+    || '').toLowerCase()
+  if (
+    chronicLower.some((x) => x.includes('diabetes') || x.includes('diyabet'))
+    || /insulin|insülin|metformin|glp-?1|diyabet/.test(meds)
+  ) {
+    bannedTags.add('failure_training')
+    warnings.push('Diyabet / kan şekeri notu: yoğunluk muhafazakâr; hipoglisemi riskine dikkat.')
+    nutritionSafety.diabetesCaution = true
+  }
+
   const riskScore = profile?.scores?.risk ?? 0
   let level = 'low'
   if (referralSuggested || riskScore >= 85) level = 'referral'
@@ -150,6 +193,7 @@ export function analyzeRisk(profile) {
 
   if (level === 'referral' || level === 'high') {
     preferredPatterns.push('mobility', 'loco_easy', 'core_easy')
+    bannedTags.add('failure_training')
   }
 
   return {
@@ -160,6 +204,7 @@ export function analyzeRisk(profile) {
     preferredPatterns: [...new Set(preferredPatterns)],
     warnings,
     referralSuggested,
+    nutritionSafety,
     textBlocklist: buildTextBlocklist(c.exerciseContraindicationsDetail),
   }
 }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { HeartPulse, Loader2, RefreshCw, Sparkles, ArrowRight } from 'lucide-react'
+import { HeartPulse, Loader2, Sparkles, ArrowRight } from 'lucide-react'
 import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
@@ -41,7 +41,6 @@ export default function HealthScoreCard({
   analysis,
   loading = false,
   complete = false,
-  onRefresh,
   error = null,
 }) {
   if (!complete) {
@@ -101,17 +100,6 @@ export default function HealthScoreCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={loading}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-cream-200 bg-white text-cream-800/70 transition hover:bg-cream-50 disabled:opacity-50"
-              aria-label="Skoru yenile"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            </button>
-          )}
           <div className={`relative flex h-20 w-20 flex-col items-center justify-center rounded-2xl bg-white shadow-md ring-2 ${tone.ring}`}>
             {showSkeleton ? (
               <Loader2 className={`h-6 w-6 animate-spin ${tone.text}`} />

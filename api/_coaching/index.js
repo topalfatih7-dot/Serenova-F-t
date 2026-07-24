@@ -22,6 +22,7 @@ import {
   clampSplitDays,
 } from './adaptation.js'
 import { buildNutritionConstraints } from './nutritionConstraints.js'
+import { evaluateNutritionSafety } from './safetyGate.js'
 
 /**
  * @param {object} memberData
@@ -174,13 +175,28 @@ export function runCoachingEngine(memberData, exerciseRows, options = {}) {
     profile.schedule.workoutWeekdays,
   )
 
+  const safety = risk.nutritionSafety || evaluateNutritionSafety({
+    bmi: profile.bmi,
+    goals: profile.goals,
+    constraints: profile.constraints,
+  }, profile.rawHealthTest || {})
+
   const nutritionConstraints = buildNutritionConstraints(
     profile,
     goals,
     options.dailyCalories || null,
-    { sessionStart },
+    { sessionStart, safety },
   )
   explain.push(...nutritionConstraints.explain)
+
+  const mesoWeek = (Number(memberData?.coachingState?.mesocycleWeek) || 0) + 1
+  explain.push(
+    `mesocycle hafta ${mesoWeek}${volume.deload ? ' (deload)' : ''}`,
+    `hacim hedefi ~${volume.weeklySetsPerMuscle?.target || '—'} set/kas/hafta (${profile.experienceLevel})`,
+  )
+  if (risk.level === 'referral' || risk.level === 'high') {
+    explain.push('yoğunluk: failure yasak; RIR 2–4 tercih')
+  }
 
   return {
     profile,
@@ -191,6 +207,7 @@ export function runCoachingEngine(memberData, exerciseRows, options = {}) {
     adaptation,
     adherence,
     nutritionConstraints,
+    safety,
     poolSize: pool.length,
     sessionDuration,
     sessionStart,
@@ -200,13 +217,13 @@ export function runCoachingEngine(memberData, exerciseRows, options = {}) {
     explain,
     referralSuggested: risk.referralSuggested,
     descriptionHints: buildDescriptionHints(
-      profile, goals, risk, split, previousSummary, adaptation, volume,
+      profile, goals, risk, split, previousSummary, adaptation, volume, mesoWeek,
     ),
     previousWorkoutSummary: previousSummary,
   }
 }
 
-function buildDescriptionHints(profile, goals, risk, split, previousSummary, adaptation, volume) {
+function buildDescriptionHints(profile, goals, risk, split, previousSummary, adaptation, volume, mesoWeek = 1) {
   const goalLabels = {
     fat_loss: 'yağ kaybı / kilo yönetimi',
     hypertrophy: 'kas gelişimi',
@@ -222,7 +239,8 @@ function buildDescriptionHints(profile, goals, risk, split, previousSummary, ada
   const parts = [
     `Bu program ${goalLabels[goals.primary] || goals.primary} odaklı hazırlandı.`,
     `${split.daysPerWeek} gün / ${split.splitType.replace(/_/g, ' ')} yapısı; seans ~${profile.schedule.sessionMinutes} dk.`,
-    `Seviye: ${profile.experienceLevel}; hedef hacim ~${volume?.weeklySetsPerMuscle?.target || '—'} set/kas/hafta.`,
+    `Seviye: ${profile.experienceLevel}; mezosikl hafta ${mesoWeek}/4; hedef hacim ~${volume?.weeklySetsPerMuscle?.target || '—'} set/kas/hafta.`,
+    'Çalışma setlerinde RIR 1–3 (yeni başlayanlarda 2–4); failure yok.',
   ]
   if (volume?.deload) parts.push('Bu dilim deload / düşük hacim haftası olarak ayarlandı.')
   if (profile.locationProfile === 'home') parts.push('Ev / mevcut ekipmana göre seçildi.')
@@ -231,6 +249,9 @@ function buildDescriptionHints(profile, goals, risk, split, previousSummary, ada
     parts.push('Son dönem tamamlanma oranına göre bu dilim daha sürdürülebilir ve hafif tutuldu.')
   } else if (adaptation?.mode === 'push') {
     parts.push('Yüksek uyumunuza göre hacim dikkatli şekilde ilerletildi.')
+  }
+  if (risk.level === 'referral' || risk.level === 'high') {
+    parts.push('Risk profili nedeniyle yoğunluk düşük tutuldu; failure ve plyometrik yok.')
   }
   if (risk.warnings?.length) parts.push(risk.warnings[0])
   if (risk.redFlags?.length) parts.push(risk.redFlags[0].messageTR)
@@ -259,4 +280,5 @@ export {
   analyzeAdherence,
   decideAdaptation,
   buildNutritionConstraints,
+  evaluateNutritionSafety,
 }

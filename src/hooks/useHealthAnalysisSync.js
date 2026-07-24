@@ -67,6 +67,5 @@ export function useHealthAnalysisSync() {
     loading,
     error,
     complete,
-    refresh: () => runSync({ force: true }),
   }
 }

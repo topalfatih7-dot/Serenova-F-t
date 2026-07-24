@@ -173,8 +173,11 @@ export const HEALTH_SCORE_CONFIG = {
 
 function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines = []) {
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
+  const macroLine = dailyCalories?.proteinG != null
+    ? ` · P${dailyCalories.proteinG}g / Y${dailyCalories.fatG}g / K${dailyCalories.carbG}g`
+    : ''
   const calLine = cal
-    ? `BMR ~${dailyCalories?.bmr || '—'} · idame ~${dailyCalories?.maintenance || '—'} · önerilen ~${cal} kcal (${dailyCalories?.goal || ''})`
+    ? `BMR ~${dailyCalories?.bmr || '—'} · TDEE ~${dailyCalories?.maintenance || '—'} · hedef ~${cal} kcal (${dailyCalories?.goal || ''})${macroLine} [${dailyCalories?.method || 'mifflin'}]`
     : 'hesaplanamadı'
   const lines = [
     `- Ad: ${profile.name || '—'}`,
@@ -189,7 +192,7 @@ function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines
     `- Antrenman yeri / ekipman: ${profile.trainingLocation || '—'} / ${profile.equipmentAccess || '—'}`,
     `- Hedef seans süresi: ${profile.sessionDurationGoal || '—'}`,
     `- Müsaitlik (antrenman günleri): ${profile.availabilitySummary || '—'}`,
-    `- Kalori: ${calLine}`,
+    `- Kalori/makro (kod hesapladı — değiştirme): ${calLine}`,
   ]
   if (profile.healthAnalysisSummary) {
     lines.push(`- Önceki sağlık analizi özeti: ${profile.healthAnalysisSummary}`)
@@ -200,25 +203,36 @@ function formatMemberProfileBlock(profile = {}, dailyCalories = null, extraLines
   return lines.join('\n')
 }
 
-const PROGRAM_ANALYSIS_RULES = `ANALİZ (metin üretirken dikkate al; hareket SEÇME):
-1) Boy, kilo, BMI, hedef kilo, yaş, cinsiyet ve kalori bandını birlikte yorumla; eksik alanda uydurma yapma.
+const PROGRAM_ANALYSIS_RULES = `ROL: Sertifikalı güç antrenmanı koçu + klinik diyetisyen gibi düşün; abartılı vaat yok.
+ANALİZ (metin üretirken; hareket SEÇME / makro HESAPLAMA):
+1) Verilen BMR/TDEE/P/F/C sayılarını kabul et; yeniden hesaplama veya uydurma YOK.
 2) Sağlık kısıtlarını description’da nazikçe yansıt; tıbbi teşhis koyma.
-3) Beslenme: alerji, yeme alışkanlıkları ve tercihlere uy; öğün kcal toplamı önerilen kaloriye ±15% yakın olsun.
-4) Antrenman hareketleri ZATEN seçilmiştir — exerciseId ekleme/değiştirme/uydurma.`
+3) Beslenme: alerji + tercihlere uy; günlük öğün Σ kcal hedefe ±10%; protein hedefine yaklaş; her ana öğünde ~20–40 g protein.
+4) Antrenman hareketleri ZATEN seçilmiştir — exerciseId ekleme/değiştirme/uydurma.
+5) Failure / mucize diyet / detoks dili YASAK. RIR 1–3 vurgusu description’da olabilir.`
+
+const MEALS_JSON_EXAMPLE = `[
+      { "mealType": "breakfast", "name": "yiyecekler + porsiyon (~kcal)", "start": "08:00", "note": "" },
+      { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
+      { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
+      { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
+      { "mealType": "dinner", "name": "...", "start": "19:00", "note": "" },
+      { "mealType": "snack_evening", "name": "...", "start": "21:30", "note": "" }
+    ]`
 
 // ─── Basic paket: AI antrenman + diyet listesi ───────────────────────
-export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen metin asistanısın.
+export const BASIC_PROGRAM_SYSTEM = `Sen Yeni Form’un profesyonel koç + diyetisyen metin asistanısın.
 ${BRAND_CONTEXT}
-Antrenman hareketleri Coaching Engine tarafından seçilmiştir. Senin görevin: başlık/açıklama yazmak, isteğe bağlı kısa form notları ve beslenme listesi üretmek.
+Antrenman hareketleri Coaching Engine tarafından seçilmiştir. Senin görevin: başlık/açıklama, isteğe bağlı form notları ve 1 günlük beslenme şablonu.
 
 ${PROGRAM_ANALYSIS_RULES}
 
 KURALLAR:
-- Verilen FIXED_WORKOUT listesine yeni hareket EKLEME; id değiştirme.
-- exerciseNotes yalnızca listedeki exerciseId’ler için; max ~80 karakter.
-- Beslenme: Türk mutfağı, pratik ev yemekleri; 6 öğün tipi.
-- Her öğün name: yiyecekler + porsiyon + tahmini kcal.
-- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
+- FIXED_WORKOUT’a hareket EKLEME; id değiştirme.
+- exerciseNotes yalnızca listedeki exerciseId’ler; max ~80 karakter; RPE/RIR ile çelişme.
+- Beslenme: Türk mutfağı, pratik ev yemekleri; ALLOWED_FOODS varsa öncelikle oradan.
+- Her öğün name: yiyecekler + porsiyon + ~kcal.
+- Su/hidrasyon cümlesi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildBasicProgramInstruction({
   profile,
@@ -228,6 +242,7 @@ export function buildBasicProgramInstruction({
   fixedWorkout = null,
   coachingSummary = '',
   nutritionConstraintsBlock = '',
+  foodAllowlistBlock = '',
 }) {
   const fixedLines = (fixedWorkout?.exercises || [])
     .map((e, i) => `${i + 1}. ${e.exerciseId} | ${e.exerciseName || ''} | ${e.amountType}/${e.amount} | ${e.note || ''}`)
@@ -246,6 +261,8 @@ ${coachingSummary || '—'}
 
 ${nutritionConstraintsBlock || ''}
 
+${foodAllowlistBlock || ''}
+
 FIXED_WORKOUT (değiştirme; yalnızca metin zenginleştir):
 sessionDuration=${fixedWorkout?.sessionDuration || 30}
 sessionStart=${fixedWorkout?.sessionStart || '09:00'}
@@ -253,9 +270,9 @@ ${fixedLines || '(liste boş)'}
 
 GÖREV:
 - workout.title kısa ve profesyonel (örn. "3 Günlük Ev Antrenmanı — Yağ Kaybı Odaklı").
-- description: 2–3 cümle; hedef, neden bu yapı, güvenlik/kısıt notu; abartılı vaat yok.
-- İstersen exerciseNotes ile form ipucu (aynı exerciseId; set/RPE zaten notta olabilir — çelişme).
-- Beslenmede 6 öğün; name içinde porsiyon + ~kcal; protein hedefine yaklaş; alerji/tercihlere uy; pratik Türk mutfağı.
+- description: 2–3 cümle; hedef, mezosikl/hacim ipucu, güvenlik; abartılı vaat yok.
+- İstersen exerciseNotes ile form ipucu (aynı exerciseId).
+- Beslenme: tek gün 6 öğün şablonu; porsiyon + ~kcal; makro kısıtlarına uy.
 
 SADECE şu JSON şemasında yanıt ver:
 {
@@ -268,37 +285,31 @@ SADECE şu JSON şemasında yanıt ver:
   },
   "nutrition": {
     "title": "kısa liste başlığı",
-    "description": "1-2 cümle + günlük kalori vurgusu",
-    "meals": [
-      { "mealType": "breakfast", "name": "yiyecekler + porsiyon (~kcal)", "start": "08:00", "note": "" },
-      { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
-      { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
-      { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
-      { "mealType": "dinner", "name": "...", "start": "19:00", "note": "" },
-      { "mealType": "snack_evening", "name": "...", "start": "21:30", "note": "" }
-    ]
+    "description": "1-2 cümle + günlük kalori/makro vurgusu",
+    "meals": ${MEALS_JSON_EXAMPLE}
   }
 }`
 }
 
 export const BASIC_PROGRAM_CONFIG = {
-  temperature: 0.25,
+  temperature: 0.22,
   maxOutputTokens: 3500,
   responseMimeType: 'application/json',
 }
 
 // ─── Eko paket: 15g diyet + 30g antrenman ────────────────────────────
-export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form platformunun koç + diyetisyen metin asistanısın.
+export const EKO_PROGRAM_SYSTEM = `Sen Yeni Form’un profesyonel koç + diyetisyen metin asistanısın.
 ${BRAND_CONTEXT}
-Eko paket için antrenman hareketleri Coaching Engine tarafından seçilmiş olabilir. Senin görevin metin ve/veya beslenme üretmek.
+Eko pakette antrenman hareketleri Coaching Engine’den gelebilir. Senin görevin metin ve/veya 7 günlük çeşitlendirilmiş beslenme üretmek.
 
 ${PROGRAM_ANALYSIS_RULES}
-7) Önceki diyet listesi varsa aynı kalori bandında çeşitlendir; birebir kopyalama.
+6) Önceki diyet varsa aynı kalori bandında çeşitlendir; birebir kopyalama.
+7) Beslenmede dayIndex 0–6 için farklı menüler yaz (aynı 6 öğünü 15 güne kopyalama).
 
 KURALLAR:
 - FIXED_WORKOUT varsa hareket ekleme/id değiştirme.
-- Beslenme: Türk mutfağı; 6 öğün; porsiyon + ~kcal; kalori ±15%.
-- Su/hidrasyon önerisi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
+- Beslenme: Türk mutfağı; ALLOWED_FOODS öncelikli; porsiyon + ~kcal; kalori ±10%.
+- Su/hidrasyon cümlesi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildEkoProgramInstruction({
   profile,
@@ -312,6 +323,7 @@ export function buildEkoProgramInstruction({
   fixedWorkout = null,
   coachingSummary = '',
   nutritionConstraintsBlock = '',
+  foodAllowlistBlock = '',
 }) {
   const cal = dailyCalories?.recommended || dailyCalories?.maintenance || null
   const fixedLines = (fixedWorkout?.exercises || [])
@@ -320,15 +332,16 @@ export function buildEkoProgramInstruction({
 
   const parts = []
   if (buildWorkout) {
-    parts.push(`ANTRENMAN METNİ (${workoutDays} gün): title + description; FIXED_WORKOUT’u değiştirme; isteğe bağlı exerciseNotes.`)
+    parts.push(`ANTRENMAN METNİ (${workoutDays} gün): title + description; FIXED_WORKOUT’u değiştirme; isteğe bağlı exerciseNotes; RIR/deload ipucu description’da olabilir.`)
     parts.push(`COACHING: ${coachingSummary || '—'}`)
     parts.push(`FIXED_WORKOUT:\n${fixedLines || '(yok)'}`)
   }
   if (buildNutrition) {
-    parts.push(`BESLENME (${dietDays} gün): 6 öğün; ~${cal || 'hedef'} kcal; protein hedefine ve kısıtlara uy.`)
+    parts.push(`BESLENME (${dietDays} gün, 7 günlük rotasyon): dayIndex 0–6 için ayrı 6’lı öğün setleri; her gün ~${cal || 'hedef'} kcal ve protein hedefine uy; menüleri çeşitlendir.`)
     if (nutritionConstraintsBlock) parts.push(nutritionConstraintsBlock)
+    if (foodAllowlistBlock) parts.push(foodAllowlistBlock)
     if (previousDietSummary) {
-      parts.push(`ÖNCEKİ DİYET (çeşitlendir):\n${previousDietSummary}`)
+      parts.push(`ÖNCEKİ DİYET (çeşitlendir, kopyalama):\n${previousDietSummary}`)
     }
   }
 
@@ -353,22 +366,24 @@ SADECE şu JSON şemasında yanıt ver:
   }` : 'null'},
   "nutrition": ${buildNutrition ? `{
     "title": "kısa liste başlığı",
-    "description": "1-2 cümle + kalori",
-    "meals": [
-      { "mealType": "breakfast", "name": "yiyecekler + porsiyon (~kcal)", "start": "08:00", "note": "" },
-      { "mealType": "snack_morning", "name": "...", "start": "10:30", "note": "" },
-      { "mealType": "lunch", "name": "...", "start": "13:00", "note": "" },
-      { "mealType": "snack_afternoon", "name": "...", "start": "16:00", "note": "" },
-      { "mealType": "dinner", "name": "...", "start": "19:00", "note": "" },
-      { "mealType": "snack_evening", "name": "...", "start": "21:30", "note": "" }
+    "description": "1-2 cümle + kalori/makro",
+    "meals": ${MEALS_JSON_EXAMPLE},
+    "mealDays": [
+      { "dayIndex": 0, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 1, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 2, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 3, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 4, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 5, "meals": ${MEALS_JSON_EXAMPLE} },
+      { "dayIndex": 6, "meals": ${MEALS_JSON_EXAMPLE} }
     ]
   }` : 'null'}
 }`
 }
 
 export const EKO_PROGRAM_CONFIG = {
-  temperature: 0.25,
-  maxOutputTokens: 4000,
+  temperature: 0.28,
+  maxOutputTokens: 8000,
   responseMimeType: 'application/json',
 }
 

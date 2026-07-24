@@ -1,6 +1,21 @@
 import { supabase } from './supabaseClient'
+import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
+
+/** Fire-and-forget Expo Push (mobile). Failures must not block in-app notification. */
+async function dispatchExpoPush(memberId, notification) {
+  try {
+    const headers = await getApiAuthHeaders()
+    await fetch('/api/expo-push', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ memberId, notification }),
+    })
+  } catch {
+    /* ignore */
+  }
+}
 
 export function buildMemberNotification({ type, title, message, ...extra }) {
   return {
@@ -36,6 +51,7 @@ export async function pushMemberNotification(memberId, notification) {
   })
 
   if (error) return { success: false, error: error.message }
+  void dispatchExpoPush(memberId, notification)
   return { success: true }
 }
 
