@@ -1,6 +1,96 @@
 /**
- * Beslenme doğrulama — HT alerji + meal name ~kcal + protein tabanı.
+ * Beslenme doğrulama — HT alerji + meal name ~kcal + protein tabanı
+ * + food_dictionary grounding (orta seviye zorunluluk).
  */
+
+/** food_dictionary name_normalized ile aynı fold (TR karakter → ASCII). */
+export function foldTr(str = '') {
+  return String(str)
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[şŞ]/g, 's')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[üÜ]/g, 'u')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[çÇ]/g, 'c')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const GROUND_MIN_KEY_LEN = 5
+/** LLM kcal vs grounded kcal sapması bu oranın üstündeyse düzelt. */
+const GROUND_KCAL_DRIFT = 0.25
+
+/**
+ * Öğün metnini food_dictionary ile eşleştir (en uzun, üst üste binmeyen substring).
+ * @param {string} name
+ * @param {Map<string, { cal: number, protein: number, fat: number, carb: number, name: string }>|null} foodIndex
+ * @returns {{ matchedCount: number, kcal: number, protein: number, fat: number, carb: number, matchedNames: string[] }}
+ */
+export function groundMealAgainstCatalog(name = '', foodIndex = null) {
+  const empty = { matchedCount: 0, kcal: 0, protein: 0, fat: 0, carb: 0, matchedNames: [] }
+  if (!foodIndex || !foodIndex.size || !name) return empty
+
+  let haystack = foldTr(name)
+  if (!haystack) return empty
+
+  const keys = [...foodIndex.keys()]
+    .map((raw) => ({ raw, folded: foldTr(raw) }))
+    .filter(({ folded }) => folded.length >= GROUND_MIN_KEY_LEN)
+    .sort((a, b) => b.folded.length - a.folded.length)
+
+  let kcal = 0
+  let protein = 0
+  let fat = 0
+  let carb = 0
+  const matchedNames = []
+
+  for (const { raw, folded } of keys) {
+    const idx = haystack.indexOf(folded)
+    if (idx < 0) continue
+    const meta = foodIndex.get(raw)
+    if (!meta) continue
+    kcal += Number(meta.cal) || 0
+    protein += Number(meta.protein) || 0
+    fat += Number(meta.fat) || 0
+    carb += Number(meta.carb) || 0
+    matchedNames.push(meta.name || raw)
+    // Aynı bölgeyi tekrar saymamak için maskele
+    haystack = `${haystack.slice(0, idx)}${' '.repeat(folded.length)}${haystack.slice(idx + folded.length)}`
+  }
+
+  return {
+    matchedCount: matchedNames.length,
+    kcal: Math.round(kcal),
+    protein: Math.round(protein * 10) / 10,
+    fat: Math.round(fat * 10) / 10,
+    carb: Math.round(carb * 10) / 10,
+    matchedNames,
+  }
+}
+
+function rewriteMealKcal(name, kcal) {
+  const cleaned = String(name || '')
+    .replace(/~\s*\d{2,4}\s*kcal/ig, '')
+    .replace(/\(\s*\d{2,4}\s*kcal\s*\)/ig, '')
+    .replace(/\d{2,4}\s*kcal/ig, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+,/g, ',')
+    .trim()
+    .replace(/[,\s]+$/g, '')
+  return `${cleaned} (~${Math.round(kcal)} kcal)`.slice(0, 400)
+}
+
+function applyGroundedKcalToName(name, groundedKcal) {
+  if (!(groundedKcal > 0)) return name
+  const llmKcal = parseKcalFromMealName(name)
+  if (llmKcal == null) return rewriteMealKcal(name, groundedKcal)
+  const drift = Math.abs(llmKcal - groundedKcal) / Math.max(groundedKcal, 1)
+  if (drift <= GROUND_KCAL_DRIFT) return name
+  return rewriteMealKcal(name, groundedKcal)
+}
 
 const ALLERGY_RULES = [
   {
@@ -132,8 +222,8 @@ function rescaleMealKcal(name, scale) {
 }
 
 /**
- * Öğün listesini alerji + kalori + protein bandına göre düzelt.
- * @returns {{ meals, explain, dailyKcal, estimatedProteinG, inBand, proteinOk, allergyFlags, targetKcal }}
+ * Öğün listesini alerji + food_dictionary grounding + kalori + protein bandına göre düzelt.
+ * @returns {{ meals, explain, dailyKcal, estimatedProteinG, estimatedFatG, estimatedCarbG, inBand, proteinOk, allergyFlags, targetKcal, groundingCoverage }}
  */
 export function guardNutritionMeals(meals, {
   healthTest = {},
@@ -168,16 +258,46 @@ export function guardNutritionMeals(meals, {
     }
   }
 
+  // food_dictionary grounding — kcal düzeltme + P/F/C (eşleşme yoksa heuristic)
+  let groundedMealsCount = 0
+  let estimatedProteinG = 0
+  let estimatedFatG = 0
+  let estimatedCarbG = 0
+  for (const meal of next) {
+    const ground = groundMealAgainstCatalog(meal.name, foodIndex)
+    if (ground.matchedCount > 0) {
+      groundedMealsCount += 1
+      const before = meal.name
+      meal.name = applyGroundedKcalToName(meal.name, ground.kcal)
+      if (meal.name !== before) {
+        explain.push(`${meal.mealType}: kcal food_dictionary → ~${ground.kcal}`)
+      }
+      estimatedProteinG += ground.protein
+      estimatedFatG += ground.fat
+      estimatedCarbG += ground.carb
+    } else {
+      estimatedProteinG += estimateProteinFromName(meal.name, foodIndex)
+    }
+  }
+
+  const totalMeals = next.length
+  const groundingCoverage = totalMeals > 0
+    ? Math.round((groundedMealsCount / totalMeals) * 100) / 100
+    : 0
+  if (totalMeals > 0) {
+    explain.push(
+      `food_dictionary eşleşme: ${groundedMealsCount}/${totalMeals} öğün (${Math.round(groundingCoverage * 100)}%)`,
+    )
+  }
+
   let dailyKcal = 0
   let parsedCount = 0
-  let estimatedProteinG = 0
   for (const meal of next) {
     const k = parseKcalFromMealName(meal.name)
     if (k != null) {
       dailyKcal += k
       parsedCount += 1
     }
-    estimatedProteinG += estimateProteinFromName(meal.name, foodIndex)
   }
 
   let inBand = true
@@ -195,7 +315,19 @@ export function guardNutritionMeals(meals, {
         name: rescaleMealKcal(meal.name, scale),
       }))
       dailyKcal = next.reduce((s, m) => s + (parseKcalFromMealName(m.name) || 0), 0)
-      estimatedProteinG = next.reduce((s, m) => s + estimateProteinFromName(m.name, foodIndex), 0)
+      // Band rescale sonrası protein: grounded oran korunamaz; yeniden tahmin
+      estimatedProteinG = next.reduce((s, m) => {
+        const g = groundMealAgainstCatalog(m.name, foodIndex)
+        return s + (g.matchedCount > 0 ? g.protein : estimateProteinFromName(m.name, foodIndex))
+      }, 0)
+      estimatedFatG = next.reduce((s, m) => {
+        const g = groundMealAgainstCatalog(m.name, foodIndex)
+        return s + (g.matchedCount > 0 ? g.fat : 0)
+      }, 0)
+      estimatedCarbG = next.reduce((s, m) => {
+        const g = groundMealAgainstCatalog(m.name, foodIndex)
+        return s + (g.matchedCount > 0 ? g.carb : 0)
+      }, 0)
       inBand = dailyKcal >= low && dailyKcal <= high
       explain.push(`kcal yeniden ölçeklendi → ~${dailyKcal}`)
     } else {
@@ -210,8 +342,7 @@ export function guardNutritionMeals(meals, {
     const floor = proteinTarget * proteinFloorRatio
     proteinOk = estimatedProteinG >= floor
     if (!proteinOk) {
-      explain.push(`protein düşük tahmini ~${estimatedProteinG}g < ${Math.round(floor)}g`)
-      // Ana öğünlere süzme/tavuk ipucu ekle (kcal’i bozmadan not)
+      explain.push(`protein düşük tahmini ~${Math.round(estimatedProteinG)}g < ${Math.round(floor)}g`)
       for (const meal of next) {
         if (['breakfast', 'lunch', 'dinner'].includes(meal.mealType)) {
           meal.note = [meal.note, 'protein artır: süzme yoğurt / ızgara tavuk ekle'].filter(Boolean).join(' · ').slice(0, 200)
@@ -227,10 +358,13 @@ export function guardNutritionMeals(meals, {
     explain,
     dailyKcal,
     estimatedProteinG: Math.round(estimatedProteinG),
+    estimatedFatG: Math.round(estimatedFatG),
+    estimatedCarbG: Math.round(estimatedCarbG),
     inBand,
     proteinOk,
     allergyFlags: flags,
     targetKcal: target,
+    groundingCoverage,
   }
 }
 
@@ -242,11 +376,43 @@ export function guardNutritionDayPlans(dayPlans, opts = {}) {
   const guardedDays = []
   const explain = []
   let allergyFlags = []
+  let coverageSum = 0
+  let coverageN = 0
+  let estimatedFatG = 0
+  let estimatedCarbG = 0
+  let estimatedProteinG = 0
   for (const day of dayPlans || []) {
     const g = guardNutritionMeals(day.meals, opts)
-    guardedDays.push({ dayIndex: day.dayIndex, meals: g.meals, dailyKcal: g.dailyKcal, inBand: g.inBand })
-    explain.push(`gün ${day.dayIndex}: kcal~${g.dailyKcal} band=${g.inBand}`)
+    guardedDays.push({
+      dayIndex: day.dayIndex,
+      meals: g.meals,
+      dailyKcal: g.dailyKcal,
+      inBand: g.inBand,
+      groundingCoverage: g.groundingCoverage,
+    })
+    explain.push(
+      `gün ${day.dayIndex}: kcal~${g.dailyKcal} band=${g.inBand} ground=${Math.round((g.groundingCoverage || 0) * 100)}%`,
+    )
     allergyFlags = g.allergyFlags || allergyFlags
+    if (typeof g.groundingCoverage === 'number') {
+      coverageSum += g.groundingCoverage
+      coverageN += 1
+    }
+    estimatedFatG += g.estimatedFatG || 0
+    estimatedCarbG += g.estimatedCarbG || 0
+    estimatedProteinG += g.estimatedProteinG || 0
   }
-  return { dayPlans: guardedDays, explain, allergyFlags }
+  const overallGroundingCoverage = coverageN > 0
+    ? Math.round((coverageSum / coverageN) * 100) / 100
+    : 0
+  const days = Math.max(1, coverageN)
+  return {
+    dayPlans: guardedDays,
+    explain,
+    allergyFlags,
+    groundingCoverage: overallGroundingCoverage,
+    estimatedFatG: Math.round(estimatedFatG / days),
+    estimatedCarbG: Math.round(estimatedCarbG / days),
+    estimatedProteinG: Math.round(estimatedProteinG / days),
+  }
 }

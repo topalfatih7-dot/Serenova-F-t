@@ -243,7 +243,7 @@ ${PROGRAM_ANALYSIS_RULES}
 KURALLAR:
 - FIXED_WORKOUT’a hareket EKLEME; id değiştirme.
 - exerciseNotes yalnızca listedeki exerciseId’ler; max ~80 karakter; RPE/RIR ile çelişme.
-- Beslenme: Türk mutfağı, pratik ev yemekleri; ALLOWED_FOODS varsa öncelikle oradan.
+- Beslenme: Türk mutfağı, pratik ev yemekleri; ALLOWED_FOODS öncelikli ve doğrulanan kaynak; dışına çıkarsan makro/kcal gerçekçi olmalı.
 - Her öğün name: yiyecekler + porsiyon + ~kcal.
 - Su/hidrasyon cümlesi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
@@ -321,7 +321,7 @@ ${PROGRAM_ANALYSIS_RULES}
 
 KURALLAR:
 - FIXED_WORKOUT varsa hareket ekleme/id değiştirme.
-- Beslenme: Türk mutfağı; ALLOWED_FOODS öncelikli; porsiyon + ~kcal; kalori ±10%.
+- Beslenme: Türk mutfağı; ALLOWED_FOODS öncelikli ve doğrulanan kaynak; dışına çıkarsan makro/kcal gerçekçi olmalı; porsiyon + ~kcal; kalori ±10%.
 - Su/hidrasyon cümlesi VERME. Tıbbi teşhis KOYMA. Türkçe yanıt ver.`
 
 export function buildEkoProgramInstruction({

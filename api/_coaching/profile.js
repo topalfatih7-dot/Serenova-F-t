@@ -3,6 +3,8 @@
  * Yeni soru eklemez; eksik alanda güvenli default + explain.
  */
 
+import { isPregnancyReported } from './safetyGate.js'
+
 const WEEKDAY_NAME_TO_JS = {
   sunday: 0,
   monday: 1,
@@ -145,7 +147,7 @@ function scoreRisk(ht = {}, explain = []) {
   if (chronic.some((c) => serious.includes(c))) score += 18
   if (chronic.includes('sleep_apnea')) score += 6
 
-  if (ht.pregnancy && ht.pregnancy !== 'no' && ht.pregnancy !== 'none') score += 20
+  if (isPregnancyReported(ht.pregnancy)) score += 20
   if (ht.doctorClearance === 'yes' && chronic.length) score += 20
   if (ht.doctorClearance === 'unsure' && chronic.length) score += 10
   if (ht.exerciseContraindications === 'yes') score += 10

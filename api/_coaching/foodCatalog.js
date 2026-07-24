@@ -2,7 +2,7 @@
  * Program üretimi için food_dictionary adayları (ALLOW list → prompt).
  */
 
-import { detectAllergyFlags } from './nutritionGuard.js'
+import { detectAllergyFlags, foldTr } from './nutritionGuard.js'
 
 const ALLERGY_TAG_DENY = {
   gluten: ['contains_gluten'],
@@ -113,7 +113,7 @@ export async function loadFoodAllowlist(admin, opts = {}) {
 
   const promptBlock = lines.length
     ? [
-      'ALLOWED_FOODS (tercihen bunlardan kur; makroyu uydurma, porsiyon + ~kcal yaz):',
+      'ALLOWED_FOODS (ÖNCELİKLİ kaynak — mümkün olduğunca bu listeden seç; farklı yazarsan gerçekçi porsiyon+kcal yaz, sistem food_dictionary ile çapraz kontrol edip düzeltecek):',
       ...lines,
     ].join('\n')
     : ''
@@ -121,11 +121,11 @@ export async function loadFoodAllowlist(admin, opts = {}) {
   return { foods, promptBlock, allergyFlags }
 }
 
-/** Guard için isim → makro haritası */
+/** Guard için isim → makro haritası (foldTr ile eşleştirme) */
 export function buildFoodMacroIndex(foods = []) {
   const byNorm = new Map()
   for (const f of foods) {
-    const key = String(f.name_normalized || f.name || '').toLowerCase()
+    const key = foldTr(f.name_normalized || f.name || '')
     if (!key) continue
     byNorm.set(key, {
       cal: Number(f.cal_per_unit) || 0,

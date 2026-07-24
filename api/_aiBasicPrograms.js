@@ -184,10 +184,28 @@ const HEALTH_PRIORITY_FIELDS = [
   ['weightChangeDetail', 'Kilo değişim detayı'],
 ]
 
-function formatHealthValue(v) {
+function formatHealthValue(v, key = '') {
   if (Array.isArray(v)) return v.join(', ')
   if (typeof v === 'object' && v != null) return JSON.stringify(v)
-  return String(v)
+  const s = String(v)
+  if (key === 'pregnancy') {
+    const map = {
+      yes: 'Evet',
+      no: 'Hayır',
+      suspect: 'Hamile olduğumu düşünüyorum',
+      prefer_not: 'Belirtmek istemiyor (gebelik varsayılmamalı)',
+    }
+    return map[s] || s
+  }
+  if (key === 'breastfeeding') {
+    const map = {
+      yes: 'Evet',
+      no: 'Hayır',
+      prefer_not: 'Belirtmek istemiyor',
+    }
+    return map[s] || s
+  }
+  return s
 }
 
 function hasHealthValue(v) {
@@ -449,12 +467,12 @@ export function buildHealthTestSummary(healthTest = {}, maxLen = 3800) {
     const v = healthTest[key]
     if (!hasHealthValue(v)) continue
     used.add(key)
-    lines.push(`${label}: ${formatHealthValue(v)}`)
+    lines.push(`${label}: ${formatHealthValue(v, key)}`)
   }
 
   for (const [key, v] of Object.entries(healthTest)) {
     if (used.has(key) || !hasHealthValue(v)) continue
-    lines.push(`${key}: ${formatHealthValue(v)}`)
+    lines.push(`${key}: ${formatHealthValue(v, key)}`)
   }
 
   let out = lines.join('\n')
@@ -763,7 +781,15 @@ export function buildValidatedProgramPayloads({
     let guardedMeta
 
     if (useWeekly && parsedDayPlans.length >= 3) {
-      const { dayPlans, explain, allergyFlags } = guardNutritionDayPlans(parsedDayPlans, guardOpts)
+      const {
+        dayPlans,
+        explain,
+        allergyFlags,
+        groundingCoverage,
+        estimatedFatG,
+        estimatedCarbG,
+        estimatedProteinG,
+      } = guardNutritionDayPlans(parsedDayPlans, guardOpts)
       const byIndex = new Map(dayPlans.map((d) => [d.dayIndex % 7, d.meals]))
       // Eksik günleri ilk güne doldur
       const fallback = dayPlans[0]?.meals || baseMeals
@@ -792,7 +818,10 @@ export function buildValidatedProgramPayloads({
         targetKcal: dailyCalories?.recommended || dailyCalories?.maintenance || null,
         inBand: dayPlans.every((d) => d.inBand !== false),
         allergyFlags: allergyFlags || [],
-        estimatedProteinG: dailyCalories?.proteinG || null,
+        estimatedProteinG: estimatedProteinG ?? dailyCalories?.proteinG ?? null,
+        estimatedFatG: estimatedFatG ?? null,
+        estimatedCarbG: estimatedCarbG ?? null,
+        groundingCoverage: groundingCoverage ?? null,
         weeklyDays: dayPlans.length,
         explain,
       }
@@ -812,6 +841,9 @@ export function buildValidatedProgramPayloads({
         inBand: guarded.inBand,
         allergyFlags: guarded.allergyFlags || [],
         estimatedProteinG: guarded.estimatedProteinG || null,
+        estimatedFatG: guarded.estimatedFatG ?? null,
+        estimatedCarbG: guarded.estimatedCarbG ?? null,
+        groundingCoverage: guarded.groundingCoverage ?? null,
         proteinOk: guarded.proteinOk,
         explain: guarded.explain,
       }
@@ -864,6 +896,9 @@ export function buildValidatedProgramPayloads({
         inBand: guardedMeta.inBand,
         allergyFlags: guardedMeta.allergyFlags || [],
         estimatedProteinG: guardedMeta.estimatedProteinG || null,
+        estimatedFatG: guardedMeta.estimatedFatG ?? null,
+        estimatedCarbG: guardedMeta.estimatedCarbG ?? null,
+        groundingCoverage: guardedMeta.groundingCoverage ?? null,
         proteinOk: guardedMeta.proteinOk,
         weeklyDays: guardedMeta.weeklyDays || null,
         calorieMethod: dailyCalories?.method || null,

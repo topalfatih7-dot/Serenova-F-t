@@ -2,7 +2,7 @@
  * Risk Analysis Engine — hard restrictions (prompt’a güvenmez).
  */
 
-import { evaluateNutritionSafety } from './safetyGate.js'
+import { evaluateNutritionSafety, isPregnancyReported } from './safetyGate.js'
 
 const REGION_ALIASES = {
   neck: 'neck',
@@ -124,7 +124,7 @@ export function analyzeRisk(profile) {
     })
   }
 
-  if (c.pregnancy && c.pregnancy !== 'no' && c.pregnancy !== 'none') {
+  if (isPregnancyReported(c.pregnancy)) {
     bannedTags.add('prone_prolonged')
     bannedTags.add('supine_prolonged')
     bannedTags.add('valsalva_heavy')

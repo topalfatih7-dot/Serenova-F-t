@@ -4,6 +4,19 @@
  */
 
 /**
+ * Gebelik yalnızca açıkça bildirilmişse / şüphe varsa aktif sayılır.
+ * `prefer_not` (Belirtmek istemiyorum), `no`, `none` → gebelik DEĞİL.
+ * Eski hata: prefer_not, `!== 'no' && !== 'none'` yüzünden gebelik gibi işleniyordu.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isPregnancyReported(value) {
+  if (value == null || value === '') return false
+  const v = String(value).trim().toLowerCase()
+  return v === 'yes' || v === 'suspect'
+}
+
+/**
  * @param {object} profile — enrichProfileBasics veya athlete profile alanları
  * @param {object} [healthTest]
  * @returns {{
@@ -88,7 +101,7 @@ export function evaluateNutritionSafety(profile = {}, healthTest = {}) {
   }
 
   const pregnancy = ht.pregnancy || profile.constraints?.pregnancy
-  if (pregnancy && pregnancy !== 'no' && pregnancy !== 'none') {
+  if (isPregnancyReported(pregnancy)) {
     blockAggressiveLanguage = true
     flags.push('pregnancy')
     messagesTR.push('Gebelik bildirildi; plan muhafazakâr tutuldu (tıbbi tavsiye değildir).')
