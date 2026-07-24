@@ -7,7 +7,7 @@ const nowISO = () => new Date().toISOString()
 async function dispatchExpoPush(memberId, notification) {
   try {
     const headers = await getApiAuthHeaders()
-    await fetch('/api/expo-push', {
+    await fetch('/api/application-notify', {
       method: 'POST',
       headers,
       body: JSON.stringify({ memberId, notification }),
