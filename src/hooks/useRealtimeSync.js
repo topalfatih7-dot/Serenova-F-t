@@ -1,10 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../services/supabaseClient'
 import { fetchActiveUsers } from '../services/presenceService'
-import { rowToTicket, rowToMember, rowToProgram, rowToStaffApplication, rowToCorporateApplication, rowToContactInquiry } from '../services/supabaseDb'
+import { rowToTicket, rowToMember, rowToStaff, rowToProgram, rowToStaffApplication, rowToCorporateApplication, rowToContactInquiry } from '../services/supabaseDb'
 import { rowToChatThread, rowToChatMessage } from '../services/chatDb'
 import { rowToAdminStaffThread, rowToAdminStaffMessage } from '../services/adminChatDb'
 import { rowToStaffCollabThread, rowToStaffCollabMessage } from '../services/staffCollabChatDb'
+import { normalizeStaffRole } from '../utils/staffRoles'
+
+function assignedColumnForRole(role) {
+  const r = normalizeStaffRole(role)
+  if (r === 'dietitian') return 'assigned_dietitian_id'
+  if (r === 'doctor') return 'assigned_doctor_id'
+  return 'assigned_coach_id'
+}
 
 export function useActiveUsers(isAdmin) {
   const [activeUsers, setActiveUsers] = useState([])
@@ -65,11 +73,13 @@ export function subscribeRealtimeSync({
   session,
   memberId,
   staffId,
+  staffRole,
   isChatMessageRelevant,
   isAdminStaffMessageRelevant,
   isStaffCollabMessageRelevant,
   onTicketsChange,
   onMemberChange,
+  onStaffChange,
   onChatThreadChange,
   onChatMessageChange,
   onAdminStaffThreadChange,
@@ -233,6 +243,31 @@ export function subscribeRealtimeSync({
   }
 
   if (session.type === 'staff' && staffId) {
+    const assignCol = assignedColumnForRole(staffRole || session.role)
+    const staffMembersChannel = supabase
+      .channel(`members-staff-${staffId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'members', filter: `${assignCol}=eq.${staffId}` },
+        (payload) => {
+          if (payload.new) onMemberChange?.(rowToMember(payload.new))
+        },
+      )
+      .subscribe()
+    channels.push(staffMembersChannel)
+
+    const staffSelfChannel = supabase
+      .channel(`staff-self-${staffId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'staff', filter: `id=eq.${staffId}` },
+        (payload) => {
+          if (payload.new) onStaffChange?.(rowToStaff(payload.new))
+        },
+      )
+      .subscribe()
+    channels.push(staffSelfChannel)
+
     const staffProgramsChannel = supabase
       .channel(`programs-staff-${staffId}`)
       .on(

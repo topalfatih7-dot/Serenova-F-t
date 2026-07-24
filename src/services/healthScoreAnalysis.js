@@ -27,6 +27,65 @@ export const HEALTH_SCORE_META = {
   readiness: { label: 'Hazır Oluş', emoji: '🚦', color: 'rose' },
 }
 
+export const STAFF_BRIEF_KEYS = ['general', 'nutrition', 'movement', 'risks', 'actions']
+
+export const STAFF_BRIEF_META = {
+  general: { label: 'Genel durum' },
+  nutrition: { label: 'Beslenme' },
+  movement: { label: 'Hareket' },
+  risks: { label: 'Riskler' },
+  actions: { label: 'Aksiyon' },
+}
+
+export const HEALTH_SCORE_HISTORY_MAX = 24
+
+/** Skor snapshot'ını history dizisine ekler / aynı gün kaydını günceller. */
+export function appendHealthScoreHistory(prevHistory, analysis) {
+  if (analysis?.overallScore == null && analysis?.overallScore !== 0) return prevHistory || []
+  const at = analysis?.aiAttemptedAt || new Date().toISOString()
+  const day = String(at).slice(0, 10)
+  const entry = {
+    at,
+    overallScore: analysis.overallScore,
+    scores: { ...(analysis.scores || {}) },
+  }
+  const list = Array.isArray(prevHistory) ? [...prevHistory] : []
+  const sameDayIdx = list.findIndex((h) => String(h?.at || '').slice(0, 10) === day)
+  if (sameDayIdx >= 0) list[sameDayIdx] = entry
+  else list.push(entry)
+  list.sort((a, b) => String(a.at).localeCompare(String(b.at)))
+  return list.slice(-HEALTH_SCORE_HISTORY_MAX)
+}
+
+export function buildFallbackStaffBrief(scores = {}, overallScore = 50) {
+  const s = scores || {}
+  const weak = HEALTH_SCORE_KEYS
+    .filter((k) => (s[k] ?? 50) < 50)
+    .map((k) => HEALTH_SCORE_META[k]?.label || k)
+  const strong = HEALTH_SCORE_KEYS
+    .filter((k) => (s[k] ?? 50) >= 70)
+    .map((k) => HEALTH_SCORE_META[k]?.label || k)
+
+  return {
+    general: `Danışanın genel sağlık skoru ${overallScore}/100. ${strong.length ? `Güçlü alanlar: ${strong.join(', ')}.` : 'Belirgin bir üstün alan öne çıkmıyor.'} ${weak.length ? `Dikkat gerektiren alanlar: ${weak.join(', ')}.` : 'Kritik düşük alan görünmüyor.'} Program planlamasında bu dengeyi göz önünde bulundurun.`,
+    nutrition: `Beslenme skoru ${s.nutrition ?? '—'}/100. Öğün düzeni, hidrasyon ve sebze/meyve alışkanlıkları diyetisyen görüşmelerinde önceliklendirilmelidir. Aşırı işlenmiş gıda ve atıştırmalık sıklığı varsa kademeli azaltma hedefleri koyun.`,
+    movement: `Hareket skoru ${s.movement ?? '—'}/100. Antrenman yoğunluğu ve frekansı mevcut kapasiteye göre ayarlanmalı; motivasyon (${s.motivation ?? '—'}) ve hazır oluş (${s.readiness ?? '—'}) skorları progressions için rehber alınabilir.`,
+    risks: `Uyku (${s.sleep ?? '—'}) ve stres yönetimi (${s.stress ?? '—'}) skorları toparlanma riskini etkiler. Yaşam tarzı skoru ${s.lifestyle ?? '—'}; sigara/alkol/ekran gibi faktörler varsa yük artışı temkinli yapılmalıdır. Tıbbi geçmişteki uyarılar varsa program öncesi netleştirin.`,
+    actions: `Önümüzdeki 2–4 haftada en düşük skorlu 1–2 alana odaklanın. Koç ve diyetisyen aynı hedef dilini kullansın; kısa check-in'lerle adherence takip edin. Skor güncellemelerini sağlık testi yenilemeleriyle izleyin.`,
+  }
+}
+
+function normalizeStaffBrief(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const out = {}
+  for (const key of STAFF_BRIEF_KEYS) {
+    const text = String(raw[key] || '').trim()
+    if (!text) return null
+    out[key] = text.slice(0, 1200)
+  }
+  return out
+}
+
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = AI_FETCH_TIMEOUT_MS) {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
@@ -214,12 +273,14 @@ export function computeFallbackHealthScores(profile = {}) {
     HEALTH_SCORE_KEYS.reduce((s, k) => s + scores[k], 0) / HEALTH_SCORE_KEYS.length,
   )
 
+  const staffBrief = buildFallbackStaffBrief(scores, overallScore)
   return {
     version: HEALTH_ANALYSIS_VERSION,
     generatedAt: new Date().toISOString().split('T')[0],
     scores,
     overallScore,
     summary: 'Cevaplarınıza göre kişisel sağlık skorunuz hesaplandı. Düzenli güncellemelerle skoru yükseltebilirsiniz.',
+    staffBrief,
     aiGenerated: false,
     aiAttemptedAt: new Date().toISOString(),
   }
@@ -232,6 +293,7 @@ export function needsHealthScoreRefresh(analysis, healthTest) {
   for (const key of HEALTH_SCORE_KEYS) {
     if (analysis.scores[key] == null) return true
   }
+  if (!normalizeStaffBrief(analysis.staffBrief)) return true
   // Eski radar şeması kalıntısı
   if (analysis.radarScores && !analysis.scores) return true
   if (!healthTest || typeof healthTest !== 'object') return false
@@ -259,6 +321,8 @@ export async function fetchAiHealthScore({ profile, categorySummaries }) {
     if (!res.ok || !data.ok) {
       return { ok: false, error: formatAiError(data.error || res.statusText) }
     }
+    const staffBrief = normalizeStaffBrief(data.staffBrief)
+      || buildFallbackStaffBrief(data.scores, data.overallScore)
     return {
       ok: true,
       version: HEALTH_ANALYSIS_VERSION,
@@ -266,6 +330,7 @@ export async function fetchAiHealthScore({ profile, categorySummaries }) {
       scores: data.scores,
       overallScore: data.overallScore,
       summary: data.summary || '',
+      staffBrief,
       aiGenerated: true,
       aiAttemptedAt: new Date().toISOString(),
     }

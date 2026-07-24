@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Users2, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle, Loader2 } from 'lucide-react'
+import { Outlet, NavLink, Link } from 'react-router-dom'
+import { LayoutDashboard, Users, Users2, ClipboardList, LogOut, Library, List, Wallet, MessageCircle, Shield, UserCircle, Loader2, Bell } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import BrandLogo from '../ui/BrandLogo'
 import PanelMobileMenu from './PanelMobileMenu'
@@ -19,6 +19,7 @@ function staffNavForRole(role) {
     { to: '/staff', icon: LayoutDashboard, label: 'Genel Bakış', end: true },
     { to: '/staff/profile', icon: UserCircle, label: 'Profilim' },
     { to: '/staff/clients', icon: Users, label: 'Danışanlarım' },
+    { to: '/staff/notifications', icon: Bell, label: 'Bildirimler', notifBadge: true },
     { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true },
   ]
   const normalizedRole = normalizeStaffRole(role)
@@ -45,7 +46,10 @@ function staffNavForRole(role) {
 }
 
 export default function StaffShell() {
-  const { staffUser, logout, loggingOut, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount, refresh } = useApp()
+  const {
+    staffUser, logout, loggingOut, chatUnreadCount, staffAdminUnreadCount,
+    staffCollabUnreadCount, notificationUnreadCount, refresh,
+  } = useApp()
 
   // İlk giriş kontrolü: geçici şifreyle giriş yapan personel için şifre değiştirme zorunluluğu
   const mustChangePassword = Boolean(staffUser?.data?.tempPasswordIssued)
@@ -73,6 +77,7 @@ export default function StaffShell() {
   const meta = staffRoleMeta(staffUser.role)
   const RoleIcon = meta.icon
   const roleLabel = meta.label
+  const unread = notificationUnreadCount || 0
   const staffNav = useMemo(() => staffNavForRole(staffUser.role).map((item) => ({
     ...item,
     badgeCount: item.chatBadge
@@ -81,8 +86,17 @@ export default function StaffShell() {
         ? staffAdminUnreadCount
         : item.collabChatBadge
           ? staffCollabUnreadCount
-          : 0,
-  })), [staffUser.role, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount])
+          : item.notifBadge
+            ? unread
+            : 0,
+  })), [staffUser.role, chatUnreadCount, staffAdminUnreadCount, staffCollabUnreadCount, unread])
+
+  const bellLink = (
+    <Link to="/staff/notifications" className="relative rounded-lg p-2 hover:bg-cream-50" aria-label="Bildirimler">
+      <Bell className="h-5 w-5 text-cream-800" />
+      {unread > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-500" />}
+    </Link>
+  )
 
   return (
     <div className="staff-panel-bg relative flex h-dvh overflow-hidden">
@@ -98,7 +112,10 @@ export default function StaffShell() {
       )}
       <aside className="relative hidden w-56 shrink-0 flex-col border-r border-cream-200 bg-white/90 backdrop-blur-sm md:flex lg:w-64">
         <div className="border-b border-cream-100 p-5">
-          <BrandLogo linkTo="/staff" />
+          <div className="flex items-start justify-between gap-2">
+            <BrandLogo linkTo="/staff" />
+            {bellLink}
+          </div>
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             <RoleIcon className="h-3 w-3" /> {roleLabel} Paneli
           </span>
@@ -150,7 +167,7 @@ export default function StaffShell() {
           accent="staff"
           logout={logout}
           loggingOut={loggingOut}
-          headerRight={<span className="text-xs font-medium text-cream-800/50">{roleLabel}</span>}
+          headerRight={bellLink}
         />
 
         <main data-panel-scroll className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-8 py-4 sm:px-10 sm:py-6 lg:px-12">

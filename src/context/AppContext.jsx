@@ -30,6 +30,7 @@ import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads,
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
+import { setStaffNotifications as persistStaffNotifications } from '../services/staffNotifications'
 
 const AuthContext = createContext(null)
 const DataContext = createContext(null)
@@ -297,8 +298,13 @@ export function AppProvider({ children }) {
   }, [isAdmin, db.tickets, currentMember?.id])
 
   const notificationUnreadCount = useMemo(
-    () => (currentMember?.notifications || []).filter((n) => !n.read).length,
-    [currentMember?.notifications],
+    () => {
+      if (isStaff) {
+        return (currentStaff?.notifications || []).filter((n) => !n.read).length
+      }
+      return (currentMember?.notifications || []).filter((n) => !n.read).length
+    },
+    [isStaff, currentStaff?.notifications, currentMember?.notifications],
   )
 
   const loadChatMessages = useCallback(async (threadId) => {
@@ -504,9 +510,10 @@ export function AppProvider({ children }) {
     // yeniden kurulur ve realtime sessizce durur. Bu yüzden yalnızca oturum kimliği
     // değiştiğinde yeniden abone oluruz.
     return subscribeRealtimeSync({
-      session: { type: sessionType, memberId: currentMember?.id, staffId: currentStaff?.id },
+      session: { type: sessionType, memberId: currentMember?.id, staffId: currentStaff?.id, role: currentStaff?.role },
       memberId: currentMember?.id,
       staffId: currentStaff?.id,
+      staffRole: currentStaff?.role,
       isChatMessageRelevant: (threadId) => {
         if (!threadId) return false
         if (sessionTypeRef.current === 'admin') return true
@@ -545,7 +552,25 @@ export function AppProvider({ children }) {
             staffUser,
             prev.members,
           )
-          return { ...prev, members: prev.members.map((m) => (m.id === compacted.id ? compacted : m)) }
+          const idx = prev.members.findIndex((m) => m.id === compacted.id)
+          if (idx >= 0) {
+            return {
+              ...prev,
+              members: prev.members.map((m, i) => (i === idx ? compacted : m)),
+            }
+          }
+          return { ...prev, members: [compacted, ...prev.members] }
+        })
+      },
+      onStaffChange: (staffRow) => {
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          const idx = prev.staff.findIndex((s) => s.id === staffRow.id)
+          if (idx < 0) return { ...prev, staff: [...prev.staff, staffRow] }
+          return {
+            ...prev,
+            staff: prev.staff.map((s, i) => (i === idx ? { ...s, ...staffRow } : s)),
+          }
         })
       },
       onChatThreadChange: (thread) => {
@@ -628,7 +653,7 @@ export function AppProvider({ children }) {
         })
       },
     })
-  }, [sessionType, currentMember?.id, currentStaff?.id])
+  }, [sessionType, currentMember?.id, currentStaff?.id, currentStaff?.role])
 
   const { activeUsers } = useActiveUsers(isAdmin)
 
@@ -668,14 +693,27 @@ export function AppProvider({ children }) {
     notificationsDirtyRef.current = true
     if (memberRef.current) {
       memberRef.current = { ...memberRef.current, notifications }
+      setRemoteDb((prev) => {
+        const memberId = memberRef.current?.id
+        if (!prev || !memberId) return prev
+        return {
+          ...prev,
+          members: prev.members.map((m) => (m.id === memberId ? { ...m, notifications } : m)),
+        }
+      })
+      return
     }
+    // Staff
     setRemoteDb((prev) => {
-      const memberId = memberRef.current?.id
-      if (!prev || !memberId) return prev
-      return {
+      if (!prev) return prev
+      const staffUser = getCurrentStaff(prev)
+      if (!staffUser?.id) return prev
+      const next = {
         ...prev,
-        members: prev.members.map((m) => (m.id === memberId ? { ...m, notifications } : m)),
+        staff: prev.staff.map((s) => (s.id === staffUser.id ? { ...s, notifications } : s)),
       }
+      remoteDbRef.current = next
+      return next
     })
   }, [])
 
@@ -687,13 +725,38 @@ export function AppProvider({ children }) {
     if (!notificationsDirtyRef.current) return
 
     const member = memberRef.current
-    if (!member) return
+    if (member) {
+      const latest = remoteDbRef.current?.members?.find((m) => m.id === member.id)
+      const notifications = latest?.notifications ?? member.notifications ?? []
+      notificationsDirtyRef.current = false
 
-    const latest = remoteDbRef.current?.members?.find((m) => m.id === member.id)
-    const notifications = latest?.notifications ?? member.notifications ?? []
+      const persist = sb.saveMemberPatch(member, { notifications }).catch(() => {
+        notificationsDirtyRef.current = true
+      })
+
+      if (notificationFlushInFlightRef.current) {
+        await notificationFlushInFlightRef.current.catch(() => {})
+      }
+      notificationFlushInFlightRef.current = persist
+      try {
+        await persist
+      } finally {
+        if (notificationFlushInFlightRef.current === persist) {
+          notificationFlushInFlightRef.current = null
+        }
+      }
+      return
+    }
+
+    const staffUser = getCurrentStaff(remoteDbRef.current || EMPTY_DB)
+    if (!staffUser?.id) return
+    const latest = remoteDbRef.current?.staff?.find((s) => s.id === staffUser.id)
+    const notifications = latest?.notifications ?? staffUser.notifications ?? []
     notificationsDirtyRef.current = false
 
-    const persist = sb.saveMemberPatch(member, { notifications }).catch(() => {
+    const persist = persistStaffNotifications(notifications).then((r) => {
+      if (!r.success) notificationsDirtyRef.current = true
+    }).catch(() => {
       notificationsDirtyRef.current = true
     })
 
@@ -1036,8 +1099,17 @@ export function AppProvider({ children }) {
 
   const markNotificationRead = useCallback((id) => {
     const member = memberRef.current
-    if (!member) return
-    const prev = member.notifications || []
+    if (member) {
+      const prev = member.notifications || []
+      if (prev.find((n) => n.id === id)?.read) return
+      const notifications = prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      applyNotificationsOptimistic(notifications)
+      scheduleNotificationFlush()
+      return
+    }
+    const staffUser = getCurrentStaff(remoteDbRef.current || EMPTY_DB)
+    if (!staffUser?.id) return
+    const prev = staffUser.notifications || []
     if (prev.find((n) => n.id === id)?.read) return
     const notifications = prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     applyNotificationsOptimistic(notifications)
@@ -1046,8 +1118,17 @@ export function AppProvider({ children }) {
 
   const markAllNotificationsRead = useCallback(() => {
     const member = memberRef.current
-    if (!member) return
-    const prev = member.notifications || []
+    if (member) {
+      const prev = member.notifications || []
+      if (prev.length > 0 && prev.every((n) => n.read)) return
+      const notifications = prev.map((n) => ({ ...n, read: true }))
+      applyNotificationsOptimistic(notifications)
+      flushNotificationReads()
+      return
+    }
+    const staffUser = getCurrentStaff(remoteDbRef.current || EMPTY_DB)
+    if (!staffUser?.id) return
+    const prev = staffUser.notifications || []
     if (prev.length > 0 && prev.every((n) => n.read)) return
     const notifications = prev.map((n) => ({ ...n, read: true }))
     applyNotificationsOptimistic(notifications)
@@ -1297,7 +1378,9 @@ export function AppProvider({ children }) {
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
     doctorSessions: currentMember?.doctorSessions || [],
-    notifications: currentMember?.notifications || [],
+    notifications: isStaff
+      ? (currentStaff?.notifications || [])
+      : (currentMember?.notifications || []),
     chatThreads,
     chatMessages,
     chatUnreadCount,
@@ -1343,6 +1426,8 @@ export function AppProvider({ children }) {
     currentMember?.dietitianSessions,
     currentMember?.doctorSessions,
     currentMember?.notifications,
+    isStaff,
+    currentStaff?.notifications,
     currentMember?.tasks,
     currentMember?.progress,
     currentMember?.settings,

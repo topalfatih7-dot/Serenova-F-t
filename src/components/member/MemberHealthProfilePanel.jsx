@@ -9,6 +9,7 @@ import {
 } from '../../data/healthTest'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
+import StaffHealthBrief from '../staff/StaffHealthBrief'
 
 function Chips({ values, map, tone = 'cream' }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -122,6 +123,7 @@ export default function MemberHealthProfilePanel({
   onSaveNotes,
   notesSaving = false,
   showHealthAnalysis = false,
+  showStaffBrief = false,
 }) {
   if (!member) return null
 
@@ -175,6 +177,13 @@ export default function MemberHealthProfilePanel({
       </div>
 
       {showHealthAnalysis && <AnalysisSummary analysis={member.healthAnalysis} />}
+
+      {showStaffBrief && (
+        <StaffHealthBrief
+          analysis={member.healthAnalysis}
+          history={member.healthScoreHistory}
+        />
+      )}
 
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">

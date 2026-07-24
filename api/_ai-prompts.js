@@ -146,7 +146,13 @@ SKOR KURALLARI:
 - motivation: motivasyon ölçeği ve hedef inancı
 - readiness: değişime hazır oluş
 - overallScore: 8 skorun dengeli birleşimi (basit ortalama değil; kritik düşük alanlar genel skoru aşağı çekebilir)
-- summary: 1–2 cümlelik kısa, destekleyici Türkçe özet
+- summary: 1–2 cümlelik kısa, destekleyici Türkçe özet (üyeye gösterilir)
+- staffBrief: yalnızca koç/diyetisyen için klinik paragraflar (madde listesi YAZMA; her alan 2–4 cümle)
+  - general: genel sağlık durumu ve öncelikler
+  - nutrition: beslenme örüntüsü, riskler ve diyetisyen odakları
+  - movement: hareket kapasitesi, antrenman uygunluğu
+  - risks: dikkat edilmesi gereken riskler / kısıtlar
+  - actions: önümüzdeki 2–4 haftalık somut aksiyon önerileri
 
 SADECE şu JSON şemasında yanıt ver:
 {
@@ -161,13 +167,20 @@ SADECE şu JSON şemasında yanıt ver:
     "readiness": 0
   },
   "overallScore": 0,
-  "summary": "kısa özet"
+  "summary": "kısa özet",
+  "staffBrief": {
+    "general": "paragraf",
+    "nutrition": "paragraf",
+    "movement": "paragraf",
+    "risks": "paragraf",
+    "actions": "paragraf"
+  }
 }`
 }
 
 export const HEALTH_SCORE_CONFIG = {
   temperature: 0.3,
-  maxOutputTokens: 500,
+  maxOutputTokens: 1400,
   responseMimeType: 'application/json',
 }
 

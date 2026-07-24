@@ -186,5 +186,37 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
     .eq('id', userId)
   if (updErr) return { ok: false, error: updErr.message }
 
+  try {
+    const when = new Intl.DateTimeFormat('tr-TR', {
+      timeZone: TZ,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(startsAt)
+    const notification = {
+      id: `n-appointment-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      type: 'appointment',
+      title: 'Yeni randevu',
+      message: `${memberRow.name || 'Danışan'} — ${when}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      memberId: userId,
+      sessionId: session.id,
+      sessionType,
+      startsAt: session.date,
+    }
+    const staffData = { ...(staffRow.data || {}) }
+    const prev = Array.isArray(staffData.notifications) ? staffData.notifications : []
+    staffData.notifications = [notification, ...prev].slice(0, 100)
+    await admin
+      .from('staff')
+      .update({ data: staffData })
+      .eq('id', staffId)
+  } catch {
+    /* randevu oluştu; bildirim opsiyonel */
+  }
+
   return { ok: true, session }
 }

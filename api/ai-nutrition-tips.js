@@ -75,6 +75,19 @@ function clampScore(n) {
   return Math.max(0, Math.min(100, Math.round(num)))
 }
 
+function normalizeStaffBrief(parsed = {}) {
+  const raw = parsed.staffBrief && typeof parsed.staffBrief === 'object' ? parsed.staffBrief : null
+  if (!raw) return null
+  const keys = ['general', 'nutrition', 'movement', 'risks', 'actions']
+  const out = {}
+  for (const key of keys) {
+    const text = String(raw[key] || '').trim()
+    if (!text) return null
+    out[key] = text.slice(0, 1200)
+  }
+  return out
+}
+
 function normalizeHealthScores(parsed = {}) {
   const rawScores = parsed.scores && typeof parsed.scores === 'object' ? parsed.scores : parsed
   const scores = {}
@@ -91,6 +104,7 @@ function normalizeHealthScores(parsed = {}) {
     scores,
     overallScore: overall,
     summary: String(parsed.summary || '').trim().slice(0, 400),
+    staffBrief: normalizeStaffBrief(parsed),
   }
 }
 

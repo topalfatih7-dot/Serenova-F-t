@@ -5,6 +5,7 @@ import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
 } from '../../services/healthScoreAnalysis'
+import { HealthScoreSimpleTrend } from './HealthScoreTrendChart'
 
 function scoreTone(score) {
   if (score >= 75) return { bar: 'bg-sage-500', ring: 'ring-sage-200', text: 'text-sage-700', glow: 'from-sage-400 to-emerald-500' }
@@ -39,6 +40,7 @@ function DimensionCard({ scoreKey, score }) {
 
 export default function HealthScoreCard({
   analysis,
+  history = [],
   loading = false,
   complete = false,
   error = null,
@@ -80,11 +82,6 @@ export default function HealthScoreCard({
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700/70">
             <HeartPulse className="h-3.5 w-3.5" /> YeniForm Sağlık Skoru
-            {analysis?.aiGenerated ? (
-              <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">AI</span>
-            ) : analysis ? (
-              <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-bold text-cream-700">Hızlı hesap</span>
-            ) : null}
           </p>
           <h3 className="mt-1 font-display text-xl font-bold text-cream-900 sm:text-2xl">
             Kişisel sağlık profiliniz
@@ -119,6 +116,8 @@ export default function HealthScoreCard({
           <DimensionCard key={key} scoreKey={key} score={scores[key]} />
         ))}
       </div>
+
+      <HealthScoreSimpleTrend history={history} />
     </div>
   )
 }

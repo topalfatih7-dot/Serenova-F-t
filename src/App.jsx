@@ -54,6 +54,7 @@ const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
 const StaffMessagesPage = lazy(() => import('./pages/staff/StaffMessagesPage'))
 const StaffAdminMessagesPage = lazy(() => import('./pages/staff/StaffAdminMessagesPage'))
 const StaffCollabMessagesPage = lazy(() => import('./pages/staff/StaffCollabMessagesPage'))
+const StaffNotificationsPage = lazy(() => import('./pages/staff/StaffNotificationsPage'))
 const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const StaffLibraryGate = lazy(() => import('./components/staff/StaffLibraryGate'))
 const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagementPage'))
@@ -163,6 +164,7 @@ export default function App() {
               <Route element={<StaffShell />}>
                 <Route path="staff" element={<StaffOverviewPage />} />
                 <Route path="staff/clients" element={<StaffClientsPage />} />
+                <Route path="staff/notifications" element={<StaffNotificationsPage />} />
                 <Route path="staff/clients/:memberId/health" element={<MemberHealthProfilePage audience="staff" />} />
                 <Route path="staff/clients/:memberId/program" element={<StaffClientProgramPage />} />
                 <Route path="staff/messages" element={<StaffMessagesPage />} />

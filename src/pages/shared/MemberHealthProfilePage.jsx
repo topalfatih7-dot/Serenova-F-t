@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext'
 import MemberHealthProfilePanel from '../../components/member/MemberHealthProfilePanel'
 import { getStaffClients } from '../../utils/chatAccess'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
+import { isCoachRole, isDietitianRole } from '../../utils/staffRoles'
 
 export default function MemberHealthProfilePage({ audience = 'staff' }) {
   const { memberId } = useParams()
@@ -96,6 +97,10 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
         onSaveNotes={handleSaveNotes}
         notesSaving={savingNotes}
         showHealthAnalysis={audience === 'admin'}
+        showStaffBrief={
+          audience === 'admin'
+          || (audience === 'staff' && (isCoachRole(staffUser?.role) || isDietitianRole(staffUser?.role)))
+        }
       />
     </PanelPageShell>
   )

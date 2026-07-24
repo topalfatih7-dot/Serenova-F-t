@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
   const {
     analysis: healthAnalysis,
+    history: healthScoreHistory,
     loading: healthScoreLoading,
     error: healthScoreError,
     complete: healthAnalysisComplete,
@@ -128,6 +129,7 @@ export default function DashboardPage() {
 
       <HealthScoreCard
         analysis={healthAnalysis}
+        history={healthScoreHistory}
         loading={healthScoreLoading}
         complete={healthAnalysisComplete}
         error={healthScoreError}

@@ -22,7 +22,8 @@
 --
 --  members.data önemli anahtarlar:
 --    healthTest      — kayıt/HealthTestWidget sağlık testi cevapları (JSONB)
---    healthAnalysis  — aiAnalysis.generateHealthAnalysis() çıktısı (VKİ, kalori,
+--    healthAnalysis  — aiAnalysis / healthScoreAnalysis çıktısı (skorlar, summary, staffBrief)
+--    healthScoreHistory — skor trendi [{ at, overallScore, scores }] (max 24)
 --                      coachRecommendations.exercises[], dietitianRecommendations.mealPlan[])
 --    goals, nutritionPrefs, fitnessLevel, weight, height, age, calorieHistory, …
 --

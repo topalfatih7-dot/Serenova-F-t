@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { Plus, Trash2, Apple, CalendarDays, Coffee, Sun, Moon, Cookie } from 'lucide-react'
+import { Plus, Trash2, Pencil, X, Apple, CalendarDays, Coffee, Sun, Moon, Cookie } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { MEAL_TYPES, mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries } from '../../utils/programSchedule'
 import { getDateInputBounds } from '../../utils/programPackageScope'
@@ -82,6 +82,7 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealType, setMealType] = useState('breakfast')
   const [draft, setDraft] = useState({ content: '', note: '', start: DEFAULT_MEAL_TIMES.breakfast })
+  const [editingId, setEditingId] = useState(null)
 
   const dateBounds = useMemo(
     () => getDateInputBounds(packageRange, { cycleLength: CYCLE_PLAN_LENGTH }),
@@ -120,11 +121,13 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
 
   const selectMealType = (id) => {
     setMealType(id)
-    setDraft((d) => ({ ...d, start: DEFAULT_MEAL_TIMES[id] || '08:00' }))
+    if (!editingId) {
+      setDraft((d) => ({ ...d, start: DEFAULT_MEAL_TIMES[id] || '08:00' }))
+    }
   }
 
-  const buildEntry = (schedulePatch) => ({
-    id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  const buildEntry = (schedulePatch, id) => ({
+    id: id || `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     mealType,
     name: draft.content.trim(),
     note: draft.note.trim(),
@@ -133,9 +136,67 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
     ...schedulePatch,
   })
 
-  const addEntry = () => {
+  const clearDraft = () => {
+    setEditingId(null)
+    setDraft({ content: '', note: '', start: DEFAULT_MEAL_TIMES[mealType] || '08:00' })
+  }
+
+  const startEdit = (entry) => {
+    setEditingId(entry.id)
+    setMealType(entry.mealType || 'breakfast')
+    setDraft({
+      content: entry.name || '',
+      note: entry.note || '',
+      start: entry.start || DEFAULT_MEAL_TIMES[entry.mealType] || '08:00',
+    })
+    if (entry.date) {
+      setScheduleMode('date')
+      setSelectedDate(entry.date)
+    } else if (entry.day != null && !isDailyMode(scheduleMode)) {
+      setSelectedDay(Number(entry.day))
+    }
+  }
+
+  const cancelEdit = () => {
+    clearDraft()
+    toast('Düzenleme iptal edildi', 'info')
+  }
+
+  const saveEntry = () => {
     if (!draft.content.trim()) {
       toast('Öğün içeriği girin', 'error')
+      return
+    }
+
+    if (editingId) {
+      setEntries((list) => {
+        const target = list.find((e) => e.id === editingId)
+        if (!target) return list
+
+        const patch = {
+          mealType,
+          name: draft.content.trim(),
+          note: draft.note.trim(),
+          exerciseName: draft.content.trim(),
+          start: draft.start,
+        }
+
+        if (isDailyMode(scheduleMode)) {
+          const oldKey = `${target.mealType}:${target.start}:${target.name}`
+          return list.map((e) => (
+            `${e.mealType}:${e.start}:${e.name}` === oldKey ? { ...e, ...patch } : e
+          ))
+        }
+
+        const updated = { ...target, ...patch }
+        const newKey = entryKey(updated)
+        return [
+          ...list.filter((e) => e.id !== editingId && entryKey(e) !== newKey),
+          updated,
+        ]
+      })
+      clearDraft()
+      toast('Öğün güncellendi', 'success')
       return
     }
 
@@ -171,6 +232,7 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
       const key = `${target.mealType}:${target.start}:${target.name}`
       return list.filter((e) => `${e.mealType}:${e.start}:${e.name}` !== key)
     })
+    if (editingId === id) clearDraft()
   }
 
   const submit = () => {
@@ -349,8 +411,12 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
               {activeEntries.map((e) => {
                 const ui = MEAL_UI[e.mealType] || MEAL_UI.breakfast
                 const Icon = ui.icon
+                const isEditing = editingId === e.id
                 return (
-                  <div key={e.id} className={`rounded-xl border px-3 py-3 ring-1 ${ui.accent}`}>
+                  <div
+                    key={e.id}
+                    className={`rounded-xl border px-3 py-3 ring-1 ${ui.accent} ${isEditing ? 'ring-2 ring-sage-400' : ''}`}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 items-start gap-2">
                         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${ui.btn} text-white`}>
@@ -364,14 +430,36 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                                 {e.start}
                               </span>
                             )}
+                            {isEditing && (
+                              <span className="rounded-full bg-sage-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                                Düzenleniyor
+                              </span>
+                            )}
                           </div>
                           <p className="mt-1 text-sm leading-relaxed text-cream-800">{e.name}</p>
                           {e.note && <p className="mt-1 text-xs text-cream-800/55">Not: {e.note}</p>}
                         </div>
                       </div>
-                      <button type="button" onClick={() => removeEntry(e.id)} className="shrink-0 text-red-400 hover:text-red-600">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(e)}
+                          className="rounded-lg p-1.5 text-cream-800/50 hover:bg-white/80 hover:text-sage-700"
+                          aria-label="Öğünü düzenle"
+                          title="Düzenle"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeEntry(e.id)}
+                          className="rounded-lg p-1.5 text-red-400 hover:bg-white/80 hover:text-red-600"
+                          aria-label="Öğünü sil"
+                          title="Sil"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -381,7 +469,20 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
         </div>
 
         <div className="rounded-xl border border-sage-100 bg-white p-3">
-          <p className="mb-3 text-xs font-semibold uppercase text-sage-700">Öğün Ekle</p>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase text-sage-700">
+              {editingId ? 'Öğünü Düzenle' : 'Öğün Ekle'}
+            </p>
+            {editingId && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-cream-800/60 hover:bg-cream-50 hover:text-cream-900"
+              >
+                <X className="h-3.5 w-3.5" /> İptal
+              </button>
+            )}
+          </div>
           <div className="mb-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             {SELECTABLE_MEALS.map((m) => {
               const ui = MEAL_UI[m.id] || MEAL_UI.breakfast
@@ -435,11 +536,11 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
           />
           <button
             type="button"
-            onClick={addEntry}
+            onClick={saveEntry}
             className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold text-white ${activeUi.btn}`}
           >
-            <Plus className="h-4 w-4" />
-            {mealLabel(mealType)} Ekle
+            {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {editingId ? `${mealLabel(mealType)} Güncelle` : `${mealLabel(mealType)} Ekle`}
           </button>
         </div>
       </div>

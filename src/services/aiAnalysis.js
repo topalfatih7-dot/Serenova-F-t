@@ -5,7 +5,7 @@ import { describeHealthTest, normalizeHealthTestForAnalysis } from '../data/heal
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
 
 /** healthAnalysis şema sürümü — eski özetler otomatik yenilenir */
-export const HEALTH_ANALYSIS_VERSION = 9
+export const HEALTH_ANALYSIS_VERSION = 10
 
 const GENERIC_WEEKLY_FOCUS =
   /\(\d+\s*dk\)|HIIT|Full Body|Üst Vücut|Alt Vücut|Vücut Ağırlığı|Esneklik\s*&\s*Yoga|Kardiyo\s*&|İtme Hareketi|Çekme Hareketi|Olimpik/i

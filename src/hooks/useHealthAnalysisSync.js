@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { isHealthTestComplete } from '../data/healthTest'
 import {
+  appendHealthScoreHistory,
   needsHealthScoreRefresh,
   resolveHealthScoreAnalysis,
 } from '../services/healthScoreAnalysis'
@@ -17,6 +18,7 @@ export function useHealthAnalysisSync() {
   const lastKeyRef = useRef('')
 
   const analysis = user?.healthAnalysis || null
+  const history = user?.healthScoreHistory || []
   const complete = Boolean(
     user?.id
     && user?.healthAck
@@ -44,7 +46,8 @@ export function useHealthAnalysisSync() {
         ...user,
         packageConfig,
       })
-      await updateProfile({ healthAnalysis: next })
+      const healthScoreHistory = appendHealthScoreHistory(user.healthScoreHistory, next)
+      await updateProfile({ healthAnalysis: next, healthScoreHistory })
       lastKeyRef.current = key
       return next
     } catch (e) {
@@ -64,6 +67,7 @@ export function useHealthAnalysisSync() {
 
   return {
     analysis,
+    history,
     loading,
     error,
     complete,

@@ -1,6 +1,7 @@
 import { Activity, HeartPulse, MapPin, Salad, Sparkles, Target, Flame, TrendingUp } from 'lucide-react'
 import { describeHealthTest, HEALTH_AUDIENCE_META } from '../../data/healthTest'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
+import StaffHealthBrief from '../staff/StaffHealthBrief'
 
 function Chips({ values, map }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -103,7 +104,13 @@ export function AnalysisBlock({ analysis }) {
   )
 }
 
-export default function MemberHealthInsights({ member, showLocation = true, compact = false, showHealthAnalysis = false }) {
+export default function MemberHealthInsights({
+  member,
+  showLocation = true,
+  compact = false,
+  showHealthAnalysis = false,
+  showStaffBrief = false,
+}) {
   if (!member) return null
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
 
@@ -144,6 +151,13 @@ export default function MemberHealthInsights({ member, showLocation = true, comp
       )}
 
       {showHealthAnalysis && <AnalysisBlock analysis={member.healthAnalysis} />}
+
+      {showStaffBrief && (
+        <StaffHealthBrief
+          analysis={member.healthAnalysis}
+          history={member.healthScoreHistory}
+        />
+      )}
 
       {member.progress?.weight?.length > 1 && (
         <div className="rounded-2xl border border-cream-100 bg-cream-50/80 p-4">

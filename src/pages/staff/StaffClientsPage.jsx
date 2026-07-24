@@ -76,7 +76,13 @@ function ClientInfo({ member, role }) {
         </div>
       </div>
 
-      <MemberHealthInsights member={member} showLocation compact showHealthAnalysis={false} />
+      <MemberHealthInsights
+        member={member}
+        showLocation
+        compact
+        showHealthAnalysis={false}
+        showStaffBrief={isCoachRole(role) || isDietitianRole(role)}
+      />
 
       <Link
         to={`/staff/clients/${member.id}/health`}
