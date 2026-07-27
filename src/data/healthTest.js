@@ -181,6 +181,13 @@ export function normalizeHealthTestForAnalysis(ht) {
     if (typeof n[key] === 'string' && n[key]) n[key] = [n[key]]
   }
 
+  // preferredExercisePlace → trainingLocation (ev / salon / ofis)
+  if (!n.trainingLocation && n.preferredExercisePlace) {
+    const place = n.preferredExercisePlace
+    if (place === 'home' || place === 'gym' || place === 'office') n.trainingLocation = place
+    else if (place === 'outdoor') n.trainingLocation = 'home'
+  }
+
   return n
 }
 

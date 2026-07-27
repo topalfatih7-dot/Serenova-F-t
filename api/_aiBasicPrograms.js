@@ -154,7 +154,7 @@ const HEALTH_PRIORITY_FIELDS = [
   ['eatingHabits', 'Yeme alışkanlıkları'],
   ['activityFrequency', 'Aktivite sıklığı'],
   ['sittingHours', 'Günlük oturma süresi'],
-  ['trainingLocation', 'Antrenman yeri tercihi'],
+  ['trainingLocation', 'Antrenman yeri'],
   ['equipmentAccess', 'Ekipman erişimi'],
   ['currentActivityTypes', 'Mevcut aktivite türleri'],
   ['sessionDurationGoal', 'Hedef antrenman süresi'],
@@ -203,6 +203,10 @@ function formatHealthValue(v, key = '') {
       no: 'Hayır',
       prefer_not: 'Belirtmek istemiyor',
     }
+    return map[s] || s
+  }
+  if (key === 'trainingLocation') {
+    const map = { home: 'Evde', gym: 'Spor salonunda', office: 'Ofiste', outdoor: 'Evde', mixed: 'Karışık' }
     return map[s] || s
   }
   return s
@@ -449,7 +453,7 @@ export function enrichProfileBasics(memberData = {}) {
     targetWeight: targetWeight || null,
     availabilitySummary: formatAvailabilitySummary(availability),
     healthAnalysisSummary: summarizeHealthAnalysis(memberData.healthAnalysis),
-    trainingLocation: ht.trainingLocation || memberData.trainingLocation || '',
+    trainingLocation: ht.trainingLocation || ht.preferredExercisePlace || memberData.trainingLocation || '',
     equipmentAccess: Array.isArray(ht.equipmentAccess) ? ht.equipmentAccess.join(', ') : (ht.equipmentAccess || ''),
     sessionDurationGoal: ht.sessionDurationGoal || '',
     performanceGoal: ht.performanceGoal || '',
@@ -460,17 +464,24 @@ export function enrichProfileBasics(memberData = {}) {
 export function buildHealthTestSummary(healthTest = {}, maxLen = 3800) {
   if (!healthTest || typeof healthTest !== 'object') return ''
 
-  const used = new Set()
+  const ht = { ...healthTest }
+  if (!ht.trainingLocation && ht.preferredExercisePlace) {
+    const place = ht.preferredExercisePlace
+    if (place === 'home' || place === 'gym' || place === 'office') ht.trainingLocation = place
+    else if (place === 'outdoor') ht.trainingLocation = 'home'
+  }
+
+  const used = new Set(['preferredExercisePlace'])
   const lines = []
 
   for (const [key, label] of HEALTH_PRIORITY_FIELDS) {
-    const v = healthTest[key]
+    const v = ht[key]
     if (!hasHealthValue(v)) continue
     used.add(key)
     lines.push(`${label}: ${formatHealthValue(v, key)}`)
   }
 
-  for (const [key, v] of Object.entries(healthTest)) {
+  for (const [key, v] of Object.entries(ht)) {
     if (used.has(key) || !hasHealthValue(v)) continue
     lines.push(`${key}: ${formatHealthValue(v, key)}`)
   }

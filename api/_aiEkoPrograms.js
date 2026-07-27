@@ -78,17 +78,24 @@ export async function loadExerciseCandidates(admin, profileOrHints = null) {
   if (hints.excludeMachines !== false) {
     q = q.eq('requires_machine', false)
   }
+  if (hints.location) {
+    q = q.contains('locations', [hints.location])
+  }
 
   let { data, error } = await q
 
   if (error || !data?.length) {
-    const fallback = await admin
+    let fallbackQ = admin
       .from('exercises')
       .select(EXERCISE_SELECT)
       .eq('video_pending', false)
       .neq('metadata->>importStatus', 'deferred')
       .order('name', { ascending: true })
       .limit(220)
+    if (hints.location) {
+      fallbackQ = fallbackQ.contains('locations', [hints.location])
+    }
+    const fallback = await fallbackQ
     data = fallback.data || []
     error = fallback.error
   }

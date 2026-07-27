@@ -459,15 +459,17 @@ Tek bir antrenmana ayirabileceginiz sure ne kadar?
 | 45_60 | 45-60 dk |  |
 | 60_plus | 60+ dk |  |
 
-### trainingLocation (`single`, required)
-Nerede antrenman yapmayi tercih edersiniz?
+### trainingLocation (`single`)
+Nerede spor yapacaksınız?
 
 | value | label | emoji |
 |-------|-------|-------|
 | home | Evde |  |
 | gym | Spor salonunda |  |
-| outdoor | Açık alanda |  |
-| mixed | Karışık |  |
+| office | Ofiste |  |
+
+> AI coaching bu cevaba göre `exercises.locations` üzerinden ev / salon / ofis hareketlerini seçer.
+> Eski kayıtlar: `preferredExercisePlace` (outdoor→home, any→mixed) geriye dönük okunur.
 
 ### previousCoachExperience (`single`)
 Daha once bir antrenörle calistiniz mi?

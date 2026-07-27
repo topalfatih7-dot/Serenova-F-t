@@ -3,7 +3,7 @@
  * Veri: HT + availability + completedActivities + exercises + önceki programs + coachingState.
  */
 
-import { buildAthleteProfile, fitnessLevelFromExperience } from './profile.js'
+import { buildAthleteProfile, fitnessLevelFromExperience, resolveTrainingLocation } from './profile.js'
 import { analyzeRisk } from './risk.js'
 import { classifyGoals } from './goals.js'
 import { planSplit } from './split.js'
@@ -244,6 +244,7 @@ function buildDescriptionHints(profile, goals, risk, split, previousSummary, ada
   ]
   if (volume?.deload) parts.push('Bu dilim deload / düşük hacim haftası olarak ayarlandı.')
   if (profile.locationProfile === 'home') parts.push('Ev / mevcut ekipmana göre seçildi.')
+  else if (profile.locationProfile === 'office') parts.push('Ofis ortamına uygun hareketler seçildi.')
   else if (profile.locationProfile === 'gym') parts.push('Salon ekipmanı dikkate alındı.')
   if (adaptation?.mode === 'ease' || adaptation?.mode === 'restart_easy') {
     parts.push('Son dönem tamamlanma oranına göre bu dilim daha sürdürülebilir ve hafif tutuldu.')
@@ -263,14 +264,17 @@ function buildDescriptionHints(profile, goals, risk, split, previousSummary, ada
 }
 
 export function coachingQueryHints(profile) {
+  const location = profile?.locationProfile || 'mixed'
   return {
     difficulties: difficultiesForExperience(profile?.experienceLevel || 'beginner'),
     excludeMachines: needsMachineExclusion(profile),
+    location: location === 'home' || location === 'gym' || location === 'office' ? location : null,
   }
 }
 
 export {
   buildAthleteProfile,
+  resolveTrainingLocation,
   analyzeRisk,
   classifyGoals,
   planSplit,

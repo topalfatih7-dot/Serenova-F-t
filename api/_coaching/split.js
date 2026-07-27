@@ -10,9 +10,10 @@ export function planSplit(profile, goalPlan, riskReport) {
   const riskLevel = riskReport?.level || 'low'
   const sessionMin = profile?.schedule?.sessionMinutes || 35
   const location = profile?.locationProfile || 'mixed'
-  const homeLike = location === 'home' || (
+  const homeLike = location === 'home' || location === 'office' || (
     Array.isArray(profile?.equipmentProfile)
     && !profile.equipmentProfile.includes('gym')
+    && location !== 'gym'
   )
 
   if (adherence < 40) days = Math.min(days, 3)

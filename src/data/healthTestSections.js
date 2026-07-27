@@ -795,14 +795,13 @@ export const HEALTH_SECTIONS = [
       },
       {
         type: 'single',
-        key: 'preferredExercisePlace',
-        label: 'Egzersiz yapmayı en çok nerede tercih edersiniz?',
+        key: 'trainingLocation',
+        label: 'Nerede spor yapacaksınız?',
         required: false,
         options: [
           { value: 'home', label: 'Evde' },
           { value: 'gym', label: 'Spor salonunda' },
-          { value: 'outdoor', label: 'Açık havada' },
-          { value: 'any', label: 'Fark etmez' },
+          { value: 'office', label: 'Ofiste' },
         ],
       },
       {

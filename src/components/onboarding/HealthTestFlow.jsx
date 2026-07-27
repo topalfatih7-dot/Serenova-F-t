@@ -15,6 +15,16 @@ import {
   isQuestionFullyAnswered,
 } from '../../data/healthTest'
 
+function migrateLegacyHealthTestKeys(ht = {}) {
+  const next = { ...ht }
+  if (!next.trainingLocation && next.preferredExercisePlace) {
+    const place = next.preferredExercisePlace
+    if (place === 'home' || place === 'gym' || place === 'office') next.trainingLocation = place
+    else if (place === 'outdoor') next.trainingLocation = 'home'
+  }
+  return next
+}
+
 function isLastHealthQuestion(index, questions) {
   return index >= questions.length - 1
 }
@@ -58,7 +68,10 @@ export default function HealthTestFlow({
 
   const [questionIndex, setQuestionIndex] = useState(resume.questionIndex)
   const [showErrors, setShowErrors] = useState(false)
-  const [healthTest, setHealthTest] = useState(() => ({ ...EMPTY_HEALTH_TEST, ...initialHealthTest }))
+  const [healthTest, setHealthTest] = useState(() => ({
+    ...EMPTY_HEALTH_TEST,
+    ...migrateLegacyHealthTestKeys(initialHealthTest || {}),
+  }))
   const [healthAck, setHealthAck] = useState(initialHealthAck)
   const [disclaimer, setDisclaimer] = useState(initialDisclaimer)
   const [phase, setPhase] = useState(resume.phase)
@@ -123,7 +136,10 @@ export default function HealthTestFlow({
             healthAck: initialHealthAck,
             disclaimer: initialDisclaimer,
           })
-      const merged = { ...EMPTY_HEALTH_TEST, ...initialHealthTest }
+      const merged = {
+        ...EMPTY_HEALTH_TEST,
+        ...migrateLegacyHealthTestKeys(initialHealthTest || {}),
+      }
       setQuestionIndex(next.questionIndex)
       setPhase(next.phase)
       setHealthTest(merged)

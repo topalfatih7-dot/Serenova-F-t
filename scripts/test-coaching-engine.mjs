@@ -20,6 +20,14 @@ const fakeExercises = [
   { id: 'e10', name: 'Reverse Lunge', body_part: 'Bacak', target_muscle: 'quads', equipment: 'bodyweight', difficulty: 'beginner', locations: ['home'], video_pending: false, requires_machine: false },
   { id: 'e11', name: 'Overhead Press', body_part: 'Omuz', target_muscle: 'shoulders', equipment: 'dumbbell', difficulty: 'beginner', locations: ['gym'], video_pending: false, requires_machine: false },
   { id: 'e12', name: 'Jump Squat', body_part: 'Bacak', target_muscle: 'quads', equipment: 'bodyweight', difficulty: 'intermediate', locations: ['home'], video_pending: false, requires_machine: false },
+  { id: 'e13', name: 'Desk Chair Squat', body_part: 'Bacak', target_muscle: 'quads', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e14', name: 'Seated March', body_part: 'Cardio', target_muscle: 'full', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e15', name: 'Wall Push Up', body_part: 'Göğüs', target_muscle: 'chest', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e16', name: 'Standing Hip Extension', body_part: 'Kalça', target_muscle: 'glutes', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e17', name: 'Seated Band Row', body_part: 'Sırt', target_muscle: 'back', equipment: 'bands', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e18', name: 'Neck Stretch', body_part: 'Mobilite', target_muscle: 'neck', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e19', name: 'Calf Raise Desk', body_part: 'Bacak', target_muscle: 'calves', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
+  { id: 'e20', name: 'Standing Side Bend', body_part: 'Core', target_muscle: 'abs', equipment: 'bodyweight', difficulty: 'beginner', locations: ['office'], video_pending: false, requires_machine: false },
 ]
 
 const member = {
@@ -205,5 +213,47 @@ if (!vol4.deload) {
   process.exit(1)
 }
 console.log('Deload week4 OK')
+
+// Lokasyon: ofis → yalnızca office locations
+const officeMember = {
+  ...member,
+  healthTest: {
+    ...member.healthTest,
+    trainingLocation: 'office',
+    injuries: 'no',
+    injuryLimitation: '',
+    painAreas: [],
+    painScale: 0,
+    equipmentAccess: ['bodyweight', 'bands'],
+  },
+}
+const officeRun = runCoachingEngine(officeMember, fakeExercises)
+const officeIds = new Set(officeRun.primaryExercises.map((e) => e.exerciseId))
+const nonOffice = [...officeIds].filter((id) => !['e13', 'e14', 'e15', 'e16', 'e17', 'e18', 'e19', 'e20'].includes(id))
+if (nonOffice.length) {
+  console.error('FAIL: office program included non-office exercises', nonOffice)
+  process.exit(1)
+}
+if (!/ofis/i.test(officeRun.descriptionHints || '')) {
+  console.error('FAIL: expected office description hint')
+  process.exit(1)
+}
+console.log('Office location filter OK:', [...officeIds].join(','))
+
+// preferredExercisePlace legacy → home
+const legacyMember = {
+  ...member,
+  healthTest: {
+    ...member.healthTest,
+    trainingLocation: undefined,
+    preferredExercisePlace: 'home',
+  },
+}
+const legacyRun = runCoachingEngine(legacyMember, fakeExercises)
+if (legacyRun.profile.locationProfile !== 'home') {
+  console.error('FAIL: preferredExercisePlace not mapped to home')
+  process.exit(1)
+}
+console.log('Legacy preferredExercisePlace OK')
 
 console.log('\nOK coaching engine smoke test passed')

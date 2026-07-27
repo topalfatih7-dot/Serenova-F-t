@@ -32,6 +32,20 @@ function clamp(n, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Math.round(n)))
 }
 
+/** HT antrenman yeri → home | gym | office | mixed (eski outdoor/any dahil) */
+export function resolveTrainingLocation(ht = {}, memberData = {}) {
+  const raw = String(
+    ht.trainingLocation
+    || ht.preferredExercisePlace
+    || memberData.trainingLocation
+    || '',
+  ).toLowerCase().trim()
+  if (raw === 'home' || raw === 'gym' || raw === 'office') return raw
+  if (raw === 'outdoor') return 'home'
+  if (raw === 'any' || raw === 'mixed') return 'mixed'
+  return 'mixed'
+}
+
 function calcBmi(weight, height) {
   const w = parseFloat(weight)
   const h = parseFloat(height)
@@ -263,7 +277,10 @@ export function buildAthleteProfile(memberData = {}) {
   const adherenceScore = scoreAdherence(ht, weekdays.length, sessionMinutes, explain)
 
   const equipment = Array.isArray(ht.equipmentAccess) ? ht.equipmentAccess : []
-  const location = ht.trainingLocation || 'mixed'
+  const location = resolveTrainingLocation(ht, memberData)
+  if (location !== 'mixed') {
+    explain.push(`Antrenman yeri: ${location}`)
+  }
 
   return {
     name: memberData.name || '',

@@ -123,9 +123,24 @@ function experienceCap(experienceLevel) {
   return 3
 }
 
+/** Egzersiz `locations` alanı seçilen yere uyuyor mu? */
+function locationMatches(meta, location = 'mixed') {
+  const locs = Array.isArray(meta.locations) ? meta.locations.map(norm) : []
+  if (!location || location === 'mixed') return true
+  if (!locs.length) {
+    // Eski kayıtlarda locations boşsa ekipman kurallarına bırak
+    return location !== 'office'
+  }
+  return locs.includes(norm(location))
+}
+
 function equipmentAllowed(meta, equipmentProfile = [], location = 'mixed') {
   const access = new Set(equipmentProfile)
-  if (location === 'home' || (!access.has('gym') && location !== 'gym')) {
+  if (location === 'office') {
+    if (meta.requires_machine) return false
+    return ['bodyweight', 'band'].includes(meta.equipmentClass)
+  }
+  if (location === 'home' || location === 'outdoor' || (!access.has('gym') && location !== 'gym')) {
     if (meta.requires_machine) return false
     if (meta.equipmentClass === 'machine' || meta.equipmentClass === 'barbell') return false
     if (meta.equipmentClass === 'cable') return false
@@ -140,9 +155,6 @@ function equipmentAllowed(meta, equipmentProfile = [], location = 'mixed') {
     if (access.has('bands') && meta.equipmentClass === 'band') return true
     if (meta.equipmentClass === 'bodyweight') return true
     return false
-  }
-  if (location === 'outdoor') {
-    return !meta.requires_machine && ['bodyweight', 'band'].includes(meta.equipmentClass)
   }
   // gym / mixed with gym access
   return true
@@ -163,6 +175,7 @@ export function buildEligiblePool(exerciseRows, profile, riskReport) {
     const meta = deriveExerciseMeta(row)
     const dRank = DIFFICULTY_RANK[meta.difficulty] || 1
     if (dRank > cap) continue
+    if (!locationMatches(meta, location)) continue
     if (!equipmentAllowed(meta, equipment, location)) continue
     if (exerciseViolatesRisk(meta, riskReport)) continue
     if (riskReport?.level === 'referral' && !['mobility', 'loco', 'core'].includes(meta.movementPattern)) {
@@ -248,7 +261,8 @@ export function difficultiesForExperience(experienceLevel) {
 export function needsMachineExclusion(profile) {
   const loc = profile?.locationProfile
   const eq = profile?.equipmentProfile || []
-  if (loc === 'home' || loc === 'outdoor') return true
+  if (loc === 'home' || loc === 'office' || loc === 'outdoor') return true
+  if (loc === 'gym') return false
   if (!eq.includes('gym')) return true
   return false
 }
