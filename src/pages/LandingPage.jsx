@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowRight, Sparkles, ChevronLeft, ChevronRight, X,
+  ArrowRight, ChevronLeft, ChevronRight, X,
   ShieldCheck, Lock, BadgeCheck,
 } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
@@ -111,8 +111,7 @@ export default function LandingPage() {
               custom={0}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur sm:text-xs"
             >
-              <Sparkles className="h-3.5 w-3.5 text-brand-300" />
-              Online Koçluk · Diyetisyen · Wellness
+              🏋️ Online Koçluk · 🥗 Online Diyetisyen · 🌿 Wellness
             </motion.span>
 
             <motion.h1
@@ -150,7 +149,7 @@ export default function LandingPage() {
                   to="/onboarding?plan=free"
                   className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base"
                 >
-                  Ücretsiz Başla
+                  🚀 Ücretsiz Başlayın
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </motion.div>
@@ -159,8 +158,7 @@ export default function LandingPage() {
                   to="/membership"
                   className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
                 >
-                  <Sparkles className="h-4 w-4 text-brand-300" />
-                  Planları İncele
+                  📝 Planları İncele
                 </Link>
               </motion.div>
             </motion.div>

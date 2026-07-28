@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Building2, Compass, Trophy, HeartHandshake } from 'lucide-react'
 import PromoBanner from '../landing/PromoBanner'
@@ -98,12 +98,39 @@ export default function PublicLayout() {
     }
   }, [menuOpen])
 
-  useEffect(() => {
+  // body position:fixed scroll kilidi sticky header'ı viewport dışına iter.
+  // Menü açılmadan önce header'ı fixed'e sabitle (yer tutucu ile), sonra kilitle.
+  useLayoutEffect(() => {
     if (!menuOpen) return undefined
-    lockPageScroll()
     const el = headerRef.current
-    if (el) setOverlayTop(Math.ceil(el.getBoundingClientRect().bottom))
-    return () => unlockPageScroll()
+    let spacer = null
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      const top = Math.max(0, Math.round(rect.top))
+      setOverlayTop(Math.ceil(rect.bottom))
+      spacer = document.createElement('div')
+      spacer.setAttribute('aria-hidden', 'true')
+      spacer.style.height = `${Math.ceil(rect.height)}px`
+      spacer.style.width = '100%'
+      el.parentNode?.insertBefore(spacer, el)
+      el.style.position = 'fixed'
+      el.style.top = `${top}px`
+      el.style.left = '0'
+      el.style.right = '0'
+      el.style.width = '100%'
+    }
+    lockPageScroll()
+    return () => {
+      unlockPageScroll()
+      if (el) {
+        el.style.position = ''
+        el.style.top = ''
+        el.style.left = ''
+        el.style.right = ''
+        el.style.width = ''
+      }
+      spacer?.remove()
+    }
   }, [menuOpen])
 
   const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()

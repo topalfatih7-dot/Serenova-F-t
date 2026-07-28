@@ -179,7 +179,7 @@ export default function HealthSummarySection({ user }) {
                 <Gauge className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-orange-700/70">Tahmini VKİ</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-orange-700/70">Vücut Kitle Endeksi</p>
                 <p className="font-display text-xl font-bold text-orange-900">
                   {calculateBMI(form.weight, form.height) ?? '—'}
                 </p>
