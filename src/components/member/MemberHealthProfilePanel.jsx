@@ -181,7 +181,6 @@ export default function MemberHealthProfilePanel({
       {showStaffBrief && (
         <StaffHealthBrief
           analysis={member.healthAnalysis}
-          history={member.healthScoreHistory}
         />
       )}
 

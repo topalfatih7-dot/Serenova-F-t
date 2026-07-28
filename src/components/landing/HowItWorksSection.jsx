@@ -155,7 +155,7 @@ export default function HowItWorksSection() {
               viewport={{ once: true, margin: "50px" }}
               className="mt-10 text-center md:text-left"
             >
-              <Link to="/onboarding?plan=free" className="btn-wellness group inline-flex">
+              <Link to="/membership" className="btn-wellness group inline-flex">
                 Ücretsiz Başla
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>

@@ -477,8 +477,8 @@ export default function ServiceLandingPage({ path }) {
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/85 sm:text-base">
               {isCoach
-                ? 'Ücretsiz Basic ile başlayın veya doğrudan Spor / VIP paketle koç desteğine geçin.'
-                : 'Ücretsiz Basic ile başlayın veya doğrudan uzman destekli pakete geçin.'}
+                ? 'Spor veya VIP paketle koç desteğine geçin.'
+                : 'Uzman destekli bir paket seçerek başlayın.'}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -489,7 +489,7 @@ export default function ServiceLandingPage({ path }) {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/onboarding?plan=free"
+                to="/membership"
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
               >
                 Ücretsiz Başla

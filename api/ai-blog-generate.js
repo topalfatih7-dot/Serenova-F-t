@@ -4,8 +4,7 @@
  * ?task=blog (varsayılan) — günlük blog makalesi (CRON_SECRET, cron 05:00)
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
- * ?task=membership-expiry — yalnızca süre dolumu + ai_eko temizliği (CRON_SECRET, cron 03:00)
- * ?task=eko-renew — süre dolumu (yedek) + Eko AI dilim yenileme (CRON_SECRET, cron 06:00)
+ * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger (CRON_SECRET, cron 03:00)
  */
 
 import {
@@ -128,9 +127,6 @@ export default async function handler(req, res) {
   ) {
     return handleMembershipExpiry(req, res)
   }
-  if (task === 'eko-renew' || task === 'eko_renew' || task === 'eko-programs') {
-    return handleEkoRenew(req, res)
-  }
   return handleBlogGenerate(req, res)
 }
 
@@ -151,7 +147,7 @@ async function handleMembershipExpiry(req, res) {
   }
 
   try {
-    const { runMembershipExpiryBatch } = await import('./_aiEkoPrograms.js')
+    const { runMembershipExpiryBatch } = await import('./_membershipExpiry.js')
     const admin = getSupabaseAdmin()
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
     const expiryLimit = Math.min(200, Math.max(1, Number(body.expiryLimit || req.query?.expiryLimit) || 100))
@@ -160,38 +156,6 @@ async function handleMembershipExpiry(req, res) {
   } catch (e) {
     console.error('[membership-expiry]', e)
     return res.status(500).json({ ok: false, error: e.message || 'Üyelik süre dolumu hatası' })
-  }
-}
-
-async function handleEkoRenew(req, res) {
-  setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
-  if (handleOptions(req, res)) return
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Yalnızca GET/POST desteklenir' })
-  }
-
-  const cronGuard = requireCronSecret(req)
-  if (!cronGuard.ok) {
-    return res.status(cronGuard.status).json({ ok: false, error: cronGuard.error })
-  }
-
-  if (!isSupabaseAdminConfigured()) {
-    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
-  }
-
-  try {
-    const { runEkoRenewBatch, runMembershipExpiryBatch } = await import('./_aiEkoPrograms.js')
-    const admin = getSupabaseAdmin()
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
-    const limit = Math.min(20, Math.max(1, Number(body.limit || req.query?.limit) || 8))
-    // Yedek geçiş: asıl expiry 03:00 cron'unda; burada daha küçük ek tur
-    const expiryLimit = Math.min(100, Math.max(1, Number(body.expiryLimit || req.query?.expiryLimit) || 40))
-    const expiry = await runMembershipExpiryBatch(admin, { limit: expiryLimit })
-    const renew = await runEkoRenewBatch(admin, { limit })
-    return res.status(200).json({ ok: true, expiry, renew })
-  } catch (e) {
-    console.error('[eko-renew]', e)
-    return res.status(500).json({ ok: false, error: e.message || 'Eko yenileme hatası' })
   }
 }
 

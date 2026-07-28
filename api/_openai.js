@@ -1,6 +1,6 @@
 /**
  * OpenAI API yardımcısı (sunucu tarafı).
- * Kalori (chat/vision): GPT-4o — Program üretimi (Basic/Eko): GPT-4.1
+ * Kalori (chat/vision): GPT-4o
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
@@ -31,11 +31,6 @@ export function isOpenAiConfigured() {
 /** Kalori metin/görsel modeli */
 export function getOpenAiModel() {
   return process.env.OPENAI_MODEL || 'gpt-4o'
-}
-
-/** Basic/Eko AI program üretimi modeli */
-export function getOpenAiProgramModel() {
-  return process.env.OPENAI_PROGRAM_MODEL || 'gpt-4.1'
 }
 
 export function estimateOpenAiCostUsd(promptTokens, completionTokens, model = 'gpt-4o') {
@@ -85,7 +80,7 @@ export function parseJsonResponse(text) {
  * @param {Array} opts.messages
  * @param {object} [opts.config]
  * @param {string} [opts.model] — verilmezse getOpenAiModel() (kalori varsayılanı)
- * @param {string} [opts.endpoint] — kullanım logu için (food-text | food-vision | program-basic | program-eko)
+ * @param {string} [opts.endpoint] — kullanım logu için (food-text | food-vision)
  * @param {string} [opts.userId]
  * @returns {Promise<{ text: string, usage: object, model: string, costUsd: number }>}
  */

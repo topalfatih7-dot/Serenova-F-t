@@ -57,8 +57,8 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-const PLAN_SORT = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
-const LEGACY_INACTIVE = ['kurucu', 'gumus', 'altin', 'platinum', 'premium']
+const PLAN_SORT = { diyet: 0, spor: 1, doktor: 2, vip: 3 }
+const LEGACY_INACTIVE = ['free', 'eko', 'kurucu', 'gumus', 'altin', 'platinum', 'premium']
 
 const DOKTOR_PACKAGE_CONFIG = {
   coachMeetingsPerMonth: 0,
@@ -72,39 +72,8 @@ const DOKTOR_PACKAGE_CONFIG = {
   addOns: [],
 }
 
-/** Kod tabanındaki paket tanımları (membershipPlans.js ile uyumlu) */
+/** Kod tabanındaki paket tanımları (membershipPlans.js ile uyumlu) — satılan paketler */
 const ACTIVE_PLANS = [
-  {
-    id: 'free', name: 'Basic', price: 0, period: 'Süresiz', badge: null, color: 'sage',
-    features: [
-      { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-      { text: 'Video Kütüphanesi (Temel)', included: true },
-      { text: 'Program Takibi', included: true },
-      { text: 'Otomatik Beslenme Programı', included: false },
-      { text: 'Otomatik Antrenman Programı', included: false },
-      { text: 'Birebir Koç Görüşmesi', included: false },
-      { text: 'Diyetisyen Randevusu', included: false },
-    ],
-    limits: ['Sağlık analizi', 'Temel video erişimi', 'Standart destek'],
-    pricing_tiers: [],
-  },
-  {
-    id: 'eko', name: 'Eko Paket', price: 1299, period: 'Aylık', badge: null, color: 'sage',
-    features: [
-      { text: 'Manuel Kalori Hesaplama', included: true },
-      { text: 'Diyet Programı Ayda 2 Kere', included: true },
-      { text: 'Spor Programı Ayda 1 Kere', included: true },
-      { text: 'Video Kütüphanesi (Sınırlı)', included: true },
-      { text: 'İlerleme Raporları', included: true },
-      { text: 'Takip Programı', included: true },
-    ],
-    limits: ['Sınırlı video erişimi', 'Program güncellemeleri', 'Standart destek'],
-    pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 1299 },
-      { months: 3, label: '3 Aylık', price: 2999 },
-      { months: 6, label: '6 Aylık', price: 3999 },
-    ],
-  },
   {
     id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald',
     features: [

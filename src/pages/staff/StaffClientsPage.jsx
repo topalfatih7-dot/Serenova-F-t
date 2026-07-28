@@ -4,25 +4,15 @@ import {
   Search, Users, Activity, Target, CalendarClock,
   Mail, CalendarRange, UserRound, FileText, HeartPulse,
 } from 'lucide-react'
-import { format, addDays } from 'date-fns'
-import NutritionProgramBuilder from '../../components/staff/NutritionProgramBuilder'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 import { useApp } from '../../context/AppContext'
-import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
 import { getStaffClients } from '../../utils/chatAccess'
 import { getStaffAppointments } from './staffAppointments'
 import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
-import {
-  findEntriesOutsidePackage,
-  getMemberPackageDateRange,
-  getPackageWindowsForProgramType,
-  isDateInPackageWindows,
-  memberHasProgramTypePackage,
-} from '../../utils/programPackageScope'
 import {
   isCoachRole,
   isDietitianRole,
@@ -136,11 +126,9 @@ function Chips({ values, map }) {
 
 export default function StaffClientsPage() {
   const navigate = useNavigate()
-  const { staffUser, platform, createProgram } = useApp()
-  const { toast } = useToast()
+  const { staffUser, platform } = useApp()
   const [search, setSearch] = useState('')
   const [infoClient, setInfoClient] = useState(null)
-  const [programClient, setProgramClient] = useState(null)
   const role = staffUser.role
   const isCoach = isCoachRole(role)
   const isDietitian = isDietitianRole(role)
@@ -151,59 +139,13 @@ export default function StaffClientsPage() {
     m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
   )
 
-  const programType = isCoach ? 'workout' : 'nutrition'
-  const packageRange = useMemo(() => {
-    if (!programClient) return null
-    return getMemberPackageDateRange(programClient, programType)
-  }, [programClient, programType])
-
-  const handleCreateNutrition = async (data) => {
-    if (!programClient) return
-    if (!memberHasProgramTypePackage(programClient, programType)) {
-      toast('Üyenin bu program türü için aktif paketi yok', 'error')
-      return
-    }
-    const outside = findEntriesOutsidePackage(data.entries || [], programClient, programType)
-    if (outside.length) {
-      const dates = [...new Set(outside.map((e) => e.date))].join(', ')
-      toast(`Paket süresi dışındaki tarihler: ${dates}`, 'error')
-      return
-    }
-    if (data.scheduleType === 'cycle14' && data.cycleStartDate) {
-      const windows = getPackageWindowsForProgramType(programClient, programType)
-      if (!isDateInPackageWindows(data.cycleStartDate, windows)) {
-        toast('Liste başlangıç tarihi üyenin paket süresi içinde olmalı', 'error')
-        return
-      }
-      const endDate = format(addDays(new Date(`${data.cycleStartDate}T12:00:00`), (data.cycleLength || 14) - 1), 'yyyy-MM-dd')
-      if (!isDateInPackageWindows(endDate, windows)) {
-        toast('14 günlük listenin bitiş tarihi paket süresini aşıyor', 'error')
-        return
-      }
-    }
-    const created = await createProgram({
-      type: 'nutrition',
-      memberId: programClient.id,
-      memberName: programClient.name,
-      staffId: staffUser.id,
-      staffName: staffUser.name,
-      ...data,
-    })
-    if (!created) {
-      toast('Program kaydedilemedi. Lütfen tekrar deneyin.', 'error')
-      return
-    }
-    toast(`${programClient.name} için liste oluşturuldu — danışana bildirim gönderildi`, 'success')
-    setProgramClient(null)
-  }
-
   const openProgramFlow = (member) => {
     if (isCoach) {
       navigate(`/staff/clients/${member.id}/program`)
       return
     }
     if (isDietitian) {
-      setProgramClient(member)
+      navigate(`/staff/clients/${member.id}/list`)
     }
   }
 
@@ -298,14 +240,6 @@ export default function StaffClientsPage() {
       <Modal open={!!infoClient} onClose={() => setInfoClient(null)} title={infoClient?.name} size="lg">
         {infoClient && <ClientInfo member={infoClient} role={role} />}
       </Modal>
-
-      {isDietitian && (
-        <Modal open={!!programClient} onClose={() => setProgramClient(null)} title={`${programClient?.name} — Beslenme Listesi`} size="xl">
-          {programClient && (
-            <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreateNutrition} />
-          )}
-        </Modal>
-      )}
     </div>
   )
 }

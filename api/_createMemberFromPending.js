@@ -90,7 +90,6 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
     profileComplete: true,
     streak: 0,
-    freeTrialExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
   }
 
   const data = memberDataPayload(member, { phoneCountry: pending?.phoneCountry || '' })
@@ -114,7 +113,7 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     member_id: userId,
     data: {
       type: 'signup',
-      text: `${name} yeni kayıt (Ücretsiz)`,
+      text: `${name} yeni kayıt`,
       createdAt: nowISO(),
     },
   })

@@ -41,7 +41,6 @@ import {
   isPackageEntryActive,
   memberExpirySyncNeedsPersist,
 } from '../utils/memberPackages'
-import { AI_EKO_SOURCE } from '../utils/aiBasicPrograms'
 import {
   compactMembersForRole,
   extractSessionsFromMemberData,
@@ -775,9 +774,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     healthAnalysis: profile.healthAnalysis || null,
     membership,
     membershipStatus: 'active',
-    freeTrialExpiresAt: membership === 'free'
-      ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
-      : null,
+    freeTrialExpiresAt: null,
     packageConfig: packageConfig || getDefaultPackageForPlan(membership),
     joinedAt: today(),
     lastActiveAt: today(),
@@ -2010,6 +2007,62 @@ export async function createProgram(data) {
   return program
 }
 
+export async function deleteProgram(id) {
+  if (!id) return { success: false, error: 'Program id gerekli' }
+  const { error } = await supabase.from('programs').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+/** Mevcut programs.data alanlarını günceller; member_id / staff_id korunur. */
+export async function updateProgram(id, patch = {}) {
+  if (!id) return null
+  const { data: existing, error: fetchErr } = await supabase
+    .from('programs')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (fetchErr || !existing) return null
+
+  const prev = existing.data && typeof existing.data === 'object' ? existing.data : {}
+  const nextType = patch.type != null
+    ? (patch.type === 'nutrition' ? 'nutrition' : 'workout')
+    : (prev.type === 'nutrition' ? 'nutrition' : 'workout')
+
+  const nextData = {
+    ...prev,
+    type: nextType,
+    memberName: patch.memberName !== undefined ? patch.memberName : (prev.memberName || ''),
+    staffName: patch.staffName !== undefined ? patch.staffName : (prev.staffName || ''),
+    title: patch.title !== undefined ? patch.title : prev.title,
+    description: patch.description !== undefined ? patch.description : (prev.description || ''),
+    items: patch.items !== undefined
+      ? (Array.isArray(patch.items) ? patch.items : [])
+      : (Array.isArray(prev.items) ? prev.items : []),
+    entries: patch.entries !== undefined
+      ? (Array.isArray(patch.entries) ? patch.entries : [])
+      : (Array.isArray(prev.entries) ? prev.entries : []),
+    scheduleType: patch.scheduleType !== undefined ? patch.scheduleType : (prev.scheduleType || null),
+    cycleStartDate: patch.cycleStartDate !== undefined ? patch.cycleStartDate : (prev.cycleStartDate || null),
+    cycleLength: patch.cycleLength !== undefined ? patch.cycleLength : (prev.cycleLength || null),
+    cycleLoop: patch.cycleLoop !== undefined ? patch.cycleLoop : (prev.cycleLoop ?? null),
+    cycleSameDaily: patch.cycleSameDaily !== undefined ? patch.cycleSameDaily : (prev.cycleSameDaily ?? null),
+    sessionDuration: patch.sessionDuration !== undefined ? patch.sessionDuration : (prev.sessionDuration || null),
+    source: patch.source !== undefined ? patch.source : (prev.source || null),
+    createdAt: prev.createdAt || nowISO(),
+    updatedAt: nowISO(),
+  }
+
+  const { data: row, error } = await supabase
+    .from('programs')
+    .update({ data: nextData })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) return null
+  return rowToProgram(row)
+}
+
 // --------------------------- tickets ---------------------------
 export async function createTicket(member, ticketData) {
   const msg = { id: `m-${Date.now()}`, from: 'member', text: ticketData.message || ticketData.text || '', createdAt: nowISO() }
@@ -2220,15 +2273,6 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   await upsertMember(updated)
 
-  // Eko → free (veya eko dışı): ai_eko programlarını temizle
-  if (prevMembership === 'eko' && updated.membership !== 'eko') {
-    try {
-      await deleteMemberProgramsBySource(updated.id, AI_EKO_SOURCE)
-    } catch (e) {
-      console.warn('[adminUpdatePremium] ai_eko cleanup', e?.message || e)
-    }
-  }
-
   const activityParts = []
   if (options.membership && options.membership !== prevMembership) {
     activityParts.push(`paket → ${getPlanLabel(options.membership)}`)
@@ -2247,19 +2291,6 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
   )
 
   return { success: true, member: updated }
-}
-
-async function deleteMemberProgramsBySource(memberId, source) {
-  const { data: rows, error } = await supabase
-    .from('programs')
-    .select('id, data')
-    .eq('member_id', memberId)
-  if (error) throw error
-  const ids = (rows || []).filter((r) => r.data?.source === source).map((r) => r.id)
-  if (!ids.length) return 0
-  const { error: delErr } = await supabase.from('programs').delete().in('id', ids)
-  if (delErr) throw delErr
-  return ids.length
 }
 
 const MEMBERSHIP_STATUS_ACTIONS = new Set(['active', 'paused', 'cancelled'])

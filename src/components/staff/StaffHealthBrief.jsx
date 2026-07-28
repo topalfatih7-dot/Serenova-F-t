@@ -1,11 +1,10 @@
-import { FileText, TrendingUp } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
   STAFF_BRIEF_KEYS,
   STAFF_BRIEF_META,
 } from '../../services/healthScoreAnalysis'
-import { HealthScoreDetailedTrend } from '../dashboard/HealthScoreTrendChart'
 
 function scoreTone(score) {
   if (score >= 75) {
@@ -74,10 +73,9 @@ function CategoryScoreCard({ scoreKey, score }) {
 }
 
 /**
- * Koç / diyetisyen — AI klinik paragraflar + skorlar + detaylı trend.
- * Üye ve doktor bu bileşeni görmez.
+ * Koç / diyetisyen — tarihsel sağlık analizi (yeni AI skor üretimi yok).
  */
-export default function StaffHealthBrief({ analysis, history = [] }) {
+export default function StaffHealthBrief({ analysis }) {
   const brief = analysis?.staffBrief
   const hasBrief = brief && STAFF_BRIEF_KEYS.some((k) => brief[k])
   const scores = analysis?.scores || {}
@@ -85,7 +83,7 @@ export default function StaffHealthBrief({ analysis, history = [] }) {
   const hasScores = HEALTH_SCORE_KEYS.some((k) => scores[k] != null) || overall != null
   const tone = scoreTone(overall ?? 0)
 
-  if (!hasBrief && !hasScores && (!history || history.length < 2)) return null
+  if (!hasBrief && !hasScores) return null
 
   return (
     <div className="space-y-4 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/50 via-white to-sage-50/40 p-4">
@@ -136,13 +134,6 @@ export default function StaffHealthBrief({ analysis, history = [] }) {
           })}
         </div>
       )}
-
-      <div>
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-cream-900">
-          <TrendingUp className="h-4 w-4 text-brand-500" /> Skor takibi
-        </p>
-        <HealthScoreDetailedTrend history={history} />
-      </div>
     </div>
   )
 }

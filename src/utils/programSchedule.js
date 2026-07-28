@@ -32,18 +32,25 @@ export function mealContentText(entries = []) {
   return parts.join(', ')
 }
 
-/** 14 günlük sabit süreli plan (başlangıç + süre). Eski döngü indeksi için resolveCycleDayIndex kullanılır. */
+/** Sabit süreli plan (başlangıç + süre). Haftalık şablon ve 14 günlük planlar dahil. */
 export function isFixedDurationPlan(program) {
   if (!program) return false
   return program.scheduleType === 'cycle14'
     || program.scheduleType === 'dateRange'
+    || program.scheduleType === 'weekly'
     || Boolean(program.cycleStartDate && program.cycleLength)
 }
 
-/** Eski model: her gün farklı menü (cycleDay 0–13). Yeni modelde cycleSameDaily=true. */
+/** Eski model: her gün farklı menü (cycleDay 0–13). Haftalık entry.day şablonu legacy değildir. */
 export function usesLegacyCycleDayRotation(program) {
   if (!program) return false
+  if (program.scheduleType === 'weekly') return false
   if (program.cycleSameDaily === true) return false
+  // Yalnızca cycleDay rotasyonu; entry.day (haftalık) legacy sayılmaz
+  const hasDayTagged = (program.entries || []).some((e) => e.day != null && e.day !== '')
+  if (hasDayTagged && !(program.entries || []).some((e) => e.cycleDay != null && e.cycleDay !== '')) {
+    return false
+  }
   if (program.cycleSameDaily === false) return true
   const days = new Set(
     (program.entries || [])
@@ -145,13 +152,9 @@ export function getProgramEntriesForDate(programs, date, member = null) {
     if (!prog.entries?.length) return
     if (member && !isProgramVisibleOnDate(prog, date, member)) return
     const programType = prog.type || (prog.entries.some((e) => e.mealType) ? 'nutrition' : 'workout')
-    // Koç (staffId) ve AI (ai_basic / ai_eko) workout’larında müsaitlik günü filtresi.
+    // Koç (staffId) workout’larında müsaitlik günü filtresi.
     // availability boşsa filtre uygulanmaz (tarihli entry’ler veya cycleSameDaily akışı kalır).
-    const isCoachedOrAiWorkout = Boolean(
-      prog.staffId
-      || prog.source === 'ai_basic'
-      || prog.source === 'ai_eko',
-    )
+    const isCoachedWorkout = Boolean(prog.staffId)
     const hasAvailDays = Boolean(
       member?.availability
       && Object.values(member.availability).some((h) => Array.isArray(h) && h.length > 0),
@@ -159,7 +162,7 @@ export function getProgramEntriesForDate(programs, date, member = null) {
     if (
       member
       && programType === 'workout'
-      && isCoachedOrAiWorkout
+      && isCoachedWorkout
       && hasAvailDays
       && !isWorkoutAllowedOnDate(date, member.availability)
     ) {

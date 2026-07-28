@@ -71,14 +71,30 @@ function isDailyMode(mode) {
   return mode === 'cycle14' || mode === 'everyday'
 }
 
-export default function NutritionProgramBuilder({ onCreate, packageRange }) {
+export default function NutritionProgramBuilder({
+  onCreate,
+  onUpdate,
+  initialData = null,
+  packageRange,
+  submitLabel,
+}) {
   const { toast } = useToast()
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [entries, setEntries] = useState([])
-  const [scheduleMode, setScheduleMode] = useState('cycle14')
+  const isEdit = Boolean(initialData) && typeof onUpdate === 'function'
+  const [title, setTitle] = useState(() => initialData?.title || '')
+  const [description, setDescription] = useState(() => initialData?.description || '')
+  const [entries, setEntries] = useState(() => (
+    Array.isArray(initialData?.entries) ? initialData.entries : []
+  ))
+  const [scheduleMode, setScheduleMode] = useState(() => {
+    const t = initialData?.scheduleType
+    if (t === 'cycle14' || t === 'everyday' || t === 'weekly' || t === 'date') return t
+    if (Array.isArray(initialData?.entries) && initialData.entries.some((e) => e.date)) return 'date'
+    return 'cycle14'
+  })
   const [selectedDay, setSelectedDay] = useState(1)
-  const [cycleStartDate, setCycleStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [cycleStartDate, setCycleStartDate] = useState(() => (
+    initialData?.cycleStartDate || format(new Date(), 'yyyy-MM-dd')
+  ))
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealType, setMealType] = useState('breakfast')
   const [draft, setDraft] = useState({ content: '', note: '', start: DEFAULT_MEAL_TIMES.breakfast })
@@ -275,7 +291,12 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
       payload.scheduleType = 'date'
     }
 
-    onCreate(payload)
+    if (isEdit) {
+      onUpdate(payload)
+      return
+    }
+
+    onCreate?.(payload)
     setTitle('')
     setDescription('')
     setEntries([])
@@ -290,45 +311,48 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
         : `${WEEKDAYS.find((d) => d.value === selectedDay)?.label || '—'} (haftalık tekrar)`
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
+    <div className="space-y-6">
+      <div className="space-y-3">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Beslenme listesi başlığı"
-          className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-sage-300"
+          className="w-full rounded-2xl border border-cream-200 bg-white px-5 py-3.5 text-base font-medium outline-none focus:border-sage-300"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Genel notlar (su tüketimi, alerjiler vb.)"
-          rows={2}
-          className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-sage-300"
+          rows={3}
+          className="w-full rounded-2xl border border-cream-200 bg-white px-5 py-3.5 text-sm outline-none focus:border-sage-300"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2 rounded-xl bg-cream-50 p-1">
-        {[
-          { id: 'cycle14', label: '14 Günlük Liste' },
-          { id: 'everyday', label: 'Süresiz her gün' },
-          { id: 'weekly', label: 'Güne özel (haftalık)' },
-          { id: 'date', label: 'Tarihe özel' },
-        ].map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setScheduleMode(m.id)}
-            className={`flex-1 min-w-[calc(50%-0.25rem)] rounded-lg py-2 text-[10px] font-semibold transition sm:min-w-0 sm:text-xs ${
-              scheduleMode === m.id ? 'bg-sage-500 text-white shadow' : 'text-cream-800/70 hover:bg-white'
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
+      <div>
+        <p className="mb-2 text-sm font-semibold text-cream-900">Zamanlama</p>
+        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-cream-50 p-1.5 lg:grid-cols-4">
+          {[
+            { id: 'cycle14', label: '14 Günlük Liste' },
+            { id: 'everyday', label: 'Süresiz her gün' },
+            { id: 'weekly', label: 'Güne özel (haftalık)' },
+            { id: 'date', label: 'Tarihe özel' },
+          ].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setScheduleMode(m.id)}
+              className={`rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                scheduleMode === m.id ? 'bg-sage-500 text-white shadow' : 'text-cream-800/70 hover:bg-white'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {scheduleMode === 'cycle14' ? (
-        <div className="rounded-xl border border-sage-200 bg-sage-50/50 p-3">
+        <div className="rounded-2xl border border-sage-200 bg-sage-50/50 p-5">
           <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sage-700">
             <CalendarDays className="h-3.5 w-3.5" />
             Liste başlangıç tarihi
@@ -339,9 +363,9 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
             min={dateBounds.min}
             max={dateBounds.max}
             onChange={(e) => setCycleStartDate(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+            className="mt-3 w-full max-w-sm rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm"
           />
-          <p className="mt-1.5 text-[11px] leading-relaxed text-sage-800/70">
+          <p className="mt-3 text-sm leading-relaxed text-sage-800/70">
             <strong>Her gün aynı menü</strong> {format(new Date(`${cycleStartDate}T12:00:00`), 'd MMMM', { locale: tr })}
             {' — '}
             {format(new Date(`${cycleEndDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
@@ -352,7 +376,7 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
           </p>
         </div>
       ) : scheduleMode === 'date' ? (
-        <div className="rounded-xl border border-sage-200 bg-sage-50/50 p-3">
+        <div className="rounded-2xl border border-sage-200 bg-sage-50/50 p-5">
           <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sage-700">
             <CalendarDays className="h-3.5 w-3.5" />
             Tarih Seç
@@ -363,18 +387,18 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
             min={singleDateBounds.min}
             max={singleDateBounds.max}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+            className="mt-3 w-full max-w-sm rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm"
           />
           {packageRange && (
-            <p className="mt-1.5 text-[11px] text-sage-800/70">
+            <p className="mt-3 text-sm text-sage-800/70">
               Paket süresi: {packageRange.start}{packageRange.end ? ` — ${packageRange.end}` : ''}
             </p>
           )}
         </div>
       ) : scheduleMode === 'weekly' ? (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Gün Seç</p>
-          <div className="grid grid-cols-7 gap-1">
+          <p className="mb-3 text-sm font-semibold text-cream-900">Gün seç</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {WEEKDAYS.map((d) => {
               const count = entries.filter((e) => e.day === d.value && !e.date).length
               return (
@@ -382,32 +406,37 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                   key={d.value}
                   type="button"
                   onClick={() => setSelectedDay(d.value)}
-                  className={`flex flex-col items-center rounded-xl py-2 text-[10px] font-semibold transition ${
-                    selectedDay === d.value ? 'bg-sage-500 text-white shadow' : 'bg-cream-50 text-cream-800/70 hover:bg-white'
+                  className={`flex flex-col items-center rounded-2xl px-3 py-4 text-sm font-semibold transition ${
+                    selectedDay === d.value
+                      ? 'bg-sage-500 text-white shadow-md'
+                      : 'border border-cream-200 bg-white text-cream-800/70 hover:border-sage-200 hover:bg-sage-50'
                   }`}
                 >
-                  <span>{d.label.slice(0, 3)}</span>
-                  {count > 0 && <span className="mt-0.5 text-[9px] opacity-80">{count}</span>}
+                  <span className="text-base">{d.label.slice(0, 3)}</span>
+                  <span className={`mt-1 text-xs ${selectedDay === d.value ? 'text-white/80' : 'text-cream-800/45'}`}>
+                    {count > 0 ? `${count} öğün` : 'boş'}
+                  </span>
                 </button>
               )
             })}
           </div>
         </div>
       ) : (
-        <p className="rounded-xl border border-sage-100 bg-sage-50/50 px-3 py-2 text-xs text-sage-800">
+        <p className="rounded-2xl border border-sage-100 bg-sage-50/50 px-4 py-3 text-sm text-sage-800">
           Eklediğiniz öğünler paket süresince haftanın her günü aynı saatlerle tekrarlanır.
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="min-h-[200px] rounded-xl border border-cream-200 bg-white p-3">
-          <p className="mb-2 text-xs font-semibold text-cream-800/70">
-            {scheduleLabel} — {activeEntries.length} öğün
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="min-h-[280px] rounded-2xl border border-cream-200 bg-cream-50/30 p-5">
+          <p className="mb-4 text-base font-bold text-cream-900">
+            {scheduleLabel}
+            <span className="ml-2 text-sm font-medium text-cream-800/50">· {activeEntries.length} öğün</span>
           </p>
           {activeEntries.length === 0 ? (
-            <p className="py-8 text-center text-xs text-cream-800/40">Öğün ekleyin</p>
+            <p className="py-16 text-center text-sm text-cream-800/40">Öğün ekleyin — sağdaki formdan başlayın</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {activeEntries.map((e) => {
                 const ui = MEAL_UI[e.mealType] || MEAL_UI.breakfast
                 const Icon = ui.icon
@@ -415,18 +444,18 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                 return (
                   <div
                     key={e.id}
-                    className={`rounded-xl border px-3 py-3 ring-1 ${ui.accent} ${isEditing ? 'ring-2 ring-sage-400' : ''}`}
+                    className={`rounded-2xl border px-4 py-4 ring-1 ${ui.accent} ${isEditing ? 'ring-2 ring-sage-400' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex min-w-0 items-start gap-2">
-                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${ui.btn} text-white`}>
-                          <Icon className="h-4 w-4" />
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ui.btn} text-white`}>
+                          <Icon className="h-5 w-5" />
                         </span>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-bold text-cream-900">{mealLabel(e.mealType)}</p>
+                            <p className="text-base font-bold text-cream-900">{mealLabel(e.mealType)}</p>
                             {e.start && (
-                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-cream-800/70">
+                              <span className="rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-cream-800/70">
                                 {e.start}
                               </span>
                             )}
@@ -436,7 +465,7 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                               </span>
                             )}
                           </div>
-                          <p className="mt-1 text-sm leading-relaxed text-cream-800">{e.name}</p>
+                          <p className="mt-1.5 text-sm leading-relaxed text-cream-800">{e.name}</p>
                           {e.note && <p className="mt-1 text-xs text-cream-800/55">Not: {e.note}</p>}
                         </div>
                       </div>
@@ -444,20 +473,20 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                         <button
                           type="button"
                           onClick={() => startEdit(e)}
-                          className="rounded-lg p-1.5 text-cream-800/50 hover:bg-white/80 hover:text-sage-700"
+                          className="rounded-lg p-2 text-cream-800/50 hover:bg-white/80 hover:text-sage-700"
                           aria-label="Öğünü düzenle"
                           title="Düzenle"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => removeEntry(e.id)}
-                          className="rounded-lg p-1.5 text-red-400 hover:bg-white/80 hover:text-red-600"
+                          className="rounded-lg p-2 text-red-400 hover:bg-white/80 hover:text-red-600"
                           aria-label="Öğünü sil"
                           title="Sil"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -468,22 +497,22 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
           )}
         </div>
 
-        <div className="rounded-xl border border-sage-100 bg-white p-3">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase text-sage-700">
-              {editingId ? 'Öğünü Düzenle' : 'Öğün Ekle'}
+        <div className="rounded-2xl border border-sage-100 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <p className="text-base font-bold text-sage-800">
+              {editingId ? 'Öğünü düzenle' : 'Öğün ekle'}
             </p>
             {editingId && (
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-cream-800/60 hover:bg-cream-50 hover:text-cream-900"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-cream-800/60 hover:bg-cream-50 hover:text-cream-900"
               >
                 <X className="h-3.5 w-3.5" /> İptal
               </button>
             )}
           </div>
-          <div className="mb-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {SELECTABLE_MEALS.map((m) => {
               const ui = MEAL_UI[m.id] || MEAL_UI.breakfast
               const Icon = ui.icon
@@ -493,51 +522,51 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
                   key={m.id}
                   type="button"
                   onClick={() => selectMealType(m.id)}
-                  className={`flex items-center gap-1.5 rounded-xl border px-2 py-2 text-left text-[10px] font-semibold transition sm:text-xs ${
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-left text-xs font-semibold transition sm:text-sm ${
                     selected ? `${ui.btn} border-transparent text-white shadow-sm` : 'border-cream-200 bg-cream-50 text-cream-800/70 hover:bg-white'
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <Icon className="h-4 w-4 shrink-0" />
                   <span className="leading-tight">{m.short}</span>
                 </button>
               )
             })}
           </div>
 
-          <div className={`mb-3 flex items-center gap-2 rounded-xl px-3 py-2 ring-1 ${activeUi.accent}`}>
-            <ActiveIcon className="h-4 w-4 shrink-0" />
-            <span className="text-sm font-semibold">{activeMeal.label}</span>
+          <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 ring-1 ${activeUi.accent}`}>
+            <ActiveIcon className="h-5 w-5 shrink-0" />
+            <span className="text-base font-semibold">{activeMeal.label}</span>
           </div>
 
-          <label className="mb-1 block text-xs font-medium text-cream-800/60">Öğün saati</label>
+          <label className="mb-1.5 block text-sm font-medium text-cream-800/60">Öğün saati</label>
           <select
             value={draft.start}
             onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-            className="mb-3 w-full rounded-lg border border-cream-200 px-3 py-2 text-sm"
+            className="mb-4 w-full rounded-xl border border-cream-200 px-4 py-3 text-sm"
           >
             {TIME_OPTIONS.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
 
-          <label className="mb-1 block text-xs font-medium text-cream-800/60">Öğün içeriği</label>
+          <label className="mb-1.5 block text-sm font-medium text-cream-800/60">Öğün içeriği</label>
           <textarea
             value={draft.content}
             onChange={(e) => setDraft({ ...draft, content: e.target.value })}
             placeholder="Örn. Yulaf lapası, muz, 10 badem, yeşil çay"
-            rows={3}
-            className="mb-2 w-full rounded-lg border border-cream-200 px-3 py-2 text-sm"
+            rows={4}
+            className="mb-3 w-full rounded-xl border border-cream-200 px-4 py-3 text-sm"
           />
           <input
             value={draft.note}
             onChange={(e) => setDraft({ ...draft, note: e.target.value })}
             placeholder="Dikkat edilecekler (opsiyonel)"
-            className="mb-3 w-full rounded-lg border border-cream-200 px-3 py-2 text-sm"
+            className="mb-4 w-full rounded-xl border border-cream-200 px-4 py-3 text-sm"
           />
           <button
             type="button"
             onClick={saveEntry}
-            className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold text-white ${activeUi.btn}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white ${activeUi.btn}`}
           >
             {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {editingId ? `${mealLabel(mealType)} Güncelle` : `${mealLabel(mealType)} Ekle`}
@@ -546,13 +575,13 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
       </div>
 
       {datesWithMeals.length > 0 && scheduleMode === 'date' && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {datesWithMeals.map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => setSelectedDate(d)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                 d === selectedDate ? 'bg-sage-500 text-white' : 'bg-sage-100 text-sage-700'
               }`}
             >
@@ -563,13 +592,13 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
       )}
 
       {daysWithMeals.length > 0 && scheduleMode === 'weekly' && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {daysWithMeals.map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => setSelectedDay(d)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                 d === selectedDay ? 'bg-sage-500 text-white' : 'bg-sage-100 text-sage-700'
               }`}
             >
@@ -579,9 +608,9 @@ export default function NutritionProgramBuilder({ onCreate, packageRange }) {
         </div>
       )}
 
-      <button type="button" onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-xl bg-sage-500 py-3 text-sm font-semibold text-white hover:bg-sage-600">
-        <Apple className="h-4 w-4" />
-        Beslenme Listesini Gönder
+      <button type="button" onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sage-500 py-4 text-base font-semibold text-white hover:bg-sage-600">
+        <Apple className="h-5 w-5" />
+        {submitLabel || (isEdit ? 'Beslenme Listesini Kaydet' : 'Beslenme Listesini Gönder')}
       </button>
     </div>
   )

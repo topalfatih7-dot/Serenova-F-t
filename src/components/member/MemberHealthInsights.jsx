@@ -155,7 +155,6 @@ export default function MemberHealthInsights({
       {showStaffBrief && (
         <StaffHealthBrief
           analysis={member.healthAnalysis}
-          history={member.healthScoreHistory}
         />
       )}
 

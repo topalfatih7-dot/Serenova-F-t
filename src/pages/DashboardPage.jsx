@@ -11,13 +11,11 @@ import MembershipBadge from '../components/ui/MembershipBadge'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
-import HealthScoreCard from '../components/dashboard/HealthScoreCard'
 import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
 import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
-import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
@@ -46,13 +44,6 @@ export default function DashboardPage() {
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
-  const {
-    analysis: healthAnalysis,
-    history: healthScoreHistory,
-    loading: healthScoreLoading,
-    error: healthScoreError,
-    complete: healthAnalysisComplete,
-  } = useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
 
@@ -126,14 +117,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      <HealthScoreCard
-        analysis={healthAnalysis}
-        history={healthScoreHistory}
-        loading={healthScoreLoading}
-        complete={healthAnalysisComplete}
-        error={healthScoreError}
-      />
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow ${dailyTipLoading ? 'animate-pulse' : ''}`}>

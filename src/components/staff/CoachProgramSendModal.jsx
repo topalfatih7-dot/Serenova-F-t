@@ -1,77 +1,92 @@
-import { useMemo, useState } from 'react'
-import { format, addDays } from 'date-fns'
+import { useMemo, useState, useEffect } from 'react'
+import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { CalendarDays, Clock, Timer, Send, AlertTriangle } from 'lucide-react'
+import { CalendarDays, Send, AlertTriangle, Sparkles } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { useToast } from '../../context/ToastContext'
-import { CYCLE_PLAN_LENGTH } from '../../utils/programSchedule'
 import { getDateInputBounds } from '../../utils/programPackageScope'
 import {
   summarizeRangeAvailability,
   formatRangeSummary,
   cycleLengthFromRange,
 } from '../../utils/memberAvailability'
+import { CYCLE_PLAN_LENGTH } from '../../utils/programSchedule'
 import {
-  buildCoachProgramPayload,
+  buildWeeklyCoachProgramPayload,
   buildCoachProgramTitle,
-  COACH_DURATION_PRESETS,
-  COACH_SESSION_TIME_OPTIONS,
+  filledWeekdaysFromDayCarts,
+  weekdayFullLabel,
+  weekdayShortLabel,
+  DEFAULT_SESSION_TIME,
 } from '../../utils/coachProgram'
 
+const DAY_CHIP = {
+  1: 'bg-sky-100 text-sky-800 ring-sky-200',
+  2: 'bg-teal-100 text-teal-800 ring-teal-200',
+  3: 'bg-amber-100 text-amber-900 ring-amber-200',
+  4: 'bg-brand-100 text-brand-800 ring-brand-200',
+  5: 'bg-sage-100 text-sage-800 ring-sage-200',
+  6: 'bg-orange-100 text-orange-900 ring-orange-200',
+  0: 'bg-rose-100 text-rose-800 ring-rose-200',
+}
+
+/** Haftalık şablon önizleme + gönderim */
 export default function CoachProgramSendModal({
   open,
   onClose,
   member,
-  cartEntries,
+  dayCarts,
+  dateMode = 'fixed14',
+  onDateModeChange,
+  rangeStart,
+  rangeEnd,
+  onRangeChange,
   packageRange,
   onSubmit,
   submitting = false,
 }) {
   const { toast } = useToast()
-  const [dateMode, setDateMode] = useState('fixed14')
-  const [cycleStartDate, setCycleStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [rangeStart, setRangeStart] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [rangeEnd, setRangeEnd] = useState(format(addDays(new Date(), 6), 'yyyy-MM-dd'))
   const [description, setDescription] = useState('')
-  const [sessionDuration, setSessionDuration] = useState(45)
-  const [sessionTime, setSessionTime] = useState({ start: '09:00', end: '10:00' })
-
-  const fixedEndDate = useMemo(
-    () => format(addDays(new Date(`${cycleStartDate}T12:00:00`), CYCLE_PLAN_LENGTH - 1), 'yyyy-MM-dd'),
-    [cycleStartDate],
-  )
-
-  const activeStart = dateMode === 'fixed14' ? cycleStartDate : rangeStart
-  const activeEnd = dateMode === 'fixed14' ? fixedEndDate : rangeEnd
 
   const dateBounds = useMemo(
     () => getDateInputBounds(packageRange, { cycleLength: dateMode === 'fixed14' ? CYCLE_PLAN_LENGTH : 0 }),
     [packageRange, dateMode],
   )
-
-  const singleBounds = useMemo(() => getDateInputBounds(packageRange), [packageRange])
+  const customBounds = useMemo(() => getDateInputBounds(packageRange), [packageRange])
+  const filledDays = useMemo(() => filledWeekdaysFromDayCarts(dayCarts), [dayCarts])
 
   const availabilitySummary = useMemo(
-    () => summarizeRangeAvailability(activeStart, activeEnd, member?.availability),
-    [activeStart, activeEnd, member?.availability],
+    () => summarizeRangeAvailability(rangeStart, rangeEnd, member?.availability),
+    [rangeStart, rangeEnd, member?.availability],
   )
 
   const autoTitle = useMemo(
-    () => buildCoachProgramTitle(member?.name || 'Danışan', activeStart, activeEnd, dateMode),
-    [member?.name, activeStart, activeEnd, dateMode],
+    () => buildCoachProgramTitle(
+      member?.name || 'Danışan',
+      rangeStart,
+      rangeEnd,
+      dateMode === 'fixed14' ? 'fixed14' : 'weekly',
+    ),
+    [member?.name, rangeStart, rangeEnd, dateMode],
   )
 
+  const emptyAvailableDays = useMemo(() => {
+    const workout = availabilitySummary.workoutWeekdays || []
+    const filledLabels = new Set(filledDays.map(weekdayFullLabel))
+    return workout.filter((label) => !filledLabels.has(label))
+  }, [availabilitySummary.workoutWeekdays, filledDays])
+
+  useEffect(() => {
+    if (!open) setDescription('')
+  }, [open])
+
   const handleSubmit = () => {
-    if (!cartEntries.length) {
-      toast('En az bir hareket ekleyin', 'error')
+    if (!filledDays.length) {
+      toast('En az bir güne hareket ekleyin', 'error')
       return
     }
-    if (dateMode === 'custom' && rangeEnd < rangeStart) {
+    if (rangeEnd < rangeStart) {
       toast('Bitiş tarihi başlangıçtan önce olamaz', 'error')
-      return
-    }
-    if (sessionTime.end <= sessionTime.start) {
-      toast('Seans bitiş saati başlangıçtan sonra olmalı', 'error')
       return
     }
     if (!availabilitySummary.hasWorkoutDays) {
@@ -83,15 +98,19 @@ export default function CoachProgramSendModal({
       return
     }
 
-    const payload = buildCoachProgramPayload({
-      cartEntries,
-      startDate: activeStart,
-      endDate: activeEnd,
+    const daySessionTimes = Object.fromEntries(
+      filledDays.map((day) => [day, DEFAULT_SESSION_TIME]),
+    )
+
+    const payload = buildWeeklyCoachProgramPayload({
+      dayCarts,
+      daySessionTimes,
+      startDate: rangeStart,
+      endDate: rangeEnd,
       description,
-      sessionDuration,
-      sessionTime,
+      sessionDuration: 45,
       memberName: member?.name || 'Danışan',
-      dateMode,
+      titleMode: dateMode === 'fixed14' ? 'fixed14' : 'weekly',
     })
 
     onSubmit(payload, availabilitySummary)
@@ -99,13 +118,15 @@ export default function CoachProgramSendModal({
 
   return (
     <Modal open={open} onClose={onClose} title="Programı Gönder" size="lg">
-      <div className="space-y-4">
-        <div className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Otomatik başlık</p>
-          <p className="mt-1 text-sm font-medium text-cream-900">{autoTitle}</p>
+      <div className="space-y-5">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 via-sky-500 to-teal-500 p-4 text-white shadow-lg shadow-brand-500/20">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80">
+            <Sparkles className="h-3.5 w-3.5" /> Program başlığı
+          </p>
+          <p className="mt-1.5 text-base font-bold leading-snug">{autoTitle}</p>
         </div>
 
-        <div className="flex gap-2 rounded-xl bg-cream-50 p-1">
+        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-cream-50 p-1.5">
           {[
             { id: 'fixed14', label: '14 Günlük' },
             { id: 'custom', label: 'Başlangıç – Bitiş' },
@@ -113,9 +134,11 @@ export default function CoachProgramSendModal({
             <button
               key={m.id}
               type="button"
-              onClick={() => setDateMode(m.id)}
-              className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${
-                dateMode === m.id ? 'bg-brand-500 text-white shadow' : 'text-cream-800/70 hover:bg-white'
+              onClick={() => onDateModeChange?.(m.id)}
+              className={`rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                dateMode === m.id
+                  ? 'bg-gradient-to-r from-brand-500 to-sky-500 text-white shadow'
+                  : 'text-cream-800/70 hover:bg-white'
               }`}
             >
               {m.label}
@@ -124,142 +147,111 @@ export default function CoachProgramSendModal({
         </div>
 
         {dateMode === 'fixed14' ? (
-          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3">
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Başlangıç tarihi
+          <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-4">
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sky-700">
+              <CalendarDays className="h-3.5 w-3.5" /> Başlangıç tarihi
             </label>
             <input
               type="date"
-              value={cycleStartDate}
+              value={rangeStart}
               min={dateBounds.min}
               max={dateBounds.max}
-              onChange={(e) => setCycleStartDate(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+              onChange={(e) => onRangeChange?.({ start: e.target.value, end: rangeEnd })}
+              className="mt-2 w-full rounded-xl border border-sky-100 bg-white px-3 py-2.5 text-sm"
             />
-            <p className="mt-1.5 text-[11px] text-brand-800/70">
-              Bitiş: <strong>{format(new Date(`${fixedEndDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}</strong>
-              {' '}(14 gün)
+            <p className="mt-2 text-sm text-sky-900/70">
+              Bitiş:{' '}
+              <strong>{format(parseISO(`${rangeEnd}T12:00:00`), 'd MMMM yyyy', { locale: tr })}</strong>
+              {' '}({CYCLE_PLAN_LENGTH} gün)
             </p>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-700">Başlangıç</label>
+            <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-4">
+              <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                <CalendarDays className="h-3.5 w-3.5" /> Başlangıç
+              </label>
               <input
                 type="date"
                 value={rangeStart}
-                min={singleBounds.min}
-                max={singleBounds.max}
-                onChange={(e) => setRangeStart(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+                min={customBounds.min}
+                max={customBounds.max}
+                onChange={(e) => onRangeChange?.({ start: e.target.value, end: rangeEnd })}
+                className="mt-2 w-full rounded-xl border border-sky-100 bg-white px-3 py-2.5 text-sm"
               />
             </div>
-            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-700">Bitiş</label>
+            <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4">
+              <label className="text-xs font-semibold uppercase tracking-wide text-teal-700">Bitiş</label>
               <input
                 type="date"
                 value={rangeEnd}
-                min={rangeStart || singleBounds.min}
-                max={singleBounds.max}
-                onChange={(e) => setRangeEnd(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm"
+                min={rangeStart || customBounds.min}
+                max={customBounds.max}
+                onChange={(e) => onRangeChange?.({ start: rangeStart, end: e.target.value })}
+                className="mt-2 w-full rounded-xl border border-teal-100 bg-white px-3 py-2.5 text-sm"
               />
             </div>
-            <p className="sm:col-span-2 text-[11px] text-brand-800/70">
+            <p className="sm:col-span-2 text-sm text-cream-800/60">
               {formatRangeSummary(rangeStart, rangeEnd)}
               {' · '}
               {cycleLengthFromRange(rangeStart, rangeEnd)} gün
+              {packageRange?.end ? ` · paket ${packageRange.end}` : ''}
             </p>
           </div>
         )}
 
-        {packageRange && (
-          <p className="text-[11px] text-cream-800/55">
-            Paket süresi: {packageRange.start}{packageRange.end ? ` — ${packageRange.end}` : ' (süresiz)'}
-          </p>
-        )}
+        <div className="rounded-2xl border border-cream-100 bg-gradient-to-br from-cream-50 to-white p-4">
+          <p className="mb-3 text-sm font-bold text-cream-900">Dolu günler</p>
+          <div className="flex flex-wrap gap-2">
+            {filledDays.map((day) => {
+              const count = dayCarts[day]?.length || 0
+              return (
+                <span
+                  key={day}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${DAY_CHIP[day] || DAY_CHIP[4]}`}
+                >
+                  {weekdayShortLabel(day)} · {count} hareket
+                </span>
+              )
+            })}
+          </div>
+          {emptyAvailableDays.length > 0 && (
+            <p className="mt-3 text-xs text-cream-800/50">
+              Boş: {emptyAvailableDays.join(', ')}
+            </p>
+          )}
+        </div>
 
         {!availabilitySummary.hasWorkoutDays && (
-          <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-900">
+          <div className="flex gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p className="leading-relaxed">
-              Danışan henüz antrenman günü belirtmemiş. Program gönderilemez; danışandan takvimde
-              <strong> Antrenman Müsaitliği </strong>
-              bölümünü doldurmasını isteyin.
-            </p>
+            <p className="leading-relaxed">Danışan henüz antrenman günü belirtmemiş. Program gönderilemez.</p>
           </div>
         )}
 
         {availabilitySummary.hasWorkoutDays && availabilitySummary.blockedCount > 0 && (
-          <div className="flex gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-xs text-brand-900">
+          <div className="flex gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <p className="font-semibold">Yalnızca antrenman günlerine yazılacak</p>
-              <p className="mt-0.5 leading-relaxed text-brand-900/85">
-                Danışanın antrenman günleri: <strong>{availabilitySummary.workoutWeekdays.join(', ')}</strong>.
-                {' '}Seçilen aralıkta {availabilitySummary.blockedCount} gün atlanır;
-                program {availabilitySummary.activeCount} antrenman gününe yansır.
-              </p>
-            </div>
+            <p className="leading-relaxed">
+              Aralıkta {availabilitySummary.activeCount} antrenman gününe yazılır;
+              müsait olmayan {availabilitySummary.blockedCount} gün atlanır.
+            </p>
           </div>
         )}
-
-        <div className="rounded-xl border border-brand-100 bg-brand-50/30 p-3">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Timer className="h-4 w-4 text-brand-500" />
-            <span className="text-sm font-medium text-cream-800">Ortalama antrenman süresi</span>
-            <div className="ml-auto flex flex-wrap gap-1">
-              {COACH_DURATION_PRESETS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setSessionDuration(d)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                    sessionDuration === d ? 'bg-brand-500 text-white' : 'border border-cream-200 bg-white text-cream-800'
-                  }`}
-                >
-                  {d} dk
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">
-            <Clock className="h-3.5 w-3.5" /> Seans saati
-          </p>
-          <div className="flex items-center gap-2">
-            <select
-              value={sessionTime.start}
-              onChange={(e) => setSessionTime({ ...sessionTime, start: e.target.value })}
-              className="flex-1 rounded-lg border border-cream-200 bg-white px-2 py-2 text-sm"
-            >
-              {COACH_SESSION_TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <span className="text-sm text-cream-800/40">–</span>
-            <select
-              value={sessionTime.end}
-              onChange={(e) => setSessionTime({ ...sessionTime, end: e.target.value })}
-              className="flex-1 rounded-lg border border-cream-200 bg-white px-2 py-2 text-sm"
-            >
-              {COACH_SESSION_TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-        </div>
 
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Genel notlar (opsiyonel)"
+          placeholder="Not ekle (opsiyonel)"
           rows={2}
-          className="w-full rounded-xl border border-cream-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-300"
+          className="w-full rounded-2xl border border-cream-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-300"
         />
 
         <button
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 via-sky-500 to-teal-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/25 hover:brightness-105 disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
           {submitting ? 'Gönderiliyor…' : 'Programı Gönder'}

@@ -96,7 +96,7 @@ export const STATIC_BRAND_FAQS = [
   },
   {
     q: 'Yeni Form ücretsiz mi?',
-    a: 'Evet. Basic paket tamamen ücretsizdir; kayıt olup kişisel sağlık analizi ile başlayabilirsiniz. Antrenman ve beslenme programları ücretli paketlerde koç / diyetisyen tarafından hazırlanır. Ücretli paketler isteğe bağlıdır.',
+    a: 'Kayıt ücretli paketlerle (Diyet, Spor, Doktor, VIP) Stripe üzerinden yapılır. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır. Paket süresi bitince erişim sınırlanır; yenilemek için üyelik sayfasını kullanın.',
   },
 ]
 
@@ -258,8 +258,8 @@ export const PAGE_SEO = {
   '/': {
     title: `${BRAND.name} — Online Koçluk ve Online Diyetisyen Platformu`,
     description:
-      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
-    keywords: buildBrandKeywords('online koçluk, online diyetisyen, fitness koçu, spor salonu programı, evde antrenman, wellness, beslenme programı, ücretsiz fitness'),
+      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor, Doktor ve VIP paketleriyle başlayın.',
+    keywords: buildBrandKeywords('online koçluk, online diyetisyen, fitness koçu, spor salonu programı, evde antrenman, wellness, beslenme programı'),
   },
   '/hakkimizda': {
     title: 'Hakkımızda — Misyonumuz, Değerlerimiz ve Uzman Kadromuz',
@@ -282,14 +282,14 @@ export const PAGE_SEO = {
   '/membership': {
     title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları',
     description:
-      'Basic (ücretsiz), Eko, Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
-    keywords: buildBrandKeywords('üyelik planları, online diyetisyen fiyat, online koçluk fiyat, eko paket, diyet paketi, spor paketi, vip paket'),
+      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
+    keywords: buildBrandKeywords('üyelik planları, online diyetisyen fiyat, online koçluk fiyat, diyet paketi, spor paketi, vip paket'),
   },
   '/onboarding': {
-    title: 'Kayıt Ol — Ücretsiz Hesap Oluştur',
+    title: 'Kayıt Ol — Paket Seç ve Başla',
     description:
-      'Yeni Form\'a birkaç dakikada kayıt olun. Ücretsiz Basic paket veya Eko, Diyet, Spor, Doktor Paketi ve VIP planlarıyla kişisel wellness yolculuğunuza başlayın.',
-    keywords: buildBrandKeywords('kayıt ol, ücretsiz fitness hesabı, online koçluk kayıt, wellness üyelik, eko paket kayıt'),
+      'Yeni Form\'a birkaç dakikada kayıt olun. Diyet, Spor, Doktor veya VIP planıyla kişisel wellness yolculuğunuza başlayın.',
+    keywords: buildBrandKeywords('kayıt ol, online koçluk kayıt, wellness üyelik, diyet paket kayıt'),
   },
   '/login': {
     title: 'Giriş Yap',

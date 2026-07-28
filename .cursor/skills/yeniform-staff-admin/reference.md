@@ -10,7 +10,8 @@
 
 ## Key files
 
-- `src/pages/staff/*`, `StaffClientProgramPage.jsx`, `StaffListsPage.jsx`
-- `src/components/staff/CoachProgramSendModal.jsx`, `NutritionProgramBuilder.jsx`
+- `src/pages/staff/*`, `StaffClientProgramPage.jsx`, `StaffClientNutritionPage.jsx`, `StaffListsPage.jsx`
+- `src/components/staff/CoachProgramSendModal.jsx`, `CoachApplySameProgramModal.jsx`, `NutritionProgramBuilder.jsx`
+- `src/utils/coachProgram.js` (`buildWeeklyCoachProgramPayload`)
 - `src/pages/admin/AdminPremiumPage.jsx`, `ManualSessionEditor.jsx`
 - `src/services/staffAssignment.js`, `supabaseDb.adminUpdatePremiumMembership`

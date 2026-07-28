@@ -13,16 +13,16 @@ description: >-
 
 - Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
 - Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
-- Stored in `members.data.healthTest` JSONB; scores via `healthScoreAnalysis.js` → `healthAnalysis` (8 boyut + overallScore)
-- Score syncs automatically after HT complete (`useHealthAnalysisSync`) — **no** dashboard “Skoru yenile” button
-- Full question catalog must live in `docs/mobile/domains/health-test-catalog.md`
+- Stored in `members.data.healthTest` JSONB
+- AI sağlık skoru üretimi **yok**; VKİ / ham özet UI kalır
+- Programlar personel (koç/diyetisyen) tarafından gönderilir
 
 ## Calendar / programs
 
 - Entries from `programs.data`; date mapping `programSchedule` / `getProgramEntriesForDate`
 - Complete workout: activity toggle; meals: `toggleMealCompletion(date, mealType, entryIds)`
 - Meal types: kahvaltı, ara öğünler, öğle, akşam (see `MEAL_TYPES`)
-- Basic/Eko AI plans: see skill **yeniform-ai-coaching** (Coaching Engine + Mifflin macros + `food_dictionary`)
+- Eski `ai_basic` / `ai_eko` kaynakları listelenmez (`programPackageScope`)
 
 ## Calorie AI
 
@@ -32,4 +32,4 @@ description: >-
 
 ## Related
 
-[reference.md](reference.md) · `yeniform-ai-coaching` · `yeniform-membership-payments` for gates
+[reference.md](reference.md) · `yeniform-membership-payments` for gates

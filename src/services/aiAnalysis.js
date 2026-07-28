@@ -1,5 +1,4 @@
-// Kural Tabanlı Analiz Servisi — Kişiselleştirilmiş sağlık analizi
-// Basic paket üyelerine kayıt sonrası otomatik olarak uygulanır.
+// Kural Tabanlı Analiz Servisi — Kişiselleştirilmiş sağlık analizi (ham profil / HT)
 
 import { describeHealthTest, normalizeHealthTestForAnalysis } from '../data/healthTest'
 import { enrichProfileForAnalysis } from '../utils/healthProfile'
@@ -361,4 +360,4 @@ function generateWeeklyPlan(profile, libraryExercises = []) {
   }))
 }
 
-// Beslenme ipuçları AI ile üretilir (api/ai-nutrition-tips.js → memberHealthSync)
+// Beslenme programları personel (diyetisyen) tarafından gönderilir.

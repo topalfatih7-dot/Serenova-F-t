@@ -16,8 +16,11 @@ description: >-
 
 ## Plan IDs
 
-`free` | `eko` | `diyet` | `spor` | `doktor` | `vip`  
-Durations: 1 / 3 / 6 months (`doktor` = one-time).
+**Satılan:** `diyet` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS`)  
+**Fallback:** `free` (süresi bitmiş)  
+**Eski (yeni satış yok):** `eko` — mevcut üyeler admin ile taşınır  
+
+Durations: 1 / 3 / 6 months (`doktor` = one-time). Ücretsiz kayıt yok — onboarding Stripe zorunlu.
 
 ## Gate helpers (parity with web)
 
@@ -30,10 +33,9 @@ From `src/data/membershipPlans.js` — copy into mobile:
 
 ## When coding or documenting
 
-1. Read `docs/mobile/04-payments-iap.md` and `domains/membership-entitlements.md`.
-2. Never unlock paid features client-only; server/RLS + membership row must agree.
-3. New webhook: RevenueCat → update same fields as Stripe webhook.
-4. Expiry → downgrade to `free` (parity `syncMembershipExpiryStatus`).
+1. Never unlock paid features client-only; server/RLS + membership row must agree.
+2. New webhook: RevenueCat → update same fields as Stripe webhook.
+3. Expiry → downgrade to `free` (`api/_membershipExpiry.js` / `syncMemberPackages`).
 
 ## Related
 

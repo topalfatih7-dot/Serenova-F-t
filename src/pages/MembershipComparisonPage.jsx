@@ -40,7 +40,7 @@ const HOW_IT_WORKS_MEMBER = [
 ]
 
 const MEMBERSHIP_FAQ = [
-  { q: 'Ücretsiz Basic paketle başlayabilir miyim?', a: 'Evet. Basic paket ücretsizdir; kişisel sağlık analizi ile başlayabilirsiniz. Antrenman ve beslenme programları ücretli paketlerde koç / diyetisyen tarafından hazırlanır.' },
+  { q: 'Hangi paketlerle başlayabilirim?', a: 'Diyet, Spor, Doktor veya VIP paketlerinden birini seçerek Stripe ile kayıt olabilirsiniz. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır.' },
   { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 2 online diyetisyen görüşmesi Diyet ve VIP paketlerindedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
   { q: 'Online koçluk hangi pakette?', a: 'Ayda 2 online koç görüşmesi Spor ve VIP paketlerindedir. Ayrıntılar online koçluk hizmet sayfasında.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
@@ -258,7 +258,7 @@ export default function MembershipComparisonPage() {
             {isMember ? 'Mevcut planınıza dönmek veya detayları görmek için profilinize gidin.' : 'Hâlâ emin değil misiniz?'}
           </p>
           <Link
-            to={isMember ? '/profile' : '/onboarding?plan=free'}
+            to={isMember ? '/profile' : '/membership'}
             className="btn-wellness mt-4 inline-flex !px-8 !py-3.5"
           >
             {isMember ? 'Profilime dön' : 'Ücretsiz başlayın'}

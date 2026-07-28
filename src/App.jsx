@@ -49,6 +49,7 @@ const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
 const StaffSelfProfilePage = lazy(() => import('./pages/staff/StaffSelfProfilePage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffClientProgramPage = lazy(() => import('./pages/staff/StaffClientProgramPage'))
+const StaffClientNutritionPage = lazy(() => import('./pages/staff/StaffClientNutritionPage'))
 const StaffProgramsPage = lazy(() => import('./pages/staff/StaffProgramsPage'))
 const StaffListsPage = lazy(() => import('./pages/staff/StaffListsPage'))
 const StaffMessagesPage = lazy(() => import('./pages/staff/StaffMessagesPage'))
@@ -74,6 +75,8 @@ const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
 const AdminPremiumPage = lazy(() => import('./pages/admin/AdminPremiumPage'))
+const AdminProgramsPage = lazy(() => import('./pages/admin/AdminProgramsPage'))
+const AdminProgramEditPage = lazy(() => import('./pages/admin/AdminProgramEditPage'))
 const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage'))
 const AdminAccountPage = lazy(() => import('./pages/admin/AdminAccountPage'))
 const VideoCallPage = lazy(() => import('./pages/VideoCallPage'))
@@ -167,6 +170,7 @@ export default function App() {
                 <Route path="staff/notifications" element={<StaffNotificationsPage />} />
                 <Route path="staff/clients/:memberId/health" element={<MemberHealthProfilePage audience="staff" />} />
                 <Route path="staff/clients/:memberId/program" element={<StaffClientProgramPage />} />
+                <Route path="staff/clients/:memberId/list" element={<StaffClientNutritionPage />} />
                 <Route path="staff/messages" element={<StaffMessagesPage />} />
                 <Route path="staff/messages/:memberId" element={<StaffMessagesPage />} />
                 <Route path="staff/admin-messages" element={<StaffAdminMessagesPage />} />
@@ -187,6 +191,8 @@ export default function App() {
                 <Route path="admin/members/:memberId/health" element={<MemberHealthProfilePage audience="admin" />} />
                 <Route path="admin/plans" element={<AdminPlansPage />} />
                 <Route path="admin/premium" element={<AdminPremiumPage />} />
+                <Route path="admin/programs" element={<AdminProgramsPage />} />
+                <Route path="admin/programs/:programId/edit" element={<AdminProgramEditPage />} />
                 <Route path="admin/applications" element={<AdminApplicationsPage />} />
                 <Route path="admin/library" element={<AdminLibraryPage />} />
                 <Route path="admin/staff" element={<AdminStaffPage />} />

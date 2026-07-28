@@ -33,7 +33,7 @@ export const ONLINE_DIYETISYEN = {
       steps: [
         {
           title: 'Kayıt ve sağlık analizi',
-          text: 'Ücretsiz Basic veya Diyet paketiyle kayıt olun; kısa sağlık ve hedef sorularını tamamlayın. Bu veriler diyetisyen eşleşmesi ve programın temelini oluşturur.',
+          text: 'Diyet veya VIP paketiyle kayıt olun; kısa sağlık ve hedef sorularını tamamlayın. Bu veriler diyetisyen eşleşmesi ve programın temelini oluşturur.',
         },
         {
           title: 'Diyetisyen eşleşmesi',
@@ -59,7 +59,7 @@ export const ONLINE_DIYETISYEN = {
     {
       h2: 'Paketler ve fiyat yönü',
       paragraphs: [
-        'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin; **Basic ile ücretsiz** sisteme girip sonra yükseltmek de mümkündür.',
+        'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin.',
         'Tek diyetisyen kliniklerinden farkımız: aynı hesapta **antrenman programı**, video kütüphanesi ve isteğe bağlı online koçluk bir arada yönetilir.',
       ],
     },
@@ -71,7 +71,7 @@ export const ONLINE_DIYETISYEN = {
     },
     {
       q: 'Online diyetisyen paketi ne kadar?',
-      a: 'Diyet paketi aylık ve 3–6 aylık seçeneklerle sunulur. Güncel fiyatları üyelik sayfasından görebilir, Basic ile ücretsiz başlayabilirsiniz.',
+      a: 'Diyet paketi aylık ve 3–6 aylık seçeneklerle sunulur. Güncel fiyatları üyelik sayfasından görebilirsiniz.',
     },
     {
       q: 'Sadece diyetisyen mi, yoksa koç da var mı?',
@@ -139,7 +139,7 @@ export const ONLINE_KOCLUK = {
     {
       h2: 'Paketler ve fiyat yönü',
       paragraphs: [
-        'Online koç görüşmeleri **Spor paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 koç + 2 diyetisyen)** sunulur. Eko paket otomatik program verir; birebir koç seansı Spor/VIP’tedir. Güncel fiyatlar için üyelik sayfasını inceleyin; **Basic ile ücretsiz** başlamak da mümkündür.',
+        'Online koç görüşmeleri **Spor paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 koç + 2 diyetisyen)** sunulur. Güncel fiyatlar için üyelik sayfasını inceleyin.',
         'Beslenmeyi de aynı çatı altında yönetmek isterseniz **online diyetisyen** hizmetimize veya **VIP pakete** göz atın — antrenman ve beslenme tek hesapta ilerler.',
       ],
     },
@@ -155,7 +155,7 @@ export const ONLINE_KOCLUK = {
     },
     {
       q: 'Online spor koçu paketi hangi planda?',
-      a: 'Birebir online koç görüşmesi Spor ve VIP paketlerindedir. Ücretsiz Basic ile sisteme girip sonra yükseltebilirsiniz.',
+      a: 'Birebir online koç görüşmesi Spor ve VIP paketlerindedir. Detaylar için üyelik sayfasını inceleyin.',
     },
     {
       q: 'Koç ve diyetisyeni birlikte alabilir miyim?',

@@ -65,7 +65,7 @@ export default function PromoBanner() {
 
             <div className="flex shrink-0 items-center gap-2">
               <Link
-                to="/onboarding?plan=free"
+                to="/membership"
                 className="group inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur transition hover:bg-white/25 sm:px-4 sm:text-sm"
               >
                 Hemen Başla

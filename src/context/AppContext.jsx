@@ -853,15 +853,6 @@ export function AppProvider({ children }) {
     const r = await sb.changeMemberPlan(currentMember, planId, planPrice, durationMonths)
     if (r.success) {
       await reloadRemote()
-      if (planId === 'eko' && r.member) {
-        try {
-          const { syncEkoProgramsIfNeeded } = await import('../services/memberHealthSync')
-          await syncEkoProgramsIfNeeded(r.member, { force: true })
-          await reloadRemote()
-        } catch (e) {
-          console.warn('[changePlan] eko AI sync', e)
-        }
-      }
     }
     return r
   }, [currentMember, reloadRemote])
@@ -910,18 +901,7 @@ export function AppProvider({ children }) {
     if (!r.success) return r
 
     await reloadRemote()
-
-    // Eko'ya geçiş veya admin Eko paket kaydı → AI diyet/antrenman üret
-    const toEko = (options?.membership === 'eko' || options?.planId === 'eko')
-      && r.member?.membership === 'eko'
-    if (!toEko || !memberId) return r
-
-    const { fetchAiEkoProgramsAdmin } = await import('../services/aiBasicPrograms')
-    const aiSync = await fetchAiEkoProgramsAdmin(memberId, { force: true })
-    if (aiSync.synced || aiSync.ok) {
-      try { await reloadRemote() } catch { /* ignore */ }
-    }
-    return { ...r, aiSync }
+    return r
   }, [reloadRemote])
 
   const adminSetMembershipStatus = useCallback(async (memberId, options) => {
@@ -968,6 +948,33 @@ export function AppProvider({ children }) {
           ? prev.programs.map((x, i) => (i === idx ? p : x))
           : [p, ...prev.programs]
         return { ...prev, programs }
+      })
+    } else {
+      await reloadRemote()
+    }
+    return p
+  }, [reloadRemote])
+
+  const deleteProgram = useCallback(async (id) => {
+    const result = await sb.deleteProgram(id)
+    if (result?.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return { ...prev, programs: (prev.programs || []).filter((p) => p.id !== id) }
+      })
+    }
+    return result
+  }, [])
+
+  const updateProgram = useCallback(async (id, patch) => {
+    const p = await sb.updateProgram(id, patch)
+    if (p) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          programs: (prev.programs || []).map((x) => (x.id === id ? p : x)),
+        }
       })
     } else {
       await reloadRemote()
@@ -1491,6 +1498,8 @@ export function AppProvider({ children }) {
     adminUpdatePremium,
     adminSetMembershipStatus,
     createProgram,
+    deleteProgram,
+    updateProgram,
     addPost,
     editPost,
     removePost,
@@ -1569,6 +1578,8 @@ export function AppProvider({ children }) {
     adminUpdatePremium,
     adminSetMembershipStatus,
     createProgram,
+    deleteProgram,
+    updateProgram,
     addPost,
     editPost,
     removePost,

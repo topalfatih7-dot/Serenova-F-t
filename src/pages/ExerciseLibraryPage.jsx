@@ -91,7 +91,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     ? 'Henüz program hareketi yok'
     : 'Hareket bulunamadı'
   const emptyDescription = !hasProgramExercises
-    ? 'Koçunuzun veya yapay zekanın oluşturduğu antrenman programındaki hareketler burada görünür.'
+    ? 'Koçunuzun oluşturduğu antrenman programındaki hareketler burada görünür.'
     : 'Arama veya filtreleri değiştirin.'
 
   return (

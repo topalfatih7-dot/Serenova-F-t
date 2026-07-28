@@ -254,7 +254,7 @@ export default function AboutPage() {
               size özel programlar ve gerçek uzman desteğiyle sağlıklı yaşamı sürdürülebilir kılmak.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/onboarding?plan=free" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110">
+              <Link to="/membership" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110">
                 Ücretsiz Başla
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
@@ -453,8 +453,8 @@ export default function AboutPage() {
                   görüşmeler ve ilerleme grafikleriyle motivasyonunuz hiç düşmüyor.
                 </p>
                 <p>
-                  Ücretsiz Basic paketle risksiz başlayabilir, hazır hissettiğinizde uzman desteği
-                  içeren paketlere geçerek koç, diyetisyen ve doktor eşleşmenizi güçlendirebilirsiniz.
+                  Diyet, Spor, Doktor veya VIP paketleriyle uzman desteği
+                  içeren paketlerle koç, diyetisyen ve doktor eşleşmenizi güçlendirebilirsiniz.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
@@ -616,7 +616,7 @@ export default function AboutPage() {
               Sorularınız mı var? Ekibimiz her zaman bir mesaj uzağınızda.
             </p>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Link to="/onboarding?plan=free" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base">
+              <Link to="/membership" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base">
                 Ücretsiz Başla
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>

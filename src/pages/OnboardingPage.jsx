@@ -20,7 +20,7 @@ import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, getTierPrice, PLAN_IDS, sortPlansForDisplay, getDefaultPackageForPlan, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, getTierPrice, SELLABLE_PLAN_IDS, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
@@ -37,17 +37,20 @@ import { isTurnstileEnabled } from '../config/turnstile'
 
 /** Eski URL plan parametrelerini güncel plan id'lerine eşler */
 const LEGACY_PLAN_MAP = {
-  gumus: 'eko',
+  free: RECOMMENDED_PLAN,
+  eko: 'diyet',
+  gumus: 'diyet',
   altin: 'doktor',
   platinum: 'vip',
   premium: 'vip',
   kurucu: 'doktor',
+  basic: RECOMMENDED_PLAN,
 }
 
 function resolvePlanFromQuery(raw) {
-  if (!raw) return 'free'
+  if (!raw) return RECOMMENDED_PLAN
   const mapped = LEGACY_PLAN_MAP[raw] || raw
-  return PLAN_IDS.includes(mapped) ? mapped : 'free'
+  return SELLABLE_PLAN_IDS.includes(mapped) ? mapped : RECOMMENDED_PLAN
 }
 
 const BENEFITS = [
@@ -173,7 +176,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
 
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
-  const rawPlan = searchParams.get('plan') || 'free'
+  const rawPlan = searchParams.get('plan') || RECOMMENDED_PLAN
   const preselectedPlan = resolvePlanFromQuery(rawPlan)
 
   const [step, setStep] = useState(0)
@@ -211,7 +214,7 @@ export default function OnboardingPage() {
     setDurationMonths(resolveDurationMonths(data.membership, searchParams))
   }
 
-  const { register, completeOAuthMember, plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
+  const { plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
@@ -253,7 +256,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!isExistingMember && searchParams.get('payment') === 'cancelled') {
-      toast('Ödeme iptal edildi. Ücretsiz üye olarak devam edebilir veya tekrar deneyebilirsiniz.', 'info')
+      toast('Ödeme iptal edildi. Bir paket seçerek tekrar deneyebilirsiniz.', 'info')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -373,48 +376,6 @@ export default function OnboardingPage() {
     return null
   }
 
-  const persistRegistration = async (membership, paymentAmount = 0) => {
-    const profile = buildProfile()
-    const packageConfig = isPaidMembership(membership)
-      ? getDefaultPackageForPlan(membership, durationMonths)
-      : null
-    const paymentOpts = paymentAmount ? { payment: paymentAmount } : {}
-
-    if (isPaidMembership(membership)) {
-      return {
-        success: false,
-        error: 'Ücretli paketler yalnızca Stripe ödeme ile açılır.',
-      }
-    }
-    if (isOAuthFlow) {
-      return completeOAuthMember(profile, membership, packageConfig, paymentOpts)
-    }
-    return register(profile, 'free')
-  }
-
-  const finishFree = async () => {
-    if (submitting) return
-    const turnstileErr = requireTurnstileOrError()
-    if (turnstileErr) {
-      showFormError(turnstileErr)
-      return
-    }
-    setSubmitting(true)
-    try {
-      const result = await persistRegistration('free')
-      if (!result.success) {
-        setTurnstileToken('')
-        setTurnstileKey((k) => k + 1)
-        showFormError(result.error || 'Kayıt tamamlanamadı.')
-        return
-      }
-      setWelcomePaid(false)
-      setWelcomeOpen(true)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   // Stripe: önce yalnızca auth + bekleyen kayıt metadata; üye satırı ödeme webhook'unda oluşur.
   const startStripeRegister = async () => {
     if (submitting) return
@@ -463,11 +424,11 @@ export default function OnboardingPage() {
   }
 
   const finish = () => {
-    if (isPaid) {
-      startStripeRegister()
-    } else {
-      finishFree()
+    if (!SELLABLE_PLAN_IDS.includes(data.membership)) {
+      showFormError('Kayıt için Diyet, Spor, Doktor veya VIP paketinden birini seçin.')
+      return
     }
+    startStripeRegister()
   }
 
   const next = () => {

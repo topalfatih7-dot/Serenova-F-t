@@ -11,13 +11,12 @@ import {
   isHealthTestComplete,
   isSectionComplete,
 } from '../data/healthTest'
-import { syncMemberHealthAssets } from '../services/memberHealthSync'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 export default function HealthTestSectionPage() {
   const { sectionId } = useParams()
   const navigate = useNavigate()
-  const { user, packageConfig, saveHealthTestProgress, myPrograms, refresh, isFreeTrialExpired } = useApp()
+  const { user, packageConfig, saveHealthTestProgress, isFreeTrialExpired } = useApp()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
@@ -45,31 +44,6 @@ export default function HealthTestSectionPage() {
       const allSectionsDone = isHealthTestComplete(healthTest, user.gender, packageConfig)
       if (allSectionsDone) {
         toast(`${section.title} tamamlandı. Tüm kategoriler kaydedildi.`, 'success')
-
-        if (user.membership === 'free' || user.membership === 'eko') {
-          const profile = { ...user, healthTest }
-          const sync = await syncMemberHealthAssets(profile, {
-            programs: myPrograms,
-            force: user.membership === 'eko' && !myPrograms?.some((p) => p.source === 'ai_eko'),
-          })
-          if (sync.synced) {
-            try { await refresh?.() } catch { /* ignore */ }
-            const msg = user.membership === 'eko'
-              ? 'Eko paket antrenman (30 gün) ve beslenme (15 gün) programınız hazır.'
-              : 'Deneme süreniz boyunca geçerli antrenman ve beslenme programınız hazır.'
-            toast(msg, 'success')
-            navigate('/programs')
-            return
-          }
-          if (sync.skipped === 'window_closed') {
-            toast('Ücretsiz deneme süreniz dolmuş; otomatik program oluşturulamadı.', 'error')
-          } else if (sync.skipped === 'package_expired') {
-            toast('Eko paket süreniz dolmuş; otomatik program oluşturulamadı.', 'error')
-          } else if (sync.reason === 'ai_error') {
-            toast(sync.error || 'Otomatik program şu an oluşturulamadı. Daha sonra tekrar deneyebilirsiniz.', 'error')
-          }
-        }
-
         navigate('/health-test')
       } else {
         toast(`${section.title} kaydedildi.`, 'success')
@@ -78,7 +52,7 @@ export default function HealthTestSectionPage() {
     } finally {
       setSaving(false)
     }
-  }, [saveHealthTestProgress, user, packageConfig, section, toast, navigate, myPrograms, refresh])
+  }, [saveHealthTestProgress, user, packageConfig, section, toast, navigate])
 
   if (!user?.id) return <Navigate to="/login" replace />
 

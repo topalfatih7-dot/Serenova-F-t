@@ -55,15 +55,21 @@ export function formatPlanPrice(plan) {
 
 export const PAID_MEMBERSHIPS = [
   'eko', 'diyet', 'spor', 'doktor', 'vip',
-  // geriye dönük uyumluluk
+  // geriye dönük uyumluluk (mevcut üyeler)
   'kurucu', 'gumus', 'altin', 'platinum', 'premium',
 ]
+
+/** Satışa açık planlar (ücretsiz kayıt / Eko kapalı) */
+export const SELLABLE_PLAN_IDS = ['diyet', 'spor', 'doktor', 'vip']
+
+/** Admin atama dropdown — Eko yeni atanmaz; free = süre bitmiş fallback */
+export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'diyet', 'spor', 'doktor', 'vip']
 
 export const PLAN_IDS = ['free', 'eko', 'diyet', 'spor', 'doktor', 'vip']
 
 export const PLAN_LABELS = {
-  free: 'Basic',
-  eko: 'Eko Paket',
+  free: 'Paketsiz',
+  eko: 'Eko Paket (eski)',
   diyet: 'Diyet Paketi',
   spor: 'Spor Paketi',
   doktor: 'Doktor Paketi',
@@ -81,11 +87,12 @@ export function getPlanBadge(plan) {
   return plan?.badge || null
 }
 
-/** Landing / onboarding için önerilen sıra */
-export const PLAN_DISPLAY_ORDER = ['free', 'eko', 'diyet', 'spor', 'doktor', 'vip']
+/** Landing / onboarding için önerilen sıra (yalnızca satılan paketler) */
+export const PLAN_DISPLAY_ORDER = ['diyet', 'spor', 'doktor', 'vip']
 
 export function sortPlansForDisplay(plans = []) {
-  return [...plans].sort((a, b) => {
+  const sellable = plans.filter((p) => SELLABLE_PLAN_IDS.includes(p.id))
+  return [...sellable].sort((a, b) => {
     const ia = PLAN_DISPLAY_ORDER.indexOf(a.id)
     const ib = PLAN_DISPLAY_ORDER.indexOf(b.id)
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
@@ -93,6 +100,10 @@ export function sortPlansForDisplay(plans = []) {
 }
 
 export const isPaidMembership = (membership) => PAID_MEMBERSHIPS.includes(membership)
+
+export function isSellablePlanId(id) {
+  return SELLABLE_PLAN_IDS.includes(id)
+}
 
 export function getPlanLabel(id) {
   return PLAN_LABELS[id] || id
@@ -155,7 +166,7 @@ export function buildPricingTiers(planId) {
 
 export const FREE_PLAN = {
   id: 'free',
-  name: 'Basic',
+  name: 'Paketsiz',
   price: 0,
   period: 'Süresiz',
   color: 'sage',
@@ -164,27 +175,23 @@ export const FREE_PLAN = {
     { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
     { text: 'Video Kütüphanesi (Temel)', included: true },
     { text: 'Program Takibi', included: true },
-    { text: 'Otomatik Beslenme Programı (deneme süresi)', included: true },
-    { text: 'Otomatik Antrenman Programı (deneme süresi)', included: true },
     { text: 'Birebir Koç Görüşmesi', included: false },
     { text: 'Diyetisyen Randevusu', included: false },
     { text: 'Manuel Kalori Hesaplama', included: false },
     { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['48 saat deneme', 'Deneme süresi programları', 'Temel video erişimi', 'Standart destek'],
+  limits: ['Süresi bitmiş üyelik fallback', 'Temel erişim'],
 }
 
 export const EKO_PLAN = {
   id: 'eko',
-  name: 'Eko Paket',
+  name: 'Eko Paket (eski)',
   price: 1299,
   period: 'Aylık',
   color: 'sage',
   pricingTiers: buildPricingTiers('eko'),
   features: [
     { text: 'Manuel Kalori Hesaplama', included: true },
-    { text: 'Diyet Programı (15 günde bir, paket boyunca)', included: true },
-    { text: 'Spor Programı (30 günde bir, paket boyunca)', included: true },
     { text: 'Video Kütüphanesi (Sınırlı)', included: true },
     { text: 'İlerleme Raporları', included: true },
     { text: 'Takip Programı', included: true },
@@ -192,7 +199,7 @@ export const EKO_PLAN = {
     { text: 'Diyetisyen Randevusu', included: false },
     { text: 'Fotoğraflı Kalori Tespiti', included: false },
   ],
-  limits: ['Sınırlı video erişimi', 'AI program yenilemeleri', 'Standart destek'],
+  limits: ['Yeni satış kapalı — mevcut üyeler admin ile taşınır'],
 }
 
 export const DIYET_PLAN = {
@@ -285,7 +292,7 @@ export const PLATINUM_PLAN = VIP_PLAN
 export const PREMIUM_PLAN = VIP_PLAN
 export const KURUCU_PLAN = DOKTOR_PLAN
 
-export const ALL_PLANS = [FREE_PLAN, EKO_PLAN, DIYET_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
+export const ALL_PLANS = [DIYET_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
 
 export const ADD_ONS = [
   { id: 'group', name: 'Grup Koçluğu', price: 450, desc: 'Haftalık canlı grup seansları' },

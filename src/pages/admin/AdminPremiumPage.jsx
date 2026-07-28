@@ -11,7 +11,7 @@ import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
 import AdminMembershipStatusPanel from '../../components/admin/AdminMembershipStatusPanel'
 import {
   isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor,
-  memberNeedsStaffAssignment, PLAN_IDS, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
+  memberNeedsStaffAssignment, ADMIN_ASSIGNABLE_PLAN_IDS, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
 } from '../../data/membershipPlans'
 import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
@@ -202,9 +202,6 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
   const dietitianName = dietitians.find((s) => s.id === dietitianId)?.name || ''
   const doctorName = doctors.find((s) => s.id === doctorId)?.name || ''
   const planChanged = membership !== member.membership
-  const hasEkoAiPrograms = (programs || []).some(
-    (p) => p.memberId === member.id && p.source === 'ai_eko',
-  )
 
   const submit = () => {
     const payload = {
@@ -216,10 +213,7 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
       doctorSessions: showDoctor ? doctorSessions : [],
     }
 
-    // Eko seçili + AI program yoksa tekrar tetikle (önceki sessiz hata sonrası kurtarma)
-    const needEkoAi = membership === 'eko' && (planChanged || !hasEkoAiPrograms)
-
-    if (planChanged || addPackage || needEkoAi) {
+    if (planChanged || addPackage) {
       payload.membership = membership
       payload.durationMonths = durationMonths
       if (addPackage) payload.addPackage = true
@@ -286,9 +280,12 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
                 onChange={(e) => setMembership(e.target.value)}
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm"
               >
-                {PLAN_IDS.map((id) => (
+                {ADMIN_ASSIGNABLE_PLAN_IDS.map((id) => (
                   <option key={id} value={id}>{PLAN_LABELS[id] || id}</option>
                 ))}
+                {membership === 'eko' && (
+                  <option value="eko">{PLAN_LABELS.eko}</option>
+                )}
               </select>
             </label>
             <label className="block">
@@ -509,17 +506,6 @@ export default function AdminPremiumPage() {
       const r = await adminUpdatePremium(selected.id, options)
       if (r.success) {
         toast('Premium ayarları kaydedildi', 'success')
-        if (options?.membership === 'eko') {
-          if (r.aiSync?.synced) {
-            toast('Eko AI diyet (15g) ve antrenman (30g) programları oluşturuldu', 'success')
-          } else if (r.aiSync && !r.aiSync.ok) {
-            toast(r.aiSync.error || 'Eko AI programları oluşturulamadı', 'error')
-          } else if (r.aiSync?.skipped) {
-            toast(r.aiSync.error || 'Eko AI program üretimi atlandı', 'error')
-          } else if (!r.aiSync) {
-            toast('Eko AI program tetiklenemedi — tekrar kaydedin', 'error')
-          }
-        }
         setSelected(null)
       } else {
         toast(r.error || 'Kaydedilemedi', 'error')

@@ -6,11 +6,9 @@
 - `src/pages/HealthTestPage.jsx`, `HealthTestSectionPage.jsx`, `HealthTestFinishPage.jsx`
 - `src/pages/CalendarPage.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`
 - `src/utils/programSchedule.js`, `programPackageScope.js`
-- `src/services/aiAnalysis.js`, `memberHealthSync.js`, `healthScoreAnalysis.js`
-- `src/hooks/useHealthAnalysisSync.js` — auto score after HT (no manual refresh UI)
+- `src/services/healthScoreAnalysis.js` — tarihsel meta (AI skor üretimi yok)
 - `api/ai-food-text.js`, `api/ai-food-vision.js`
-- AI Basic/Eko programs: `api/_aiEkoPrograms.js`, `api/_coaching/*` → skill `yeniform-ai-coaching`
 
 ## Staff visibility
 
-Staff health profile: answers + clinical notes; **no** full `healthAnalysis` UI (`showHealthAnalysis={false}`). Admin sees analysis.
+Staff health profile: answers + clinical notes; tarihsel `healthAnalysis` brief varsa `StaffHealthBrief` gösterir.
