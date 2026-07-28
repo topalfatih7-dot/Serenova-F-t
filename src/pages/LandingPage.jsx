@@ -22,6 +22,7 @@ import LatestBlogPosts from '../components/landing/LatestBlogPosts'
 import HeroBackgroundVideo from '../components/ui/HeroBackgroundVideo'
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS, sortPlansForDisplay } from '../data/membershipPlans'
+import { getPlanCtaLabel } from '../utils/planCta'
 import { useApp } from '../context/AppContext'
 import { usePlatformDisplayStats } from '../hooks/usePlatformDisplayStats'
 import JsonLd from '../components/seo/JsonLd'
@@ -133,7 +134,7 @@ export default function LandingPage() {
               className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-white/85 sm:text-base lg:mx-0"
             >
               Hedefinize uygun antrenman ve beslenme planı; uzman eşliği ve
-              birebir video görüşmelerle birlikte ilerlersiniz. Ücretsiz başlayın —
+              birebir video görüşmelerle birlikte ilerlersiniz. Paketinizi seçin —
               evde veya salonda, kendi temposunuzda sürdürün.
             </motion.p>
 
@@ -149,7 +150,7 @@ export default function LandingPage() {
                   to="/membership"
                   className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base"
                 >
-                  🚀 Ücretsiz Başlayın
+                  🚀 Paket Seçin
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </motion.div>
@@ -185,7 +186,7 @@ export default function LandingPage() {
               custom={5}
               className="mt-3 text-xs text-white/60"
             >
-              Kredi kartı gerekmez · 2 dakikada üye olun
+              Güvenli ödeme · 2 dakikada üye olun
             </motion.p>
 
             {/* Güven rozetleri + istatistikler */}
@@ -284,7 +285,7 @@ export default function LandingPage() {
                   plan={plan}
                   featured={plan.id === 'vip'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
-                  ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+                  ctaLabel={getPlanCtaLabel(plan)}
                 />
               </div>
             ))}
@@ -302,7 +303,7 @@ export default function LandingPage() {
                   plan={plan}
                   featured={plan.id === 'vip'}
                   ctaTo={`/onboarding?plan=${plan.id}`}
-                  ctaLabel={plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`}
+                  ctaLabel={getPlanCtaLabel(plan)}
                 />
                 </div>
               </div>

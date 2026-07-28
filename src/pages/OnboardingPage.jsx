@@ -165,7 +165,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
                 ? 'Zaten bu plandasınız'
                 : isPaid
                   ? `${selectedPlan?.name} · ${selectedPrice.toLocaleString('tr-TR')}₺ ile Geç`
-                  : 'Ücretsiz Plana Geç'}
+                  : 'Pakete geç'}
             </button>
           </div>
         </div>
@@ -540,7 +540,7 @@ export default function OnboardingPage() {
               {step === 0
                 ? (isOAuthFlow
                   ? 'Google hesabınızla bağlandınız. İletişim için telefon numaranızı girin.'
-                  : 'Birkaç bilgi yeterli — ücretsiz başlayabilir, istediğiniz zaman yükseltebilirsiniz.')
+                  : 'Birkaç bilgi yeterli — paketinizi seçin, istediğiniz zaman yükseltebilirsiniz.')
                 : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
             </p>
 
@@ -747,7 +747,7 @@ export default function OnboardingPage() {
                     ? 'Kaydediliyor…'
                     : isPaid
                       ? `${selectedPlan?.name} · Ödemeye Geç`
-                      : 'Ücretsiz Kayıt Ol')
+                      : 'Paket Seçin')
                   : 'Devam Et'}
                 {!submitting && <ArrowRight className="h-5 w-5" />}
               </motion.button>

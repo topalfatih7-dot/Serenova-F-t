@@ -38,14 +38,14 @@ export default function AdminOverviewPage() {
       {!hasMembers && (
         <EmptyState
           title="Henüz kayıtlı üye yok"
-          description="İlk üyeler /onboarding üzerinden ücretsiz veya Stripe ile ücretli kayıt olabilir."
+          description="İlk üyeler /onboarding üzerinden ücretli paket seçerek Stripe ile kayıt olabilir."
         />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard label="Toplam Üye" value={adminStats.totalMembers} sub={`+${adminStats.newThisMonth} bu ay`} icon={Users} accent="brand" />
         <StatsCard label="Premium Üye" value={adminStats.premium} sub={hasMembers ? `%${pct} oran` : '—'} icon={Crown} accent="gold" />
-        <StatsCard label="Ücretsiz Üye" value={adminStats.free} sub="Kayıtlı" icon={UserCheck} accent="sage" />
+        <StatsCard label="Paketsiz Üye" value={adminStats.free} sub="Süre bitmiş" icon={UserCheck} accent="sage" />
         <StatsCard label="MRR" value={adminStats.mrr ? `${(adminStats.mrr / 1000).toFixed(1)}K₺` : '0₺'} sub={`Toplam gelir: ${adminStats.totalRevenue.toLocaleString('tr-TR')}₺`} icon={TrendingUp} accent="brand" />
       </div>
 

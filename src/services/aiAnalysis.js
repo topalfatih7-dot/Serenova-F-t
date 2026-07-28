@@ -33,15 +33,6 @@ export function isHealthAnalysisStale(analysis, libraryCount = 0) {
   return false
 }
 
-/** Gemini ipuçları henüz yok ve denenmedi mi? (sonsuz retry önleme) */
-export function needsAiNutritionTips(analysis) {
-  const tips = analysis?.dietitianRecommendations
-  if (!tips) return true
-  if (tips.aiGenerated) return false
-  if (tips.aiAttemptedAt) return false
-  return true
-}
-
 export function generateHealthAnalysis(profile, exercises = []) {
   const enriched = enrichProfileForAnalysis(profile)
   const bmi = calculateBmi(enriched.weight, enriched.height)

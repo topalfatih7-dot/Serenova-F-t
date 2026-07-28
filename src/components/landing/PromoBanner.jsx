@@ -56,9 +56,9 @@ export default function PromoBanner() {
                 <Sparkles className="h-4 w-4 text-gold-300" />
               </motion.span>
               <p className="truncate text-xs font-medium sm:text-sm">
-                <span className="font-semibold">Ücretsiz başla</span>
+                <span className="font-semibold">Paketini seç</span>
                 <span className="mx-1.5 hidden text-white/50 sm:inline">·</span>
-                <span className="hidden text-white/90 sm:inline">Kredi kartı gerekmez</span>
+                <span className="hidden text-white/90 sm:inline">Diyet, Spor, Doktor veya VIP</span>
                 <CreditCard className="ml-1 inline h-3.5 w-3.5 text-white/70 sm:hidden" />
               </p>
             </div>

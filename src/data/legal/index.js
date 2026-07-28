@@ -74,7 +74,7 @@ export const LEGAL_FOOTER_PARAGRAPHS = [
 
 export function getLegalMembershipNotice(brandName) {
   return [
-    `${brandName} platformuna üye olmak, hesap oluşturmak, ücretsiz veya ücretli paketlere kayıt olmak ya da ödeme adımını tamamlamak suretiyle; Üyelik ve Abonelik Sözleşmesi, Mesafeli Hizmet Sözleşmesi, KVKK Aydınlatma Metni, Gizlilik Politikası, Çerez Politikası, Sağlık Sorumluluk Reddi, Topluluk Kuralları, İptal ve İade Politikası ile platformda yayımlanan diğer tüm politika, bilgilendirme ve hizmet standartlarını okuduğunuzu, anladığınızı ve bağlayıcı şekilde kabul etmiş sayıldığınızı beyan etmiş olursunuz. Özel nitelikli kişisel veriler (sağlık verileri vb.) için ayrıca KVKK Açık Rıza Metni kapsamında gerekli onayları vermiş sayılırsınız.`,
+    `${brandName} platformuna üye olmak, hesap oluşturmak, ücretli paketlere kayıt olmak ya da ödeme adımını tamamlamak suretiyle; Üyelik ve Abonelik Sözleşmesi, Mesafeli Hizmet Sözleşmesi, KVKK Aydınlatma Metni, Gizlilik Politikası, Çerez Politikası, Sağlık Sorumluluk Reddi, Topluluk Kuralları, İptal ve İade Politikası ile platformda yayımlanan diğer tüm politika, bilgilendirme ve hizmet standartlarını okuduğunuzu, anladığınızı ve bağlayıcı şekilde kabul etmiş sayıldığınızı beyan etmiş olursunuz. Özel nitelikli kişisel veriler (sağlık verileri vb.) için ayrıca KVKK Açık Rıza Metni kapsamında gerekli onayları vermiş sayılırsınız.`,
     'Bu metinler zaman zaman güncellenebilir; güncel sürümler platform üzerinde yayımlandığı tarihten itibaren geçerlidir. Platform tıbbi teşhis veya tedavi hizmeti sunmaz; sunulan içerikler genel wellness ve yaşam tarzı rehberliği niteliğindedir.',
   ]
 }

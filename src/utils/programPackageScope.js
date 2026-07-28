@@ -89,14 +89,12 @@ export function isStaffProgramVisibleOnDate(program, date, member) {
 export function isProgramVisibleOnDate(program, date, member) {
   if (!program) return false
   if (!member) return true
-  if (program.source === 'ai_eko' || program.source === 'ai_basic') return false
   return isStaffProgramVisibleOnDate(program, date, member)
 }
 
 /** Program listesi: üyenin şu an görme hakkı var mı? */
 export function isProgramListedForMember(program, member) {
   if (!program || !member) return Boolean(program)
-  if (program.source === 'ai_eko' || program.source === 'ai_basic') return false
   return true
 }
 

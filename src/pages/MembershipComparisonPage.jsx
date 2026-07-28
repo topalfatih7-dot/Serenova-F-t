@@ -28,8 +28,8 @@ const comparisonRows = [
 ]
 
 const HOW_IT_WORKS_SIGNUP = [
-  { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Ücretsiz başlayın veya hedefinize uygun paketi seçin — her plan net özelliklerle listelenir.' },
-  { icon: CreditCard, title: '2. Güvenle kayıt olun', desc: 'Birkaç bilgi, şifre oluşturun. Ücretli planda güvenli ödeme ekranına geçersiniz.' },
+  { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Hedefinize uygun paketi seçin — Diyet, Spor, Doktor veya VIP; her plan net özelliklerle listelenir.' },
+  { icon: CreditCard, title: '2. Güvenle kayıt olun', desc: 'Birkaç bilgi, şifre oluşturun. Güvenli ödeme ekranına geçersiniz.' },
   { icon: LayoutDashboard, title: '3. Hemen başlayın', desc: 'Dashboard\'ınız açılır; programlarınız ve uzman desteğiniz hazır.' },
 ]
 
@@ -76,7 +76,7 @@ export default function MembershipComparisonPage() {
         subtitle={
           isMember
             ? 'Giriş yapmış hesabınızla plan değiştirebilir veya ek paket (ör. Doktor) satın alabilirsiniz. Yeni kayıt gerekmez.'
-            : 'Ücretsiz başlayın veya video görüşmeli diyetisyen / koç paketlerinden birini seçin. Gizli ücret yok, süre seçimi sizde.'
+            : 'Video görüşmeli diyetisyen / koç paketlerinden birini seçin. Gizli ücret yok, süre seçimi sizde.'
         }
       />
 
@@ -261,7 +261,7 @@ export default function MembershipComparisonPage() {
             to={isMember ? '/profile' : '/membership'}
             className="btn-wellness mt-4 inline-flex !px-8 !py-3.5"
           >
-            {isMember ? 'Profilime dön' : 'Ücretsiz başlayın'}
+            {isMember ? 'Profilime dön' : 'Paket seçin'}
           </Link>
         </motion.div>
 

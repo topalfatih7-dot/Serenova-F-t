@@ -14,7 +14,7 @@ const STEPS = [
     step: '02',
     icon: Sparkles,
     title: 'Planınız şekillensin',
-    desc: 'Ücretsiz sağlık analiziyle başlayın. Premium planda koç ve diyetisyen eşleşmesiyle programınız netleşir.',
+    desc: 'Sağlık analizinizle başlayın. Paketinizde koç ve diyetisyen eşleşmesiyle programınız netleşir.',
     accent: 'from-sage-500 to-sage-600',
   },
   {
@@ -156,7 +156,7 @@ export default function HowItWorksSection() {
               className="mt-10 text-center md:text-left"
             >
               <Link to="/membership" className="btn-wellness group inline-flex">
-                Ücretsiz Başla
+                Paket Seçin
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>

@@ -255,7 +255,7 @@ export default function AboutPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/membership" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110">
-                Ücretsiz Başla
+                Paket Seçin
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link to="/membership" className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
@@ -612,12 +612,12 @@ export default function AboutPage() {
               Dönüşüm yolculuğunuza bugün başlayın
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">
-              Ücretsiz kayıt olun, sağlık testinizi tamamlayın ve size özel programınızla tanışın.
+              Paketinizi seçin, sağlık testinizi tamamlayın; koç veya diyetisyeniniz size özel programı hazırlar.
               Sorularınız mı var? Ekibimiz her zaman bir mesaj uzağınızda.
             </p>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               <Link to="/membership" className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base">
-                Ücretsiz Başla
+                Paket Seçin
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link

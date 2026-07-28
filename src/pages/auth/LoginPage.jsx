@@ -286,7 +286,7 @@ export default function LoginPage() {
             <p className="mt-6 text-center text-base text-cream-800/60">
               Hesabınız yok mu?{' '}
               <Link to="/onboarding" className="font-semibold text-brand-600 hover:underline">
-                Ücretsiz kayıt olun
+                Kayıt olun
               </Link>
             </p>
           </AuthFormCard>

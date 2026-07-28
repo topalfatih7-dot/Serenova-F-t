@@ -64,7 +64,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
           {formatPlanPrice(plan)}
         </p>
         {isFree ? (
-          <p className="mt-1 text-sm text-sage-600">Kredi kartı gerekmez</p>
+          <p className="mt-1 text-sm text-sage-600">Süre bitmiş üyelik fallback</p>
         ) : isOneTime ? (
           <p className="mt-1 text-sm text-cream-800/60">{durationLabel} · mevcut üyeliğe eklenebilir</p>
         ) : (

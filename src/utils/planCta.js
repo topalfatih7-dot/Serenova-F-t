@@ -6,10 +6,10 @@ const PLAN_RANK = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
 /** Plan kartı / karşılaştırma CTA metni */
 export function getPlanCtaLabel(plan, { forMember = false, member = null, currentMembership = 'free' } = {}) {
   if (!forMember) {
-    return plan.price === 0 ? 'Ücretsiz Başla' : `${plan.name} ile Kayıt Ol`
+    return plan.price === 0 ? 'Paketleri İncele' : `${plan.name} ile Kayıt Ol`
   }
 
-  if (plan.price === 0) return 'Ücretsiz Plana Geç'
+  if (plan.price === 0) return 'Paketsiz moda geç'
   if (isOneTimePlan(plan.id)) return 'Doktor Paketi Ekle'
 
   const hasPaid = member

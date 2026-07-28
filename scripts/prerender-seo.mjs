@@ -20,7 +20,7 @@ const STATIC_SHELLS = {
   '/': {
     title: 'Yeni Form — Online Koçluk ve Online Diyetisyen Platformu',
     description:
-      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Basic (ücretsiz) paketle hemen başlayın.',
+      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor, Doktor veya VIP paketini seçin.',
     h1: 'Online koçluk ve diyetisyen ile size özel program',
     body: `<p>Online diyetisyen ve online spor koçunuz hedefinize göre programınızı hazırlar, video görüşmelerle yanınızda olur.</p>
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/membership">Üyelik paketleri</a></p>`,
@@ -28,7 +28,7 @@ const STATIC_SHELLS = {
   '/membership': {
     title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları | Yeni Form',
     description:
-      'Basic (ücretsiz), Eko, Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
+      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
     h1: 'Online diyetisyen ve online koçluk paketleri',
     body: `<p>Video görüşmeli diyetisyen ve koç paketlerini karşılaştırın.</p>
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a></p>`,

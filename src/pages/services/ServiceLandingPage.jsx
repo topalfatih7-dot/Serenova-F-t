@@ -492,7 +492,7 @@ export default function ServiceLandingPage({ path }) {
                 to="/membership"
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                Ücretsiz Başla
+                Paket Seçin
               </Link>
             </div>
           </motion.div>

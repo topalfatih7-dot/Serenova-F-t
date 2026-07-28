@@ -110,7 +110,7 @@ export default function HealthTestHub({
             Kişisel sağlık analizi kaydedildi
           </span>
           <p className="mt-1 text-xs text-sage-800/75 break-words">
-            Cevaplarınız profilinizde saklanır; panelde YeniForm Sağlık Skoru güncellenir.
+            Cevaplarınız profilinizde saklanır; panelde sağlık özeti (VKİ ve kural tabanlı skor) güncellenir.
             İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.
           </p>
         </div>

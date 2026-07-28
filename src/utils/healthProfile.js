@@ -92,7 +92,7 @@ export function inferNutritionPrefsFromHealthTest(healthTest = {}) {
 }
 
 /**
- * Analiz / AI program için profilde gerçekten girilmiş olması gereken alanlar.
+ * Kural tabanlı sağlık analizi için profilde gerçekten girilmiş olması gereken alanlar.
  * Eksikse varsayılan (70 kg / 170 cm / 30 yaş) kullanılır — bu yüzden uyarı gösterilir.
  */
 export function getMissingAnalysisProfileFields(profile = {}) {
