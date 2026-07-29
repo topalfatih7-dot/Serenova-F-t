@@ -142,7 +142,7 @@ export default function MembershipPlanCard({
             </p>
           )}
           {plan.price === 0 && (
-            <p className="mt-2 text-xs text-sage-600">Süre bitmiş üyelik — temel erişim</p>
+            <p className="mt-2 text-xs text-sage-600">Kart gerekmez — istediğiniz zaman yükseltin</p>
           )}
         </div>
 

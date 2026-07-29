@@ -9,10 +9,11 @@ import {
 
 /**
  * Kişisel sağlık analizi tamamlandığında staff-only skor + brief üretir (bir kez).
+ * Ücretsiz / paketsiz üyede çalışmaz — yalnızca kayıt; analiz ücretli planda.
  * Otomatik yeniden üretim yok — fingerprint değişiminde personel butonu kullanılır.
  */
 export function useHealthAnalysisSync() {
-  const { user, packageConfig, updateProfile } = useApp()
+  const { user, packageConfig, updateProfile, isUnpaidMember } = useApp()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const runningRef = useRef(false)
@@ -28,6 +29,7 @@ export function useHealthAnalysisSync() {
   )
 
   const runSync = useCallback(async ({ force = false } = {}) => {
+    if (isUnpaidMember) return null
     if (!user?.id || !complete) return null
     if (runningRef.current) return analysis
     if (!force && !needsInitialHealthAnalysis(analysis)) {
@@ -58,13 +60,14 @@ export function useHealthAnalysisSync() {
       runningRef.current = false
       setLoading(false)
     }
-  }, [user, packageConfig, complete, analysis, updateProfile])
+  }, [user, packageConfig, complete, analysis, updateProfile, isUnpaidMember])
 
   useEffect(() => {
+    if (isUnpaidMember) return
     if (!complete) return
     if (!needsInitialHealthAnalysis(analysis)) return
     runSync()
-  }, [complete, analysis, runSync])
+  }, [complete, analysis, runSync, isUnpaidMember])
 
   return {
     analysis,

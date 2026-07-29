@@ -900,26 +900,49 @@ async function setSessionFromApiLogin(email, password, { turnstileToken = '', au
 
 async function signInAfterSignup(email, password, { turnstileToken = '', authSessionToken = '', userId = '' } = {}) {
   const creds = { turnstileToken, authSessionToken, userId }
+  const mapErr = (msg) => {
+    const m = String(msg || '')
+    if (/captcha/i.test(m)) {
+      return 'Bot doğrulaması gerekli. Kutuyu yenileyip tekrar deneyin.'
+    }
+    return m
+  }
+
   try {
+    /* E-posta onayı + CAPTCHA’sız oturum: önce unlock, sonra auth-session login */
+    if (authSessionToken) {
+      await unlockSignupSession(email, password, creds)
+      const viaSession = await setSessionFromApiLogin(email, password, creds)
+      if (viaSession.ok) return { success: true }
+    }
+
     const viaApi = await setSessionFromApiLogin(email, password, creds)
     if (viaApi.ok) return { success: true }
 
-    if (/bot|doğrulama/i.test(viaApi.error || '') && !authSessionToken) {
-      return { success: false, error: viaApi.error }
+    if (/bot|doğrulama|captcha/i.test(viaApi.error || '') && !authSessionToken) {
+      return { success: false, error: mapErr(viaApi.error) }
     }
 
     const unlocked = await unlockSignupSession(email, password, creds)
     if (unlocked.success) {
-      const retry = await setSessionFromApiLogin(email, password, creds)
+      const retry = await setSessionFromApiLogin(email, password, {
+        ...creds,
+        /* Unlock sonrası Turnstile tüketilmiş olabilir; auth-session yeterli */
+        turnstileToken: '',
+      })
       if (retry.ok) return { success: true }
-      return { success: false, error: retry.error || 'Oturum açılamadı.' }
+      return { success: false, error: mapErr(retry.error) || 'Oturum açılamadı.' }
     }
     if (unlocked.unlockUnavailable) {
-      return { success: false, error: unlocked.error }
+      return { success: false, error: mapErr(unlocked.error) }
     }
 
     if (!import.meta.env.PROD) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
+      })
       if (!signInError) return { success: true }
       if (/not confirmed|confirm/i.test(signInError.message)) {
         return {
@@ -927,18 +950,22 @@ async function signInAfterSignup(email, password, { turnstileToken = '', authSes
           error: 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin veya destek ile iletişime geçin.',
         }
       }
-      return { success: false, error: signInError.message }
+      return { success: false, error: mapErr(signInError.message) }
     }
 
     return {
       success: false,
-      error: viaApi.error || 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin.',
+      error: mapErr(viaApi.error) || 'Kayıt oluşturuldu ancak oturum açılamadı. Lütfen giriş yapmayı deneyin.',
     }
   } catch {
     if (!import.meta.env.PROD) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: turnstileToken ? { captchaToken: turnstileToken } : undefined,
+      })
       if (!signInError) return { success: true }
-      return { success: false, error: signInError.message }
+      return { success: false, error: mapErr(signInError.message) }
     }
     return { success: false, error: 'Giriş servisine ulaşılamadı.' }
   }
@@ -1016,6 +1043,12 @@ export async function ensureAuthForRegistration(profile) {
   })
 
   if (signUpError) {
+    if (/captcha/i.test(signUpError.message)) {
+      return {
+        success: false,
+        error: 'Bot doğrulaması gerekli. Kutuyu yenileyip tekrar deneyin.',
+      }
+    }
     if (/validate email|invalid format|invalid email/i.test(signUpError.message)) {
       return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
     }

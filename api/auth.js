@@ -85,7 +85,7 @@ async function requireBotGuard(req, body, { allowAuthSession = false, deferToSup
   return requireTurnstile(req, token)
 }
 
-/** Localhost: anon CAPTCHA engelini service-role password grant ile aş. */
+/** Localhost / kayıt oturumu: anon CAPTCHA engelini service-role password grant ile aş. */
 async function passwordGrant(email, password, captchaToken, { localBypass = false } = {}) {
   const url = getSupabaseUrl()
   const anonKey = getAnonKey()
@@ -93,24 +93,9 @@ async function passwordGrant(email, password, captchaToken, { localBypass = fals
     return { ok: false, status: 503, error: 'Supabase URL veya anon anahtarı eksik.' }
   }
 
-  const anon = createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-  const { data, error: signInErr } = await anon.auth.signInWithPassword({
-    email,
-    password,
-    options: captchaToken ? { captchaToken } : undefined,
-  })
-  if (!signInErr && data?.session) {
-    return { ok: true, session: data.session }
-  }
-
-  const msg = String(signInErr?.message || '')
-  const captchaBlocked = /captcha/i.test(msg)
-  const unconfirmed = /not confirmed|confirm/i.test(msg)
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (localBypass && serviceKey && (captchaBlocked || !captchaToken || unconfirmed)) {
+  const tryServiceGrant = async () => {
+    if (!serviceKey) return null
     const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: {
@@ -135,11 +120,39 @@ async function passwordGrant(email, password, captchaToken, { localBypass = fals
     }
     const svcMsg = String(json?.error_description || json?.msg || json?.error || '')
     if (/not confirmed|confirm/i.test(svcMsg)) {
-      return { ok: false, status: 401, error: svcMsg || msg, unconfirmed: true }
+      return { ok: false, status: 401, error: svcMsg, unconfirmed: true }
     }
     if (res.status === 400 || res.status === 401) {
       return { ok: false, status: 401, error: 'E-posta veya şifre hatalı.' }
     }
+    return { ok: false, status: res.status || 500, error: formatPasswordAuthError(svcMsg) || 'Giriş başarısız.' }
+  }
+
+  /* Kayıt sonrası auth-session: Turnstile zaten signup’ta doğrulandı (tek kullanımlık). */
+  if (localBypass && serviceKey && (!captchaToken || captchaToken.length < 10)) {
+    const granted = await tryServiceGrant()
+    if (granted) return granted
+  }
+
+  const anon = createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error: signInErr } = await anon.auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  })
+  if (!signInErr && data?.session) {
+    return { ok: true, session: data.session }
+  }
+
+  const msg = String(signInErr?.message || '')
+  const captchaBlocked = /captcha/i.test(msg)
+  const unconfirmed = /not confirmed|confirm/i.test(msg)
+
+  if (localBypass && serviceKey && (captchaBlocked || !captchaToken || unconfirmed)) {
+    const granted = await tryServiceGrant()
+    if (granted) return granted
   }
 
   if (unconfirmed) {
@@ -281,11 +294,19 @@ async function handlePasswordLogin(req, res, body) {
   }
 
   const captchaToken = readCaptchaToken(body)
+  /* Signup siteverify token’ı yakar; auth-session ile service-role grant kullanılır. */
+  const authSession = body.authSessionToken
+    ? verifyFormSession(body.authSessionToken, { ip: getClientIp(req), kind: 'auth-signup' })
+    : { ok: false }
+
   const result = await passwordGrant(email, password, captchaToken, {
-    localBypass: isLocalDevAuth(req),
+    localBypass: isLocalDevAuth(req) || authSession.ok,
   })
   if (!result.ok) {
-    return res.status(result.status || 401).json({ ok: false, error: result.error })
+    return res.status(result.status || 401).json({
+      ok: false,
+      error: formatPasswordAuthError(result.error) || result.error,
+    })
   }
 
   const session = result.session

@@ -22,6 +22,7 @@ import { setCorsHeaders, handleOptions, requireAuth, getAdminEmail } from './_gu
 import { checkAiDailyQuota } from './_aiQuota.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+import { isPaidMembership } from './_memberPackages.js'
 
 export const config = {
   maxDuration: 60,
@@ -132,6 +133,13 @@ export default async function handler(req, res) {
 
     if (memberErr || !memberRow) {
       return res.status(404).json({ ok: false, error: 'Üye bulunamadı' })
+    }
+
+    if (!isPaidMembership(memberRow.membership)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'Sağlık AI analizi yalnızca aktif ücretli üyelikte kullanılabilir',
+      })
     }
 
     const allowed = await canAccessMember(auth.user, memberRow, admin)

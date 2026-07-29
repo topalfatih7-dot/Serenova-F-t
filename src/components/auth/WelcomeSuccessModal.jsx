@@ -88,8 +88,9 @@ export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue
               <div className="flex items-start gap-3 rounded-2xl border border-cream-100 bg-cream-50/80 p-4">
                 <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                 <p className="text-sm leading-relaxed text-cream-800/80">
-                  Hesabınız hazır. Kişisel panelinizden programlarınızı takip edebilir,
-                  uzmanlarınızla iletişime geçebilir ve hedeflerinize adım adım ilerleyebilirsiniz.
+                  {isPaid
+                    ? 'Hesabınız hazır. Kişisel panelinizden programlarınızı takip edebilir, uzmanlarınızla iletişime geçebilir ve hedeflerinize adım adım ilerleyebilirsiniz.'
+                    : 'Hesabınız hazır. İsterseniz sağlık testinizi doldurun; paket seçerek tüm hizmetleri açabilirsiniz.'}
                 </p>
               </div>
 
@@ -101,7 +102,7 @@ export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25"
               >
                 {isPaid && <Crown className="h-4 w-4 text-gold-200" />}
-                Panele Git
+                {isPaid ? 'Panele Git' : 'Sağlık Testine Git'}
               </motion.button>
             </div>
           </motion.div>

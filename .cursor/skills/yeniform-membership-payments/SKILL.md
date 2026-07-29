@@ -13,7 +13,8 @@ description: >-
 - **Mobile digital subs:** App Store / Play via **RevenueCat** (IAP required).
 - **Web:** Stripe Checkout + `api/stripe-webhook.js` + Customer Portal (`POST /api/stripe-checkout` · `action: 'create-portal-session'`).
 - **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, package/expiry in `members.data`.
-- **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (üye paneli duvarı); ücretsiz kayıt yok.
+- **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (dashboard, mesajlar, program, takvim, kütüphane). Profil + `/membership` açık. `/health-test` doldurulabilir; AI analiz yok (`api/ai-health-analysis` 403).
+- **Ücretsiz kayıt:** onboarding Step 0 → `register(profile, 'free')` / OAuth `completeOAuthMember(..., 'free')`. İsteğe bağlı “Paketle başla” → Stripe.
 
 ## Plan IDs
 
@@ -21,9 +22,11 @@ description: >-
 **Fallback:** `free` (süresi bitmiş)  
 **Eski (yeni satış yok):** `eko` — mevcut üyeler admin ile taşınır  
 
-Durations: 1 / 3 / 6 months (`doktor` = one-time). Ücretsiz kayıt yok — onboarding Stripe zorunlu.
+Durations: 1 / 3 / 6 months (`doktor` = one-time). Ücretsiz kayıt açık (`membership: 'free'`); ücretli yol Stripe.
 
 Sıra: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5).
+
+**Fallback `free`:** ücretsiz kayıt **ve** süresi bitmiş ücretli.
 
 ## Gate helpers (parity with web)
 

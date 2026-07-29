@@ -60,7 +60,7 @@ export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'eko_diyet', 'diyet', 'eko_spo
 export const PLAN_IDS = ['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip']
 
 export const PLAN_LABELS = {
-  free: 'Paketsiz',
+  free: 'Ücretsiz',
   eko: 'Eko Paket (eski)',
   eko_diyet: 'Eko Diyet Paketi',
   eko_spor: 'Eko Spor Paketi',
@@ -164,21 +164,21 @@ export function buildPricingTiers(planId) {
 
 export const FREE_PLAN = {
   id: 'free',
-  name: 'Paketsiz',
+  name: 'Ücretsiz',
   price: 0,
   period: 'Süresiz',
   color: 'sage',
+  badge: 'Ücretsiz',
   pricingTiers: [],
   features: [
-    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
-    { text: 'Video Kütüphanesi (Temel)', included: true },
-    { text: 'Program Takibi', included: true },
-    { text: 'Birebir Koç Görüşmesi', included: false },
-    { text: 'Diyetisyen Randevusu', included: false },
-    { text: 'Manuel Kalori Hesaplama', included: false },
-    { text: 'Fotoğraflı Kalori Tespiti', included: false },
+    { text: 'Hesap oluşturma', included: true },
+    { text: 'Sağlık testi doldurma (kayıt)', included: true },
+    { text: 'AI sağlık analizi / skor', included: false },
+    { text: 'Koç & diyetisyen paneli', included: false },
+    { text: 'Program, takvim, kütüphane', included: false },
+    { text: 'Mesajlar & kalori AI', included: false },
   ],
-  limits: ['Süresi bitmiş üyelik fallback', 'Temel erişim'],
+  limits: ['İstediğiniz zaman ücretli pakete geçebilirsiniz'],
 }
 
 export const EKO_PLAN = {

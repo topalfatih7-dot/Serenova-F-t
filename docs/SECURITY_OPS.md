@@ -21,7 +21,8 @@
 - Signup 3/saat, login 12/saat (IP+email); disposable domain engeli (`api/_disposableEmail.js`).
 - Production’da client doğrudan `signUp` / `signInWithPassword` kullanmaz.
 - **Dashboard (zorunlu sıfıra yaklaşmak için):** Authentication → Bot and Abuse Protection → CAPTCHA = Cloudflare Turnstile + aynı `TURNSTILE_SECRET_KEY`. Bu, anon key ile doğrudan `/auth/v1/token` brute-force’unu keser.
-- Login/unlock: Turnstile token **Supabase’e iletilir** (biz siteverify etmeyiz — token tek kullanımlık). Signup API hâlâ kendi siteverify’ını kullanır (admin RPC).
+- Login/unlock: Turnstile token **Supabase’e iletilir** (biz siteverify etmeyiz — token tek kullanımlık). Signup API hâlâ kendi siteverify’ını yapar (admin RPC).
+- **Kayıt sonrası oturum:** Signup `authSessionToken` üretir; `password-login` bu oturumla **service-role password grant** kullanır (Turnstile tekrar istenmez — signup token’ı zaten tüketilmiştir).
 
 ## Vercel / WAF (manuel)
 

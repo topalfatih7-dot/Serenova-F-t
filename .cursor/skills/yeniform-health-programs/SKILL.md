@@ -14,7 +14,8 @@ description: >-
 - Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
 - Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
 - Stored in `members.data.healthTest` JSONB
-- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4)
+- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4) — **yalnızca ücretli üyelik**
+  - `membership === 'free'`: HT kaydı serbest; sync/API çalışmaz
   - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis`
   - Üye dashboard: `HealthScoreCard` (genel /100 + boyutlar; `staffBrief` yok)
   - Program / diyet listesi AI **üretilmez**

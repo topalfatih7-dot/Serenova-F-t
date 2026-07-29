@@ -11,13 +11,13 @@ description: >-
 ## Critical rules
 
 1. Production clients should not call `signInWithPassword` / `signUp` raw against Supabase for password flows — use `POST /api/auth` actions (Turnstile / rate limit). See `api/auth.js` and `docs/SECURITY_OPS.md`.
-2. Auth session may exist **before** `members` row (Stripe/IAP pending). UI must use `hasRegisteredMember` — no fake profile header.
+2. Auth session may exist **before** `members` row (Stripe pending paid path). Free signup creates `members` immediately. UI must use `hasRegisteredMember` — no fake profile header.
 3. `ProfileCompletionGate`: if member role and not registered → `/onboarding?plan=…` (+ `oauth=1` when social).
 
 ## Onboarding steps (current web)
 
 **Step 0 Hesap:** name, email (non-OAuth), phone+country, gender, password×2 + PASSWORD_RULES, legal consents.  
-**Step 1 Üyelik:** plan cards + duration 1/3/6 + Turnstile → register / checkout.
+**Step 1 Üyelik:** `FREE_PLAN` + satılan plan kartları; süre yalnızca ücretli. Turnstile → `free` ise `register` / OAuth complete; ücretli ise Stripe.
 
 ## Roles after login
 

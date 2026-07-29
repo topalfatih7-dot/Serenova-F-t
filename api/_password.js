@@ -21,6 +21,9 @@ export function passwordRequirementsMessage() {
 /** Supabase Auth / HIBP ve diğer şifre hatalarını Türkçe’ye çevirir. */
 export function formatPasswordAuthError(raw) {
   const msg = String(raw || '')
+  if (/captcha/i.test(msg)) {
+    return 'Bot doğrulaması gerekli. Kutuyu yenileyip tekrar deneyin.'
+  }
   if (/known to be weak|easy to guess|pwned|leaked|hibp/i.test(msg)) {
     return passwordRequirementsMessage()
   }

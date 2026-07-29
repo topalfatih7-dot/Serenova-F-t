@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { HeartPulse } from 'lucide-react'
 import HealthTestHub from '../components/onboarding/HealthTestHub'
-import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -21,23 +20,20 @@ export default function HealthTestPage() {
     setConsentSaving(true)
     try {
       await updateProfile({ healthAck, disclaimer })
-      toast('Onaylar kaydedildi. Analize başlayabilirsiniz.', 'success')
+      toast(
+        isUnpaidMember
+          ? 'Onaylar kaydedildi. Sağlık testine başlayabilirsiniz.'
+          : 'Onaylar kaydedildi. Analize başlayabilirsiniz.',
+        'success',
+      )
     } catch (err) {
       toast(err?.message || 'Onaylar kaydedilemedi.', 'error')
     } finally {
       setConsentSaving(false)
     }
-  }, [updateProfile, toast])
+  }, [updateProfile, toast, isUnpaidMember])
 
   if (!user?.id) return <Navigate to="/login" replace />
-
-  if (isUnpaidMember) {
-    return (
-      <PanelPageShell>
-        <UnpaidMemberGate />
-      </PanelPageShell>
-    )
-  }
 
   const needsConsent = !user.healthAck || !user.disclaimer
 
@@ -47,8 +43,12 @@ export default function HealthTestPage() {
         title="Kişisel Sağlık Analizi"
         subtitle={
           needsConsent
-            ? 'Analize başlamadan önce onayları işaretleyin'
-            : 'Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz'
+            ? (isUnpaidMember
+              ? 'Teste başlamadan önce onayları işaretleyin'
+              : 'Analize başlamadan önce onayları işaretleyin')
+            : isUnpaidMember
+              ? 'Her kategoriyi tamamlayın — cevaplar kaydedilir; AI analiz paketle açılır'
+              : 'Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz'
         }
         icon={HeartPulse}
         accent="brand"
@@ -65,6 +65,7 @@ export default function HealthTestPage() {
         profile={user}
         analysisReady={analysisReady}
         analysisLoading={analysisLoading}
+        saveOnly={isUnpaidMember}
       />
     </PanelPageShell>
   )

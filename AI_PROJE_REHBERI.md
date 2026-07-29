@@ -12,14 +12,14 @@
 
 1. Production veri SoT: `src/services/supabaseDb.js` (eski `localDb` yok).
 2. Ücretli plan **yalnızca** Stripe webhook / admin — istemci `changeMemberPlan` ile açılmaz.
-3. Kayıt: auth session Stripe öncesi açılır; `members` satırı webhook ile gelir → header `hasRegisteredMember()` / `isFullyRegistered`.
+3. Kayıt: ücretsiz → `members` hemen (`membership: 'free'`); ücretli → auth session Stripe öncesi, `members` webhook ile → header `hasRegisteredMember()` / `isFullyRegistered`.
 4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz.
-5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` yalnızca personel.
+5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4 — yalnızca ücretli üyelik). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` yalnızca personel.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
-8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
+8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = ücretsiz kayıt + süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
-10. **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (panel duvarı). Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
+10. **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (dashboard/mesajlar/program/takvim/kütüphane). `/health-test` kayıt serbest, AI analiz yok. Profil + `/membership` açık. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 
 ---
 
@@ -41,7 +41,7 @@
 
 **Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · **sağlık skoru (üye dashboard) + staff brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
 
-**Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış · ücretsiz kayıt. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok.)
+**Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
 **Ops açık:** GSC, admin içerik, yasal metin ince ayar. Denetim Faz 2–3 (paketsiz lock, Portal, hakediş) tamam → `docs/ROADMAP_DENETIM.md`. Faz 4–5 (aktivasyon, auto-renew) bekliyor.
 
@@ -180,5 +180,5 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 - AI program/diyet/skor/tips kaldırıldı; `ai-nutrition-tips` silindi.
 - Kalori + blog + günlük tüyo kaldı.
-- Basic/Eko yeni satış ve ücretsiz kayıt kapandı; sonra Eko Diyet/Eko Spor yeniden satıldı (`SELLABLE_PLAN_IDS`).
+- Basic/Eko yeni satış kapandı; ücretsiz kayıt geçici kapandı sonra 2026-07-29 yeniden açıldı; Eko Diyet/Eko Spor yeniden satıldı (`SELLABLE_PLAN_IDS`).
 - `membership-expiry` → `api/_membershipExpiry.js`; `eko-renew` kaldırıldı.

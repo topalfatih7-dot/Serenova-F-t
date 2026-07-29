@@ -20,7 +20,7 @@ import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, getTierPrice, SELLABLE_PLAN_IDS, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, FREE_PLAN, getTierPrice, SELLABLE_PLAN_IDS, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
@@ -35,9 +35,8 @@ import { ensureAuthForRegistration, savePendingRegistrationMetadata } from '../s
 import TurnstileWidget from '../components/security/TurnstileWidget'
 import { isTurnstileEnabled } from '../config/turnstile'
 
-/** Eski URL plan parametrelerini güncel plan id'lerine eşler */
+/** Eski URL plan parametrelerini güncel plan id'lerine eşler (`free` ücretsiz kayıt olarak kalır) */
 const LEGACY_PLAN_MAP = {
-  free: RECOMMENDED_PLAN,
   eko: 'eko_diyet',
   gumus: 'eko_diyet',
   altin: 'doktor',
@@ -48,9 +47,9 @@ const LEGACY_PLAN_MAP = {
 }
 
 function resolvePlanFromQuery(raw) {
-  if (!raw) return RECOMMENDED_PLAN
+  if (!raw || raw === 'free') return 'free'
   const mapped = LEGACY_PLAN_MAP[raw] || raw
-  return SELLABLE_PLAN_IDS.includes(mapped) ? mapped : RECOMMENDED_PLAN
+  return SELLABLE_PLAN_IDS.includes(mapped) ? mapped : 'free'
 }
 
 const BENEFITS = [
@@ -176,7 +175,7 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
 
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
-  const rawPlan = searchParams.get('plan') || RECOMMENDED_PLAN
+  const rawPlan = searchParams.get('plan') || 'free'
   const preselectedPlan = resolvePlanFromQuery(rawPlan)
 
   const [step, setStep] = useState(0)
@@ -214,12 +213,25 @@ export default function OnboardingPage() {
     setDurationMonths(resolveDurationMonths(data.membership, searchParams))
   }
 
-  const { plans, changePlan, isAuthenticated, isAdmin, isStaff, membership: currentMembership, user, authUser, loading } = useApp()
+  const {
+    plans,
+    changePlan,
+    register,
+    completeOAuthMember,
+    isAuthenticated,
+    isAdmin,
+    isStaff,
+    membership: currentMembership,
+    user,
+    authUser,
+    loading,
+  } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
   const isOAuthFlow = isAuthenticated && isSocialAuthUser(authUser) && !hasRegisteredMember(user)
   const oauthPrefilledRef = useRef(false)
+  const wantsPaidPath = SELLABLE_PLAN_IDS.includes(preselectedPlan)
 
   useEffect(() => {
     if (searchParams.get('oauth') !== '1' || isAuthenticated || loading) return
@@ -274,9 +286,11 @@ export default function OnboardingPage() {
   }
 
   const update = (patch) => setData((d) => ({ ...d, ...patch }))
-  const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
-  const selectedPlan = displayPlans.find((p) => p.id === data.membership) || displayPlans[0]
+  const paidPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
+  const displayPlans = [FREE_PLAN, ...paidPlans]
+  const selectedPlan = displayPlans.find((p) => p.id === data.membership) || FREE_PLAN
   const isPaid = isPaidMembership(data.membership)
+  const isFreeSelection = data.membership === 'free'
 
   const showFormError = (message) => {
     setErrorModal({ open: true, message })
@@ -305,7 +319,9 @@ export default function OnboardingPage() {
         return 'Devam etmek için kullanım koşullarını ve gizlilik politikasını kabul etmelisiniz.'
       }
     }
-    if (step === 1 && !data.membership) return 'Kayıt için bir üyelik planı seçin.'
+    if (step === 1 && data.membership !== 'free' && !SELLABLE_PLAN_IDS.includes(data.membership)) {
+      return 'Kayıt için Ücretsiz, Diyet, Spor, Doktor veya VIP paketinden birini seçin.'
+    }
     return 'Lütfen eksik veya hatalı alanları düzeltin.'
   }
 
@@ -353,7 +369,9 @@ export default function OnboardingPage() {
         data.password === data.confirmPassword
       )
     }
-    if (step === 1) return !!data.membership
+    if (step === 1) {
+      return data.membership === 'free' || SELLABLE_PLAN_IDS.includes(data.membership)
+    }
     return true
   }
 
@@ -423,30 +441,72 @@ export default function OnboardingPage() {
     // başarılıysa tarayıcı Stripe'a yönlendirilir
   }
 
+  const finishFreeRegister = async () => {
+    if (submitting) return
+    if (!canNext()) {
+      setShowErrors(true)
+      showFormError(getValidationError())
+      return
+    }
+    const turnstileErr = requireTurnstileOrError()
+    if (turnstileErr) {
+      showFormError(turnstileErr)
+      return
+    }
+    setSubmitting(true)
+    const profile = buildProfile()
+    const r = isOAuthFlow
+      ? await completeOAuthMember(profile, 'free')
+      : await register(profile, 'free')
+    if (!r.success) {
+      setTurnstileToken('')
+      setTurnstileKey((k) => k + 1)
+      showFormError(r.error || 'Kayıt oluşturulamadı.')
+      setSubmitting(false)
+      return
+    }
+    setWelcomePaid(false)
+    setWelcomeOpen(true)
+    setSubmitting(false)
+  }
+
   const finish = () => {
+    if (data.membership === 'free') {
+      finishFreeRegister()
+      return
+    }
     if (!SELLABLE_PLAN_IDS.includes(data.membership)) {
-      showFormError('Kayıt için Diyet, Spor, Doktor veya VIP paketinden birini seçin.')
+      showFormError('Kayıt için Ücretsiz, Diyet, Spor, Doktor veya VIP paketinden birini seçin.')
       return
     }
     startStripeRegister()
   }
 
-  const next = () => {
+  const goToPlanStep = () => {
     if (!canNext()) {
       setShowErrors(true)
       showFormError(getValidationError())
       return
     }
     setShowErrors(false)
+    if (!data.membership) {
+      update({ membership: wantsPaidPath ? preselectedPlan : 'free' })
+    }
+    setTurnstileToken('')
+    setTurnstileKey((k) => k + 1)
+    setStep(1)
+    setMaxReached(1)
+    setSubmitHighlight(true)
+    window.setTimeout(scrollToSubmit, 350)
+  }
+
+  const next = () => {
     if (step === 1) {
       setSubmitHighlight(false)
       finish()
       return
     }
-    setStep(1)
-    setMaxReached(1)
-    setSubmitHighlight(Boolean(data.membership))
-    window.setTimeout(scrollToSubmit, 350)
+    goToPlanStep()
   }
 
   const back = () => {
@@ -540,8 +600,8 @@ export default function OnboardingPage() {
               {step === 0
                 ? (isOAuthFlow
                   ? 'Google hesabınızla bağlandınız. İletişim için telefon numaranızı girin.'
-                  : 'Birkaç bilgi yeterli — paketinizi seçin, istediğiniz zaman yükseltebilirsiniz.')
-                : 'Size en uygun paketi seçin. Gizli ücret yok, süreyi siz belirlersiniz.'}
+                  : 'Birkaç bilgi yeterli — sonraki adımda ücretsiz veya ücretli paketinizi seçin.')
+                : 'Ücretsiz hesap veya ücretli paket seçin. Ücretli planda süreyi siz belirlersiniz.'}
             </p>
 
             <div className="mt-6">
@@ -665,13 +725,15 @@ export default function OnboardingPage() {
                           />
                         </div>
                       ))}
-                      <div className="snap-end shrink-0 pb-2 pt-1">
-                        <MembershipDurationPicker
-                          planId={data.membership}
-                          value={durationMonths}
-                          onChange={handleDurationChange}
-                        />
-                      </div>
+                      {isPaid && (
+                        <div className="snap-end shrink-0 pb-2 pt-1">
+                          <MembershipDurationPicker
+                            planId={data.membership}
+                            value={durationMonths}
+                            onChange={handleDurationChange}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>
@@ -745,9 +807,11 @@ export default function OnboardingPage() {
                 {step === 1
                   ? (submitting
                     ? 'Kaydediliyor…'
-                    : isPaid
-                      ? `${selectedPlan?.name} · Ödemeye Geç`
-                      : 'Paket Seçin')
+                    : isFreeSelection
+                      ? 'Ücretsiz üye ol'
+                      : isPaid
+                        ? `${selectedPlan?.name} · Ödemeye Geç`
+                        : 'Paket Seçin')
                   : 'Devam Et'}
                 {!submitting && <ArrowRight className="h-5 w-5" />}
               </motion.button>
@@ -786,7 +850,7 @@ export default function OnboardingPage() {
         open={welcomeOpen}
         planName={selectedPlan?.name}
         isPaid={welcomePaid}
-        onContinue={() => navigate('/profile')}
+        onContinue={() => navigate('/health-test')}
       />
     </div>
   )

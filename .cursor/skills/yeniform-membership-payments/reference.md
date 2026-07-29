@@ -26,7 +26,8 @@
 ## Key web files
 
 - `src/data/membershipPlans.js` — `SELLABLE_PLAN_IDS`, `ADMIN_ASSIGNABLE_PLAN_IDS`, `isPaidMembership`
-- `src/components/membership/UnpaidMemberGate.jsx` — paketsiz üye paneli kilidi
+- `src/components/membership/UnpaidMemberGate.jsx` — paketsiz üye paneli kilidi (HT hariç)
+- Ücretsiz kayıt: `OnboardingPage` → `register(..., 'free')`; AI analiz: `useHealthAnalysisSync` + `api/ai-health-analysis` unpaid 403
 - `src/services/stripePayment.js`, `api/stripe-checkout.js` (Checkout + portal), `api/stripe-webhook.js`, `api/_stripe.js`
 - `members.stripe_customer_id` — webhook/checkout persist; Portal için gerekli
 - `src/services/premiumMembership.js`

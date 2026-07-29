@@ -1316,7 +1316,7 @@ export function AppProvider({ children }) {
     payments: db.payments,
   }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
 
-  // Paketsiz üye (free = süresi bitmiş fallback / ücretsiz kayıt yok).
+  // Paketsiz üye (free = ücretsiz kayıt veya süresi bitmiş fallback).
   const isUnpaidMember = useMemo(
     () => !isPaidMembership(currentMember?.membership || 'free'),
     [currentMember?.membership],
