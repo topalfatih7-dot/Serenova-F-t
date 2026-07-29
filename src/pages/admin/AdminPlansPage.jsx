@@ -11,6 +11,8 @@ import {
   emptyEntitlements,
   normalizeEntitlements,
   isValidPlanId,
+  validateSellablePlanPricing,
+  STRIPE_MIN_AMOUNT_TRY,
 } from '../../data/membershipPlans'
 import {
   planVisual,
@@ -105,6 +107,11 @@ export default function AdminPlansPage() {
 
   const handleSave = async () => {
     if (!draft) return
+    const priceErr = validateSellablePlanPricing(draft)
+    if (priceErr) {
+      toast(priceErr, 'error')
+      return
+    }
     setSaving(true)
     try {
       await savePlan(draft)
@@ -137,6 +144,11 @@ export default function AdminPlansPage() {
     }
     if (!createDraft.name?.trim()) {
       toast('Paket adı gerekli.', 'error')
+      return
+    }
+    const priceErr = validateSellablePlanPricing(createDraft)
+    if (priceErr) {
+      toast(priceErr, 'error')
       return
     }
     setSaving(true)
@@ -640,7 +652,9 @@ function EditForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-xs font-semibold text-cream-800/60">Fiyat (₺/ay)</label>
+          <label className="mb-1 block text-xs font-semibold text-cream-800/60">
+            Fiyat (₺/ay) — satışta min. {STRIPE_MIN_AMOUNT_TRY}₺
+          </label>
           <div className="relative">
             <DollarSign className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-cream-400" />
             <input

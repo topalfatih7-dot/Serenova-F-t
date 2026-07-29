@@ -21,6 +21,37 @@ export function getStripe() {
 
 export const CURRENCY = 'try'
 
+/**
+ * Stripe settlement (GBP hesabında £0.30 min) için TRY güvenli alt sınır.
+ * Kur dalgalanmasına tampon — 10₺ gibi test tutarları reddedilir.
+ */
+export const STRIPE_MIN_AMOUNT_TRY = 50
+
+export function assertStripeMinAmountTry(amountTry) {
+  const n = Number(amountTry) || 0
+  if (n < STRIPE_MIN_AMOUNT_TRY) {
+    return {
+      ok: false,
+      error: `Stripe minimum tutar ${STRIPE_MIN_AMOUNT_TRY}₺. Paket fiyatı en az ${STRIPE_MIN_AMOUNT_TRY}₺ olmalı (şu an ${n.toLocaleString('tr-TR')}₺). Admin → Paketler’den fiyatı yükseltin.`,
+    }
+  }
+  return { ok: true }
+}
+
+/** Stripe API hata mesajını kullanıcıya Türkçe özetle */
+export function mapStripeCheckoutError(err) {
+  const raw = String(err?.message || err || '')
+  const lower = raw.toLowerCase()
+  if (
+    lower.includes('at least 30 pence')
+    || lower.includes('minimum')
+    || lower.includes('convert to at least')
+  ) {
+    return `Ödeme tutarı Stripe minimumunun altında. Paket fiyatını en az ${STRIPE_MIN_AMOUNT_TRY}₺ yapın (hesap GBP settlement — düşük TL tutarları reddedilir).`
+  }
+  return raw || 'Ödeme oturumu oluşturulamadı.'
+}
+
 // membershipPlans.js ile aynı varsayılan fiyatlar (TL, aylık).
 export const PLAN_FALLBACK = {
   eko_diyet: { name: 'Eko Diyet Paketi', price: 1299, durationMonths: 1 },

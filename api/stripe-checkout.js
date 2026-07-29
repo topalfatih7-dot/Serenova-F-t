@@ -3,7 +3,16 @@
  * Body (checkout): { planId, durationMonths?: 1|3|6, flow?: 'register'|'change' }
  * Body (portal):   { action: 'create-portal-session' }
  */
-import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, toMinorUnits, getTierPrice } from './_stripe.js'
+import {
+  getStripe,
+  isStripeConfigured,
+  CURRENCY,
+  PLAN_FALLBACK,
+  toMinorUnits,
+  getTierPrice,
+  assertStripeMinAmountTry,
+  mapStripeCheckoutError,
+} from './_stripe.js'
 import {
   loadPlansById,
   isCheckoutEligiblePlan,
@@ -233,6 +242,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Plan fiyatı bulunamadı.' })
     }
 
+    const minCheck = assertStripeMinAmountTry(planPrice)
+    if (!minCheck.ok) {
+      return res.status(400).json({ ok: false, error: minCheck.error })
+    }
+
     const durationLabel = oneTime
       ? 'Tek Seferlik'
       : (durationMonths === 1 ? '1 ay' : `${durationMonths} ay`)
@@ -284,6 +298,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, url: session.url, id: session.id })
   } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e.message || e) })
+    return res.status(500).json({ ok: false, error: mapStripeCheckoutError(e) })
   }
 }

@@ -38,6 +38,24 @@ export function isValidPlanId(id) {
   return typeof id === 'string' && PLAN_ID_PATTERN.test(id) && id.length >= 2 && id.length <= 40
 }
 
+/** Stripe GBP settlement (~£0.30) için TRY güvenli alt sınır — api/_stripe.js ile aynı */
+export const STRIPE_MIN_AMOUNT_TRY = 50
+
+export function validateSellablePlanPricing(plan) {
+  if (!plan || plan.isSellable !== true) return null
+  const price = Number(plan.price) || 0
+  if (price > 0 && price < STRIPE_MIN_AMOUNT_TRY) {
+    return `Satışa açık paketlerde Stripe minimumu ${STRIPE_MIN_AMOUNT_TRY}₺. Taban fiyatı yükseltin.`
+  }
+  for (const t of plan.pricingTiers || []) {
+    const p = Number(t.price) || 0
+    if (p > 0 && p < STRIPE_MIN_AMOUNT_TRY) {
+      return `Fiyat katmanı "${t.label || `${t.months} ay`}" Stripe minimumunun altında (${STRIPE_MIN_AMOUNT_TRY}₺).`
+    }
+  }
+  return null
+}
+
 /** Runtime plan kataloğu (AppContext hydrate sonrası) */
 let _planCatalog = new Map()
 
