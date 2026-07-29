@@ -153,7 +153,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {items.map((ex) => (
               <button
                 key={ex.id}
@@ -162,51 +162,51 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
                 onPointerEnter={() => prefetchExerciseVideo(ex.videoUrl)}
                 onPointerDown={() => prefetchExerciseVideo(ex.videoUrl)}
                 onFocus={() => prefetchExerciseVideo(ex.videoUrl)}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"
+                className="group flex flex-col overflow-hidden rounded-xl border border-violet-100/80 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
               >
-                <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br px-4 ${categoryGradient(ex.category)}`}>
+                <div className={`relative flex h-10 items-center justify-between bg-gradient-to-br px-2.5 ${categoryGradient(ex.category)}`}>
                   <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
-                  <span className="relative rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  <span className="relative truncate rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
                     {ex.category}
                   </span>
-                  <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-white/30">
-                    <PlayCircle className="h-5 w-5" />
+                  <span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-white/30">
+                    <PlayCircle className="h-3.5 w-3.5" />
                   </span>
                 </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <div className="mb-4 flex justify-center">
-                    <div className="relative h-28 w-36 overflow-hidden rounded-2xl shadow-md ring-1 ring-violet-100/80 sm:h-32 sm:w-44">
+                <div className="flex flex-1 flex-col p-2.5">
+                  <div className="mb-2 flex justify-center">
+                    <div className="relative aspect-[4/3] w-full max-w-[7rem] overflow-hidden rounded-lg shadow-sm ring-1 ring-violet-100/80">
                       <ExerciseVideoThumbnail
                         url={ex.videoUrl}
                         videoPending={ex.videoPending}
-                        size="card"
+                        size="md"
                         accent="brand"
                         fallbackIcon={Dumbbell}
-                        className="!h-full !w-full !max-h-full !max-w-full !rounded-2xl"
+                        className="!h-full !w-full !max-h-full !max-w-full !rounded-lg"
                       />
                     </div>
                   </div>
-                  <p className="font-display font-bold leading-snug text-cream-900 group-hover:text-violet-800">{ex.name}</p>
-                  <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed text-cream-800/60">
+                  <p className="line-clamp-2 text-sm font-display font-bold leading-snug text-cream-900 group-hover:text-violet-800">{ex.name}</p>
+                  <p className="mt-1 line-clamp-1 flex-1 text-[11px] leading-snug text-cream-800/55">
                     {ex.description || 'Açıklama eklenmemiş.'}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {ex.equipment && (
-                      <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">{ex.equipment}</span>
+                      <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-700">{ex.equipment}</span>
                     )}
                     {ex.difficulty && (
-                      <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-medium text-cream-800/60">
+                      <span className="rounded-full bg-cream-100 px-1.5 py-0.5 text-[9px] font-medium text-cream-800/60">
                         {DIFFICULTY_LABELS[ex.difficulty] || ex.difficulty}
                       </span>
                     )}
-                    {formatExerciseLocations(ex.locations).map((label) => (
-                      <span key={label} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">{label}</span>
+                    {formatExerciseLocations(ex.locations).slice(0, 2).map((label) => (
+                      <span key={label} className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-medium text-rose-700">{label}</span>
                     ))}
                     {ex.requiresMachine && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Makinalı</span>
+                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">Makinalı</span>
                     )}
                   </div>
-                  <p className="mt-3 text-xs font-semibold text-violet-600">
+                  <p className="mt-2 text-[10px] font-semibold text-violet-600">
                     {ex.videoPending ? 'Video yakında →' : 'Videoyu izle →'}
                   </p>
                 </div>
