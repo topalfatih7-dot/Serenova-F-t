@@ -14,21 +14,22 @@ import { RECOMMENDED_PLAN, getDurationSavingsPercent, RECOMMENDED_DURATION_MONTH
 import { buildFaqSchema } from '../config/seo'
 
 const comparisonRows = [
-  { feature: 'Kişisel Sağlık & Vücut Analizi', free: true, eko: false, diyet: true, spor: true, vip: true, doktor: false },
-  { feature: 'Manuel Kalori Hesaplama', free: false, eko: true, diyet: true, spor: true, vip: true, doktor: false },
-  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko: false, diyet: true, spor: true, vip: true, doktor: false },
-  { feature: 'Online Doktor Seansı', free: false, eko: false, diyet: false, spor: false, vip: false, doktor: true },
-  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko: false, diyet: '2', spor: false, vip: '2', doktor: false },
-  { feature: 'Koç Görüşmesi / Ay', free: false, eko: false, diyet: false, spor: '2', vip: '2', doktor: false },
-  { feature: 'Diyet Programı', free: 'Deneme süresi', eko: '15 günde bir', diyet: 'Özel', spor: false, vip: 'Özel', doktor: false },
-  { feature: 'Spor Programı', free: 'Deneme süresi', eko: '30 günde bir', diyet: false, spor: 'Özel', vip: 'Özel', doktor: false },
-  { feature: 'Video Kütüphanesi', free: 'Temel', eko: 'Sınırlı', diyet: false, spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
-  { feature: 'İlerleme Raporları', free: 'Temel', eko: true, diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
-  { feature: 'Destek', free: 'Standart', eko: 'Standart', diyet: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
+  { feature: 'Yeniform Kişisel Sağlık Analizi', free: true, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
+  { feature: 'Kan Tahlili Analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true, doktor: false },
+  { feature: 'Manuel Kalori Hesaplama', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
+  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
+  { feature: 'Online Doktor Seansı', free: false, eko_diyet: false, diyet: false, eko_spor: false, spor: false, vip: false, doktor: true },
+  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko_diyet: '1', diyet: '2', eko_spor: false, spor: false, vip: '2', doktor: false },
+  { feature: 'Koç Görüşmesi / Ay', free: false, eko_diyet: false, diyet: false, eko_spor: '1', spor: '2', vip: '2', doktor: false },
+  { feature: 'Diyet Programı', free: false, eko_diyet: 'Özel', diyet: 'Özel', eko_spor: false, spor: false, vip: 'Özel', doktor: false },
+  { feature: 'Spor Programı', free: false, eko_diyet: false, diyet: false, eko_spor: 'Özel', spor: 'Özel', vip: 'Özel', doktor: false },
+  { feature: 'Video Kütüphanesi', free: 'Temel', eko_diyet: false, diyet: false, eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
+  { feature: 'İlerleme Raporları', free: 'Temel', eko_diyet: 'Sınırsız', diyet: 'Sınırsız', eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
+  { feature: 'Destek', free: 'Standart', eko_diyet: 'Sınırsız', diyet: 'Sınırsız', eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
 ]
 
 const HOW_IT_WORKS_SIGNUP = [
-  { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Hedefinize uygun paketi seçin — Diyet, Spor, Doktor veya VIP; her plan net özelliklerle listelenir.' },
+  { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Hedefinize uygun paketi seçin — Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP.' },
   { icon: CreditCard, title: '2. Güvenle kayıt olun', desc: 'Birkaç bilgi, şifre oluşturun. Güvenli ödeme ekranına geçersiniz.' },
   { icon: LayoutDashboard, title: '3. Hemen başlayın', desc: 'Dashboard\'ınız açılır; programlarınız ve uzman desteğiniz hazır.' },
 ]
@@ -40,9 +41,10 @@ const HOW_IT_WORKS_MEMBER = [
 ]
 
 const MEMBERSHIP_FAQ = [
-  { q: 'Hangi paketlerle başlayabilirim?', a: 'Diyet, Spor, Doktor veya VIP paketlerinden birini seçerek Stripe ile kayıt olabilirsiniz. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır.' },
-  { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 2 online diyetisyen görüşmesi Diyet ve VIP paketlerindedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
-  { q: 'Online koçluk hangi pakette?', a: 'Ayda 2 online koç görüşmesi Spor ve VIP paketlerindedir. Ayrıntılar online koçluk hizmet sayfasında.' },
+  { q: 'Hangi paketlerle başlayabilirim?', a: 'Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP paketlerinden birini seçerek Stripe ile kayıt olabilirsiniz. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır.' },
+  { q: 'Eko paketler ne fark eder?', a: 'Eko Diyet ve Eko Spor, ana paketlerle aynı özellikleri sunar; fark yalnızca ayda 1 görüşme hakkıdır (Diyet/Spor’da 2).' },
+  { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
+  { q: 'Online koçluk hangi pakette?', a: 'Ayda 1 görüşme Eko Spor’da, ayda 2 Spor ve VIP’tedir. Ayrıntılar online koçluk hizmet sayfasında.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
   { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket satın alabilirsiniz.' },
 ]
@@ -206,7 +208,7 @@ export default function MembershipComparisonPage() {
                     <tr className="border-b border-cream-100 bg-gradient-to-r from-cream-50/80 to-sage-50/40">
                       <th className="w-48 py-4 pl-5 pr-4 text-left text-sm font-medium text-cream-800/50">Özellik</th>
                       {displayPlans.map((plan) => {
-                        const theme = getPlanTheme(plan.id)
+                        const theme = getPlanTheme(plan)
                         const isVip = plan.id === RECOMMENDED_PLAN
                         return (
                           <th key={plan.id} className={`px-3 py-4 text-center ${isVip ? 'bg-amber-50/60' : ''}`}>
@@ -215,7 +217,7 @@ export default function MembershipComparisonPage() {
                               className="group flex flex-col items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-brand-50/60"
                             >
                               <span className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-sm transition group-hover:scale-105 ${theme.iconIdle}`}>
-                                {planIcon(plan.id, 'h-4 w-4')}
+                                {planIcon(plan, 'h-4 w-4')}
                               </span>
                               <span className={`font-display text-sm font-bold ${theme.label}`}>{plan.name}</span>
                               <span className="text-xs font-medium text-cream-800/50">

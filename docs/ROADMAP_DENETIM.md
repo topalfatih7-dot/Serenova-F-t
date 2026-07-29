@@ -23,7 +23,7 @@
 ## 2026-07-28 / 29 delta (ürün)
 
 - AI Basic/Eko program+diyet üretimi kaldırıldı; koç/diyetisyen builder + admin program CRUD.
-- Ücretsiz kayıt / Eko yeni satış kapalı; `SELLABLE_PLAN_IDS` = diyet/spor/doktor/vip.
+- Ücretsiz kayıt kapalı; eski tek `eko` yeni satış kapalı. Satılan: `eko_diyet` / `diyet` / `eko_spor` / `spor` / `doktor` / `vip`.
 - Staff GPT-5.4 sağlık skoru + `staffBrief`; üye dashboard `HealthScoreCard` (brief yok).
 - Pazarlama / legal copy paid-only modele hizalandı (2026-07-28).
 - Faz 2–3: `UnpaidMemberGate`, Stripe Portal (`stripe_customer_id`), `staff_earnings` + video attendance.

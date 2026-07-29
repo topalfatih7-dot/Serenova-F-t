@@ -39,6 +39,8 @@ export function getPostLoginPath(db) {
 const PLAN_COLORS = {
   free: '#5f9270',
   eko: '#5f9270',
+  eko_diyet: '#0d9488',
+  eko_spor: '#0284c7',
   diyet: '#059669',
   spor: '#2563eb',
   doktor: '#d97706',
@@ -109,7 +111,7 @@ export function computeAdminStats(db) {
 
 export function computeMembershipBreakdown(db) {
   const members = db.members
-  const planIds = ['eko', 'diyet', 'spor', 'doktor', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'diyet', 'spor', 'doktor', 'vip'].includes(id))]
+  const planIds = ['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip'].includes(id))]
   const breakdown = []
 
   planIds.forEach((planId) => {

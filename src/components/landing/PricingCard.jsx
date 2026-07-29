@@ -8,7 +8,7 @@ const VISIBLE_COLLAPSED = 6
 
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
   const [expanded, setExpanded] = useState(false)
-  const theme = getPlanTheme(plan.id)
+  const theme = getPlanTheme(plan)
   const isFree = plan.price === 0
   const badge = getPlanBadge(plan)
   const features = plan.features || []
@@ -51,7 +51,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         <span
           className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' || isOneTime ? theme.icon : theme.iconIdle}`}
         >
-          {planIcon(plan.id, 'h-7 w-7')}
+          {planIcon(plan, 'h-7 w-7')}
         </span>
         <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
         {isOneTime && (

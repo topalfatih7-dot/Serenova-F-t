@@ -205,6 +205,7 @@ create table if not exists public.plans (
   limits jsonb not null default '[]'::jsonb,
   pricing_tiers jsonb not null default '[]'::jsonb,
   color text default 'sage',
+  icon text,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

@@ -57,7 +57,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-const PLAN_SORT = { diyet: 0, spor: 1, doktor: 2, vip: 3 }
+const PLAN_SORT = { eko_diyet: 0, diyet: 1, eko_spor: 2, spor: 3, doktor: 4, vip: 5 }
 const LEGACY_INACTIVE = ['free', 'eko', 'kurucu', 'gumus', 'altin', 'platinum', 'premium']
 
 const DOKTOR_PACKAGE_CONFIG = {
@@ -75,16 +75,37 @@ const DOKTOR_PACKAGE_CONFIG = {
 /** Kod tabanındaki paket tanımları (membershipPlans.js ile uyumlu) — satılan paketler */
 const ACTIVE_PLANS = [
   {
+    id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    features: [
+      { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+      { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
+      { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+      { text: 'Ayda 1 Diyetisyen ile Online Görüşme', included: true },
+      { text: 'Diyet Üyeye Özel Diyet Programı', included: true },
+      { text: 'Sınırsız İlerleme Raporları', included: true },
+      { text: 'Takip Programı', included: true },
+      { text: 'Sınırsız Destek', included: true },
+      { text: 'Birebir Koç Görüşmesi', included: false },
+    ],
+    limits: ['Ayda 1 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
+    pricing_tiers: [
+      { months: 1, label: 'Aylık', price: 1299 },
+      { months: 3, label: '3 Aylık', price: 2999 },
+      { months: 6, label: '6 Aylık', price: 3999 },
+    ],
+  },
+  {
     id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald',
     features: [
       { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
-      { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+      { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
       { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
       { text: 'Diyet Üyeye Özel Diyet Programı', included: true },
       { text: 'Sınırsız İlerleme Raporları', included: true },
       { text: 'Takip Programı', included: true },
       { text: 'Sınırsız Destek', included: true },
+      { text: 'Birebir Koç Görüşmesi', included: false },
     ],
     limits: ['Ayda 2 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
     pricing_tiers: [
@@ -94,10 +115,28 @@ const ACTIVE_PLANS = [
     ],
   },
   {
+    id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    features: [
+      { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
+      { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+      { text: 'Ayda 1 Koç ile Online Görüşme', included: true },
+      { text: 'Spor Üyeye Özel Spor Programı', included: true },
+      { text: 'Sınırsız Video Kütüphanesi Erişimi', included: true },
+      { text: 'Sınırsız İlerleme Raporları', included: true },
+      { text: 'Takip Programı', included: true },
+      { text: 'Sınırsız Destek', included: true },
+    ],
+    limits: ['Ayda 1 koç görüşmesi', 'Kişisel spor programı', 'Sınırsız video'],
+    pricing_tiers: [
+      { months: 1, label: 'Aylık', price: 1299 },
+      { months: 3, label: '3 Aylık', price: 2999 },
+      { months: 6, label: '6 Aylık', price: 3999 },
+    ],
+  },
+  {
     id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue',
     features: [
-      { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
-      { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+      { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
       { text: 'Ayda 2 Koç ile Online Görüşme', included: true },
       { text: 'Spor Üyeye Özel Spor Programı', included: true },
@@ -127,7 +166,7 @@ const ACTIVE_PLANS = [
     id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'brand',
     features: [
       { text: 'Kan Tahlili Testi Analizi', included: true },
-      { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+      { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
       { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
       { text: 'Vip Üyeye Özel Diyet Programı', included: true },

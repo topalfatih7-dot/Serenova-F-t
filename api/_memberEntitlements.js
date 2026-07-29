@@ -5,9 +5,9 @@
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
 
-const PHOTO_CALORIE_PLANS = new Set(['diyet', 'spor', 'vip', 'platinum', 'premium'])
+const PHOTO_CALORIE_PLANS = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
 const MANUAL_CALORIE_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
-const PAID = new Set(['eko', 'diyet', 'spor', 'doktor', 'vip', 'gumus', 'altin', 'platinum', 'premium', 'kurucu'])
+const PAID = new Set(['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip', 'gumus', 'altin', 'platinum', 'premium', 'kurucu'])
 
 function today() {
   return new Date().toISOString().slice(0, 10)

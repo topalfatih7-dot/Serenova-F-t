@@ -1,7 +1,16 @@
 import { isPaidMembership } from '../data/membershipPlans'
 import { isOneTimePlan, memberHasActivePaidPackages } from './memberPackages'
 
-const PLAN_RANK = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
+const PLAN_RANK = {
+  free: 0,
+  eko: 1,
+  eko_diyet: 2,
+  eko_spor: 3,
+  diyet: 4,
+  spor: 5,
+  doktor: 6,
+  vip: 7,
+}
 
 /** Plan kartı / karşılaştırma CTA metni */
 export function getPlanCtaLabel(plan, { forMember = false, member = null, currentMembership = 'free' } = {}) {

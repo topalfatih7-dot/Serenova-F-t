@@ -9,7 +9,7 @@ import {
   sanitizeStaffForPackage,
 } from '../data/membershipPlans'
 import { applyStaffAssignments } from './staffAssignment'
-import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths, extendPremiumExpiry } from './premiumMembership'
+import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
 import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
@@ -40,6 +40,10 @@ import {
   isOneTimePlan,
   isPackageEntryActive,
   memberExpirySyncNeedsPersist,
+  removeMemberPackage,
+  updatePackageDuration,
+  patchPackageExpiry,
+  resolveTargetSubscriptionPackageId,
 } from '../utils/memberPackages'
 import {
   compactMembersForRole,
@@ -528,6 +532,7 @@ function rowToPlan(row) {
     limits: row.limits || [],
     pricingTiers: row.pricing_tiers || [],
     color: row.color || 'sage',
+    icon: row.icon || null,
     sortOrder: row.sort_order || 0,
   }
 }
@@ -550,6 +555,7 @@ export async function upsertPlan(plan) {
     limits: plan.limits || [],
     pricing_tiers: plan.pricingTiers || [],
     color: plan.color || 'sage',
+    icon: plan.icon || null,
     sort_order: plan.sortOrder || 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'id' })
@@ -2134,6 +2140,24 @@ export async function sendTicketReply(id, from, text) {
   return { ...ticket, messages, status, success: true }
 }
 
+async function resolveAdminAssignPrice(planId, durationMonths, amountOverride) {
+  if (amountOverride !== undefined && amountOverride !== null && amountOverride !== '') {
+    const n = Number(amountOverride)
+    return Number.isFinite(n) && n >= 0 ? n : 0
+  }
+  const months = Number(durationMonths) || 1
+  const { data: planRow } = await supabase.from('plans').select('price, pricing_tiers').eq('id', planId).maybeSingle()
+  if (planRow) {
+    const tiers = planRow.pricing_tiers
+    if (Array.isArray(tiers)) {
+      const tier = tiers.find((t) => Number(t.months) === months)
+      if (tier?.price != null) return Number(tier.price) || 0
+    }
+    if (typeof planRow.price === 'number' && planRow.price >= 0) return planRow.price
+  }
+  return 0
+}
+
 /** Admin: koç/diyetisyen ataması, paket değiştirme ve süre yönetimi */
 export async function adminUpdatePremiumMembership(memberId, options = {}) {
   const { data: memberRows } = await supabase.from('members').select('*').eq('id', memberId).limit(1)
@@ -2153,47 +2177,69 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   let activePackages = migrateLegacyToPackages(member)
   const targetingFree = Boolean(options.membership && !isPaidMembership(options.membership))
+  const removingPackage = Boolean(options.removePackageId)
+  let assignedPaidPlan = null
+  let assignedCfg = null
+  let assignedMonths = 0
+  let assignedAmount = null
 
-  if (options.membership) {
+  if (removingPackage) {
+    activePackages = removeMemberPackage(activePackages, options.removePackageId)
+  } else if (options.membership) {
     const planId = options.membership
-    const months = Number(options.durationMonths) || getDurationMonths(member.packageConfig) || 1
+    const months = isOneTimePlan(planId)
+      ? 0
+      : (Number(options.durationMonths) || getDurationMonths(member.packageConfig) || 1)
     const cfg = getDefaultPackageForPlan(planId, months)
 
     if (targetingFree) {
       // Abonelik paketlerini kaldır; aktif tek seferlik (doktor) korunur
       activePackages = activePackages.filter((p) => isOneTimePlan(p.planId) && isPackageEntryActive(p))
     } else {
-      activePackages = resolvePackagePurchase(activePackages, planId, cfg, {}, { addPackage: options.addPackage })
+      const amount = await resolveAdminAssignPrice(planId, months || 1, options.amount)
+      assignedAmount = amount
+      assignedPaidPlan = planId
+      assignedCfg = cfg
+      assignedMonths = months
+      activePackages = resolvePackagePurchase(
+        activePackages,
+        planId,
+        cfg,
+        { price: amount },
+        { addPackage: options.addPackage },
+      )
+    }
+  } else if (options.durationMonths != null) {
+    // Süre-only: membership değişmeden abonelik süresini yenile
+    const targetId = resolveTargetSubscriptionPackageId(activePackages, options.targetPackageId)
+    if (targetId) {
+      activePackages = updatePackageDuration(activePackages, targetId, options.durationMonths)
     }
   }
 
-  // Free hedefinde süre uzatma / kalan gün uygulanmaz
+  // Free / tek paket çıkarma hedefinde süre uzatma uygulanmaz (çıkarma sonrası kalanlara uygulanabilir)
   if (!targetingFree) {
-    if (options.extendDays != null && Number(options.extendDays) !== 0) {
-      activePackages = activePackages.map((p) => {
-        if (isOneTimePlan(p.planId)) return p
-        return { ...p, expiresAt: extendPremiumExpiry(p.expiresAt, options.extendDays) }
+    const hasExpiryPatch = (
+      (options.extendDays != null && Number(options.extendDays) !== 0)
+      || (options.setRemainingDays != null && Number(options.setRemainingDays) >= 0)
+      || options.premiumExpiresAt
+    )
+    if (hasExpiryPatch) {
+      activePackages = patchPackageExpiry(activePackages, {
+        targetPackageId: options.targetPackageId || null,
+        extendDays: options.extendDays != null && Number(options.extendDays) !== 0
+          ? options.extendDays
+          : null,
+        setRemainingDays: options.extendDays != null && Number(options.extendDays) !== 0
+          ? null
+          : options.setRemainingDays,
+        premiumExpiresAt: (
+          options.extendDays != null && Number(options.extendDays) !== 0
+        ) || (options.setRemainingDays != null && Number(options.setRemainingDays) >= 0)
+          ? null
+          : options.premiumExpiresAt,
+        extendAll: Boolean(options.extendAll),
       })
-    } else if (options.setRemainingDays != null && Number(options.setRemainingDays) >= 0) {
-      const d = new Date()
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() + Number(options.setRemainingDays))
-      const newExpiry = d.toISOString().split('T')[0]
-      let touched = false
-      activePackages = activePackages.map((p) => {
-        if (isOneTimePlan(p.planId)) return p
-        if (!touched) {
-          touched = true
-          return { ...p, expiresAt: newExpiry }
-        }
-        return p
-      })
-    }
-
-    if (options.premiumExpiresAt) {
-      activePackages = activePackages.map((p, i) => (
-        isOneTimePlan(p.planId) ? p : (i === 0 ? { ...p, expiresAt: options.premiumExpiresAt } : p)
-      ))
     }
   }
 
@@ -2209,37 +2255,40 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
     doctorSessions: options.doctorSessions !== undefined ? options.doctorSessions : (member.doctorSessions || []),
   }
 
-  // Free indirme: sync'ten önce membership + premium alanlarını temizle (changeMemberPlan ile aynı)
-  if (targetingFree) {
-    if (!activePackages.length) {
-      draft = {
-        ...draft,
-        membership: 'free',
-        membershipStatus: 'active',
-        packageConfig: DEFAULT_PACKAGE,
-        premiumExpiresAt: null,
-        premiumStartedAt: null,
-        freeTrialExpiresAt: null,
-      }
-    } else {
-      // Yalnızca tek seferlik paket kaldı — abonelik tarihlerini temizle; primary sync çözer
-      draft = {
-        ...draft,
-        membershipStatus: 'active',
-        premiumExpiresAt: null,
-        freeTrialExpiresAt: null,
-      }
+  const activeAfter = activePackages.filter((p) => isPackageEntryActive(p))
+  const clearedToFree = targetingFree || (removingPackage && !activeAfter.length)
+
+  // Free indirme / son paket çıkarma: sync'ten önce membership + premium alanlarını temizle
+  if (clearedToFree && !activeAfter.length) {
+    draft = {
+      ...draft,
+      membership: 'free',
+      membershipStatus: 'active',
+      packageConfig: DEFAULT_PACKAGE,
+      premiumExpiresAt: null,
+      premiumStartedAt: null,
+      freeTrialExpiresAt: null,
+    }
+  } else if (targetingFree && activeAfter.length) {
+    draft = {
+      ...draft,
+      membershipStatus: 'active',
+      premiumExpiresAt: null,
+      freeTrialExpiresAt: null,
     }
   }
 
   draft = syncMemberPackages(draft)
 
-  // Ücretli pakete geçince eski Basic deneme kilidini kaldır
   if (isPaidMembership(draft.membership)) {
     draft.freeTrialExpiresAt = null
   }
 
-  if (options.membership && options.membership !== prevMembership) {
+  if (
+    (options.membership && options.membership !== prevMembership)
+    || removingPackage
+    || clearedToFree
+  ) {
     draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   }
 
@@ -2299,11 +2348,41 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   await upsertMember(updated)
 
+  // Ücretli admin paket ataması → payments (Stripe webhook şekliyle uyumlu)
+  if (assignedPaidPlan && assignedCfg) {
+    const amount = assignedAmount ?? 0
+    const note = String(options.paymentNote || '').trim()
+      || (amount <= 0 ? 'Ücretsiz admin ataması' : '')
+    await supabase.from('payments').insert({
+      member_id: updated.id,
+      data: {
+        memberName: updated.name || '',
+        amount,
+        packageConfig: assignedCfg,
+        planId: assignedPaidPlan,
+        durationMonths: assignedMonths,
+        status: 'completed',
+        provider: 'admin',
+        note: note || null,
+        createdAt: nowISO(),
+      },
+    })
+    await addActivity(
+      'payment',
+      `${updated.name} admin paket ataması (${getPlanLabel(assignedPaidPlan)}, ${Number(amount).toLocaleString('tr-TR')}₺)`,
+      updated.id,
+    )
+  }
+
   const activityParts = []
-  if (options.membership && options.membership !== prevMembership) {
-    activityParts.push(`paket → ${getPlanLabel(options.membership)}`)
+  if (removingPackage) {
+    activityParts.push('paket çıkarıldı')
   } else if (options.addPackage && options.membership) {
     activityParts.push(`paket eklendi: ${getPlanLabel(options.membership)}`)
+  } else if (options.membership && options.membership !== prevMembership) {
+    activityParts.push(`paket → ${getPlanLabel(options.membership)}`)
+  } else if (options.durationMonths != null) {
+    activityParts.push('süre ayı güncellendi')
   }
   if (options.extendDays || options.setRemainingDays != null || options.premiumExpiresAt) {
     activityParts.push('süre güncellendi')

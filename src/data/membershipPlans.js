@@ -46,22 +46,24 @@ export function formatPlanPrice(plan) {
 }
 
 export const PAID_MEMBERSHIPS = [
-  'eko', 'diyet', 'spor', 'doktor', 'vip',
+  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip',
   // geriye dönük uyumluluk (mevcut üyeler)
   'kurucu', 'gumus', 'altin', 'platinum', 'premium',
 ]
 
-/** Satışa açık planlar (ücretsiz kayıt / Eko kapalı) */
-export const SELLABLE_PLAN_IDS = ['diyet', 'spor', 'doktor', 'vip']
+/** Satışa açık planlar (eski tek `eko` kapalı) */
+export const SELLABLE_PLAN_IDS = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
 
-/** Admin atama dropdown — Eko yeni atanmaz; free = süre bitmiş fallback */
-export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'diyet', 'spor', 'doktor', 'vip']
+/** Admin atama dropdown — eski `eko` yeni atanmaz; free = süre bitmiş fallback */
+export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
 
-export const PLAN_IDS = ['free', 'eko', 'diyet', 'spor', 'doktor', 'vip']
+export const PLAN_IDS = ['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip']
 
 export const PLAN_LABELS = {
   free: 'Paketsiz',
   eko: 'Eko Paket (eski)',
+  eko_diyet: 'Eko Diyet Paketi',
+  eko_spor: 'Eko Spor Paketi',
   diyet: 'Diyet Paketi',
   spor: 'Spor Paketi',
   doktor: 'Doktor Paketi',
@@ -80,7 +82,7 @@ export function getPlanBadge(plan) {
 }
 
 /** Landing / onboarding için önerilen sıra (yalnızca satılan paketler) */
-export const PLAN_DISPLAY_ORDER = ['diyet', 'spor', 'doktor', 'vip']
+export const PLAN_DISPLAY_ORDER = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
 
 export function sortPlansForDisplay(plans = []) {
   const sellable = plans.filter((p) => SELLABLE_PLAN_IDS.includes(p.id))
@@ -103,7 +105,9 @@ export function getPlanLabel(id) {
 
 /** Üyelik planı → görsel rozet seviyesi */
 export function getMembershipBadgeTier(membership) {
-  if (membership === 'eko' || membership === 'gumus') return 'silver'
+  if (membership === 'eko' || membership === 'eko_diyet' || membership === 'eko_spor' || membership === 'gumus') {
+    return 'silver'
+  }
   if (membership === 'doktor' || membership === 'kurucu') return 'silver'
   if (membership === 'diyet' || membership === 'spor' || membership === 'altin') return 'gold'
   if (membership === 'vip' || membership === 'platinum' || membership === 'premium') {
@@ -115,6 +119,8 @@ export function getMembershipBadgeTier(membership) {
 /** Plan + süre için fiyat (TL) */
 export const PLAN_PRICING = {
   eko: { 1: 1299, 3: 2999, 6: 3999 },
+  eko_diyet: { 1: 1299, 3: 2999, 6: 3999 },
+  eko_spor: { 1: 1299, 3: 2999, 6: 3999 },
   diyet: { 1: 2499, 3: 6499, 6: 9999 },
   spor: { 1: 2499, 3: 6499, 6: 9999 },
   doktor: { 1: 1500 },
@@ -194,6 +200,28 @@ export const EKO_PLAN = {
   limits: ['Yeni satış kapalı — mevcut üyeler admin ile taşınır'],
 }
 
+export const EKO_DIYET_PLAN = {
+  id: 'eko_diyet',
+  name: 'Eko Diyet Paketi',
+  price: 1299,
+  period: 'Aylık',
+  color: 'sage',
+  badge: 'Eko',
+  pricingTiers: buildPricingTiers('eko_diyet'),
+  features: [
+    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+    { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 1 Diyetisyen ile Online Görüşme', included: true },
+    { text: 'Diyet Üyeye Özel Diyet Programı', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Takip Programı', included: true },
+    { text: 'Sınırsız Destek', included: true },
+    { text: 'Birebir Koç Görüşmesi', included: false },
+  ],
+  limits: ['Ayda 1 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
+}
+
 export const DIYET_PLAN = {
   id: 'diyet',
   name: 'Diyet Paketi',
@@ -203,7 +231,7 @@ export const DIYET_PLAN = {
   pricingTiers: buildPricingTiers('diyet'),
   features: [
     { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
-    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
     { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
     { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
     { text: 'Diyet Üyeye Özel Diyet Programı', included: true },
@@ -215,6 +243,27 @@ export const DIYET_PLAN = {
   limits: ['Ayda 2 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
 }
 
+export const EKO_SPOR_PLAN = {
+  id: 'eko_spor',
+  name: 'Eko Spor Paketi',
+  price: 1299,
+  period: 'Aylık',
+  color: 'sage',
+  badge: 'Eko',
+  pricingTiers: buildPricingTiers('eko_spor'),
+  features: [
+    { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
+    { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
+    { text: 'Ayda 1 Koç ile Online Görüşme', included: true },
+    { text: 'Spor Üyeye Özel Spor Programı', included: true },
+    { text: 'Sınırsız Video Kütüphanesi Erişimi', included: true },
+    { text: 'Sınırsız İlerleme Raporları', included: true },
+    { text: 'Takip Programı', included: true },
+    { text: 'Sınırsız Destek', included: true },
+  ],
+  limits: ['Ayda 1 koç görüşmesi', 'Kişisel spor programı', 'Sınırsız video'],
+}
+
 export const SPOR_PLAN = {
   id: 'spor',
   name: 'Spor Paketi',
@@ -223,8 +272,7 @@ export const SPOR_PLAN = {
   color: 'blue',
   pricingTiers: buildPricingTiers('spor'),
   features: [
-    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
-    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
     { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
     { text: 'Ayda 2 Koç ile Online Görüşme', included: true },
     { text: 'Spor Üyeye Özel Spor Programı', included: true },
@@ -262,7 +310,7 @@ export const VIP_PLAN = {
   pricingTiers: buildPricingTiers('vip'),
   features: [
     { text: 'Kan Tahlili Testi Analizi', included: true },
-    { text: 'Kişisel Sağlık & Vücut Analizi', included: true },
+    { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
     { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
     { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
     { text: 'Vip Üyeye Özel Diyet Programı', included: true },
@@ -284,7 +332,7 @@ export const PLATINUM_PLAN = VIP_PLAN
 export const PREMIUM_PLAN = VIP_PLAN
 export const KURUCU_PLAN = DOKTOR_PLAN
 
-export const ALL_PLANS = [DIYET_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
+export const ALL_PLANS = [EKO_DIYET_PLAN, DIYET_PLAN, EKO_SPOR_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
 
 export const ADD_ONS = [
   { id: 'group', name: 'Grup Koçluğu', price: 450, desc: 'Haftalık canlı grup seansları' },
@@ -306,8 +354,10 @@ export const DEFAULT_PACKAGE = {
 
 const PACKAGE_BY_PLAN = {
   eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
+  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1 },
+  eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
   diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
-  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 1 },
+  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
   doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, billingType: 'one_time' },
   vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
   kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
@@ -342,7 +392,7 @@ export function getDefaultPackageForPlan(planId, durationMonths = 1) {
 
 /** Fotoğraflı kalori erişimi olan planlar (tek plan id — çoklu paket için memberHasPhotoCalorieAccess kullanın) */
 export function hasPhotoCalorieAccess(membership) {
-  return ['diyet', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
+  return ['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
 }
 
 /** Manuel kalori erişimi (doktor tek seferlik paketi hariç) */
@@ -353,7 +403,7 @@ export function hasManualCalorieAccess(membership) {
 
 /** Tam video kütüphanesi erişimi */
 export function hasFullVideoAccess(membership) {
-  return ['spor', 'vip', 'platinum', 'premium'].includes(membership)
+  return ['eko_spor', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
 }
 
 export const COACH_MAX_PER_MONTH = 6

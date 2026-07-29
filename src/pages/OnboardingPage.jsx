@@ -38,8 +38,8 @@ import { isTurnstileEnabled } from '../config/turnstile'
 /** Eski URL plan parametrelerini güncel plan id'lerine eşler */
 const LEGACY_PLAN_MAP = {
   free: RECOMMENDED_PLAN,
-  eko: 'diyet',
-  gumus: 'diyet',
+  eko: 'eko_diyet',
+  gumus: 'eko_diyet',
   altin: 'doktor',
   platinum: 'vip',
   premium: 'vip',

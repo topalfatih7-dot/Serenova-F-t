@@ -17,19 +17,21 @@ description: >-
 
 ## Plan IDs
 
-**Satılan:** `diyet` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS`)  
+**Satılan:** `eko_diyet` | `diyet` | `eko_spor` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS`)  
 **Fallback:** `free` (süresi bitmiş)  
 **Eski (yeni satış yok):** `eko` — mevcut üyeler admin ile taşınır  
 
 Durations: 1 / 3 / 6 months (`doktor` = one-time). Ücretsiz kayıt yok — onboarding Stripe zorunlu.
+
+Sıra: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5).
 
 ## Gate helpers (parity with web)
 
 From `src/data/membershipPlans.js` — copy into mobile:
 
 - `hasManualCalorieAccess` — not free/doktor/kurucu
-- `hasPhotoCalorieAccess` — diyet, spor, vip (+ legacy platinum/premium)
-- `hasFullVideoAccess` — spor, vip (+ legacy)
+- `hasPhotoCalorieAccess` — eko_diyet, eko_spor, diyet, spor, vip (+ legacy platinum/premium)
+- `hasFullVideoAccess` — eko_spor, spor, vip (+ legacy)
 - Package quotas: `PACKAGE_BY_PLAN` / `getDefaultPackageForPlan`
 
 ## When coding or documenting

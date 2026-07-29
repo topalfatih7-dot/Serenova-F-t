@@ -89,10 +89,10 @@ const PLAN_RANK = Object.fromEntries(PLAN_IDS.map((id, i) => [id, i]))
 /** Geriye dönük plan id → sıra (resolvePrimaryMembership) */
 export const LEGACY_PLAN_RANK = {
   gumus: 1,
-  altin: 4,
-  kurucu: 4,
-  platinum: 5,
-  premium: 5,
+  altin: 6,
+  kurucu: 6,
+  platinum: 7,
+  premium: 7,
 }
 
 export function planRank(planId) {
@@ -133,6 +133,85 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
 
 export function addMemberPackage(activePackages = [], planId, packageConfig, meta = {}) {
   return [...(activePackages || []), createPackageEntry(planId, packageConfig, meta)]
+}
+
+/** Tek paket çıkar — status: expired; syncMemberPackages birleşik hakları yeniden hesaplar */
+export function removeMemberPackage(activePackages = [], packageId) {
+  if (!packageId) return activePackages || []
+  return (activePackages || []).map((p) => (
+    p.id === packageId ? { ...p, status: 'expired' } : p
+  ))
+}
+
+/** Abonelik paketleri arasında hedef (veya birincil) entry id */
+export function resolveTargetSubscriptionPackageId(activePackages = [], targetPackageId = null) {
+  const active = (activePackages || []).filter((p) => isPackageEntryActive(p) && !isOneTimePlan(p.planId))
+  if (!active.length) return null
+  if (targetPackageId && active.some((p) => p.id === targetPackageId)) return targetPackageId
+  const primaryId = resolvePrimaryMembership(active, active[0].planId)
+  const primary = active.find((p) => p.planId === primaryId)
+  return primary?.id || active[0].id
+}
+
+/** Süre ayını yeniden yaz; startedAt korunur, expiresAt yeniden hesaplanır */
+export function updatePackageDuration(activePackages = [], packageId, durationMonths) {
+  const months = Number(durationMonths) || 1
+  return (activePackages || []).map((p) => {
+    if (p.id !== packageId || isOneTimePlan(p.planId)) return p
+    const packageConfig = {
+      ...(p.packageConfig || {}),
+      durationMonths: months,
+      durationWeeks: months * 4,
+    }
+    return {
+      ...p,
+      packageConfig,
+      expiresAt: computePremiumExpiresAt(p.startedAt || today(), months),
+    }
+  })
+}
+
+/** Kalan gün / uzatma / açık bitiş — yalnızca hedef (veya birincil) abonelik */
+export function patchPackageExpiry(activePackages = [], {
+  targetPackageId = null,
+  extendDays = null,
+  setRemainingDays = null,
+  premiumExpiresAt = null,
+  extendAll = false,
+} = {}) {
+  const targetId = resolveTargetSubscriptionPackageId(activePackages, targetPackageId)
+
+  if (extendDays != null && Number(extendDays) !== 0) {
+    const days = Number(extendDays)
+    return (activePackages || []).map((p) => {
+      if (isOneTimePlan(p.planId) || !isPackageEntryActive(p)) return p
+      if (!extendAll && p.id !== targetId) return p
+      const base = p.expiresAt && p.expiresAt >= today()
+        ? new Date(p.expiresAt)
+        : new Date()
+      base.setHours(0, 0, 0, 0)
+      base.setDate(base.getDate() + days)
+      return { ...p, expiresAt: base.toISOString().split('T')[0] }
+    })
+  }
+
+  if (setRemainingDays != null && Number(setRemainingDays) >= 0) {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() + Number(setRemainingDays))
+    const newExpiry = d.toISOString().split('T')[0]
+    return (activePackages || []).map((p) => (
+      p.id === targetId ? { ...p, expiresAt: newExpiry } : p
+    ))
+  }
+
+  if (premiumExpiresAt) {
+    return (activePackages || []).map((p) => (
+      p.id === targetId ? { ...p, expiresAt: premiumExpiresAt } : p
+    ))
+  }
+
+  return activePackages || []
 }
 
 export function memberHasActivePaidPackages(member) {
@@ -264,8 +343,8 @@ export function doctorLimitIsOneTime(packageConfig = {}) {
   return (Number(packageConfig.doctorSessionsTotal) || 0) > 0
 }
 
-const PHOTO_CALORIE_PLANS = new Set(['diyet', 'spor', 'vip', 'platinum', 'premium'])
-const FULL_VIDEO_PLANS = new Set(['spor', 'vip', 'platinum', 'premium'])
+const PHOTO_CALORIE_PLANS = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
+const FULL_VIDEO_PLANS = new Set(['eko_spor', 'spor', 'vip', 'platinum', 'premium'])
 const MANUAL_CALORIE_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
 
 /** Aktif paketler + birleşik config */

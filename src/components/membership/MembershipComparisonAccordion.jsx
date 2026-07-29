@@ -30,7 +30,7 @@ export default function MembershipComparisonAccordion({
   return (
     <div className="space-y-3 md:hidden">
       {plans.map((plan) => {
-        const theme = getPlanTheme(plan.id)
+        const theme = getPlanTheme(plan)
         const isOpen = openId === plan.id
         const isVip = plan.id === 'vip'
 
@@ -48,7 +48,7 @@ export default function MembershipComparisonAccordion({
               aria-expanded={isOpen}
             >
               <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${theme.iconIdle}`}>
-                {planIcon(plan.id, 'h-4 w-4')}
+                {planIcon(plan, 'h-4 w-4')}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2">

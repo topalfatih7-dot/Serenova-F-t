@@ -17,7 +17,7 @@
 5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` yalnızca personel.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
-8. Satılan plan sırası: Diyet(0) → Spor(1) → Doktor(2) → Vip(3). `free` = süresi bitmiş fallback; `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
+8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 10. **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (panel duvarı). Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 
@@ -67,8 +67,10 @@ Browser → Supabase Auth
 |----|-------|-----------------|-----|
 | `free` | hayır | — | Süre bitmiş fallback |
 | `eko` | hayır (eski) | — | Mevcut üyeler admin ile taşınır |
-| `diyet` | evet | diyetisyen | |
-| `spor` | evet | koç | |
+| `eko_diyet` | evet | diyetisyen (1/ay) | Diyet’in ekonomik versiyonu |
+| `diyet` | evet | diyetisyen (2/ay) | |
+| `eko_spor` | evet | koç (1/ay) | Spor’un ekonomik versiyonu; kan tahlili yok |
+| `spor` | evet | koç (2/ay) | Kan tahlili yok |
 | `doktor` | evet | tek sefer doktor | |
 | `vip` | evet | koç+diyet | |
 
@@ -164,6 +166,9 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 ## 11. Son delta (2026-07-29)
 
+- Paket kataloğu: `eko_diyet` / `eko_spor` satışa açıldı (1299/2999/3999; ayda 1 görüşme).
+- Spor / Eko Spor: kan tahlili (doktor hakkı) kaldırıldı; Diyet / Eko Diyet / Vip’te kaldı.
+- Özellik satırı: “Yeniform Kişisel Sağlık Analizi” (diyet/spor/vip + eko’lar).
 - GPT-5.4 sağlık skoru + `staffBrief` (`api/ai-health-analysis.js`); program/diyet AI yok.
 - Üye panel: `HealthScoreCard` (genel /100 + boyutlar); brief personelde.
 - HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz. Aynı fingerprint’te yeniden analiz engelli.
@@ -175,5 +180,5 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 - AI program/diyet/skor/tips kaldırıldı; `ai-nutrition-tips` silindi.
 - Kalori + blog + günlük tüyo kaldı.
-- Basic/Eko yeni satış ve ücretsiz kayıt kapandı; `SELLABLE_PLAN_IDS` = diyet/spor/doktor/vip.
+- Basic/Eko yeni satış ve ücretsiz kayıt kapandı; sonra Eko Diyet/Eko Spor yeniden satıldı (`SELLABLE_PLAN_IDS`).
 - `membership-expiry` → `api/_membershipExpiry.js`; `eko-renew` kaldırıldı.

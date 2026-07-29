@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import {
   Crown, Search, Dumbbell, Apple, Calendar, Clock,
-  UserCheck, ChevronRight, AlertTriangle, Package, Stethoscope,
+  UserCheck, ChevronRight, AlertTriangle, Package, Stethoscope, X, DollarSign,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -15,8 +15,11 @@ import {
 } from '../../data/membershipPlans'
 import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
-import { isOneTimePlan, isPackageEntryActive } from '../../utils/memberPackages'
+import {
+  isOneTimePlan, isPackageEntryActive, resolveTargetSubscriptionPackageId, migrateLegacyToPackages,
+} from '../../utils/memberPackages'
 import { fetchMemberSessions } from '../../services/supabaseDb'
+import { planIcon, getPlanTheme } from '../../components/membership/planTheme'
 
 const EMPTY_LIST = Object.freeze([])
 
@@ -34,7 +37,35 @@ const STATUS_LABELS = {
   cancelled: 'İptal',
 }
 
-function PremiumMemberCard({ member, staffName, onEdit }) {
+function activePackagesOf(member) {
+  return migrateLegacyToPackages(member).filter((p) => isPackageEntryActive(p))
+}
+
+function PlanChip({ planId, expiresAt, oneTime, onRemove, removable, themePlan }) {
+  const theme = getPlanTheme(themePlan || planId)
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ${theme.chip}`}>
+      <span className={`flex h-5 w-5 items-center justify-center rounded-full ${theme.iconIdle}`}>
+        {planIcon(themePlan || planId, 'h-3 w-3')}
+      </span>
+      {PLAN_LABELS[planId] || planId}
+      {oneTime ? ' · tek sefer' : expiresAt ? ` · ${expiresAt}` : ''}
+      {removable && onRemove && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
+          className="ml-0.5 rounded-full p-0.5 hover:bg-black/10"
+          title="Paketi çıkar"
+          aria-label="Paketi çıkar"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </span>
+  )
+}
+
+function PremiumMemberCard({ member, plans, staffName, onEdit }) {
   const info = enrichMemberPremium(member)
   const isFree = !isPaidMembership(member.membership)
   const showCoach = packageIncludesCoach(member.packageConfig)
@@ -44,6 +75,8 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
   const missingDiet = showDiet && !member.assignedDietitianId
   const missingDoctor = showDoctor && !member.assignedDoctorId
   const staffCols = [showCoach, showDiet, showDoctor].filter(Boolean).length
+  const pkgs = activePackagesOf(member)
+  const planById = (id) => plans?.find((p) => p.id === id)
 
   return (
     <button
@@ -67,11 +100,29 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
                 {PLAN_LABELS[member.membership] || member.membership}
               </span>
             )}
+            {pkgs.length > 1 && (
+              <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[10px] font-semibold text-cream-700 ring-1 ring-cream-200">
+                +{pkgs.length - 1} paket
+              </span>
+            )}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${STATUS_STYLES[member.membershipStatus] || STATUS_STYLES.active}`}>
               {STATUS_LABELS[member.membershipStatus] || member.membershipStatus}
             </span>
           </div>
           <p className="truncate text-xs text-cream-800/50">{member.email}</p>
+          {pkgs.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {pkgs.map((p) => (
+                <PlanChip
+                  key={p.id}
+                  planId={p.planId}
+                  expiresAt={p.expiresAt}
+                  oneTime={isOneTimePlan(p.planId)}
+                  themePlan={planById(p.planId) || p.planId}
+                />
+              ))}
+            </div>
+          )}
         </div>
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-cream-300 group-hover:text-brand-400" />
       </div>
@@ -151,14 +202,23 @@ function PremiumMemberCard({ member, staffName, onEdit }) {
   )
 }
 
-function EditPremiumModal({ member, staff, members, programs = [], onClose, onSave, onStatusChange, busy }) {
+function EditPremiumModal({
+  member, plans, staff, members, onClose, onSave, onRemovePackage, onStatusChange, busy,
+}) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
   const doctors = staff.filter((s) => s.role === 'doctor' && s.active !== false)
 
+  const pkgs = activePackagesOf(member)
+  const subscriptionPkgs = pkgs.filter((p) => !isOneTimePlan(p.planId))
+  const defaultTargetId = resolveTargetSubscriptionPackageId(pkgs)
+
   const [membership, setMembership] = useState(member?.membership || 'free')
   const [addPackage, setAddPackage] = useState(false)
   const [durationMonths, setDurationMonths] = useState(() => getDurationMonths(member?.packageConfig))
+  const [amountInput, setAmountInput] = useState('')
+  const [paymentNote, setPaymentNote] = useState('')
+  const [targetPackageId, setTargetPackageId] = useState(defaultTargetId || '')
   const [remainingDaysInput, setRemainingDaysInput] = useState(() => {
     const r = getRemainingDays(member?.premiumExpiresAt)
     return r != null ? String(r) : ''
@@ -188,8 +248,14 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
     return () => { active = false }
   }, [member?.id])
 
+  useEffect(() => {
+    const next = resolveTargetSubscriptionPackageId(activePackagesOf(member))
+    setTargetPackageId(next || '')
+  }, [member])
+
   if (!member) return null
 
+  const planById = (id) => plans?.find((p) => p.id === id)
   const previewPackage = getDefaultPackageForPlan(membership, durationMonths)
   const showCoach = packageIncludesCoach(previewPackage)
   const showDiet = packageIncludesDietitian(previewPackage)
@@ -202,6 +268,18 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
   const dietitianName = dietitians.find((s) => s.id === dietitianId)?.name || ''
   const doctorName = doctors.find((s) => s.id === doctorId)?.name || ''
   const planChanged = membership !== member.membership
+  const willAssignPaid = (planChanged || addPackage) && isPaidMembership(membership)
+  const extendFilled = extendDays !== '' && !Number.isNaN(Number(extendDays)) && Number(extendDays) !== 0
+  const remainingTouched = remainingDaysInput !== '' && remainingDaysInput !== String(remaining ?? '')
+
+  const suggestAmount = () => {
+    const plan = planById(membership)
+    if (!plan) return ''
+    const months = membership === 'doktor' ? 1 : durationMonths
+    const tier = (plan.pricingTiers || []).find((t) => Number(t.months) === Number(months))
+    if (tier?.price != null) return String(tier.price)
+    return plan.price != null ? String(plan.price) : ''
+  }
 
   const submit = () => {
     const payload = {
@@ -213,23 +291,37 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
       doctorSessions: showDoctor ? doctorSessions : [],
     }
 
+    if (targetPackageId) payload.targetPackageId = targetPackageId
+
     if (planChanged || addPackage) {
       payload.membership = membership
       payload.durationMonths = durationMonths
       if (addPackage) payload.addPackage = true
-    } else if (durationMonths !== getDurationMonths(member.packageConfig)) {
+      if (willAssignPaid) {
+        if (amountInput !== '') payload.amount = Number(amountInput)
+        if (paymentNote.trim()) payload.paymentNote = paymentNote.trim()
+      }
+    } else if (
+      isPaidMembership(membership)
+      && durationMonths !== getDurationMonths(member.packageConfig)
+    ) {
       payload.durationMonths = durationMonths
     }
 
-    const extend = Number(extendDays)
-    if (extendDays !== '' && !Number.isNaN(extend) && extend !== 0) {
-      payload.extendDays = extend
-    } else if (remainingDaysInput !== '' && remainingDaysInput !== String(remaining ?? '')) {
+    if (extendFilled) {
+      payload.extendDays = Number(extendDays)
+    } else if (remainingTouched) {
       const days = Number(remainingDaysInput)
       if (!Number.isNaN(days) && days >= 0) payload.setRemainingDays = days
     }
 
     onSave(payload)
+  }
+
+  const handleRemovePkg = (pkg) => {
+    const label = PLAN_LABELS[pkg.planId] || pkg.planId
+    if (!window.confirm(`“${label}” paketini bu üyeden çıkarmak istediğinize emin misiniz?`)) return
+    onRemovePackage(pkg.id)
   }
 
   return (
@@ -238,12 +330,22 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
         <div className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 p-4 text-white">
           <p className="font-display text-lg font-bold">{member.name}</p>
           <p className="text-sm text-white/80">{member.email}</p>
-          {(member.activePackages || []).filter((p) => isPackageEntryActive(p)).length > 0 && (
+          {pkgs.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {(member.activePackages || []).filter((p) => isPackageEntryActive(p)).map((p) => (
-                <span key={p.id} className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-semibold">
+              {pkgs.map((p) => (
+                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold">
+                  {planIcon(planById(p.planId) || p.planId, 'h-3 w-3')}
                   {PLAN_LABELS[p.planId] || p.planId}
                   {isOneTimePlan(p.planId) ? ' · tek sefer' : p.expiresAt ? ` · ${p.expiresAt}` : ''}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => handleRemovePkg(p)}
+                    className="rounded-full p-0.5 hover:bg-white/20 disabled:opacity-50"
+                    title="Paketi çıkar"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </span>
               ))}
             </div>
@@ -258,7 +360,6 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
           onSubmit={onStatusChange}
         />
 
-        {/* Paket & süre */}
         <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
             <Package className="h-4 w-4 text-brand-500" /> Paket & Süre
@@ -277,7 +378,12 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
               <span className="mb-1 block text-xs text-cream-800/55">Üyelik paketi</span>
               <select
                 value={membership}
-                onChange={(e) => setMembership(e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value
+                  setMembership(id)
+                  if (id === 'doktor') setDurationMonths(0)
+                  else if (durationMonths === 0) setDurationMonths(1)
+                }}
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm"
               >
                 {ADMIN_ASSIGNABLE_PLAN_IDS.map((id) => (
@@ -303,14 +409,61 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
                 ))}
               </select>
             </label>
+            {willAssignPaid && (
+              <>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-cream-800/55">Tutar (₺)</span>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-cream-400" />
+                    <input
+                      type="number"
+                      min={0}
+                      value={amountInput}
+                      onChange={(e) => setAmountInput(e.target.value)}
+                      onFocus={() => { if (amountInput === '') setAmountInput(suggestAmount()) }}
+                      placeholder={suggestAmount() || '0'}
+                      className="w-full rounded-xl border border-cream-200 bg-white py-2.5 pl-7 pr-3 text-sm"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-cream-800/45">Boş bırakılırsa plan fiyatı / 0₺ admin kaydı yazılır</p>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-cream-800/55">Ödeme notu</span>
+                  <input
+                    type="text"
+                    value={paymentNote}
+                    onChange={(e) => setPaymentNote(e.target.value)}
+                    placeholder="Opsiyonel — banka havalesi, hediye…"
+                    className="w-full rounded-xl border border-cream-200 bg-white px-3 py-2.5 text-sm"
+                  />
+                </label>
+              </>
+            )}
+            {subscriptionPkgs.length > 0 && (
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-xs text-cream-800/55">Süre hedef paketi</span>
+                <select
+                  value={targetPackageId}
+                  onChange={(e) => setTargetPackageId(e.target.value)}
+                  className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm"
+                >
+                  {subscriptionPkgs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {PLAN_LABELS[p.planId] || p.planId}
+                      {p.expiresAt ? ` · bitiş ${p.expiresAt}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="block">
               <span className="mb-1 block text-xs text-cream-800/55">Kalan gün (manuel)</span>
               <input
                 type="number"
                 min={0}
                 value={remainingDaysInput}
-                onChange={(e) => setRemainingDaysInput(e.target.value)}
-                disabled={!isPaidMembership(membership)}
+                onChange={(e) => { setRemainingDaysInput(e.target.value); setExtendDays('') }}
+                disabled={!isPaidMembership(membership) || extendFilled}
                 placeholder="Örn. 30"
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm disabled:opacity-50"
               />
@@ -320,8 +473,8 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
               <input
                 type="number"
                 value={extendDays}
-                onChange={(e) => setExtendDays(e.target.value)}
-                disabled={!isPaidMembership(membership)}
+                onChange={(e) => { setExtendDays(e.target.value); if (e.target.value) setRemainingDaysInput(String(remaining ?? '')) }}
+                disabled={!isPaidMembership(membership) || remainingTouched}
                 placeholder="Örn. 7"
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm disabled:opacity-50"
               />
@@ -331,13 +484,14 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
             <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-700">
               <AlertTriangle className="h-3.5 w-3.5" />
               {addPackage
-                ? 'Yeni paket mevcut haklara eklenir; birleşik erişim uygulanır.'
-                : 'Paket değişince abonelik paketleri yenilenir; tek seferlik doktor paketleri korunur.'}
+                ? 'Yeni paket mevcut haklara eklenir; birleşik erişim uygulanır. Ödeme kaydı yazılır.'
+                : membership === 'free'
+                  ? 'Abonelik paketleri kaldırılır; tek seferlik doktor paketleri korunur (chip ile çıkarılabilir).'
+                  : 'Paket değişince abonelik paketleri yenilenir; tek seferlik doktor paketleri korunur. Ödeme kaydı yazılır.'}
             </p>
           )}
         </section>
 
-        {/* Süre özeti */}
         <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
             <Calendar className="h-4 w-4 text-brand-500" /> Mevcut Premium Süresi
@@ -366,7 +520,6 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
           )}
         </section>
 
-        {/* Atamalar — yalnızca pakette olan roller */}
         {assignmentTitle && (
           <section className="rounded-2xl border border-cream-200 p-4">
             <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
@@ -414,7 +567,6 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
           </section>
         )}
 
-        {/* Manuel randevular */}
         {sessionsLoading ? (
           <p className="text-sm text-cream-800/50">Randevular yükleniyor…</p>
         ) : (
@@ -446,7 +598,7 @@ function EditPremiumModal({ member, staff, members, programs = [], onClose, onSa
 }
 
 export default function AdminPremiumPage() {
-  const { platform, adminUpdatePremium, adminSetMembershipStatus } = useApp()
+  const { platform, plans, adminUpdatePremium, adminSetMembershipStatus } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -454,8 +606,8 @@ export default function AdminPremiumPage() {
   const [busy, setBusy] = useState(false)
 
   const staff = platform.staff || EMPTY_LIST
-  const programs = platform.programs || EMPTY_LIST
   const members = useMemo(() => platform.members ?? EMPTY_LIST, [platform.members])
+  const planList = plans || EMPTY_LIST
   const staffName = (id) => staff.find((s) => s.id === id)?.name || 'Atanmadı'
 
   const premiumMembers = useMemo(() => {
@@ -509,6 +661,26 @@ export default function AdminPremiumPage() {
         setSelected(null)
       } else {
         toast(r.error || 'Kaydedilemedi', 'error')
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleRemovePackage = async (packageId) => {
+    if (!selected) return
+    setBusy(true)
+    try {
+      const r = await adminUpdatePremium(selected.id, { removePackageId: packageId })
+      if (r.success) {
+        toast('Paket çıkarıldı', 'success')
+        if (r.member && isPaidMembership(r.member.membership)) {
+          setSelected(r.member)
+        } else {
+          setSelected(null)
+        }
+      } else {
+        toast(r.error || 'Paket çıkarılamadı', 'error')
       }
     } finally {
       setBusy(false)
@@ -594,19 +766,26 @@ export default function AdminPremiumPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {premiumMembers.map((m) => (
-            <PremiumMemberCard key={m.id} member={m} staffName={staffName} onEdit={setSelected} />
+            <PremiumMemberCard
+              key={m.id}
+              member={m}
+              plans={planList}
+              staffName={staffName}
+              onEdit={setSelected}
+            />
           ))}
         </div>
       )}
 
       <EditPremiumModal
-        key={selected?.id}
+        key={`${selected?.id}-${(selected?.activePackages || []).map((p) => `${p.id}:${p.status}`).join('|')}`}
         member={selected}
+        plans={planList}
         staff={staff}
         members={members}
-        programs={programs}
         onClose={() => setSelected(null)}
         onSave={handleSave}
+        onRemovePackage={handleRemovePackage}
         onStatusChange={handleStatusChange}
         busy={busy}
       />

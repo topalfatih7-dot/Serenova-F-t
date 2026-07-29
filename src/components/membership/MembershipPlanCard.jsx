@@ -22,7 +22,7 @@ export default function MembershipPlanCard({
   compact = false,
 }) {
   const [expanded, setExpanded] = useState(false)
-  const theme = getPlanTheme(plan.id)
+  const theme = getPlanTheme(plan)
   const isRecommended = recommended ?? plan.id === RECOMMENDED_PLAN
   const planBadge = badge ?? getPlanBadge(plan)
   const features = plan.features || []
@@ -42,6 +42,13 @@ export default function MembershipPlanCard({
     e.stopPropagation()
     setExpanded((v) => !v)
   }
+
+  const iconStyle = theme.customHex
+    ? { backgroundColor: theme.customHex, color: '#fff' }
+    : undefined
+  const accentStyle = theme.customHex
+    ? { background: `linear-gradient(90deg, ${theme.customHex}aa, ${theme.customHex})` }
+    : undefined
 
   return (
     <Tag
@@ -72,12 +79,18 @@ export default function MembershipPlanCard({
         />
       )}
 
-      <div className={`h-2 w-full bg-gradient-to-r ${theme.accent}`} />
+      <div
+        className={`h-2 w-full ${theme.customHex ? '' : `bg-gradient-to-r ${theme.accent}`}`}
+        style={accentStyle}
+      />
 
       {planBadge && (
-        <span className={`absolute left-1/2 top-3 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md ${
-          plan.id === 'doktor' ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-cream-900/90'
-        }`}>
+        <span
+          className={`absolute left-1/2 top-3 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md ${
+            theme.customHex ? '' : (plan.id === 'doktor' ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-cream-900/90')
+          }`}
+          style={theme.customHex ? { backgroundColor: theme.customHex } : undefined}
+        >
           {plan.id === 'doktor' && <Sparkles className="mr-1 inline h-2.5 w-2.5" />}
           {planBadge}
         </span>
@@ -97,8 +110,15 @@ export default function MembershipPlanCard({
 
       <div className={`flex flex-1 flex-col p-5 ${planBadge ? 'pt-9' : 'pt-5'}`}>
         <div className="flex flex-col items-center text-center">
-          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition group-hover:scale-105 ${selected || isRecommended || isOneTime ? theme.icon : theme.iconIdle}`}>
-            {planIcon(plan.id, 'h-6 w-6')}
+          <span
+            className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition group-hover:scale-105 ${
+              theme.customHex ? '' : (selected || isRecommended || isOneTime ? theme.icon : theme.iconIdle)
+            }`}
+            style={iconStyle || (theme.customHex && !(selected || isRecommended || isOneTime)
+              ? { backgroundColor: `${theme.customHex}18`, color: theme.customHex }
+              : undefined)}
+          >
+            {planIcon(plan, 'h-6 w-6')}
           </span>
           <h3 className={`mt-3 font-display text-lg font-bold text-cream-900 ${theme.label}`}>{plan.name}</h3>
           {isOneTime && (

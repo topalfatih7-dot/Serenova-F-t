@@ -23,14 +23,18 @@ export const CURRENCY = 'try'
 
 // membershipPlans.js ile aynı varsayılan fiyatlar (TL, aylık).
 export const PLAN_FALLBACK = {
+  eko_diyet: { name: 'Eko Diyet Paketi', price: 1299, durationMonths: 1 },
   diyet: { name: 'Diyet Paketi', price: 2499, durationMonths: 1 },
+  eko_spor: { name: 'Eko Spor Paketi', price: 1299, durationMonths: 1 },
   spor: { name: 'Spor Paketi', price: 2499, durationMonths: 1 },
   doktor: { name: 'Doktor Paketi', price: 1500, durationMonths: 0 },
   vip: { name: 'Vip Paket', price: 4999, durationMonths: 1 },
 }
 
 export const TIER_PRICES = {
+  eko_diyet: { 1: 1299, 3: 2999, 6: 3999 },
   diyet: { 1: 2499, 3: 6499, 6: 9999 },
+  eko_spor: { 1: 1299, 3: 2999, 6: 3999 },
   spor: { 1: 2499, 3: 6499, 6: 9999 },
   doktor: { 1: 1500 },
   vip: { 1: 4999, 3: 12999, 6: 19999 },

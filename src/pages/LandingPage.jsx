@@ -133,9 +133,10 @@ export default function LandingPage() {
               custom={2}
               className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-white/85 sm:text-base lg:mx-0"
             >
-              Hedefinize uygun antrenman ve beslenme planı; uzman eşliği ve
-              birebir video görüşmelerle birlikte ilerlersiniz. Paketinizi seçin —
-              evde veya salonda, kendi temposunuzda sürdürün.
+              Yeni Form; uzman diyetisyenler, kişisel antrenörler ve gelişmiş
+              sağlık analizleriyle yaşam tarzınıza uygun sürdürülebilir çözümler
+              sunar. Beslenmeden egzersize ilerlemenizi tek platform üzerinden
+              takip edin ve hedefinize ulaşın.
             </motion.p>
 
             <motion.div
@@ -150,7 +151,7 @@ export default function LandingPage() {
                   to="/membership"
                   className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base"
                 >
-                  🚀 Paket Seçin
+                  Ücretsiz Başla
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </motion.div>

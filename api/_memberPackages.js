@@ -5,13 +5,22 @@
 
 const ONE_TIME_PLANS = new Set(['doktor'])
 const PAID_PLANS = new Set([
-  'eko', 'diyet', 'spor', 'doktor', 'vip',
+  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip',
   'gumus', 'altin', 'platinum', 'premium', 'kurucu',
 ])
 
-const PLAN_RANK = { free: 0, eko: 1, diyet: 2, spor: 3, doktor: 4, vip: 5 }
+const PLAN_RANK = {
+  free: 0,
+  eko: 1,
+  eko_diyet: 2,
+  eko_spor: 3,
+  diyet: 4,
+  spor: 5,
+  doktor: 6,
+  vip: 7,
+}
 
-const LEGACY_PLAN_RANK = { gumus: 1, altin: 4, kurucu: 4, platinum: 5, premium: 5 }
+const LEGACY_PLAN_RANK = { gumus: 1, altin: 6, kurucu: 6, platinum: 7, premium: 7 }
 
 function planRank(planId) {
   if (PLAN_RANK[planId] != null) return PLAN_RANK[planId]

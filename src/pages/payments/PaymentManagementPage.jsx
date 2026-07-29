@@ -124,6 +124,7 @@ function MemberPayments() {
                   <th className="px-4 py-3">Tarih</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Tutar</th>
+                  <th className="px-4 py-3">Kaynak</th>
                   <th className="px-4 py-3">Durum</th>
                 </tr>
               </thead>
@@ -135,6 +136,9 @@ function MemberPayments() {
                     </td>
                     <td className="px-4 py-3 font-medium text-cream-900">{paymentPlanLabel(p)}</td>
                     <td className="px-4 py-3 font-semibold text-cream-900">{formatTry(p.amount)}</td>
+                    <td className="px-4 py-3 text-xs text-cream-800/70">
+                      {p.provider === 'admin' ? 'Admin' : p.provider === 'stripe' ? 'Stripe' : (p.provider || '—')}
+                    </td>
                     <td className="px-4 py-3"><StatusBadge status={p.status || 'completed'} /></td>
                   </tr>
                 ))}
@@ -437,6 +441,7 @@ function AdminPayments() {
                   <p className="font-medium text-cream-900">{t.memberName || 'Üye'}</p>
                   <p className="text-xs text-cream-800/50">
                     {paymentPlanLabel(t)}
+                    {t.provider === 'admin' ? ' · Admin' : t.provider === 'stripe' ? ' · Stripe' : ''}
                     {paymentDate(t) ? ` · ${format(new Date(paymentDate(t)), 'd MMM yyyy', { locale: tr })}` : ''}
                   </p>
                 </div>
