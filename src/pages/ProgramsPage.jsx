@@ -7,6 +7,7 @@ import Modal from '../components/ui/Modal'
 import VideoPlayer from '../components/ui/VideoPlayer'
 import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation, isCycle14SameDaily } from '../utils/programSchedule'
@@ -82,9 +83,17 @@ function groupBySchedule(entries = [], program = null) {
 }
 
 export default function ProgramsPage() {
-  const { myPrograms } = useApp()
+  const { myPrograms, isUnpaidMember } = useApp()
   const [filter, setFilter] = useState('all')
   const [activeExercise, setActiveExercise] = useState(null)
+
+  if (isUnpaidMember) {
+    return (
+      <PanelPageShell>
+        <UnpaidMemberGate />
+      </PanelPageShell>
+    )
+  }
 
   const filtered = filter === 'all' ? myPrograms : myPrograms.filter((p) => p.type === filter)
 

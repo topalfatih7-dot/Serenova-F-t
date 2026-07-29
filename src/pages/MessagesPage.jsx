@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MessageCircle, Shield } from 'lucide-react'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import ChatThreadView from '../components/chat/ChatThreadView'
 import ChatConsentModal from '../components/chat/ChatConsentModal'
 import ChatCollapsiblePrograms from '../components/chat/ChatCollapsiblePrograms'
@@ -50,6 +51,7 @@ export default function MessagesPage() {
   const {
     user, myPrograms, staff, chatThreads, chatMessages,
     loadChatMessages, sendChatMessage, markChatThreadRead, acceptChatConsent,
+    isUnpaidMember,
   } = useApp()
 
   const [consentOpen, setConsentOpen] = useState(false)
@@ -89,6 +91,14 @@ export default function MessagesPage() {
     }
     navigate(`/messages/${role}`)
   }, [navigate, sortedThreads])
+
+  if (isUnpaidMember) {
+    return (
+      <PanelPageShell>
+        <UnpaidMemberGate />
+      </PanelPageShell>
+    )
+  }
 
   const handleConsent = async () => {
     localStorage.setItem(CHAT_CONSENT_KEY, '1')

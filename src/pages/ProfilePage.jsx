@@ -18,7 +18,7 @@ import HealthSummarySection from '../components/profile/HealthSummarySection'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 
-import { FreeTrialExpiredProfileAlert } from '../components/membership/FreeTrialExpiredGate'
+import { UnpaidMemberProfileAlert } from '../components/membership/UnpaidMemberGate'
 import { getPlanLabel } from '../data/membershipPlans'
 import {
   countUsedDoctorSessions,
@@ -39,7 +39,7 @@ export default function ProfilePage() {
     user, membership, membershipStatus, settings, myPrograms, staff,
     updateProfile, updateSettings, logout, loggingOut,
     refresh,
-    isFreeTrialExpired,
+    isUnpaidMember,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
   } = useApp()
@@ -136,7 +136,7 @@ export default function ProfilePage() {
     <div className="relative w-full space-y-5 pb-10 sm:space-y-6">
       <div aria-hidden className="pointer-events-none absolute -left-6 -right-6 -top-6 -z-10 h-64 rounded-[2rem] bg-gradient-to-br from-brand-100/50 via-cream-50 to-sage-100/40 blur-2xl sm:-left-10 sm:-right-10" />
 
-      {isFreeTrialExpired && <FreeTrialExpiredProfileAlert />}
+      {isUnpaidMember && <UnpaidMemberProfileAlert />}
 
       {/* Hero */}
       <motion.div variants={fadeUp} initial="hidden" animate="show" className="relative overflow-hidden rounded-3xl border border-white/80 bg-white shadow-lg shadow-brand-900/[0.06]">

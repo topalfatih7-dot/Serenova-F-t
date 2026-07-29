@@ -13,7 +13,7 @@ import {
   computeMonthlyGrowth,
   getSessionStats,
 } from '../services/platformStats'
-import { ALL_PLANS } from '../data/membershipPlans'
+import { ALL_PLANS, isPaidMembership } from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { clearIncomingChatSoundState } from '../hooks/useIncomingChatSound'
@@ -1316,8 +1316,13 @@ export function AppProvider({ children }) {
     payments: db.payments,
   }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
 
-  // Yalnızca gerçek Basic denemesi: free + freeTrialExpiresAt geçmiş.
-  // Ücretli paket bitince freeTrialExpiresAt temizlenir → bu duvar açılmaz.
+  // Paketsiz üye (free = süresi bitmiş fallback / ücretsiz kayıt yok).
+  const isUnpaidMember = useMemo(
+    () => !isPaidMembership(currentMember?.membership || 'free'),
+    [currentMember?.membership],
+  )
+
+  // Legacy: eski 48s deneme alanı — yeni UI isUnpaidMember kullanır.
   const isFreeTrialExpired = useMemo(
     () => Boolean(
       currentMember?.membership === 'free'
@@ -1342,6 +1347,7 @@ export function AppProvider({ children }) {
     premiumExpiresAt: currentMember?.premiumExpiresAt,
     premiumStartedAt: currentMember?.premiumStartedAt,
     freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
+    isUnpaidMember,
     isFreeTrialExpired,
     verificationStatus,
     loggingOut,
@@ -1363,6 +1369,7 @@ export function AppProvider({ children }) {
     currentMember?.premiumExpiresAt,
     currentMember?.premiumStartedAt,
     currentMember?.freeTrialExpiresAt,
+    isUnpaidMember,
     isFreeTrialExpired,
     verificationStatus,
     loggingOut,

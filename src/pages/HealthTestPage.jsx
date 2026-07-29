@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { HeartPulse } from 'lucide-react'
 import HealthTestHub from '../components/onboarding/HealthTestHub'
-import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -11,7 +11,7 @@ import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { needsInitialHealthAnalysis } from '../services/healthScoreAnalysis'
 
 export default function HealthTestPage() {
-  const { user, packageConfig, updateProfile, isFreeTrialExpired } = useApp()
+  const { user, packageConfig, updateProfile, isUnpaidMember } = useApp()
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
   const { analysis, loading: analysisLoading } = useHealthAnalysisSync()
@@ -31,10 +31,10 @@ export default function HealthTestPage() {
 
   if (!user?.id) return <Navigate to="/login" replace />
 
-  if (isFreeTrialExpired) {
+  if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <FreeTrialExpiredGate />
+        <UnpaidMemberGate />
       </PanelPageShell>
     )
   }

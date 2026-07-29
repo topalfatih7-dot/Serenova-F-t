@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ClipboardList, Star, CalendarDays, Play, BookOpen, Sparkles,
@@ -12,7 +11,7 @@ import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModa
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import HealthScoreCard from '../components/dashboard/HealthScoreCard'
-import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
@@ -40,8 +39,8 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, isFreeTrialExpired, freeTrialExpiresAt,
-    premiumExpiresAt, premiumStartedAt, refresh,
+    myPrograms, progress, isUnpaidMember,
+    premiumExpiresAt, refresh,
     posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
@@ -68,12 +67,6 @@ export default function DashboardPage() {
     isPaidMembership(membership)
     && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
   )
-  const showPaidExpiredBanner = Boolean(
-    membership === 'free'
-    && premiumStartedAt
-    && !freeTrialExpiresAt
-    && !isFreeTrialExpired,
-  )
 
   const latestPosts = useMemo(
     () => (posts || [])
@@ -88,8 +81,8 @@ export default function DashboardPage() {
     [myPrograms, user],
   )
 
-  if (isFreeTrialExpired) {
-    return <FreeTrialExpiredGate />
+  if (isUnpaidMember) {
+    return <UnpaidMemberGate />
   }
 
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
@@ -147,20 +140,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {membership === 'free' && freeTrialExpiresAt && !isFreeTrialExpired && (() => {
-        const msLeft = new Date(freeTrialExpiresAt) - new Date()
-        const hLeft = Math.max(0, Math.ceil(msLeft / 3600000))
-        return (
-          <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <Crown className="h-4 w-4 shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-800 flex-1">
-              Deneme süreniz: <strong>{hLeft} saat</strong> kaldı.
-            </p>
-            <Link to="/membership" className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white">Üye Ol</Link>
-          </div>
-        )
-      })()}
-
       {showExpiringBanner && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3.5">
           <Clock className="h-5 w-5 shrink-0 text-amber-600" />
@@ -182,43 +161,6 @@ export default function DashboardPage() {
             Yenile <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      )}
-
-      {showPaidExpiredBanner && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-300 bg-gradient-to-r from-brand-50 to-white p-5"
-        >
-          <div className="flex items-center gap-3">
-            <Crown className="h-6 w-6 shrink-0 text-gold-500" />
-            <div>
-              <p className="font-medium text-cream-900">Paket süreniz doldu</p>
-              <p className="text-sm text-cream-800/60">
-                Ücretli özellikler kapandı. Devam etmek için bir plan seçip yenileyin.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/membership"
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600"
-          >
-            Planı Yenile <ArrowRight className="h-4 w-4" />
-          </Link>
-        </motion.div>
-      )}
-
-      {membership === 'free' && !showPaidExpiredBanner && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 to-white p-5">
-          <div className="flex items-center gap-3">
-            <Crown className="h-6 w-6 text-gold-500" />
-            <div>
-              <p className="font-medium text-cream-900">Daha fazlasını keşfedin</p>
-              <p className="text-sm text-cream-800/60">Birebir koç & diyetisyen desteği için ücretli planlarımız</p>
-            </div>
-          </div>
-          <Link to="/membership" className="rounded-full bg-brand-500 px-5 py-2 text-sm font-semibold text-white">Planları İncele</Link>
-        </motion.div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">

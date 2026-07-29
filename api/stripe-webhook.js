@@ -217,6 +217,7 @@ async function activateMembership(admin, meta, session) {
       assigned_coach_id: draft.assignedCoachId || null,
       assigned_dietitian_id: draft.assignedDietitianId || null,
       assigned_doctor_id: draft.assignedDoctorId || null,
+      ...(session.customer ? { stripe_customer_id: String(session.customer) } : {}),
       data: newData,
       updated_at: nowISO(),
     })

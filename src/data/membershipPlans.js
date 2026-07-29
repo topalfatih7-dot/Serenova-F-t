@@ -16,14 +16,6 @@ export function getDurationMonthsLabel(months = 1) {
   return `${m} ay`
 }
 
-/**
- * Yaklaşık gün (eski UI / istatistik). Asıl süre takvim ayıdır — satın alma bitişi için kullanmayın.
- * @deprecated Prefer getDurationMonthsLabel / computePremiumExpiresAt
- */
-export function getDurationDays(months = 1) {
-  return Math.round((Number(months) || 1) * 30)
-}
-
 /** Fiyat kartlarında kısa süre: "1 ay", "Tek seferlik", "Süresiz" (takvim ayı modeli). */
 export function getPlanDurationLabel(plan) {
   if (!plan) return ''

@@ -152,12 +152,6 @@ export const COACHING_FEDERATIONS = [
   { value: 'diger', label: 'Diğer GSB lisanslı federasyon', short: 'Diğer' },
 ]
 
-/** @deprecated Eski chip listesi — yeni başvurularda federationCerts kullanılır */
-export const OFFICIAL_COACHING_CERTIFICATES = [
-  ...COACHING_LICENSE_LEVELS.map((l) => `GSB Antrenörlük Belgesi — ${l.label}`),
-  OFFICIAL_COACHING_CERT_NONE,
-]
-
 export function federationLabel(value, other = '') {
   if (!value) return ''
   if (value === 'diger') return other?.trim() || 'Diğer federasyon'

@@ -73,11 +73,6 @@ export function needsInitialHealthAnalysis(analysis) {
   return false
 }
 
-/** @deprecated — needsInitialHealthAnalysis kullan */
-export function needsHealthScoreRefresh(analysis, _healthTest) {
-  return needsInitialHealthAnalysis(analysis)
-}
-
 /** HT / profil değişti; personel yeniden analiz etmeli. */
 export function isHealthAnalysisStale(analysis, profile = {}) {
   if (!analysis || needsInitialHealthAnalysis(analysis)) return false

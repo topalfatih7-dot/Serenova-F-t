@@ -16,6 +16,7 @@ import ExerciseDetailModal from '../components/library/ExerciseDetailModal'
 import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { fetchExerciseById } from '../services/exerciseLibrary'
@@ -58,7 +59,7 @@ function entryToExerciseDetail(entry) {
 }
 
 export default function CalendarPage() {
-  const { myPrograms, user, updateProfile, toggleActivityCompletion, toggleMealCompletion } = useApp()
+  const { myPrograms, user, updateProfile, toggleActivityCompletion, toggleMealCompletion, isUnpaidMember } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -204,6 +205,14 @@ export default function CalendarPage() {
     })
     return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
   }, [days, current, myPrograms, completedActivities, user])
+
+  if (isUnpaidMember) {
+    return (
+      <PanelPageShell>
+        <UnpaidMemberGate />
+      </PanelPageShell>
+    )
+  }
 
   return (
     <PanelPageShell>

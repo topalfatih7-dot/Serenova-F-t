@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { HeartPulse } from 'lucide-react'
 import HealthTestFlow from '../components/onboarding/HealthTestFlow'
-import FreeTrialExpiredGate from '../components/membership/FreeTrialExpiredGate'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import PanelPageHeader, { PanelBackLink, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -16,7 +16,7 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 export default function HealthTestSectionPage() {
   const { sectionId } = useParams()
   const navigate = useNavigate()
-  const { user, packageConfig, saveHealthTestProgress, isFreeTrialExpired } = useApp()
+  const { user, packageConfig, saveHealthTestProgress, isUnpaidMember } = useApp()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
@@ -56,10 +56,10 @@ export default function HealthTestSectionPage() {
 
   if (!user?.id) return <Navigate to="/login" replace />
 
-  if (isFreeTrialExpired) {
+  if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <FreeTrialExpiredGate />
+        <UnpaidMemberGate />
       </PanelPageShell>
     )
   }

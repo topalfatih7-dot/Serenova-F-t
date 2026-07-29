@@ -2,7 +2,7 @@
 
 > **Tarih:** 2026-07-11  
 > **Amaç:** Ne yaptık, nerede, nasıl; bozulursa nereye bakılacak.  
-> **İlgili:** [`VIDEO_PLAYER_IOS_FULLSCREEN.md`](./VIDEO_PLAYER_IOS_FULLSCREEN.md) · `.cursor/rules/exercise-import.mdc` · `AI_PROJE_REHBERI.md` §68–§70
+> **İlgili:** [`VIDEO_PLAYER_IOS_FULLSCREEN.md`](./VIDEO_PLAYER_IOS_FULLSCREEN.md) · `.cursor/rules/exercise-import.mdc` · [`AI_PROJE_REHBERI.md`](../AI_PROJE_REHBERI.md) (egzersiz videosu kuralları §0 madde 6)
 
 ---
 

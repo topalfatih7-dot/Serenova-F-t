@@ -21,11 +21,14 @@
 
 ## Key web files
 
-- `src/data/membershipPlans.js` — `SELLABLE_PLAN_IDS`, `ADMIN_ASSIGNABLE_PLAN_IDS`
-- `src/services/stripePayment.js`, `api/stripe-checkout.js`, `api/stripe-webhook.js`, `api/_stripe.js`
+- `src/data/membershipPlans.js` — `SELLABLE_PLAN_IDS`, `ADMIN_ASSIGNABLE_PLAN_IDS`, `isPaidMembership`
+- `src/components/membership/UnpaidMemberGate.jsx` — paketsiz üye paneli kilidi
+- `src/services/stripePayment.js`, `api/stripe-checkout.js` (Checkout + portal), `api/stripe-webhook.js`, `api/_stripe.js`
+- `members.stripe_customer_id` — webhook/checkout persist; Portal için gerekli
 - `src/services/premiumMembership.js`
 - `api/_membershipExpiry.js` — cron membership-expiry
 - `src/services/supabaseDb.js` → `changeMemberPlan`, `adminUpdatePremiumMembership`
+- `src/data/staffPayouts.js`, `src/services/sessionAttendance.js`, `staff_earnings` table
 
 ## IAP SKU naming (convention for docs)
 

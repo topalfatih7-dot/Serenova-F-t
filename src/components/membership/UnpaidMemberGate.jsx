@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Crown } from 'lucide-react'
 
-/** Dashboard / sağlık testleri — tam panel uyarı (deneme süresi doldu). */
-export default function FreeTrialExpiredGate() {
+/** Dashboard / panel sayfaları — paketsiz üye tam duvarı. */
+export default function UnpaidMemberGate() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <motion.div
@@ -14,9 +14,9 @@ export default function FreeTrialExpiredGate() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100">
           <Crown className="h-8 w-8 text-amber-500" />
         </div>
-        <h2 className="mt-5 font-display text-xl font-bold text-cream-900">48 Saatlik Deneme Süreniz Doldu</h2>
+        <h2 className="mt-5 font-display text-xl font-bold text-cream-900">Aktif paketiniz yok</h2>
         <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
-          Ücretsiz deneme süreniz sona erdi. Devam etmek için bir üyelik planı seçerek tüm özelliklere erişin.
+          Panel özelliklerine devam etmek için bir üyelik planı seçin. Paket süreniz dolduysa yenileyerek erişimi yeniden açabilirsiniz.
         </p>
         <Link
           to="/membership"
@@ -32,8 +32,8 @@ export default function FreeTrialExpiredGate() {
   )
 }
 
-/** Profil — kırmızı, dikkat çekici satır içi uyarı. */
-export function FreeTrialExpiredProfileAlert() {
+/** Profil — satır içi uyarı (profil erişilebilir kalır). */
+export function UnpaidMemberProfileAlert() {
   return (
     <motion.div
       role="alert"
@@ -48,10 +48,10 @@ export function FreeTrialExpiredProfileAlert() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-extrabold uppercase tracking-wide text-red-700">
-              Dikkat — deneme süreniz doldu
+              Dikkat — aktif paket yok
             </p>
             <p className="mt-1 text-sm font-semibold leading-snug text-red-800">
-              48 saatlik Basic denemeniz sona erdi. Panel özelliklerine devam etmek için hemen bir plan seçin.
+              Panel özelliklerine devam etmek için bir plan seçin veya mevcut paketini yenileyin.
             </p>
           </div>
         </div>

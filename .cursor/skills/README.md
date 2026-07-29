@@ -18,4 +18,4 @@ Bu skill’ler **otomatik tetiklenir** (`disable-model-invocation` yok). Agent, 
 
 Supabase şema/RLS: `.agents/skills/supabase*`.
 
-Mobil handoff kaynağı: `docs/mobile/` — önce `IMPLEMENTATION-LOCK.md` ve `COMPLETE.md`.
+Mobil handoff: hedef dizin `docs/mobile/` (henüz repoda yok). Spec yazarken `yeniform-mobile-spec`; uygulama `yeniform-expo-app`. Web SoT: `src/` + `api/` + `AI_PROJE_REHBERI.md`.

@@ -7,6 +7,7 @@ import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail
 import ExerciseDetailModal from '../components/library/ExerciseDetailModal'
 import ExerciseLibraryFilters, { DIFFICULTY_ALL, EXERCISE_CATEGORY_ALL, FILTER_ALL } from '../components/library/ExerciseLibraryFilters'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { DIFFICULTY_LABELS, formatExerciseLocations } from '../data/exerciseTurkish'
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
 import { useApp } from '../context/AppContext'
@@ -27,7 +28,7 @@ function categoryGradient(category) {
 }
 
 export default function ExerciseLibraryPage({ staffMode = false }) {
-  const { myPrograms } = useApp()
+  const { myPrograms, isUnpaidMember } = useApp()
   const programExerciseIds = useMemo(
     () => (staffMode ? undefined : collectProgramExerciseIds(myPrograms)),
     [staffMode, myPrograms],
@@ -93,6 +94,14 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
   const emptyDescription = !hasProgramExercises
     ? 'Koçunuzun oluşturduğu antrenman programındaki hareketler burada görünür.'
     : 'Arama veya filtreleri değiştirin.'
+
+  if (!staffMode && isUnpaidMember) {
+    return (
+      <PanelPageShell>
+        <UnpaidMemberGate />
+      </PanelPageShell>
+    )
+  }
 
   return (
     <PanelPageShell>

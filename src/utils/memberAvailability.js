@@ -26,11 +26,6 @@ export function isWorkoutAllowedOnDate(date, availability) {
   return workoutDays.includes(getDay(date))
 }
 
-/** @deprecated isWorkoutAllowedOnDate kullanın */
-export function isWeekdayBlockedForWorkout(date, availability) {
-  return !isWorkoutAllowedOnDate(date, availability)
-}
-
 export function workoutWeekdayLabels(availability) {
   return getWorkoutWeekdays(availability)
     .map((v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === v)?.label)

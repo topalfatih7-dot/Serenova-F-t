@@ -1,16 +1,19 @@
 /**
- * Stripe Checkout başlatma servisi.
+ * Stripe Checkout + Customer Portal servisi.
  */
 import { supabase } from './supabaseClient'
 
-export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null) {
-  let token = null
+async function getAccessToken() {
   try {
     const { data } = await supabase.auth.getSession()
-    token = data?.session?.access_token || null
+    return data?.session?.access_token || null
   } catch {
-    /* oturum okunamadı */
+    return null
   }
+}
+
+export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null) {
+  const token = await getAccessToken()
   if (!token) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
 
   let json
@@ -30,4 +33,26 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
 
   window.location.href = json.url
   return { success: true }
+}
+
+/** Stripe Customer Portal — kart / fatura yönetimi */
+export async function startStripePortal() {
+  const token = await getAccessToken()
+  if (!token) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+
+  try {
+    const res = await fetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'create-portal-session' }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || !json?.url) {
+      return { success: false, error: json?.error || 'Portal açılamadı.' }
+    }
+    window.location.href = json.url
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e?.message || e) }
+  }
 }

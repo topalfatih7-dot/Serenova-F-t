@@ -76,4 +76,4 @@ Android / FS API yok: pseudo (`needsPseudoFullscreen`).
 
 ## İlgili
 
-Genel video kuralları: [`VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md) · `AI_PROJE_REHBERI.md` §69–§70.
+Genel video kuralları: [`VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md`](./VIDEO_LATENCY_AND_PLAYBACK_RUNBOOK.md) · [`AI_PROJE_REHBERI.md`](../AI_PROJE_REHBERI.md) §0 madde 6.

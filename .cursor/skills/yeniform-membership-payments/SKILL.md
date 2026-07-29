@@ -11,8 +11,9 @@ description: >-
 ## Locked model
 
 - **Mobile digital subs:** App Store / Play via **RevenueCat** (IAP required).
-- **Web:** existing Stripe Checkout + `api/stripe-webhook.js`.
-- **Source of truth:** Supabase `members.membership`, `membership_status`, package/expiry in `members.data` (and related fields).
+- **Web:** Stripe Checkout + `api/stripe-webhook.js` + Customer Portal (`POST /api/stripe-checkout` · `action: 'create-portal-session'`).
+- **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, package/expiry in `members.data`.
+- **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (üye paneli duvarı); ücretsiz kayıt yok.
 
 ## Plan IDs
 

@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
  * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -11,6 +11,7 @@ import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_
 import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
+import { recordSessionAttendance } from './_sessionAttendance.js'
 import { handleGa4Report } from './_ga4Report.js'
 import { handleAiUsageReport } from './_aiUsageReport.js'
 import { claimActiveSession, isActiveSession } from './_singleSession.js'
@@ -508,6 +509,25 @@ async function handleBookSession(req, res, body) {
   return res.status(200).json(result)
 }
 
+async function handleSessionAttendance(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await recordSessionAttendance(admin, userData.user, {
+    sessionId: body.sessionId,
+    sessionType: body.sessionType,
+    event: body.event,
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
 const EXERCISE_VIDEO_BUCKET = 'exercise-videos'
 const EXERCISE_VIDEO_EXPIRES = 15 * 60
 
@@ -684,6 +704,7 @@ export default async function handler(req, res) {
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
+    if (action === 'session-attendance') return handleSessionAttendance(req, res, body)
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'exercise-video-urls') return handleExerciseVideoUrls(req, res, body)
     if (action === 'ga4-report') return handleGa4Report(req, res, body)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -12,6 +12,7 @@ import {
   buildRoomUrl, buildRoomName, isVideoCallConfigured, SESSION_TYPE_META, VIDEO_CALL_CONFIG, getDailyToken,
 } from '../config/videoCall'
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
+import { reportSessionAttendance } from '../services/sessionAttendanceApi'
 import { formatMinutesTr } from '../utils/formatDuration'
 import { normalizeSessionType, staffRoleMeta } from '../utils/staffRoles'
 import ParticipantTile, { CallControls, DeviceSelectors, WaitingTile } from '../components/video/VideoCallUI'
@@ -93,13 +94,46 @@ export default function VideoCallPage({ audience = 'member' }) {
     token: canFetchToken ? meetingToken : '',
   })
 
+  const joinedReported = useRef(false)
+  useEffect(() => {
+    if (!call.isJoined || joinedReported.current || !sessionId) return
+    joinedReported.current = true
+    reportSessionAttendance({
+      sessionId,
+      sessionType: context.sessionType || normalizedType,
+      event: 'join',
+    })
+  }, [call.isJoined, sessionId, context.sessionType, normalizedType])
+
+  const reportLeave = () => {
+    if (!joinedReported.current || !sessionId) return
+    joinedReported.current = false
+    reportSessionAttendance({
+      sessionId,
+      sessionType: context.sessionType || normalizedType,
+      event: 'leave',
+    })
+  }
+
+  useEffect(() => {
+    if (call.isJoined || !joinedReported.current) return
+    reportLeave()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- leave when Daily drops JOINED
+  }, [call.isJoined])
+
   const backPath = audience === 'staff'
     ? '/staff'
     : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : sessionType === 'doctor' ? '/schedule?tab=doctor' : '/schedule?tab=coach'
 
   const handleExit = () => {
+    reportLeave()
     call.destroy()
     navigate(backPath)
+  }
+
+  const handleLeaveMeeting = async () => {
+    reportLeave()
+    await call.leaveMeeting()
   }
 
   if (!configured) {
@@ -269,7 +303,7 @@ export default function VideoCallPage({ audience = 'member' }) {
           onToggleCam={call.toggleCam}
           onToggleScreen={call.toggleScreenShare}
           onJoin={call.join}
-          onLeaveMeeting={call.leaveMeeting}
+          onLeaveMeeting={handleLeaveMeeting}
           showScreenShare
         />
       </footer>

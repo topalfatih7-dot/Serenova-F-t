@@ -19,6 +19,7 @@
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
 8. Satılan plan sırası: Diyet(0) → Spor(1) → Doktor(2) → Vip(3). `free` = süresi bitmiş fallback; `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
+10. **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (panel duvarı). Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 
 ---
 
@@ -42,9 +43,9 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış · ücretsiz kayıt. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok.)
 
-**Ops açık (kod değil):** GSC, admin içerik, yasal metin, denetim Faz 2–5 → `docs/ROADMAP_DENETIM.md`.
+**Ops açık:** GSC, admin içerik, yasal metin ince ayar. Denetim Faz 2–3 (paketsiz lock, Portal, hakediş) tamam → `docs/ROADMAP_DENETIM.md`. Faz 4–5 (aktivasyon, auto-renew) bekliyor.
 
-**Mobil:** Expo app **bu repoda yok**.
+**Mobil:** Expo app **bu repoda yok**. Handoff spec’ler henüz `docs/mobile/` altında yok — skill’ler hedef yapıyı tanımlar.
 
 ---
 
@@ -106,8 +107,9 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 **Multiplex özet:**
 
-- `auth` — signup/login/reset · book-session · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
+- `auth` — signup/login/reset · book-session · session-attendance · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
 - `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry
+- `stripe-checkout` — Checkout session · `action: create-portal-session` (Customer Portal)
 
 ---
 
@@ -167,6 +169,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 - HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz. Aynı fingerprint’te yeniden analiz engelli.
 - Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
+- Faz 2–3: `UnpaidMemberGate` (`membership === 'free'`), Stripe Portal (`stripe_customer_id`), video attendance → `staff_earnings`, `aiAnalysis` orphan silindi.
 
 ## 11b. Önceki delta (2026-07-28)
 
