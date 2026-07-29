@@ -42,7 +42,9 @@ Cloudflare kullanılıyorsa aynı path’lere rate limit rule ekleyin.
 4. Auth log’larında brute-force spike.
 5. Bundle’da `TELEGRAM_*` / `SERVICE_ROLE` / `TURNSTILE_SECRET` sızıntısı olmadığını doğrula (`VITE_` prefix yok).
 
-## Stripe webhook (manuel Dashboard)
+## Stripe webhook (manuel Dashboard) — AÇIK OPS
+
+> Tam checklist: [`docs/OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 
 Subscription yenileme için endpoint’te şu event’ler **açık olmalı** (kod zaten işliyor):
 
@@ -50,7 +52,8 @@ Subscription yenileme için endpoint’te şu event’ler **açık olmalı** (ko
 2. `invoice.paid` — dönem yenileme (`renewMembership`)
 3. `customer.subscription.deleted` — `stripeSubscriptionId` temizliği
 
-Dashboard → Developers → Webhooks → endpoint → Events to send.
+Dashboard → Developers → Webhooks → endpoint → Events to send.  
+Vercel `STRIPE_WEBHOOK_SECRET` = endpoint signing secret.
 
 ## Bilinçli advisor istisnaları (2026-07-29)
 

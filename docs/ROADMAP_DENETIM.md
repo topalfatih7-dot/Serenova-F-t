@@ -7,6 +7,13 @@
 
 ---
 
+## AÇIK OPS — kullanıcı (kritik)
+
+- [ ] **Stripe webhook event’leri** — Dashboard’a `invoice.paid` + `customer.subscription.deleted` ekle (kod hazır; eklenmezse abonelik yenilenmez). Adım adım: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
+- [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)
+
+---
+
 ## Faz durumu
 
 | Faz | Konu | Durum |
@@ -73,9 +80,10 @@
 
 - [x] Aktivasyon funnel (2026-07-29): Admin Analytics hunisi (program + randevu), GA4 `sign_up` / `begin_checkout` / `purchase` / `health_test_complete`, dashboard `ActivationChecklist`
 - [x] Stripe Subscription otomatik yenileme (2026-07-29): recurring planlar `mode: subscription` + `invoice.paid` yenileme; doktor `payment`; iptal Portal
+- [ ] **Manuel:** Stripe Dashboard webhook event’leri (`invoice.paid`, `customer.subscription.deleted`) — [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 - [x] `eko` DB temizliği — 0 üye; plan `is_active/is_sellable=false` (JS legacy okuma saklandı)
 - [x] Expo mobil **handoff foundations** (taslak) — **2026-07-29 itibarıyla mobil işler ertelendi; genişletme yok**
-- [x] GSC ops hazırlık (`docs/OPS_GSC.md`, robots, `VITE_GSC_VERIFICATION` inject) — manuel GSC tıklama hesap gerektirir
+- [x] GSC ops — mülk + sitemap Başarılı (2026-07-29 kullanıcı ekranı); kod: [`OPS_GSC.md`](OPS_GSC.md)
 - [x] Yasal ince ayar: üyelik + iptal metinleri 48s deneme / Eko paketler / Subscription Portal (2026-07-29)
 - [x] Admin FAQ kopya hizası (paketler + 48s + kalori hakları; SEO static FAQ aynı) — 2026-07-29
 

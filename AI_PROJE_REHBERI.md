@@ -43,7 +43,7 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık:** GSC manuel doğrulama ([`docs/OPS_GSC.md`](docs/OPS_GSC.md)); Stripe Dashboard webhook event’leri. **Mobil / Expo ertelendi** (`docs/mobile/` taslak dursun, genişletme yok). Denetim Faz 0–5 + legal/GSC → `docs/ROADMAP_DENETIM.md`.
+**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam (mülk + sitemap Başarılı). **Mobil / Expo ertelendi**. Denetim → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Expo app **bu repoda yok**. Handoff spec’ler henüz `docs/mobile/` altında yok — skill’ler hedef yapıyı tanımlar.
 

@@ -1,0 +1,14 @@
+---
+description: Stripe subscription webhook Dashboard ops — hatırlat açık kalırsa
+alwaysApply: true
+---
+
+# Stripe webhook — açık ops hatırlatması
+
+`docs/OPS_STRIPE_WEBHOOK.md` ve `docs/ROADMAP_DENETIM.md` içindeki **AÇIK OPS — Stripe webhook** maddesi `[ ]` (açık) ise:
+
+1. Oturumda veya kod revizesi / commit öncesi kullanıcıya **kısa hatırlat**: Stripe Dashboard’da `invoice.paid` + `customer.subscription.deleted` event’leri production (ve varsa test) webhook endpoint’ine eklendi mi?
+2. Detay linki: [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)
+3. Kullanıcı “hallettim / eklendi” derse: o dosyadaki checkbox’ları ve ROADMAP’teki ilgili `[ ]` maddelerini `[x]` yap; bu kuralın `alwaysApply` ihtiyacı kalmadıysa kuralı `alwaysApply: false` yap veya kuralı sil.
+
+Kod tarafı hazır (`api/stripe-webhook.js`); eksik olan yalnızca Dashboard event seçimi + `STRIPE_WEBHOOK_SECRET` uyumu.

@@ -1,5 +1,8 @@
 # Google Search Console — ops checklist
 
+> **2026-07-29:** Mülk `yeniform.com` doğrulu; sitemap `Başarılı` (67 sayfa). Bu dosya arşiv / bakım notu.  
+> Kalan kritik ops: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
+
 Canonical: `https://www.yeniform.com`  
 Sitemap: `https://www.yeniform.com/sitemap.xml` (`api/sitemap.js`)  
 robots: `public/robots.txt`
