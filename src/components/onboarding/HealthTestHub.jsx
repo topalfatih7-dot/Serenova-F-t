@@ -41,6 +41,8 @@ export default function HealthTestHub({
   onConsentSave,
   consentSaving = false,
   profile = null,
+  analysisReady = false,
+  analysisLoading = false,
 }) {
   const [localAck, setLocalAck] = useState(!!healthAck)
   const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
@@ -110,8 +112,11 @@ export default function HealthTestHub({
             Kişisel sağlık analizi kaydedildi
           </span>
           <p className="mt-1 text-xs text-sage-800/75 break-words">
-            Cevaplarınız profilinizde saklanır; panelde sağlık özeti (VKİ ve kural tabanlı skor) güncellenir.
-            İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.
+            {analysisReady
+              ? 'Sağlık analiziniz hazır; koç ve diyetisyeniniz görüntüler. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
+              : analysisLoading
+                ? 'Cevaplarınız kaydedildi; koç/diyetisyen raporu hazırlanıyor…'
+                : 'Cevaplarınız profilinizde saklanır. Koç ve diyetisyeniniz için AI raporu arka planda üretilir. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'}
           </p>
         </div>
       )}

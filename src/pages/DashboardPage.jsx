@@ -20,6 +20,7 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
 import { useDailyTip } from '../hooks/useDailyTip'
+import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { buildWeeklyAdherence } from '../utils/memberProgress'
 import { getRemainingDays } from '../services/premiumMembership'
 import { format } from 'date-fns'
@@ -44,6 +45,8 @@ export default function DashboardPage() {
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
+  // Staff-only AI skor: HT tamamlanınca bir kez üretir (üyeye skor göstermez)
+  useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
 

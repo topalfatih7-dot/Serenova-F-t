@@ -14,7 +14,10 @@ description: >-
 - Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
 - Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
 - Stored in `members.data.healthTest` JSONB
-- AI sağlık skoru üretimi **yok**; VKİ / ham özet UI kalır
+- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4)
+  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis` (üyeye skor/brief **gösterilmez**)
+  - Program / diyet listesi AI **üretilmez**
+  - Fingerprint stale → personel “Güncel değil” + yeniden analiz
 - Programlar personel (koç/diyetisyen) tarafından gönderilir
 
 ## Calendar / programs

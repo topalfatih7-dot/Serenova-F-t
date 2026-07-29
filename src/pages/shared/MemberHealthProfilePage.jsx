@@ -7,6 +7,8 @@ import MemberHealthProfilePanel from '../../components/member/MemberHealthProfil
 import { getStaffClients } from '../../utils/chatAccess'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { isCoachRole, isDietitianRole } from '../../utils/staffRoles'
+import { isHealthAnalysisStale } from '../../services/healthScoreAnalysis'
+import { useStaffHealthAnalysisRerun } from '../../hooks/useStaffHealthAnalysisRerun'
 
 export default function MemberHealthProfilePage({ audience = 'staff' }) {
   const { memberId } = useParams()
@@ -49,6 +51,32 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
       setSavingNotes(false)
     }
   }, [member, audience, adminPatchMember, staffPatchMember, toast])
+
+  const patchMember = useCallback(async (memberId, patch) => {
+    if (audience === 'admin') return adminPatchMember(memberId, patch)
+    return staffPatchMember(memberId, patch)
+  }, [audience, adminPatchMember, staffPatchMember])
+
+  const {
+    rerun,
+    loading: analysisRerunning,
+    error: analysisRerunError,
+  } = useStaffHealthAnalysisRerun({
+    member,
+    packageConfig: member?.packageConfig,
+    patchMember,
+  })
+
+  const analysisStale = useMemo(
+    () => (member ? isHealthAnalysisStale(member.healthAnalysis, member) : false),
+    [member],
+  )
+
+  const handleRerunAnalysis = useCallback(async () => {
+    const next = await rerun()
+    if (next) toast('Sağlık analizi güncellendi', 'success')
+    else toast('Yeniden analiz başarısız', 'error')
+  }, [rerun, toast])
 
   if (!member) {
     return (
@@ -101,6 +129,10 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
           audience === 'admin'
           || (audience === 'staff' && (isCoachRole(staffUser?.role) || isDietitianRole(staffUser?.role)))
         }
+        analysisStale={analysisStale}
+        onRerunAnalysis={handleRerunAnalysis}
+        analysisRerunning={analysisRerunning}
+        analysisRerunError={analysisRerunError}
       />
     </PanelPageShell>
   )

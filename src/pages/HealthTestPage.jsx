@@ -7,11 +7,15 @@ import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageH
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { PANEL_IMAGES } from '../utils/panelImages'
+import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
+import { needsInitialHealthAnalysis } from '../services/healthScoreAnalysis'
 
 export default function HealthTestPage() {
   const { user, packageConfig, updateProfile, isFreeTrialExpired } = useApp()
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
+  const { analysis, loading: analysisLoading } = useHealthAnalysisSync()
+  const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
 
   const handleConsentSave = useCallback(async ({ healthAck, disclaimer }) => {
     setConsentSaving(true)
@@ -59,6 +63,8 @@ export default function HealthTestPage() {
         onConsentSave={handleConsentSave}
         consentSaving={consentSaving}
         profile={user}
+        analysisReady={analysisReady}
+        analysisLoading={analysisLoading}
       />
     </PanelPageShell>
   )

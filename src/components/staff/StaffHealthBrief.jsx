@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react'
+import { AlertTriangle, FileText, Loader2, RefreshCw } from 'lucide-react'
 import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
@@ -73,9 +73,15 @@ function CategoryScoreCard({ scoreKey, score }) {
 }
 
 /**
- * Koç / diyetisyen — tarihsel sağlık analizi (yeni AI skor üretimi yok).
+ * Koç / diyetisyen — GPT sağlık skoru + staffBrief (üyeye gösterilmez).
  */
-export default function StaffHealthBrief({ analysis }) {
+export default function StaffHealthBrief({
+  analysis,
+  stale = false,
+  onRerun = null,
+  rerunning = false,
+  rerunError = null,
+}) {
   const brief = analysis?.staffBrief
   const hasBrief = brief && STAFF_BRIEF_KEYS.some((k) => brief[k])
   const scores = analysis?.scores || {}
@@ -83,7 +89,7 @@ export default function StaffHealthBrief({ analysis }) {
   const hasScores = HEALTH_SCORE_KEYS.some((k) => scores[k] != null) || overall != null
   const tone = scoreTone(overall ?? 0)
 
-  if (!hasBrief && !hasScores) return null
+  if (!hasBrief && !hasScores && !stale) return null
 
   return (
     <div className="space-y-4 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/50 via-white to-sage-50/40 p-4">
@@ -104,6 +110,38 @@ export default function StaffHealthBrief({ analysis }) {
           </div>
         )}
       </div>
+
+      {stale && (
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Analiz güncel değil
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-900/75">
+              Sağlık testi veya profil bilgileri güncellendi. Güncel skor ve brief için yeniden analiz edin.
+            </p>
+            {rerunError && (
+              <p className="mt-1.5 text-xs font-medium text-rose-700">{rerunError}</p>
+            )}
+          </div>
+          {typeof onRerun === 'function' && (
+            <button
+              type="button"
+              onClick={onRerun}
+              disabled={rerunning}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
+            >
+              {rerunning ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Yeniden analiz et
+            </button>
+          )}
+        </div>
+      )}
 
       {hasScores && (
         <div>
@@ -132,6 +170,20 @@ export default function StaffHealthBrief({ analysis }) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!stale && typeof onRerun === 'function' && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onRerun}
+            disabled={rerunning}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-cream-800/55 transition hover:bg-cream-50 hover:text-brand-700 disabled:opacity-60"
+          >
+            {rerunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Yeniden analiz et
+          </button>
         </div>
       )}
     </div>

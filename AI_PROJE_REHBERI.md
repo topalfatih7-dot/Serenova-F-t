@@ -2,7 +2,7 @@
 
 > **Amaç:** Az token ile doğru bağlam. Detay için kod / `.cursor/skills/yeniform-*` / `docs/*`.  
 > **Canlı:** https://www.yeniform.com · Vercel `serenova-f-t` · Supabase `rvzksmyhsgxgrxgeabmi`  
-> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-07-28
+> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-07-29
 
 **AI okuma sırası:** §0 kurallar → §2 durum → ilgili skill → kod. Tam dosya envanteri / eski changelog **yok** (git history).
 
@@ -13,8 +13,8 @@
 1. Production veri SoT: `src/services/supabaseDb.js` (eski `localDb` yok).
 2. Ücretli plan **yalnızca** Stripe webhook / admin — istemci `changeMemberPlan` ile açılmaz.
 3. Kayıt: auth session Stripe öncesi açılır; `members` satırı webhook ile gelir → header `hasRegisteredMember()` / `isFullyRegistered`.
-4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme; mevcut multiplex’e `task=` ekle. `_*.js` sayılmaz.
-5. AI üretim yüzeyleri **yalnızca**: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo. Program / diyet listesi / sağlık skoru AI **yok**.
+4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz.
+5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **staff sağlık skoru/brief** (`ai-health-analysis`, GPT-5.4). Program / diyet listesi / öğün menüsü AI **yok**. Üye skor/brief görmez.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
 8. Satılan plan sırası: Diyet(0) → Spor(1) → Doktor(2) → Vip(3). `free` = süresi bitmiş fallback; `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
@@ -30,16 +30,16 @@
 | DB/Auth/Storage | Supabase · `setup.sql` + `migrations/` |
 | Ödeme | Stripe Checkout + webhook (web). RevenueCat/IAP **bu repoda yok**. |
 | Video | Daily.co · `api/daily-room.js` |
-| AI | Kalori GPT-4o · Blog/ipucu Gemini flash-lite |
+| AI | Kalori GPT-4o · Staff sağlık GPT-5.4 · Blog/ipucu Gemini flash-lite |
 | Deploy | `vercel.json` SPA rewrite + cron + `sitemap.xml` → `api/sitemap` · build: `vite` + `prerender-seo.mjs` |
 
 ---
 
-## 2. Durum (2026-07-28)
+## 2. Durum (2026-07-29)
 
-**Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
+**Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · **staff-only sağlık skoru/brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
 
-**Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · sağlık skoru AI · Basic/Eko yeni satış · ücretsiz kayıt.
+**Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış · ücretsiz kayıt. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok.)
 
 **Ops açık (kod değil):** GSC, admin içerik, yasal metin, denetim Faz 2–5 → `docs/ROADMAP_DENETIM.md`.
 
@@ -76,19 +76,22 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 ## 5. AI sistemleri
 
-### 5.1 Kalori / blog / ipucu
+### 5.1 Kalori / blog / ipucu / staff sağlık
 
 | Endpoint | Model | Not |
 |----------|-------|-----|
 | `ai-food-text` / `ai-food-vision` | GPT-4o | plan guard · `food_dictionary` cache |
+| `ai-health-analysis` | GPT-5.4 (`OPENAI_HEALTH_MODEL`) | HT tamamlanınca 1×; staff-only 8 skor + `staffBrief`; program/diyet yok |
 | `ai-blog-generate` default | Gemini | cron 05:00 |
 | `?task=daily-tip` | Gemini | cron 04:00 · `site_content` |
 | `?task=membership-expiry` | — | cron 03:00 · `api/_membershipExpiry.js` |
 
-### 5.2 Sağlık testi (AI skor yok)
+### 5.2 Sağlık testi + staff AI rapor
 
 - HT 6 kategori: `healthTestSections.js`
-- VKİ / ham özet UI kalır; otomatik AI skor üretimi **yok**
+- Tamamlanınca `useHealthAnalysisSync` → `/api/ai-health-analysis` → `members.data.healthAnalysis` (+ `healthScoreHistory`)
+- Üye: skor/brief **görünmez** (yalnızca “analiz hazır” durumu)
+- Koç/diyetisyen: `StaffHealthBrief`; fingerprint stale → “Güncel değil” + yeniden analiz
 - Programlar: personel (koç/diyetisyen) gönderir → `programs` tablosu
   - Koç: `/staff/clients/:id/program` — haftalık şablon (`scheduleType: 'weekly'`, `entry.day` + gün bazlı seans saati); aralık bugün→paket bitişi; müsait olmayan günlere yazılmaz
   - Diyetisyen: `/staff/clients/:id/list` — `NutritionProgramBuilder` (mantık aynı, tam sayfa UX)
@@ -98,7 +101,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 ## 6. Vercel serverless haritası
 
-**Serverless (~11):** `ai-blog-generate` · `ai-food-text` · `ai-food-vision` · `application-notify` · `auth` · `contact` · `daily-room` · `sitemap` · `stripe-checkout` · `stripe-webhook` · `telegram-notify`
+**Serverless (~12):** `ai-blog-generate` · `ai-food-text` · `ai-food-vision` · `ai-health-analysis` · `application-notify` · `auth` · `contact` · `daily-room` · `sitemap` · `stripe-checkout` · `stripe-webhook` · `telegram-notify`
 
 **Multiplex özet:**
 
@@ -126,7 +129,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 | VKİ | `src/services/health.js` · UI `HealthSummarySection` |
 | Planlar | `src/data/membershipPlans.js` |
 | SEO içerik | `src/data/seoServiceContent.js` |
-| Promptlar | `api/_ai-prompts.js` (food + blog + tip) |
+| Promptlar | `api/_ai-prompts.js` (food + health score + blog + tip) |
 | Stripe | `api/stripe-*.js`, `api/_stripe.js` |
 | Şema | `supabase/setup.sql`, `supabase/migrations/` |
 | Env şablon | `.env.example` |
@@ -156,7 +159,14 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 ---
 
-## 11. Son delta (2026-07-28)
+## 11. Son delta (2026-07-29)
+
+- Staff-only GPT-5.4 sağlık skoru + `staffBrief` geri eklendi (`api/ai-health-analysis.js`); program/diyet AI yok.
+- HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz.
+- Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
+- Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
+
+## 11b. Önceki delta (2026-07-28)
 
 - AI program/diyet/skor/tips kaldırıldı; `ai-nutrition-tips` silindi.
 - Kalori + blog + günlük tüyo kaldı.

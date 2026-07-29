@@ -124,6 +124,10 @@ export default function MemberHealthProfilePanel({
   notesSaving = false,
   showHealthAnalysis = false,
   showStaffBrief = false,
+  analysisStale = false,
+  onRerunAnalysis = null,
+  analysisRerunning = false,
+  analysisRerunError = null,
 }) {
   if (!member) return null
 
@@ -181,6 +185,10 @@ export default function MemberHealthProfilePanel({
       {showStaffBrief && (
         <StaffHealthBrief
           analysis={member.healthAnalysis}
+          stale={analysisStale}
+          onRerun={onRerunAnalysis}
+          rerunning={analysisRerunning}
+          rerunError={analysisRerunError}
         />
       )}
 

@@ -1,6 +1,6 @@
 /**
  * OpenAI API yardımcısı (sunucu tarafı).
- * Kalori (chat/vision): GPT-4o
+ * Kalori (chat/vision): GPT-4o · Staff sağlık analizi: GPT-5.4
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
@@ -14,6 +14,8 @@ const GPT41_INPUT_PER_M = 2.0
 const GPT41_OUTPUT_PER_M = 8.0
 const GPT4O_MINI_INPUT_PER_M = 0.15
 const GPT4O_MINI_OUTPUT_PER_M = 0.6
+const GPT54_INPUT_PER_M = 2.5
+const GPT54_OUTPUT_PER_M = 15.0
 
 export class OpenAiApiError extends Error {
   constructor(status, code, message) {
@@ -33,6 +35,15 @@ export function getOpenAiModel() {
   return process.env.OPENAI_MODEL || 'gpt-4o'
 }
 
+/** Staff sağlık skoru / brief modeli */
+export function getOpenAiHealthModel() {
+  return process.env.OPENAI_HEALTH_MODEL || 'gpt-5.4'
+}
+
+function isGpt5Family(model = '') {
+  return /^gpt-5/i.test(String(model || ''))
+}
+
 export function estimateOpenAiCostUsd(promptTokens, completionTokens, model = 'gpt-4o') {
   const m = String(model || '').toLowerCase()
   let inRate = GPT4O_INPUT_PER_M
@@ -40,6 +51,9 @@ export function estimateOpenAiCostUsd(promptTokens, completionTokens, model = 'g
   if (m.includes('gpt-4o-mini') || m.includes('gpt-4.1-mini')) {
     inRate = GPT4O_MINI_INPUT_PER_M
     outRate = GPT4O_MINI_OUTPUT_PER_M
+  } else if (m.includes('gpt-5.4') || m.includes('gpt-5.5') || m.includes('gpt-5.6') || m.startsWith('gpt-5')) {
+    inRate = GPT54_INPUT_PER_M
+    outRate = GPT54_OUTPUT_PER_M
   } else if (m.includes('gpt-4.1')) {
     inRate = GPT41_INPUT_PER_M
     outRate = GPT41_OUTPUT_PER_M
@@ -95,11 +109,24 @@ export async function callOpenAi({
   if (!key) throw new Error('OPENAI_API_KEY tanımlı değil')
 
   const model = modelOverride || getOpenAiModel()
+  const maxOut = config.maxOutputTokens ?? config.max_tokens ?? 800
   const body = {
     model,
     messages,
-    temperature: config.temperature ?? 0.2,
-    max_tokens: config.maxOutputTokens ?? config.max_tokens ?? 800,
+  }
+  // GPT-5 ailesi: max_completion_tokens; temperature yalnızca effort=none ile güvenli
+  if (isGpt5Family(model)) {
+    body.max_completion_tokens = maxOut
+    const effort = config.reasoningEffort === false
+      ? null
+      : (config.reasoningEffort || 'low')
+    if (effort) body.reasoning_effort = effort
+    if (effort === 'none' && config.temperature != null) {
+      body.temperature = config.temperature
+    }
+  } else {
+    body.temperature = config.temperature ?? 0.2
+    body.max_tokens = maxOut
   }
   if (config.responseMimeType === 'application/json' || config.response_format === 'json') {
     body.response_format = { type: 'json_object' }

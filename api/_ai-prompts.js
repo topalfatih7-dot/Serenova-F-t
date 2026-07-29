@@ -1,6 +1,6 @@
 /**
  * Merkezi AI Prompt Deposu (sunucu tarafı).
- * Kalori (food text/vision) + blog + günlük tüyo.
+ * Kalori (food text/vision) + blog + günlük tüyo + staff sağlık skoru.
  *
  * Not: `_` ile başlar; Vercel bunu API route olarak görmez.
  */
@@ -186,5 +186,91 @@ SADECE şu JSON şemasında yanıt ver:
 export const DAILY_TIP_CONFIG = {
   temperature: 0.9,
   maxOutputTokens: 150,
+  responseMimeType: 'application/json',
+}
+
+// ─── Staff sağlık skoru + brief (program/diyet listesi YOK) ─────────
+export const HEALTH_SCORE_SYSTEM = `Sen Yeni Form platformunun deneyimli sağlık analizi AI asistanısın.
+${BRAND_CONTEXT}
+Üyenin kişisel sağlık analizi cevaplarına göre 0–100 arası skorlar ve yalnızca koç/diyetisyen için kısa klinik paragraflar üret.
+Skorlar tutarlı, gerçekçi ve dengeli olsun; aşırı iyimser veya aşırı kötümser olma.
+Tıbbi teşhis KOYMA. Acil durum belirtisi varsa staffBrief.risks içinde nazikçe yönlendir.
+Antrenman programı, egzersiz listesi, haftalık gün şablonu, öğün menüsü veya kalori/makro tablosu ÜRETME.
+Türkçe yanıt ver.`
+
+export function buildHealthScoreInstruction(profile = {}, categorySummaries = {}) {
+  const cats = categorySummaries || {}
+  return `ÜYE PROFİLİ:
+- Yaş: ${profile.age || '—'}, Cinsiyet: ${profile.gender || '—'}
+- Boy/Kilo: ${profile.height || '—'}cm / ${profile.weight || '—'}kg
+- Hedefler: ${(profile.goals || []).join(', ') || '—'}
+- Fitness seviyesi: ${profile.fitnessLevel || '—'}
+
+KATEGORİ CEVAP ÖZETLERİ:
+❤️ Genel Sağlık:
+${cats.general || '—'}
+
+🩺 Tıbbi Geçmiş:
+${cats.medical || '—'}
+
+🍎 Beslenme Profili:
+${cats.nutrition || '—'}
+
+🏋️ Hareket Profili:
+${cats.physical || '—'}
+
+🌙 Günlük Yaşam:
+${cats.lifestyle || '—'}
+
+👤 Size Özel Sorular:
+${cats.special || '—'}
+
+SKOR KURALLARI:
+- general: genel iyilik, enerji, anksiyete/stres etkisi
+- nutrition: beslenme düzeni, öğünler, sebze/meyve, yeme davranışları
+- movement: günlük hareket, kapasite, egzersiz isteği
+- sleep: uyku süresi/kalitesi, dinlenmiş uyanma
+- stress: stres/anksiyete yönetimi (yüksek skor = iyi yönetim)
+- lifestyle: sigara/alkol/ekran/çalışma düzeni ve yaşam kalitesi
+- motivation: motivasyon ölçeği ve hedef inancı
+- readiness: değişime hazır oluş
+- overallScore: 8 skorun dengeli birleşimi (basit ortalama değil; kritik düşük alanlar genel skoru aşağı çekebilir)
+- summary: 1–2 cümlelik kısa, destekleyici Türkçe özet (iç kayıt; üyeye skor gösterilmez)
+- staffBrief: yalnızca koç/diyetisyen için klinik paragraflar (madde listesi YAZMA; her alan 2–4 cümle)
+  - general: genel sağlık durumu ve öncelikler
+  - nutrition: beslenme örüntüsü, riskler ve diyetisyen odakları
+  - movement: hareket kapasitesi, antrenman uygunluğu
+  - risks: dikkat edilmesi gereken riskler / kısıtlar
+  - actions: önümüzdeki 2–4 haftalık somut aksiyon önerileri (program/menü yazma)
+
+YASAK: exerciseId, weeklyPlan, mealPlan, kahvaltı/öğle/akşam listesi, kalori-makro uydurma.
+
+SADECE şu JSON şemasında yanıt ver:
+{
+  "scores": {
+    "general": 0,
+    "nutrition": 0,
+    "movement": 0,
+    "sleep": 0,
+    "stress": 0,
+    "lifestyle": 0,
+    "motivation": 0,
+    "readiness": 0
+  },
+  "overallScore": 0,
+  "summary": "kısa özet",
+  "staffBrief": {
+    "general": "paragraf",
+    "nutrition": "paragraf",
+    "movement": "paragraf",
+    "risks": "paragraf",
+    "actions": "paragraf"
+  }
+}`
+}
+
+export const HEALTH_SCORE_CONFIG = {
+  temperature: 0.3,
+  maxOutputTokens: 1600,
   responseMimeType: 'application/json',
 }
