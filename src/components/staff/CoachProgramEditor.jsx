@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeft, ArrowRight, Dumbbell, Plus, Check, Trash2, Send, ShoppingBag, Loader2, PlayCircle,
+  ArrowLeft, ArrowRight, Dumbbell, Plus, Check, Trash2, Send, Loader2, PlayCircle,
   ChevronUp, ChevronDown, Minus, Copy, CalendarDays, Eraser, AlertTriangle, Sparkles,
 } from 'lucide-react'
 import { format, addDays, parseISO } from 'date-fns'
@@ -116,12 +116,12 @@ function WizardSteps({ step }) {
 }
 
 function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMove, onPreview, ui }) {
-  const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-95 sm:h-8 sm:w-8'
+  const iconBtn = 'flex h-8 w-8 items-center justify-center rounded-lg transition active:scale-95'
   const hasVideo = Boolean(entry.videoUrl || entry.videoPending)
   const tone = ui || dayUi(3)
   return (
-    <div className={`overflow-hidden rounded-2xl border px-1 py-1 shadow-sm ring-1 ${tone.accent}`}>
-      <div className="flex gap-3 p-3">
+    <div className={`overflow-hidden rounded-xl border px-0.5 py-0.5 shadow-sm ring-1 ${tone.accent}`}>
+      <div className="flex gap-2 p-2.5">
         <button
           type="button"
           disabled={!hasVideo}
@@ -137,21 +137,21 @@ function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMov
           </span>
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-1">
-            <p className="min-w-0 flex-1 text-sm font-bold leading-snug text-cream-900">{entry.exerciseName}</p>
+          <div className="flex items-start gap-0.5">
+            <p className="min-w-0 flex-1 text-xs font-bold leading-snug text-cream-900 sm:text-sm">{entry.exerciseName}</p>
             <div className="flex shrink-0 items-center">
               <button type="button" onClick={() => onMove(entry.id, -1)} disabled={isFirst} className={`${iconBtn} text-cream-800/40 hover:bg-white/80 disabled:opacity-20`} aria-label="Yukarı">
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp className="h-3.5 w-3.5" />
               </button>
               <button type="button" onClick={() => onMove(entry.id, 1)} disabled={isLast} className={`${iconBtn} text-cream-800/40 hover:bg-white/80 disabled:opacity-20`} aria-label="Aşağı">
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
               <button type="button" onClick={() => onRemove(entry.id)} className={`${iconBtn} text-red-400 hover:bg-white/80 hover:text-red-600`} aria-label="Çıkar">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-2 flex flex-wrap items-center gap-1">
             <div className="flex rounded-lg bg-white/70 p-0.5">
               {[
                 { id: 'reps', label: 'Tekrar' },
@@ -161,14 +161,14 @@ function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMov
                   key={m.id}
                   type="button"
                   onClick={() => onPatch(entry.id, { amountType: m.id })}
-                  className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold ${entry.amountType === m.id ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-800/50'}`}
+                  className={`rounded-md px-2 py-1 text-[10px] font-semibold ${entry.amountType === m.id ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-800/50'}`}
                 >
                   {m.label}
                 </button>
               ))}
             </div>
             <div className="flex items-center overflow-hidden rounded-lg border border-white/80 bg-white">
-              <button type="button" onClick={() => onPatch(entry.id, { amount: Math.max(1, (Number(entry.amount) || 1) - 1) })} className="flex h-8 w-8 items-center justify-center text-cream-800/55" aria-label="Azalt">
+              <button type="button" onClick={() => onPatch(entry.id, { amount: Math.max(1, (Number(entry.amount) || 1) - 1) })} className="flex h-7 w-7 items-center justify-center text-cream-800/55" aria-label="Azalt">
                 <Minus className="h-3 w-3" />
               </button>
               <input
@@ -177,32 +177,32 @@ function CartEntryCard({ entry, index, isFirst, isLast, onPatch, onRemove, onMov
                 min={1}
                 value={entry.amount}
                 onChange={(ev) => onPatch(entry.id, { amount: Number(ev.target.value) || 1 })}
-                className="h-8 w-10 border-x border-cream-100 text-center text-sm font-bold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="h-7 w-9 border-x border-cream-100 text-center text-sm font-bold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
-              <button type="button" onClick={() => onPatch(entry.id, { amount: (Number(entry.amount) || 0) + 1 })} className="flex h-8 w-8 items-center justify-center text-cream-800/55" aria-label="Artır">
+              <button type="button" onClick={() => onPatch(entry.id, { amount: (Number(entry.amount) || 0) + 1 })} className="flex h-7 w-7 items-center justify-center text-cream-800/55" aria-label="Artır">
                 <Plus className="h-3 w-3" />
               </button>
             </div>
             {entry.amountType === 'duration' ? (
               <div className="flex rounded-lg bg-white/70 p-0.5">
                 {['sn', 'dk'].map((u) => (
-                  <button key={u} type="button" onClick={() => onPatch(entry.id, { durationUnit: u })} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${entry.durationUnit === u ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-800/50'}`}>
+                  <button key={u} type="button" onClick={() => onPatch(entry.id, { durationUnit: u })} className={`rounded-md px-1.5 py-1 text-[10px] font-semibold ${entry.durationUnit === u ? 'bg-white text-cream-900 shadow-sm' : 'text-cream-800/50'}`}>
                     {u}
                   </button>
                 ))}
               </div>
             ) : (
-              <span className="text-[11px] text-cream-800/45">tekrar</span>
+              <span className="text-[10px] text-cream-800/45">tekrar</span>
             )}
           </div>
         </div>
       </div>
-      <div className="border-t border-white/60 px-3 pb-3 pt-2">
+      <div className="border-t border-white/60 px-2.5 pb-2.5 pt-1.5">
         <input
           value={entry.note}
           onChange={(ev) => onPatch(entry.id, { note: ev.target.value })}
-          placeholder="Not ekle (ör. 3 set)"
-          className="w-full rounded-xl border border-white/80 bg-white/90 px-3 py-2 text-sm outline-none focus:border-cream-300"
+          placeholder="Not (ör. 3 set)"
+          className="w-full rounded-lg border border-white/80 bg-white/90 px-2.5 py-1.5 text-xs outline-none focus:border-cream-300"
         />
       </div>
     </div>
@@ -213,17 +213,17 @@ function CartList({ cart, onPatch, onRemove, onMove, onPreview, className = '', 
   const tone = ui || dayUi(3)
   if (!cart.length) {
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <span className={`flex h-14 w-14 items-center justify-center rounded-2xl text-white ${tone.btn}`}>
-          <Dumbbell className="h-6 w-6" />
+      <div className="flex flex-col items-center gap-2 py-8 text-center">
+        <span className={`flex h-11 w-11 items-center justify-center rounded-xl text-white ${tone.btn}`}>
+          <Dumbbell className="h-5 w-5" />
         </span>
-        <p className="text-base font-semibold text-cream-900">Bu gün boş</p>
-        <p className="text-sm text-cream-800/50">Kütüphaneden hareket ekleyin</p>
+        <p className="text-sm font-semibold text-cream-900">Bu gün boş</p>
+        <p className="text-xs text-cream-800/50">Kütüphaneden hareket ekleyin</p>
       </div>
     )
   }
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-2.5 ${className}`}>
       {cart.map((e, idx) => (
         <CartEntryCard key={e.id} entry={e} index={idx} isFirst={idx === 0} isLast={idx === cart.length - 1} onPatch={onPatch} onRemove={onRemove} onMove={onMove} onPreview={onPreview} ui={tone} />
       ))}
@@ -285,7 +285,6 @@ export default function CoachProgramEditor({
     }
     return format(addDays(new Date(), CYCLE_PLAN_LENGTH - 1), 'yyyy-MM-dd')
   })
-  const [cartOpen, setCartOpen] = useState(false)
   const [applySameOpen, setApplySameOpen] = useState(false)
   const [copyTargetOpen, setCopyTargetOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -519,7 +518,6 @@ export default function CoachProgramEditor({
       toast('En az bir güne hareket ekleyin', 'error')
       return
     }
-    setCartOpen(false)
     setStep(3)
   }
 
@@ -665,51 +663,29 @@ export default function CoachProgramEditor({
     </div>
   )
 
-  const dayRailItem = (d, variant = 'rail') => {
+  const dayTopButton = (d) => {
     const count = dayCarts[d.value]?.length || 0
     const active = selectedDay === d.value
     const ui = dayUi(d.value)
-    if (variant === 'chip') {
-      return (
-        <button
-          key={d.value}
-          type="button"
-          onClick={() => setSelectedDay(d.value)}
-          className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
-            active
-              ? 'bg-gradient-to-r from-brand-500 to-sky-500 text-white shadow-md'
-              : `${ui.chip} ring-1 ring-inset`
-          }`}
-        >
-          {d.short}
-          <span className={`ml-1.5 text-xs font-semibold ${active ? 'text-white/80' : 'opacity-70'}`}>
-            {count || '·'}
-          </span>
-        </button>
-      )
-    }
     return (
       <button
         key={d.value}
         type="button"
         onClick={() => setSelectedDay(d.value)}
-        className={`flex w-full items-center justify-between rounded-2xl px-3.5 py-3.5 text-left transition ${
+        className={`min-w-0 flex-1 rounded-xl px-2 py-3 text-center transition sm:rounded-2xl sm:px-3 sm:py-3.5 ${
           active
-            ? 'bg-gradient-to-r from-brand-500 to-sky-500 text-white shadow-lg shadow-brand-500/20'
+            ? 'bg-gradient-to-r from-brand-500 to-sky-500 text-white shadow-md shadow-brand-500/20'
             : `border bg-gradient-to-br ${ui.soft} ${ui.border} hover:shadow-sm`
         }`}
       >
-        <div>
-          <p className={`text-sm font-bold ${active ? 'text-white' : 'text-cream-900'}`}>{d.label}</p>
-          <p className={`mt-0.5 text-xs ${active ? 'text-white/80' : 'text-cream-800/50'}`}>
-            {count > 0 ? `${count} hareket` : 'Boş'}
-          </p>
-        </div>
-        {count > 0 && (
-          <span className={`flex h-7 min-w-7 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-white/20 text-white' : ui.chip}`}>
-            {count}
-          </span>
-        )}
+        <p className={`truncate text-xs font-bold sm:text-sm ${active ? 'text-white' : 'text-cream-900'}`}>
+          <span className="sm:hidden">{d.short}</span>
+          <span className="hidden sm:inline">{d.label}</span>
+        </p>
+        <p className={`mt-0.5 text-[10px] font-semibold sm:text-xs ${active ? 'text-white/80' : 'text-cream-800/50'}`}>
+          {count > 0 ? `${count}` : '·'}
+          <span className="hidden sm:inline">{count > 0 ? ' hareket' : ' Boş'}</span>
+        </p>
       </button>
     )
   }
@@ -737,7 +713,7 @@ export default function CoachProgramEditor({
         <p className="py-10 text-center text-sm text-cream-800/50">Hareket bulunamadı.</p>
       ) : (
         <>
-          <div className="grid max-h-[min(52vh,520px)] gap-3 overflow-y-auto pr-0.5 sm:grid-cols-2">
+          <div className="grid max-h-[min(70vh,720px)] gap-3 overflow-y-auto overscroll-contain pr-0.5 sm:grid-cols-2 xl:grid-cols-3">
             {filteredExercisesList.map((ex) => {
               const inCart = cartExerciseIds.has(ex.id)
               const hasVideo = Boolean(ex.videoUrl || ex.videoPending)
@@ -883,86 +859,70 @@ export default function CoachProgramEditor({
 
       {step === 2 && (
         <div className="space-y-4">
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
-            {orderedWorkoutDays.map((d) => dayRailItem(d, 'chip'))}
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-            <aside className="hidden lg:block">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-cream-800/50">Günler</p>
-              <div className="sticky top-4 space-y-2">
-                {orderedWorkoutDays.map((d) => dayRailItem(d, 'rail'))}
-              </div>
-            </aside>
-
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setApplySameOpen(true)}
-                  disabled={!activeCart.length || !workoutWeekdays.length}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800 disabled:opacity-40"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Tüm günlere aynı
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCopyTargetOpen(true)}
-                  disabled={!activeCart.length || otherCopyTargets.length === 0}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 disabled:opacity-40"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Günü kopyala
-                </button>
-                <button
-                  type="button"
-                  onClick={clearSelectedDay}
-                  disabled={!activeCart.length}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-cream-200 bg-white px-3 py-2 text-xs font-semibold text-cream-800 disabled:opacity-40"
-                >
-                  <Eraser className="h-3.5 w-3.5" /> Temizle
-                </button>
-              </div>
-
-              {selectedDay != null && (
-                <>
-                  <div className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 ring-1 ${activeUi.accent}`}>
-                    <Dumbbell className="h-4 w-4" />
-                    <span className="text-base font-bold">{weekdayFullLabel(selectedDay)}</span>
-                    <span className="text-sm opacity-60">· {activeCart.length} hareket</span>
-                  </div>
-
-                  <div className="grid gap-5 xl:grid-cols-2">
-                    <div className={`min-h-[260px] rounded-2xl border p-4 bg-gradient-to-br ${activeUi.soft} ${activeUi.border}`}>
-                      <div className="mb-3 flex items-center justify-between">
-                        <p className="font-bold text-cream-900">{weekdayShortLabel(selectedDay)} akışı</p>
-                        <button type="button" onClick={() => setCartOpen(true)} className="text-xs font-semibold text-brand-600 lg:hidden">
-                          <ShoppingBag className="mr-1 inline h-3.5 w-3.5" /> Liste
-                        </button>
-                      </div>
-                      <div className="hidden lg:block">
-                        <CartList
-                          cart={activeCart}
-                          onPatch={updateCartItem}
-                          onRemove={removeFromCart}
-                          onMove={moveCartItem}
-                          onPreview={previewCartEntry}
-                          ui={activeUi}
-                          className="max-h-[min(52vh,500px)] overflow-y-auto"
-                        />
-                      </div>
-                      <p className="text-sm text-cream-800/50 lg:hidden">
-                        {activeCart.length ? `${activeCart.length} hareket — listeyi açın` : 'Henüz hareket yok'}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-cream-100 bg-white p-4 shadow-sm">
-                      <p className="mb-3 font-bold text-cream-900">Kütüphane</p>
-                      {libraryBlock}
-                    </div>
-                  </div>
-                </>
-              )}
+          <div className="rounded-2xl border border-cream-100 bg-white p-2.5 shadow-sm sm:p-3">
+            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-cream-800/45">Gün seç</p>
+            <div className="flex gap-1.5 sm:gap-2">
+              {orderedWorkoutDays.map((d) => dayTopButton(d))}
             </div>
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setApplySameOpen(true)}
+              disabled={!activeCart.length || !workoutWeekdays.length}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-xs font-semibold text-brand-800 disabled:opacity-40"
+            >
+              <Copy className="h-3.5 w-3.5" /> Tüm günlere aynı
+            </button>
+            <button
+              type="button"
+              onClick={() => setCopyTargetOpen(true)}
+              disabled={!activeCart.length || otherCopyTargets.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs font-semibold text-sky-800 disabled:opacity-40"
+            >
+              <Copy className="h-3.5 w-3.5" /> Günü kopyala
+            </button>
+            <button
+              type="button"
+              onClick={clearSelectedDay}
+              disabled={!activeCart.length}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-cream-200 bg-white px-3 py-2.5 text-xs font-semibold text-cream-800 disabled:opacity-40"
+            >
+              <Eraser className="h-3.5 w-3.5" /> Temizle
+            </button>
+          </div>
+
+          {selectedDay != null && (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] lg:gap-5 lg:items-start">
+              <div className="min-w-0 rounded-2xl border border-cream-100 bg-white p-3 shadow-sm sm:p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-bold text-cream-900">Kütüphane</p>
+                  <span className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold ring-1 ${activeUi.accent}`}>
+                    <Dumbbell className="h-3.5 w-3.5" />
+                    {weekdayFullLabel(selectedDay)}
+                  </span>
+                </div>
+                {libraryBlock}
+              </div>
+
+              <div className={`min-w-0 rounded-2xl border p-3 sm:p-4 bg-gradient-to-br lg:sticky lg:top-4 ${activeUi.soft} ${activeUi.border}`}>
+                <div className="mb-3">
+                  <p className="font-bold text-cream-900">{weekdayShortLabel(selectedDay)} akışı</p>
+                  <p className="mt-0.5 text-xs text-cream-800/50">{activeCart.length} hareket</p>
+                </div>
+                <CartList
+                  cart={activeCart}
+                  onPatch={updateCartItem}
+                  onRemove={removeFromCart}
+                  onMove={moveCartItem}
+                  onPreview={previewCartEntry}
+                  ui={activeUi}
+                  className="max-h-[min(55vh,560px)] overflow-y-auto overscroll-contain lg:max-h-[min(70vh,720px)]"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-cream-200 bg-white/95 px-3 pt-3 backdrop-blur pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="mx-auto flex max-w-4xl gap-2">
@@ -992,31 +952,69 @@ export default function CoachProgramEditor({
             <p className="mt-1.5 text-lg font-bold leading-snug">{autoTitle}</p>
           </div>
 
-          <div className="rounded-3xl border border-cream-100 bg-white p-5 shadow-sm sm:p-6">
-            <p className="mb-3 text-sm font-bold text-cream-900">Süre (düzenlenebilir)</p>
-            <div className="space-y-3">
-              {dateModeToggle}
-              {dateFields}
+          <div className="overflow-hidden rounded-3xl border border-cream-100 bg-white shadow-sm">
+            <div className="border-b border-cream-100 bg-gradient-to-r from-cream-50/80 to-white px-5 py-4">
+              <p className="text-sm font-bold text-cream-900">Program özeti</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cream-800/65">
+                <span>{formatRangeSummary(activeStart, activeEnd)}</span>
+                <span>{cycleLengthFromRange(activeStart, activeEnd)} gün</span>
+                <span>{filledDays.length} dolu gün</span>
+                <span>{totalExercises} hareket</span>
+              </div>
             </div>
-          </div>
 
-          <div className="rounded-3xl border border-cream-100 bg-white p-5 shadow-sm">
-            <p className="mb-3 text-sm font-bold text-cream-900">Dolu günler</p>
-            <div className="flex flex-wrap gap-2">
-              {filledDays.map((day) => (
-                <span key={day} className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${dayUi(day).chip}`}>
-                  {weekdayShortLabel(day)} · {dayCarts[day]?.length || 0} hareket
-                </span>
-              ))}
+            <div className="divide-y divide-cream-100">
+              {filledDays.map((day) => {
+                const cart = dayCarts[day] || []
+                const ui = dayUi(day)
+                return (
+                  <div key={day} className="px-5 py-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${ui.chip}`}>
+                        {weekdayFullLabel(day)}
+                      </span>
+                      <span className="text-xs text-cream-800/50">{cart.length} hareket</span>
+                    </div>
+                    <ol className="space-y-2">
+                      {cart.map((entry, idx) => {
+                        const amount = entry.amountType === 'duration'
+                          ? `${entry.amount} ${entry.durationUnit || 'sn'}`
+                          : `${entry.amount} tekrar`
+                        return (
+                          <li key={entry.id} className="flex gap-3 text-sm">
+                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${ui.btn}`}>
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-cream-900">{entry.exerciseName}</p>
+                              <p className="mt-0.5 text-xs text-cream-800/60">
+                                {amount}
+                                {entry.note ? ` · ${entry.note}` : ''}
+                              </p>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ol>
+                  </div>
+                )
+              })}
             </div>
-            {emptyAvailableLabels.length > 0 && (
-              <p className="mt-3 text-xs text-cream-800/50">Boş bırakılan: {emptyAvailableLabels.join(', ')}</p>
-            )}
-            {availabilitySummary.blockedCount > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Aralıkta {availabilitySummary.activeCount} antrenman gününe yazılır.
-              </p>
+
+            {(emptyAvailableLabels.length > 0 || availabilitySummary.blockedCount > 0) && (
+              <div className="space-y-2 border-t border-cream-100 bg-cream-50/40 px-5 py-3">
+                {emptyAvailableLabels.length > 0 && (
+                  <p className="text-xs text-cream-800/55">
+                    Boş bırakılan müsait günler: {emptyAvailableLabels.join(', ')}
+                  </p>
+                )}
+                {availabilitySummary.blockedCount > 0 && (
+                  <p className="flex items-start gap-2 text-xs text-amber-900">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    Seçilen aralıkta {availabilitySummary.activeCount} antrenman gününe yazılır.
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
@@ -1044,10 +1042,6 @@ export default function CoachProgramEditor({
           </div>
         </div>
       )}
-
-      <Modal open={cartOpen} onClose={() => setCartOpen(false)} title={`${selectedDay != null ? weekdayFullLabel(selectedDay) : 'Gün'} akışı`} size="md">
-        <CartList cart={activeCart} onPatch={updateCartItem} onRemove={removeFromCart} onMove={moveCartItem} onPreview={previewCartEntry} ui={activeUi} />
-      </Modal>
 
       <Modal open={copyTargetOpen} onClose={() => setCopyTargetOpen(false)} title="Günü kopyala" size="sm">
         <div className="space-y-2">
