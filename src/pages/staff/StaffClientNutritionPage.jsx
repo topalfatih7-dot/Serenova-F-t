@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import NutritionProgramBuilder from '../../components/staff/NutritionProgramBuilder'
-import AvailabilityView from '../../components/package/AvailabilityView'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getStaffClients } from '../../utils/chatAccess'
@@ -111,33 +110,11 @@ export default function StaffClientNutritionPage() {
           {member.name}
         </h1>
         <p className="mt-2 max-w-xl text-base text-cream-800/65">
-          Beslenme listesi hazırlayın · öğünleri ekleyip gönderin
+          Beslenme listesi hazırlayın · süre seçin, öğünleri ekleyin, önizleyip gönderin
         </p>
       </div>
 
-      <div className="rounded-3xl border border-sage-100 bg-gradient-to-br from-sage-50/80 to-white p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-lg font-bold text-cream-900">Paket & bağlam</p>
-            <p className="mt-1 text-sm text-cream-800/60">
-              Liste tarihleri üyenin aktif diyetisyen paketi içinde kalmalıdır
-            </p>
-          </div>
-          {packageRange && (
-            <p className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-cream-800/70 ring-1 ring-cream-100">
-              Paket: {packageRange.start}{packageRange.end ? ` — ${packageRange.end}` : ' (süresiz)'}
-            </p>
-          )}
-        </div>
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-medium text-cream-800/80">Antrenman müsaitliği (bilgi)</p>
-          <AvailabilityView value={member.availability} emptyText="Danışan henüz müsaitlik belirtmemiş." />
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-8">
-        <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreateNutrition} />
-      </div>
+      <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreateNutrition} />
     </div>
   )
 }

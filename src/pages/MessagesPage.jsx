@@ -158,7 +158,6 @@ export default function MessagesPage() {
               </AvatarWithPresence>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{c.name}</p>
-                <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>{c.title}</p>
               </div>
               {unread > 0 && (
                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white shadow-sm">

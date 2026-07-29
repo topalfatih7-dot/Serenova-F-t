@@ -2,11 +2,20 @@
 
 ## Staff nav source
 
-`src/components/layout/StaffShell.jsx` → `staffNavForRole`
+`src/config/staffNav.js` → `staffNavForRole` / `buildStaffNavItems`  
+Shell: `src/components/layout/StaffShell.jsx` → `PanelSidebar` + `TopBar` + `PanelMobileMenu`
 
 ## Admin nav source
 
-`src/components/layout/AdminShell.jsx` → `adminNav` (overview, members, plans, premium, applications, library, staff, payments, sessions, messages, support, blog, content, analytics, ai-costs, activity, account)
+`src/config/adminNav.js` → `ADMIN_NAV` / `buildAdminNavItems`  
+(overview, members, plans, premium, programs, applications, library, staff, payments, sessions, messages, support, blog, content, analytics, ai-costs, activity, account)  
+Shell: `src/components/layout/AdminShell.jsx` → `PanelSidebar` + `TopBar` + `PanelMobileMenu`
+
+## Shared panel chrome
+
+- `src/components/layout/PanelSidebar.jsx` — hover-expand rail (`activeVariant`: member | staff | admin)
+- `src/components/layout/TopBar.jsx` — desktop sticky bar (role path props)
+- `src/components/layout/PanelMobileMenu.jsx` — mobile drawer
 
 ## Key files
 

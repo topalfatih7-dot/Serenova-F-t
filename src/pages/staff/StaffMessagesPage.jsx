@@ -152,9 +152,11 @@ export default function StaffMessagesPage() {
               </AvatarWithPresence>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{member.name}</p>
-                <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
-                  {thread?.lastPreview || 'Henüz mesaj yok'}
-                </p>
+                {thread?.lastPreview ? (
+                  <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
+                    {thread.lastPreview}
+                  </p>
+                ) : null}
               </div>
               {unread > 0 && (
                 <span className="flex h-5 min-w-[20px] animate-pulse items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
