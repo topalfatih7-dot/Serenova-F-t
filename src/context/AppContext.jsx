@@ -30,6 +30,7 @@ import { totalUnreadThreads, adminStaffThreadUnreadCount, sortAdminStaffThreads,
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
+import { markIntentionalLogout } from '../utils/authRedirect'
 import { setStaffNotifications as persistStaffNotifications } from '../services/staffNotifications'
 
 const AuthContext = createContext(null)
@@ -811,6 +812,7 @@ export function AppProvider({ children }) {
       await flushNotificationReads()
       clearIncomingChatSoundState()
       clearNotificationAlertState()
+      markIntentionalLogout()
       await sb.logout()
       await reloadRemote()
     } finally {

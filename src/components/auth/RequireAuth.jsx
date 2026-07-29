@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { shouldSkipReturnUrl } from '../../utils/authRedirect'
 
 /**
  * Oturum ve rol kontrolü. Giriş yapmamış kullanıcıları login'e yönlendirir.
@@ -12,6 +13,9 @@ export default function RequireAuth({ role = null }) {
   if (loading) return null
 
   if (!isAuthenticated) {
+    if (shouldSkipReturnUrl()) {
+      return <Navigate to="/login" replace />
+    }
     return (
       <Navigate
         to="/login"

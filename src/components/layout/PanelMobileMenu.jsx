@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, LogOut, Loader2 } from 'lucide-react'
 import BrandLogo from '../ui/BrandLogo'
@@ -21,12 +21,20 @@ export default function PanelMobileMenu({
   headerRight = null,
 }) {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
   const activeClass = ACCENTS[accent] || ACCENTS.member
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
+
+  const handleLogout = useCallback(async () => {
+    if (loggingOut || !logout) return
+    setOpen(false)
+    await logout()
+    navigate('/login', { replace: true })
+  }, [logout, loggingOut, navigate])
 
   return (
     <>
@@ -115,7 +123,7 @@ export default function PanelMobileMenu({
                 <div className="border-t border-cream-100 p-3">
                   <button
                     type="button"
-                    onClick={() => { if (!loggingOut) { setOpen(false); logout() } }}
+                    onClick={handleLogout}
                     disabled={loggingOut}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/70 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >

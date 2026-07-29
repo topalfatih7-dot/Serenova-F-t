@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, Loader2 } from 'lucide-react'
 import BrandLogo from '../ui/BrandLogo'
 
@@ -59,11 +59,18 @@ function PanelSidebar({
   loggingOut = false,
 }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const hoverLockedRef = useRef(false)
   const railRef = useRef(null)
 
   const active = ACTIVE[activeVariant] || ACTIVE.member
+
+  const handleLogout = useCallback(async () => {
+    if (loggingOut || !logout) return
+    await logout()
+    navigate('/login', { replace: true })
+  }, [logout, loggingOut, navigate])
 
   const collapse = useCallback(() => {
     setExpanded(false)
@@ -197,7 +204,7 @@ function PanelSidebar({
         <div className={`shrink-0 border-t border-cream-100 transition-[padding] duration-300 ${expanded ? 'p-3' : 'p-2'}`}>
           <button
             type="button"
-            onClick={logout}
+            onClick={handleLogout}
             disabled={loggingOut}
             title={loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
             className={`flex w-full items-center rounded-xl py-2.5 text-sm text-rose-500/80 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60 ${

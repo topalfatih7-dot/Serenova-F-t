@@ -106,7 +106,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (loggingOut) return
     await logout()
-    navigate('/')
+    navigate('/login', { replace: true })
     toast('Çıkış yapıldı', 'info')
   }
 

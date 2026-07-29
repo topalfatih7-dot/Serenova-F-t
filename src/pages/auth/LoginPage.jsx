@@ -16,6 +16,7 @@ import SocialAuthButtons from '../../components/auth/SocialAuthButtons'
 import FormErrorModal from '../../components/ui/FormErrorModal'
 import AuthFormShell, { AuthFormCard } from '../../components/auth/AuthFormShell'
 import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
+import { resolvePostLoginPath, clearIntentionalLogout } from '../../utils/authRedirect'
 import TurnstileWidget from '../../components/security/TurnstileWidget'
 import { isTurnstileEnabled } from '../../config/turnstile'
 
@@ -44,6 +45,8 @@ export default function LoginPage() {
   const msgShownRef = useRef(false)
 
   useEffect(() => {
+    clearIntentionalLogout()
+
     const revokedMsg = consumeSessionRevokedMessage()
     if (revokedMsg && !msgShownRef.current) {
       msgShownRef.current = true
@@ -64,13 +67,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return
-    if (redirectTo && !redirectTo.startsWith('/login')) {
-      navigate(redirectTo, { replace: true })
-      return
-    }
-    if (isAdmin) navigate('/admin', { replace: true })
-    else if (isStaff) navigate('/staff', { replace: true })
-    else navigate('/profile', { replace: true })
+    const role = isAdmin ? 'admin' : isStaff ? 'staff' : 'member'
+    navigate(resolvePostLoginPath(redirectTo, role), { replace: true })
   }, [isAuthenticated, isAdmin, isStaff, redirectTo, navigate])
 
   const showFormError = (message) => {
@@ -107,14 +105,7 @@ export default function LoginPage() {
         return
       }
       toast('Hoş geldiniz!', 'success')
-      const target = redirectTo && !redirectTo.startsWith('/login')
-        ? redirectTo
-        : result.role === 'admin'
-          ? '/admin'
-          : result.role === 'staff'
-            ? '/staff'
-            : '/profile'
-      navigate(target, { replace: true })
+      navigate(resolvePostLoginPath(redirectTo, result.role), { replace: true })
     } finally {
       setLoading(false)
     }
