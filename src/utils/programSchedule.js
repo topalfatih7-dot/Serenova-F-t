@@ -1,4 +1,5 @@
 import { format, getDay, parseISO, isValid, differenceInCalendarDays, startOfDay } from 'date-fns'
+import { tr } from 'date-fns/locale'
 import { isProgramVisibleOnDate } from './programPackageScope'
 import { isWorkoutAllowedOnDate } from './memberAvailability'
 
@@ -258,4 +259,29 @@ export function formatEntrySchedule(entry, program = null) {
   const n = Number(entry.day)
   if (!Number.isNaN(n) && days[n]) return `Her ${days[n]}`
   return ''
+}
+
+/** Danışan + zamanlama → otomatik beslenme liste başlığı (koç programı ile aynı desen) */
+export function buildNutritionProgramTitle(memberName, startStr, endStr, mode = 'weekly') {
+  const name = memberName || 'Danışan'
+  const fmt = (s) => format(parseISO(`${s}T12:00:00`), 'd MMM yyyy', { locale: tr })
+  const start = startStr ? fmt(startStr) : null
+  const end = endStr ? fmt(endStr) : null
+
+  if (mode === 'cycle14' && start && end) {
+    return `${name} — 14 Günlük Beslenme (${start} – ${end})`
+  }
+  if (mode === 'date' && start) {
+    if (end && endStr !== startStr) {
+      return `${name} — Tarihe Özel Beslenme (${start} – ${end})`
+    }
+    return `${name} — Tarihe Özel Beslenme (${start})`
+  }
+  if (mode === 'weekly' && start && end) {
+    return `${name} — Haftalık Beslenme (${start} – ${end})`
+  }
+  if (mode === 'weekly' && start) {
+    return `${name} — Haftalık Beslenme (${start}+)`
+  }
+  return `${name} — Beslenme Listesi`
 }

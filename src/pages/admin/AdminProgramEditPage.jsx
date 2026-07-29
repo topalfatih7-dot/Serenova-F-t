@@ -102,6 +102,7 @@ export default function AdminProgramEditPage() {
         )}
         <NutritionProgramBuilder
           packageRange={packageRange}
+          memberName={member.name}
           initialData={program}
           onUpdate={handleNutritionUpdate}
           submitLabel="Beslenme Listesini Kaydet"

@@ -114,7 +114,11 @@ export default function StaffClientNutritionPage() {
         </p>
       </div>
 
-      <NutritionProgramBuilder packageRange={packageRange} onCreate={handleCreateNutrition} />
+      <NutritionProgramBuilder
+        packageRange={packageRange}
+        memberName={member.name}
+        onCreate={handleCreateNutrition}
+      />
     </div>
   )
 }

@@ -24,7 +24,8 @@ Force password when `tempPasswordIssued`. Clients via `getStaffClients()` (assig
 
 ## Dietitian list builder UX
 
-`StaffClientNutritionPage` (`/staff/clients/:id/list`): page shell + `NutritionProgramBuilder` (scheduleMode logic unchanged).
+`StaffClientNutritionPage` (`/staff/clients/:id/list`): page shell + `NutritionProgramBuilder`.
+Zamanlama: `cycle14` | `weekly` | `date` (süresiz her gün yok). Başlık `buildNutritionProgramTitle` ile otomatik (koç programı gibi).
 ## Admin critical flows
 
 - **Programs:** `AdminProgramsPage` (`/admin/programs`) — filtre, görüntüle, sil; edit → `AdminProgramEditPage` (`CoachProgramEditor` / `NutritionProgramBuilder` + `updateProgram`)
