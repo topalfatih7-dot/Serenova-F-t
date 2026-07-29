@@ -3,7 +3,13 @@
  * Body (checkout): { planId, durationMonths?: 1|3|6, flow?: 'register'|'change' }
  * Body (portal):   { action: 'create-portal-session' }
  */
-import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, isPaidPlanId, toMinorUnits, getTierPrice } from './_stripe.js'
+import { getStripe, isStripeConfigured, CURRENCY, PLAN_FALLBACK, toMinorUnits, getTierPrice } from './_stripe.js'
+import {
+  loadPlansById,
+  isCheckoutEligiblePlan,
+  isOneTimePlanId,
+  tierPriceFromPlan,
+} from './_planEntitlements.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { normalizeEmailAddress } from './_email.js'
 
@@ -143,15 +149,46 @@ export default async function handler(req, res) {
 
     const planId = String(body.planId || '')
     const flow = body.flow === 'change' ? 'change' : 'register'
-    const durationMonths = planId === 'doktor'
+
+    const plansById = await loadPlansById(admin)
+    let plan = plansById.get(planId) || null
+    if (!plan) {
+      const { data: planRow } = await admin.from('plans').select('*').eq('id', planId).maybeSingle()
+      if (planRow) {
+        plan = {
+          id: planRow.id,
+          name: planRow.name,
+          price: Number(planRow.price) || 0,
+          period: planRow.period || 'Aylık',
+          isActive: planRow.is_active !== false,
+          isSellable: planRow.is_sellable === true,
+          billingType: planRow.billing_type === 'one_time' ? 'one_time' : 'recurring',
+          entitlements: planRow.entitlements || {},
+          pricingTiers: planRow.pricing_tiers || [],
+        }
+      }
+    }
+
+    // is_sellable kolonu yoksa / migration öncesi: fiyat + aktif veya PLAN_FALLBACK
+    let eligible = false
+    if (!plan) {
+      eligible = Boolean(PLAN_FALLBACK[planId])
+    } else if (plan.isSellable === undefined) {
+      eligible = plan.isActive !== false && (Number(plan.price) > 0 || Boolean(PLAN_FALLBACK[planId]))
+    } else {
+      eligible = isCheckoutEligiblePlan(plan)
+    }
+
+    if (!eligible) {
+      return res.status(400).json({ ok: false, error: 'Geçersiz veya satışa kapalı plan.' })
+    }
+
+    const oneTime = isOneTimePlanId(planId, plan)
+    const durationMonths = oneTime
       ? 1
       : ([1, 3, 6].includes(Number(body.durationMonths))
         ? Number(body.durationMonths)
         : 1)
-
-    if (!isPaidPlanId(planId)) {
-      return res.status(400).json({ ok: false, error: 'Geçersiz plan.' })
-    }
 
     const auth = await resolveAuthUser(admin, req)
     if (auth.error) return res.status(auth.status).json({ ok: false, error: auth.error })
@@ -168,26 +205,16 @@ export default async function handler(req, res) {
       if (!memberName) memberName = memberRow?.name || ''
     }
 
-    let planName = PLAN_FALLBACK[planId]?.name || planId
-    let planPrice = getTierPrice(planId, durationMonths)
-
-    const { data: planRow } = await admin.from('plans').select('*').eq('id', planId).maybeSingle()
-    if (planRow) {
-      if (planRow.name) planName = planRow.name
-      const tiers = planRow.pricing_tiers || planRow.data?.pricingTiers
-      if (Array.isArray(tiers)) {
-        const tier = tiers.find((t) => Number(t.months) === durationMonths)
-        if (tier?.price) planPrice = tier.price
-      } else if (durationMonths === 1 && typeof planRow.price === 'number' && planRow.price > 0) {
-        planPrice = planRow.price
-      }
-    }
+    let planName = plan?.name || PLAN_FALLBACK[planId]?.name || planId
+    let planPrice = plan
+      ? tierPriceFromPlan(plan, durationMonths)
+      : getTierPrice(planId, durationMonths)
 
     if (!planPrice || planPrice <= 0) {
       return res.status(400).json({ ok: false, error: 'Plan fiyatı bulunamadı.' })
     }
 
-    const durationLabel = planId === 'doktor'
+    const durationLabel = oneTime
       ? 'Tek Seferlik'
       : (durationMonths === 1 ? '1 ay' : `${durationMonths} ay`)
     const origin = getOrigin(req)
@@ -220,8 +247,8 @@ export default async function handler(req, res) {
             currency: CURRENCY,
             unit_amount: toMinorUnits(planPrice),
             product_data: {
-              name: planId === 'doktor' ? planName : `${planName} (${durationLabel})`,
-              description: planId === 'doktor'
+              name: oneTime ? planName : `${planName} (${durationLabel})`,
+              description: oneTime
                 ? `${planName} — 1 online doktor görüşmesi`
                 : `${planName} — ${durationLabel} üyelik`,
             },

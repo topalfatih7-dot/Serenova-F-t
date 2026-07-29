@@ -14,12 +14,15 @@ description: >-
 - Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
 - Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
 - Stored in `members.data.healthTest` JSONB
-- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4) — **yalnızca ücretli üyelik**
-  - `membership === 'free'`: HT kaydı serbest; sync/API çalışmaz
-  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis`
+- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4)
+  - **Ücretli** veya **aktif 48s deneme** (`isFreeTrialActive`): sync/API çalışır
+  - Denemede yalnızca **1×** ilk analiz; `force` / yeniden analiz yalnızca ücretli
+  - Deneme bitmiş / denemesiz free: HT kaydı serbest; AI 403; dashboard gate
+  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis` (paket alınca aynı kayıt kullanılır)
   - Üye dashboard: `HealthScoreCard` (genel /100 + boyutlar; `staffBrief` yok)
+  - Personel: skorlar görülebilir; `staffBrief` paragrafları **yalnızca ücretli** üyelikte
   - Program / diyet listesi AI **üretilmez**
-  - Fingerprint stale → personel “Güncel değil” + yeniden analiz; değişmediyse UI/API engeller
+  - Fingerprint stale → personel yeniden analiz (ücretli); değişmediyse UI/API engeller
 - Programlar personel (koç/diyetisyen) tarafından gönderilir
 
 ## Calendar / programs

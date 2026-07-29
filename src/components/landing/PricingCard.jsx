@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, X, ChevronDown } from 'lucide-react'
 import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan } from '../../data/membershipPlans'
-import { getPlanTheme, planIcon, dailyPrice } from '../membership/planTheme'
+import { getPlanTheme, planVisual, dailyPrice } from '../membership/planTheme'
 
 const VISIBLE_COLLAPSED = 6
 
@@ -51,7 +51,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         <span
           className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' || isOneTime ? theme.icon : theme.iconIdle}`}
         >
-          {planIcon(plan, 'h-7 w-7')}
+          {planVisual(plan, 'h-7 w-7', 'text-2xl leading-none')}
         </span>
         <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
         {isOneTime && (

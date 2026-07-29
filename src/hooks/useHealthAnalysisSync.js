@@ -8,16 +8,19 @@ import {
 } from '../services/healthScoreAnalysis'
 
 /**
- * Kişisel sağlık analizi tamamlandığında staff-only skor + brief üretir (bir kez).
- * Ücretsiz / paketsiz üyede çalışmaz — yalnızca kayıt; analiz ücretli planda.
- * Otomatik yeniden üretim yok — fingerprint değişiminde personel butonu kullanılır.
+ * Kişisel sağlık analizi tamamlandığında skor + staffBrief üretir (bir kez).
+ * Ücretli üyelik veya aktif 48s ücretsiz denemede çalışır.
+ * Denemede yalnızca ilk analiz; fingerprint değişiminde personel yeniden analizi
+ * yalnızca ücretli üyelikte kullanılır.
  */
 export function useHealthAnalysisSync() {
-  const { user, packageConfig, updateProfile, isUnpaidMember } = useApp()
+  const { user, packageConfig, updateProfile, isUnpaidMember, isFreeTrialActive } = useApp()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const runningRef = useRef(false)
   const lastKeyRef = useRef('')
+
+  const canRunAnalysis = !isUnpaidMember || isFreeTrialActive
 
   const analysis = user?.healthAnalysis || null
   const history = user?.healthScoreHistory || []
@@ -29,7 +32,7 @@ export function useHealthAnalysisSync() {
   )
 
   const runSync = useCallback(async ({ force = false } = {}) => {
-    if (isUnpaidMember) return null
+    if (!canRunAnalysis) return null
     if (!user?.id || !complete) return null
     if (runningRef.current) return analysis
     if (!force && !needsInitialHealthAnalysis(analysis)) {
@@ -60,14 +63,14 @@ export function useHealthAnalysisSync() {
       runningRef.current = false
       setLoading(false)
     }
-  }, [user, packageConfig, complete, analysis, updateProfile, isUnpaidMember])
+  }, [user, packageConfig, complete, analysis, updateProfile, canRunAnalysis])
 
   useEffect(() => {
-    if (isUnpaidMember) return
+    if (!canRunAnalysis) return
     if (!complete) return
     if (!needsInitialHealthAnalysis(analysis)) return
     runSync()
-  }, [complete, analysis, runSync, isUnpaidMember])
+  }, [complete, analysis, runSync, canRunAnalysis])
 
   return {
     analysis,

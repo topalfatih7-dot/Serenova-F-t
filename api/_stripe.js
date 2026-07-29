@@ -45,6 +45,7 @@ export function getTierPrice(planId, months = 1) {
   return TIER_PRICES[planId]?.[m] || PLAN_FALLBACK[planId]?.price || 0
 }
 
+/** Legacy fallback allowlist — checkout artık DB `is_sellable` tercih eder */
 export const PAID_PLAN_IDS = Object.keys(PLAN_FALLBACK)
 export const isPaidPlanId = (id) => PAID_PLAN_IDS.includes(id)
 

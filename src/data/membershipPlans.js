@@ -27,8 +27,74 @@ export function getPlanDurationLabel(plan) {
 /** Tek seferlik plan mı (fiyat/CTA gösterimi) */
 export function isOneTimeBillingPlan(plan) {
   if (!plan) return false
+  if (plan.billingType === 'one_time') return true
   if (plan.id === 'doktor') return true
   return plan.period === 'Tek Seferlik'
+}
+
+/** Admin oluşturma: slug plan id */
+export const PLAN_ID_PATTERN = /^[a-z][a-z0-9_]*$/
+export function isValidPlanId(id) {
+  return typeof id === 'string' && PLAN_ID_PATTERN.test(id) && id.length >= 2 && id.length <= 40
+}
+
+/** Runtime plan kataloğu (AppContext hydrate sonrası) */
+let _planCatalog = new Map()
+
+export function setPlanCatalog(plans = []) {
+  const next = new Map()
+  for (const p of plans || []) {
+    if (p?.id) next.set(p.id, p)
+  }
+  _planCatalog = next
+}
+
+export function getPlanFromCatalog(id) {
+  if (!id) return null
+  if (_planCatalog.has(id)) return _planCatalog.get(id)
+  return ALL_PLANS.find((p) => p.id === id) || (id === 'free' ? FREE_PLAN : null)
+}
+
+export function emptyEntitlements() {
+  return {
+    coachMeetingsPerMonth: 0,
+    dietitianMeetingsPerMonth: 0,
+    doctorMeetingsPerMonth: 0,
+    doctorSessionsTotal: 0,
+    photoCalorie: false,
+    manualCalorie: false,
+    fullVideo: false,
+  }
+}
+
+export function normalizeEntitlements(raw = {}) {
+  const e = emptyEntitlements()
+  if (!raw || typeof raw !== 'object') return e
+  e.coachMeetingsPerMonth = Math.max(0, Number(raw.coachMeetingsPerMonth) || 0)
+  e.dietitianMeetingsPerMonth = Math.max(0, Number(raw.dietitianMeetingsPerMonth) || 0)
+  e.doctorMeetingsPerMonth = Math.max(0, Number(raw.doctorMeetingsPerMonth) || 0)
+  e.doctorSessionsTotal = Math.max(0, Number(raw.doctorSessionsTotal) || 0)
+  e.photoCalorie = Boolean(raw.photoCalorie)
+  e.manualCalorie = Boolean(raw.manualCalorie)
+  e.fullVideo = Boolean(raw.fullVideo)
+  return e
+}
+
+export function entitlementsToPackageConfig(entitlements, billingType = 'recurring', durationMonths = 1) {
+  const e = normalizeEntitlements(entitlements)
+  const oneTime = billingType === 'one_time'
+  const months = Number(durationMonths) || 1
+  return {
+    ...DEFAULT_PACKAGE,
+    coachMeetingsPerMonth: e.coachMeetingsPerMonth,
+    dietitianMeetingsPerMonth: e.dietitianMeetingsPerMonth,
+    doctorMeetingsPerMonth: e.doctorMeetingsPerMonth,
+    ...(e.doctorSessionsTotal > 0 ? { doctorSessionsTotal: e.doctorSessionsTotal } : {}),
+    ...(oneTime
+      ? { billingType: 'one_time', durationMonths: 0, durationWeeks: 0 }
+      : { durationMonths: months, durationWeeks: months * 4 }),
+    addOns: [],
+  }
 }
 
 /** Fiyat gösterimi: "Aylık 3.499₺" */
@@ -85,21 +151,90 @@ export function getPlanBadge(plan) {
 export const PLAN_DISPLAY_ORDER = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
 
 export function sortPlansForDisplay(plans = []) {
-  const sellable = plans.filter((p) => SELLABLE_PLAN_IDS.includes(p.id))
+  const sellable = (plans || []).filter((p) => {
+    if (!p?.id || p.id === 'free') return false
+    if (p.isActive === false) return false
+    if (typeof p.isSellable === 'boolean') return p.isSellable
+    return SELLABLE_PLAN_IDS.includes(p.id)
+  })
   return [...sellable].sort((a, b) => {
+    const sa = Number(a.sortOrder)
+    const sb = Number(b.sortOrder)
+    if (Number.isFinite(sa) && Number.isFinite(sb) && sa !== sb) return sa - sb
     const ia = PLAN_DISPLAY_ORDER.indexOf(a.id)
     const ib = PLAN_DISPLAY_ORDER.indexOf(b.id)
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
   })
 }
 
-export const isPaidMembership = (membership) => PAID_MEMBERSHIPS.includes(membership)
+/** Ücretli üyelik: free değil + legacy set veya katalogda fiyatlı/satılabilir */
+export function isPaidMembership(membership) {
+  if (!membership || membership === 'free') return false
+  if (PAID_MEMBERSHIPS.includes(membership)) return true
+  const plan = getPlanFromCatalog(membership)
+  if (plan) return Number(plan.price) > 0 || plan.isSellable === true
+  return true
+}
 
-export function isSellablePlanId(id) {
+/** Admin atama listesi — free + aktif planlar (DB) */
+export function getAdminAssignablePlanIds(plans = []) {
+  const ids = ['free']
+  for (const p of plans || []) {
+    if (!p?.id || p.id === 'free') continue
+    if (p.isActive === false) continue
+    ids.push(p.id)
+  }
+  return ids.length > 1 ? ids : [...ADMIN_ASSIGNABLE_PLAN_IDS]
+}
+
+/** Ücretsiz kayıt denemesi — kayıt anından itibaren. */
+export const FREE_TRIAL_MS = 48 * 60 * 60 * 1000
+
+export function computeFreeTrialExpiresAt(fromDate = new Date()) {
+  const base = fromDate instanceof Date ? fromDate.getTime() : new Date(fromDate).getTime()
+  const t = Number.isFinite(base) ? base : Date.now()
+  return new Date(t + FREE_TRIAL_MS).toISOString()
+}
+
+/** Aktif 48s deneme (yalnızca membership === 'free' + geçerli expiresAt). */
+export function isFreeTrialActive(memberOrFields = {}, now = Date.now()) {
+  const membership = memberOrFields?.membership || 'free'
+  const expiresAt = memberOrFields?.freeTrialExpiresAt
+  if (membership !== 'free' || !expiresAt) return false
+  const t = new Date(expiresAt).getTime()
+  if (!Number.isFinite(t)) return false
+  return now < t
+}
+
+/** free + expiresAt geçmiş (deneme verilmiş ama bitmiş). */
+export function isFreeTrialExpired(memberOrFields = {}, now = Date.now()) {
+  const membership = memberOrFields?.membership || 'free'
+  const expiresAt = memberOrFields?.freeTrialExpiresAt
+  if (membership !== 'free' || !expiresAt) return false
+  const t = new Date(expiresAt).getTime()
+  if (!Number.isFinite(t)) return false
+  return now >= t
+}
+
+/** Dashboard erişimi: ücretli veya aktif 48s deneme. */
+export function canAccessMemberDashboard(memberOrFields = {}, now = Date.now()) {
+  if (isPaidMembership(memberOrFields?.membership)) return true
+  return isFreeTrialActive(memberOrFields, now)
+}
+
+export function isSellablePlanId(id, plans) {
+  if (!id || id === 'free') return false
+  const list = plans || (_planCatalog.size ? Array.from(_planCatalog.values()) : null)
+  if (list?.length) {
+    const plan = list.find((p) => p.id === id) || getPlanFromCatalog(id)
+    if (plan && typeof plan.isSellable === 'boolean') return plan.isSellable && plan.isActive !== false
+  }
   return SELLABLE_PLAN_IDS.includes(id)
 }
 
 export function getPlanLabel(id) {
+  const plan = getPlanFromCatalog(id)
+  if (plan?.name) return plan.name
   return PLAN_LABELS[id] || id
 }
 
@@ -169,16 +304,20 @@ export const FREE_PLAN = {
   period: 'Süresiz',
   color: 'sage',
   badge: 'Ücretsiz',
+  isSellable: false,
+  isActive: true,
+  billingType: 'recurring',
+  entitlements: emptyEntitlements(),
   pricingTiers: [],
   features: [
     { text: 'Hesap oluşturma', included: true },
     { text: 'Sağlık testi doldurma (kayıt)', included: true },
-    { text: 'AI sağlık analizi / skor', included: false },
+    { text: '48 saat AI sağlık skorları (panel)', included: true },
     { text: 'Koç & diyetisyen paneli', included: false },
     { text: 'Program, takvim, kütüphane', included: false },
     { text: 'Mesajlar & kalori AI', included: false },
   ],
-  limits: ['İstediğiniz zaman ücretli pakete geçebilirsiniz'],
+  limits: ['48 saat sonra panel kilitlenir; istediğiniz zaman ücretli pakete geçebilirsiniz'],
 }
 
 export const EKO_PLAN = {
@@ -207,6 +346,14 @@ export const EKO_DIYET_PLAN = {
   period: 'Aylık',
   color: 'sage',
   badge: 'Eko',
+  isSellable: true,
+  isActive: true,
+  billingType: 'recurring',
+  sortOrder: 0,
+  entitlements: {
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    photoCalorie: true, manualCalorie: true, fullVideo: false,
+  },
   pricingTiers: buildPricingTiers('eko_diyet'),
   features: [
     { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
@@ -228,6 +375,14 @@ export const DIYET_PLAN = {
   price: 2499,
   period: 'Aylık',
   color: 'emerald',
+  isSellable: true,
+  isActive: true,
+  billingType: 'recurring',
+  sortOrder: 1,
+  entitlements: {
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    photoCalorie: true, manualCalorie: true, fullVideo: false,
+  },
   pricingTiers: buildPricingTiers('diyet'),
   features: [
     { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
@@ -250,6 +405,14 @@ export const EKO_SPOR_PLAN = {
   period: 'Aylık',
   color: 'sage',
   badge: 'Eko',
+  isSellable: true,
+  isActive: true,
+  billingType: 'recurring',
+  sortOrder: 2,
+  entitlements: {
+    coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    photoCalorie: true, manualCalorie: true, fullVideo: true,
+  },
   pricingTiers: buildPricingTiers('eko_spor'),
   features: [
     { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -270,6 +433,14 @@ export const SPOR_PLAN = {
   price: 2499,
   period: 'Aylık',
   color: 'blue',
+  isSellable: true,
+  isActive: true,
+  billingType: 'recurring',
+  sortOrder: 3,
+  entitlements: {
+    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    photoCalorie: true, manualCalorie: true, fullVideo: true,
+  },
   pricingTiers: buildPricingTiers('spor'),
   features: [
     { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -291,6 +462,14 @@ export const DOKTOR_PLAN = {
   period: 'Tek Seferlik',
   color: 'teal',
   badge: 'Tek Seferlik',
+  isSellable: true,
+  isActive: true,
+  billingType: 'one_time',
+  sortOrder: 4,
+  entitlements: {
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1,
+    photoCalorie: false, manualCalorie: false, fullVideo: false,
+  },
   pricingTiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   features: [
     { text: '1 Online Doktor Görüşmesi', included: true },
@@ -307,6 +486,14 @@ export const VIP_PLAN = {
   period: 'Aylık',
   color: 'brand',
   badge: 'VIP',
+  isSellable: true,
+  isActive: true,
+  billingType: 'recurring',
+  sortOrder: 5,
+  entitlements: {
+    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    photoCalorie: true, manualCalorie: true, fullVideo: true,
+  },
   pricingTiers: buildPricingTiers('vip'),
   features: [
     { text: 'Kan Tahlili Testi Analizi', included: true },
@@ -368,8 +555,32 @@ const PACKAGE_BY_PLAN = {
   premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 2 },
 }
 
-/** Plan ID + süre (ay) için varsayılan paket konfigürasyonu */
-export function getDefaultPackageForPlan(planId, durationMonths = 1) {
+const LEGACY_PHOTO_CALORIE = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
+const LEGACY_FULL_VIDEO = new Set(['eko_spor', 'spor', 'vip', 'platinum', 'premium'])
+const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
+
+function planHasEntitlementFlags(plan) {
+  const e = plan?.entitlements
+  if (!e || typeof e !== 'object') return false
+  // normalizeEntitlements her zaman boolean üretir — yalnızca anlamlı kota/bayrak varsa DB kaynaklı say
+  return (
+    Number(e.coachMeetingsPerMonth) > 0
+    || Number(e.dietitianMeetingsPerMonth) > 0
+    || Number(e.doctorMeetingsPerMonth) > 0
+    || Number(e.doctorSessionsTotal) > 0
+    || e.photoCalorie === true
+    || e.manualCalorie === true
+    || e.fullVideo === true
+  )
+}
+
+/** Plan ID + süre (ay) için varsayılan paket konfigürasyonu (DB entitlements öncelikli) */
+export function getDefaultPackageForPlan(planId, durationMonths = 1, planRow = null) {
+  const plan = planRow || getPlanFromCatalog(planId)
+  if (plan && planHasEntitlementFlags(plan)) {
+    const billing = plan.billingType || (planId === 'doktor' || plan.period === 'Tek Seferlik' ? 'one_time' : 'recurring')
+    return entitlementsToPackageConfig(plan.entitlements, billing, durationMonths)
+  }
   if (planId === 'doktor') {
     return {
       ...DEFAULT_PACKAGE,
@@ -390,20 +601,26 @@ export function getDefaultPackageForPlan(planId, durationMonths = 1) {
   }
 }
 
-/** Fotoğraflı kalori erişimi olan planlar (tek plan id — çoklu paket için memberHasPhotoCalorieAccess kullanın) */
+/** Fotoğraflı kalori erişimi (tek plan id — çoklu paket için memberHasPhotoCalorieAccess) */
 export function hasPhotoCalorieAccess(membership) {
-  return ['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
+  const plan = getPlanFromCatalog(membership)
+  if (plan && typeof plan.entitlements?.photoCalorie === 'boolean') return plan.entitlements.photoCalorie
+  return LEGACY_PHOTO_CALORIE.has(membership)
 }
 
-/** Manuel kalori erişimi (doktor tek seferlik paketi hariç) */
+/** Manuel kalori erişimi */
 export function hasManualCalorieAccess(membership) {
-  if (membership === 'free' || membership === 'doktor' || membership === 'kurucu') return false
-  return true
+  const plan = getPlanFromCatalog(membership)
+  if (plan && typeof plan.entitlements?.manualCalorie === 'boolean') return plan.entitlements.manualCalorie
+  if (LEGACY_MANUAL_EXCLUDE.has(membership)) return false
+  return membership !== 'free'
 }
 
 /** Tam video kütüphanesi erişimi */
 export function hasFullVideoAccess(membership) {
-  return ['eko_spor', 'spor', 'vip', 'platinum', 'premium'].includes(membership)
+  const plan = getPlanFromCatalog(membership)
+  if (plan && typeof plan.entitlements?.fullVideo === 'boolean') return plan.entitlements.fullVideo
+  return LEGACY_FULL_VIDEO.has(membership)
 }
 
 export const COACH_MAX_PER_MONTH = 6

@@ -10,6 +10,7 @@ import {
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
 import StaffHealthBrief from '../staff/StaffHealthBrief'
+import { isPaidMembership } from '../../data/membershipPlans'
 
 function Chips({ values, map, tone = 'cream' }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -131,6 +132,7 @@ export default function MemberHealthProfilePanel({
 }) {
   if (!member) return null
 
+  const memberPaid = isPaidMembership(member.membership)
   const complete = isHealthTestComplete(member.healthTest, member.gender, member.packageConfig)
   const hasProgress = hasHealthTestProgress(member.healthTest, member.gender, member.packageConfig)
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
@@ -186,7 +188,8 @@ export default function MemberHealthProfilePanel({
         <StaffHealthBrief
           analysis={member.healthAnalysis}
           stale={analysisStale}
-          onRerun={onRerunAnalysis}
+          showBrief={memberPaid}
+          onRerun={memberPaid ? onRerunAnalysis : null}
           rerunning={analysisRerunning}
           rerunError={analysisRerunError}
         />

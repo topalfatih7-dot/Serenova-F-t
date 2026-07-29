@@ -13,35 +13,62 @@ description: >-
 - **Mobile digital subs:** App Store / Play via **RevenueCat** (IAP required).
 - **Web:** Stripe Checkout + `api/stripe-webhook.js` + Customer Portal (`POST /api/stripe-checkout` · `action: 'create-portal-session'`).
 - **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, package/expiry in `members.data`.
-- **Paketsiz üye:** `membership === 'free'` → `UnpaidMemberGate` (dashboard, mesajlar, program, takvim, kütüphane). Profil + `/membership` açık. `/health-test` doldurulabilir; AI analiz yok (`api/ai-health-analysis` 403).
+- **Plan catalog (DB):** `public.plans` — marketing + `is_sellable` + `billing_type` + `entitlements` jsonb + `emoji`/`icon`/`color`. Admin CRUD: `/admin/plans`.
+- **Paketsiz üye:** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Profil + `/membership` + `/health-test` açık.
+- **48s deneme (yalnızca yeni ücretsiz kayıt):** `freeTrialExpiresAt = now+48h` (`FREE_TRIAL_MS`). Aktifken dashboard + skorlar açık (`canAccessMemberDashboard`); HT tamamlanınca AI 1×. Süre bitince dashboard da gate. Süresi bitmiş ücretli → yeni deneme yok (`freeTrialExpiresAt` temizlenir).
 - **Ücretsiz kayıt:** onboarding Step 0 → `register(profile, 'free')` / OAuth `completeOAuthMember(..., 'free')`. İsteğe bağlı “Paketle başla” → Stripe.
 
 ## Plan IDs
 
-**Satılan:** `eko_diyet` | `diyet` | `eko_spor` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS`)  
+**Seed / fallback satılan:** `eko_diyet` | `diyet` | `eko_spor` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS` — yalnızca JS fallback)  
+**Runtime satış:** `plans.is_active && plans.is_sellable` (admin yeni ID ekleyebilir)  
 **Fallback:** `free` (süresi bitmiş)  
 **Eski (yeni satış yok):** `eko` — mevcut üyeler admin ile taşınır  
 
-Durations: 1 / 3 / 6 months (`doktor` = one-time). Ücretsiz kayıt açık (`membership: 'free'`); ücretli yol Stripe.
+Durations: 1 / 3 / 6 months (`billing_type === 'one_time'` için tek seferlik). Ücretsiz kayıt açık; ücretli yol Stripe (DB’den fiyat + uygunluk).
 
-Sıra: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5).
+Sıra: `sort_order` (seed: Eko Diyet(0) → … → Vip(5)).
 
-**Fallback `free`:** ücretsiz kayıt **ve** süresi bitmiş ücretli.
+## Entitlements (DB)
+
+`plans.entitlements` jsonb:
+
+```json
+{
+  "coachMeetingsPerMonth": 0,
+  "dietitianMeetingsPerMonth": 0,
+  "doctorMeetingsPerMonth": 0,
+  "doctorSessionsTotal": 0,
+  "photoCalorie": false,
+  "manualCalorie": false,
+  "fullVideo": false
+}
+```
+
+`getDefaultPackageForPlan` / Stripe webhook `packageConfig` snapshot bu alanlardan üretilir. Kota değişikliği **yeni** atama/ödemeyi etkiler.
 
 ## Gate helpers (parity with web)
 
-From `src/data/membershipPlans.js` — copy into mobile:
+From `src/data/membershipPlans.js` (+ `setPlanCatalog` hydrate sonrası):
 
-- `hasManualCalorieAccess` — not free/doktor/kurucu
-- `hasPhotoCalorieAccess` — eko_diyet, eko_spor, diyet, spor, vip (+ legacy platinum/premium)
-- `hasFullVideoAccess` — eko_spor, spor, vip (+ legacy)
-- Package quotas: `PACKAGE_BY_PLAN` / `getDefaultPackageForPlan`
+- `isFreeTrialActive` / `canAccessMemberDashboard` / `FREE_TRIAL_MS`
+- `hasManualCalorieAccess` / `hasPhotoCalorieAccess` / `hasFullVideoAccess` — DB entitlements, legacy set fallback
+- `getDefaultPackageForPlan(planId, months, planRow?)`
+- `sortPlansForDisplay` — `isSellable` + `sortOrder`
+- Server: `api/_planEntitlements.js`, `api/_memberEntitlements.js`
+
+## Admin
+
+- `/admin/plans` — oluştur / düzenle / soft-delete (pasif) / hard-delete (üye yoksa); emoji, renk, kota, bayraklar, `is_sellable`
+- `/admin/premium` — atama listesi `getAdminAssignablePlanIds(plans)`
+- `npm run db:migrate` admin marketing alanlarını **ezmez** (yoksa insert / boş entitlements doldur)
 
 ## When coding or documenting
 
 1. Never unlock paid features client-only; server/RLS + membership row must agree.
-2. New webhook: RevenueCat → update same fields as Stripe webhook.
-3. Expiry → downgrade to `free` (`api/_membershipExpiry.js` / `syncMemberPackages`).
+2. Stripe checkout: DB `is_sellable` + fiyat; yeni plan ID’leri kod deploy gerektirmez.
+3. New webhook: RevenueCat → update same fields as Stripe webhook.
+4. Expiry → downgrade to `free` (`api/_membershipExpiry.js` / `syncMemberPackages`).
 
 ## Related
 

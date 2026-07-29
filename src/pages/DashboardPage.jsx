@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
@@ -35,15 +35,30 @@ function ChartEmpty({ message = 'Henüz veri yok' }) {
   )
 }
 
+function formatTrialRemaining(ms) {
+  if (ms <= 0) return 'Süre doldu'
+  const totalMin = Math.ceil(ms / 60000)
+  const hours = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24)
+    const remH = hours % 24
+    return remH > 0 ? `${days}g ${remH}s` : `${days} gün`
+  }
+  if (hours > 0) return mins > 0 ? `${hours}s ${mins}dk` : `${hours} saat`
+  return `${Math.max(1, mins)} dk`
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, isUnpaidMember,
-    premiumExpiresAt, refresh,
+    myPrograms, progress, canAccessMemberDashboard, isFreeTrialActive,
+    freeTrialExpiresAt, premiumExpiresAt, refresh,
     posts,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
   const {
     analysis: healthAnalysis,
@@ -54,6 +69,22 @@ export default function DashboardPage() {
   } = useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
+
+  useEffect(() => {
+    if (!isFreeTrialActive || !freeTrialExpiresAt) return undefined
+    const expires = new Date(freeTrialExpiresAt).getTime()
+    if (!Number.isFinite(expires)) return undefined
+    const tick = () => setNowMs(Date.now())
+    tick()
+    const remaining = expires - Date.now()
+    if (remaining <= 0) return undefined
+    const interval = setInterval(tick, Math.min(60_000, Math.max(1000, remaining)))
+    const endTimer = setTimeout(tick, remaining + 50)
+    return () => {
+      clearInterval(interval)
+      clearTimeout(endTimer)
+    }
+  }, [isFreeTrialActive, freeTrialExpiresAt])
 
   const goMembership = useCallback(() => navigate('/membership'), [navigate])
   const goCoachSchedule = useCallback(() => navigate('/schedule?tab=coach'), [navigate])
@@ -68,6 +99,17 @@ export default function DashboardPage() {
     && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
   )
 
+  const trialRemainingMs = useMemo(() => {
+    if (!isFreeTrialActive || !freeTrialExpiresAt) return 0
+    return Math.max(0, new Date(freeTrialExpiresAt).getTime() - nowMs)
+  }, [isFreeTrialActive, freeTrialExpiresAt, nowMs])
+
+  const dashboardOpen = useMemo(() => {
+    if (isPaidMembership(membership)) return true
+    if (!freeTrialExpiresAt) return false
+    return nowMs < new Date(freeTrialExpiresAt).getTime()
+  }, [membership, freeTrialExpiresAt, nowMs])
+
   const latestPosts = useMemo(
     () => (posts || [])
       .filter((p) => p.published)
@@ -81,7 +123,7 @@ export default function DashboardPage() {
     [myPrograms, user],
   )
 
-  if (isUnpaidMember) {
+  if (!canAccessMemberDashboard || !dashboardOpen) {
     return <UnpaidMemberGate />
   }
 
@@ -90,11 +132,31 @@ export default function DashboardPage() {
 
   const planLabel = getPlanLabel(membership)
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
+  const showTrialBanner = Boolean(isFreeTrialActive && freeTrialExpiresAt)
 
   const today = new Date()
 
   return (
     <div className="space-y-6">
+      {showTrialBanner && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-brand-50/40 px-4 py-3.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-cream-900">
+              Ücretsiz deneme — kalan süre: {formatTrialRemaining(trialRemainingMs)}
+            </p>
+            <p className="mt-0.5 text-xs leading-relaxed text-cream-800/65">
+              Sağlık skorlarınızı görüntüleyebilirsiniz. Süre bitince panel kilitlenir; tam erişim için paket seçin.
+            </p>
+          </div>
+          <Link
+            to="/membership"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+          >
+            <Crown className="h-4 w-4" /> Plan Seç
+          </Link>
+        </div>
+      )}
+
       <div className="welcome-banner">
         <div className="welcome-banner-photo" aria-hidden>
           <img src={PANEL_IMAGES.dashboardHero.url} alt="" />

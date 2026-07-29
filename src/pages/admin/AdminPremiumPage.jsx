@@ -11,7 +11,8 @@ import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
 import AdminMembershipStatusPanel from '../../components/admin/AdminMembershipStatusPanel'
 import {
   isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor,
-  memberNeedsStaffAssignment, ADMIN_ASSIGNABLE_PLAN_IDS, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
+  memberNeedsStaffAssignment, getAdminAssignablePlanIds, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
+  getPlanLabel,
 } from '../../data/membershipPlans'
 import { enrichMemberPremium, getRemainingDays, getDurationMonths } from '../../services/premiumMembership'
 import { countStaffClients } from '../../services/staffAssignment'
@@ -255,11 +256,14 @@ function EditPremiumModal({
 
   if (!member) return null
 
+  const assignableIds = getAdminAssignablePlanIds(plans)
   const planById = (id) => plans?.find((p) => p.id === id)
-  const previewPackage = getDefaultPackageForPlan(membership, durationMonths)
+  const selectedPlan = planById(membership)
+  const previewPackage = getDefaultPackageForPlan(membership, durationMonths, selectedPlan)
+  const selectedOneTime = selectedPlan?.billingType === 'one_time' || membership === 'doktor'
   const showCoach = packageIncludesCoach(previewPackage)
   const showDiet = packageIncludesDietitian(previewPackage)
-  const showDoctor = packageIncludesDoctor(previewPackage) || membership === 'doktor'
+  const showDoctor = packageIncludesDoctor(previewPackage) || selectedOneTime
   const assignmentTitle = [showCoach && 'Koç', showDiet && 'Diyetisyen', showDoctor && 'Doktor'].filter(Boolean).join(' & ') || null
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
@@ -381,16 +385,17 @@ function EditPremiumModal({
                 onChange={(e) => {
                   const id = e.target.value
                   setMembership(id)
-                  if (id === 'doktor') setDurationMonths(0)
+                  const p = plans?.find((x) => x.id === id)
+                  if (id === 'doktor' || p?.billingType === 'one_time') setDurationMonths(0)
                   else if (durationMonths === 0) setDurationMonths(1)
                 }}
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm"
               >
-                {ADMIN_ASSIGNABLE_PLAN_IDS.map((id) => (
-                  <option key={id} value={id}>{PLAN_LABELS[id] || id}</option>
+                {assignableIds.map((id) => (
+                  <option key={id} value={id}>{getPlanLabel(id)}</option>
                 ))}
-                {membership === 'eko' && (
-                  <option value="eko">{PLAN_LABELS.eko}</option>
+                {membership === 'eko' && !assignableIds.includes('eko') && (
+                  <option value="eko">{getPlanLabel('eko')}</option>
                 )}
               </select>
             </label>
@@ -399,10 +404,10 @@ function EditPremiumModal({
               <select
                 value={durationMonths}
                 onChange={(e) => setDurationMonths(Number(e.target.value))}
-                disabled={!isPaidMembership(membership) || membership === 'doktor'}
+                disabled={!isPaidMembership(membership) || selectedOneTime}
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm disabled:opacity-50"
               >
-                {membership === 'doktor' ? (
+                {selectedOneTime ? (
                   <option value={0}>Tek seferlik</option>
                 ) : DURATION_OPTIONS.map((o) => (
                   <option key={o.months} value={o.months}>{o.label}</option>

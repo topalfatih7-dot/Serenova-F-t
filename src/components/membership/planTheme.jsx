@@ -87,6 +87,21 @@ export function planIcon(planOrId, className = 'h-5 w-5') {
   return <Icon className={className} />
 }
 
+/** Kartlarda emoji varsa onu göster, yoksa Lucide ikon */
+export function planVisual(planOrId, className = 'h-5 w-5', emojiClassName = 'text-2xl leading-none') {
+  const emoji = planOrId && typeof planOrId === 'object' ? planOrId.emoji : null
+  if (emoji && String(emoji).trim()) {
+    return <span className={emojiClassName} aria-hidden>{String(emoji).trim()}</span>
+  }
+  return planIcon(planOrId, className)
+}
+
+/** Admin emoji hızlı seçim */
+export const PLAN_EMOJI_OPTIONS = [
+  '🥗', '💪', '🏃', '🩺', '👑', '⭐', '🔥', '🌿', '🍎', '🏋️',
+  '💚', '🎯', '✨', '🏆', '🧘', '❤️', '🥇', '⚡', '🌟', '🎁',
+]
+
 /** Token veya #hex → tema sınıfları */
 export const PLAN_COLOR_TOKENS = [
   { id: 'sage', label: 'Sage', swatch: 'bg-sage-500', accent: 'from-sage-300 via-sage-400 to-emerald-400', glow: 'shadow-sage-200/50', ring: 'border-sage-300 ring-sage-100', icon: 'bg-gradient-to-br from-sage-400 to-emerald-500 text-white', iconIdle: 'bg-sage-50 text-sage-600', chip: 'bg-sage-50 text-sage-700 ring-sage-100', btn: 'bg-gradient-to-r from-sage-500 to-emerald-500 text-white', btnIdle: 'bg-sage-50 text-sage-800', label: 'text-sage-700', header: 'from-sage-50 to-sage-100/60 border-sage-200', badge: 'bg-sage-500 text-white' },

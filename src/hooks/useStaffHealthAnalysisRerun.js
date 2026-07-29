@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { isPaidMembership } from '../data/membershipPlans'
 import {
   appendHealthScoreHistory,
   isHealthAnalysisStale,
@@ -24,6 +25,12 @@ export function useStaffHealthAnalysisRerun({
   const rerun = useCallback(async () => {
     if (!member?.id || typeof patchMember !== 'function') {
       return { ok: false, error: 'Üye bulunamadı' }
+    }
+
+    if (!isPaidMembership(member.membership)) {
+      const msg = 'Yeniden analiz yalnızca aktif ücretli üyelikte kullanılabilir'
+      setError(msg)
+      return { ok: false, error: msg }
     }
 
     const analysis = member.healthAnalysis

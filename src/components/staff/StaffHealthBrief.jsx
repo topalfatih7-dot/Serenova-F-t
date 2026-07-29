@@ -74,6 +74,7 @@ function CategoryScoreCard({ scoreKey, score }) {
 
 /**
  * Koç / diyetisyen — GPT sağlık skoru + staffBrief (üyeye gösterilmez).
+ * showBrief=false iken yalnızca skorlar (ücretsiz/deneme üyede brief kilitli).
  */
 export default function StaffHealthBrief({
   analysis,
@@ -81,21 +82,24 @@ export default function StaffHealthBrief({
   onRerun = null,
   rerunning = false,
   rerunError = null,
+  showBrief = true,
 }) {
   const brief = analysis?.staffBrief
-  const hasBrief = brief && STAFF_BRIEF_KEYS.some((k) => brief[k])
+  const hasBrief = Boolean(showBrief && brief && STAFF_BRIEF_KEYS.some((k) => brief[k]))
   const scores = analysis?.scores || {}
   const overall = analysis?.overallScore
   const hasScores = HEALTH_SCORE_KEYS.some((k) => scores[k] != null) || overall != null
   const tone = scoreTone(overall ?? 0)
+  const canRerun = showBrief && typeof onRerun === 'function'
 
-  if (!hasBrief && !hasScores && !stale) return null
+  if (!hasBrief && !hasScores && !(stale && canRerun)) return null
 
   return (
     <div className="space-y-4 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/50 via-white to-sage-50/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-cream-900">
-          <FileText className="h-4 w-4 text-brand-500" /> Detaylı sağlık analizi
+          <FileText className="h-4 w-4 text-brand-500" />
+          {showBrief ? 'Detaylı sağlık analizi' : 'Sağlık skorları'}
         </p>
         {overall != null && (
           <div className={`relative flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-md ring-2 ${tone.ring}`}>
@@ -111,7 +115,13 @@ export default function StaffHealthBrief({
         )}
       </div>
 
-      {stale && (
+      {!showBrief && hasScores && (
+        <p className="rounded-xl border border-cream-100 bg-white/80 px-3 py-2 text-xs leading-relaxed text-cream-800/60">
+          Detaylı personel brief’i üye ücretli paket aldığında görünür.
+        </p>
+      )}
+
+      {stale && canRerun && (
         <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-3">
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
@@ -125,21 +135,19 @@ export default function StaffHealthBrief({
               <p className="mt-1.5 text-xs font-medium text-rose-700">{rerunError}</p>
             )}
           </div>
-          {typeof onRerun === 'function' && (
-            <button
-              type="button"
-              onClick={onRerun}
-              disabled={rerunning}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
-            >
-              {rerunning ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              Yeniden analiz et
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onRerun}
+            disabled={rerunning}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
+          >
+            {rerunning ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Yeniden analiz et
+          </button>
         </div>
       )}
 

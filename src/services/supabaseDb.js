@@ -6,7 +6,8 @@ import { normalizeEmailAddress, sanitizeEmailInput } from '../utils/emailAddress
 import { ADMIN_CREDENTIALS } from '../config/brand'
 import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
-  sanitizeStaffForPackage,
+  normalizeEntitlements, isValidPlanId, setPlanCatalog,
+  sanitizeStaffForPackage, computeFreeTrialExpiresAt,
 } from '../data/membershipPlans'
 import { applyStaffAssignments } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
@@ -304,7 +305,7 @@ async function hydrateOnce() {
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
     supabase.from('exercises').select('id', { count: 'exact', head: true }),
-    supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+    supabase.from('plans').select('*').order('sort_order', { ascending: true }),
   ])
 
   // Güvenli temel liste (herkes) + erişimi olanlarda (admin/kendi kaydı) tam veriyle üzerine yaz.
@@ -315,7 +316,8 @@ async function hydrateOnce() {
   const posts = (postsRes.data || []).map(rowToPost)
   const exerciseCount = exercisesRes.count ?? 0
   const exercises = []
-  const plans = plansRes.data?.length ? plansRes.data.map(rowToPlan) : ALL_PLANS
+  const allPlansFromDb = plansRes.data?.length ? plansRes.data.map(rowToPlan) : null
+  setPlanCatalog(allPlansFromDb || ALL_PLANS)
   const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
   ;(contentRes.data || []).forEach((r) => {
     const item = { id: r.id, ...(r.data || {}) }
@@ -326,7 +328,10 @@ async function hydrateOnce() {
   })
 
   if (!user) {
-    return { ...EMPTY_DB, staff, posts, content, exercises, exerciseCount, plans, authUser: null }
+    const publicPlans = allPlansFromDb
+      ? allPlansFromDb.filter((p) => p.isActive !== false)
+      : ALL_PLANS
+    return { ...EMPTY_DB, staff, posts, content, exercises, exerciseCount, plans: publicPlans, authUser: null }
   }
 
   const authUser = {
@@ -367,6 +372,11 @@ async function hydrateOnce() {
       }
     }
   }
+
+  // Admin: tüm planlar (pasif dahil); diğerleri yalnızca aktif
+  const plans = allPlansFromDb
+    ? (role === 'admin' ? allPlansFromDb : allPlansFromDb.filter((p) => p.isActive !== false))
+    : ALL_PLANS
 
   return {
     version: 2,
@@ -521,6 +531,13 @@ function rowToContactInquiry(row) {
 }
 
 function rowToPlan(row) {
+  const knownSellable = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
+  // Kolon yoksa (migration öncesi) undefined — sortPlansForDisplay legacy fallback kullanır
+  const isSellable = row.is_sellable == null
+    ? (knownSellable.includes(row.id) ? true : undefined)
+    : row.is_sellable === true
+  const entRaw = row.entitlements
+  const hasEnt = entRaw && typeof entRaw === 'object' && Object.keys(entRaw).length > 0
   return {
     id: row.id,
     name: row.name,
@@ -533,17 +550,31 @@ function rowToPlan(row) {
     pricingTiers: row.pricing_tiers || [],
     color: row.color || 'sage',
     icon: row.icon || null,
+    emoji: row.emoji || null,
+    isSellable,
+    billingType: row.billing_type === 'one_time'
+      ? 'one_time'
+      : (row.id === 'doktor' ? 'one_time' : 'recurring'),
+    entitlements: hasEnt ? normalizeEntitlements(entRaw) : normalizeEntitlements({}),
     sortOrder: row.sort_order || 0,
   }
 }
 
-export async function getPlans() {
-  const { data } = await supabase.from('plans').select('*').eq('is_active', true).order('sort_order', { ascending: true })
+export async function getPlans({ includeInactive = false } = {}) {
+  let q = supabase.from('plans').select('*').order('sort_order', { ascending: true })
+  if (!includeInactive) q = q.eq('is_active', true)
+  const { data } = await q
   if (!data || data.length === 0) return ALL_PLANS
-  return data.map(rowToPlan)
+  const plans = data.map(rowToPlan)
+  setPlanCatalog(plans)
+  return plans
 }
 
 export async function upsertPlan(plan) {
+  if (!isValidPlanId(plan.id) && plan.id !== 'free') {
+    throw new Error('Geçersiz plan ID. Küçük harf, rakam ve alt çizgi kullanın.')
+  }
+  const billingType = plan.billingType === 'one_time' ? 'one_time' : 'recurring'
   const { error } = await supabase.from('plans').upsert({
     id: plan.id,
     name: plan.name,
@@ -556,10 +587,41 @@ export async function upsertPlan(plan) {
     pricing_tiers: plan.pricingTiers || [],
     color: plan.color || 'sage',
     icon: plan.icon || null,
-    sort_order: plan.sortOrder || 0,
+    emoji: plan.emoji || null,
+    is_sellable: plan.isSellable === true,
+    billing_type: billingType,
+    entitlements: normalizeEntitlements(plan.entitlements || {}),
+    sort_order: Number(plan.sortOrder) || 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'id' })
   if (error) throw error
+}
+
+/** Soft-delete: is_active=false, is_sellable=false. Hard delete yalnızca üye yoksa. */
+export async function deletePlan(planId, { hard = false } = {}) {
+  if (!planId || planId === 'free') throw new Error('Bu plan silinemez.')
+
+  if (hard) {
+    const { count: memCount, error: memErr } = await supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('membership', planId)
+    if (memErr) throw memErr
+    if ((memCount || 0) > 0) {
+      throw new Error('Bu pakete sahip üyeler var — yalnızca pasife alınabilir.')
+    }
+    const { error } = await supabase.from('plans').delete().eq('id', planId)
+    if (error) throw error
+    return { hard: true }
+  }
+
+  const { error } = await supabase.from('plans').update({
+    is_active: false,
+    is_sellable: false,
+    updated_at: new Date().toISOString(),
+  }).eq('id', planId)
+  if (error) throw error
+  return { hard: false }
 }
 
 // --------------------------- persistence helpers ---------------------------
@@ -799,7 +861,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     healthAnalysis: profile.healthAnalysis || null,
     membership,
     membershipStatus: 'active',
-    freeTrialExpiresAt: null,
+    freeTrialExpiresAt: membership === 'free' ? computeFreeTrialExpiresAt() : null,
     packageConfig: packageConfig || getDefaultPackageForPlan(membership),
     joinedAt: today(),
     lastActiveAt: today(),

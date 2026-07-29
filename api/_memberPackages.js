@@ -34,7 +34,32 @@ export function isOneTimePlan(planId) {
 }
 
 export function isPaidMembership(planId) {
-  return PAID_PLANS.has(planId)
+  if (!planId || planId === 'free') return false
+  if (PAID_PLANS.has(planId)) return true
+  // Admin’den oluşturulan dinamik plan ID’leri
+  return /^[a-z][a-z0-9_]*$/.test(planId)
+}
+
+/** Ücretsiz kayıt denemesi — kayıt anından itibaren (client FREE_TRIAL_MS ile aynı). */
+export const FREE_TRIAL_MS = 48 * 60 * 60 * 1000
+
+export function computeFreeTrialExpiresAt(fromDate = new Date()) {
+  const base = fromDate instanceof Date ? fromDate.getTime() : new Date(fromDate).getTime()
+  const t = Number.isFinite(base) ? base : Date.now()
+  return new Date(t + FREE_TRIAL_MS).toISOString()
+}
+
+/** Aktif 48s deneme — member satırı veya { membership, freeTrialExpiresAt }. */
+export function isFreeTrialActive(memberOrFields = {}, now = Date.now()) {
+  const membership = memberOrFields?.membership || 'free'
+  const data = memberOrFields?.data && typeof memberOrFields.data === 'object'
+    ? memberOrFields.data
+    : null
+  const expiresAt = memberOrFields?.freeTrialExpiresAt ?? data?.freeTrialExpiresAt ?? null
+  if (membership !== 'free' || !expiresAt) return false
+  const t = new Date(expiresAt).getTime()
+  if (!Number.isFinite(t)) return false
+  return now < t
 }
 
 export function countUsedDoctorSessions(member) {

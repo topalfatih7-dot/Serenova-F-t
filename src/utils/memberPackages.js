@@ -1,6 +1,10 @@
 import {
   DEFAULT_PACKAGE,
   getDefaultPackageForPlan,
+  getPlanFromCatalog,
+  hasFullVideoAccess,
+  hasManualCalorieAccess,
+  hasPhotoCalorieAccess,
   isPaidMembership,
   PLAN_IDS,
   sanitizeStaffForPackage,
@@ -12,7 +16,10 @@ const today = () => new Date().toISOString().split('T')[0]
 export const ONE_TIME_PLANS = new Set(['doktor'])
 
 export function isOneTimePlan(planId) {
-  return ONE_TIME_PLANS.has(planId)
+  if (!planId) return false
+  if (ONE_TIME_PLANS.has(planId)) return true
+  const plan = getPlanFromCatalog(planId)
+  return plan?.billingType === 'one_time' || plan?.period === 'Tek Seferlik'
 }
 
 export function isPackageEntryActive(pkg, now = today()) {
@@ -343,10 +350,6 @@ export function doctorLimitIsOneTime(packageConfig = {}) {
   return (Number(packageConfig.doctorSessionsTotal) || 0) > 0
 }
 
-const PHOTO_CALORIE_PLANS = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const FULL_VIDEO_PLANS = new Set(['eko_spor', 'spor', 'vip', 'platinum', 'premium'])
-const MANUAL_CALORIE_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
-
 /** Aktif paketler + birleşik config */
 export function resolveMemberEntitlements(member) {
   if (!member) {
@@ -368,13 +371,13 @@ function activePlanIds(member) {
 }
 
 export function memberHasPhotoCalorieAccess(member) {
-  return activePlanIds(member).some((id) => PHOTO_CALORIE_PLANS.has(id))
+  return activePlanIds(member).some((id) => hasPhotoCalorieAccess(id))
 }
 
 export function memberHasManualCalorieAccess(member) {
-  return activePlanIds(member).some((id) => !MANUAL_CALORIE_EXCLUDE.has(id))
+  return activePlanIds(member).some((id) => hasManualCalorieAccess(id))
 }
 
 export function memberHasFullVideoAccess(member) {
-  return activePlanIds(member).some((id) => FULL_VIDEO_PLANS.has(id))
+  return activePlanIds(member).some((id) => hasFullVideoAccess(id))
 }

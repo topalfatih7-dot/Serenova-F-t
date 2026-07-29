@@ -2,6 +2,7 @@ import { Activity, HeartPulse, MapPin, Salad, Sparkles, Target, Flame, TrendingU
 import { describeHealthTest, HEALTH_AUDIENCE_META } from '../../data/healthTest'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import StaffHealthBrief from '../staff/StaffHealthBrief'
+import { isPaidMembership } from '../../data/membershipPlans'
 
 function Chips({ values, map }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -113,6 +114,7 @@ export default function MemberHealthInsights({
 }) {
   if (!member) return null
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
+  const memberPaid = isPaidMembership(member.membership)
 
   return (
     <div className="space-y-4">
@@ -155,6 +157,7 @@ export default function MemberHealthInsights({
       {showStaffBrief && (
         <StaffHealthBrief
           analysis={member.healthAnalysis}
+          showBrief={memberPaid}
         />
       )}
 

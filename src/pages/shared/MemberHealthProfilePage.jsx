@@ -7,6 +7,7 @@ import MemberHealthProfilePanel from '../../components/member/MemberHealthProfil
 import { getStaffClients } from '../../utils/chatAccess'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { isCoachRole, isDietitianRole } from '../../utils/staffRoles'
+import { isPaidMembership } from '../../data/membershipPlans'
 import { isHealthAnalysisStale } from '../../services/healthScoreAnalysis'
 import { useStaffHealthAnalysisRerun } from '../../hooks/useStaffHealthAnalysisRerun'
 
@@ -67,16 +68,22 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
     patchMember,
   })
 
+  const memberPaid = Boolean(member && isPaidMembership(member.membership))
+
   const analysisStale = useMemo(
-    () => (member ? isHealthAnalysisStale(member.healthAnalysis, member) : false),
-    [member],
+    () => (member && memberPaid ? isHealthAnalysisStale(member.healthAnalysis, member) : false),
+    [member, memberPaid],
   )
 
   const handleRerunAnalysis = useCallback(async () => {
+    if (!memberPaid) {
+      toast('Yeniden analiz yalnızca aktif ücretli üyelikte kullanılabilir', 'error')
+      return
+    }
     const result = await rerun()
     if (result?.ok) toast('Sağlık analizi güncellendi', 'success')
     else toast(result?.error || 'Yeniden analiz başarısız', 'error')
-  }, [rerun, toast])
+  }, [rerun, toast, memberPaid])
 
   if (!member) {
     return (

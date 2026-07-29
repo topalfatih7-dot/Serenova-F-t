@@ -13,7 +13,14 @@ import {
   computeMonthlyGrowth,
   getSessionStats,
 } from '../services/platformStats'
-import { ALL_PLANS, isPaidMembership } from '../data/membershipPlans'
+import {
+  ALL_PLANS,
+  isPaidMembership,
+  isFreeTrialActive as checkFreeTrialActive,
+  isFreeTrialExpired as checkFreeTrialExpired,
+  canAccessMemberDashboard as checkCanAccessMemberDashboard,
+  setPlanCatalog,
+} from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
 import { subscribeRealtimeSync, useActiveUsers } from '../hooks/useRealtimeSync'
 import { clearIncomingChatSoundState } from '../hooks/useIncomingChatSound'
@@ -112,6 +119,10 @@ export function AppProvider({ children }) {
   }, [])
 
   const db = remoteDb || EMPTY_DB
+
+  useEffect(() => {
+    setPlanCatalog(db.plans?.length ? db.plans : ALL_PLANS)
+  }, [db.plans])
   const currentMember = useMemo(() => getCurrentMember(db), [db])
   const currentStaff = useMemo(() => getCurrentStaff(db), [db])
   const authUser = db.authUser || null
@@ -849,6 +860,17 @@ export function AppProvider({ children }) {
     await reloadRemote()
   }, [reloadRemote])
 
+  const createPlan = useCallback(async (plan) => {
+    await sb.upsertPlan({ ...plan, isActive: plan.isActive !== false })
+    await reloadRemote()
+  }, [reloadRemote])
+
+  const deletePlan = useCallback(async (planId, opts = {}) => {
+    const result = await sb.deletePlan(planId, opts)
+    await reloadRemote()
+    return result
+  }, [reloadRemote])
+
   // Mevcut üyenin planını değiştirir (yeni kayıt oluşturmaz)
   const changePlan = useCallback(async (planId, planPrice = 0, durationMonths = 1) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
@@ -1317,19 +1339,30 @@ export function AppProvider({ children }) {
   }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
 
   // Paketsiz üye (free = ücretsiz kayıt veya süresi bitmiş fallback).
+  // Mesaj/takvim/kütüphane/program gate'leri bunu kullanır (denemede de kilitli).
   const isUnpaidMember = useMemo(
     () => !isPaidMembership(currentMember?.membership || 'free'),
     [currentMember?.membership],
   )
 
-  // Legacy: eski 48s deneme alanı — yeni UI isUnpaidMember kullanır.
+  const trialFields = useMemo(() => ({
+    membership: currentMember?.membership || 'free',
+    freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
+  }), [currentMember?.membership, currentMember?.freeTrialExpiresAt])
+
+  const isFreeTrialActive = useMemo(
+    () => checkFreeTrialActive(trialFields),
+    [trialFields],
+  )
+
   const isFreeTrialExpired = useMemo(
-    () => Boolean(
-      currentMember?.membership === 'free'
-      && currentMember?.freeTrialExpiresAt
-      && new Date() > new Date(currentMember.freeTrialExpiresAt),
-    ),
-    [currentMember],
+    () => checkFreeTrialExpired(trialFields),
+    [trialFields],
+  )
+
+  const canAccessMemberDashboard = useMemo(
+    () => checkCanAccessMemberDashboard(trialFields),
+    [trialFields],
   )
 
   const authValue = useMemo(() => ({
@@ -1348,7 +1381,9 @@ export function AppProvider({ children }) {
     premiumStartedAt: currentMember?.premiumStartedAt,
     freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
     isUnpaidMember,
+    isFreeTrialActive,
     isFreeTrialExpired,
+    canAccessMemberDashboard,
     verificationStatus,
     loggingOut,
     // Kabuk rozetleri — Data listelerinden bağımsız; sohbet gövdesi değişince Auth sabit kalır
@@ -1370,7 +1405,9 @@ export function AppProvider({ children }) {
     currentMember?.premiumStartedAt,
     currentMember?.freeTrialExpiresAt,
     isUnpaidMember,
+    isFreeTrialActive,
     isFreeTrialExpired,
+    canAccessMemberDashboard,
     verificationStatus,
     loggingOut,
     chatUnreadCount,
@@ -1492,6 +1529,8 @@ export function AppProvider({ children }) {
     registerWithPayment,
     registerWithPlan,
     savePlan,
+    createPlan,
+    deletePlan,
     changePlan,
     processPremiumPayment,
     upgradeToPremium,
@@ -1572,6 +1611,8 @@ export function AppProvider({ children }) {
     registerWithPayment,
     registerWithPlan,
     savePlan,
+    createPlan,
+    deletePlan,
     changePlan,
     processPremiumPayment,
     upgradeToPremium,

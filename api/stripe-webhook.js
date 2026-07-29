@@ -12,6 +12,11 @@ import {
   syncMemberPackages,
 } from './_memberPackages.js'
 import { createMemberFromPendingRegistration } from './_createMemberFromPending.js'
+import {
+  loadPlansById,
+  defaultPackageForPlan as packageFromPlanEntitlements,
+  isOneTimePlanId,
+} from './_planEntitlements.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -24,42 +29,10 @@ function computeExpiry(startDate, durationMonths) {
   return d.toISOString().split('T')[0]
 }
 
-function defaultPackageForPlan(planId, durationMonths = 1) {
-  if (planId === 'doktor') {
-    return {
-      coachMeetingsPerMonth: 0,
-      dietitianMeetingsPerMonth: 0,
-      doctorMeetingsPerMonth: 0,
-      doctorSessionsTotal: 1,
-      billingType: 'one_time',
-      coachMeetingsPerWeek: 0,
-      durationMonths: 0,
-      durationWeeks: 0,
-      addOns: [],
-    }
-  }
-  const months = Number(durationMonths) || 1
-  const configs = {
-    eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-    eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1 },
-    eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-    diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
-    spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-    kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-    vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
-    gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
-    altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
-    platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 3 },
-    premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 2 },
-  }
-  const base = configs[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 }
-  return {
-    coachMeetingsPerWeek: 0,
-    addOns: [],
-    ...base,
-    durationMonths: months,
-    durationWeeks: months * 4,
-  }
+async function resolveDefaultPackage(admin, planId, durationMonths = 1) {
+  const byId = await loadPlansById(admin)
+  const plan = byId.get(planId) || null
+  return packageFromPlanEntitlements(planId, durationMonths, plan)
 }
 
 const TG_TIME = () => new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
@@ -164,7 +137,10 @@ async function activateMembership(admin, meta, session) {
   if (!memberId || !planId) return { ok: false, error: 'Eksik metadata' }
 
   const amount = Number(meta.planPrice) || (session.amount_total ? session.amount_total / 100 : 0)
-  const durationMonths = isOneTimePlan(planId) ? 0 : (Number(meta.durationMonths) || Number(meta.durationWeeks) / 4 || 1)
+  const plansById = await loadPlansById(admin)
+  const plan = plansById.get(planId) || null
+  const oneTime = isOneTimePlanId(planId, plan) || isOneTimePlan(planId)
+  const durationMonths = oneTime ? 0 : (Number(meta.durationMonths) || Number(meta.durationWeeks) / 4 || 1)
   const sessionId = session.id
 
   const { data: existing } = await admin
@@ -190,7 +166,7 @@ async function activateMembership(admin, meta, session) {
 
   const data = memberRow.data || {}
   const member = memberFromRow(memberRow)
-  const packageConfig = defaultPackageForPlan(planId, durationMonths)
+  const packageConfig = await resolveDefaultPackage(admin, planId, durationMonths || 1)
   const started = today()
 
   let activePackages = resolvePackagePurchase(
@@ -204,7 +180,7 @@ async function activateMembership(admin, meta, session) {
     ...member,
     activePackages,
     premiumStartedAt: member.premiumStartedAt || started,
-    premiumExpiresAt: isOneTimePlan(planId) ? member.premiumExpiresAt : computeExpiry(started, durationMonths),
+    premiumExpiresAt: oneTime ? member.premiumExpiresAt : computeExpiry(started, durationMonths),
     lastActiveAt: started,
   })
 
@@ -226,7 +202,7 @@ async function activateMembership(admin, meta, session) {
     .eq('id', memberId)
   if (updErr) return { ok: false, error: updErr.message }
 
-  const durationLabel = isOneTimePlan(planId) ? 'tek seferlik' : `${durationMonths} ay`
+  const durationLabel = oneTime ? 'tek seferlik' : `${durationMonths} ay`
 
   await admin.from('payments').insert({
     member_id: memberId,

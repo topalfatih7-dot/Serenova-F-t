@@ -20,7 +20,7 @@ import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, FREE_PLAN, getTierPrice, SELLABLE_PLAN_IDS, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { isPaidMembership, ALL_PLANS, FREE_PLAN, getTierPrice, isSellablePlanId, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
 import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
@@ -46,10 +46,10 @@ const LEGACY_PLAN_MAP = {
   basic: RECOMMENDED_PLAN,
 }
 
-function resolvePlanFromQuery(raw) {
+function resolvePlanFromQuery(raw, plans) {
   if (!raw || raw === 'free') return 'free'
   const mapped = LEGACY_PLAN_MAP[raw] || raw
-  return SELLABLE_PLAN_IDS.includes(mapped) ? mapped : 'free'
+  return isSellablePlanId(mapped, plans) ? mapped : 'free'
 }
 
 const BENEFITS = [
@@ -176,11 +176,25 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const rawPlan = searchParams.get('plan') || 'free'
-  const preselectedPlan = resolvePlanFromQuery(rawPlan)
+  const {
+    plans,
+    changePlan,
+    register,
+    completeOAuthMember,
+    isAuthenticated,
+    isAdmin,
+    isStaff,
+    membership: currentMembership,
+    user,
+    authUser,
+    loading,
+  } = useApp()
+  const catalogPlans = plans?.length ? plans : ALL_PLANS
+  const preselectedPlan = resolvePlanFromQuery(rawPlan, catalogPlans)
 
   const [step, setStep] = useState(0)
   const [maxReached, setMaxReached] = useState(0)
-  const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(resolvePlanFromQuery(rawPlan), searchParams))
+  const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(resolvePlanFromQuery(rawPlan, catalogPlans), searchParams))
   const [submitting, setSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -213,25 +227,12 @@ export default function OnboardingPage() {
     setDurationMonths(resolveDurationMonths(data.membership, searchParams))
   }
 
-  const {
-    plans,
-    changePlan,
-    register,
-    completeOAuthMember,
-    isAuthenticated,
-    isAdmin,
-    isStaff,
-    membership: currentMembership,
-    user,
-    authUser,
-    loading,
-  } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
   const isOAuthFlow = isAuthenticated && isSocialAuthUser(authUser) && !hasRegisteredMember(user)
   const oauthPrefilledRef = useRef(false)
-  const wantsPaidPath = SELLABLE_PLAN_IDS.includes(preselectedPlan)
+  const wantsPaidPath = isSellablePlanId(preselectedPlan, catalogPlans)
 
   useEffect(() => {
     if (searchParams.get('oauth') !== '1' || isAuthenticated || loading) return
@@ -319,7 +320,7 @@ export default function OnboardingPage() {
         return 'Devam etmek için kullanım koşullarını ve gizlilik politikasını kabul etmelisiniz.'
       }
     }
-    if (step === 1 && data.membership !== 'free' && !SELLABLE_PLAN_IDS.includes(data.membership)) {
+    if (step === 1 && data.membership !== 'free' && !isSellablePlanId(data.membership, catalogPlans)) {
       return 'Kayıt için Ücretsiz, Diyet, Spor, Doktor veya VIP paketinden birini seçin.'
     }
     return 'Lütfen eksik veya hatalı alanları düzeltin.'
@@ -370,7 +371,7 @@ export default function OnboardingPage() {
       )
     }
     if (step === 1) {
-      return data.membership === 'free' || SELLABLE_PLAN_IDS.includes(data.membership)
+      return data.membership === 'free' || isSellablePlanId(data.membership, catalogPlans)
     }
     return true
   }
@@ -475,7 +476,7 @@ export default function OnboardingPage() {
       finishFreeRegister()
       return
     }
-    if (!SELLABLE_PLAN_IDS.includes(data.membership)) {
+    if (!isSellablePlanId(data.membership, catalogPlans)) {
       showFormError('Kayıt için Ücretsiz, Diyet, Spor, Doktor veya VIP paketinden birini seçin.')
       return
     }

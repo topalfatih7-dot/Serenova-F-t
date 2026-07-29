@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan, RECOMMENDED_PLAN } from '../../data/membershipPlans'
-import { getPlanTheme, planIcon, dailyPrice } from './planTheme'
+import { getPlanTheme, planVisual, dailyPrice } from './planTheme'
 
 const VISIBLE_FEATURES = 4
 const MotionLink = motion(Link)
@@ -118,7 +118,7 @@ export default function MembershipPlanCard({
               ? { backgroundColor: `${theme.customHex}18`, color: theme.customHex }
               : undefined)}
           >
-            {planIcon(plan, 'h-6 w-6')}
+            {planVisual(plan, 'h-6 w-6', 'text-2xl leading-none')}
           </span>
           <h3 className={`mt-3 font-display text-lg font-bold text-cream-900 ${theme.label}`}>{plan.name}</h3>
           {isOneTime && (

@@ -206,10 +206,21 @@ create table if not exists public.plans (
   pricing_tiers jsonb not null default '[]'::jsonb,
   color text default 'sage',
   icon text,
+  emoji text,
+  is_sellable boolean not null default false,
+  billing_type text not null default 'recurring'
+    check (billing_type in ('recurring', 'one_time')),
+  entitlements jsonb not null default '{}'::jsonb,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Existing DBs: add columns if table already created without them
+alter table public.plans add column if not exists emoji text;
+alter table public.plans add column if not exists is_sellable boolean not null default false;
+alter table public.plans add column if not exists billing_type text not null default 'recurring';
+alter table public.plans add column if not exists entitlements jsonb not null default '{}'::jsonb;
 
 -- Kadro başvuruları (koç / diyetisyen)
 create table if not exists public.staff_applications (

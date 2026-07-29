@@ -1,29 +1,29 @@
 /**
  * Sunucu tarafı üye paket yetkileri (AI kalori API guard).
- * Client `src/utils/memberPackages.js` ile aynı kurallar — kopya tutulur (api→src import yok).
+ * Client `src/utils/memberPackages.js` ile aynı kurallar — DB plans.entitlements + legacy.
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
-
-const PHOTO_CALORIE_PLANS = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const MANUAL_CALORIE_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
-const PAID = new Set(['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip', 'gumus', 'altin', 'platinum', 'premium', 'kurucu'])
+import {
+  loadPlansById,
+  planHasManualCalorie,
+  planHasPhotoCalorie,
+  isOneTimePlanId,
+  isLegacyPaidPlanId,
+} from './_planEntitlements.js'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
 function isPaidMembership(id) {
-  return PAID.has(id)
+  if (!id || id === 'free') return false
+  return isLegacyPaidPlanId(id) || id.length > 0
 }
 
-function isOneTimePlan(planId) {
-  return planId === 'doktor'
-}
-
-function isPackageEntryActive(pkg, now = today()) {
+function isPackageEntryActive(pkg, plan = null, now = today()) {
   if (!pkg || pkg.status !== 'active') return false
-  if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') return true
+  if (isOneTimePlanId(pkg.planId, plan) || pkg.packageConfig?.billingType === 'one_time') return true
   if (!pkg.expiresAt) return true
   return pkg.expiresAt >= now
 }
@@ -37,19 +37,25 @@ function activePlanIdsFromRow(row) {
     active = [{
       planId: membership,
       status: 'active',
-      expiresAt: isOneTimePlan(membership) ? null : (data.premiumExpiresAt || null),
+      expiresAt: membership === 'doktor' ? null : (data.premiumExpiresAt || null),
+      packageConfig: data.packageConfig || null,
     }]
   }
-  const ids = active.filter((p) => isPackageEntryActive(p)).map((p) => p.planId).filter(Boolean)
+  const ids = active
+    .filter((p) => isPackageEntryActive(p))
+    .map((p) => p.planId)
+    .filter(Boolean)
   return ids.length ? ids : [membership || 'free']
 }
 
-export function memberRowHasManualCalorieAccess(row) {
-  return activePlanIdsFromRow(row).some((id) => !MANUAL_CALORIE_EXCLUDE.has(id))
+export async function memberRowHasManualCalorieAccess(row, plansById = null) {
+  const ids = activePlanIdsFromRow(row)
+  return ids.some((id) => planHasManualCalorie(id, plansById?.get(id) || null))
 }
 
-export function memberRowHasPhotoCalorieAccess(row) {
-  return activePlanIdsFromRow(row).some((id) => PHOTO_CALORIE_PLANS.has(id))
+export async function memberRowHasPhotoCalorieAccess(row, plansById = null) {
+  const ids = activePlanIdsFromRow(row)
+  return ids.some((id) => planHasPhotoCalorie(id, plansById?.get(id) || null))
 }
 
 /** @returns {{ ok: true, row } | { ok: false, status: number, error: string }} */
@@ -75,9 +81,10 @@ export async function requireMemberCalorieAccess(userId, { photo = false } = {})
     return { ok: false, status: 403, error: 'Üye kaydı bulunamadı.' }
   }
 
+  const plansById = await loadPlansById(admin)
   const allowed = photo
-    ? memberRowHasPhotoCalorieAccess(data)
-    : memberRowHasManualCalorieAccess(data)
+    ? await memberRowHasPhotoCalorieAccess(data, plansById)
+    : await memberRowHasManualCalorieAccess(data, plansById)
 
   if (!allowed) {
     return {

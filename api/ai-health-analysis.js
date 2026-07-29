@@ -1,6 +1,9 @@
 /**
- * Staff-only sağlık skoru + brief (GPT-5.4).
+ * Sağlık skoru + staffBrief (GPT-5.4).
  * Program / diyet listesi üretmez.
+ *
+ * Erişim: aktif ücretli üyelik veya 48s ücretsiz deneme (yalnızca ilk analiz).
+ * force yeniden analiz: yalnızca ücretli.
  *
  * POST body:
  * - profile, categorySummaries — üye kendi analizi
@@ -22,7 +25,7 @@ import { setCorsHeaders, handleOptions, requireAuth, getAdminEmail } from './_gu
 import { checkAiDailyQuota } from './_aiQuota.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
-import { isPaidMembership } from './_memberPackages.js'
+import { isPaidMembership, isFreeTrialActive } from './_memberPackages.js'
 
 export const config = {
   maxDuration: 60,
@@ -135,10 +138,21 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: 'Üye bulunamadı' })
     }
 
-    if (!isPaidMembership(memberRow.membership)) {
+    const paid = isPaidMembership(memberRow.membership)
+    const trialActive = !paid && isFreeTrialActive(memberRow)
+
+    if (!paid && !trialActive) {
       return res.status(403).json({
         ok: false,
-        error: 'Sağlık AI analizi yalnızca aktif ücretli üyelikte kullanılabilir',
+        error: 'Sağlık AI analizi yalnızca aktif ücretli üyelikte veya 48 saatlik denemede kullanılabilir',
+      })
+    }
+
+    // Personel force / yeniden analiz yalnızca ücretli üyelikte
+    if (force && !paid) {
+      return res.status(403).json({
+        ok: false,
+        error: 'Yeniden analiz yalnızca aktif ücretli üyelikte kullanılabilir',
       })
     }
 
@@ -148,6 +162,18 @@ export default async function handler(req, res) {
     }
 
     const dbProfile = profileFromMemberRow(memberRow)
+    const existingAnalysis = dbProfile.healthAnalysis
+
+    // Denemede yalnızca ilk (eksik) analiz — tamamlanmış analiz varsa engelle
+    if (trialActive && isCompleteHealthAnalysis(existingAnalysis)) {
+      return res.status(409).json({
+        ok: false,
+        error: 'Deneme süresinde sağlık analizi yalnızca bir kez üretilir',
+        unchanged: true,
+        force,
+      })
+    }
+
     const clientProfile = body.profile && typeof body.profile === 'object' ? body.profile : {}
     const profile = {
       age: clientProfile.age ?? dbProfile.age,
@@ -168,7 +194,6 @@ export default async function handler(req, res) {
       healthTest: dbProfile.healthTest,
     })
 
-    const existingAnalysis = dbProfile.healthAnalysis
     if (
       isCompleteHealthAnalysis(existingAnalysis)
       && existingAnalysis.sourceFingerprint

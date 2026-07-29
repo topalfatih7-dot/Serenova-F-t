@@ -10,20 +10,22 @@ import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { needsInitialHealthAnalysis } from '../services/healthScoreAnalysis'
 
 export default function HealthTestPage() {
-  const { user, packageConfig, updateProfile, isUnpaidMember } = useApp()
+  const { user, packageConfig, updateProfile, isUnpaidMember, isFreeTrialActive } = useApp()
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
   const { analysis, loading: analysisLoading } = useHealthAnalysisSync()
   const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
+  const saveOnly = isUnpaidMember && !isFreeTrialActive
+  const analysisUnlocked = !saveOnly
 
   const handleConsentSave = useCallback(async ({ healthAck, disclaimer }) => {
     setConsentSaving(true)
     try {
       await updateProfile({ healthAck, disclaimer })
       toast(
-        isUnpaidMember
-          ? 'Onaylar kaydedildi. Sağlık testine başlayabilirsiniz.'
-          : 'Onaylar kaydedildi. Analize başlayabilirsiniz.',
+        analysisUnlocked
+          ? 'Onaylar kaydedildi. Analize başlayabilirsiniz.'
+          : 'Onaylar kaydedildi. Sağlık testine başlayabilirsiniz.',
         'success',
       )
     } catch (err) {
@@ -31,7 +33,7 @@ export default function HealthTestPage() {
     } finally {
       setConsentSaving(false)
     }
-  }, [updateProfile, toast, isUnpaidMember])
+  }, [updateProfile, toast, analysisUnlocked])
 
   if (!user?.id) return <Navigate to="/login" replace />
 
@@ -43,12 +45,12 @@ export default function HealthTestPage() {
         title="Kişisel Sağlık Analizi"
         subtitle={
           needsConsent
-            ? (isUnpaidMember
-              ? 'Teste başlamadan önce onayları işaretleyin'
-              : 'Analize başlamadan önce onayları işaretleyin')
-            : isUnpaidMember
-              ? 'Her kategoriyi tamamlayın — cevaplar kaydedilir; AI analiz paketle açılır'
-              : 'Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz'
+            ? (analysisUnlocked
+              ? 'Analize başlamadan önce onayları işaretleyin'
+              : 'Teste başlamadan önce onayları işaretleyin')
+            : analysisUnlocked
+              ? 'Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz'
+              : 'Her kategoriyi tamamlayın — cevaplar kaydedilir; AI analiz paketle açılır'
         }
         icon={HeartPulse}
         accent="brand"
@@ -65,7 +67,7 @@ export default function HealthTestPage() {
         profile={user}
         analysisReady={analysisReady}
         analysisLoading={analysisLoading}
-        saveOnly={isUnpaidMember}
+        saveOnly={saveOnly}
       />
     </PanelPageShell>
   )

@@ -72,10 +72,12 @@ const DOKTOR_PACKAGE_CONFIG = {
   addOns: [],
 }
 
-/** Kod tabanındaki paket tanımları (membershipPlans.js ile uyumlu) — satılan paketler */
+/** Seed / eksik plan insert — admin marketing alanlarını ezmez */
 const ACTIVE_PLANS = [
   {
     id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    billing_type: 'recurring',
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
     features: [
       { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -96,6 +98,8 @@ const ACTIVE_PLANS = [
   },
   {
     id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald',
+    billing_type: 'recurring',
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
     features: [
       { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -116,6 +120,8 @@ const ACTIVE_PLANS = [
   },
   {
     id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    billing_type: 'recurring',
+    entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -135,6 +141,8 @@ const ACTIVE_PLANS = [
   },
   {
     id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue',
+    billing_type: 'recurring',
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -154,6 +162,8 @@ const ACTIVE_PLANS = [
   },
   {
     id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'teal',
+    billing_type: 'one_time',
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, photoCalorie: false, manualCalorie: false, fullVideo: false },
     features: [
       { text: '1 Online Doktor Görüşmesi', included: true },
       { text: 'Görüntülü Görüşme', included: true },
@@ -164,6 +174,8 @@ const ACTIVE_PLANS = [
   },
   {
     id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'brand',
+    billing_type: 'recurring',
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
       { text: 'Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -187,29 +199,79 @@ const ACTIVE_PLANS = [
   },
 ]
 
-async function upsertPlan(plan) {
-  const row = {
-    id: plan.id,
-    name: plan.name,
-    price: plan.price,
-    period: plan.period,
-    is_active: true,
-    badge: plan.badge,
-    features: plan.features,
-    limits: plan.limits,
-    pricing_tiers: plan.pricing_tiers,
-    color: plan.color,
-    sort_order: PLAN_SORT[plan.id] ?? 99,
-    updated_at: new Date().toISOString(),
+function entitlementsEmpty(ent) {
+  if (ent == null) return true
+  if (typeof ent === 'object' && !Array.isArray(ent) && Object.keys(ent).length === 0) return true
+  return false
+}
+
+/** Yalnızca yoksa insert — mevcut admin düzenlemelerini ezmez */
+async function ensurePlan(plan) {
+  const { data: existing, error: selErr } = await supabase
+    .from('plans')
+    .select('id, entitlements, is_sellable, billing_type')
+    .eq('id', plan.id)
+    .maybeSingle()
+  if (selErr) throw new Error(`plans.${plan.id} select: ${selErr.message}`)
+
+  if (!existing) {
+    const row = {
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      period: plan.period,
+      is_active: true,
+      is_sellable: true,
+      badge: plan.badge,
+      features: plan.features,
+      limits: plan.limits,
+      pricing_tiers: plan.pricing_tiers,
+      color: plan.color,
+      billing_type: plan.billing_type || 'recurring',
+      entitlements: plan.entitlements || {},
+      sort_order: PLAN_SORT[plan.id] ?? 99,
+      updated_at: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('plans').insert(row)
+    if (error) throw new Error(`plans.${plan.id} insert: ${error.message}`)
+    console.log(`  ✓ plan eklendi: ${plan.id}`)
+    return
   }
-  const { error } = await supabase.from('plans').upsert(row, { onConflict: 'id' })
-  if (error) throw new Error(`plans.${plan.id}: ${error.message}`)
-  console.log(`  ✓ plan: ${plan.id} (sort ${row.sort_order})`)
+
+  // Mevcut satır: yalnızca boş entitlements / eksik sellable bayraklarını doldur
+  const patch = { updated_at: new Date().toISOString() }
+  let need = false
+  if (entitlementsEmpty(existing.entitlements) && plan.entitlements) {
+    patch.entitlements = plan.entitlements
+    need = true
+  }
+  if (existing.is_sellable !== true) {
+    patch.is_sellable = true
+    need = true
+  }
+  if (!existing.billing_type && plan.billing_type) {
+    patch.billing_type = plan.billing_type
+    need = true
+  } else if (plan.id === 'doktor' && existing.billing_type !== 'one_time') {
+    patch.billing_type = 'one_time'
+    need = true
+  }
+  if (need) {
+    const { error } = await supabase.from('plans').update(patch).eq('id', plan.id)
+    if (error) throw new Error(`plans.${plan.id} patch: ${error.message}`)
+    console.log(`  ✓ plan tamamlandı (entitlements/sellable): ${plan.id}`)
+  } else {
+    console.log(`  · plan korundu (admin): ${plan.id}`)
+  }
 }
 
 async function deactivateLegacyPlans() {
   for (const id of LEGACY_INACTIVE) {
-    const { error } = await supabase.from('plans').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id)
+    const { error } = await supabase.from('plans').update({
+      is_active: false,
+      is_sellable: false,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
     if (error) console.warn(`  ⚠ pasif: ${id} — ${error.message}`)
     else console.log(`  ✓ pasif: ${id}`)
   }
@@ -291,29 +353,33 @@ async function runPendingSqlMigrations() {
 }
 
 async function syncPlans() {
-  console.log('Plan senkronu…')
-  for (const plan of ACTIVE_PLANS) await upsertPlan(plan)
+  console.log('Plan senkronu (admin-safe: yoksa insert / boş entitlements doldur)…')
+  for (const plan of ACTIVE_PLANS) await ensurePlan(plan)
   await deactivateLegacyPlans()
   await migrateKurucuMembers()
 }
 
 async function verify() {
-  const { data, error } = await supabase.from('plans').select('id, name, sort_order, is_active').order('sort_order')
+  const { data, error } = await supabase
+    .from('plans')
+    .select('id, name, sort_order, is_active, is_sellable, billing_type')
+    .order('sort_order')
   if (error) throw error
-  console.log('\nAktif planlar (DB):')
-  for (const p of data.filter((r) => r.is_active)) {
-    console.log(`  ${p.sort_order}. ${p.id} — ${p.name}`)
+  console.log('\nSatılabilir planlar (DB):')
+  for (const p of (data || []).filter((r) => r.is_active && r.is_sellable)) {
+    console.log(`  ${p.sort_order}. ${p.id} — ${p.name} (${p.billing_type || 'recurring'})`)
   }
 }
 
 async function main() {
   console.log('Supabase migration başlıyor…\n')
-  await syncPlans()
+  // Önce şema (yeni kolonlar), sonra plan seed — admin alanları ezilmez
   try {
     await runPendingSqlMigrations()
   } catch (e) {
     console.warn('SQL migration uyarısı:', e.message)
   }
+  await syncPlans()
   await verify()
   console.log('\nTamamlandı.')
 }
