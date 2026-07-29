@@ -191,11 +191,6 @@ export function normalizeHealthTestForAnalysis(ht) {
   return n
 }
 
-/** @deprecated Paket artık bölümleri kilitlemez; geriye uyumluluk için boş bağlam. */
-export function getHealthPackageContext(_packageConfig = {}) {
-  return { hasCoach: true, hasDietitian: true }
-}
-
 /** Yalnızca cinsiyet özel bölümleri filtreler (women / men / diet_women). */
 function sectionApplies(section, gender) {
   if (section.genderOnly && section.genderOnly !== gender) return false

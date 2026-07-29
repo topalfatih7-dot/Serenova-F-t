@@ -16,8 +16,8 @@ export default function VideoJoinLink({
 }) {
   if (!session || session.status !== 'scheduled') return null
 
-  const roomAccess = canAccessCallRoom(session)
-  const joinCheck = canJoinSession(session)
+  const roomAccess = canAccessCallRoom(session, new Date(), sessionType)
+  const joinCheck = canJoinSession(session, new Date(), sessionType)
   const path = audience === 'staff'
     ? staffCallPath(sessionType, session.id)
     : memberCallPath(sessionType, session.id)

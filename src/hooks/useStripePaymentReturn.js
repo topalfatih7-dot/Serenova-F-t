@@ -6,6 +6,7 @@ import {
   markStripePaymentGrace,
 } from '../utils/stripePaymentGrace'
 import { findStripePaymentBySession } from '../services/supabaseDb'
+import { trackGa4Event } from '../utils/ga4Loader'
 
 const POLL_DELAYS_MS = [400, 800, 1200, 1800, 2500, 3500, 5000, 7000]
 
@@ -29,6 +30,10 @@ export default function useStripePaymentReturn(refresh, options = {}) {
     markStripePaymentGrace()
     const sessionId = searchParams.get('session_id')
     toast(successMessage, 'success')
+    trackGa4Event('purchase', {
+      transaction_id: sessionId || undefined,
+      currency: 'TRY',
+    })
 
     const next = new URLSearchParams(searchParams)
     next.delete('payment')

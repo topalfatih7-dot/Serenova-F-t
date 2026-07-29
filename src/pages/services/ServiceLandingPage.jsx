@@ -87,7 +87,7 @@ const WHY_BY_PATH = {
     {
       icon: CalendarCheck,
       title: 'Kişiye özel antrenman programı',
-      text: 'Programınız panelde kalır; egzersiz kütüphanesiyle teknik netleşir.',
+      text: 'Programınız panelde kalır; listedeki hareket videolarıyla teknik netleşir.',
       accent: 'from-sage-500 to-sage-700',
       card: 'border-sage-200/70 bg-gradient-to-br from-sage-50 via-white to-white',
     },
@@ -303,7 +303,7 @@ export default function ServiceLandingPage({ path }) {
                   <h2 className="section-title mt-4 text-left">{section.h2}</h2>
                   <p className="section-subtitle mt-3 max-w-xl text-left text-base sm:text-lg">
                     {isCoach
-                      ? 'Kayıttan ilk koç görüşmesine kadar net adımlar — program, kütüphane ve video seansları tek yerde.'
+                      ? 'Kayıttan ilk koç görüşmesine kadar net adımlar — program, hareket videoları ve video seansları tek yerde.'
                       : 'Kayıttan ilk görüşmeye kadar net adımlar — panel ve video seansları tek yerde.'}
                   </p>
                 </motion.div>
@@ -409,7 +409,7 @@ export default function ServiceLandingPage({ path }) {
             <p className="section-subtitle mt-3 max-w-xl text-left text-base sm:text-lg">
               {isCoach ? (
                 <>
-                  Tek seferlik PDF veya mesaj listesi değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, antrenman programı ve kütüphane tek sistemde.
+                  Tek seferlik PDF veya mesaj listesi değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, antrenman programı ve hareket videoları tek sistemde.
                 </>
               ) : (
                 <>

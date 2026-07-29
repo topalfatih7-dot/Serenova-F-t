@@ -27,6 +27,7 @@ import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
 import { startStripeCheckout } from '../services/stripePayment'
 import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
+import { trackGa4Event } from '../utils/ga4Loader'
 const STEPS = ['Hesap', 'Üyelik']
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
@@ -421,6 +422,9 @@ export default function OnboardingPage() {
         setSubmitting(false)
         return
       }
+      trackGa4Event('sign_up', { method: 'email', plan: data.membership, trial: false })
+    } else {
+      trackGa4Event('sign_up', { method: 'google', plan: data.membership, trial: false })
     }
 
     const pending = await savePendingRegistrationMetadata(profile, data.membership, durationMonths)
@@ -469,6 +473,7 @@ export default function OnboardingPage() {
     setWelcomePaid(false)
     setWelcomeOpen(true)
     setSubmitting(false)
+    trackGa4Event('sign_up', { method: 'email', plan: 'free', trial: true })
   }
 
   const finish = () => {

@@ -117,11 +117,6 @@ export function shouldAttemptAutoplay(autoPlayProp = true) {
   return true
 }
 
-/** @deprecated use shouldAttemptAutoplay — geriye uyumluluk */
-export function shouldAutoplayExerciseVideo() {
-  return shouldAttemptAutoplay(true)
-}
-
 /** iOS → metadata; saveData → none; masaüstü autoplay → auto. */
 export function exerciseVideoPreload(autoPlay) {
   if (prefersSaveData()) return 'none'

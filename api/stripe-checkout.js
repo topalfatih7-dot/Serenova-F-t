@@ -268,30 +268,44 @@ export default async function handler(req, res) {
       flow,
     }
     if (checkoutEmail) metadata.email = checkoutEmail
+
+    // recurring plan → Stripe Subscription (otomatik yenileme); doktor → tek seferlik payment
+    const useSubscription = !oneTime
+    const productName = oneTime ? planName : `${planName} (${durationLabel})`
+    const productDescription = oneTime
+      ? `${planName} — 1 online doktor görüşmesi`
+      : `${planName} — ${durationLabel} üyelik · süre sonunda otomatik yenilenir`
+
+    const priceData = {
+      currency: CURRENCY,
+      unit_amount: toMinorUnits(planPrice),
+      product_data: {
+        name: productName,
+        description: productDescription,
+      },
+    }
+    if (useSubscription) {
+      priceData.recurring = {
+        interval: 'month',
+        interval_count: durationMonths,
+      }
+    }
+
     const sessionParams = {
-      mode: 'payment',
+      mode: useSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],
       client_reference_id: user.id,
       customer: customerId,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: CURRENCY,
-            unit_amount: toMinorUnits(planPrice),
-            product_data: {
-              name: oneTime ? planName : `${planName} (${durationLabel})`,
-              description: oneTime
-                ? `${planName} — 1 online doktor görüşmesi`
-                : `${planName} — ${durationLabel} üyelik`,
-            },
-          },
-        },
-      ],
+      line_items: [{ quantity: 1, price_data: priceData }],
       metadata,
-      payment_intent_data: { metadata },
       success_url: `${origin}${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${cancelPath}?payment=cancelled`,
+    }
+
+    if (useSubscription) {
+      sessionParams.subscription_data = { metadata }
+    } else {
+      sessionParams.payment_intent_data = { metadata }
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams)

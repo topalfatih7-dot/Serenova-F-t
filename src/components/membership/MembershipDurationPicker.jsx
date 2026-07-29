@@ -25,7 +25,10 @@ export default function MembershipDurationPicker({ planId, value, onChange }) {
     >
       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-cream-800/55">
         <Sparkles className="h-3.5 w-3.5 text-sage-500" />
-        Paket süresi — ne kadar süreyle devam etmek istersiniz?
+        Paket süresi — süre sonunda otomatik yenilenir
+      </p>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-cream-800/50">
+        Kartınızdan seçtiğiniz dönem tutarı tahsil edilir; iptal için Ödeme Yönetimi → Stripe Portal.
       </p>
       {showSixMonthHint && (
         <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-medium leading-relaxed text-amber-900 ring-1 ring-amber-100">

@@ -1,4 +1,4 @@
-import { VIDEO_CALL_CONFIG } from '../config/videoCall'
+import { getJoinWindowMinutes } from '../config/videoCall'
 import { formatDurationTr } from '../utils/formatDuration'
 import {
   assignedKeyForRole,
@@ -7,12 +7,14 @@ import {
   sessionsKeyForRole,
 } from '../utils/staffRoles'
 
-export function getSessionTiming(session, now = new Date()) {
+export function getSessionTiming(session, now = new Date(), sessionType = 'coach') {
+  const type = normalizeSessionType(sessionType)
   const start = new Date(session?.date)
   const durationMin = Number(session?.duration) || 30
-  const windowStart = new Date(start.getTime() - VIDEO_CALL_CONFIG.joinMinutesBefore * 60_000)
+  const { before, after } = getJoinWindowMinutes(type)
+  const windowStart = new Date(start.getTime() - before * 60_000)
   const sessionEnd = new Date(start.getTime() + durationMin * 60_000)
-  const windowEnd = new Date(start.getTime() + (durationMin + VIDEO_CALL_CONFIG.joinMinutesAfter) * 60_000)
+  const windowEnd = new Date(start.getTime() + (durationMin + after) * 60_000)
 
   const untilWindowOpensMs = Math.max(0, windowStart - now)
   const untilStartMs = Math.max(0, start - now)
@@ -24,6 +26,8 @@ export function getSessionTiming(session, now = new Date()) {
     sessionEnd,
     windowStart,
     windowEnd,
+    joinMinutesBefore: before,
+    joinMinutesAfter: after,
     isExpired: now > windowEnd,
     isBeforeWindow: now < windowStart,
     isInJoinWindow: now >= windowStart && now <= windowEnd,
@@ -36,7 +40,7 @@ export function getSessionTiming(session, now = new Date()) {
 }
 
 /** Görüşme odası sayfasına erişilebilir mi? (Randevu planlı ve süresi dolmamış) */
-export function canAccessCallRoom(session, now = new Date()) {
+export function canAccessCallRoom(session, now = new Date(), sessionType = 'coach') {
   if (!session || session.status !== 'scheduled') {
     return { ok: false, reason: 'Bu randevu aktif değil veya iptal edilmiş.' }
   }
@@ -45,7 +49,7 @@ export function canAccessCallRoom(session, now = new Date()) {
     return { ok: false, reason: 'Randevu tarihi geçersiz.' }
   }
 
-  const timing = getSessionTiming(session, now)
+  const timing = getSessionTiming(session, now, sessionType)
   if (timing.isExpired) {
     return { ok: false, reason: 'Görüşme süresi doldu.', timing }
   }
@@ -54,8 +58,8 @@ export function canAccessCallRoom(session, now = new Date()) {
 }
 
 /** Canlı görüşmeye katılım durumu ve kalan süre mesajları */
-export function canJoinSession(session, now = new Date()) {
-  const access = canAccessCallRoom(session, now)
+export function canJoinSession(session, now = new Date(), sessionType = 'coach') {
+  const access = canAccessCallRoom(session, now, sessionType)
   if (!access.ok) return access
 
   const { timing } = access
@@ -118,7 +122,6 @@ export function findMemberSession(
   sessionId,
 ) {
   const type = normalizeSessionType(sessionType)
-  const key = SESSION_LIST_KEYS[type]
   const list = type === 'coach'
     ? coachSessions
     : type === 'dietitian'
@@ -126,7 +129,7 @@ export function findMemberSession(
       : doctorSessions
   const session = (list || []).find((s) => s.id === sessionId)
   if (!session) return null
-  return { session, sessionType: type, key }
+  return { session, sessionType: type, key: SESSION_LIST_KEYS[type] }
 }
 
 /** Koç / diyetisyen / doktor için danışan oturumu */
@@ -166,8 +169,8 @@ export function resolveCallContext({
     const staffRole = normalizeStaffRole(staffUser?.role)
     const found = findStaffSession(platformMembers, staffUser?.id, staffRole, type, sessionId)
     if (!found) return { error: 'Randevu bulunamadı veya bu görüşmeye erişiminiz yok.' }
-    const joinCheck = canJoinSession(found.session)
-    const roomAccess = canAccessCallRoom(found.session)
+    const joinCheck = canJoinSession(found.session, new Date(), type)
+    const roomAccess = canAccessCallRoom(found.session, new Date(), type)
     return {
       session: found.session,
       sessionType: type,
@@ -187,8 +190,8 @@ export function resolveCallContext({
     sessionId,
   )
   if (!found) return { error: 'Randevu bulunamadı.' }
-  const joinCheck = canJoinSession(found.session)
-  const roomAccess = canAccessCallRoom(found.session)
+  const joinCheck = canJoinSession(found.session, new Date(), type)
+  const roomAccess = canAccessCallRoom(found.session, new Date(), type)
   return {
     session: found.session,
     sessionType: type,

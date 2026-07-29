@@ -6,6 +6,7 @@ import {
   needsInitialHealthAnalysis,
   resolveHealthScoreAnalysis,
 } from '../services/healthScoreAnalysis'
+import { trackGa4Event } from '../utils/ga4Loader'
 
 /**
  * Kişisel sağlık analizi tamamlandığında skor + staffBrief üretir (bir kez).
@@ -55,6 +56,12 @@ export function useHealthAnalysisSync() {
       const healthScoreHistory = appendHealthScoreHistory(user.healthScoreHistory, next)
       await updateProfile({ healthAnalysis: next, healthScoreHistory })
       lastKeyRef.current = key
+      if (!analysis?.overallScore) {
+        trackGa4Event('health_test_complete', {
+          has_scores: next?.overallScore != null,
+          trial: Boolean(isFreeTrialActive && isUnpaidMember),
+        })
+      }
       return next
     } catch (e) {
       setError(e?.message || 'Skor hesaplanamadı')
@@ -63,7 +70,7 @@ export function useHealthAnalysisSync() {
       runningRef.current = false
       setLoading(false)
     }
-  }, [user, packageConfig, complete, analysis, updateProfile, canRunAnalysis])
+  }, [user, packageConfig, complete, analysis, updateProfile, canRunAnalysis, isFreeTrialActive, isUnpaidMember])
 
   useEffect(() => {
     if (!canRunAnalysis) return

@@ -24,6 +24,8 @@ export const PUBLIC_HYDRATE_PASS_THROUGH = [
   '/kvkk',
   '/privacy',
   '/terms',
+  '/online-diyetisyen',
+  '/online-kocluk',
 ]
 
 export function isAuthFastPath(pathname = '') {

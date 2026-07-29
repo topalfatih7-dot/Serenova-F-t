@@ -41,3 +41,21 @@ Cloudflare kullanılıyorsa aynı path’lere rate limit rule ekleyin.
 3. `ai_usage_logs` anormal kullanıcı trafiği.
 4. Auth log’larında brute-force spike.
 5. Bundle’da `TELEGRAM_*` / `SERVICE_ROLE` / `TURNSTILE_SECRET` sızıntısı olmadığını doğrula (`VITE_` prefix yok).
+
+## Stripe webhook (manuel Dashboard)
+
+Subscription yenileme için endpoint’te şu event’ler **açık olmalı** (kod zaten işliyor):
+
+1. `checkout.session.completed` / `checkout.session.async_payment_succeeded` (mevcut)
+2. `invoice.paid` — dönem yenileme (`renewMembership`)
+3. `customer.subscription.deleted` — `stripeSubscriptionId` temizliği
+
+Dashboard → Developers → Webhooks → endpoint → Events to send.
+
+## Bilinçli advisor istisnaları (2026-07-29)
+
+- `members_staff_safe`: `security_invoker = true` (iletişim strip + `staff_manages_member`). Eski SECURITY DEFINER ERROR kapatıldı.
+- `is_admin()` → `anon` EXECUTE: RLS policy değerlendirmesi için gerekli; fonksiyon yalnızca admin e-postasını döner.
+- `phone_in_use` → `anon`: kayıt/telefon doğrulama.
+- `get_online_stats` → `anon`: landing canlı sayaç.
+- `admin_*` / `append_*` / `book_staff_session` vb. → `authenticated` EXECUTE: fonksiyon gövdesinde `is_admin()` / staff check vardır; revoke etme.

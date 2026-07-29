@@ -131,7 +131,7 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
     startedAt,
     expiresAt: oneTime
       ? null
-      : computePremiumExpiresAt(startedAt, getDurationMonths(packageConfig)),
+      : (meta.expiresAt || computePremiumExpiresAt(startedAt, getDurationMonths(packageConfig))),
     status: 'active',
     purchasedAt: meta.purchasedAt || new Date().toISOString(),
     price: meta.price || 0,

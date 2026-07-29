@@ -11,6 +11,7 @@ import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModa
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import HealthScoreCard from '../components/dashboard/HealthScoreCard'
+import ActivationChecklist from '../components/dashboard/ActivationChecklist'
 import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
@@ -55,7 +56,7 @@ export default function DashboardPage() {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, canAccessMemberDashboard, isFreeTrialActive,
     freeTrialExpiresAt, premiumExpiresAt, refresh,
-    posts,
+    posts, packageConfig,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const [nowMs, setNowMs] = useState(() => Date.now())
@@ -156,6 +157,17 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+
+      <ActivationChecklist
+        user={user}
+        membership={membership}
+        packageConfig={packageConfig}
+        myPrograms={myPrograms}
+        coachSessions={coachSessions}
+        dietitianSessions={dietitianSessions}
+        doctorSessions={user?.doctorSessions}
+        isFreeTrialActive={isFreeTrialActive}
+      />
 
       <div className="welcome-banner">
         <div className="welcome-banner-photo" aria-hidden>

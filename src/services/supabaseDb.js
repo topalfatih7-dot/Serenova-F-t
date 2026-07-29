@@ -8,8 +8,9 @@ import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
   normalizeEntitlements, isValidPlanId, setPlanCatalog,
   sanitizeStaffForPackage, computeFreeTrialExpiresAt,
+  packageIncludesCoach, packageIncludesDietitian,
 } from '../data/membershipPlans'
-import { applyStaffAssignments } from './staffAssignment'
+import { assignStaffOnly } from './staffAssignment'
 import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths } from './premiumMembership'
 import { notifyTelegram } from './telegramNotify'
 import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
@@ -2387,20 +2388,20 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
     draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   }
 
-  const assignments = applyStaffAssignments(draft, staffList, members, {
+  const staffOnly = assignStaffOnly(draft, staffList, members, {
     autoAssign: Boolean(options.autoAssign),
     manualCoachId: draft.assignedCoachId,
     manualDietitianId: draft.assignedDietitianId,
-    coachSessions: draft.coachSessions,
-    dietitianSessions: draft.dietitianSessions,
   })
+  const needCoach = packageIncludesCoach(draft.packageConfig || {})
+  const needDiet = packageIncludesDietitian(draft.packageConfig || {})
 
   let updated = {
     ...draft,
-    assignedCoachId: assignments.assignedCoachId,
-    assignedDietitianId: assignments.assignedDietitianId,
-    coachSessions: assignments.coachSessions,
-    dietitianSessions: assignments.dietitianSessions,
+    assignedCoachId: staffOnly.assignedCoachId,
+    assignedDietitianId: staffOnly.assignedDietitianId,
+    coachSessions: needCoach ? (draft.coachSessions ?? []) : [],
+    dietitianSessions: needDiet ? (draft.dietitianSessions ?? []) : [],
     lastActiveAt: today(),
   }
   updated = syncMembershipExpiryStatus(updated)

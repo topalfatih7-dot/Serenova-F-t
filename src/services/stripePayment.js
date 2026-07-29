@@ -31,6 +31,16 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
     return { success: false, error: String(e?.message || e) }
   }
 
+  try {
+    const { trackGa4Event } = await import('../utils/ga4Loader')
+    trackGa4Event('begin_checkout', {
+      currency: 'TRY',
+      items: [{ item_id: planId, item_name: planId, quantity: 1 }],
+      flow,
+      duration_months: durationMonths,
+    })
+  } catch { /* GA opsiyonel */ }
+
   window.location.href = json.url
   return { success: true }
 }

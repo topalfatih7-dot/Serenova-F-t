@@ -182,6 +182,9 @@ async function activateMembership(admin, meta, session) {
     premiumStartedAt: member.premiumStartedAt || started,
     premiumExpiresAt: oneTime ? member.premiumExpiresAt : computeExpiry(started, durationMonths),
     lastActiveAt: started,
+    ...(session.subscription
+      ? { stripeSubscriptionId: String(session.subscription) }
+      : {}),
   })
 
   draft = sanitizeStaffForPackage(draft.packageConfig, draft)
@@ -216,6 +219,7 @@ async function activateMembership(admin, meta, session) {
       provider: 'stripe',
       stripeSessionId: sessionId,
       stripePaymentIntent: session.payment_intent || null,
+      stripeSubscriptionId: session.subscription ? String(session.subscription) : null,
       createdAt: nowISO(),
     },
   })
@@ -225,6 +229,115 @@ async function activateMembership(admin, meta, session) {
     data: {
       type: 'payment',
       text: `${memberRow.name || 'Üye'} ${planId} planı (${durationLabel}) için ödeme tamamladı (${amount.toLocaleString('tr-TR')}₺)`,
+      createdAt: nowISO(),
+    },
+  })
+
+  return { ok: true }
+}
+
+/**
+ * Abonelik yenileme (invoice.paid · billing_reason=subscription_cycle).
+ * İlk dönem checkout.session.completed ile işlenir.
+ */
+async function renewMembership(admin, meta, invoice, subscription) {
+  const memberId = meta.memberId
+  const planId = meta.planId
+  if (!memberId || !planId) return { ok: false, error: 'Eksik metadata' }
+
+  const invoiceId = invoice.id
+  const { data: existing } = await admin
+    .from('payments')
+    .select('id')
+    .eq('member_id', memberId)
+    .filter('data->>stripeInvoiceId', 'eq', invoiceId)
+    .maybeSingle()
+  if (existing) return { ok: true, duplicate: true }
+
+  const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
+  if (fetchErr) return { ok: false, error: fetchErr.message }
+  if (!row) return { ok: false, error: 'Üye bulunamadı' }
+
+  const amount = Number(meta.planPrice)
+    || (invoice.amount_paid ? invoice.amount_paid / 100 : 0)
+  const plansById = await loadPlansById(admin)
+  const plan = plansById.get(planId) || null
+  const oneTime = isOneTimePlanId(planId, plan) || isOneTimePlan(planId)
+  if (oneTime) return { ok: true, skipped: true }
+
+  const durationMonths = Number(meta.durationMonths) || 1
+  const data = row.data || {}
+  const member = memberFromRow(row)
+  const packageConfig = await resolveDefaultPackage(admin, planId, durationMonths)
+  const started = today()
+  const baseExpiry = member.premiumExpiresAt && member.premiumExpiresAt > started
+    ? member.premiumExpiresAt
+    : started
+  const newExpiry = computeExpiry(baseExpiry, durationMonths)
+
+  let activePackages = resolvePackagePurchase(
+    migrateLegacyToPackages(member),
+    planId,
+    packageConfig,
+    { price: amount, startedAt: started, expiresAt: newExpiry },
+  )
+
+  let draft = syncMemberPackages({
+    ...member,
+    activePackages,
+    premiumStartedAt: member.premiumStartedAt || started,
+    premiumExpiresAt: newExpiry,
+    lastActiveAt: started,
+    stripeSubscriptionId: subscription?.id
+      || member.stripeSubscriptionId
+      || data.stripeSubscriptionId
+      || null,
+  })
+
+  draft = sanitizeStaffForPackage(draft.packageConfig, draft)
+  const newData = memberDataPayload(draft, data)
+
+  const customerId = typeof invoice.customer === 'string'
+    ? invoice.customer
+    : (invoice.customer?.id || null)
+
+  const { error: updErr } = await admin
+    .from('members')
+    .update({
+      membership: draft.membership,
+      membership_status: draft.membershipStatus || 'active',
+      assigned_coach_id: draft.assignedCoachId || null,
+      assigned_dietitian_id: draft.assignedDietitianId || null,
+      assigned_doctor_id: draft.assignedDoctorId || null,
+      ...(customerId ? { stripe_customer_id: customerId } : {}),
+      data: newData,
+      updated_at: nowISO(),
+    })
+    .eq('id', memberId)
+  if (updErr) return { ok: false, error: updErr.message }
+
+  await admin.from('payments').insert({
+    member_id: memberId,
+    data: {
+      memberName: row.name || '',
+      amount,
+      packageConfig,
+      planId,
+      durationMonths,
+      status: 'completed',
+      provider: 'stripe',
+      stripeInvoiceId: invoiceId,
+      stripeSubscriptionId: subscription?.id || null,
+      createdAt: nowISO(),
+      kind: 'subscription_renewal',
+    },
+  })
+
+  await admin.from('activities').insert({
+    member_id: memberId,
+    data: {
+      type: 'payment',
+      text: `${row.name || 'Üye'} ${planId} aboneliği yenilendi (${durationMonths} ay, ${amount.toLocaleString('tr-TR')}₺)`,
       createdAt: nowISO(),
     },
   })
@@ -323,6 +436,64 @@ export default async function handler(req, res) {
           email: meta.email || pi.receipt_email,
           reason: pi.last_payment_error?.message || 'Kart reddedildi veya ödeme tamamlanamadı.',
         })
+        break
+      }
+      case 'invoice.paid': {
+        const invoice = event.data.object
+        // İlk fatura checkout.session.completed ile işlenir — çift aktivasyon yok
+        if (invoice.billing_reason === 'subscription_create') break
+        if (
+          invoice.billing_reason !== 'subscription_cycle'
+          && invoice.billing_reason !== 'subscription_update'
+        ) break
+
+        const stripeSubId = typeof invoice.subscription === 'string'
+          ? invoice.subscription
+          : invoice.subscription?.id
+        if (!stripeSubId) break
+
+        const subscription = await stripe.subscriptions.retrieve(stripeSubId)
+        const meta = {
+          ...(subscription.metadata || {}),
+          ...(invoice.metadata || {}),
+        }
+        if (!isYeniFormCheckoutMetadata(meta)) break
+
+        const admin = getSupabaseAdmin()
+        const result = await renewMembership(admin, meta, invoice, subscription)
+        if (!result.ok) return res.status(500).json({ ok: false, error: result.error })
+        if (!result.duplicate && !result.skipped) {
+          await notifyPaymentTelegram({
+            ok: true,
+            meta: { ...meta, durationLabel: `${meta.durationMonths || 1} ay · yenileme` },
+            amount: Number(meta.planPrice) || (invoice.amount_paid ? invoice.amount_paid / 100 : 0),
+            email: invoice.customer_email,
+            sessionId: invoice.id,
+          })
+        }
+        break
+      }
+      case 'customer.subscription.deleted': {
+        // Dönem sonunda iptal — expiry cron free'ye indirger; subscription id temizle
+        const subscription = event.data.object
+        const meta = subscription.metadata || {}
+        if (!isYeniFormCheckoutMetadata(meta)) break
+        const admin = getSupabaseAdmin()
+        const { data: row } = await admin
+          .from('members')
+          .select('id, data')
+          .eq('id', meta.memberId)
+          .maybeSingle()
+        if (row) {
+          const data = { ...(row.data || {}) }
+          if (data.stripeSubscriptionId === subscription.id) {
+            delete data.stripeSubscriptionId
+            await admin
+              .from('members')
+              .update({ data, updated_at: nowISO() })
+              .eq('id', row.id)
+          }
+        }
         break
       }
       default:

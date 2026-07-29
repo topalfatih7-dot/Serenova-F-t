@@ -12,19 +12,26 @@ Allow: /blog
 Allow: /team/
 Allow: /corporate
 Allow: /hakkimizda
+Allow: /legal/
 
+Disallow: /login
+Disallow: /forgot-password
 Disallow: /reset-password
+Disallow: /auth/
 Disallow: /admin
 Disallow: /staff
+Disallow: /dashboard
 Disallow: /call
 Disallow: /calendar
 Disallow: /calorie
 Disallow: /schedule
 Disallow: /notifications
+Disallow: /messages
 Disallow: /support
 Disallow: /programs
 Disallow: /library
 Disallow: /profile
+Disallow: /health-test
 Disallow: /api/
 
 Sitemap: https://www.yeniform.com/sitemap.xml

@@ -100,9 +100,13 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
   const months = Number(packageConfig?.durationMonths) || 1
   let expiresAt = null
   if (!oneTime) {
-    const d = new Date(startedAt)
-    d.setMonth(d.getMonth() + months)
-    expiresAt = d.toISOString().split('T')[0]
+    if (meta.expiresAt) {
+      expiresAt = meta.expiresAt
+    } else {
+      const d = new Date(startedAt)
+      d.setMonth(d.getMonth() + months)
+      expiresAt = d.toISOString().split('T')[0]
+    }
   }
   return {
     id: meta.id || `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

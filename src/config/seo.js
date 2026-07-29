@@ -84,11 +84,11 @@ export const STATIC_BRAND_FAQS = [
   },
   {
     q: 'Online diyetisyen hizmeti var mı?',
-    a: 'Evet. Diyet ve VIP paketlerinde ayda 2 online diyetisyen görüşmesi yapılır. Ayrıntılar için yeniform.com/online-diyetisyen sayfasına bakın.',
+    a: 'Evet. Eko Diyet, Diyet ve VIP paketlerinde online diyetisyen desteği vardır (pakete göre seans hakkı değişir). Ayrıntılar: yeniform.com/online-diyetisyen',
   },
   {
     q: 'Online koçluk nasıl çalışır?',
-    a: 'Spor ve VIP paketlerinde ayda 2 video koç görüşmesi ve kişiye özel antrenman programı sunulur. Detay: yeniform.com/online-kocluk',
+    a: 'Eko Spor, Spor ve VIP paketlerinde video koç görüşmesi ve kişiye özel antrenman programı sunulur. Detay: yeniform.com/online-kocluk',
   },
   {
     q: 'Yeni Form sitesine nasıl ulaşırım?',
@@ -96,7 +96,7 @@ export const STATIC_BRAND_FAQS = [
   },
   {
     q: 'Yeni Form ücretsiz mi?',
-    a: 'Kayıt ücretli paketlerle (Diyet, Spor, Doktor, VIP) Stripe üzerinden yapılır. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır. Paket süresi bitince erişim sınırlanır; yenilemek için üyelik sayfasını kullanın.',
+    a: 'Kayıt sonrası 48 saat ücretsiz deneme sunulur; ardından Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP paketlerinden birini Stripe ile seçebilirsiniz. Programlar koç / diyetisyen tarafından hazırlanır. Abonelikleri Stripe Müşteri Portalı üzerinden iptal edebilirsiniz.',
   },
 ]
 

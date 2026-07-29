@@ -9,7 +9,7 @@ import {
 import { useApp } from '../context/AppContext'
 import { useDailyCall } from '../hooks/useDailyCall'
 import {
-  buildRoomUrl, buildRoomName, isVideoCallConfigured, SESSION_TYPE_META, VIDEO_CALL_CONFIG, getDailyToken,
+  buildRoomUrl, isVideoCallConfigured, SESSION_TYPE_META, getDailyToken, getJoinWindowMinutes,
 } from '../config/videoCall'
 import { canJoinSession, resolveCallContext } from '../services/videoCallSession'
 import { reportSessionAttendance } from '../services/sessionAttendanceApi'
@@ -74,23 +74,45 @@ export default function VideoCallPage({ audience = 'member' }) {
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()
   const [meetingToken, setMeetingToken] = useState('')
+  const [tokenError, setTokenError] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const canFetchToken = configured && !context.error && context.roomAccess?.ok
+
+  const liveJoinCheck = context.session
+    ? canJoinSession(context.session, new Date(), context.sessionType || normalizedType)
+    : { ok: false }
+  const canFetchToken = configured && !context.error && context.roomAccess?.ok && liveJoinCheck.ok
 
   useEffect(() => {
-    if (!canFetchToken) return undefined
+    if (!canFetchToken || !sessionId || !context.sessionType) {
+      setMeetingToken('')
+      return undefined
+    }
     let cancelled = false
-    const roomName = buildRoomName(context.sessionType, sessionId)
-    getDailyToken(roomName, context.displayName, audience === 'staff')
-      .then((t) => { if (!cancelled && t) setMeetingToken(t) })
-      .catch(() => {})
+    setTokenError('')
+    getDailyToken(context.sessionType, sessionId, context.displayName)
+      .then((result) => {
+        if (cancelled) return
+        if (result.token) {
+          setMeetingToken(result.token)
+          setTokenError('')
+        } else {
+          setMeetingToken('')
+          setTokenError(result.error || 'Görüşme odasına bağlanılamadı.')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMeetingToken('')
+          setTokenError('Bağlantı hatası. Tekrar deneyin.')
+        }
+      })
     return () => { cancelled = true }
-  }, [canFetchToken, context.sessionType, sessionId, context.displayName, audience])
+  }, [canFetchToken, context.sessionType, sessionId, context.displayName])
 
   const call = useDailyCall({
     roomUrl,
     userName: context.displayName,
-    enabled: canFetchToken,
+    enabled: canFetchToken && Boolean(meetingToken),
     token: canFetchToken ? meetingToken : '',
   })
 
@@ -167,11 +189,12 @@ export default function VideoCallPage({ audience = 'member' }) {
   }
 
   const { session } = context
-  const joinCheck = canJoinSession(session)
+  const joinCheck = liveJoinCheck
+  const joinWindow = getJoinWindowMinutes(context.sessionType || normalizedType)
   const sessionDate = new Date(session.date)
   const remote = call.participants.remote[0]
   const local = call.participants.local
-  const canJoinLive = context.roomAccess?.ok
+  const canJoinLive = Boolean(joinCheck.ok && meetingToken && !tokenError)
 
   const statusBadge = call.isJoined
     ? { dot: 'bg-green-400 animate-pulse', text: 'Canlı' }
@@ -258,6 +281,7 @@ export default function VideoCallPage({ audience = 'member' }) {
               meta={meta}
               roomUrl={roomUrl}
               joinCheck={joinCheck}
+              joinWindow={joinWindow}
               call={call}
             />
           </div>
@@ -282,14 +306,17 @@ export default function VideoCallPage({ audience = 'member' }) {
                 meta={meta}
                 roomUrl={roomUrl}
                 joinCheck={joinCheck}
+                joinWindow={joinWindow}
                 call={call}
               />
             </div>
           )}
         </div>
 
-        {call.error && (
-          <p className="mx-3 mb-2 shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-200 sm:mx-6 sm:text-sm">{call.error}</p>
+        {(call.error || tokenError) && (
+          <p className="mx-3 mb-2 shrink-0 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-200 sm:mx-6 sm:text-sm">
+            {tokenError || call.error}
+          </p>
         )}
       </div>
 
@@ -312,7 +339,7 @@ export default function VideoCallPage({ audience = 'member' }) {
   )
 }
 
-function SessionDetailsPanel({ sessionDate, session, audience, context, meta, roomUrl, joinCheck, call }) {
+function SessionDetailsPanel({ sessionDate, session, audience, context, meta, roomUrl, joinCheck, joinWindow, call }) {
   return (
     <>
       <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm sm:p-4">
@@ -352,7 +379,7 @@ function SessionDetailsPanel({ sessionDate, session, audience, context, meta, ro
           />
         </div>
         <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-          Oda {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesBefore)} önce açılır, randevu bitiminden {formatMinutesTr(VIDEO_CALL_CONFIG.joinMinutesAfter)} sonra kapanır.
+          Oda {formatMinutesTr(joinWindow.before)} önce açılır, randevu bitiminden {formatMinutesTr(joinWindow.after)} sonra kapanır.
         </p>
       </div>
     </>

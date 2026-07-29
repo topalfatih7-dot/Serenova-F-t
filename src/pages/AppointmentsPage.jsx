@@ -4,6 +4,7 @@ import { Dumbbell, Apple, Stethoscope, CheckCircle } from 'lucide-react'
 import MemberScheduleView from '../components/calendar/MemberScheduleView'
 import { coachMonthlyLimit, dietitianMonthlyLimit } from '../components/calendar/memberScheduleLimits'
 import { useApp } from '../context/AppContext'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import {
   packageIncludesCoach,
   packageIncludesDietitian,
@@ -50,6 +51,7 @@ export default function AppointmentsPage() {
     dietitianSessions,
     doctorSessions,
     packageConfig,
+    isUnpaidMember,
   } = useApp()
 
   const activeTab = useMemo(() => {
@@ -59,6 +61,10 @@ export default function AppointmentsPage() {
 
   const setTab = (id) => {
     setSearchParams({ tab: id }, { replace: true })
+  }
+
+  if (isUnpaidMember) {
+    return <UnpaidMemberGate />
   }
 
   return (

@@ -103,7 +103,7 @@ function isoWeekPeriodKey(d = new Date()) {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
 }
 
-async function resolveCaller(admin, user) {
+export async function resolveCaller(admin, user) {
   const email = String(user.email || '').toLowerCase()
   if (email) {
     const { data: staffRow } = await admin
@@ -118,7 +118,7 @@ async function resolveCaller(admin, user) {
   return { kind: 'member', memberId: user.id, userId: user.id }
 }
 
-async function findSessionContext(admin, sessionId, sessionTypeHint, caller) {
+export async function findSessionContext(admin, sessionId, sessionTypeHint, caller) {
   const types = sessionTypeHint && SESSION_KEYS[sessionTypeHint]
     ? [sessionTypeHint]
     : ['coach', 'dietitian', 'doctor']

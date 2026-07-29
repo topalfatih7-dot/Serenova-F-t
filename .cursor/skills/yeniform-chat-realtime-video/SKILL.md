@@ -19,7 +19,7 @@ RLS: member own threads; `staff_manages_member`; admin. Realtime via `useRealtim
 ## Daily video
 
 - Route: `/call/:sessionType/:sessionId` (member) or `/staff/call/...`
-- API: `POST /api/daily-room` — auth required; private room; token ~1h; room exp ~2h; max 4
+- API: `POST /api/daily-room` `{ sessionType, sessionId, userName }` — üye/atanmış staff/admin; join penceresi sektör bazlı (koç 10/20, diyetisyen·doktor 15/30); `is_owner` yalnız staff/admin; token ~1h; room ~2h; max 4
 - Mobile: Daily React Native SDK; camera/mic permissions
 
 ## Push (mobile addition)

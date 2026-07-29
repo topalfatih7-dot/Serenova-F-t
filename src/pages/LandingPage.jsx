@@ -112,7 +112,7 @@ export default function LandingPage() {
               custom={0}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur sm:text-xs"
             >
-              🏋️ Online Koçluk · 🥗 Online Diyetisyen · 🌿 Wellness
+              Online koçluk · Online diyetisyen · Wellness
             </motion.span>
 
             <motion.h1

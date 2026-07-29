@@ -30,7 +30,7 @@
 | App | Vite 8 + React 19 + RR7 + Tailwind 4 · `src/main.jsx` → `App.jsx` |
 | State | `AppContext` dilimleri: `useAuth` / `useData` / `useActions` (+ `useApp`) |
 | DB/Auth/Storage | Supabase · `setup.sql` + `migrations/` |
-| Ödeme | Stripe Checkout + webhook (web). RevenueCat/IAP **bu repoda yok**. |
+| Ödeme | Stripe Checkout **Subscription** (recurring) + one-shot doktor · Portal · webhook. RevenueCat/IAP **bu repoda yok**. |
 | Video | Daily.co · `api/daily-room.js` |
 | AI | Kalori GPT-4o · Staff sağlık GPT-5.4 · Blog/ipucu Gemini flash-lite |
 | Deploy | `vercel.json` SPA rewrite + cron + `sitemap.xml` → `api/sitemap` · build: `vite` + `prerender-seo.mjs` |
@@ -43,7 +43,7 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık:** GSC, admin içerik, yasal metin ince ayar. Denetim Faz 2–3 (paketsiz lock, Portal, hakediş) tamam → `docs/ROADMAP_DENETIM.md`. Faz 4–5 (aktivasyon, auto-renew) bekliyor.
+**Ops açık:** GSC manuel doğrulama ([`docs/OPS_GSC.md`](docs/OPS_GSC.md)); Stripe Dashboard webhook event’leri. **Mobil / Expo ertelendi** (`docs/mobile/` taslak dursun, genişletme yok). Denetim Faz 0–5 + legal/GSC → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Expo app **bu repoda yok**. Handoff spec’ler henüz `docs/mobile/` altında yok — skill’ler hedef yapıyı tanımlar.
 
@@ -112,7 +112,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 - `auth` — signup/login/reset · book-session · session-attendance · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
 - `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry
-- `stripe-checkout` — Checkout session · `action: create-portal-session` (Customer Portal)
+- `stripe-checkout` — Checkout session (recurring → Subscription; doktor → payment) · `action: create-portal-session`
 
 ---
 

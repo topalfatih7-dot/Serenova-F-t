@@ -60,7 +60,7 @@ export const ONLINE_DIYETISYEN = {
       h2: 'Paketler ve fiyat yönü',
       paragraphs: [
         'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin.',
-        'Tek diyetisyen kliniklerinden farkımız: aynı hesapta **antrenman programı**, video kütüphanesi ve isteğe bağlı online koçluk bir arada yönetilir.',
+        'Tek diyetisyen kliniklerinden farkımız: aynı hesapta **antrenman programı**, programınızdaki hareket videoları ve isteğe bağlı online koçluk bir arada yönetilir.',
       ],
     },
   ],
@@ -93,7 +93,7 @@ export const ONLINE_KOCLUK = {
     'online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi, online antrenör',
   h1: 'Online Koçluk ile Size Özel Antrenman Programı',
   lead:
-    'Yeni Form’da online koçluk; PDF program satışı değil — **video görüşme**, kişiye özel antrenman planı, egzersiz kütüphanesi ve panel takibi bir arada. Hedefinize uygun **Spor veya VIP** paketle başlayın.',
+    'Yeni Form’da online koçluk; PDF program satışı değil — **video görüşme**, kişiye özel antrenman planı, programınızdaki egzersiz videoları ve panel takibi bir arada. Hedefinize uygun **Spor veya VIP** paketle başlayın.',
   primaryCta: { to: '/onboarding?plan=spor', label: 'Spor Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/coaches', label: 'Koç kadromuzu inceleyin' },
@@ -105,7 +105,7 @@ export const ONLINE_KOCLUK = {
       h2: 'Online koçluk nedir?',
       paragraphs: [
         '**Online koçluk**, antrenörünüzle aynı salonda olmadan kişiye özel program ve düzenli geri bildirim almanızdır. Yeni Form’da süreç; hedefleriniz, ekipmanınız ve antrenman yerinize (ev veya salon) göre **kişiselleştirilmiş antrenman programı**, ayda planlanan **video görüşmeler** ve panel üzerinden ilerleme takibi şeklinde ilerler.',
-        '“Online spor koçu” veya “uzaktan antrenman” arayanlar için kritik nokta **sürdürülebilir takiptir**. Farkımız, tek seferlik PDF yerine **koçluk platformuyla entegre** bir sistem sunmamızdır: program panelde kalır, hareketler video kütüphanesiyle desteklenir.',
+        '“Online spor koçu” veya “uzaktan antrenman” arayanlar için kritik nokta **sürdürülebilir takiptir**. Farkımız, tek seferlik PDF yerine **koçluk platformuyla entegre** bir sistem sunmamızdır: program panelde kalır, hareketler programınızdaki videolarla desteklenir.',
       ],
     },
     {
@@ -120,8 +120,8 @@ export const ONLINE_KOCLUK = {
           text: 'Spor paketinde ayda 2 online koç görüşmesi vardır. VIP’te aynı hak diyetisyen seanslarıyla birleşir.',
         },
         {
-          title: 'Program ve kütüphane',
-          text: 'Size özel antrenman programınız panele düşer; egzersiz videolarıyla tekniği netleştirirsiniz.',
+          title: 'Program ve hareket videoları',
+          text: 'Size özel antrenman programınız panele düşer; listedeki egzersiz videolarıyla tekniği netleştirirsiniz.',
         },
         {
           title: 'Video görüşme ve revize',
@@ -151,7 +151,7 @@ export const ONLINE_KOCLUK = {
     },
     {
       q: 'Evde ekipmansız çalışabilir miyim?',
-      a: 'Evet. Koçunuz ev veya salon tercihinize ve ekipman erişiminize göre programı uyarlar; kütüphanede ev antrenmanları da bulunur.',
+      a: 'Evet. Koçunuz ev veya salon tercihinize ve ekipman erişiminize göre programı uyarlar; programınızdaki hareket videolarıyla ev antrenmanı da yapılabilir.',
     },
     {
       q: 'Online spor koçu paketi hangi planda?',

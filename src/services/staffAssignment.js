@@ -55,19 +55,6 @@ export function assignStaffOnly(member, staffList, members, options = {}) {
   }
 }
 
-/** @deprecated Otomatik randevu üretimi kaldırıldı — admin panelinden elle girilir. */
-export function applyStaffAssignments(member, staffList, members, options = {}) {
-  const pkg = member.packageConfig || {}
-  const needCoach = packageIncludesCoach(pkg)
-  const needDiet = packageIncludesDietitian(pkg)
-  const staffOnly = assignStaffOnly(member, staffList, members, options)
-  return {
-    ...staffOnly,
-    coachSessions: needCoach ? (options.coachSessions ?? member.coachSessions ?? []) : [],
-    dietitianSessions: needDiet ? (options.dietitianSessions ?? member.dietitianSessions ?? []) : [],
-  }
-}
-
 export function countStaffClients(members, staffId, role) {
   const key = role === 'coach' ? 'assignedCoachId' : 'assignedDietitianId'
   return members.filter((m) => isPaidMembership(m.membership) && m[key] === staffId).length

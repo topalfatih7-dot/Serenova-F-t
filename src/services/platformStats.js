@@ -55,16 +55,36 @@ import { isHealthTestComplete } from '../data/healthTest'
 
 export function computeOnboardingFunnel(db) {
   const members = db.members || []
+  const programs = db.programs || []
   const total = members.length
-  const withHealthTest = members.filter((m) => isHealthTestComplete(m.healthTest, m.gender, m.packageConfig)).length
+  const memberIdsWithProgram = new Set(
+    programs.map((p) => p.memberId).filter(Boolean),
+  )
+
+  const withHealthTest = members.filter((m) =>
+    isHealthTestComplete(m.healthTest, m.gender, m.packageConfig),
+  ).length
   const premium = members.filter((m) => isPaidMembership(m.membership)).length
-  const paidActive = members.filter((m) => isPaidMembership(m.membership) && m.membershipStatus === 'active').length
+  const paidActive = members.filter(
+    (m) => isPaidMembership(m.membership) && m.membershipStatus === 'active',
+  ).length
+  const withProgram = members.filter((m) => memberIdsWithProgram.has(m.id)).length
+  const withSession = members.filter((m) => {
+    const n = (m.coachSessions || []).length
+      + (m.dietitianSessions || []).length
+      + (m.doctorSessions || []).length
+    return n > 0
+  }).length
+
+  const pct = (n) => (total ? Math.round((n / total) * 100) : 0)
 
   return [
     { step: 'Kayıtlı üye', count: total, pct: total ? 100 : 0 },
-    { step: 'Sağlık testi tamam', count: withHealthTest, pct: total ? Math.round((withHealthTest / total) * 100) : 0 },
-    { step: 'Ücretli üye', count: premium, pct: total ? Math.round((premium / total) * 100) : 0 },
-    { step: 'Aktif ücretli', count: paidActive, pct: total ? Math.round((paidActive / total) * 100) : 0 },
+    { step: 'Sağlık testi tamam', count: withHealthTest, pct: pct(withHealthTest) },
+    { step: 'Ücretli üye', count: premium, pct: pct(premium) },
+    { step: 'Aktif ücretli', count: paidActive, pct: pct(paidActive) },
+    { step: 'Programı olan', count: withProgram, pct: pct(withProgram) },
+    { step: 'Randevu almış', count: withSession, pct: pct(withSession) },
   ]
 }
 

@@ -11,8 +11,8 @@ description: >-
 ## Locked model
 
 - **Mobile digital subs:** App Store / Play via **RevenueCat** (IAP required).
-- **Web:** Stripe Checkout + `api/stripe-webhook.js` + Customer Portal (`POST /api/stripe-checkout` · `action: 'create-portal-session'`).
-- **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, package/expiry in `members.data`.
+- **Web:** Stripe Checkout — recurring planlar **Subscription** (`mode: subscription`, 1/3/6 ay `interval_count`); `doktor` one-shot `payment`. Webhook: `checkout.session.completed` + `invoice.paid` (yenileme) + `customer.subscription.deleted`. Portal: `action: 'create-portal-session'`.
+- **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, `data.stripeSubscriptionId`, package/expiry in `members.data`.
 - **Plan catalog (DB):** `public.plans` — marketing + `is_sellable` + `billing_type` + `entitlements` jsonb + `emoji`/`icon`/`color`. Admin CRUD: `/admin/plans`.
 - **Paketsiz üye:** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Profil + `/membership` + `/health-test` açık.
 - **48s deneme (yalnızca yeni ücretsiz kayıt):** `freeTrialExpiresAt = now+48h` (`FREE_TRIAL_MS`). Aktifken dashboard + skorlar açık (`canAccessMemberDashboard`); HT tamamlanınca AI 1×. Süre bitince dashboard da gate. Süresi bitmiş ücretli → yeni deneme yok (`freeTrialExpiresAt` temizlenir).

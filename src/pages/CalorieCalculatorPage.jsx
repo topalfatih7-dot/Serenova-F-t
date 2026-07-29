@@ -5,7 +5,7 @@ import {
   ArrowLeft, Camera, Flame, BarChart3,
   CheckCircle, RefreshCw, AlertCircle,
   Send, Sparkles, Keyboard, Trash2, ScanLine,
-  ImagePlus, Lock,
+  ImagePlus, Lock, Crown,
 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
@@ -16,6 +16,7 @@ import {
   formatAnalysisReply,
 } from '../services/calorieChat'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
+import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
 function estimateMacros(totalCal) {
@@ -81,7 +82,7 @@ const MODE_OPTIONS = [
 export default function CalorieCalculatorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user, updateProfile } = useApp()
+  const { user, updateProfile, isUnpaidMember } = useApp()
   const fileRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -203,6 +204,14 @@ export default function CalorieCalculatorPage() {
 
   const visibleModes = MODE_OPTIONS.filter((m) => m.id === 'chat' || isPlatinum)
 
+  if (isUnpaidMember) {
+    return (
+      <PanelPageShell>
+        <UnpaidMemberGate />
+      </PanelPageShell>
+    )
+  }
+
   if (!isPaid) {
     return (
       <PanelPageShell>
@@ -210,13 +219,15 @@ export default function CalorieCalculatorPage() {
           <ArrowLeft className="h-4 w-4" /> Geri Dön
         </button>
         <div className="glass-card-solid overflow-hidden p-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 text-white shadow-lg">
-            <Flame className="h-8 w-8" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <Crown className="h-8 w-8" />
           </div>
-          <h1 className="mt-4 font-display text-xl font-bold text-cream-900">Kalori Hesaplayıcı</h1>
-          <p className="mt-2 text-sm text-cream-800/70">Bu özellik Gümüş ve üzeri paketlerde kullanılabilir.</p>
-          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-105">
-            Planları İncele
+          <h1 className="mt-4 font-display text-xl font-bold text-cream-900">Aktif pakette kalori yok</h1>
+          <p className="mt-2 text-sm leading-relaxed text-cream-800/70">
+            Yazarak veya fotoğrafla kalori analizi paket haklarınıza dahil değil. Uygun bir plan seçerek devam edebilirsiniz.
+          </p>
+          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600">
+            <Crown className="h-4 w-4" /> Plan Seç &amp; Devam Et
           </Link>
         </div>
       </PanelPageShell>

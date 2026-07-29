@@ -106,8 +106,25 @@ function localApiPlugin() {
   }
 }
 
+function gscMetaPlugin() {
+  return {
+    name: 'gsc-verification-meta',
+    transformIndexHtml(html) {
+      loadLocalEnv()
+      const token = String(process.env.VITE_GSC_VERIFICATION || '').trim()
+      if (!token || !/^[A-Za-z0-9_-]+$/.test(token)) return html
+      const tag = `    <meta name="google-site-verification" content="${token}" />\n`
+      if (html.includes('google-site-verification')) return html
+      return html.replace(
+        /<!-- GSC:[^\n]*-->\s*\n/,
+        (m) => `${m}${tag}`,
+      )
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), localApiPlugin()],
+  plugins: [react(), tailwindcss(), gscMetaPlugin(), localApiPlugin()],
   appType: 'spa',
   preview: { host: true },
   server: { port: 5173 },

@@ -3,21 +3,43 @@
  *
  * Daily.co hesabı: https://dashboard.daily.co
  * Domain örneği: yourteam.daily.co
+ *
+ * Katılma pencereleri (varsayılan): koç 10/20 · diyetisyen 15/30 · doktor 15/30
+ * api/_videoJoinWindows.js ile aynı sayılar.
  */
 
 import { getApiAuthHeaders } from '../services/apiAuth.js'
+import { normalizeSessionType } from '../utils/staffRoles'
+
+const JOIN_WINDOW_DEFAULTS = {
+  coach: { before: 10, after: 20 },
+  dietitian: { before: 15, after: 30 },
+  doctor: { before: 15, after: 30 },
+}
+
+function envMinutes(name, fallback) {
+  const raw = import.meta.env[name]
+  if (raw === undefined || raw === '') return fallback
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= 0 ? n : fallback
+}
 
 export const VIDEO_CALL_CONFIG = {
   /** Daily.co subdomain (https://DOMAIN/room-name) */
   domain: (import.meta.env.VITE_DAILY_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, ''),
-  /** Oda adı öneki: {prefix}-{coach|dietitian}-{sessionId} */
+  /** Oda adı öneki: {prefix}-{coach|dietitian|doctor}-{sessionId} */
   roomPrefix: import.meta.env.VITE_DAILY_ROOM_PREFIX || 'donusum',
-  /** İsteğe bağlı — REST API ile oda oluşturmak için (ileride backend) */
-  apiKey: import.meta.env.VITE_DAILY_API_KEY || '',
-  /** Randevudan kaç dakika önce katılıma izin verilsin */
-  joinMinutesBefore: Number(import.meta.env.VITE_VIDEO_JOIN_MINUTES_BEFORE) || 15,
-  /** Randevu süresinden kaç dakika sonra oda kapanır */
-  joinMinutesAfter: Number(import.meta.env.VITE_VIDEO_JOIN_MINUTES_AFTER) || 30,
+}
+
+/** Sektöre göre katılma penceresi (dk önce / süre bitiminden sonra) */
+export function getJoinWindowMinutes(sessionType) {
+  const type = normalizeSessionType(sessionType)
+  const base = JOIN_WINDOW_DEFAULTS[type] || JOIN_WINDOW_DEFAULTS.coach
+  const suffix = type.toUpperCase()
+  return {
+    before: envMinutes(`VITE_VIDEO_JOIN_BEFORE_${suffix}`, base.before),
+    after: envMinutes(`VITE_VIDEO_JOIN_AFTER_${suffix}`, base.after),
+  }
 }
 
 export function isVideoCallConfigured() {
@@ -46,21 +68,28 @@ export function staffCallPath(sessionType, sessionId) {
 }
 
 /**
- * Sunucu tarafından oda oluştur + toplantı tokeni al (production güvenli mod).
- * DAILY_API_KEY Vercel'de tanımlı değilse 503 döner → uygulama public modda çalışır.
- * @returns {Promise<string|null>} token string veya null
+ * Sunucu: oda + token. Yetki + join penceresi api/daily-room’da doğrulanır.
+ * @returns {Promise<{ token: string|null, error?: string, code?: string }>}
  */
-export async function getDailyToken(roomName, userName, isOwner = false) {
+export async function getDailyToken(sessionType, sessionId, userName) {
   try {
     const res = await fetch('/api/daily-room', {
       method: 'POST',
       headers: await getApiAuthHeaders(),
-      body: JSON.stringify({ roomName, userName, isOwner }),
+      body: JSON.stringify({ sessionType, sessionId, userName }),
     })
     const data = await res.json().catch(() => ({}))
-    return data.ok ? (data.token || null) : null
+    if (data.ok && data.token) {
+      return { token: data.token, roomUrl: data.roomUrl || null }
+    }
+    const code = data.code || (res.status === 403 ? 'forbidden' : 'error')
+    return {
+      token: null,
+      error: data.error || 'Görüşme odasına bağlanılamadı.',
+      code,
+    }
   } catch {
-    return null
+    return { token: null, error: 'Bağlantı hatası. Tekrar deneyin.', code: 'network' }
   }
 }
 

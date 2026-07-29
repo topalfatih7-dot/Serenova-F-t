@@ -1,8 +1,9 @@
-# Yeni Form — Denetim Yol Haritası
+﻿# Yeni Form — Denetim Yol Haritası
 
 > **Kaynak:** 2026-07-17 proje denetimi · **Güncelleme:** 2026-07-29  
-> **Durum:** Faz 0–1 tamam · Faz 2–3 uygulama (2026-07-29) · Faz 4–5 bekliyor  
-> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md`
+> **Durum:** Faz 0–5 + web ops (legal/GSC) 2026-07-29 · **Mobil / Expo erteledi**  
+> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · GSC: [`OPS_GSC.md`](OPS_GSC.md)  
+> Mobil not: [`mobile/README.md`](mobile/README.md) — şu an genişletilmiyor.
 
 ---
 
@@ -15,8 +16,8 @@
 | 1b | Paid-only model · AI program kaldırma · staff builders · GPT sağlık skoru | Tamamlandı (2026-07-28/29) |
 | 2 | Paketsiz üye lock · Stripe Customer Portal · dürüst ürün (kısmi copy) | Tamamlandı (2026-07-29) |
 | 3 | Attendance → hakediş · AI orphan cleanup | Tamamlandı (2026-07-29) |
-| 4 | Aktivasyon & büyüme | Bekliyor |
-| 5 | İsteğe bağlı ileri | Bekliyor |
+| 4 | Aktivasyon funnel (metrik + GA4 + checklist) | Tamamlandı (2026-07-29) |
+| 5 | Stripe Subscription otomatik yenileme | Tamamlandı (2026-07-29) |
 
 ---
 
@@ -40,7 +41,7 @@
 | 4 | `payments_insert` spoof | Düzeltildi (Faz 1) |
 | 5 | Admin email drift | Düzeltildi (Faz 1) |
 | 6 | Hakediş mock / `sessionAttendance` / `aiAnalysis` orphan | Düzeltildi (Faz 3) |
-| 7 | Yarım trial duvarı / pazarlama vaatleri | Paketsiz lock + kısmi copy (Faz 2); video katmanı kararı açık |
+| 7 | Yarım trial duvarı / pazarlama vaatleri | Paketsiz lock + kısmi copy (Faz 2); video katmanı **program-scoped** (2026-07-29) |
 
 ---
 
@@ -59,7 +60,7 @@
 - [x] Stripe Customer Portal (`action: create-portal-session` → `stripe-checkout`)
 - [x] `members.stripe_customer_id` + webhook persist
 - [x] Paid-only pazarlama/legal copy (2026-07-28)
-- [ ] Video kütüphanesi vs pazarlama nihai karar (açık)
+- [x] Video kütüphanesi vs pazarlama nihai karar — **program-scoped** (üye yalnız kendi programındaki videolar; SEO/onboarding copy hizalandı, 2026-07-29)
 
 ## Faz 3 checklist
 
@@ -70,9 +71,50 @@
 
 ## Faz 4+ (sonra)
 
-- Aktivasyon funnel
-- Stripe Subscription otomatik yenileme (şu an Checkout one-shot + Portal kart/fatura)
-- `eko` DB temizliği (aktif eko üye kalmayana kadar)
-- Expo mobil (repo dışı)
+- [x] Aktivasyon funnel (2026-07-29): Admin Analytics hunisi (program + randevu), GA4 `sign_up` / `begin_checkout` / `purchase` / `health_test_complete`, dashboard `ActivationChecklist`
+- [x] Stripe Subscription otomatik yenileme (2026-07-29): recurring planlar `mode: subscription` + `invoice.paid` yenileme; doktor `payment`; iptal Portal
+- [x] `eko` DB temizliği — 0 üye; plan `is_active/is_sellable=false` (JS legacy okuma saklandı)
+- [x] Expo mobil **handoff foundations** (taslak) — **2026-07-29 itibarıyla mobil işler ertelendi; genişletme yok**
+- [x] GSC ops hazırlık (`docs/OPS_GSC.md`, robots, `VITE_GSC_VERIFICATION` inject) — manuel GSC tıklama hesap gerektirir
+- [x] Yasal ince ayar: üyelik + iptal metinleri 48s deneme / Eko paketler / Subscription Portal (2026-07-29)
+- [x] Admin FAQ kopya hizası (paketler + 48s + kalori hakları; SEO static FAQ aynı) — 2026-07-29
 
 Detay: [`AI_PROJE_REHBERI.md`](../AI_PROJE_REHBERI.md).
+
+---
+
+## Tam ürün tarama (2026-07-29) — Faz 4 öncesi
+
+Kanıta dayalı envanter + ölü kod + UX + gap listesi: [`docs/TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md).
+
+**Tarama sonucu (özet):**
+
+- DB: aktif `eko` üye **0** (cleanup için uygun).
+- P0 adayları: SEO `/online-*` hydrate pass-through eksik; Supabase `members_staff_safe` SECURITY DEFINER advisor ERROR; anon/authenticated EXECUTE WARN’lar.
+- P1: gate UX tutarsızlığı (kalori/randevu vs `UnpaidMemberGate`); landing “Ücretsiz Başla” / stats floor; `fullVideo` entitlement runtime’da kullanılmıyor → video-pazarlama kararı hâlâ açık.
+- Ölü export (0 çağrı): `shouldAutoplayExerciseVideo`, `getHealthPackageContext`, `buildCoachProgramPayload`.
+- Uygulama sırası: Tur 1 P0 → Tur 2 ölü kod → Tur 3 UX → Tur 4 Faz 4/5 (ürün onayı).
+
+### Tur 1–3 uygulandı (2026-07-29)
+
+Kararlar: istatistik floor **tutuldu**; kütüphane **program-scoped kaldı**; Faz 4/Subscription **hariç**.
+
+| Tur | Yapılan |
+|-----|---------|
+| 1 | `authPaths` ← `/online-diyetisyen`, `/online-kocluk`; `members_staff_safe` → `security_invoker` (advisor ERROR kapandı). Anon/authenticated EXECUTE WARN’lar bilinçli (RLS/`phone_in_use`/landing stats). |
+| 2 | Silindi: `shouldAutoplayExerciseVideo`, `getHealthPackageContext`, `buildCoachProgramPayload`, `applyStaffAssignments` → `assignStaffOnly` |
+| 3 | `/schedule` + unpaid kalori → `UnpaidMemberGate`; landing CTA “48 saat ücretsiz dene”; SEO/onboarding copy program-scoped |
+
+### Faz 4 uygulandı (2026-07-29)
+
+- Admin Analytics hunisi: +program +randevu adımları
+- GA4: `sign_up`, `begin_checkout`, `purchase`, `health_test_complete`
+- Üye dashboard `ActivationChecklist` (HT → plan / randevu / program)
+
+### Faz 5 + eko cleanup (2026-07-29)
+
+- Recurring checkout → Stripe Subscription (`interval_count` = 1/3/6 ay); `invoice.paid` süre uzatır
+- Doktor paketi → `mode: payment` (tek seferlik)
+- Webhook: `customer.subscription.deleted` → `stripeSubscriptionId` temizliği
+- **Ops:** Stripe Dashboard webhook’a `invoice.paid` + `customer.subscription.deleted` ekleyin (mevcut `checkout.session.*` kalsın)
+- `eko` plan pasif / satış kapalı; üye 0

@@ -27,7 +27,7 @@ export default function AdminAnalyticsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Analitik</h1>
-        <p className="mt-1 text-sm text-cream-800/60">Platform metrikleri ve GA4 dönüşüm hunisi</p>
+        <p className="mt-1 text-sm text-cream-800/60">Aktivasyon hunisi, platform metrikleri ve GA4</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
@@ -52,9 +52,11 @@ export default function AdminAnalyticsPage() {
       <div className="rounded-2xl border border-cream-200 bg-white p-6">
         <h3 className="flex items-center gap-2 font-semibold text-cream-900">
           <BarChart3 className="h-4 w-4 text-brand-500" />
-          Üye hunisi (platform verisi)
+          Üye aktivasyon hunisi
         </h3>
-        <p className="mt-1 text-xs text-cream-800/55">Kayıt → sağlık testi → ücretli üyelik</p>
+        <p className="mt-1 text-xs text-cream-800/55">
+          Kayıt → sağlık testi → ücretli → aktif → program → randevu
+        </p>
         <div className="mt-4 space-y-3">
           {onboardingFunnel.map((row, i) => (
             <div key={row.step}>

@@ -18,9 +18,9 @@ export default function StaffVideoPanel({ clients, role }) {
   ;(clients || []).forEach((m) => {
     ;(m[key] || []).forEach((s) => {
       if (s.status !== 'scheduled') return
-      const timing = getSessionTiming(s, now)
+      const timing = getSessionTiming(s, now, sessionType)
       if (timing.isExpired) return
-      const join = canJoinSession(s, now)
+      const join = canJoinSession(s, now, sessionType)
       sessions.push({ ...s, memberName: m.name, timing, join })
     })
   })
