@@ -532,9 +532,9 @@ function rowToContactInquiry(row) {
 
 function rowToPlan(row) {
   const knownSellable = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
-  // Kolon yoksa (migration öncesi) undefined — sortPlansForDisplay legacy fallback kullanır
+  // Kolon yoksa: bilinen satılanlar veya fiyatı olan dinamik paketler satılabilir
   const isSellable = row.is_sellable == null
-    ? (knownSellable.includes(row.id) ? true : undefined)
+    ? (knownSellable.includes(row.id) || (row.id !== 'free' && Number(row.price) > 0))
     : row.is_sellable === true
   const entRaw = row.entitlements
   const hasEnt = entRaw && typeof entRaw === 'object' && Object.keys(entRaw).length > 0

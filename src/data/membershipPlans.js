@@ -52,7 +52,15 @@ export function setPlanCatalog(plans = []) {
 export function getPlanFromCatalog(id) {
   if (!id) return null
   if (_planCatalog.has(id)) return _planCatalog.get(id)
-  return ALL_PLANS.find((p) => p.id === id) || (id === 'free' ? FREE_PLAN : null)
+  // ALL_PLANS / FREE_PLAN modül init sırasında TDZ'de olabilir (buildPricingTiers)
+  try {
+    const found = ALL_PLANS.find((p) => p.id === id)
+    if (found) return found
+  } catch { /* TDZ during module init */ }
+  try {
+    if (id === 'free') return FREE_PLAN
+  } catch { /* TDZ */ }
+  return null
 }
 
 export function emptyEntitlements() {
@@ -227,7 +235,12 @@ export function isSellablePlanId(id, plans) {
   const list = plans || (_planCatalog.size ? Array.from(_planCatalog.values()) : null)
   if (list?.length) {
     const plan = list.find((p) => p.id === id) || getPlanFromCatalog(id)
-    if (plan && typeof plan.isSellable === 'boolean') return plan.isSellable && plan.isActive !== false
+    if (plan) {
+      if (plan.isActive === false) return false
+      if (typeof plan.isSellable === 'boolean') return plan.isSellable
+      // is_sellable kolonu henüz map edilmediyse: fiyatlı aktif planı satılabilir say
+      return Number(plan.price) > 0 || SELLABLE_PLAN_IDS.includes(id)
+    }
   }
   return SELLABLE_PLAN_IDS.includes(id)
 }
@@ -262,11 +275,26 @@ export const PLAN_PRICING = {
   vip: { 1: 4999, 3: 12999, 6: 19999 },
 }
 
-export function getTierPrice(planId, months = 1) {
+/** Plan + süre fiyatı — önce DB/katalog pricingTiers, yoksa PLAN_PRICING fallback */
+export function getTierPrice(planId, months = 1, planRow = null) {
   const m = Number(months) || 1
-  const tiers = PLAN_PRICING[planId]
-  if (!tiers) return 0
-  return tiers[m] || tiers[1] || 0
+  // Modül init'te ALL_PLANS TDZ'sine düşmemek için önce Map / verilen satır
+  const plan = planRow || (_planCatalog.size ? _planCatalog.get(planId) : null)
+  if (plan) {
+    const tiers = plan.pricingTiers || []
+    if (Array.isArray(tiers) && tiers.length) {
+      const tier = tiers.find((t) => Number(t.months) === m)
+      if (tier != null && tier.price != null && Number(tier.price) > 0) return Number(tier.price)
+      if (m === 1) {
+        const first = tiers.find((t) => Number(t.price) > 0)
+        if (first) return Number(first.price)
+      }
+    }
+    if (Number(plan.price) > 0 && (m === 1 || !tiers.length)) return Number(plan.price)
+  }
+  const hardcoded = PLAN_PRICING[planId]
+  if (!hardcoded) return 0
+  return hardcoded[m] || hardcoded[1] || 0
 }
 
 /** Uzun süre seçiminde aylık baz fiyata göre yüzde tasarruf (ör. 6 ay VIP). */

@@ -150,37 +150,56 @@ export default async function handler(req, res) {
     const planId = String(body.planId || '')
     const flow = body.flow === 'change' ? 'change' : 'register'
 
-    const plansById = await loadPlansById(admin)
-    let plan = plansById.get(planId) || null
-    if (!plan) {
-      const { data: planRow } = await admin.from('plans').select('*').eq('id', planId).maybeSingle()
-      if (planRow) {
-        plan = {
-          id: planRow.id,
-          name: planRow.name,
-          price: Number(planRow.price) || 0,
-          period: planRow.period || 'Aylık',
-          isActive: planRow.is_active !== false,
-          isSellable: planRow.is_sellable === true,
-          billingType: planRow.billing_type === 'one_time' ? 'one_time' : 'recurring',
-          entitlements: planRow.entitlements || {},
-          pricingTiers: planRow.pricing_tiers || [],
-        }
-      }
+    // Checkout için her zaman taze satır oku (yeni admin paketleri cache'e takılmasın)
+    const { data: planRow, error: planErr } = await admin
+      .from('plans')
+      .select('*')
+      .eq('id', planId)
+      .maybeSingle()
+    if (planErr) {
+      return res.status(500).json({ ok: false, error: 'Plan bilgisi okunamadı.' })
     }
 
-    // is_sellable kolonu yoksa / migration öncesi: fiyat + aktif veya PLAN_FALLBACK
+    let plan = null
+    if (planRow) {
+      const sellableRaw = planRow.is_sellable
+      plan = {
+        id: planRow.id,
+        name: planRow.name,
+        price: Number(planRow.price) || 0,
+        period: planRow.period || 'Aylık',
+        isActive: planRow.is_active !== false,
+        isSellable: sellableRaw == null
+          ? (Number(planRow.price) > 0 && planRow.id !== 'free')
+          : sellableRaw === true,
+        billingType: planRow.billing_type === 'one_time' ? 'one_time' : 'recurring',
+        entitlements: planRow.entitlements || {},
+        pricingTiers: planRow.pricing_tiers || [],
+      }
+    } else {
+      // Cache / legacy fallback
+      const plansById = await loadPlansById(admin)
+      plan = plansById.get(planId) || null
+    }
+
     let eligible = false
     if (!plan) {
       eligible = Boolean(PLAN_FALLBACK[planId])
-    } else if (plan.isSellable === undefined) {
-      eligible = plan.isActive !== false && (Number(plan.price) > 0 || Boolean(PLAN_FALLBACK[planId]))
+    } else if (plan.isActive === false) {
+      eligible = false
+    } else if (plan.isSellable === true) {
+      eligible = Number(plan.price) > 0 || isOneTimePlanId(planId, plan) || isCheckoutEligiblePlan(plan)
+    } else if (plan.isSellable === false) {
+      eligible = false
     } else {
-      eligible = isCheckoutEligiblePlan(plan)
+      eligible = plan.isActive !== false && (Number(plan.price) > 0 || Boolean(PLAN_FALLBACK[planId]))
     }
 
     if (!eligible) {
-      return res.status(400).json({ ok: false, error: 'Geçersiz veya satışa kapalı plan.' })
+      return res.status(400).json({
+        ok: false,
+        error: 'Geçersiz veya satışa kapalı plan. Admin panelinden paketinin aktif ve satışa açık olduğundan emin olun.',
+      })
     }
 
     const oneTime = isOneTimePlanId(planId, plan)

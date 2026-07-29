@@ -80,7 +80,9 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const [saving, setSaving] = useState(false)
 
   const selectedPlan = plans.find((p) => p.id === selected) || plans[0]
-  const selectedPrice = isPaidMembership(selected) ? getTierPrice(selected, durationMonths) : 0
+  const selectedPrice = isPaidMembership(selected)
+    ? getTierPrice(selected, durationMonths, selectedPlan)
+    : 0
   const isPaid = isPaidMembership(selected)
   const isCurrent = selected === currentMembership
 
@@ -106,13 +108,12 @@ function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan,
   const handleConfirm = async () => {
     if (isCurrent) return
     if (isPaid) {
-      if (!isStripeEnabled()) {
-        toast(STRIPE_REQUIRED_MESSAGE, 'error')
-        return
-      }
       setSaving(true)
       const r = await startStripeCheckout(selected, 'change', durationMonths, userEmail)
-      if (!r.success) { setSaving(false); toast(r.error || 'Ödeme başlatılamadı', 'error') }
+      if (!r.success) {
+        setSaving(false)
+        toast(r.error || (isStripeEnabled() ? 'Ödeme başlatılamadı' : STRIPE_REQUIRED_MESSAGE), 'error')
+      }
       return
     }
     if (await applyChange(0)) {
@@ -408,10 +409,6 @@ export default function OnboardingPage() {
       showFormError(turnstileErr)
       return
     }
-    if (!isStripeEnabled()) {
-      showFormError(STRIPE_REQUIRED_MESSAGE)
-      return
-    }
     setSubmitting(true)
     const profile = buildProfile()
 
@@ -437,7 +434,10 @@ export default function OnboardingPage() {
     const r = await startStripeCheckout(data.membership, 'register', durationMonths, checkoutEmail)
     if (!r.success) {
       setSubmitting(false)
-      toast(r.error || 'Ödeme başlatılamadı.', 'error')
+      // Sunucu hatasını göster (satışa kapalı / fiyat / Stripe secret); flag kapalıysa genel mesaj
+      const msg = r.error
+        || (isStripeEnabled() ? 'Ödeme başlatılamadı.' : STRIPE_REQUIRED_MESSAGE)
+      showFormError(msg)
     }
     // başarılıysa tarayıcı Stripe'a yönlendirilir
   }

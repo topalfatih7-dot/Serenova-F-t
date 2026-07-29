@@ -172,11 +172,14 @@ export function isCheckoutEligiblePlan(plan) {
 export function tierPriceFromPlan(plan, months = 1) {
   if (!plan) return 0
   const m = Number(months) || 1
-  const tiers = plan.pricingTiers || []
+  const tiers = plan.pricingTiers || plan.pricing_tiers || []
   if (Array.isArray(tiers) && tiers.length) {
     const tier = tiers.find((t) => Number(t.months) === m)
-    if (tier?.price) return Number(tier.price)
-    if (m === 1 && tiers[0]?.price) return Number(tiers[0].price)
+    if (tier != null && Number(tier.price) > 0) return Number(tier.price)
+    if (m === 1) {
+      const priced = tiers.find((t) => Number(t.price) > 0)
+      if (priced) return Number(priced.price)
+    }
   }
   return Number(plan.price) || 0
 }
