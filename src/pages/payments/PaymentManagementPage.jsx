@@ -264,7 +264,9 @@ function AdminPayments() {
               <div key={m.id} className="flex items-center justify-between rounded-xl border border-cream-200 bg-white px-4 py-3">
                 <div>
                   <p className="font-medium text-cream-900">{m.name}</p>
-                  <p className="text-xs text-cream-800/50">{m.email}</p>
+                  <p className="text-xs text-cream-800/50">
+                    {getPlanLabel(m.packageConfig?.planId || m.membership) || 'Ücretli üye'}
+                  </p>
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${m.membershipStatus === 'active' ? 'bg-sage-50 text-sage-700' : 'bg-amber-50 text-amber-700'}`}>
                   {m.membershipStatus}

@@ -38,6 +38,22 @@ export function buildHealthAnalysisFingerprint(profile = {}) {
   return `v1:${(hash >>> 0).toString(36)}`
 }
 
+/** Tam skor + staffBrief var mı (yeniden analiz kilidi için). */
+export function isCompleteHealthAnalysis(analysis) {
+  if (!analysis || typeof analysis !== 'object') return false
+  if (analysis.overallScore == null && analysis.overallScore !== 0) return false
+  if (!analysis.scores || typeof analysis.scores !== 'object') return false
+  for (const key of SCORE_KEYS) {
+    if (analysis.scores[key] == null) return false
+  }
+  const brief = analysis.staffBrief
+  if (!brief || typeof brief !== 'object') return false
+  for (const key of STAFF_BRIEF_KEYS) {
+    if (!String(brief[key] || '').trim()) return false
+  }
+  return true
+}
+
 export function normalizeStaffBrief(parsed = {}) {
   const raw = parsed.staffBrief && typeof parsed.staffBrief === 'object'
     ? parsed.staffBrief

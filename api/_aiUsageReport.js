@@ -149,6 +149,6 @@ export async function handleAiUsageReport(req, res, body = {}) {
     byProvider: providerRows,
     byModel: modelRows,
     recent,
-    pricingNote: 'Maliyet tahmini: Kalori GPT-4o $2.50 / $10.00; Program GPT-4.1 $2.00 / $8.00 (1M giriş/çıkış token). Cache/sözlük hit’leri $0. OpenAI fatura tutarıyla küçük farklar olabilir.',
+    pricingNote: 'Maliyet tahmini: Kalori GPT-4o $2.50 / $10.00; Staff sağlık GPT-5.4 $2.50 / $15.00 (1M giriş/çıkış token). Cache/sözlük hit’leri $0. Geriye dönük (backfill) satırlar tahmini token kullanır; OpenAI faturasıyla küçük farklar olabilir.',
   })
 }

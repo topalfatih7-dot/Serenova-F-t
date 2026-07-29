@@ -1,11 +1,17 @@
 import { useCallback, useState } from 'react'
 import {
   appendHealthScoreHistory,
+  isHealthAnalysisStale,
+  needsInitialHealthAnalysis,
   resolveHealthScoreAnalysis,
 } from '../services/healthScoreAnalysis'
 
+const UNCHANGED_MSG =
+  'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz'
+
 /**
- * Personel/admin — danışan için force yeniden sağlık analizi.
+ * Personel/admin — yalnızca HT/profil fingerprint stale (veya ilk analiz eksik) ise yeniden üretim.
+ * @returns {{ ok: true, analysis } | { ok: false, error: string }}
  */
 export function useStaffHealthAnalysisRerun({
   member,
@@ -16,7 +22,18 @@ export function useStaffHealthAnalysisRerun({
   const [error, setError] = useState(null)
 
   const rerun = useCallback(async () => {
-    if (!member?.id || typeof patchMember !== 'function') return null
+    if (!member?.id || typeof patchMember !== 'function') {
+      return { ok: false, error: 'Üye bulunamadı' }
+    }
+
+    const analysis = member.healthAnalysis
+    const canRerun =
+      needsInitialHealthAnalysis(analysis) || isHealthAnalysisStale(analysis, member)
+    if (!canRerun) {
+      setError(UNCHANGED_MSG)
+      return { ok: false, error: UNCHANGED_MSG }
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -26,10 +43,11 @@ export function useStaffHealthAnalysisRerun({
       )
       const healthScoreHistory = appendHealthScoreHistory(member.healthScoreHistory, next)
       await patchMember(member.id, { healthAnalysis: next, healthScoreHistory })
-      return next
+      return { ok: true, analysis: next }
     } catch (e) {
-      setError(e?.message || 'Yeniden analiz başarısız')
-      return null
+      const msg = e?.message || 'Yeniden analiz başarısız'
+      setError(msg)
+      return { ok: false, error: msg }
     } finally {
       setLoading(false)
     }

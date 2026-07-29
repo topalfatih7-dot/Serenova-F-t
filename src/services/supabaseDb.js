@@ -53,22 +53,26 @@ const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
 
 // --------------------------- map: row <-> object ---------------------------
-const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'assignedDoctorId', 'role', 'password']
+const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'assignedDoctorId', 'role', 'password', '_contactHidden']
 
 function memberData(member) {
   const data = {}
   Object.keys(member).forEach((k) => {
     if (!MEMBER_COLUMN_KEYS.includes(k)) data[k] = member[k]
   })
+  // Personel görünümünde iletişim alanları zaten boş; JSONB'ye yazma
+  if (member._contactHidden) {
+    delete data.phone
+    delete data.phoneCountry
+    delete data.email
+  }
   return data
 }
 
 function memberToRow(member) {
-  return {
+  const row = {
     id: member.id,
-    email: member.email,
     name: member.name || '',
-    phone: member.phone || '',
     role: member.role === 'admin' ? 'admin' : 'member',
     membership: member.membership || 'free',
     membership_status: member.membershipStatus || 'active',
@@ -78,9 +82,14 @@ function memberToRow(member) {
     data: memberData(member),
     updated_at: nowISO(),
   }
+  if (!member._contactHidden) {
+    row.email = member.email
+    row.phone = member.phone || ''
+  }
+  return row
 }
 
-function rowToMember(row) {
+function rowToMember(row, { contactHidden = false } = {}) {
   const data = row.data || {}
   const {
     assignedCoachId: _c,
@@ -88,18 +97,23 @@ function rowToMember(row) {
     assignedDoctorId: _doc,
     ...dataRest
   } = data
+  const hideContact = contactHidden || !Object.prototype.hasOwnProperty.call(row, 'email')
   const raw = {
     ...dataRest,
     id: row.id,
-    email: row.email,
+    email: hideContact ? '' : (row.email || ''),
     name: row.name,
-    phone: row.phone || dataRest.phone || '',
+    phone: hideContact ? '' : (row.phone || dataRest.phone || ''),
     membership: row.membership,
     membershipStatus: row.membership_status,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
     assignedDoctorId: row.assigned_doctor_id ?? null,
     role: row.role || dataRest.role || 'member',
+  }
+  if (hideContact) {
+    raw.phoneCountry = ''
+    raw._contactHidden = true
   }
   return syncMemberPackages(raw)
 }
@@ -231,14 +245,15 @@ async function fetchAuthenticatedBundle(user, staff) {
     activities = (activitiesRes.data || []).map(rowToActivity)
     payments = (paymentsRes.data || []).map(rowToPayment)
   } else {
+    const membersTable = role === 'staff' ? 'members_staff_safe' : 'members'
     const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
-      supabase.from('members').select('*'),
+      supabase.from(membersTable).select('*'),
       supabase.from('programs').select('*').order('created_at', { ascending: false }),
       supabase.from('tickets').select('*').order('created_at', { ascending: false }),
       supabase.from('activities').select('*').order('created_at', { ascending: false }),
       supabase.from('payments').select('*').order('created_at', { ascending: false }),
     ])
-    members = (membersRes.data || []).map(rowToMember)
+    members = (membersRes.data || []).map((row) => rowToMember(row, { contactHidden: role === 'staff' }))
     const memberIds = memberIdSet(members)
     programs = filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds)
     tickets = filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds)
@@ -399,7 +414,10 @@ export async function hydrate({ force = false } = {}) {
 
 /** Tek üyenin randevu dizileri — admin/staff listede strip edilmişse lazy load için. */
 export async function fetchMemberSessions(memberId) {
-  const { data, error } = await supabase.from('members').select('data').eq('id', memberId).maybeSingle()
+  let { data, error } = await supabase.from('members').select('data').eq('id', memberId).maybeSingle()
+  if (error || !data) {
+    ;({ data, error } = await supabase.from('members_staff_safe').select('data').eq('id', memberId).maybeSingle())
+  }
   if (error || !data) {
     return { coachSessions: [], dietitianSessions: [], doctorSessions: [] }
   }
@@ -547,9 +565,10 @@ async function upsertMember(member) {
 // Var olan üyeyi GÜNCELLER (upsert değil) — staff/diyetisyen yamaları
 // members_update RLS politikasını kullanır (members_insert WITH CHECK'e takılmaz).
 async function updateMemberRow(member) {
+  const row = memberToRow(member)
   const { data, error } = await supabase
     .from('members')
-    .update(memberToRow(member))
+    .update(row)
     .eq('id', member.id)
     .select('id')
   if (error) throw error
@@ -1196,13 +1215,20 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
 
-  // Kimlik alanları kilitli
-  updated.email = member.email
-  if (member.phone) {
-    updated.phone = member.phone
-    if (member.phoneCountry) updated.phoneCountry = member.phoneCountry
-  } else if (patch.phone != null && patch.phone !== '') {
-    updated.phone = normalizeE164(patch.phone)
+  // Kimlik alanları kilitli (personel görünümünde iletişim gizli — boş yazma)
+  if (member._contactHidden) {
+    delete updated.email
+    delete updated.phone
+    delete updated.phoneCountry
+    updated._contactHidden = true
+  } else {
+    updated.email = member.email
+    if (member.phone) {
+      updated.phone = member.phone
+      if (member.phoneCountry) updated.phoneCountry = member.phoneCountry
+    } else if (patch.phone != null && patch.phone !== '') {
+      updated.phone = normalizeE164(patch.phone)
+    }
   }
   if (member.gender) {
     updated.gender = member.gender

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, Users, Activity, Target, CalendarClock,
-  Mail, CalendarRange, UserRound, FileText, HeartPulse,
+  CalendarRange, UserRound, FileText, HeartPulse, Package,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
@@ -10,6 +10,7 @@ import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 import { useApp } from '../../context/AppContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
+import { getPlanLabel } from '../../data/membershipPlans'
 import { getStaffClients } from '../../utils/chatAccess'
 import { getStaffAppointments } from './staffAppointments'
 import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
@@ -52,9 +53,14 @@ function ClientInfo({ member, role }) {
             <p className="mt-1 text-xs text-cream-800/50">Yaş: {member.age || '—'} · {member.gender === 'female' ? 'Kadın' : member.gender === 'male' ? 'Erkek' : '—'}</p>
           </div>
           <div className="rounded-xl bg-cream-50 p-3">
-            <p className="text-xs text-cream-800/50">İletişim</p>
-            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900 break-all"><Mail className="h-3.5 w-3.5 shrink-0" /> {member.email}</p>
-            {member.phone && <p className="mt-1 text-xs text-cream-800/55">{member.phone}</p>}
+            <p className="text-xs text-cream-800/50">Paket</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-cream-900">
+              <Package className="h-3.5 w-3.5 shrink-0" />
+              {getPlanLabel(member.packageConfig?.planId || member.membership) || '—'}
+            </p>
+            <p className="mt-1 text-xs text-cream-800/55">
+              {member.membershipStatus === 'active' ? 'Aktif' : (member.membershipStatus || '—')}
+            </p>
           </div>
         </div>
       </div>
@@ -136,7 +142,7 @@ export default function StaffClientsPage() {
 
   const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
   const filtered = clients.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
+    (m.name || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const openProgramFlow = (member) => {
@@ -160,7 +166,7 @@ export default function StaffClientsPage() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-800/40" />
         <input
           type="text"
-          placeholder="İsim veya e-posta ara..."
+          placeholder="İsim ara..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-xl border border-cream-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-300"
@@ -193,7 +199,9 @@ export default function StaffClientsPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-cream-900">{m.name}</p>
-                    <p className="truncate text-xs text-cream-800/50">{m.email}</p>
+                    <p className="truncate text-xs text-cream-800/50">
+                      {getPlanLabel(m.packageConfig?.planId || m.membership) || 'Üye'}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between text-sm">

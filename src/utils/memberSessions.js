@@ -14,8 +14,23 @@ export function stripMemberSessions(member) {
 }
 
 /**
+ * Personel tarafında üye e-posta/telefon gizlenir.
+ * `_contactHidden`: updateMemberRow'un boş iletişim yazmasını engeller.
+ */
+export function stripMemberContact(member) {
+  if (!member || member._contactHidden) return member
+  return {
+    ...member,
+    email: '',
+    phone: '',
+    phoneCountry: '',
+    _contactHidden: true,
+  }
+}
+
+/**
  * Admin: tüm üyelerden session strip.
- * Staff: yalnızca atanmadığı üyelerden strip (danışanlarda kalır).
+ * Staff: danışanlar + iletişim strip; atanmadığı üyelerden session strip.
  * Member: dokunulmaz.
  */
 export function compactMembersForRole(members, role, staffUser = null) {
@@ -25,9 +40,12 @@ export function compactMembersForRole(members, role, staffUser = null) {
     const clientIds = new Set(
       getStaffClients(members, staffUser.role, staffUser.id).map((m) => m.id),
     )
-    return members.map((m) => (clientIds.has(m.id) ? m : stripMemberSessions(m)))
+    return members.map((m) => {
+      const base = clientIds.has(m.id) ? m : stripMemberSessions(m)
+      return stripMemberContact(base)
+    })
   }
-  return members.map(stripMemberSessions)
+  return members.map((m) => stripMemberContact(stripMemberSessions(m)))
 }
 
 export function applySessionCompactionToMember(member, role, staffUser = null, allMembers = []) {
@@ -37,9 +55,10 @@ export function applySessionCompactionToMember(member, role, staffUser = null, a
     const clientIds = new Set(
       getStaffClients(allMembers, staffUser.role, staffUser.id).map((m) => m.id),
     )
-    return clientIds.has(member.id) ? member : stripMemberSessions(member)
+    const base = clientIds.has(member.id) ? member : stripMemberSessions(member)
+    return stripMemberContact(base)
   }
-  return stripMemberSessions(member)
+  return stripMemberContact(stripMemberSessions(member))
 }
 
 export function extractSessionsFromMemberData(data = {}) {

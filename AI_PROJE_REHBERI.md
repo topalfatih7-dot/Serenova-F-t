@@ -18,6 +18,7 @@
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
 8. Satılan plan sırası: Diyet(0) → Spor(1) → Doktor(2) → Vip(3). `free` = süresi bitmiş fallback; `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
+9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 
 ---
 
@@ -91,7 +92,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 - HT 6 kategori: `healthTestSections.js`
 - Tamamlanınca `useHealthAnalysisSync` → `/api/ai-health-analysis` → `members.data.healthAnalysis` (+ `healthScoreHistory`)
 - Üye dashboard: `HealthScoreCard` — genel skor /100 + 8 boyut (+ trend); `staffBrief` **gösterilmez**
-- Koç/diyetisyen: `StaffHealthBrief` (skor + brief); fingerprint stale → “Güncel değil” + yeniden analiz
+- Koç/diyetisyen: `StaffHealthBrief` (skor + brief); fingerprint stale → “Güncel değil” + yeniden analiz. HT/profil değişmediyse yeniden analiz **yok** (UI + hook + API 409)
 - Programlar: personel (koç/diyetisyen) gönderir → `programs` tablosu
   - Koç: `/staff/clients/:id/program` — haftalık şablon (`scheduleType: 'weekly'`, `entry.day` + gün bazlı seans saati); aralık bugün→paket bitişi; müsait olmayan günlere yazılmaz
   - Diyetisyen: `/staff/clients/:id/list` — `NutritionProgramBuilder` (mantık aynı, tam sayfa UX)
@@ -163,7 +164,7 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 - GPT-5.4 sağlık skoru + `staffBrief` (`api/ai-health-analysis.js`); program/diyet AI yok.
 - Üye panel: `HealthScoreCard` (genel /100 + boyutlar); brief personelde.
-- HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz.
+- HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz. Aynı fingerprint’te yeniden analiz engelli.
 - Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
 

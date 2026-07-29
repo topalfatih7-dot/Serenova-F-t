@@ -18,7 +18,7 @@ description: >-
   - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis`
   - Üye dashboard: `HealthScoreCard` (genel /100 + boyutlar; `staffBrief` yok)
   - Program / diyet listesi AI **üretilmez**
-  - Fingerprint stale → personel “Güncel değil” + yeniden analiz
+  - Fingerprint stale → personel “Güncel değil” + yeniden analiz; değişmediyse UI/API engeller
 - Programlar personel (koç/diyetisyen) tarafından gönderilir
 
 ## Calendar / programs

@@ -73,9 +73,9 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
   )
 
   const handleRerunAnalysis = useCallback(async () => {
-    const next = await rerun()
-    if (next) toast('Sağlık analizi güncellendi', 'success')
-    else toast('Yeniden analiz başarısız', 'error')
+    const result = await rerun()
+    if (result?.ok) toast('Sağlık analizi güncellendi', 'success')
+    else toast(result?.error || 'Yeniden analiz başarısız', 'error')
   }, [rerun, toast])
 
   if (!member) {
@@ -107,7 +107,7 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
 
       <PanelPageHeader
         title={member.name}
-        subtitle={`Sağlık profili · ${member.email}`}
+        subtitle="Sağlık profili"
         icon={HeartPulse}
         accent="brand"
       />

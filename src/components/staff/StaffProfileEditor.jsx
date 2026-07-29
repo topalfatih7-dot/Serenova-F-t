@@ -322,7 +322,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                   onChange={(availability) => update({ availability })}
                 />
               </ProfileSectionCard>
-              <ProfileSectionCard icon={Globe} title="Sosyal Medya & Web" subtitle="Opsiyonel — profilinizde link olarak görünür" accent="violet">
+              <ProfileSectionCard icon={Globe} title="Sosyal Medya & Web" subtitle="Yalnızca yönetim kaydı — danışanlara gösterilmez" accent="violet">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input value={form.linkedin} onChange={(e) => update({ linkedin: e.target.value })} placeholder="LinkedIn URL" className={inputCls} />
                   <input value={form.instagram} onChange={(e) => update({ instagram: e.target.value })} placeholder="Instagram URL" className={inputCls} />

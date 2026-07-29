@@ -172,20 +172,6 @@ export default function StaffHealthBrief({
           })}
         </div>
       )}
-
-      {!stale && typeof onRerun === 'function' && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={onRerun}
-            disabled={rerunning}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-cream-800/55 transition hover:bg-cream-50 hover:text-brand-700 disabled:opacity-60"
-          >
-            {rerunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Yeniden analiz et
-          </button>
-        </div>
-      )}
     </div>
   )
 }

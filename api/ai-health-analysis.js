@@ -4,7 +4,7 @@
  *
  * POST body:
  * - profile, categorySummaries — üye kendi analizi
- * - memberId?, force? — personel/admin yeniden analiz
+ * - memberId?, force? — personel/admin yeniden analiz (fingerprint değişmeden 409)
  */
 
 import {
@@ -14,6 +14,7 @@ import {
 } from './_ai-prompts.js'
 import {
   buildHealthAnalysisFingerprint,
+  isCompleteHealthAnalysis,
   normalizeHealthScores,
   normalizeStaffBrief,
 } from './_healthScoreAnalysis.js'
@@ -159,6 +160,21 @@ export default async function handler(req, res) {
       healthTest: dbProfile.healthTest,
     })
 
+    const existingAnalysis = dbProfile.healthAnalysis
+    if (
+      isCompleteHealthAnalysis(existingAnalysis)
+      && existingAnalysis.sourceFingerprint
+      && existingAnalysis.sourceFingerprint === fingerprint
+    ) {
+      return res.status(409).json({
+        ok: false,
+        error: 'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz',
+        unchanged: true,
+        sourceFingerprint: fingerprint,
+        force,
+      })
+    }
+
     const {
       callOpenAi,
       parseJsonResponse,
@@ -177,6 +193,9 @@ export default async function handler(req, res) {
     let normalized = null
     let aiGenerated = false
     let usedModel = model
+    let usage = null
+    let costUsd = 0
+    let apiCallSucceeded = false
 
     try {
       const result = await callOpenAi({
@@ -192,7 +211,10 @@ export default async function handler(req, res) {
         endpoint: 'ai-health-analysis',
         userId: auth.user.id,
       })
+      apiCallSucceeded = true
       usedModel = result.model || model
+      usage = result.usage || null
+      costUsd = Number(result.costUsd) || 0
       const parsed = parseJsonResponse(result.text)
       normalized = normalizeHealthScores(parsed)
       if (normalized?.staffBrief == null && parsed) {
@@ -202,14 +224,17 @@ export default async function handler(req, res) {
       aiGenerated = Boolean(normalized)
     } catch (e) {
       console.error('[ai-health-analysis] openai', e?.message || e)
-      logAiUsage({
-        provider: 'openai',
-        model,
-        endpoint: 'ai-health-analysis',
-        userId: auth.user.id,
-        success: false,
-        errorCode: e?.code || 'openai_error',
-      }).catch(() => {})
+      // callOpenAi zaten success logladıysa çift satır yazma; yalnızca API çağrısı düştüğünde failure log
+      if (!apiCallSucceeded) {
+        await logAiUsage({
+          provider: 'openai',
+          model,
+          endpoint: 'ai-health-analysis',
+          userId: auth.user.id,
+          success: false,
+          errorCode: e?.code || e?.name || 'openai_error',
+        })
+      }
     }
 
     if (!normalized) {
@@ -236,6 +261,10 @@ export default async function handler(req, res) {
       staffBrief: normalized.staffBrief,
       aiGenerated,
       model: usedModel,
+      usage,
+      costUsd,
+      promptTokens: usage?.promptTokens ?? 0,
+      completionTokens: usage?.completionTokens ?? 0,
       sourceFingerprint: fingerprint,
       force,
       userId: auth.user.id,

@@ -8,9 +8,9 @@
 - `src/utils/programSchedule.js`, `programPackageScope.js`
 - `src/services/healthScoreAnalysis.js` — skor meta, fingerprint, AI fetch, fallback
 - `src/hooks/useHealthAnalysisSync.js` — üye ilk otomatik tetik
-- `src/hooks/useStaffHealthAnalysisRerun.js` — personel force rerun
+- `src/hooks/useStaffHealthAnalysisRerun.js` — personel rerun (yalnızca stale / ilk eksik)
 - `src/components/dashboard/HealthScoreCard.jsx` — üye panel genel /100 + 8 boyut
-- `src/components/staff/StaffHealthBrief.jsx` — personel skor + brief + stale UI
+- `src/components/staff/StaffHealthBrief.jsx` — personel skor + brief + stale UI (güncelken buton yok)
 - `api/ai-health-analysis.js`, `api/_healthScoreAnalysis.js`, `api/_ai-prompts.js` (HEALTH_SCORE_*)
 - `api/ai-food-text.js`, `api/ai-food-vision.js`
 

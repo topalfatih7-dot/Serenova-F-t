@@ -355,7 +355,11 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
       body: JSON.stringify(body),
     })
     if (!res.ok || !data.ok) {
-      return { ok: false, error: formatAiError(data.error || res.statusText) }
+      return {
+        ok: false,
+        unchanged: data.unchanged === true || res.status === 409,
+        error: formatAiError(data.error || res.statusText),
+      }
     }
     const staffBrief = normalizeStaffBrief(data.staffBrief)
       || buildFallbackStaffBrief(data.scores, data.overallScore)
@@ -371,6 +375,9 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
       staffBrief,
       aiGenerated: data.aiGenerated !== false,
       model: data.model || null,
+      promptTokens: Number(data.promptTokens ?? data.usage?.promptTokens) || 0,
+      completionTokens: Number(data.completionTokens ?? data.usage?.completionTokens) || 0,
+      costUsd: Number(data.costUsd) || 0,
       sourceFingerprint,
       aiAttemptedAt: new Date().toISOString(),
     }
@@ -384,7 +391,7 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
   }
 }
 
-/** AI dene; başarısızsa yedek skor döndür. */
+/** AI dene; başarısızsa yedek skor döndür. Fingerprint değişmediyse hata fırlatır. */
 export async function resolveHealthScoreAnalysis(profile, opts = {}) {
   const categorySummaries = buildCategorySummaries(
     profile?.healthTest,
@@ -407,6 +414,11 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
       dailyCalories: profile?.healthAnalysis?.dailyCalories ?? null,
       fitnessScore: profile?.healthAnalysis?.fitnessScore ?? null,
     }
+  }
+  if (ai.unchanged) {
+    const err = new Error(ai.error || 'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz')
+    err.code = 'health_analysis_unchanged'
+    throw err
   }
   const fallback = computeFallbackHealthScores(profile)
   return {

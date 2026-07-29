@@ -168,7 +168,7 @@ export async function callOpenAi({
   const totalTokens = Number(usage.total_tokens) || (promptTokens + completionTokens)
   const costUsd = estimateOpenAiCostUsd(promptTokens, completionTokens, model)
 
-  logAiUsage({
+  await logAiUsage({
     provider: 'openai',
     model,
     endpoint,
@@ -178,7 +178,7 @@ export async function callOpenAi({
     totalTokens,
     costUsd,
     success: true,
-  }).catch(() => {})
+  })
 
   return { text, usage: { promptTokens, completionTokens, totalTokens }, model, costUsd }
 }
@@ -195,11 +195,15 @@ export async function logAiUsage({
   success = true,
   errorCode = null,
   meta = null,
+  createdAt = null,
 }) {
   const admin = getSupabaseAdmin()
-  if (!admin) return
+  if (!admin) {
+    console.error('[logAiUsage] Supabase admin yapılandırması eksik — kullanım logu yazılamadı', { endpoint, model })
+    return { ok: false, error: 'supabase_admin_missing' }
+  }
   try {
-    await admin.from('ai_usage_logs').insert({
+    const row = {
       provider,
       model,
       endpoint,
@@ -211,8 +215,17 @@ export async function logAiUsage({
       success: Boolean(success),
       error_code: errorCode ? String(errorCode).slice(0, 80) : null,
       meta: meta && typeof meta === 'object' ? meta : null,
-    })
-  } catch {
-    /* log asla ana akışı bozmasın */
+    }
+    if (createdAt) row.created_at = createdAt
+
+    const { error } = await admin.from('ai_usage_logs').insert(row)
+    if (error) {
+      console.error('[logAiUsage] insert failed', error.message || error, { endpoint, model })
+      return { ok: false, error: error.message || 'insert_failed' }
+    }
+    return { ok: true }
+  } catch (e) {
+    console.error('[logAiUsage] unexpected', e?.message || e, { endpoint, model })
+    return { ok: false, error: String(e?.message || e) }
   }
 }
