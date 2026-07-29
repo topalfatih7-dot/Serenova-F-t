@@ -42,17 +42,33 @@ export function isFixedDurationPlan(program) {
     || Boolean(program.cycleStartDate && program.cycleLength)
 }
 
+/** 14 günlük plan: her gün aynı menü (varsayılan / eski kayıtlar). */
+export function isCycle14SameDaily(program) {
+  if (!program || program.scheduleType !== 'cycle14') return false
+  if (usesLegacyCycleDayRotation(program)) return false
+  return program.cycleSameDaily !== false
+}
+
+/** 14 günlük plan: haftanın gününe göre şablon (her Pzt aynı, her Salı aynı…). */
+export function isCycle14ByWeekday(program) {
+  if (!program || program.scheduleType !== 'cycle14') return false
+  if (usesLegacyCycleDayRotation(program)) return false
+  return program.cycleSameDaily === false
+}
+
 /** Eski model: her gün farklı menü (cycleDay 0–13). Haftalık entry.day şablonu legacy değildir. */
 export function usesLegacyCycleDayRotation(program) {
   if (!program) return false
   if (program.scheduleType === 'weekly') return false
   if (program.cycleSameDaily === true) return false
-  // Yalnızca cycleDay rotasyonu; entry.day (haftalık) legacy sayılmaz
+  // Haftanın günü şablonu (entry.day) legacy cycleDay rotasyonu değildir
   const hasDayTagged = (program.entries || []).some((e) => e.day != null && e.day !== '')
-  if (hasDayTagged && !(program.entries || []).some((e) => e.cycleDay != null && e.cycleDay !== '')) {
+  const hasCycleDay = (program.entries || []).some((e) => e.cycleDay != null && e.cycleDay !== '')
+  if (hasDayTagged && !hasCycleDay) {
     return false
   }
-  if (program.cycleSameDaily === false) return true
+  // cycleSameDaily:false + cycleDay → eski 14 slot rotasyonu
+  if (program.cycleSameDaily === false && hasCycleDay) return true
   const days = new Set(
     (program.entries || [])
       .filter((e) => e.cycleDay != null && e.cycleDay !== '')
@@ -240,11 +256,21 @@ export function splitEntriesByType(entries) {
 }
 
 export function formatEntrySchedule(entry, program = null) {
+  const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
   if (entry.cycleDay != null && entry.cycleDay !== '' && program && usesLegacyCycleDayRotation(program)) {
     const len = Number(program?.cycleLength) || CYCLE_PLAN_LENGTH
     return `Gün ${Number(entry.cycleDay) + 1}/${len}`
   }
-  if (program && isFixedDurationPlan(program) && !usesLegacyCycleDayRotation(program)) {
+  if (program && isCycle14ByWeekday(program) && entry.day != null && entry.day !== '') {
+    const len = Number(program.cycleLength) || CYCLE_PLAN_LENGTH
+    const n = Number(entry.day)
+    return days[n] ? `Her ${days[n]} · ${len} gün` : `${len} gün`
+  }
+  if (program && isCycle14SameDaily(program)) {
+    const len = Number(program.cycleLength) || CYCLE_PLAN_LENGTH
+    return `Her gün aynı · ${len} gün`
+  }
+  if (program && isFixedDurationPlan(program) && !usesLegacyCycleDayRotation(program) && program.cycleSameDaily !== false) {
     const len = Number(program.cycleLength) || CYCLE_PLAN_LENGTH
     return `Her gün aynı · ${len} gün`
   }
@@ -255,7 +281,6 @@ export function formatEntrySchedule(entry, program = null) {
     } catch { /* yoksay */ }
     return entry.date
   }
-  const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
   const n = Number(entry.day)
   if (!Number.isNaN(n) && days[n]) return `Her ${days[n]}`
   return ''

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, ArrowRight, UserPlus, Dumbbell, Apple, CheckCircle,
-  Plus, Briefcase, GraduationCap, Award, Upload,
+  Plus, Briefcase, GraduationCap, Award,
   Share2, Video, Link2, Globe, MapPin, Building2, Sparkles,
   Target, Users, User,
 } from 'lucide-react'
@@ -21,7 +21,7 @@ import {
   GroupedChipSelect,
   FlatChipSelect,
   ServiceAreaGrid,
-  BulkCertUpload,
+  InlineDocUpload,
   ApplicationSummaryModal,
   FederationCertEditor,
 } from '../components/staff/StaffApplicationUi'
@@ -41,6 +41,9 @@ import {
   validateStaffApplicationStep,
   getOfficialCoachingCertLabels,
   EMPTY_FEDERATION_CERT,
+  hasCoachEducationInfo,
+  hasEducationEntryInfo,
+  hasCertificateEntryInfo,
 } from '../data/staffApplication'
 import { staffRoleLabel } from '../utils/staffRoles'
 
@@ -83,6 +86,7 @@ export default function StaffApplicationPage() {
   const specialtyGroups = form.role === 'dietitian' ? dietitianGroups : COACH_SPECIALTY_GROUPS
   const districts = useMemo(() => getDistricts(form.city), [form.city])
   const gymDistricts = useMemo(() => getDistricts(form.gymCity), [form.gymCity])
+  const officeDistricts = useMemo(() => getDistricts(form.officeCity), [form.officeCity])
 
   const stepErrors = useMemo(() => validateStaffApplicationStep(step, form), [step, form])
 
@@ -132,10 +136,18 @@ export default function StaffApplicationPage() {
   }
 
   const handleBulkCertUpload = async (fileList) => {
-    if (!fileList.length) return
+    const uploaded = await uploadDocs(fileList)
+    if (uploaded.length) {
+      setForm((f) => ({ ...f, certificateFiles: [...(f.certificateFiles || []), ...uploaded] }))
+    }
+  }
+
+  const uploadDocs = async (fileOrList) => {
+    const fileList = Array.isArray(fileOrList) ? fileOrList : (fileOrList ? [fileOrList] : [])
+    if (!fileList.length) return []
     if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
       toast('Belge yüklemeden önce bot doğrulamasını tamamlayın', 'error')
-      return
+      return []
     }
     setUploadingCerts(true)
     try {
@@ -153,14 +165,27 @@ export default function StaffApplicationPage() {
         }
         uploaded.push({ name: file.name, url: r.url })
       }
-      if (uploaded.length) {
-        update({ certificateFiles: [...(form.certificateFiles || []), ...uploaded] })
-        toast(`${uploaded.length} belge yüklendi`, 'success')
-      }
+      if (uploaded.length) toast(`${uploaded.length} belge yüklendi`, 'success')
+      return uploaded
     } finally {
       setUploadingCerts(false)
     }
   }
+
+  const handleSingleDocUpload = async (file, onSaved) => {
+    const uploaded = await uploadDocs(file)
+    if (uploaded[0]) onSaved(uploaded[0])
+  }
+
+  const showCoachEducationDoc = hasCoachEducationInfo(form)
+  const showOfficialCertDoc = !form.noOfficialCoachingCert && (form.federationCerts || []).some((fc) => fc.federation && (fc.levels || []).length)
+  const showIntlCertDoc = (form.internationalCerts || []).some((c) => c !== OTHER_OPTION)
+    || ((form.internationalCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.international?.trim())
+  const showBranchCertDoc = (form.branchCerts || []).some((c) => c !== OTHER_OPTION)
+    || ((form.branchCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.branch?.trim())
+  const needsAnyDocUpload = form.role === 'coach'
+    ? (showCoachEducationDoc || showOfficialCertDoc || showIntlCertDoc || showBranchCertDoc)
+    : (form.education || []).some(hasEducationEntryInfo) || (form.certificates || []).some(hasCertificateEntryInfo)
 
   if (done) {
     return (
@@ -246,21 +271,46 @@ export default function StaffApplicationPage() {
                       <select value={form.district} onChange={(e) => update({ district: e.target.value })} disabled={!form.city} className={selectCls}><option value="">{form.city ? 'İlçe *' : '—'}</option>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select>
                     </div>
                   </AccordionSection>
-                  <AccordionSection id="gym" title="Salon Bilgisi" subtitle="Opsiyonel" icon={Building2} tone="amber" open={openSection === 'gym'} onToggle={toggleSection}>
-                    <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm">
-                      <input type="checkbox" checked={form.hasGym} onChange={(e) => update({ hasGym: e.target.checked })} className="accent-brand-500" />
-                      Çalıştığım / sahibi olduğum bir salon var
-                    </label>
-                    {form.hasGym && (
-                      <div className="space-y-3">
-                        <input value={form.gymName} onChange={(e) => update({ gymName: e.target.value })} placeholder="Salon adı *" className={inputCls} />
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <select value={form.gymCity} onChange={(e) => update({ gymCity: e.target.value, gymDistrict: '' })} className={selectCls}><option value="">Salon ili *</option>{CITY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
-                          <select value={form.gymDistrict} onChange={(e) => update({ gymDistrict: e.target.value })} disabled={!form.gymCity} className={selectCls}><option value="">Salon ilçesi *</option>{gymDistricts.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+                  {form.role === 'dietitian' ? (
+                    <AccordionSection id="office" title="Ofis Bilgisi" subtitle="Opsiyonel" icon={Building2} tone="amber" open={openSection === 'office'} onToggle={toggleSection}>
+                      <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm">
+                        <input type="checkbox" checked={form.hasOffice} onChange={(e) => update({ hasOffice: e.target.checked })} className="accent-brand-500" />
+                        Çalıştığım / sahibi olduğum bir ofis var
+                      </label>
+                      {form.hasOffice && (
+                        <div className="space-y-3">
+                          <input value={form.officeName} onChange={(e) => update({ officeName: e.target.value })} placeholder="Ofis adı *" className={inputCls} />
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <select value={form.officeCity} onChange={(e) => update({ officeCity: e.target.value, officeDistrict: '' })} className={selectCls}><option value="">İl *</option>{CITY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                            <select value={form.officeDistrict} onChange={(e) => update({ officeDistrict: e.target.value })} disabled={!form.officeCity} className={selectCls}><option value="">İlçe *</option>{officeDistricts.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+                          </div>
+                          <textarea
+                            value={form.officeAddress}
+                            onChange={(e) => update({ officeAddress: e.target.value })}
+                            placeholder="Adres *"
+                            rows={3}
+                            className={`${inputCls} resize-none`}
+                          />
                         </div>
-                      </div>
-                    )}
-                  </AccordionSection>
+                      )}
+                    </AccordionSection>
+                  ) : (
+                    <AccordionSection id="gym" title="Salon Bilgisi" subtitle="Opsiyonel" icon={Building2} tone="amber" open={openSection === 'gym'} onToggle={toggleSection}>
+                      <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm">
+                        <input type="checkbox" checked={form.hasGym} onChange={(e) => update({ hasGym: e.target.checked })} className="accent-brand-500" />
+                        Çalıştığım / sahibi olduğum bir salon var
+                      </label>
+                      {form.hasGym && (
+                        <div className="space-y-3">
+                          <input value={form.gymName} onChange={(e) => update({ gymName: e.target.value })} placeholder="Salon adı *" className={inputCls} />
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <select value={form.gymCity} onChange={(e) => update({ gymCity: e.target.value, gymDistrict: '' })} className={selectCls}><option value="">Salon ili *</option>{CITY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                            <select value={form.gymDistrict} onChange={(e) => update({ gymDistrict: e.target.value })} disabled={!form.gymCity} className={selectCls}><option value="">Salon ilçesi *</option>{gymDistricts.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+                          </div>
+                        </div>
+                      )}
+                    </AccordionSection>
+                  )}
                   <AccordionSection id="social" title="Sosyal Medya & Web" subtitle="Opsiyonel" icon={Share2} tone="violet" open={openSection === 'social'} onToggle={toggleSection}>
                     <div className="space-y-3">
                       <SocialInput icon={Link2} value={form.linkedin} onChange={(v) => update({ linkedin: v })} placeholder="LinkedIn" />
@@ -303,7 +353,6 @@ export default function StaffApplicationPage() {
                     <div className="space-y-3">
                       <input type="number" min={0} max={50} value={form.experienceYears} onChange={(e) => update({ experienceYears: e.target.value })} placeholder="Deneyim (yıl) *" className={inputCls} />
                       <input value={form.graduationDepartment} onChange={(e) => update({ graduationDepartment: e.target.value })} placeholder="Mezuniyet bölümü *" className={inputCls} />
-                      <input value={form.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} placeholder="Diploma / TDD oda no *" className={inputCls} />
                       <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} rows={3} placeholder="Kendinizi tanıtın (opsiyonel)" className={inputCls} />
                     </div>
                   </AccordionSection>
@@ -312,33 +361,99 @@ export default function StaffApplicationPage() {
 
               {step === 3 && form.role === 'coach' && (
                 <>
+                  {needsAnyDocUpload && (
+                    <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                  )}
                   <AccordionSection id="education" title="Eğitim Bilgisi" icon={GraduationCap} tone="brand" open={openSection === 'education'} onToggle={toggleSection}>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <select value={form.educationLevel} onChange={(e) => update({ educationLevel: e.target.value })} className={selectCls}><option value="">Düzey *</option>{EDUCATION_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
-                      <input value={form.educationDepartment} onChange={(e) => update({ educationDepartment: e.target.value })} placeholder="Bölüm *" className={inputCls} />
-                      <input type="number" step="0.01" min={0} max={4} value={form.educationGpa} onChange={(e) => update({ educationGpa: e.target.value })} placeholder="GPA" className={inputCls} />
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <select value={form.educationLevel} onChange={(e) => update({ educationLevel: e.target.value })} className={selectCls}><option value="">Düzey *</option>{EDUCATION_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
+                        <input value={form.educationDepartment} onChange={(e) => update({ educationDepartment: e.target.value })} placeholder="Bölüm *" className={inputCls} />
+                        <input type="number" step="0.01" min={0} max={4} value={form.educationGpa} onChange={(e) => update({ educationGpa: e.target.value })} placeholder="GPA" className={inputCls} />
+                      </div>
+                      <AnimatePresence>
+                        {showCoachEducationDoc && (
+                          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                            <InlineDocUpload
+                              label="Eğitim belgesi PDF / görseli"
+                              hint="Girdiğiniz eğitim bilgisine ait diploma veya mezuniyet belgesini yükleyin."
+                              file={form.educationFile}
+                              uploading={uploadingCerts}
+                              onUpload={(file) => handleSingleDocUpload(file, (uploaded) => update({ educationFile: uploaded }))}
+                              onRemove={() => update({ educationFile: null })}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </AccordionSection>
                   <AccordionSection id="official-cert" title="GSB Federasyon Antrenörlük Belgesi" subtitle="Federasyon ve kademe seçimi" icon={Award} tone="amber" open={openSection === 'official-cert'} onToggle={toggleSection} count={getOfficialCoachingCertLabels(form).length}>
-                    <FederationCertEditor
-                      federationCerts={form.federationCerts}
-                      noOfficialCoachingCert={form.noOfficialCoachingCert}
-                      onChange={(federationCerts) => update({ federationCerts })}
-                      onToggleNone={(checked) => update({
-                        noOfficialCoachingCert: checked,
-                        federationCerts: checked ? [] : (form.federationCerts?.length ? form.federationCerts : [{ ...EMPTY_FEDERATION_CERT }]),
-                      })}
-                    />
+                    <div className="space-y-3">
+                      <FederationCertEditor
+                        federationCerts={form.federationCerts}
+                        noOfficialCoachingCert={form.noOfficialCoachingCert}
+                        onChange={(federationCerts) => update({ federationCerts })}
+                        onToggleNone={(checked) => update({
+                          noOfficialCoachingCert: checked,
+                          federationCerts: checked ? [] : (form.federationCerts?.length ? form.federationCerts : [{ ...EMPTY_FEDERATION_CERT }]),
+                        })}
+                      />
+                      <AnimatePresence>
+                        {showOfficialCertDoc && (
+                          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                            <InlineDocUpload
+                              label="Federasyon belgesi PDF / görseli"
+                              hint="Seçtiğiniz federasyon antrenörlük belgesinin PDF veya fotoğrafını yükleyin."
+                              files={form.certificateFiles}
+                              multiple
+                              uploading={uploadingCerts}
+                              onUpload={(files) => handleBulkCertUpload(files)}
+                              onRemove={(i) => update({ certificateFiles: form.certificateFiles.filter((_, idx) => idx !== i) })}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </AccordionSection>
                   <AccordionSection id="intl-cert" title="Uluslararası Sertifikalar" icon={Award} tone="sky" open={openSection === 'intl-cert'} onToggle={toggleSection} count={form.internationalCerts.length}>
-                    <FlatChipSelect items={INTERNATIONAL_CERTIFICATES} selected={form.internationalCerts} onChange={(internationalCerts) => update({ internationalCerts })} tone="sky" otherValue={form.certOtherNotes?.international} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, international: v } })} otherPlaceholder="Diğer uluslararası sertifika" />
+                    <div className="space-y-3">
+                      <FlatChipSelect items={INTERNATIONAL_CERTIFICATES} selected={form.internationalCerts} onChange={(internationalCerts) => update({ internationalCerts })} tone="sky" otherValue={form.certOtherNotes?.international} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, international: v } })} otherPlaceholder="Diğer uluslararası sertifika" />
+                      <AnimatePresence>
+                        {showIntlCertDoc && (
+                          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                            <InlineDocUpload
+                              label="Uluslararası sertifika PDF / görseli"
+                              hint="Seçtiğiniz uluslararası sertifikaların PDF veya fotoğraflarını yükleyin."
+                              files={form.certificateFiles}
+                              multiple
+                              uploading={uploadingCerts}
+                              onUpload={(files) => handleBulkCertUpload(files)}
+                              onRemove={(i) => update({ certificateFiles: form.certificateFiles.filter((_, idx) => idx !== i) })}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </AccordionSection>
                   <AccordionSection id="branch-cert" title="Branşa Özel Sertifikalar" icon={Award} tone="emerald" open={openSection === 'branch-cert'} onToggle={toggleSection} count={form.branchCerts.length}>
-                    <FlatChipSelect items={BRANCH_CERTIFICATES} selected={form.branchCerts} onChange={(branchCerts) => update({ branchCerts })} tone="emerald" otherValue={form.certOtherNotes?.branch} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, branch: v } })} otherPlaceholder="Diğer branş sertifikası" />
-                  </AccordionSection>
-                  <AccordionSection id="cert-files" title="Belge Yükleme" subtitle="Tüm sertifikalarınızı toplu yükleyin" icon={Upload} tone="sage" open={openSection === 'cert-files'} onToggle={toggleSection} count={form.certificateFiles?.length || 0}>
-                    <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
-                    <BulkCertUpload files={form.certificateFiles} uploading={uploadingCerts} onUpload={handleBulkCertUpload} onRemove={(i) => update({ certificateFiles: form.certificateFiles.filter((_, idx) => idx !== i) })} />
+                    <div className="space-y-3">
+                      <FlatChipSelect items={BRANCH_CERTIFICATES} selected={form.branchCerts} onChange={(branchCerts) => update({ branchCerts })} tone="emerald" otherValue={form.certOtherNotes?.branch} onOtherChange={(v) => update({ certOtherNotes: { ...form.certOtherNotes, branch: v } })} otherPlaceholder="Diğer branş sertifikası" />
+                      <AnimatePresence>
+                        {showBranchCertDoc && (
+                          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                            <InlineDocUpload
+                              label="Branş sertifikası PDF / görseli"
+                              hint="Seçtiğiniz branş sertifikalarının PDF veya fotoğraflarını yükleyin."
+                              files={form.certificateFiles}
+                              multiple
+                              uploading={uploadingCerts}
+                              onUpload={(files) => handleBulkCertUpload(files)}
+                              onRemove={(i) => update({ certificateFiles: form.certificateFiles.filter((_, idx) => idx !== i) })}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </AccordionSection>
                 </>
               )}
@@ -346,22 +461,81 @@ export default function StaffApplicationPage() {
               {step === 3 && form.role === 'dietitian' && (
                 <AccordionSection id="diet-edu" title="Eğitim & Sertifikalar" icon={GraduationCap} tone="sage" open={openSection === 'diet-edu'} onToggle={toggleSection}>
                   <div className="space-y-6">
+                    {needsAnyDocUpload && (
+                      <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />
+                    )}
                     {form.education.map((edu, i) => (
-                      <div key={i} className="grid gap-2 sm:grid-cols-3">
-                        <input value={edu.degree} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, degree: e.target.value }; update({ education: list }) }} placeholder="Bölüm" className={inputCls} />
-                        <input value={edu.school} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, school: e.target.value }; update({ education: list }) }} placeholder="Okul" className={inputCls} />
-                        <input value={edu.year} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, year: e.target.value }; update({ education: list }) }} placeholder="Yıl" className={inputCls} />
+                      <div key={`edu-${i}`} className="space-y-2">
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <input value={edu.degree} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, degree: e.target.value }; update({ education: list }) }} placeholder="Bölüm" className={inputCls} />
+                          <input value={edu.school} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, school: e.target.value }; update({ education: list }) }} placeholder="Okul" className={inputCls} />
+                          <input value={edu.year} onChange={(e) => { const list = [...form.education]; list[i] = { ...edu, year: e.target.value }; update({ education: list }) }} placeholder="Yıl" className={inputCls} />
+                        </div>
+                        <AnimatePresence>
+                          {hasEducationEntryInfo(edu) && (
+                            <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                              <InlineDocUpload
+                                label="Eğitim belgesi PDF / görseli"
+                                hint="Bu eğitim kaydına ait diploma veya mezuniyet belgesini yükleyin."
+                                file={edu.file}
+                                uploading={uploadingCerts}
+                                onUpload={(file) => handleSingleDocUpload(file, (uploaded) => {
+                                  setForm((f) => {
+                                    const list = [...(f.education || [])]
+                                    list[i] = { ...list[i], file: uploaded }
+                                    return { ...f, education: list }
+                                  })
+                                })}
+                                onRemove={() => {
+                                  setForm((f) => {
+                                    const list = [...(f.education || [])]
+                                    list[i] = { ...list[i], file: null }
+                                    return { ...f, education: list }
+                                  })
+                                }}
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
-                    <button type="button" onClick={() => update({ education: [...form.education, { degree: '', school: '', year: '' }] })} className="text-xs font-medium text-brand-600"><Plus className="inline h-3 w-3" /> Eğitim ekle</button>
+                    <button type="button" onClick={() => update({ education: [...form.education, { degree: '', school: '', year: '', file: null }] })} className="text-xs font-medium text-brand-600"><Plus className="inline h-3 w-3" /> Eğitim ekle</button>
                     {form.certificates.map((cert, i) => (
-                      <div key={i} className="grid gap-2 sm:grid-cols-3">
-                        <input value={cert.name} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, name: e.target.value }; update({ certificates: list }) }} placeholder="Sertifika" className={inputCls} />
-                        <input value={cert.issuer} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, issuer: e.target.value }; update({ certificates: list }) }} placeholder="Kurum" className={inputCls} />
-                        <input value={cert.year} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, year: e.target.value }; update({ certificates: list }) }} placeholder="Yıl" className={inputCls} />
+                      <div key={`cert-${i}`} className="space-y-2">
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <input value={cert.name} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, name: e.target.value }; update({ certificates: list }) }} placeholder="Sertifika" className={inputCls} />
+                          <input value={cert.issuer} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, issuer: e.target.value }; update({ certificates: list }) }} placeholder="Kurum" className={inputCls} />
+                          <input value={cert.year} onChange={(e) => { const list = [...form.certificates]; list[i] = { ...cert, year: e.target.value }; update({ certificates: list }) }} placeholder="Yıl" className={inputCls} />
+                        </div>
+                        <AnimatePresence>
+                          {hasCertificateEntryInfo(cert) && (
+                            <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+                              <InlineDocUpload
+                                label="Sertifika belgesi PDF / görseli"
+                                hint="Bu sertifikaya ait PDF veya fotoğrafı yükleyin."
+                                file={cert.file}
+                                uploading={uploadingCerts}
+                                onUpload={(file) => handleSingleDocUpload(file, (uploaded) => {
+                                  setForm((f) => {
+                                    const list = [...(f.certificates || [])]
+                                    list[i] = { ...list[i], file: uploaded }
+                                    return { ...f, certificates: list }
+                                  })
+                                })}
+                                onRemove={() => {
+                                  setForm((f) => {
+                                    const list = [...(f.certificates || [])]
+                                    list[i] = { ...list[i], file: null }
+                                    return { ...f, certificates: list }
+                                  })
+                                }}
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
-                    <button type="button" onClick={() => update({ certificates: [...form.certificates, { name: '', issuer: '', year: '' }] })} className="text-xs font-medium text-brand-600"><Plus className="inline h-3 w-3" /> Sertifika ekle</button>
+                    <button type="button" onClick={() => update({ certificates: [...form.certificates, { name: '', issuer: '', year: '', file: null }] })} className="text-xs font-medium text-brand-600"><Plus className="inline h-3 w-3" /> Sertifika ekle</button>
                   </div>
                 </AccordionSection>
               )}

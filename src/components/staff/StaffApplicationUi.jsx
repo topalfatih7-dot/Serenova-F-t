@@ -200,12 +200,12 @@ function OtherOptionBlock({ selected, onToggle, value, onChange, placeholder, to
   )
 }
 
-export function BulkCertUpload({ files, uploading, onUpload, onRemove }) {
+export function BulkCertUpload({ files, uploading, onUpload, onRemove, title = 'Sertifika Belgeleri', hint = 'Seçtiğiniz tüm sertifikaların PDF veya fotoğraflarını buraya toplu yükleyin (birden fazla dosya).' }) {
   const inputRef = useRef(null)
   return (
     <div className="rounded-2xl border-2 border-dashed border-sage-200 bg-gradient-to-br from-sage-50/80 to-emerald-50/40 p-5">
-      <p className="text-sm font-bold text-cream-900">Sertifika Belgeleri</p>
-      <p className="mt-1 text-xs text-cream-800/60">Seçtiğiniz tüm sertifikaların PDF veya fotoğraflarını buraya toplu yükleyin (birden fazla dosya).</p>
+      <p className="text-sm font-bold text-cream-900">{title}</p>
+      <p className="mt-1 text-xs text-cream-800/60">{hint}</p>
       <input
         ref={inputRef}
         type="file"
@@ -237,6 +237,75 @@ export function BulkCertUpload({ files, uploading, onUpload, onRemove }) {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  )
+}
+
+/** Bilgi girildiğinde hemen altında belgenin PDF/görselini ister */
+export function InlineDocUpload({
+  label = 'Belge PDF / görseli',
+  hint = 'Girdiğiniz bilgiye ait belgeyi yükleyin (PDF, JPG, PNG).',
+  file = null,
+  files = null,
+  uploading = false,
+  multiple = false,
+  onUpload,
+  onRemove,
+}) {
+  const inputRef = useRef(null)
+  const list = files || (file ? [file] : [])
+  return (
+    <div className="rounded-xl border border-dashed border-amber-200/80 bg-amber-50/50 p-3.5">
+      <p className="text-xs font-semibold text-cream-900">{label} *</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-cream-800/55">{hint}</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          const selected = Array.from(e.target.files || [])
+          if (selected.length) onUpload(multiple ? selected : selected[0])
+          e.target.value = ''
+        }}
+      />
+      {list.length > 0 ? (
+        <ul className="mt-2.5 space-y-1.5">
+          {list.map((f, i) => (
+            <li key={f.url || f.name || i} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-xs ring-1 ring-cream-100">
+              <span className="flex min-w-0 items-center gap-2 text-cream-800">
+                <FileText className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <span className="truncate">{f.name || `Belge ${i + 1}`}</span>
+              </span>
+              <button type="button" onClick={() => onRemove(multiple ? i : undefined)} className="shrink-0 rounded p-1 text-cream-400 hover:bg-red-50 hover:text-red-500">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+          {multiple && (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg bg-white py-2 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-50 disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploading ? 'Yükleniyor…' : 'Başka belge ekle'}
+            </button>
+          )}
+        </ul>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-white py-2.5 text-xs font-semibold text-amber-800 shadow-sm ring-1 ring-amber-200 transition hover:bg-amber-50 disabled:opacity-50"
+        >
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {uploading ? 'Yükleniyor…' : 'PDF / görsel yükle'}
+        </button>
       )}
     </div>
   )
@@ -387,7 +456,13 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
           <SummaryRow label="Telefon" value={form.phone} />
           <SummaryRow label="Cinsiyet" value={GENDER_LABELS[form.gender]} />
           <SummaryRow label="Konum" value={form.city ? `${form.city} / ${form.district}` : ''} />
-          {form.hasGym && <SummaryRow label="Salon" value={[form.gymName, form.gymCity, form.gymDistrict].filter(Boolean).join(' · ')} />}
+          {isCoach && form.hasGym && <SummaryRow label="Salon" value={[form.gymName, form.gymCity, form.gymDistrict].filter(Boolean).join(' · ')} />}
+          {!isCoach && form.hasOffice && (
+            <>
+              <SummaryRow label="Ofis" value={[form.officeName, form.officeCity, form.officeDistrict].filter(Boolean).join(' · ')} />
+              {form.officeAddress?.trim() && <SummaryRow label="Ofis adresi" value={form.officeAddress} />}
+            </>
+          )}
         </SummarySection>
 
         <SummarySection title="Uzmanlık">
@@ -397,7 +472,6 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
           {!isCoach && (
             <>
               <SummaryRow label="Mezuniyet" value={form.graduationDepartment} />
-              <SummaryRow label="Oda no" value={form.licenseNumber} />
             </>
           )}
         </SummarySection>
@@ -405,10 +479,24 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
         {isCoach && (
           <SummarySection title="Eğitim & Sertifika">
             <SummaryRow label="Eğitim" value={[EDU[form.educationLevel], form.educationDepartment, form.educationGpa && `GPA ${form.educationGpa}`].filter(Boolean).join(' · ')} />
+            <SummaryRow label="Eğitim belgesi" value={form.educationFile?.name || (form.educationFile?.url ? 'Yüklendi' : '')} />
             <SummaryRow label="Resmi antrenörlük" value={getOfficialCoachingCertLabels(form).join(' · ') || (form.noOfficialCoachingCert ? 'Belge yok' : '')} />
             <SummaryRow label="Uluslararası" value={[...(form.internationalCerts || []), form.certOtherNotes?.international].filter(Boolean).join(', ')} />
             <SummaryRow label="Branş" value={[...(form.branchCerts || []), form.certOtherNotes?.branch].filter(Boolean).join(', ')} />
-            <SummaryRow label="Belgeler" value={`${(form.certificateFiles || []).length} dosya yüklendi`} />
+            <SummaryRow label="Sertifika belgeleri" value={`${(form.certificateFiles || []).length} dosya yüklendi`} />
+          </SummarySection>
+        )}
+
+        {!isCoach && (
+          <SummarySection title="Eğitim & Sertifika">
+            <SummaryRow
+              label="Eğitim"
+              value={(form.education || []).filter((e) => e.degree || e.school).map((e) => [e.degree, e.school, e.year, e.file?.name && '📄'].filter(Boolean).join(' · ')).join(' | ')}
+            />
+            <SummaryRow
+              label="Sertifikalar"
+              value={(form.certificates || []).filter((c) => c.name).map((c) => [c.name, c.issuer, c.year, c.file?.name && '📄'].filter(Boolean).join(' · ')).join(' | ')}
+            />
           </SummarySection>
         )}
 

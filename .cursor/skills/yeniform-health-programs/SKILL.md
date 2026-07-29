@@ -15,7 +15,8 @@ description: >-
 - Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
 - Stored in `members.data.healthTest` JSONB
 - HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4)
-  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis` (üyeye skor/brief **gösterilmez**)
+  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis`
+  - Üye dashboard: `HealthScoreCard` (genel /100 + boyutlar; `staffBrief` yok)
   - Program / diyet listesi AI **üretilmez**
   - Fingerprint stale → personel “Güncel değil” + yeniden analiz
 - Programlar personel (koç/diyetisyen) tarafından gönderilir

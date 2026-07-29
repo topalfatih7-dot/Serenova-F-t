@@ -14,7 +14,7 @@
 2. Ücretli plan **yalnızca** Stripe webhook / admin — istemci `changeMemberPlan` ile açılmaz.
 3. Kayıt: auth session Stripe öncesi açılır; `members` satırı webhook ile gelir → header `hasRegisteredMember()` / `isFullyRegistered`.
 4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz.
-5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **staff sağlık skoru/brief** (`ai-health-analysis`, GPT-5.4). Program / diyet listesi / öğün menüsü AI **yok**. Üye skor/brief görmez.
+5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` yalnızca personel.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
 8. Satılan plan sırası: Diyet(0) → Spor(1) → Doktor(2) → Vip(3). `free` = süresi bitmiş fallback; `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
@@ -37,7 +37,7 @@
 
 ## 2. Durum (2026-07-29)
 
-**Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · **staff-only sağlık skoru/brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
+**Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · **sağlık skoru (üye dashboard) + staff brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış · ücretsiz kayıt. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok.)
 
@@ -90,8 +90,8 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 - HT 6 kategori: `healthTestSections.js`
 - Tamamlanınca `useHealthAnalysisSync` → `/api/ai-health-analysis` → `members.data.healthAnalysis` (+ `healthScoreHistory`)
-- Üye: skor/brief **görünmez** (yalnızca “analiz hazır” durumu)
-- Koç/diyetisyen: `StaffHealthBrief`; fingerprint stale → “Güncel değil” + yeniden analiz
+- Üye dashboard: `HealthScoreCard` — genel skor /100 + 8 boyut (+ trend); `staffBrief` **gösterilmez**
+- Koç/diyetisyen: `StaffHealthBrief` (skor + brief); fingerprint stale → “Güncel değil” + yeniden analiz
 - Programlar: personel (koç/diyetisyen) gönderir → `programs` tablosu
   - Koç: `/staff/clients/:id/program` — haftalık şablon (`scheduleType: 'weekly'`, `entry.day` + gün bazlı seans saati); aralık bugün→paket bitişi; müsait olmayan günlere yazılmaz
   - Diyetisyen: `/staff/clients/:id/list` — `NutritionProgramBuilder` (mantık aynı, tam sayfa UX)
@@ -161,7 +161,8 @@ Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipP
 
 ## 11. Son delta (2026-07-29)
 
-- Staff-only GPT-5.4 sağlık skoru + `staffBrief` geri eklendi (`api/ai-health-analysis.js`); program/diyet AI yok.
+- GPT-5.4 sağlık skoru + `staffBrief` (`api/ai-health-analysis.js`); program/diyet AI yok.
+- Üye panel: `HealthScoreCard` (genel /100 + boyutlar); brief personelde.
 - HT tamamlanınca otomatik 1×; stale fingerprint → personel yeniden analiz.
 - Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).

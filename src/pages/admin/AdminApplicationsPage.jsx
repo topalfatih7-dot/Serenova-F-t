@@ -342,7 +342,15 @@ function TagList({ items }) {
 function StaffApplicationDetail({ app, d }) {
   const isCoach = app.role === 'coach'
   const location = [d.city, d.district].filter(Boolean).join(' / ')
-  const gym = d.hasGym ? [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · ') : null
+  const gym = isCoach && d.hasGym ? [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · ') : null
+  const office = !isCoach && (d.hasOffice || d.hasGym)
+    ? {
+        line: d.hasOffice
+          ? [d.officeName, d.officeCity, d.officeDistrict].filter(Boolean).join(' · ')
+          : [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · '),
+        address: d.hasOffice ? (d.officeAddress?.trim() || '') : '',
+      }
+    : null
   const socials = [
     d.linkedin && ['LinkedIn', d.linkedin],
     d.instagram && ['Instagram', d.instagram],
@@ -369,6 +377,13 @@ function StaffApplicationDetail({ app, d }) {
       {gym && (
         <DetailBlock title="Salon">
           <p className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5 text-amber-600" /> {gym}</p>
+        </DetailBlock>
+      )}
+
+      {office?.line && (
+        <DetailBlock title="Ofis">
+          <p className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5 text-amber-600" /> {office.line}</p>
+          {office.address && <p className="mt-1 text-cream-800/70">{office.address}</p>}
         </DetailBlock>
       )}
 
@@ -405,6 +420,11 @@ function StaffApplicationDetail({ app, d }) {
               {d.educationDepartment ? ` · ${d.educationDepartment}` : ''}
               {d.educationGpa ? ` · GPA ${d.educationGpa}` : ''}
             </p>
+            {d.educationFile?.url && (
+              <a href={d.educationFile.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                {d.educationFile.name || 'Eğitim belgesi'} <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
           </DetailBlock>
           <DetailBlock title="GSB Federasyon Antrenörlük">
             <TagList items={getOfficialCoachingCertLabels(d)} />
@@ -456,18 +476,45 @@ function StaffApplicationDetail({ app, d }) {
           {d.bio && <DetailBlock title="Tanıtım"><p className="text-cream-800/75">{d.bio}</p></DetailBlock>}
           {(d.education || []).length > 0 && (
             <DetailBlock title="Eğitim">
-              <ul className="list-inside list-disc text-cream-800/75">
+              <ul className="space-y-1.5 text-cream-800/75">
                 {d.education.filter((e) => e.degree || e.school).map((e, i) => (
-                  <li key={i}>{[e.degree, e.school, e.year].filter(Boolean).join(' · ')}</li>
+                  <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>{[e.degree, e.school, e.year].filter(Boolean).join(' · ')}</span>
+                    {e.file?.url && (
+                      <a href={e.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                        Belge <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </li>
                 ))}
               </ul>
             </DetailBlock>
           )}
           {(d.certificates || []).length > 0 && (
             <DetailBlock title="Sertifikalar">
-              <ul className="list-inside list-disc text-cream-800/75">
+              <ul className="space-y-1.5 text-cream-800/75">
                 {d.certificates.filter((c) => c.name).map((c, i) => (
-                  <li key={i}>{[c.name, c.issuer, c.year].filter(Boolean).join(' · ')}</li>
+                  <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>{[c.name, c.issuer, c.year].filter(Boolean).join(' · ')}</span>
+                    {c.file?.url && (
+                      <a href={c.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                        Belge <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </DetailBlock>
+          )}
+          {(d.certificateFiles?.length > 0) && (
+            <DetailBlock title="Yüklenen Belgeler">
+              <ul className="space-y-1">
+                {(d.certificateFiles || []).map((f, i) => (
+                  <li key={f.url || i}>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                      {f.name || `Belge ${i + 1}`} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </li>
                 ))}
               </ul>
             </DetailBlock>

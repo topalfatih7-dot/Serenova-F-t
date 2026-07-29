@@ -46,6 +46,7 @@ function buildCoachSections(d) {
   const eduLine = [eduLevel, d.educationDepartment, d.educationGpa ? `GPA ${d.educationGpa}` : ''].filter(Boolean).join(' · ')
 
   const certLinks = [
+    ...(d.educationFile?.name || d.educationFile?.url ? [d.educationFile.name || 'Eğitim belgesi'] : []),
     ...(d.certificateFiles || []).map((f) => f.name || f.url),
     ...Object.keys(d.certDocuments || {}),
   ]
@@ -88,7 +89,6 @@ function buildDietitianSections(d) {
     d.bio ? section('Tanıtım', `<p class="bio">${escapeHtml(d.bio).replace(/\n/g, '<br/>')}</p>`) : '',
     section('Mezuniyet & Lisans', `
       ${row('Bölüm', d.graduationDepartment)}
-      ${row('Diploma / Oda No', d.licenseNumber)}
     `),
     section('Eğitim', listItems(
       (d.education || []).filter((e) => e.degree || e.school),
@@ -106,7 +106,17 @@ export function buildStaffApplicationCvHtml(app) {
   const roleLabel = staffRoleLabel(app.role)
   const isCoach = app.role === 'coach'
   const location = [d.city, d.district].filter(Boolean).join(' / ')
-  const gym = d.hasGym ? [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · ') : ''
+  const gym = isCoach && d.hasGym ? [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · ') : ''
+  const hasDietitianWorkplace = !isCoach && (d.hasOffice || d.hasGym)
+  const officeLine = hasDietitianWorkplace
+    ? (d.hasOffice
+      ? [d.officeName, d.officeCity, d.officeDistrict].filter(Boolean).join(' · ')
+      : [d.gymName, d.gymCity, d.gymDistrict].filter(Boolean).join(' · '))
+    : ''
+  const officeAddress = d.hasOffice ? (d.officeAddress || '').trim() : ''
+  const officeHtml = officeLine
+    ? `<p>${escapeHtml(officeLine)}</p>${officeAddress ? `<p>${escapeHtml(officeAddress)}</p>` : ''}`
+    : ''
   const appliedAt = app.createdAt
     ? format(new Date(app.createdAt), 'd MMMM yyyy', { locale: tr })
     : '—'
@@ -163,6 +173,7 @@ export function buildStaffApplicationCvHtml(app) {
       </header>
 
       ${gym ? section('Çalıştığı Salon', `<p>${escapeHtml(gym)}</p>`) : ''}
+      ${officeHtml ? section('Çalıştığı Ofis', officeHtml) : ''}
       ${socialRows ? section('Sosyal Medya', socialRows) : ''}
       ${(d.languages || []).length ? section('Diller', tagList(d.languages)) : ''}
       ${bodySections}

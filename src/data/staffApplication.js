@@ -241,6 +241,11 @@ export const EMPTY_STAFF_APPLICATION = {
   gymName: '',
   gymCity: '',
   gymDistrict: '',
+  hasOffice: false,
+  officeName: '',
+  officeCity: '',
+  officeDistrict: '',
+  officeAddress: '',
   instagram: '',
   youtube: '',
   website: '',
@@ -254,6 +259,7 @@ export const EMPTY_STAFF_APPLICATION = {
   educationLevel: '',
   educationDepartment: '',
   educationGpa: '',
+  educationFile: null,
   noOfficialCoachingCert: false,
   federationCerts: [{ federation: 'tvgfbf', federationOther: '', levels: [] }],
   officialCoachingCerts: [],
@@ -267,12 +273,23 @@ export const EMPTY_STAFF_APPLICATION = {
   serviceAreaOther: '',
   languages: ['Türkçe'],
   // Diyetisyen
-  licenseNumber: '',
   graduationDepartment: '',
-  education: [{ degree: '', school: '', year: '' }],
-  certificates: [{ name: '', issuer: '', year: '' }],
+  education: [{ degree: '', school: '', year: '', file: null }],
+  certificates: [{ name: '', issuer: '', year: '', file: null }],
   bio: '',
   title: '',
+}
+
+export function hasEducationEntryInfo(edu) {
+  return !!(edu?.degree?.trim() || edu?.school?.trim() || edu?.year?.trim())
+}
+
+export function hasCertificateEntryInfo(cert) {
+  return !!(cert?.name?.trim() || cert?.issuer?.trim() || cert?.year?.trim())
+}
+
+export function hasCoachEducationInfo(form) {
+  return !!(form?.educationLevel || form?.educationDepartment?.trim() || form?.educationGpa)
 }
 
 export function toggleInList(list, item) {
@@ -306,7 +323,7 @@ export function applicationToStaffPayload(app, tempPassword) {
   } else if (d.graduationDepartment) {
     education.unshift({
       degree: d.graduationDepartment,
-      school: d.licenseNumber ? `Oda/Diploma No: ${d.licenseNumber}` : '',
+      school: '',
       year: '',
     })
   }
@@ -351,7 +368,14 @@ function baseErrors(form) {
   if (!form.city?.trim()) errors.push('İl seçin')
   if (!form.district?.trim()) errors.push('İlçe seçin')
   if (!form.gender) errors.push('Cinsiyet seçin')
-  if (form.hasGym) {
+  if (form.role === 'dietitian') {
+    if (form.hasOffice) {
+      if (!form.officeName?.trim()) errors.push('Ofis adı gerekli')
+      if (!form.officeCity?.trim()) errors.push('Ofis ili gerekli')
+      if (!form.officeDistrict?.trim()) errors.push('Ofis ilçesi gerekli')
+      if (!form.officeAddress?.trim()) errors.push('Ofis adresi gerekli')
+    }
+  } else if (form.hasGym) {
     if (!form.gymName?.trim()) errors.push('Salon adı gerekli')
     if (!form.gymCity?.trim()) errors.push('Salon ili gerekli')
     if (!form.gymDistrict?.trim()) errors.push('Salon ilçesi gerekli')
@@ -379,7 +403,6 @@ function dietitianStep2Errors(form) {
   if (!(form.specialties || []).length) errors.push('En az bir uzmanlık alanı seçin')
   if (!form.experienceYears && form.experienceYears !== 0) errors.push('Deneyim yılı gerekli')
   if (!form.graduationDepartment?.trim()) errors.push('Mezuniyet bölümü gerekli')
-  if (!form.licenseNumber?.trim()) errors.push('Diploma / TDD oda kayıt no gerekli')
   return errors
 }
 
@@ -387,6 +410,9 @@ function coachStep3Errors(form) {
   const errors = []
   if (!form.educationLevel) errors.push('Eğitim düzeyi seçin')
   if (!form.educationDepartment?.trim()) errors.push('Bölüm bilgisi gerekli')
+  if (hasCoachEducationInfo(form) && !form.educationFile?.url) {
+    errors.push('Eğitim belgesi PDF / görselini yükleyin')
+  }
   const hasOfficial = !form.noOfficialCoachingCert && (
     (form.federationCerts || []).some((fc) => fc.federation && (fc.levels || []).length)
     || (form.officialCoachingCerts || []).some((c) => c && c !== OFFICIAL_COACHING_CERT_NONE)
@@ -406,7 +432,7 @@ function coachStep3Errors(form) {
   if ((form.internationalCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.international?.trim()) errors.push('Diğer uluslararası sertifikayı yazın')
   if ((form.branchCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.branch?.trim()) errors.push('Diğer branş sertifikasını yazın')
   const needsFiles = hasOfficial || hasIntl || hasBranch
-  if (needsFiles && !(form.certificateFiles || []).length) errors.push('En az bir sertifika belgesi yükleyin')
+  if (needsFiles && !(form.certificateFiles || []).length) errors.push('Seçtiğiniz sertifikalar için PDF / görsel yükleyin')
   return errors
 }
 
@@ -416,6 +442,16 @@ function dietitianStep3Errors(form) {
   if (!edu) errors.push('En az bir eğitim bilgisi girin')
   const cert = (form.certificates || []).find((c) => c.name?.trim())
   if (!cert) errors.push('En az bir sertifika / diploma girin')
+  ;(form.education || []).forEach((e, i) => {
+    if (hasEducationEntryInfo(e) && !e.file?.url) {
+      errors.push(`${i + 1}. eğitim kaydı için belge PDF / görselini yükleyin`)
+    }
+  })
+  ;(form.certificates || []).forEach((c, i) => {
+    if (hasCertificateEntryInfo(c) && !c.file?.url) {
+      errors.push(`${i + 1}. sertifika kaydı için belge PDF / görselini yükleyin`)
+    }
+  })
   return errors
 }
 
@@ -450,10 +486,6 @@ export function buildStaffApplicationPayload(form) {
     city: form.city || '',
     district: form.district || '',
     gender: form.gender || '',
-    hasGym: !!form.hasGym,
-    gymName: form.gymName || '',
-    gymCity: form.gymCity || '',
-    gymDistrict: form.gymDistrict || '',
     instagram: form.instagram || '',
     youtube: form.youtube || '',
     website: form.website || '',
@@ -465,25 +497,55 @@ export function buildStaffApplicationPayload(form) {
   }
 
   if (form.role === 'dietitian') {
+    const education = (form.education || []).map((e) => ({
+      degree: e.degree || '',
+      school: e.school || '',
+      year: e.year || '',
+      file: e.file?.url ? { name: e.file.name || '', url: e.file.url } : null,
+    }))
+    const certificates = (form.certificates || []).map((c) => ({
+      name: c.name || '',
+      issuer: c.issuer || '',
+      year: c.year || '',
+      file: c.file?.url ? { name: c.file.name || '', url: c.file.url } : null,
+    }))
+    const certificateFiles = [
+      ...education.filter((e) => e.file?.url).map((e) => ({ name: e.file.name || `Eğitim — ${e.degree || e.school}`, url: e.file.url, kind: 'education' })),
+      ...certificates.filter((c) => c.file?.url).map((c) => ({ name: c.file.name || `Sertifika — ${c.name}`, url: c.file.url, kind: 'certificate' })),
+    ]
     return {
       ...common,
+      hasOffice: !!form.hasOffice,
+      officeName: form.officeName || '',
+      officeCity: form.officeCity || '',
+      officeDistrict: form.officeDistrict || '',
+      officeAddress: form.officeAddress || '',
       graduationDepartment: form.graduationDepartment || '',
-      licenseNumber: form.licenseNumber || '',
-      education: form.education || [],
-      certificates: form.certificates || [],
+      education,
+      certificates,
+      certificateFiles,
       bio: form.bio || '',
       title: form.title || '',
     }
   }
 
+  const educationFile = form.educationFile?.url
+    ? { name: form.educationFile.name || 'Eğitim belgesi', url: form.educationFile.url, kind: 'education' }
+    : null
+
   return {
     ...common,
+    hasGym: !!form.hasGym,
+    gymName: form.gymName || '',
+    gymCity: form.gymCity || '',
+    gymDistrict: form.gymDistrict || '',
     competentGroups: form.competentGroups || [],
     competentGroupOther: form.competentGroupOther || '',
     chronicDiseaseExamples: form.chronicDiseaseExamples || '',
     educationLevel: form.educationLevel || '',
     educationDepartment: form.educationDepartment || '',
     educationGpa: form.educationGpa || '',
+    educationFile,
     noOfficialCoachingCert: !!form.noOfficialCoachingCert,
     federationCerts: (form.federationCerts || []).map((fc) => ({
       federation: fc.federation || '',
@@ -493,7 +555,11 @@ export function buildStaffApplicationPayload(form) {
     officialCoachingCerts: form.officialCoachingCerts || [],
     internationalCerts: form.internationalCerts || [],
     branchCerts: form.branchCerts || [],
-    certificateFiles: form.certificateFiles || [],
+    certificateFiles: (form.certificateFiles || []).map((f) => ({
+      name: f.name || '',
+      url: f.url,
+      kind: f.kind || 'certificate',
+    })),
     certOtherNotes: form.certOtherNotes || {},
     workApproaches: form.workApproaches || [],
     workApproachOther: form.workApproachOther || '',

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { List, Apple, User } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { List, Apple, User, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
@@ -32,34 +33,45 @@ export default function StaffListsPage() {
         <div className="space-y-3">
           {mine.map((p) => {
             const open = expanded === p.id
-            const mealCount = p.scheduleType === 'cycle14' && !usesLegacyCycleDayRotation(p)
+            const mealCount = p.scheduleType === 'cycle14' && p.cycleSameDaily !== false && !usesLegacyCycleDayRotation(p)
               ? dedupeDailyNutritionEntries(p.entries || []).length
               : new Set(
                   (p.entries || []).map((e) => `${e.cycleDay ?? e.date ?? e.day}_${e.mealType}`)
                 ).size
             return (
               <div key={p.id} className="overflow-hidden rounded-2xl border border-cream-200 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setExpanded(open ? null : p.id)}
-                  className="flex w-full items-center gap-4 p-5 text-left"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
-                    <Apple className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-cream-900">{p.title}</p>
-                    {p.scheduleType === 'cycle14' && (
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">14 gün · her gün aynı</p>
-                    )}
-                    <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
-                      <User className="h-3 w-3" /> {p.memberName} · {format(new Date(p.createdAt), 'd MMM yyyy', { locale: tr })}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-sage-50 px-2.5 py-0.5 text-xs font-semibold text-sage-700">
-                    {mealCount} öğün
-                  </span>
-                </button>
+                <div className="flex items-center gap-3 p-5">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(open ? null : p.id)}
+                    className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-600">
+                      <Apple className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-cream-900">{p.title}</p>
+                      {p.scheduleType === 'cycle14' && (
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">
+                          {p.cycleSameDaily === false ? '14 gün · güne göre' : '14 gün · her gün aynı'}
+                        </p>
+                      )}
+                      <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
+                        <User className="h-3 w-3" /> {p.memberName} · {format(new Date(p.createdAt), 'd MMM yyyy', { locale: tr })}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-sage-50 px-2.5 py-0.5 text-xs font-semibold text-sage-700">
+                      {mealCount} öğün
+                    </span>
+                  </button>
+                  <Link
+                    to={`/staff/programs/${p.id}/edit`}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-sage-200 bg-sage-50 px-3 py-2 text-xs font-semibold text-sage-700 hover:bg-sage-100"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Düzenle
+                  </Link>
+                </div>
                 {open && (
                   <div className="border-t border-cream-100 px-5 pb-5 pt-4">
                     {p.description && <p className="mb-3 text-sm text-cream-800/70">{p.description}</p>}

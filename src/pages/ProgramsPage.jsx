@@ -9,7 +9,7 @@ import ExerciseVideoThumbnail from '../components/library/ExerciseVideoThumbnail
 import PanelPageHeader, { PanelChip, PanelPageShell } from '../components/layout/PanelPageHeader'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
-import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation } from '../utils/programSchedule'
+import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation, isCycle14SameDaily } from '../utils/programSchedule'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
@@ -48,8 +48,10 @@ function groupLabel(key, program = null) {
 }
 
 function groupBySchedule(entries = [], program = null) {
-  const sameDailyFixed = (program?.scheduleType === 'cycle14' || program?.scheduleType === 'dateRange')
-    && !usesLegacyCycleDayRotation(program)
+  const sameDailyFixed = (
+    (program?.scheduleType === 'cycle14' && isCycle14SameDaily(program))
+    || (program?.scheduleType === 'dateRange' && program?.cycleSameDaily !== false && !usesLegacyCycleDayRotation(program))
+  )
   if (sameDailyFixed) {
     return [{
       key: 'daily',
@@ -157,7 +159,7 @@ export default function ProgramsPage() {
                         </span>
                         {p.scheduleType === 'cycle14' && (
                           <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
-                            14 Gün · Her Gün Aynı
+                            {p.cycleSameDaily === false ? '14 Gün · Güne Göre' : '14 Gün · Her Gün Aynı'}
                           </span>
                         )}
                         {p.scheduleType === 'dateRange' && p.cycleStartDate && (
@@ -178,7 +180,7 @@ export default function ProgramsPage() {
                           {' — '}
                           {format(addDays(new Date(`${p.cycleStartDate}T12:00:00`), (p.cycleLength || CYCLE_PLAN_LENGTH) - 1), 'd MMMM yyyy', { locale: tr })}
                           {p.cycleSameDaily === false
-                            ? ' · antrenman günlerinde geçerli'
+                            ? (p.scheduleType === 'cycle14' ? ' · haftanın gününe göre' : ' · antrenman günlerinde geçerli')
                             : ' · her gün aynı program'}
                         </p>
                       )}

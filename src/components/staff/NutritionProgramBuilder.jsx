@@ -3,7 +3,7 @@ import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   Plus, Trash2, Pencil, X, Apple, CalendarDays, Coffee, Sun, Moon, Cookie,
-  ArrowRight, Check, Send, Sparkles,
+  ArrowRight, Check, Send, Sparkles, Copy,
 } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import {
@@ -11,7 +11,6 @@ import {
   mealLabel,
   CYCLE_PLAN_LENGTH,
   dedupeDailyNutritionEntries,
-  buildNutritionProgramTitle,
 } from '../../utils/programSchedule'
 import { getDateInputBounds } from '../../utils/programPackageScope'
 import { WEEKDAYS } from '../package/supportScheduleConstants'
@@ -58,8 +57,8 @@ const DEFAULT_MEAL_TIMES = {
   snack_evening: '21:30',
 }
 
-function entryToText(e, scheduleMode) {
-  const schedule = scheduleMode === 'cycle14'
+function entryToText(e, scheduleMode, cycleSameDaily = true) {
+  const schedule = scheduleMode === 'cycle14' && cycleSameDaily
     ? '14 gün boyunca her gün'
     : e.date
       ? format(new Date(`${e.date}T12:00:00`), 'd MMM', { locale: tr })
@@ -88,8 +87,12 @@ function entryKey(entry) {
   return `day:${entry.day}:${entry.mealType}:${entry.start || ''}`
 }
 
-function isDailyMode(mode) {
-  return mode === 'cycle14'
+function isSameDailyCycle(mode, cycleSameDaily) {
+  return mode === 'cycle14' && cycleSameDaily
+}
+
+function usesWeekdayPicker(mode, cycleSameDaily) {
+  return mode === 'weekly' || (mode === 'cycle14' && !cycleSameDaily)
 }
 
 function WizardSteps({ step }) {
@@ -127,9 +130,6 @@ function WizardSteps({ step }) {
 }
 
 function scopedEntries(entries, scheduleMode) {
-  if (isDailyMode(scheduleMode)) {
-    return entries.filter((e) => e.day != null && !e.date && e.cycleDay == null)
-  }
   if (scheduleMode === 'date') {
     return entries.filter((e) => e.date)
   }
@@ -147,6 +147,7 @@ export default function NutritionProgramBuilder({
   const { toast } = useToast()
   const isEdit = Boolean(initialData) && typeof onUpdate === 'function'
   const [step, setStep] = useState(1)
+  const [title, setTitle] = useState(() => initialData?.title || '')
   const [description, setDescription] = useState(() => initialData?.description || '')
   const [entries, setEntries] = useState(() => (
     Array.isArray(initialData?.entries) ? initialData.entries : []
@@ -159,7 +160,14 @@ export default function NutritionProgramBuilder({
     if (Array.isArray(initialData?.entries) && initialData.entries.some((e) => e.date)) return 'date'
     return 'cycle14'
   })
+  const [cycleSameDaily, setCycleSameDaily] = useState(() => {
+    if (initialData?.scheduleType === 'cycle14' || initialData?.scheduleType === 'everyday') {
+      return initialData?.cycleSameDaily !== false
+    }
+    return true
+  })
   const [selectedDay, setSelectedDay] = useState(1)
+  const [copyOpen, setCopyOpen] = useState(false)
   const [cycleStartDate, setCycleStartDate] = useState(() => (
     initialData?.cycleStartDate || format(new Date(), 'yyyy-MM-dd')
   ))
@@ -185,15 +193,18 @@ export default function NutritionProgramBuilder({
     [cycleStartDate],
   )
 
+  const sameDaily = isSameDailyCycle(scheduleMode, cycleSameDaily)
+  const weekdayPicker = usesWeekdayPicker(scheduleMode, cycleSameDaily)
+
   const activeEntries = useMemo(() => {
-    if (isDailyMode(scheduleMode)) {
+    if (sameDaily) {
       return dedupeDailyNutritionEntries(entries.filter((e) => !e.date && e.cycleDay == null))
     }
     if (scheduleMode === 'date') {
       return sortEntries(entries.filter((e) => e.date === selectedDate))
     }
     return sortEntries(entries.filter((e) => e.day === selectedDay && !e.date))
-  }, [entries, selectedDay, selectedDate, scheduleMode])
+  }, [entries, selectedDay, selectedDate, scheduleMode, sameDaily])
 
   const allScoped = useMemo(
     () => sortEntries(scopedEntries(entries, scheduleMode)),
@@ -201,8 +212,8 @@ export default function NutritionProgramBuilder({
   )
 
   const displayEntries = useMemo(
-    () => (isDailyMode(scheduleMode) ? dedupeDailyNutritionEntries(allScoped) : allScoped),
-    [allScoped, scheduleMode],
+    () => (sameDaily ? dedupeDailyNutritionEntries(allScoped) : allScoped),
+    [allScoped, sameDaily],
   )
 
   const mealCount = displayEntries.length
@@ -214,8 +225,15 @@ export default function NutritionProgramBuilder({
 
   const daysWithMeals = useMemo(() => {
     const set = new Set(entries.filter((e) => e.day != null && !e.date).map((e) => e.day))
-    return Array.from(set).sort((a, b) => a - b)
+    return WEEKDAYS.map((d) => d.value).filter((v) => set.has(v))
   }, [entries])
+
+  const missingWeekdays = useMemo(() => {
+    if (!(scheduleMode === 'cycle14' && !cycleSameDaily)) return []
+    return WEEKDAYS.filter(
+      (d) => !entries.some((e) => e.day === d.value && !e.date && e.cycleDay == null),
+    )
+  }, [scheduleMode, cycleSameDaily, entries])
 
   const canGoStep2 = useMemo(() => {
     if (scheduleMode === 'cycle14') {
@@ -233,7 +251,9 @@ export default function NutritionProgramBuilder({
     return true
   }, [scheduleMode, cycleStartDate, selectedDate, dateBounds, singleDateBounds])
 
-  const canGoStep3 = mealCount > 0
+  const canGoStep3 = scheduleMode === 'cycle14' && !cycleSameDaily
+    ? missingWeekdays.length === 0
+    : mealCount > 0
 
   const activeMeal = SELECTABLE_MEALS.find((m) => m.id === mealType) || SELECTABLE_MEALS[0]
   const activeUi = MEAL_UI[mealType] || MEAL_UI.breakfast
@@ -242,43 +262,106 @@ export default function NutritionProgramBuilder({
   const scheduleModeLabel = SCHEDULE_OPTIONS.find((m) => m.id === scheduleMode)?.label || ''
 
   const scheduleSummary = scheduleMode === 'cycle14'
-    ? `${format(new Date(`${cycleStartDate}T12:00:00`), 'd MMM', { locale: tr })} — ${format(new Date(`${cycleEndDate}T12:00:00`), 'd MMM yyyy', { locale: tr })} · ${CYCLE_PLAN_LENGTH} gün`
+    ? `${format(new Date(`${cycleStartDate}T12:00:00`), 'd MMM', { locale: tr })} — ${format(new Date(`${cycleEndDate}T12:00:00`), 'd MMM yyyy', { locale: tr })} · ${CYCLE_PLAN_LENGTH} gün${cycleSameDaily ? ' · her gün aynı' : ' · güne göre'}`
     : scheduleMode === 'date'
       ? format(new Date(`${selectedDate}T12:00:00`), 'd MMMM yyyy, EEEE', { locale: tr })
       : daysWithMeals.length
         ? `Haftalık · ${daysWithMeals.map((d) => WEEKDAYS.find((w) => w.value === d)?.label?.slice(0, 3)).join(', ')}`
         : 'Haftalık tekrar'
 
-  const scheduleLabel = scheduleMode === 'cycle14'
+  const scheduleLabel = sameDaily
     ? `Günlük menü · ${CYCLE_PLAN_LENGTH} gün geçerli`
     : scheduleMode === 'date'
       ? format(new Date(`${selectedDate}T12:00:00`), 'd MMMM yyyy, EEEE', { locale: tr })
-      : `${WEEKDAYS.find((d) => d.value === selectedDay)?.label || '—'} (haftalık tekrar)`
-
-  const titleRange = useMemo(() => {
-    if (scheduleMode === 'cycle14') {
-      return { start: cycleStartDate, end: cycleEndDate }
-    }
-    if (scheduleMode === 'date') {
-      const dates = datesWithMeals.length ? datesWithMeals : (selectedDate ? [selectedDate] : [])
-      return { start: dates[0] || null, end: dates[dates.length - 1] || null }
-    }
-    return {
-      start: packageRange?.start || format(new Date(), 'yyyy-MM-dd'),
-      end: packageRange?.end || null,
-    }
-  }, [scheduleMode, cycleStartDate, cycleEndDate, datesWithMeals, selectedDate, packageRange])
-
-  const autoTitle = useMemo(
-    () => buildNutritionProgramTitle(memberName, titleRange.start, titleRange.end, scheduleMode),
-    [memberName, titleRange.start, titleRange.end, scheduleMode],
-  )
+      : scheduleMode === 'cycle14'
+        ? `${WEEKDAYS.find((d) => d.value === selectedDay)?.label || '—'} (14 gün içinde her hafta)`
+        : `${WEEKDAYS.find((d) => d.value === selectedDay)?.label || '—'} (haftalık tekrar)`
 
   const selectMealType = (id) => {
     setMealType(id)
     if (!editingId) {
       setDraft((d) => ({ ...d, start: DEFAULT_MEAL_TIMES[id] || '08:00' }))
     }
+  }
+
+  const applyCycleSameDaily = (nextSameDaily) => {
+    if (nextSameDaily === cycleSameDaily) return
+    if (nextSameDaily) {
+      // Güne göre → her gün aynı: seçili günün menüsünü 7 güne yay
+      const sourceDay = entries.some((e) => e.day === selectedDay && !e.date)
+        ? selectedDay
+        : (entries.find((e) => e.day != null && !e.date)?.day ?? selectedDay)
+      const template = dedupeDailyNutritionEntries(
+        entries.filter((e) => e.day === sourceDay && !e.date && e.cycleDay == null),
+      )
+      const stamped = []
+      template.forEach((e) => {
+        for (let day = 0; day <= 6; day += 1) {
+          stamped.push({
+            ...e,
+            id: `n-${Date.now()}-${day}-${Math.random().toString(36).slice(2, 6)}`,
+            day,
+          })
+        }
+      })
+      setEntries((list) => [
+        ...list.filter((e) => e.date || e.cycleDay != null),
+        ...stamped,
+      ])
+    } else {
+      // Her gün aynı → güne göre: mevcut tekil menüyü tüm günlere bırak (kullanıcı özelleştirir)
+      // entries zaten day:0..6 ise dokunma
+      const hasWeekday = entries.some((e) => e.day != null && !e.date)
+      if (!hasWeekday) {
+        const template = dedupeDailyNutritionEntries(entries.filter((e) => !e.date && e.cycleDay == null))
+        const stamped = []
+        template.forEach((e) => {
+          for (let day = 0; day <= 6; day += 1) {
+            stamped.push({
+              ...e,
+              id: `n-${Date.now()}-${day}-${Math.random().toString(36).slice(2, 6)}`,
+              day,
+            })
+          }
+        })
+        setEntries((list) => [
+          ...list.filter((e) => e.date || e.cycleDay != null),
+          ...stamped,
+        ])
+      }
+    }
+    setCycleSameDaily(nextSameDaily)
+    setCopyOpen(false)
+  }
+
+  const copySelectedDayTo = (targetDays) => {
+    const source = entries.filter((e) => e.day === selectedDay && !e.date && e.cycleDay == null)
+    if (!source.length) {
+      toast('Önce bu güne öğün ekleyin', 'error')
+      return
+    }
+    const targets = targetDays.filter((d) => d !== selectedDay)
+    if (!targets.length) {
+      toast('Kopyalanacak başka gün seçin', 'error')
+      return
+    }
+    setEntries((list) => {
+      let next = list.filter(
+        (e) => !(targets.includes(e.day) && !e.date && e.cycleDay == null),
+      )
+      targets.forEach((day) => {
+        source.forEach((e) => {
+          next.push({
+            ...e,
+            id: `n-${Date.now()}-${day}-${Math.random().toString(36).slice(2, 6)}`,
+            day,
+          })
+        })
+      })
+      return next
+    })
+    setCopyOpen(false)
+    toast(`${WEEKDAYS.find((w) => w.value === selectedDay)?.label || 'Gün'} menüsü ${targets.length} güne kopyalandı`, 'success')
   }
 
   const buildEntry = (schedulePatch, id) => ({
@@ -306,7 +389,7 @@ export default function NutritionProgramBuilder({
     })
     if (entry.date) {
       setSelectedDate(entry.date)
-    } else if (entry.day != null && !isDailyMode(scheduleMode)) {
+    } else if (entry.day != null && !sameDaily) {
       setSelectedDay(Number(entry.day))
     }
   }
@@ -335,7 +418,7 @@ export default function NutritionProgramBuilder({
           start: draft.start,
         }
 
-        if (isDailyMode(scheduleMode)) {
+        if (sameDaily) {
           const oldKey = `${target.mealType}:${target.start}:${target.name}`
           return list.map((e) => (
             `${e.mealType}:${e.start}:${e.name}` === oldKey ? { ...e, ...patch } : e
@@ -362,7 +445,7 @@ export default function NutritionProgramBuilder({
         next.push(buildEntry(patch))
       }
 
-      if (isDailyMode(scheduleMode)) {
+      if (sameDaily) {
         for (let day = 0; day <= 6; day += 1) {
           upsert({ day })
         }
@@ -380,7 +463,7 @@ export default function NutritionProgramBuilder({
   const removeEntry = (id) => {
     setEntries((list) => {
       const target = list.find((e) => e.id === id)
-      if (!target || !isDailyMode(scheduleMode)) {
+      if (!target || !sameDaily) {
         return list.filter((e) => e.id !== id)
       }
       const key = `${target.mealType}:${target.start}:${target.name}`
@@ -398,31 +481,50 @@ export default function NutritionProgramBuilder({
   }
 
   const goStep3 = () => {
+    if (scheduleMode === 'cycle14' && !cycleSameDaily && missingWeekdays.length > 0) {
+      toast(`Tüm günlere öğün ekleyin: ${missingWeekdays.map((d) => d.label).join(', ')}`, 'error')
+      return
+    }
     if (!canGoStep3) {
       toast('En az bir öğün ekleyin', 'error')
       return
     }
     clearDraft()
+    setCopyOpen(false)
     setStep(3)
   }
 
   const submit = async () => {
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) {
+      toast('Liste başlığı girin', 'error')
+      return
+    }
     const scoped = scopedEntries(entries, scheduleMode)
     if (scoped.length === 0) {
       toast('En az bir öğün ekleyin', 'error')
       return
     }
+    if (scheduleMode === 'cycle14' && !cycleSameDaily) {
+      const missing = WEEKDAYS.filter(
+        (d) => !scoped.some((e) => e.day === d.value),
+      )
+      if (missing.length) {
+        toast(`Tüm günlere öğün ekleyin: ${missing.map((d) => d.label).join(', ')}`, 'error')
+        return
+      }
+    }
 
     const ordered = sortEntries(scoped)
-    const forItems = isDailyMode(scheduleMode)
+    const forItems = sameDaily
       ? dedupeDailyNutritionEntries(ordered)
       : ordered
 
     const payload = {
-      title: autoTitle,
+      title: trimmedTitle,
       description: description.trim(),
       entries: ordered,
-      items: forItems.map((e) => entryToText(e, scheduleMode)),
+      items: forItems.map((e) => entryToText(e, scheduleMode, cycleSameDaily)),
     }
 
     if (scheduleMode === 'cycle14') {
@@ -430,7 +532,7 @@ export default function NutritionProgramBuilder({
       payload.cycleStartDate = cycleStartDate
       payload.cycleLength = CYCLE_PLAN_LENGTH
       payload.cycleLoop = false
-      payload.cycleSameDaily = true
+      payload.cycleSameDaily = cycleSameDaily
     } else if (scheduleMode === 'weekly') {
       payload.scheduleType = 'weekly'
     } else if (scheduleMode === 'date') {
@@ -450,8 +552,10 @@ export default function NutritionProgramBuilder({
     setSubmitting(true)
     try {
       await onCreate?.(payload)
+      setTitle('')
       setDescription('')
       setEntries([])
+      setCycleSameDaily(true)
       setStep(1)
     } finally {
       setSubmitting(false)
@@ -503,26 +607,65 @@ export default function NutritionProgramBuilder({
 
             <div className="mt-5">
               {scheduleMode === 'cycle14' ? (
-                <div className="rounded-2xl border border-sage-200 bg-white/80 p-5">
-                  <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sage-700">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    Liste başlangıç tarihi
-                  </label>
-                  <input
-                    type="date"
-                    value={cycleStartDate}
-                    min={dateBounds.min}
-                    max={dateBounds.max}
-                    onChange={(e) => setCycleStartDate(e.target.value)}
-                    className="mt-3 w-full max-w-sm rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm"
-                  />
-                  <p className="mt-3 text-sm leading-relaxed text-sage-800/70">
-                    <strong>Her gün aynı menü</strong>{' '}
-                    {format(new Date(`${cycleStartDate}T12:00:00`), 'd MMMM', { locale: tr })}
-                    {' — '}
-                    {format(new Date(`${cycleEndDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
-                    {' '}tarihleri arasında geçerli ({CYCLE_PLAN_LENGTH} gün).
-                  </p>
+                <div className="space-y-4 rounded-2xl border border-sage-200 bg-white/80 p-5">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sage-700">Menü tipi</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => applyCycleSameDaily(true)}
+                        className={`rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
+                          cycleSameDaily
+                            ? 'bg-sage-500 text-white shadow'
+                            : 'border border-cream-200 bg-white text-cream-800/70 hover:border-sage-200'
+                        }`}
+                      >
+                        Her gün aynı
+                        <span className={`mt-0.5 block text-xs font-medium ${cycleSameDaily ? 'text-white/80' : 'text-cream-800/45'}`}>
+                          14 gün boyunca tek menü
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyCycleSameDaily(false)}
+                        className={`rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
+                          !cycleSameDaily
+                            ? 'bg-sage-500 text-white shadow'
+                            : 'border border-cream-200 bg-white text-cream-800/70 hover:border-sage-200'
+                        }`}
+                      >
+                        Güne göre
+                        <span className={`mt-0.5 block text-xs font-medium ${!cycleSameDaily ? 'text-white/80' : 'text-cream-800/45'}`}>
+                          Her Pzt / Salı / … ayrı menü
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sage-700">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      Liste başlangıç tarihi
+                    </label>
+                    <input
+                      type="date"
+                      value={cycleStartDate}
+                      min={dateBounds.min}
+                      max={dateBounds.max}
+                      onChange={(e) => setCycleStartDate(e.target.value)}
+                      className="mt-3 w-full max-w-sm rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm"
+                    />
+                    <p className="mt-3 text-sm leading-relaxed text-sage-800/70">
+                      {cycleSameDaily ? (
+                        <><strong>Her gün aynı menü</strong>{' '}</>
+                      ) : (
+                        <><strong>Haftanın gününe göre</strong> (ör. her Pazartesi aynı){' '}</>
+                      )}
+                      {format(new Date(`${cycleStartDate}T12:00:00`), 'd MMMM', { locale: tr })}
+                      {' — '}
+                      {format(new Date(`${cycleEndDate}T12:00:00`), 'd MMMM yyyy', { locale: tr })}
+                      {' '}tarihleri arasında geçerli ({CYCLE_PLAN_LENGTH} gün).
+                    </p>
+                  </div>
                 </div>
               ) : scheduleMode === 'date' ? (
                 <div className="rounded-2xl border border-sage-200 bg-white/80 p-5">
@@ -560,31 +703,75 @@ export default function NutritionProgramBuilder({
 
       {step === 2 && (
         <div className="space-y-4">
-          {scheduleMode === 'weekly' && (
+          {weekdayPicker && (
             <div className="rounded-2xl border border-cream-100 bg-white p-2.5 shadow-sm sm:p-3">
-              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-cream-800/45">Gün seç</p>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-cream-800/45">Gün seç</p>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCopyOpen((o) => !o)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sage-200 bg-sage-50 px-2.5 py-1.5 text-xs font-semibold text-sage-700 hover:bg-sage-100"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Kopyala
+                  </button>
+                  {copyOpen && (
+                    <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-cream-200 bg-white p-2 shadow-lg">
+                      <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">
+                        Seçili günü kopyala
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => copySelectedDayTo(WEEKDAYS.map((d) => d.value))}
+                        className="w-full rounded-lg px-2 py-2 text-left text-xs font-semibold text-cream-900 hover:bg-sage-50"
+                      >
+                        Tüm günlere kopyala
+                      </button>
+                      {WEEKDAYS.filter((d) => d.value !== selectedDay).map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() => copySelectedDayTo([d.value])}
+                          className="w-full rounded-lg px-2 py-2 text-left text-xs font-medium text-cream-800/80 hover:bg-sage-50"
+                        >
+                          → {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
                 {WEEKDAYS.map((d) => {
                   const count = entries.filter((e) => e.day === d.value && !e.date).length
+                  const missing = scheduleMode === 'cycle14' && !cycleSameDaily && count === 0
                   return (
                     <button
                       key={d.value}
                       type="button"
-                      onClick={() => setSelectedDay(d.value)}
+                      onClick={() => { setSelectedDay(d.value); setCopyOpen(false) }}
                       className={`flex flex-col items-center rounded-2xl px-3 py-3 text-sm font-semibold transition ${
                         selectedDay === d.value
                           ? 'bg-sage-500 text-white shadow-md'
-                          : 'border border-cream-200 bg-white text-cream-800/70 hover:border-sage-200 hover:bg-sage-50'
+                          : missing
+                            ? 'border border-amber-300 bg-amber-50 text-amber-800'
+                            : 'border border-cream-200 bg-white text-cream-800/70 hover:border-sage-200 hover:bg-sage-50'
                       }`}
                     >
                       <span className="text-base">{d.label.slice(0, 3)}</span>
-                      <span className={`mt-1 text-xs ${selectedDay === d.value ? 'text-white/80' : 'text-cream-800/45'}`}>
+                      <span className={`mt-1 text-xs ${selectedDay === d.value ? 'text-white/80' : missing ? 'text-amber-700/80' : 'text-cream-800/45'}`}>
                         {count > 0 ? `${count} öğün` : 'boş'}
                       </span>
                     </button>
                   )
                 })}
               </div>
+              {scheduleMode === 'cycle14' && !cycleSameDaily && missingWeekdays.length > 0 && (
+                <p className="mt-2 px-1 text-xs text-amber-700">
+                  Eksik günler: {missingWeekdays.map((d) => d.label).join(', ')}
+                </p>
+              )}
             </div>
           )}
 
@@ -621,7 +808,7 @@ export default function NutritionProgramBuilder({
             </div>
           )}
 
-          {daysWithMeals.length > 0 && scheduleMode === 'weekly' && (
+          {daysWithMeals.length > 0 && weekdayPicker && (
             <div className="flex flex-wrap gap-2">
               {daysWithMeals.map((d) => (
                 <button
@@ -815,8 +1002,16 @@ export default function NutritionProgramBuilder({
       {step === 3 && (
         <div className="mx-auto max-w-2xl space-y-5">
           <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-sage-500 via-teal-500 to-sage-600 p-5 text-white shadow-lg shadow-sage-500/20">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/75">Liste başlığı</p>
-            <p className="mt-1.5 text-lg font-bold leading-snug">{autoTitle}</p>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-white/80">
+              Liste başlığı
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={`${memberName} için beslenme listesi`}
+              className="mt-2 w-full rounded-xl border border-white/35 bg-white/95 px-4 py-3 text-base font-semibold text-cream-900 placeholder:text-cream-800/40 outline-none focus:border-white focus:ring-2 focus:ring-white/40"
+            />
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-cream-100 bg-white shadow-sm">
@@ -830,7 +1025,7 @@ export default function NutritionProgramBuilder({
             </div>
 
             <div className="divide-y divide-cream-100">
-              {scheduleMode === 'weekly' ? (
+              {weekdayPicker ? (
                 daysWithMeals.map((day) => {
                   const dayEntries = sortEntries(allScoped.filter((e) => e.day === day))
                   return (
