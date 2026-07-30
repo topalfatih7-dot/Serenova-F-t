@@ -19,6 +19,7 @@ import {
   buildServiceSchema,
   buildFaqSchema,
   buildBreadcrumbSchema,
+  buildHowToSchema,
 } from '../../config/seo'
 import { BRAND } from '../../config/brand'
 import { SERVICE_PAGES } from '../../data/seoServiceContent'
@@ -163,6 +164,7 @@ export default function ServiceLandingPage({ path }) {
   const whyItems = WHY_BY_PATH[path] || WHY_BY_PATH['/online-diyetisyen']
   const isCoach = path === '/online-kocluk'
 
+  const stepsSection = page.sections.find((s) => s.steps?.length)
   const schemas = [
     buildServiceSchema({
       name: page.serviceName,
@@ -182,6 +184,13 @@ export default function ServiceLandingPage({ path }) {
         },
       ],
     }),
+    stepsSection
+      ? buildHowToSchema({
+          name: stepsSection.h2,
+          description: page.lead.replace(/\*\*/g, ''),
+          steps: stepsSection.steps,
+        })
+      : null,
     buildFaqSchema(page.faqs),
     buildBreadcrumbSchema([
       { name: 'Ana Sayfa', path: '/' },

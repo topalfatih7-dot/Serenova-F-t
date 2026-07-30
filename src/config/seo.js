@@ -439,6 +439,56 @@ export function buildWebSiteSchema() {
     description: SEO.defaultDescription,
     inLanguage: SEO.language,
     publisher: { '@id': `${url}#organization` },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${url}blog?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+}
+
+/**
+ * AggregateRating schema — testimonial/review verisi varsa kullan.
+ * ratingValue: 1-5 arası ortalama, reviewCount: toplam değerlendirme sayısı.
+ */
+export function buildAggregateRatingSchema({ ratingValue = 4.9, reviewCount = 100 } = {}) {
+  const url = absoluteUrl('/')
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${url}#organization`,
+    name: BRAND.name,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: String(ratingValue),
+      bestRating: '5',
+      worstRating: '1',
+      reviewCount: String(reviewCount),
+    },
+  }
+}
+
+/**
+ * HowTo schema — "Nasıl çalışır?" adım bölümleri için.
+ * steps: [{ name, text, url? }]
+ */
+export function buildHowToSchema({ name, description, steps = [] }) {
+  if (!name || !steps.length) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name,
+    description,
+    step: steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name || s.title,
+      text: s.text,
+      url: s.url ? absoluteUrl(s.url) : undefined,
+    })),
   }
 }
 

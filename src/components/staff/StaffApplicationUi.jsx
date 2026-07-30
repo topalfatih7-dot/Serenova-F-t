@@ -402,19 +402,16 @@ export function FederationCertEditor({ federationCerts, noOfficialCoachingCert, 
                     key={level.value}
                     type="button"
                     onClick={() => toggleLevel(index, level.value)}
-                    className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                       active
                         ? 'border-amber-400 bg-white shadow-sm ring-1 ring-amber-200'
                         : 'border-cream-200 bg-white hover:border-amber-200'
                     }`}
                   >
-                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${active ? 'border-amber-500 bg-amber-500 text-white' : 'border-cream-300'}`}>
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${active ? 'border-amber-500 bg-amber-500 text-white' : 'border-cream-300'}`}>
                       {active && <Check className="h-3 w-3" />}
                     </span>
-                    <span>
-                      <span className="font-medium text-cream-900">{level.label}</span>
-                      <span className="mt-0.5 block text-xs text-cream-800/55">{level.hint}</span>
-                    </span>
+                    <span className="font-medium text-cream-900">{level.label}</span>
                   </button>
                 )
               })}

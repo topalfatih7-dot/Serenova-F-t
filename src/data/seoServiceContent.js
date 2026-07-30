@@ -81,6 +81,22 @@ export const ONLINE_DIYETISYEN = {
       q: 'Program kişiye özel mi hazırlanır?',
       a: 'Evet. Sağlık analizi ve görüşme notlarınıza göre diyetisyeniniz size özel beslenme programı hazırlar ve seanslarda günceller.',
     },
+    {
+      q: 'Online diyetisyen güvenilir mi?',
+      a: 'Yeni Form diyetisyenleri lisanslı ve deneyimli beslenme uzmanlarıdır. Platform içi video görüşme, şifreli iletişim ve KVKK uyumu ile güvenli hizmet sunulur.',
+    },
+    {
+      q: 'İlk seansta neler konuşulur?',
+      a: 'İlk seansta beslenme alışkanlıklarınız, hedefleriniz, sağlık geçmişiniz ve günlük rutininiz değerlendirilir. Sağlık testinizi tamamladıysanız diyetisyen analiz sonuçlarınızı da inceler.',
+    },
+    {
+      q: 'Online diyetisyen programı ne kadar sürer?',
+      a: 'Süre hedefinize göre değişir. Çoğu üye 3–6 aylık süreçte kalıcı alışkanlık değişimi sağlar. Paket süreniz boyunca diyetisyeninizle çalışmaya devam edersiniz.',
+    },
+    {
+      q: 'Online diyetisyen ile yüz yüze diyetisyen arasındaki fark nedir?',
+      a: 'Yüz yüze kliniğe gitme zorunluluğu yoktur; randevu saatinde bilgisayar ya da telefonunuzdan katılırsınız. Yeni Form\'da tüm program, ilerleme ve mesajlaşma aynı platformda yürütüldüğü için takip daha sistematiktir.',
+    },
   ],
 }
 
@@ -160,6 +176,22 @@ export const ONLINE_KOCLUK = {
     {
       q: 'Koç ve diyetisyeni birlikte alabilir miyim?',
       a: 'VIP paket ayda 2 koç ve 2 diyetisyen görüşmesini birleştirir. Ayrıntılar için üyelik karşılaştırma sayfasını inceleyin.',
+    },
+    {
+      q: 'Online koçluk yüz yüze kadar etkili mi?',
+      a: 'Araştırmalar, düzenli online koçluk programlarının yüz yüze çalışmaya yakın sonuçlar verdiğini göstermektedir. Yeni Form\'da program, video kütüphanesi ve mesajlaşma aynı platformda olduğu için tutarlılık daha kolay sağlanır.',
+    },
+    {
+      q: 'Online koç beni ne sıklıkla takip eder?',
+      a: 'Spor paketinde ayda 2 video görüşmesi yer alır. Görüşmeler arasında mesajlaşma ile koçunuza ulaşabilir, program güncellemesi talep edebilirsiniz.',
+    },
+    {
+      q: 'Daha önce hiç spor yapmadım, online koçluk benim için uygun mu?',
+      a: 'Evet. Koçunuz fitness seviyenizi başlangıçta değerlendirir ve tamamen yeni başlayanlara uygun program hazırlar. Yeni Form\'da temel egzersiz videoları da program içinde yer alır.',
+    },
+    {
+      q: 'Online koçluk programım nasıl takip edilir?',
+      a: 'Kişisel panelinizdeki takvimde her gün ve egzersiz görünür. Tamamladığınız seansları işaretler, koçunuz ilerlemenizi gerçek zamanlı görerek programı günceller.',
     },
   ],
 }

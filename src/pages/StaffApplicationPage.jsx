@@ -254,7 +254,7 @@ export default function StaffApplicationPage() {
                         label="Profil Fotoğrafı (isteğe bağlı)"
                         variant="portrait"
                         optional
-                        hint="Onay sonrası profilinizde görünebilir; şimdilik atlayabilirsiniz."
+                        hint="Profil fotoğrafı başvuruya dahil edilmez; onay sonrası personel profilinizden ekleyebilirsiniz."
                       />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
                       <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" className={inputCls} />

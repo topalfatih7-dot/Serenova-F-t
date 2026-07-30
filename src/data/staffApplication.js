@@ -102,44 +102,17 @@ export const COMPETENT_GROUPS = {
 
 export const OFFICIAL_COACHING_CERT_NONE = 'Yok'
 
-/** GSB Antrenör Eğitimi Yönetmeliği (RG 14.12.2019) — 5 kademe unvanları */
+/** GSB Antrenör Eğitimi Yönetmeliği — 1–3 kademe */
 export const COACHING_LICENSE_LEVELS = [
-  {
-    value: '1',
-    label: '1. Kademe — Yardımcı Antrenör',
-    short: 'Yardımcı Antrenör',
-    hint: 'Üst kademe antrenör nezaretinde spor faaliyetine yardımcı olma',
-  },
-  {
-    value: '2',
-    label: '2. Kademe — Temel Antrenör',
-    short: 'Temel Antrenör',
-    hint: 'Minikler ve yıldızlar kategorisinde antrenman planlama ve uygulama',
-  },
-  {
-    value: '3',
-    label: '3. Kademe — Kıdemli Antrenör',
-    short: 'Kıdemli Antrenör',
-    hint: 'Tüm yaş kategorileri ve milli takımlarda antrenman yönetimi',
-  },
-  {
-    value: '4',
-    label: '4. Kademe — Başantrenör',
-    short: 'Başantrenör',
-    hint: 'Orta vadeli program planlama, analiz ve sporcu kariyer planlaması',
-  },
-  {
-    value: '5',
-    label: '5. Kademe — Teknik Direktör',
-    short: 'Teknik Direktör',
-    hint: 'Koordinatörlük, uzun vadeli strateji ve federasyon düzeyi yönetim',
-  },
+  { value: '1', label: '1. Kademe', short: '1. Kademe' },
+  { value: '2', label: '2. Kademe', short: '2. Kademe' },
+  { value: '3', label: '3. Kademe', short: '3. Kademe' },
 ]
 
 /** GSB lisanslı federasyonlar — fitness/wellness koç başvuruları için öncelikli liste */
 export const COACHING_FEDERATIONS = [
   { value: 'tvgfbf', label: 'Türkiye Vücut Geliştirme, Fitness ve Bilek Güreşi Federasyonu (TVGFBF)', short: 'TVGFBF' },
-  { value: 'jimnastik', label: 'Türkiye Jimnastik Federasyonu', short: 'TJF' },
+  { value: 'cimnastik', label: 'Türkiye Cimnastik Federasyonu', short: 'TCF' },
   { value: 'atletizm', label: 'Türkiye Atletizm Federasyonu', short: 'TAF' },
   { value: 'yuzme', label: 'Türkiye Yüzme Federasyonu', short: 'TYF' },
   { value: 'tenis', label: 'Türkiye Tenis Federasyonu', short: 'TTF' },
@@ -476,7 +449,10 @@ export function validateStaffApplication(form) {
 
 export function buildStaffApplicationPayload(form) {
   const common = {
-    photo: form.photo || null,
+    // Base64 data URL'leri payload'a koyma — gövde limitini aşar ("başvuru verisi çok yüksek")
+    photo: (typeof form.photo === 'string' && !form.photo.startsWith('data:'))
+      ? form.photo
+      : null,
     city: form.city || '',
     district: form.district || '',
     gender: form.gender || '',

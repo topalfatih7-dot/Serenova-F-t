@@ -6,22 +6,33 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseUrl, isSupabaseAdminConfigured, getSupabaseAdmin } from './_supabaseAdmin.js'
 
+/**
+ * Deploy tarihi — Vercel VERCEL_GIT_COMMIT_SHA ile değişmez, bu yüzden
+ * DEPLOY_DATE env ile override edilebilir; yoksa ISO tarih olarak bugün kullanılır.
+ * Statik sayfalar için lastmod sinyali Google'a taze içerik olduğunu gösterir.
+ */
+function getDeployDate() {
+  const envDate = process.env.DEPLOY_DATE
+  if (envDate && /^\d{4}-\d{2}-\d{2}$/.test(envDate)) return envDate
+  return new Date().toISOString().slice(0, 10)
+}
+
 /** Canonical public URL'ler — redirect duplicate'ler (/kvkk, /privacy, /terms) yok */
 const STATIC_ROUTES = [
-  { loc: '/', changefreq: 'weekly', priority: '1.0' },
-  { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
-  { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95' },
-  { loc: '/online-kocluk', changefreq: 'weekly', priority: '0.95' },
-  { loc: '/membership', changefreq: 'weekly', priority: '0.9' },
-  { loc: '/onboarding', changefreq: 'monthly', priority: '0.9' },
-  { loc: '/stories', changefreq: 'weekly', priority: '0.8' },
-  { loc: '/blog', changefreq: 'daily', priority: '0.8' },
-  { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/corporate', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
-  { loc: '/team/apply', changefreq: 'monthly', priority: '0.6' },
+  { loc: '/', changefreq: 'weekly', priority: '1.0', lastmod: getDeployDate() },
+  { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8', lastmod: getDeployDate() },
+  { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95', lastmod: getDeployDate() },
+  { loc: '/online-kocluk', changefreq: 'weekly', priority: '0.95', lastmod: getDeployDate() },
+  { loc: '/membership', changefreq: 'weekly', priority: '0.9', lastmod: getDeployDate() },
+  { loc: '/onboarding', changefreq: 'monthly', priority: '0.9', lastmod: getDeployDate() },
+  { loc: '/stories', changefreq: 'weekly', priority: '0.8', lastmod: getDeployDate() },
+  { loc: '/blog', changefreq: 'daily', priority: '0.8', lastmod: getDeployDate() },
+  { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
+  { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
+  { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
+  { loc: '/corporate', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
+  { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6', lastmod: getDeployDate() },
+  { loc: '/team/apply', changefreq: 'monthly', priority: '0.6', lastmod: getDeployDate() },
   { loc: '/legal/kvkk', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/kvkk-acik-riza-metni', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/gizlilik-politikasi', changefreq: 'yearly', priority: '0.4' },

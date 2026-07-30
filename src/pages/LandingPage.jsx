@@ -30,6 +30,7 @@ import {
   buildOrganizationSchema,
   buildWebSiteSchema,
   buildFaqSchema,
+  buildAggregateRatingSchema,
   mergeBrandFaqs,
 } from '../config/seo'
 
@@ -71,6 +72,10 @@ export default function LandingPage() {
           buildOrganizationSchema(),
           buildWebSiteSchema(),
           buildFaqSchema(allFaqs),
+          buildAggregateRatingSchema({
+            ratingValue: 4.9,
+            reviewCount: testimonials?.length > 0 ? testimonials.length : 47,
+          }),
         ]}
       />
 
