@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Check, Timer } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 
 function TrialShieldVisual() {
   return (
@@ -62,21 +62,17 @@ export default function MembershipTrialCta({ isMember = false }) {
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="membership-trial-card relative overflow-hidden rounded-[1.75rem] border border-white/90 bg-white/95 p-6 shadow-[0_20px_50px_-28px_rgba(30,70,55,0.28)] sm:rounded-[2rem] sm:p-8 lg:p-10"
+      className="membership-trial-card relative overflow-hidden rounded-[1.75rem] border border-teal-100/70 p-6 shadow-[0_20px_50px_-28px_rgba(30,70,55,0.28)] sm:rounded-[2rem] sm:p-8 lg:p-10"
     >
-      <div aria-hidden className="pointer-events-none absolute -left-20 top-0 h-48 w-48 rounded-full bg-sky-100/50 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -right-16 bottom-0 h-52 w-52 rounded-full bg-sage-100/60 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -left-20 top-0 h-52 w-52 rounded-full bg-sky-200/45 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-16 bottom-0 h-56 w-56 rounded-full bg-emerald-200/40 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute left-1/3 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-teal-100/50 blur-3xl" />
 
       <div className="relative z-[1] grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
         <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-teal-700 ring-1 ring-sky-100 shadow-sm">
-            <Timer className="h-3.5 w-3.5 text-teal-600" aria-hidden />
-            48 saat deneme
-          </span>
-
           {isMember ? (
             <>
-              <h3 className="mt-4 font-display text-[clamp(1.35rem,2.8vw,1.85rem)] font-bold leading-tight text-slate-900">
+              <h3 className="font-display text-[clamp(1.35rem,2.8vw,1.85rem)] font-bold leading-tight text-slate-900">
                 Planınızı yönetmeye{' '}
                 <span className="bg-gradient-to-r from-teal-600 to-emerald-500 bg-clip-text text-transparent">
                   hazır mısınız?
@@ -95,7 +91,7 @@ export default function MembershipTrialCta({ isMember = false }) {
             </>
           ) : (
             <>
-              <h3 className="mt-4 font-display text-[clamp(1.35rem,2.8vw,1.85rem)] font-bold leading-tight text-slate-900">
+              <h3 className="font-display text-[clamp(1.35rem,2.8vw,1.85rem)] font-bold leading-tight text-slate-900">
                 Hâlâ{' '}
                 <span className="bg-gradient-to-r from-teal-600 to-emerald-500 bg-clip-text text-transparent">
                   emin
@@ -114,7 +110,7 @@ export default function MembershipTrialCta({ isMember = false }) {
                     aria-hidden
                     className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full"
                   />
-                  Ücretsiz başla
+                  Hemen başla
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
                 </Link>
               </motion.div>

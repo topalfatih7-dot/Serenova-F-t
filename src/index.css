@@ -1730,6 +1730,14 @@ body {
 }
 
 /* 48 saat deneme CTA — kalkan görseli */
+.membership-trial-card {
+  background:
+    radial-gradient(ellipse 55% 70% at 88% 42%, rgba(110, 231, 183, 0.22), transparent 58%),
+    radial-gradient(ellipse 48% 60% at 8% 20%, rgba(125, 211, 252, 0.28), transparent 55%),
+    radial-gradient(ellipse 40% 50% at 55% 100%, rgba(45, 143, 196, 0.1), transparent 50%),
+    linear-gradient(145deg, #f0faf8 0%, #eef8fc 42%, #f4fbf6 100%);
+}
+
 .membership-trial-glow {
   pointer-events: none;
   position: absolute;
