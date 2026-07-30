@@ -561,7 +561,7 @@ export const VIP_PLAN = {
     { text: 'Sınırsız Destek', included: true },
     { text: 'Vip Üye Rozeti', included: true },
   ],
-  limits: ['En kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
+  limits: ['İşbirliği içerisindeki uzmanlarımıza en kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
 }
 
 // Geriye dönük uyumluluk

@@ -1,10 +1,7 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { getPlanDurationLabel, isOneTimeBillingPlan } from '../../data/membershipPlans'
 import { getPlanTheme, planVisual } from '../membership/planTheme'
-
-const VISIBLE_FEATURES = 3
 
 /** Landing kart fiyatı — checkout metinlerini bozmaz */
 function formatCardPrice(plan) {
@@ -15,7 +12,6 @@ function formatCardPrice(plan) {
 }
 
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
-  const [expanded, setExpanded] = useState(false)
   const theme = getPlanTheme(plan)
   const isFree = plan.price === 0
   const isElite = plan.id === 'vip'
@@ -24,11 +20,6 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
   const isOneTime = isOneTimeBillingPlan(plan)
   const durationLabel = getPlanDurationLabel(plan)
   const includedFeatures = (plan.features || []).filter((f) => f.included)
-  const hasMore = includedFeatures.length > VISIBLE_FEATURES
-  const visibleFeatures = expanded || !hasMore
-    ? includedFeatures
-    : includedFeatures.slice(0, VISIBLE_FEATURES)
-  const hiddenCount = includedFeatures.length - VISIBLE_FEATURES
 
   const description = Array.isArray(plan.limits) && plan.limits.length
     ? plan.limits[0]
@@ -58,7 +49,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
 
   return (
     <div
-      className={`plans-pricing-card plans-pricing-card--ref relative flex h-full flex-col rounded-3xl border bg-white px-4 pb-4 pt-6 sm:px-5 sm:pb-5 sm:pt-7 ${shellClass}`}
+      className={`plans-pricing-card plans-pricing-card--ref relative flex h-full flex-col rounded-3xl border bg-white px-4 pb-5 pt-7 sm:px-5 sm:pb-6 sm:pt-8 ${shellClass}`}
     >
       <div
         aria-hidden
@@ -94,7 +85,7 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       </div>
 
       <ul className="mt-4 space-y-2">
-        {visibleFeatures.map((f, i) => (
+        {includedFeatures.map((f, i) => (
           <li key={i} className="flex items-start gap-2 text-left text-[11px] leading-snug text-slate-700 sm:text-xs">
             <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${theme.label}`} strokeWidth={2.75} />
             <span>{f.text}</span>
@@ -102,24 +93,14 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
         ))}
       </ul>
 
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="mt-2 flex w-full items-center justify-center gap-0.5 rounded-lg py-1 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-50"
+      <div className="mt-auto pt-5 sm:pt-6">
+        <Link
+          to={ctaTo}
+          className={`block rounded-full py-2.5 text-center text-[11px] font-semibold transition sm:text-xs ${ctaClass}`}
         >
-          {expanded ? 'Daha az' : `+${hiddenCount} özellik`}
-          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
-        </button>
-      )}
-
-      <Link
-        to={ctaTo}
-        className={`mt-auto block rounded-full py-2.5 text-center text-[11px] font-semibold transition sm:text-xs ${ctaClass}`}
-      >
-        {ctaLabel}
-      </Link>
+          {ctaLabel}
+        </Link>
+      </div>
     </div>
   )
 }

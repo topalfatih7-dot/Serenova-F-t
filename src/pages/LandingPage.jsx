@@ -249,7 +249,11 @@ export default function LandingPage() {
               Üyelik Planları
             </span>
             <h2 className="section-title mt-3 text-[clamp(1.5rem,3.2vw,2.15rem)]">
-              Hedefinize uygun planı seçin.
+              Hedefinize{' '}
+              <span className="bg-gradient-to-r from-sage-600 to-brand-600 bg-clip-text text-transparent">
+                uygun planı
+              </span>{' '}
+              seçin.
             </h2>
             <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600">
               Yeni Form&apos;un tüm planları uzman desteğiyle hazırlanır. İhtiyaçlarınıza ve

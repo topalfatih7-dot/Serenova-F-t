@@ -190,7 +190,7 @@ const ACTIVE_PLANS = [
       { text: 'Sınırsız Destek', included: true },
       { text: 'Vip Üye Rozeti', included: true },
     ],
-    limits: ['En kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
+    limits: ['İşbirliği içerisindeki uzmanlarımıza en kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
     pricing_tiers: [
       { months: 1, label: 'Aylık', price: 4999 },
       { months: 3, label: '3 Aylık', price: 12999 },
