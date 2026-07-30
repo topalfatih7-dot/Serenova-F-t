@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
-  ShieldCheck, Lock, BadgeCheck,
+  ShieldCheck, Lock, BadgeCheck, Star,
 } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
 import FAQAccordion from '../components/landing/FAQAccordion'
@@ -234,29 +234,34 @@ export default function LandingPage() {
       <HowItWorksSection />
 
       {/* ═══════════════════════════════════════════
-          ÜYELİK SEÇENEKLERİ — Mobil Swipe Hint
+          ÜYELİK SEÇENEKLERİ
       ═══════════════════════════════════════════ */}
-      <PlansAnimatedBackground className="plans-section-ref !flex min-h-[100svh] !flex-col !justify-center !overflow-x-hidden !overflow-y-visible !py-10 sm:!py-12">
+      <PlansAnimatedBackground className="plans-section-ref !py-12 sm:!py-16">
         <div className="mx-auto w-full max-w-[92rem] px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '50px' }}
-            className="text-center"
+            className="plans-ref-heading text-center"
           >
-            <span className="section-badge">Planlar</span>
-            <h2 className="section-title mt-3 text-[clamp(1.5rem,3.2vw,2.15rem)]">Üyelik Seçenekleri</h2>
-            <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600 sm:text-[0.95rem]">
-              Size en uygun planı seçin — kayıt anında başlasın
+            <span className="plans-ref-badge">
+              <Star className="h-3 w-3 fill-current" aria-hidden />
+              Üyelik Planları
+            </span>
+            <h2 className="section-title mt-3 text-[clamp(1.5rem,3.2vw,2.15rem)]">
+              Hedefinize uygun planı seçin.
+            </h2>
+            <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+              Yeni Form&apos;un tüm planları uzman desteğiyle hazırlanır. İhtiyaçlarınıza ve
+              hedeflerinize göre planınızı yükseltebilir veya değiştirebilirsiniz.
             </p>
           </motion.div>
 
-          {/* pt: üst badge’ler taşmasın; overflow-y visible */}
-          <div className="mt-6 flex items-stretch gap-3 overflow-x-auto overflow-y-visible pt-4 pb-2 [scrollbar-width:thin] sm:mt-8 sm:gap-3.5 sm:overflow-x-visible md:gap-4">
+          <div className="plans-cards-grid mt-5 sm:mt-6 lg:mt-8">
             {displayPlans.map((plan, i) => (
               <div
                 key={plan.id}
-                className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative z-0 w-[min(48vw,14.5rem)] shrink-0 overflow-visible sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0`}
+                className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative min-w-0`}
               >
                 <PricingCard
                   plan={plan}

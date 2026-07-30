@@ -75,7 +75,7 @@ const DOKTOR_PACKAGE_CONFIG = {
 /** Seed / eksik plan insert — admin marketing alanlarını ezmez */
 const ACTIVE_PLANS = [
   {
-    id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage', icon: 'Salad',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
     features: [
@@ -97,7 +97,7 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald',
+    id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald', icon: 'Apple',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
     features: [
@@ -119,7 +119,7 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage',
+    id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sky', icon: 'Footprints',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
@@ -140,7 +140,7 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue',
+    id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue', icon: 'Dumbbell',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
@@ -161,7 +161,7 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'teal',
+    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'violet', icon: 'Stethoscope',
     billing_type: 'one_time',
     entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, photoCalorie: false, manualCalorie: false, fullVideo: false },
     features: [
@@ -173,7 +173,7 @@ const ACTIVE_PLANS = [
     pricing_tiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   },
   {
-    id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'brand',
+    id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'gold', icon: 'Crown',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
     features: [
@@ -209,7 +209,7 @@ function entitlementsEmpty(ent) {
 async function ensurePlan(plan) {
   const { data: existing, error: selErr } = await supabase
     .from('plans')
-    .select('id, entitlements, is_sellable, billing_type')
+    .select('id, entitlements, is_sellable, billing_type, emoji, icon')
     .eq('id', plan.id)
     .maybeSingle()
   if (selErr) throw new Error(`plans.${plan.id} select: ${selErr.message}`)
@@ -227,6 +227,8 @@ async function ensurePlan(plan) {
       limits: plan.limits,
       pricing_tiers: plan.pricing_tiers,
       color: plan.color,
+      icon: plan.icon || null,
+      emoji: null,
       billing_type: plan.billing_type || 'recurring',
       entitlements: plan.entitlements || {},
       sort_order: PLAN_SORT[plan.id] ?? 99,
@@ -256,10 +258,18 @@ async function ensurePlan(plan) {
     patch.billing_type = 'one_time'
     need = true
   }
+  if (plan.icon && existing.icon !== plan.icon) {
+    patch.icon = plan.icon
+    need = true
+  }
+  if (existing.emoji) {
+    patch.emoji = null
+    need = true
+  }
   if (need) {
     const { error } = await supabase.from('plans').update(patch).eq('id', plan.id)
     if (error) throw new Error(`plans.${plan.id} patch: ${error.message}`)
-    console.log(`  ✓ plan tamamlandı (entitlements/sellable): ${plan.id}`)
+    console.log(`  ✓ plan tamamlandı (entitlements/sellable/icon): ${plan.id}`)
   } else {
     console.log(`  · plan korundu (admin): ${plan.id}`)
   }

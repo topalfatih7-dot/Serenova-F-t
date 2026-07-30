@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan, RECOMMENDED_PLAN } from '../../data/membershipPlans'
-import { getPlanTheme, planVisual, dailyPrice } from './planTheme'
+import { getPlanTheme, planVisual } from './planTheme'
 
 const VISIBLE_FEATURES = 4
 const MotionLink = motion(Link)
@@ -29,7 +29,6 @@ export default function MembershipPlanCard({
   const hasMore = features.length > VISIBLE_FEATURES
   const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_FEATURES)
   const hiddenCount = features.length - VISIBLE_FEATURES
-  const daily = dailyPrice(plan.price)
   const durationLabel = getPlanDurationLabel(plan)
   const isOneTime = isOneTimeBillingPlan(plan)
   const Tag = mode === 'select' ? motion.button : MotionLink
@@ -129,12 +128,6 @@ export default function MembershipPlanCard({
           </p>
           {plan.price > 0 && (
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-cream-800/45">{durationLabel}</p>
-          )}
-          {plan.price > 0 && !isOneTime && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
-              <Sparkles className="h-3 w-3" />
-              Günde ~{daily.toLocaleString('tr-TR')}₺ — kahve fiyatına wellness
-            </p>
           )}
           {isOneTime && (
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-semibold text-teal-800 ring-1 ring-teal-100">
