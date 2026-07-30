@@ -1,7 +1,6 @@
 # Stripe webhook — AÇIK OPS (manuel, kritik)
 
 > **Durum:** Kod hazır · **Dashboard event’leri kullanıcıda açık değilse abonelik yenilenmez**  
-> **GSC:** Tamam (`yeniform.com` doğrulu + sitemap Başarılı) — bu iş Stripe’a özel  
 > Kapanınca: bu dosyadaki checkbox’ları işaretle + [`ROADMAP_DENETIM.md`](ROADMAP_DENETIM.md) maddesini `[x]` yap
 
 Kod: `api/stripe-webhook.js` (`invoice.paid` → süre uzatma, `customer.subscription.deleted` → subscription id temizliği).  

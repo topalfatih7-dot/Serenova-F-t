@@ -33,7 +33,9 @@ Varsayılan Supabase göndericisi (`noreply@mail.app.supabase.io`) yerine kendi 
 [Authentication → URL Configuration](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/url-configuration)
 
 - **Site URL:** `https://www.yeniform.com`
-- **Redirect URLs:** `https://www.yeniform.com/**`, `http://localhost:5173/**`, `http://localhost:3000/**`
+- **Redirect URLs:** `https://www.yeniform.com/**`, `https://yeniform.com/**`, `http://localhost:5173/**`, `http://localhost:3000/**`
+
+Google OAuth markalama / Custom Domain: [`docs/OPS_GOOGLE_OAUTH.md`](../../docs/OPS_GOOGLE_OAUTH.md).
 
 ## Şablon subject (konu) alanları
 

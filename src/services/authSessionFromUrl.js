@@ -2,6 +2,10 @@
  * Supabase PKCE + token_hash + implicit-hash oturum kurulumu.
  * Tüm Supabase recovery / magic-link yönlendirme biçimlerini destekler.
  */
+
+/** StrictMode / remount: aynı PKCE code için tek exchange. */
+const inflightByCode = new Map()
+
 function stripQueryKeys(keys) {
   const params = new URLSearchParams(window.location.search)
   let changed = false
@@ -16,7 +20,7 @@ function stripQueryKeys(keys) {
 export function stripAuthCodeFromUrl() { stripQueryKeys(['code']) }
 export function stripTokenHashFromUrl() { stripQueryKeys(['token_hash', 'type']) }
 
-/** detectSessionInUrl PKCE değişimini tamamlaması için kısa süre bekler (çift exchange yarışını önler). */
+/** detectSessionInUrl / paralel exchange tamamlanması için kısa süre bekler. */
 function waitForDetectedSession(supabase, waitMs = 5000) {
   return new Promise((resolve) => {
     let settled = false
@@ -52,6 +56,38 @@ function waitForDetectedSession(supabase, waitMs = 5000) {
 }
 
 /**
+ * Aynı code için tek exchange; StrictMode çift mount kodu iki kez tüketmesin.
+ * Kod kullanılmışsa kısa poll ile oturumu kurtarır.
+ */
+async function exchangeCodeSingleFlight(supabase, code, waitMs) {
+  const existing = inflightByCode.get(code)
+  if (existing) return existing
+
+  const promise = (async () => {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data?.session) {
+      stripAuthCodeFromUrl()
+      return data.session
+    }
+
+    // Kod tüketilmiş olabilir (paralel mount); kısa süre oturum bekle
+    const autoSession = await waitForDetectedSession(supabase, Math.min(waitMs, 3000))
+    if (autoSession?.user) {
+      stripAuthCodeFromUrl()
+      return autoSession
+    }
+    return null
+  })()
+
+  inflightByCode.set(code, promise)
+  try {
+    return await promise
+  } finally {
+    inflightByCode.delete(code)
+  }
+}
+
+/**
  * URL'deki her türlü Supabase auth parametresinden oturum kurar:
  *   1. token_hash + type  → verifyOtp  (özel şablon / magic-link)
  *   2. code               → exchangeCodeForSession  (PKCE — en yaygın)
@@ -73,22 +109,18 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = 
     if (!error && data?.session) { stripTokenHashFromUrl(); return data.session }
   }
 
-  // 2) detectSessionInUrl PKCE oturumu kurmuş olabilir — kod değişiminden önce kontrol
+  // 2) PKCE oturumu kurmuş olabilir — kod değişiminden önce kontrol
   const { data: { session: preExchange } } = await supabase.auth.getSession()
   if (preExchange?.user) {
     if (params.get('code')) stripAuthCodeFromUrl()
     return preExchange
   }
 
-  // 3) PKCE code — aynı sekmede code_verifier varken önce manuel exchange (en hızlı yol)
+  // 3) PKCE code — single-flight (StrictMode / remount güvenli)
   const code = params.get('code')
   if (code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error && data?.session) { stripAuthCodeFromUrl(); return data.session }
-
-    // Kod tüketilmiş olabilir (detectSessionInUrl); kısa süre oturum bekle
-    const autoSession = await waitForDetectedSession(supabase, Math.min(waitMs, 3000))
-    if (autoSession?.user) { stripAuthCodeFromUrl(); return autoSession }
+    const session = await exchangeCodeSingleFlight(supabase, code, waitMs)
+    if (session?.user) return session
   }
 
   // 4) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)

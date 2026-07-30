@@ -2,7 +2,7 @@
 
 > **Kaynak:** 2026-07-17 proje denetimi · **Güncelleme:** 2026-07-29  
 > **Durum:** Faz 0–5 + web ops (legal/GSC) 2026-07-29 · **Mobil / Expo erteledi**  
-> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · GSC: [`OPS_GSC.md`](OPS_GSC.md)  
+> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · Google OAuth marka: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 > Mobil not: [`mobile/README.md`](mobile/README.md) — şu an genişletilmiyor.
 
 ---
@@ -10,6 +10,7 @@
 ## AÇIK OPS — kullanıcı (kritik)
 
 - [ ] **Stripe webhook event’leri** — Dashboard’a `invoice.paid` + `customer.subscription.deleted` ekle (kod hazır; eklenmezse abonelik yenilenmez). Adım adım: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
+- [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 - [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)
 
 ---
@@ -83,7 +84,7 @@
 - [ ] **Manuel:** Stripe Dashboard webhook event’leri (`invoice.paid`, `customer.subscription.deleted`) — [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 - [x] `eko` DB temizliği — 0 üye; plan `is_active/is_sellable=false` (JS legacy okuma saklandı)
 - [x] Expo mobil **handoff foundations** (taslak) — **2026-07-29 itibarıyla mobil işler ertelendi; genişletme yok**
-- [x] GSC ops — mülk + sitemap Başarılı (2026-07-29 kullanıcı ekranı); kod: [`OPS_GSC.md`](OPS_GSC.md)
+- [x] GSC ops — mülk + sitemap Başarılı (2026-07-29); checklist dosyası kaldırıldı (tamamlandı)
 - [x] Yasal ince ayar: üyelik + iptal metinleri 48s deneme / Eko paketler / Subscription Portal (2026-07-29)
 - [x] Admin FAQ kopya hizası (paketler + 48s + kalori hakları; SEO static FAQ aynı) — 2026-07-29
 

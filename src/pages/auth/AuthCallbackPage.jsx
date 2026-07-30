@@ -8,11 +8,19 @@ import { BRAND } from '../../config/brand'
 import { getPostLoginPath } from '../../services/platformStats'
 import { establishAuthSessionFromUrl } from '../../services/authSessionFromUrl'
 import { recordSocialLogin, resolveQuickPostLoginPath } from '../../services/supabaseDb'
+import {
+  applyOAuthPendingToParams,
+  clearOAuthPending,
+  peekOAuthPending,
+} from '../../services/oauthAuth'
 import { useApp } from '../../context/AppContext'
 
 const AUTO_REDIRECT_SECONDS = 10
 const REFRESH_TIMEOUT_MS = 4000
 const OAUTH_SAFETY_TIMEOUT_MS = 12000
+
+/** StrictMode çift finish: OAuth navigate tek kez. */
+let oauthNavigateLock = false
 
 function readCallbackParams() {
   const params = new URLSearchParams(window.location.search)
@@ -21,7 +29,15 @@ function readCallbackParams() {
   hashParams.forEach((value, key) => {
     if (!params.has(key)) params.set(key, value)
   })
+  applyOAuthPendingToParams(params)
   return params
+}
+
+function isOAuthCallbackParams(params) {
+  const flow = params.get('flow')
+  if (flow === 'login' || flow === 'signup') return true
+  // Site URL köküne ?code= düşüp flow kaybolursa yine OAuth say
+  return Boolean(params.get('code'))
 }
 
 function refreshWithTimeout(refresh, ms = REFRESH_TIMEOUT_MS) {
@@ -62,21 +78,33 @@ export default function AuthCallbackPage() {
     refreshRef.current = refresh
   }, [refresh])
 
-  const isOAuthCallback = searchParams.get('flow') === 'login' || searchParams.get('flow') === 'signup'
+  const isOAuthCallback =
+    searchParams.get('flow') === 'login' ||
+    searchParams.get('flow') === 'signup' ||
+    Boolean(searchParams.get('code')) ||
+    Boolean(peekOAuthPending())
 
   const completeOAuthSignIn = useCallback(async (session) => {
-    if (navigatingRef.current) return
+    if (oauthNavigateLock || navigatingRef.current) return
+    oauthNavigateLock = true
     navigatingRef.current = true
     const params = readCallbackParams()
     const plan = params.get('plan') || 'free'
-    const dest = await resolveQuickPostLoginPath(session, { plan })
-      .catch(() => `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`)
-    if (!dest.includes('/onboarding')) {
-      recordSocialLogin().catch(() => {})
+    try {
+      const dest = await resolveQuickPostLoginPath(session, { plan })
+        .catch(() => `/onboarding?oauth=1&plan=${encodeURIComponent(plan)}`)
+      if (!dest.includes('/onboarding')) {
+        recordSocialLogin().catch(() => {})
+      }
+      clearOAuthPending()
+      const db = await refreshWithTimeout(refreshRef.current)
+      dbRef.current = db
+      navigate(dest, { replace: true })
+    } catch {
+      oauthNavigateLock = false
+      navigatingRef.current = false
+      throw new Error('oauth_complete_failed')
     }
-    const db = await refreshWithTimeout(refreshRef.current)
-    dbRef.current = db
-    navigate(dest, { replace: true })
   }, [navigate])
 
   useEffect(() => {
@@ -104,8 +132,7 @@ export default function AuthCallbackPage() {
       const errorCode = params.get('error_code')
       const evt = params.get('evt')
       const verify = params.get('verify')
-      const flow = params.get('flow')
-      const isOAuthFlow = flow === 'login' || flow === 'signup'
+      const isOAuthFlow = isOAuthCallbackParams(params)
 
       const isRecovery =
         (window.location.hash || '').includes('type=recovery') ||
@@ -165,6 +192,7 @@ export default function AuthCallbackPage() {
       if (session?.user) {
         const plan = params.get('plan') || 'free'
         const dest = await resolveQuickPostLoginPath(session, { plan }).catch(() => '/profile')
+        clearOAuthPending()
         await refreshWithTimeout(refreshRef.current)
         if (!active) return
         navigate(dest, { replace: true })

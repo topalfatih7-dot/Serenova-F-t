@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { applyOAuthPendingToParams } from '../../services/oauthAuth'
 
 /**
  * Supabase PKCE akışı doğrulama kodunu çoğu zaman Site URL köküne (?code=…) yollar.
  * Hash (#error=…) ve query parametrelerini birleştirip /auth/callback rotasına taşır.
+ * flow= kaybolduysa sessionStorage'daki OAuth pending ile doldurur.
  */
 export default function AuthRedirectHandler() {
   const location = useLocation()
@@ -29,6 +31,10 @@ export default function AuthRedirectHandler() {
     const hasHashTokens = hashRaw.includes('access_token') || hashRaw.includes('type=')
 
     if (!code && !authError && !errorCode && !hasHashTokens && !tokenHash) return
+
+    if (code) {
+      applyOAuthPendingToParams(params)
+    }
 
     if (flowType === 'recovery' || hashRaw.includes('type=recovery')) {
       if (!params.has('next')) params.set('next', 'reset-password')
