@@ -214,6 +214,17 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
       .from('staff')
       .update({ data: staffData })
       .eq('id', staffId)
+
+    const { notifyAppointmentConfirmed } = await import('./_whatsappEvents.js')
+    await notifyAppointmentConfirmed(admin, {
+      memberId: userId,
+      staffId,
+      sessionType,
+      startsAt: session.date,
+      sessionId: session.id,
+      memberName: memberRow.name,
+      staffName: staffRow.name,
+    })
   } catch {
     /* randevu oluştu; bildirim opsiyonel */
   }

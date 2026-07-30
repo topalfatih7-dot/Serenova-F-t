@@ -68,7 +68,7 @@ export default function PanelMobileMenu({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25 }}
-              className="absolute left-0 top-0 flex h-full w-72 max-w-[82%] flex-col border-r border-cream-200 bg-white shadow-xl"
+              className="absolute left-0 top-0 flex h-full w-72 max-w-[82%] flex-col border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl"
             >
               <div className="flex items-center justify-between border-b border-cream-100 p-4">
                 <BrandLogo linkTo={brandLink} size="sm" />
@@ -102,18 +102,30 @@ export default function PanelMobileMenu({
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                        isActive ? activeClass : 'text-cream-800 hover:bg-cream-100'
+                        isActive
+                          ? activeClass
+                          : 'hover:bg-gradient-to-r hover:from-brand-50/80 hover:to-sage-50/50'
                       }`
                     }
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.label}</span>
-                    {item.badgeCount > 0 && (
-                      <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white ${
-                        item.healthTestBadge ? 'bg-amber-500' : 'bg-rose-500'
-                      }`}>
-                        {item.healthTestBadge ? '!' : item.badgeCount > 9 ? '9+' : item.badgeCount}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        <item.icon
+                          className={`h-4 w-4 shrink-0 ${
+                            isActive ? 'text-inherit' : (item.iconTone || 'text-cream-800')
+                          }`}
+                        />
+                        <span className={`flex-1 ${isActive ? '' : (item.labelTone || 'text-cream-800')}`}>
+                          {item.label}
+                        </span>
+                        {item.badgeCount > 0 && (
+                          <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white ${
+                            item.healthTestBadge ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}>
+                            {item.healthTestBadge ? '!' : item.badgeCount > 9 ? '9+' : item.badgeCount}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 ))}
@@ -125,7 +137,7 @@ export default function PanelMobileMenu({
                     type="button"
                     onClick={handleLogout}
                     disabled={loggingOut}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream-800/70 hover:bg-cream-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-rose-500/80 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
                     {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}

@@ -1175,15 +1175,38 @@ export function AppProvider({ children }) {
   const rescheduleSession = useCallback(async (id, type, newDate) => {
     if (!currentMember) return
     const key = sessionKey(type)
+    const prev = (currentMember[key] || []).find((s) => s.id === id)
     const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, date: newDate, status: 'rescheduled' } : s))
     await patchCurrentRemote({ [key]: sessions })
+    if (prev) {
+      const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+      void notifyWhatsAppEvent('appt_rescheduled', {
+        memberId: currentMember.id,
+        sessionId: id,
+        sessionType: type,
+        oldStartsAt: prev.date,
+        newStartsAt: newDate,
+        actor: 'member',
+      })
+    }
   }, [currentMember, patchCurrentRemote])
 
   const cancelSession = useCallback(async (id, type) => {
     if (!currentMember) return
     const key = sessionKey(type)
+    const prev = (currentMember[key] || []).find((s) => s.id === id)
     const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, status: 'cancelled' } : s))
     await patchCurrentRemote({ [key]: sessions })
+    if (prev) {
+      const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+      void notifyWhatsAppEvent('appt_cancelled', {
+        memberId: currentMember.id,
+        sessionId: id,
+        sessionType: type,
+        startsAt: prev.date,
+        actor: 'member',
+      })
+    }
   }, [currentMember, patchCurrentRemote])
 
   // Self-servis randevu: personel müsaitliğinden çakışmasız randevu oluştur

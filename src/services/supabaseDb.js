@@ -880,7 +880,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     assignedCoachId,
     assignedDietitianId,
     assignedDoctorId,
-    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
+    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true, whatsappNotifs: true },
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
     streak: 0,

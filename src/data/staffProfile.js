@@ -84,6 +84,7 @@ export function normalizeStaffProfile(raw = {}) {
 /** Supabase staff.data JSONB payload — tek kaynak */
 export function staffProfileDataPayload(data) {
   const n = normalizeStaffProfile(data)
+  const settings = data?.settings && typeof data.settings === 'object' ? data.settings : undefined
   return {
     phone: n.phone || '',
     title: n.title || '',
@@ -107,6 +108,7 @@ export function staffProfileDataPayload(data) {
     workStart: n.workStart || '09:00',
     workEnd: n.workEnd || '17:00',
     availability: n.availability && typeof n.availability === 'object' ? n.availability : {},
+    ...(settings ? { settings } : {}),
   }
 }
 

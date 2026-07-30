@@ -3,14 +3,14 @@ import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
 
-/** Fire-and-forget Expo Push (mobile). Failures must not block in-app notification. */
-async function dispatchExpoPush(memberId, notification) {
+/** Fire-and-forget Expo Push + WhatsApp (mobile / Meta). */
+async function dispatchOutbound(memberId, notification, extra = {}) {
   try {
     const headers = await getApiAuthHeaders()
     await fetch('/api/application-notify', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ memberId, notification }),
+      body: JSON.stringify({ memberId, notification, ...extra }),
     })
   } catch {
     /* ignore */
@@ -40,7 +40,7 @@ export function staffRoleNotificationLabel(role) {
 }
 
 /** members.data.notifications — RPC ile atomik ekleme (RLS güvenli). */
-export async function pushMemberNotification(memberId, notification) {
+export async function pushMemberNotification(memberId, notification, outboundExtra = {}) {
   if (!memberId || !notification?.title) {
     return { success: false, error: 'Eksik bildirim bilgisi' }
   }
@@ -51,7 +51,7 @@ export async function pushMemberNotification(memberId, notification) {
   })
 
   if (error) return { success: false, error: error.message }
-  void dispatchExpoPush(memberId, notification)
+  void dispatchOutbound(memberId, notification, outboundExtra)
   return { success: true }
 }
 
@@ -63,7 +63,11 @@ export async function notifyMemberProgram({ memberId, staffName, title, programT
     message: `${staffName || 'Uzmanınız'} size "${title}" programını hazırladı. Programlarım bölümünden inceleyebilirsiniz.`,
     programId: programId || null,
     programType: programType || 'workout',
-  }))
+  }), {
+    staffName: staffName || null,
+    programTitle: title || typeLabel,
+    programType: programType || 'workout',
+  })
 }
 
 export async function notifyMemberChatMessage({ memberId, preview, threadId, staffRole }) {
@@ -74,5 +78,22 @@ export async function notifyMemberChatMessage({ memberId, preview, threadId, sta
     message: preview,
     threadId: threadId || null,
     staffRole: staffRole || null,
-  }))
+  }), {
+    threadId: threadId || null,
+    staffRole: staffRole || null,
+  })
+}
+
+/** Cancel / reschedule → WhatsApp + staff in-app (server). */
+export async function notifyWhatsAppEvent(event, payload = {}) {
+  try {
+    const headers = await getApiAuthHeaders()
+    await fetch('/api/application-notify', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'whatsapp-event', event, ...payload }),
+    })
+  } catch {
+    /* ignore */
+  }
 }

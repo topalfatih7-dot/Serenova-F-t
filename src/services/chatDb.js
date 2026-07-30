@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
-import { notifyMemberChatMessage } from './memberNotifications'
+import { notifyMemberChatMessage, notifyWhatsAppEvent } from './memberNotifications'
 import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
 const nowISO = () => new Date().toISOString()
@@ -162,6 +162,14 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
       memberId: thread.memberId,
       preview,
       threadId: thread.id,
+      staffRole: thread.staffRole,
+    })
+  } else if (senderType === 'member') {
+    void notifyWhatsAppEvent('new_chat_message', {
+      threadId: thread.id,
+      senderType: 'member',
+      memberId: thread.memberId,
+      staffId: thread.staffId,
       staffRole: thread.staffRole,
     })
   }

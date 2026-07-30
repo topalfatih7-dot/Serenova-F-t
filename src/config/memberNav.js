@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 
 /** Üye paneli sidebar / mobil menü — tek kaynak.
- * iconTone / labelTone: masaüstü rail renkleri (mobil menü bunları kullanmaz). */
+ * iconTone / labelTone: sidebar / mobil menü renkleri. */
 export const MEMBER_NAV = [
   { to: '/profile', icon: Settings, label: 'Profil', iconTone: 'text-slate-500', labelTone: 'text-slate-600' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', iconTone: 'text-brand-500', labelTone: 'text-brand-700' },

@@ -394,12 +394,13 @@ export default function ProfilePage() {
                 { key: 'pushNotifs', label: 'Tarayıcı bildirimleri', color: 'bg-sage-50' },
                 { key: 'soundNotifs', label: 'Bildirim sesleri', color: 'bg-violet-50' },
                 { key: 'reminderNotifs', label: 'Hatırlatıcılar', color: 'bg-amber-50' },
+                { key: 'whatsappNotifs', label: 'WhatsApp bildirimleri', color: 'bg-teal-50' },
               ].map((t) => (
                 <label key={t.key} className={`flex cursor-pointer items-center justify-between rounded-2xl border border-white/80 px-4 py-3 shadow-sm transition hover:shadow-md ${t.color}`}>
                   <span className="text-sm font-medium text-cream-800">{t.label}</span>
                   <input
                     type="checkbox"
-                    checked={!!settings[t.key]}
+                    checked={settings[t.key] !== false}
                     onChange={(e) => handleNotifToggle(t.key, e.target.checked)}
                     className="h-5 w-5 accent-brand-500"
                   />

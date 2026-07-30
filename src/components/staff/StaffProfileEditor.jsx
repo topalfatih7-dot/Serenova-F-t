@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Globe, Clock, Lock, Check, X,
-  ExternalLink, AlertCircle, Loader2, Eye, Info,
+  ExternalLink, AlertCircle, Loader2, Eye, Info, Bell,
 } from 'lucide-react'
 import PhotoUpload from '../ui/PhotoUpload'
 import PhoneField from '../ui/PhoneField'
@@ -56,6 +56,9 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
   const [tab, setTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(() => normalizeStaffProfile(staffUser))
+  const [whatsappNotifs, setWhatsappNotifs] = useState(
+    () => staffUser?.settings?.whatsappNotifs !== false,
+  )
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -105,6 +108,10 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
         instagram: form.instagram,
         youtube: form.youtube,
         website: form.website,
+        settings: {
+          ...(staffUser?.settings || {}),
+          whatsappNotifs,
+        },
       }
       const result = await onSave(payload)
       if (result?.success === false) {
@@ -303,6 +310,9 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                     placeholder="Deneyiminiz, yaklaşımınız ve danışanlarınıza nasıl destek olduğunuz…"
                     className={`${inputCls} resize-y`}
                   />
+                  <p className="mt-1.5 text-xs text-cream-800/50">
+                    Bu biyografi herkese açık yayınlanır — kadro sayfalarında ve genel profilinizde görünür.
+                  </p>
                 </label>
                 <div className="rounded-2xl border border-cream-200 bg-cream-50/50 px-4 py-3">
                   <p className="text-xs text-cream-800/55">
@@ -334,7 +344,22 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
           )}
 
           {tab === 'security' && (
-            <ProfileSectionCard icon={Lock} title="Şifre Değiştir" subtitle="Güvenlik için önce mevcut şifrenizi doğrulayın" accent="brand">
+            <div className="space-y-5">
+              <ProfileSectionCard icon={Bell} title="Bildirimler" subtitle="Randevu ve mesaj uyarıları" accent="sage">
+                <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-cream-200 bg-teal-50/60 px-4 py-3">
+                  <span className="text-sm font-medium text-cream-800">WhatsApp bildirimleri</span>
+                  <input
+                    type="checkbox"
+                    checked={whatsappNotifs}
+                    onChange={(e) => setWhatsappNotifs(e.target.checked)}
+                    className="h-5 w-5 accent-brand-500"
+                  />
+                </label>
+                <p className="mt-2 text-xs text-cream-800/50">
+                  Kapalıysa randevu ve danışan mesajı WhatsApp bildirimleri gönderilmez. Kaydet’e basmayı unutmayın.
+                </p>
+              </ProfileSectionCard>
+              <ProfileSectionCard icon={Lock} title="Şifre Değiştir" subtitle="Güvenlik için önce mevcut şifrenizi doğrulayın" accent="brand">
               <div className="space-y-4">
                 <label className="block sm:max-w-md">
                   <FieldLabel required>Mevcut şifre</FieldLabel>
@@ -385,12 +410,12 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                 </button>
               </div>
             </ProfileSectionCard>
+            </div>
           )}
         </motion.div>
       </AnimatePresence>
 
-      {tab !== 'security' && (
-        <div className="sticky bottom-4 z-10 flex justify-center">
+      <div className="sticky bottom-4 z-10 flex justify-center">
           <button
             type="button"
             onClick={handleSave}
@@ -401,7 +426,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
             {saving ? 'Kaydediliyor…' : 'Değişiklikleri Kaydet'}
           </button>
         </div>
-      )}
     </div>
   )
 }
