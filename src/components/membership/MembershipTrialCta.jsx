@@ -1,16 +1,72 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+
+function LeafSvg({ className = '', gid = 'a', tone = 'green' }) {
+  const body = `trialLeafBody-${gid}`
+  const shine = `trialLeafShine-${gid}`
+  const colors =
+    tone === 'mint'
+      ? { a: '#8fd9a8', b: '#45b87a', c: '#2a8f5c' }
+      : tone === 'olive'
+        ? { a: '#a3c96b', b: '#6fa040', c: '#4a7a28' }
+        : { a: '#7dce6a', b: '#3faf5f', c: '#1f7a45' }
+
+  return (
+    <svg aria-hidden viewBox="0 0 72 96" className={className}>
+      <defs>
+        <linearGradient id={body} x1="0.2" y1="0" x2="0.85" y2="1">
+          <stop offset="0%" stopColor={colors.a} />
+          <stop offset="45%" stopColor={colors.b} />
+          <stop offset="100%" stopColor={colors.c} />
+        </linearGradient>
+        <linearGradient id={shine} x1="0" y1="0" x2="1" y2="0.6">
+          <stop offset="0%" stopColor="#c8f0a8" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#c8f0a8" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M36 4C20 22 10 42 12 72c8-7 16-10 24-10s16 3 24 10C62 42 52 22 36 4Z"
+        fill={`url(#${body})`}
+      />
+      <path
+        d="M36 4C24 24 16 42 16 62c6-5 12-8 20-8 2 0 4 .2 6 .6C38 36 38 18 36 4Z"
+        fill={`url(#${shine})`}
+      />
+      <path d="M36 16v58" stroke="rgba(255,255,255,0.42)" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M36 30c-7 7-12 16-14 26M36 38c7 6 11 14 13 24M36 48c-5 5-8 11-9 17"
+        stroke="rgba(255,255,255,0.26)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
 
 function TrialShieldVisual() {
   return (
     <div className="membership-trial-visual relative mx-auto flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 lg:mx-0 lg:h-56 lg:w-56">
       <div aria-hidden className="membership-trial-glow membership-trial-glow-a" />
       <div aria-hidden className="membership-trial-glow membership-trial-glow-b" />
+
+      {/* Arka plan yaprakları */}
+      <LeafSvg
+        gid="back1"
+        tone="olive"
+        className="membership-trial-leaf membership-trial-leaf-back-1"
+      />
+      <LeafSvg
+        gid="back2"
+        tone="mint"
+        className="membership-trial-leaf membership-trial-leaf-back-2"
+      />
+
       <svg
         aria-hidden
         viewBox="0 0 160 180"
-        className="relative z-[1] h-[78%] w-auto drop-shadow-[0_18px_32px_rgba(45,140,120,0.28)]"
+        className="relative z-[2] h-[78%] w-auto drop-shadow-[0_18px_32px_rgba(45,140,120,0.28)]"
       >
         <defs>
           <linearGradient id="trialShieldFill" x1="0" y1="0" x2="1" y2="1">
@@ -42,16 +98,22 @@ function TrialShieldVisual() {
           strokeLinejoin="round"
         />
       </svg>
-      <svg
-        aria-hidden
-        viewBox="0 0 48 56"
-        className="absolute bottom-3 right-4 z-[2] h-10 w-8 text-sage-500/80 sm:bottom-4 sm:right-6 sm:h-12 sm:w-9"
-      >
-        <path
-          d="M24 4C14 16 8 28 10 44c5-4 10-5 14-5s9 1 14 5C40 28 34 16 24 4Z"
-          fill="currentColor"
-        />
-      </svg>
+
+      {/* Ön / yan yapraklar — dağınık */}
+      <LeafSvg
+        gid="front1"
+        className="membership-trial-leaf membership-trial-leaf-front-1"
+      />
+      <LeafSvg
+        gid="front2"
+        tone="mint"
+        className="membership-trial-leaf membership-trial-leaf-front-2"
+      />
+      <LeafSvg
+        gid="front3"
+        tone="olive"
+        className="membership-trial-leaf membership-trial-leaf-front-3"
+      />
     </div>
   )
 }
@@ -120,9 +182,6 @@ export default function MembershipTrialCta({ isMember = false }) {
 
         <div className="relative flex justify-center lg:justify-end" aria-hidden>
           <TrialShieldVisual />
-          <span className="absolute left-[18%] top-[22%] flex h-7 w-7 items-center justify-center rounded-full bg-white text-emerald-500 shadow-md sm:left-[22%] sm:top-[18%]">
-            <Check className="h-3.5 w-3.5" strokeWidth={3} />
-          </span>
         </div>
       </div>
     </motion.div>

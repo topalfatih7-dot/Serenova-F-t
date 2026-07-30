@@ -1754,6 +1754,91 @@ body {
   background: radial-gradient(circle, rgba(110, 231, 183, 0.32) 0%, transparent 68%);
 }
 
+.membership-trial-leaf {
+  pointer-events: none;
+  position: absolute;
+  height: auto;
+  filter: drop-shadow(0 8px 12px rgba(34, 100, 60, 0.22));
+}
+
+/* Arka — kalkanın altında, hafif blur */
+.membership-trial-leaf-back-1 {
+  z-index: 1;
+  left: 6%;
+  top: 28%;
+  width: 3.1rem;
+  opacity: 0.55;
+  filter: blur(0.4px) drop-shadow(0 6px 10px rgba(34, 100, 60, 0.18));
+  transform: rotate(-58deg) scaleX(-1);
+  animation: membership-trial-sway-1 9s ease-in-out infinite;
+}
+
+.membership-trial-leaf-back-2 {
+  z-index: 1;
+  right: 4%;
+  top: 14%;
+  width: 2.6rem;
+  opacity: 0.45;
+  filter: blur(0.6px) drop-shadow(0 6px 10px rgba(34, 100, 60, 0.15));
+  transform: rotate(38deg);
+  animation: membership-trial-sway-2 10s ease-in-out infinite 0.5s;
+}
+
+/* Ön — dağınık, farklı boyut/açı */
+.membership-trial-leaf-front-1 {
+  z-index: 3;
+  right: -2%;
+  bottom: 6%;
+  width: 3.35rem;
+  transform: rotate(22deg);
+  animation: membership-trial-sway-3 8s ease-in-out infinite;
+}
+
+.membership-trial-leaf-front-2 {
+  z-index: 3;
+  left: -4%;
+  bottom: 22%;
+  width: 2.55rem;
+  opacity: 0.9;
+  transform: rotate(-48deg) scaleX(-1);
+  animation: membership-trial-sway-1 8.8s ease-in-out infinite 0.7s;
+}
+
+.membership-trial-leaf-front-3 {
+  z-index: 3;
+  right: 18%;
+  top: -2%;
+  width: 2rem;
+  opacity: 0.72;
+  transform: rotate(62deg);
+  animation: membership-trial-sway-2 9.4s ease-in-out infinite 1.1s;
+}
+
+@keyframes membership-trial-sway-1 {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 2px -5px; }
+}
+
+@keyframes membership-trial-sway-2 {
+  0%, 100% { translate: 0 0; }
+  50% { translate: -3px 4px; }
+}
+
+@keyframes membership-trial-sway-3 {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 1px -6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .membership-trial-leaf-back-1,
+  .membership-trial-leaf-back-2,
+  .membership-trial-leaf-front-1,
+  .membership-trial-leaf-front-2,
+  .membership-trial-leaf-front-3 {
+    animation: none;
+  }
+}
+
 .membership-mesh-how {
   background:
     radial-gradient(ellipse 50% 55% at -5% 20%, rgba(68, 150, 100, 0.14), transparent 58%),
