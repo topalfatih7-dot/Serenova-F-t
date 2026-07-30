@@ -11,7 +11,7 @@ import PricingCard from '../components/landing/PricingCard'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import JsonLd from '../components/seo/JsonLd'
 import { getPlanCtaLabel } from '../utils/planCta'
-import { RECOMMENDED_PLAN, getDurationSavingsPercent, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import { buildFaqSchema } from '../config/seo'
 
 const comparisonRows = [
@@ -104,13 +104,6 @@ export default function MembershipComparisonPage() {
               </div>
             ))}
           </div>
-
-          {displayPlans.some((p) => p.id === RECOMMENDED_PLAN) && (
-            <p className="mt-6 text-center text-sm text-cream-800/65">
-              <span className="font-semibold text-amber-800">VIP 6 aylık paket</span>
-              {' '}— %{getDurationSavingsPercent(RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS)} tasarruf ile en avantajlı seçenek.
-            </p>
-          )}
         </div>
       </PlansAnimatedBackground>
 

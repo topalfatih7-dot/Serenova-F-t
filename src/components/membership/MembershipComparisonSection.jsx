@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
-  CalendarDays,
   Camera,
   Check,
   ClipboardList,
@@ -12,10 +11,8 @@ import {
   Library,
   MessageCircle,
   MessagesSquare,
-  ShieldCheck,
   TrendingUp,
   UserRound,
-  Users,
   X,
   Headphones,
   Calculator,
@@ -25,24 +22,6 @@ import { RECOMMENDED_PLAN } from '../../data/membershipPlans'
 import { getPlanTheme, planIcon } from './planTheme'
 import MembershipComparisonAccordion from './MembershipComparisonAccordion'
 import { scrollToContactSection } from '../../utils/scrollToContact'
-
-const TRUST_ITEMS = [
-  {
-    icon: ShieldCheck,
-    label: 'Güvenli ve KVKK Uyumlu',
-    tone: 'text-teal-600 bg-teal-50 ring-teal-100',
-  },
-  {
-    icon: Users,
-    label: 'Uzman Kadro',
-    tone: 'text-sage-700 bg-sage-50 ring-sage-100',
-  },
-  {
-    icon: CalendarDays,
-    label: 'Esnek Planlama',
-    tone: 'text-emerald-700 bg-emerald-50 ring-emerald-100',
-  },
-]
 
 const FEATURE_ICONS = {
   'Yeniform Kişisel Sağlık Analizi': { Icon: HeartPulse, className: 'text-rose-500 bg-rose-50' },
@@ -129,23 +108,6 @@ export default function MembershipComparisonSection({
           <p className="section-subtitle mx-auto mt-2 max-w-xl text-sm">
             Abonelik planlarında 1, 3 veya 6 aylık süre; Doktor Paketi tek seferliktir.
           </p>
-
-          <ul className="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-center gap-2.5 sm:gap-3">
-            {TRUST_ITEMS.map((item) => {
-              const Icon = item.icon
-              return (
-                <li
-                  key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-700 shadow-sm ring-1 ring-slate-100/90 backdrop-blur-sm sm:text-xs"
-                >
-                  <span className={`flex h-7 w-7 items-center justify-center rounded-full ring-1 ${item.tone}`}>
-                    <Icon className="h-3.5 w-3.5" strokeWidth={2.1} aria-hidden />
-                  </span>
-                  {item.label}
-                </li>
-              )
-            })}
-          </ul>
         </div>
 
         <div className="mt-6 md:hidden">
