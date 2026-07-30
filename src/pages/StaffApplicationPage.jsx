@@ -127,6 +127,8 @@ export default function StaffApplicationPage() {
         toast(r.error || 'Başvuru gönderilemedi', 'error')
         return
       }
+      if (r.formSessionToken) setFormSessionToken(r.formSessionToken)
+      if (r.photo && r.photo !== form.photo) update({ photo: r.photo })
       setSummaryOpen(false)
       setDone(true)
       toast('Başvurunuz alındı! İnceleme sonrası e-posta ile bilgilendirileceksiniz.', 'success')
@@ -175,6 +177,22 @@ export default function StaffApplicationPage() {
   const handleSingleDocUpload = async (file, onSaved) => {
     const uploaded = await uploadDocs(file)
     if (uploaded[0]) onSaved(uploaded[0])
+  }
+
+  const persistApplicationPhoto = async (file) => {
+    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
+      throw new Error('Fotoğraf yüklemeden önce bot doğrulamasını tamamlayın')
+    }
+    const session = formSessionToken
+    const r = await uploadStaffApplicationDoc(file, {
+      turnstileToken: session ? '' : turnstileToken,
+      formSessionToken: session,
+    })
+    if (!r.success || !r.url) {
+      throw new Error(r.error || 'Fotoğraf yüklenemedi')
+    }
+    if (r.formSessionToken) setFormSessionToken(r.formSessionToken)
+    return r.url
   }
 
   const showCoachEducationDoc = hasCoachEducationInfo(form)
@@ -248,13 +266,17 @@ export default function StaffApplicationPage() {
                 <>
                   <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
+                      {isTurnstileEnabled() && !formSessionToken && (
+                        <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                      )}
                       <PhotoUpload
                         value={form.photo}
                         onChange={(photo) => update({ photo })}
                         label="Profil Fotoğrafı (isteğe bağlı)"
                         variant="portrait"
                         optional
-                        hint="Profil fotoğrafı başvuruya dahil edilmez; onay sonrası personel profilinizden ekleyebilirsiniz."
+                        persistUpload={persistApplicationPhoto}
+                        hint="Fotoğraf başvurunuza kaydedilir; onay sonrası profilinizde görünür."
                       />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
                       <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" className={inputCls} />

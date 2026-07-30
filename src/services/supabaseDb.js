@@ -1974,8 +1974,54 @@ export async function uploadStaffApplicationDoc(file, { turnstileToken = '', for
   }
 }
 
+/** Base64 data URL → File (profil fotoğrafını storage'a almak için) */
+function dataUrlToFile(dataUrl, filename = 'profile.jpg') {
+  const [header, data] = String(dataUrl || '').split(',')
+  if (!data) throw new Error('Geçersiz görsel')
+  const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg'
+  const binary = atob(data)
+  const arr = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) arr[i] = binary.charCodeAt(i)
+  return new File([arr], filename, { type: mime })
+}
+
+/**
+ * Başvuru payload'ına base64 koyma — storage URL'e çevir.
+ * @returns {{ ok: true, photo: string|null, formSessionToken: string } | { ok: false, error: string }}
+ */
+async function resolveStaffApplicationPhoto(photo, { turnstileToken = '', formSessionToken = '' } = {}) {
+  if (!photo || typeof photo !== 'string') {
+    return { ok: true, photo: null, formSessionToken }
+  }
+  if (!photo.startsWith('data:')) {
+    return { ok: true, photo, formSessionToken }
+  }
+  try {
+    const file = dataUrlToFile(photo, 'profile.jpg')
+    const up = await uploadStaffApplicationDoc(file, {
+      turnstileToken: formSessionToken ? '' : turnstileToken,
+      formSessionToken,
+    })
+    if (!up.success || !up.url) {
+      return { ok: false, error: up.error || 'Profil fotoğrafı yüklenemedi' }
+    }
+    return {
+      ok: true,
+      photo: up.url,
+      formSessionToken: up.formSessionToken || formSessionToken,
+    }
+  } catch (e) {
+    return { ok: false, error: e.message || 'Profil fotoğrafı yüklenemedi' }
+  }
+}
+
 export async function submitStaffApplication(form, { turnstileToken = '', formSessionToken = '' } = {}) {
-  const payload = buildStaffApplicationPayload(form)
+  const photoResolved = await resolveStaffApplicationPhoto(form.photo, { turnstileToken, formSessionToken })
+  if (!photoResolved.ok) {
+    return { success: false, error: photoResolved.error }
+  }
+  const session = photoResolved.formSessionToken || formSessionToken
+  const payload = buildStaffApplicationPayload({ ...form, photo: photoResolved.photo })
 
   try {
     const res = await fetch('/api/contact', {
@@ -1989,15 +2035,20 @@ export async function submitStaffApplication(form, { turnstileToken = '', formSe
         phone: form.phone?.trim() || '',
         roleLabel: staffRoleLabel(form.role),
         data: payload,
-        turnstileToken: turnstileToken || '',
-        formSessionToken: formSessionToken || '',
+        turnstileToken: session ? '' : (turnstileToken || ''),
+        formSessionToken: session || '',
       }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok || !data.ok) {
       return { success: false, error: data.error || 'Başvuru gönderilemedi' }
     }
-    return { success: true, id: data.id, formSessionToken: data.formSessionToken || formSessionToken }
+    return {
+      success: true,
+      id: data.id,
+      formSessionToken: data.formSessionToken || session,
+      photo: photoResolved.photo,
+    }
   } catch (e) {
     return { success: false, error: e.message || 'Başvuru gönderilemedi' }
   }

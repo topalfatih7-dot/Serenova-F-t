@@ -30,10 +30,43 @@ function resizeImage(file, maxDim = 720, quality = 0.82) {
   })
 }
 
-export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı', hint, variant = 'body', optional = false }) {
+export function dataUrlToFile(dataUrl, filename = 'photo.jpg') {
+  const [header, data] = String(dataUrl || '').split(',')
+  if (!data) throw new Error('Geçersiz görsel')
+  const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg'
+  const binary = atob(data)
+  const arr = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) arr[i] = binary.charCodeAt(i)
+  const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg'
+  const name = filename.includes('.') ? filename : `${filename}.${ext}`
+  return new File([arr], name, { type: mime })
+}
+
+/**
+ * @param {object} props
+ * @param {string|null} props.value
+ * @param {(v: string|null) => void} props.onChange
+ * @param {string} [props.label]
+ * @param {string} [props.hint]
+ * @param {'body'|'portrait'} [props.variant]
+ * @param {boolean} [props.optional]
+ * @param {(file: File) => Promise<string>} [props.persistUpload] — set edilirse boyutlandırılmış dosya storage'a yüklenir; onChange public URL alır
+ */
+export default function PhotoUpload({
+  value,
+  onChange,
+  label = 'Boy Fotoğrafı',
+  hint,
+  variant = 'body',
+  optional = false,
+  persistUpload,
+}) {
   const inputRef = useRef(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [localPreview, setLocalPreview] = useState(null)
+
+  const displaySrc = localPreview || value
 
   const handleFile = async (file) => {
     if (!file) return
@@ -45,12 +78,29 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
     setLoading(true)
     try {
       const dataUrl = await resizeImage(file)
-      onChange(dataUrl)
-    } catch {
-      setError('Görsel yüklenemedi, tekrar deneyin')
+      if (persistUpload) {
+        setLocalPreview(dataUrl)
+        const resized = dataUrlToFile(dataUrl, 'profile.jpg')
+        const url = await persistUpload(resized)
+        if (!url || typeof url !== 'string') throw new Error('Yükleme URL döndürmedi')
+        setLocalPreview(null)
+        onChange(url)
+      } else {
+        onChange(dataUrl)
+      }
+    } catch (e) {
+      setLocalPreview(null)
+      setError(e?.message || 'Görsel yüklenemedi, tekrar deneyin')
     } finally {
       setLoading(false)
+      if (inputRef.current) inputRef.current.value = ''
     }
+  }
+
+  const clear = () => {
+    setLocalPreview(null)
+    setError('')
+    onChange(null)
   }
 
   const isPortrait = variant === 'portrait'
@@ -59,6 +109,7 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
     ? (optional ? 'Profil fotoğrafı ekle (isteğe bağlı)' : 'Profil fotoğrafı ekle *')
     : 'Fotoğraf ekle (isteğe bağlı)'
   const placeholderHint = isPortrait ? 'Net portre, yüzünüz görünür olmalı' : ''
+  const loadingLabel = persistUpload ? 'Kaydediliyor...' : 'Yükleniyor...'
 
   return (
     <div className="block">
@@ -68,22 +119,29 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
         </span>
       )}
 
-      {value ? (
+      {displaySrc ? (
         <div className="relative inline-flex overflow-hidden rounded-2xl border border-cream-200 bg-cream-50">
-          <img src={value} alt="Fotoğraf önizleme" className={previewClass} />
+          <img src={displaySrc} alt="Fotoğraf önizleme" className={previewClass} />
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+              <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+            </div>
+          )}
           <div className="absolute right-1.5 top-1.5 flex gap-1.5">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-cream-800 shadow-sm hover:bg-white"
+              disabled={loading}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-cream-800 shadow-sm hover:bg-white disabled:opacity-50"
               aria-label="Değiştir"
             >
               <Camera className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => onChange(null)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-red-500 shadow-sm hover:bg-white"
+              onClick={clear}
+              disabled={loading}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-red-500 shadow-sm hover:bg-white disabled:opacity-50"
               aria-label="Kaldır"
             >
               <X className="h-4 w-4" />
@@ -105,7 +163,7 @@ export default function PhotoUpload({ value, onChange, label = 'Boy Fotoğrafı'
             </span>
           )}
           <span className="text-sm font-medium text-cream-900">
-            {loading ? 'Yükleniyor...' : placeholderTitle}
+            {loading ? loadingLabel : placeholderTitle}
           </span>
           {placeholderHint ? (
             <span className="text-xs text-cream-800/55">{placeholderHint}</span>

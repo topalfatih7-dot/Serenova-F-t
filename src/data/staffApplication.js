@@ -449,8 +449,8 @@ export function validateStaffApplication(form) {
 
 export function buildStaffApplicationPayload(form) {
   const common = {
-    // Base64 data URL'leri payload'a koyma — gövde limitini aşar ("başvuru verisi çok yüksek")
-    photo: (typeof form.photo === 'string' && !form.photo.startsWith('data:'))
+    // Base64 data URL gönderme — storage URL beklenir (yükleme submit / PhotoUpload persistUpload ile yapılır)
+    photo: (typeof form.photo === 'string' && form.photo && !form.photo.startsWith('data:'))
       ? form.photo
       : null,
     city: form.city || '',

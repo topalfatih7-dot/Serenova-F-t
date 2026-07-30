@@ -121,10 +121,12 @@ export default function AdminApplicationsPage() {
   const downloadCv = async (app) => {
     setCvBusy(app.id)
     try {
+      toast('CV hazırlanıyor — ek belgeler yükleniyor…', 'info')
       const filename = await downloadStaffApplicationCvPdf(app)
       toast(`CV indirildi: ${filename}`, 'success')
-    } catch {
-      toast('CV oluşturulamadı. Lütfen tekrar deneyin.', 'error')
+    } catch (e) {
+      console.error(e)
+      toast(e?.message || 'CV oluşturulamadı. Lütfen tekrar deneyin.', 'error')
     } finally {
       setCvBusy(null)
     }

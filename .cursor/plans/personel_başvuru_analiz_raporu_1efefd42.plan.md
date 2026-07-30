@@ -24,8 +24,8 @@ todos:
     content: Diyetisyen Adım 2'ye sadeleştirilmiş yetkin danışan grubu seçimi eklenmeli — staffApplication.js + StaffApplicationPage.jsx
     status: pending
   - id: o1-photo-hint
-    content: Profil fotoğrafı hint mesajı ve payload davranışı tutarlı hale getirilmeli — StaffApplicationPage.jsx
-    status: pending
+    content: Profil fotoğrafı storage'a yüklenip URL ile kaydedilir (payload boyutu + gösterim) — StaffApplicationPage + PhotoUpload + supabaseDb
+    status: completed
   - id: k5-languages
     content: Dil seçim arayüzü Adım 1'e eklenmeli (her iki rol için) — StaffApplicationPage.jsx + staffApplication.js
     status: pending
@@ -34,7 +34,6 @@ todos:
     status: pending
 isProject: false
 ---
-
 
 # Personel Başvuru Formu — Detaylı Analiz & Düzeltme Raporu
 
