@@ -34,6 +34,7 @@ function StoryPhoto({ className = '', variant = 'banner' }) {
 function StoryCard({ story, index }) {
   const ring = AVATAR_RINGS[index % AVATAR_RINGS.length]
   const initial = story.name?.charAt(0)?.toUpperCase() || '?'
+  const photo = typeof story.photo === 'string' && story.photo.trim() ? story.photo.trim() : null
 
   return (
     <motion.article
@@ -44,9 +45,21 @@ function StoryCard({ story, index }) {
       {/* Avatar — merkez */}
       <div className="mx-auto shrink-0">
         <div className={`rounded-full bg-gradient-to-br p-[3px] ${ring} shadow-md`}>
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-cream-900">
-            {initial}
-          </span>
+          {photo ? (
+            <img
+              src={photo}
+              alt={story.name || 'Üye'}
+              className="h-16 w-16 rounded-full object-cover bg-white"
+              loading="lazy"
+              decoding="async"
+              width={64}
+              height={64}
+            />
+          ) : (
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-cream-900">
+              {initial}
+            </span>
+          )}
         </div>
       </div>
 

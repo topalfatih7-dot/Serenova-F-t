@@ -94,10 +94,6 @@ export const STATIC_BRAND_FAQS = [
     q: 'Yeni Form sitesine nasıl ulaşırım?',
     a: 'Resmi web adresimiz www.yeniform.com\'dur. Google\'da "Yeni Form", "yeniform" veya "yeni form wellness" yazarak da bize ulaşabilirsiniz.',
   },
-  {
-    q: 'Yeni Form ücretsiz mi?',
-    a: 'Kayıt sonrası 48 saat ücretsiz deneme sunulur; ardından Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP paketlerinden birini Stripe ile seçebilirsiniz. Programlar koç / diyetisyen tarafından hazırlanır. Abonelikleri Stripe Müşteri Portalı üzerinden iptal edebilirsiniz.',
-  },
 ]
 
 export function mergeKeywords(...parts) {

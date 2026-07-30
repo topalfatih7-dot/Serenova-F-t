@@ -20,7 +20,7 @@ const SUCCESS_STORY_FILTERS = [
 const EMPTY = {
   testimonial: { name: '', role: '', quote: '', rating: 5 },
   faq: { q: '', a: '' },
-  success_story: { name: '', duration: '', highlight: '', story: '', consent: true, approved: true },
+  success_story: { name: '', duration: '', highlight: '', story: '', photo: '', consent: true, approved: true },
 }
 
 function dataFromItem(item) {
@@ -75,6 +75,10 @@ function ContentFormModal({ open, onClose, onSubmit, kind, initial, isEdit }) {
             <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="İsim" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
             <input value={form.duration} onChange={(e) => update({ duration: e.target.value })} placeholder="Süre (ör. 12 hafta)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
             <input value={form.highlight} onChange={(e) => update({ highlight: e.target.value })} placeholder="Öne çıkan başlık" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+            <input value={form.photo || ''} onChange={(e) => update({ photo: e.target.value })} placeholder="Profil fotoğrafı URL (ör. /success-stories/elif-k.webp)" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+            {form.photo?.trim() && (
+              <img src={form.photo.trim()} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-brand-100" />
+            )}
             <textarea value={form.story || ''} onChange={(e) => update({ story: e.target.value })} rows={4} placeholder="Hikaye metni" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
             <label className="flex cursor-pointer items-center justify-between rounded-xl border border-cream-200 px-4 py-3">
               <span className="text-sm font-medium text-cream-900">Onaylı (yayında)</span>
@@ -237,7 +241,12 @@ export default function AdminContentPage() {
               {activeTab === 'successStories' && (
                 <>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-cream-900">{item.name}</p>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      {item.photo ? (
+                        <img src={item.photo} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-cream-200" />
+                      ) : null}
+                      <p className="font-semibold text-cream-900">{item.name}</p>
+                    </div>
                     <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${item.approved ? 'bg-sage-50 text-sage-700' : 'bg-amber-50 text-amber-700'}`}>
                       {item.approved ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                       {item.approved ? 'Onaylı' : 'İncelemede'}

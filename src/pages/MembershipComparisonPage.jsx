@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, HelpCircle, UserPlus, CreditCard, LayoutDashboard, RefreshCw } from 'lucide-react'
+import { Check, X, Star, ArrowRight, Sparkles } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { ALL_PLANS, formatPlanPrice, sortPlansForDisplay } from '../data/membershipPlans'
 import MembershipHero from '../components/membership/MembershipHero'
-import MembershipPlanCard from '../components/membership/MembershipPlanCard'
 import MembershipReassurance from '../components/membership/MembershipReassurance'
 import MembershipComparisonAccordion from '../components/membership/MembershipComparisonAccordion'
+import PricingCard from '../components/landing/PricingCard'
+import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import JsonLd from '../components/seo/JsonLd'
 import { getPlanTheme, planIcon } from '../components/membership/planTheme'
 import { getPlanCtaLabel } from '../utils/planCta'
@@ -14,30 +15,17 @@ import { RECOMMENDED_PLAN, getDurationSavingsPercent, RECOMMENDED_DURATION_MONTH
 import { buildFaqSchema } from '../config/seo'
 
 const comparisonRows = [
-  { feature: 'Yeniform Kişisel Sağlık Analizi', free: true, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
-  { feature: 'Kan Tahlili Analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true, doktor: false },
-  { feature: 'Manuel Kalori Hesaplama', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
-  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true, doktor: false },
-  { feature: 'Online Doktor Seansı', free: false, eko_diyet: false, diyet: false, eko_spor: false, spor: false, vip: false, doktor: true },
-  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko_diyet: '1', diyet: '2', eko_spor: false, spor: false, vip: '2', doktor: false },
-  { feature: 'Koç Görüşmesi / Ay', free: false, eko_diyet: false, diyet: false, eko_spor: '1', spor: '2', vip: '2', doktor: false },
-  { feature: 'Diyet Programı', free: false, eko_diyet: 'Özel', diyet: 'Özel', eko_spor: false, spor: false, vip: 'Özel', doktor: false },
-  { feature: 'Spor Programı', free: false, eko_diyet: false, diyet: false, eko_spor: 'Özel', spor: 'Özel', vip: 'Özel', doktor: false },
-  { feature: 'Video Kütüphanesi', free: 'Temel', eko_diyet: false, diyet: false, eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
-  { feature: 'İlerleme Raporları', free: 'Temel', eko_diyet: 'Sınırsız', diyet: 'Sınırsız', eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
-  { feature: 'Destek', free: 'Standart', eko_diyet: 'Sınırsız', diyet: 'Sınırsız', eko_spor: 'Sınırsız', spor: 'Sınırsız', vip: 'Sınırsız', doktor: false },
-]
-
-const HOW_IT_WORKS_SIGNUP = [
-  { icon: UserPlus, title: '1. Planınızı seçin', desc: 'Hedefinize uygun paketi seçin — Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP.' },
-  { icon: CreditCard, title: '2. Güvenle kayıt olun', desc: 'Birkaç bilgi, şifre oluşturun. Güvenli ödeme ekranına geçersiniz.' },
-  { icon: LayoutDashboard, title: '3. Hemen başlayın', desc: 'Dashboard\'ınız açılır; programlarınız ve uzman desteğiniz hazır.' },
-]
-
-const HOW_IT_WORKS_MEMBER = [
-  { icon: RefreshCw, title: '1. Yeni planı seçin', desc: 'Mevcut planınız korunur; istediğiniz paketi listeden seçin.' },
-  { icon: CreditCard, title: '2. Güvenle ödeyin', desc: 'Yeni hesap açılmaz — mevcut girişinizle ödeme yapıp planı güncellersiniz.' },
-  { icon: LayoutDashboard, title: '3. Hemen kullanın', desc: 'Ek paketler mevcut üyeliğinize eklenir; haklarınız birleştirilir.' },
+  { feature: 'Yeniform Kişisel Sağlık Analizi', free: true, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
+  { feature: 'Doktor tarafından kan tahlili analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true },
+  { feature: 'Manuel Kalori Hesaplama', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
+  { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
+  { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko_diyet: '1', diyet: '2', eko_spor: false, spor: false, vip: '2' },
+  { feature: 'Koç Görüşmesi / Ay', free: false, eko_diyet: false, diyet: false, eko_spor: '1', spor: '2', vip: '2' },
+  { feature: 'Diyet Programı', free: false, eko_diyet: 'Kişiye özel', diyet: 'Kişiye özel', eko_spor: false, spor: false, vip: 'Kişiye özel' },
+  { feature: 'Spor Programı', free: false, eko_diyet: false, diyet: false, eko_spor: 'Kişiye özel', spor: 'Kişiye özel', vip: 'Kişiye özel' },
+  { feature: 'Hareket kütüphanesi', free: 'Temel', eko_diyet: false, diyet: false, eko_spor: true, spor: true, vip: true },
+  { feature: 'İlerleme Raporları', free: 'Temel', eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
+  { feature: 'Destek', free: 'Standart', eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
 ]
 
 const MEMBERSHIP_FAQ = [
@@ -60,7 +48,7 @@ export default function MembershipComparisonPage() {
   const allPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const isMember = isAuthenticated && !isAdmin && !isStaff
   const displayPlans = isMember ? allPlans.filter((p) => p.id !== membership) : allPlans
-  const howItWorks = isMember ? HOW_IT_WORKS_MEMBER : HOW_IT_WORKS_SIGNUP
+  const comparisonPlans = displayPlans.filter((p) => p.id !== 'doktor')
 
   const ctaForPlan = (plan) => getPlanCtaLabel(plan, {
     forMember: isMember,
@@ -82,9 +70,9 @@ export default function MembershipComparisonPage() {
         }
       />
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6">
+      <div className="relative mx-auto max-w-6xl px-4 pt-4 sm:px-6">
         {!isMember && (
-          <p className="mb-6 text-center text-sm text-cream-800/75">
+          <p className="mb-2 text-center text-sm text-cream-800/75">
             Hizmet detayı:{' '}
             <Link to="/online-diyetisyen" className="font-semibold text-brand-700 underline-offset-2 hover:underline">
               Online diyetisyen
@@ -95,81 +83,62 @@ export default function MembershipComparisonPage() {
             </Link>
           </p>
         )}
-        {/* Nasıl üye olunur */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="membership-section-asymmetric rounded-3xl border border-sage-200/50 p-6 shadow-sm shadow-sage-100/40 sm:p-8"
-        >
-          <div aria-hidden className="about-mesh membership-mesh-how absolute inset-0 rounded-3xl" />
-          <div aria-hidden className="about-mesh-dot absolute inset-0 rounded-3xl" />
-          <div className="relative z-[1]">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sage-500 to-teal-600 text-white shadow-md">
-                <HelpCircle className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="font-display text-xl font-bold text-cream-900">
-                  {isMember ? 'Plan nasıl değiştirilir?' : 'Nasıl üye olursunuz?'}
-                </h2>
-                <p className="mt-1 text-sm text-cream-800/65">
-                  {isMember ? 'Üç basit adım — hesabınız aynı kalır.' : 'Üç basit adım — kafanızda soru işareti kalmadan.'}
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {howItWorks.map((step, i) => {
-                const Icon = step.icon
-                return (
-                  <motion.div
-                    key={step.title}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 }}
-                    className="rounded-2xl border border-white/90 bg-white/85 p-4 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-sage-500 text-white shadow-sm">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <h3 className="mt-3 text-sm font-bold text-cream-900">{step.title}</h3>
-                    <p className="mt-1 text-xs leading-relaxed text-cream-800/65">{step.desc}</p>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
-        </motion.section>
+      </div>
 
-        {/* Plan kartları */}
-        <div className="relative mt-14">
-          <div aria-hidden className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-brand-200/25 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute -right-8 bottom-0 h-48 w-48 rounded-full bg-sage-200/30 blur-3xl" />
-          <div className="relative grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {/* Plan kartları — ana sayfadaki grid + PricingCard */}
+      <PlansAnimatedBackground className="plans-section-ref !py-10 sm:!py-14">
+        <div className="mx-auto w-full max-w-[92rem] px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '50px' }}
+            className="plans-ref-heading text-center"
+          >
+            <span className="plans-ref-badge">
+              <Star className="h-3 w-3 fill-current" aria-hidden />
+              Üyelik Planları
+            </span>
+            <h2 className="section-title mt-3 text-[clamp(1.5rem,3.2vw,2.15rem)]">
+              Hedefinize{' '}
+              <span className="bg-gradient-to-r from-sage-600 to-brand-600 bg-clip-text text-transparent">
+                uygun planı
+              </span>{' '}
+              seçin.
+            </h2>
+            <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+              Yeni Form&apos;un tüm planları uzman desteğiyle hazırlanır. İhtiyaçlarınıza ve
+              hedeflerinize göre planınızı yükseltebilir veya değiştirebilirsiniz.
+            </p>
+          </motion.div>
+
+          <div className="plans-cards-grid mt-5 sm:mt-6 lg:mt-8">
             {displayPlans.map((plan, i) => (
-              <MembershipPlanCard
+              <div
                 key={plan.id}
-                plan={plan}
-                index={i}
-                mode="link"
-                recommended={plan.id === RECOMMENDED_PLAN}
-                ctaTo={`/onboarding?plan=${plan.id}${plan.id === RECOMMENDED_PLAN ? `&months=${RECOMMENDED_DURATION_MONTHS}` : ''}`}
-                ctaLabel={ctaForPlan(plan)}
-              />
+                className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative min-w-0`}
+              >
+                <PricingCard
+                  plan={plan}
+                  featured={plan.id === 'vip'}
+                  ctaTo={`/onboarding?plan=${plan.id}${plan.id === RECOMMENDED_PLAN ? `&months=${RECOMMENDED_DURATION_MONTHS}` : ''}`}
+                  ctaLabel={ctaForPlan(plan)}
+                />
+              </div>
             ))}
           </div>
+
+          {displayPlans.some((p) => p.id === RECOMMENDED_PLAN) && (
+            <p className="mt-6 text-center text-sm text-cream-800/65">
+              <span className="font-semibold text-amber-800">VIP 6 aylık paket</span>
+              {' '}— %{getDurationSavingsPercent(RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS)} tasarruf ile en avantajlı seçenek.
+            </p>
+          )}
         </div>
+      </PlansAnimatedBackground>
 
-        {displayPlans.some((p) => p.id === RECOMMENDED_PLAN) && (
-          <p className="mt-6 text-center text-sm text-cream-800/65">
-            <span className="font-semibold text-amber-800">VIP 6 aylık paket</span>
-            {' '}— %{getDurationSavingsPercent(RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS)} tasarruf ile en avantajlı seçenek.
-          </p>
-        )}
-
+      <div className="relative mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         {/* Karşılaştırma — asimetrik bölüm */}
-        <section className="membership-section-asymmetric mt-14 rounded-3xl px-4 py-10 sm:px-6 sm:py-12">
+        <section className="membership-section-asymmetric mt-4 rounded-3xl px-4 py-10 sm:px-6 sm:py-12">
           <div aria-hidden className="about-mesh membership-mesh-compare absolute inset-0 rounded-3xl" />
           <div aria-hidden className="about-mesh-dot absolute inset-0 rounded-3xl" />
           <div className="relative z-[1]">
@@ -180,7 +149,7 @@ export default function MembershipComparisonPage() {
               </div>
               <div className="mt-6">
                 <MembershipComparisonAccordion
-                  plans={displayPlans}
+                  plans={comparisonPlans}
                   comparisonRows={comparisonRows}
                   isMember={isMember}
                   membership={membership}
@@ -207,7 +176,7 @@ export default function MembershipComparisonPage() {
                   <thead>
                     <tr className="border-b border-cream-100 bg-gradient-to-r from-cream-50/80 to-sage-50/40">
                       <th className="w-48 py-4 pl-5 pr-4 text-left text-sm font-medium text-cream-800/50">Özellik</th>
-                      {displayPlans.map((plan) => {
+                      {comparisonPlans.map((plan) => {
                         const theme = getPlanTheme(plan)
                         const isVip = plan.id === RECOMMENDED_PLAN
                         return (
@@ -236,7 +205,7 @@ export default function MembershipComparisonPage() {
                         className={`border-b border-cream-50 transition hover:bg-sage-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-cream-50/30'}`}
                       >
                         <td className="py-3.5 pl-5 pr-4 text-sm font-medium text-cream-900">{row.feature}</td>
-                        {displayPlans.map((plan) => (
+                        {comparisonPlans.map((plan) => (
                           <td key={plan.id} className="px-3 py-3.5 text-center text-sm">
                             <CellValue value={row[plan.id]} />
                           </td>
@@ -251,20 +220,64 @@ export default function MembershipComparisonPage() {
         </section>
 
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-10 text-center"
+          className="relative mt-10 overflow-hidden rounded-3xl border border-sage-200/60 bg-gradient-to-br from-white via-sage-50/40 to-brand-50/50 p-8 text-center shadow-sm shadow-sage-100/50 sm:p-10"
         >
-          <p className="text-sm text-cream-800/60">
-            {isMember ? 'Mevcut planınıza dönmek veya detayları görmek için profilinize gidin.' : 'Hâlâ emin değil misiniz?'}
-          </p>
-          <Link
-            to={isMember ? '/profile' : '/membership'}
-            className="btn-wellness mt-4 inline-flex !px-8 !py-3.5"
-          >
-            {isMember ? 'Profilime dön' : 'Paket seçin'}
-          </Link>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-200/30 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-sage-200/40 blur-3xl"
+          />
+          <div className="relative z-[1]">
+            {isMember ? (
+              <>
+                <p className="text-sm text-cream-800/65">
+                  Mevcut planınıza dönmek veya detayları görmek için profilinize gidin.
+                </p>
+                <Link
+                  to="/profile"
+                  className="btn-wellness mt-5 inline-flex !px-8 !py-3.5"
+                >
+                  Profilime dön
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-sage-700 ring-1 ring-sage-200/80 shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-brand-500" aria-hidden />
+                  48 saat deneme
+                </span>
+                <h3 className="mt-4 font-display text-xl font-bold text-cream-900 sm:text-2xl">
+                  Hâlâ emin değil misiniz?
+                </h3>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream-800/65">
+                  Ücretsiz kaydolun, sağlık skorlarınızı ve paneli deneyin — kredi kartı gerekmez.
+                </p>
+                <motion.div
+                  className="mt-6 inline-flex"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Link
+                    to="/onboarding?plan=free"
+                    className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-sage-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/35 transition hover:brightness-110 sm:text-base"
+                  >
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+                    />
+                    Ücretsiz başla
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+                  </Link>
+                </motion.div>
+              </>
+            )}
+          </div>
         </motion.div>
 
         <div className="mt-10">
