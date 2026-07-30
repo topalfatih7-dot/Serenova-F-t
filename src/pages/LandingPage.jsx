@@ -148,7 +148,7 @@ export default function LandingPage() {
             >
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
                 <Link
-                  to="/membership"
+                  to="/onboarding?plan=free"
                   className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 sm:text-base"
                 >
                   🚀 Ücretsiz Başla
@@ -187,7 +187,7 @@ export default function LandingPage() {
               custom={5}
               className="mt-3 text-xs text-white/60"
             >
-              Güvenli ödeme · 2 dakikada üye olun
+              Kredi kartı gerekmez · 2 dakikada üye olun
             </motion.p>
 
             {/* Güven rozetleri + istatistikler */}

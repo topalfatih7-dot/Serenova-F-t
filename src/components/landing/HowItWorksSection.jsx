@@ -15,7 +15,7 @@ const STEPS = [
     step: '01',
     icon: ClipboardList,
     title: 'Sağlık profilinizi oluşturun',
-    desc: 'Hedef, yaşam tarzı ve sağlık bilgilerinizi paylaşın. Birkaç dakikada size özel başlangıç için sağlam bir temel oluşur.',
+    desc: 'Yaşam tarzınızı, beslenme alışkanlıklarınızı ve sağlık bilgilerinizi birkaç dakika içinde paylaşın. Böylece size en uygun program için güçlü bir başlangıç oluşturulur.',
     card: 'from-brand-50 via-white to-brand-100/60 border-brand-200/70 hover:border-brand-300',
     rail: 'from-brand-400 to-brand-600',
     iconWrap: 'from-brand-500 to-brand-600 shadow-brand-500/30',
@@ -26,7 +26,7 @@ const STEPS = [
     step: '02',
     icon: Sparkles,
     title: 'Size özel plan oluşturulsun',
-    desc: 'Sağlık analizinizle başlayın. Paketinizde koç ve diyetisyen eşleşmesiyle programınız netleşir.',
+    desc: 'Uzman diyetisyenler ve kişisel antrenörler tarafından hedeflerinize uygun beslenme ve egzersiz planınız hazırlanır. Gerekli durumlarda sağlık analizleriyle programınız daha da kişiselleştirilir.',
     card: 'from-sage-50 via-white to-emerald-50/70 border-sage-200/70 hover:border-sage-300',
     rail: 'from-sage-400 to-emerald-500',
     iconWrap: 'from-sage-500 to-emerald-500 shadow-sage-500/30',
@@ -37,7 +37,7 @@ const STEPS = [
     step: '03',
     icon: TrendingUp,
     title: 'Takip edin, gelişin, hedefinize ulaşın',
-    desc: 'Panelden ilerlemenizi görün. Randevularınıza video ile katılın; planınız ihtiyaçlarınıza göre birlikte güncellenir.',
+    desc: 'İlerlemenizi düzenli olarak takip edin, uzmanlarınızla iletişimde kalın ve ihtiyaçlarınıza göre planınızı güncelleyin. Sağlıklı yaşamı sürdürülebilir hale getirin.',
     card: 'from-warm-50 via-white to-brand-50/70 border-warm-200/60 hover:border-brand-200',
     rail: 'from-warm-400 to-brand-500',
     iconWrap: 'from-warm-400 to-brand-500 shadow-brand-500/25',
@@ -89,8 +89,9 @@ export default function HowItWorksSection() {
               .
             </h2>
             <p className="section-subtitle mx-auto mt-3 max-w-xl md:mx-0">
-              Yeni Form yalnızca bir diyet programı değil — beslenme, hareket ve sağlık
-              analizini bir araya getirerek sürdürülebilir bir yaşam tarzı kurmanıza yardımcı olur.
+              Yeni Form, sadece bir diyet programı sunmaz. Beslenme, egzersiz ve sağlık
+              analizlerini tek platformda bir araya getirerek size özel sürdürülebilir bir yaşam
+              planı oluşturur.
             </p>
           </motion.div>
 
@@ -179,7 +180,7 @@ export default function HowItWorksSection() {
               viewport={{ once: true, margin: '50px' }}
               className="mt-10 text-center md:text-left"
             >
-              <Link to="/membership" className="btn-wellness group inline-flex">
+              <Link to="/onboarding?plan=free" className="btn-wellness group inline-flex">
                 Ücretsiz Başlayın
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
