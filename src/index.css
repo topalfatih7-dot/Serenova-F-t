@@ -461,6 +461,17 @@ body {
   background: linear-gradient(135deg, #eef6fb 0%, #f5faf7 40%, #eef8f2 100%);
 }
 
+/* Landing planlar — referans: açık gri/mavi zemin */
+.plans-section-ref.plans-aurora-section {
+  background: linear-gradient(180deg, #eef5fb 0%, #f7fafc 42%, #ffffff 100%);
+  overflow-x: hidden;
+  overflow-y: visible;
+  contain: style;
+}
+.plans-section-ref .plans-aurora-bg {
+  opacity: 0.28;
+}
+
 .plans-aurora-bg {
   pointer-events: none;
   position: absolute;
@@ -511,11 +522,22 @@ body {
 .plans-pricing-card:hover {
   transform: translateY(-8px);
 }
+.plans-pricing-card--ref:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(15, 40, 60, 0.1);
+}
+.plans-pricing-card--compact:hover {
+  transform: translateY(-3px);
+}
 .plans-pricing-icon {
   transition: transform 0.25s ease;
 }
 .plans-pricing-card:hover .plans-pricing-icon {
   transform: scale(1.08) rotate(3deg);
+}
+.plans-pricing-card--compact:hover .plans-pricing-icon,
+.plans-pricing-card--ref:hover .plans-pricing-icon {
+  transform: scale(1.04);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -524,10 +546,14 @@ body {
   .how-it-works-connector {
     animation: none;
   }
-  .plans-pricing-card:hover {
+  .plans-pricing-card:hover,
+  .plans-pricing-card--compact:hover,
+  .plans-pricing-card--ref:hover {
     transform: none;
   }
-  .plans-pricing-card:hover .plans-pricing-icon {
+  .plans-pricing-card:hover .plans-pricing-icon,
+  .plans-pricing-card--compact:hover .plans-pricing-icon,
+  .plans-pricing-card--ref:hover .plans-pricing-icon {
     transform: none;
   }
 }

@@ -1,117 +1,113 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, X, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan } from '../../data/membershipPlans'
 import { getPlanTheme, planVisual, dailyPrice } from '../membership/planTheme'
 
-const VISIBLE_COLLAPSED = 6
+const VISIBLE_FEATURES = 4
 
 export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel }) {
   const [expanded, setExpanded] = useState(false)
   const theme = getPlanTheme(plan)
   const isFree = plan.price === 0
   const badge = getPlanBadge(plan)
-  const features = plan.features || []
-  const hasMore = features.length > VISIBLE_COLLAPSED
-  const visibleFeatures = expanded || !hasMore ? features : features.slice(0, VISIBLE_COLLAPSED)
-  const hiddenCount = features.length - VISIBLE_COLLAPSED
-  const daily = dailyPrice(plan.price)
   const isFeatured = featured || plan.id === 'vip'
+  const isElite = plan.id === 'vip'
   const isOneTime = isOneTimeBillingPlan(plan)
   const durationLabel = getPlanDurationLabel(plan)
+  const daily = dailyPrice(plan.price)
+
+  const includedFeatures = (plan.features || []).filter((f) => f.included)
+  const hasMore = includedFeatures.length > VISIBLE_FEATURES
+  const visibleFeatures = expanded || !hasMore
+    ? includedFeatures
+    : includedFeatures.slice(0, VISIBLE_FEATURES)
+  const hiddenCount = includedFeatures.length - VISIBLE_FEATURES
+
+  const description = Array.isArray(plan.limits) && plan.limits.length
+    ? plan.limits.slice(0, 2).join('. ')
+    : isFree
+      ? 'Süre bitmiş üyelik fallback'
+      : isOneTime
+        ? `${durationLabel} · mevcut üyeliğe eklenebilir`
+        : `${durationLabel} · 3 ve 6 aylık seçenekler de mevcut`
+
+  const solidCta = isElite
 
   return (
-    // Hover animasyonu CSS (.plans-pricing-card) — Framer spring kaldırıldı
     <div
-      className={`plans-pricing-card relative flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border bg-white shadow-sm md:min-h-[30rem] lg:min-h-[32rem] ${
-        isFeatured
-          ? `border-amber-200/70 ${theme.glow} ring-2 ring-amber-100/60`
-          : isOneTime
-            ? `border-teal-200/70 ${theme.glow} ring-2 ring-teal-100/50`
-            : plan.id === 'vip'
-              ? `border-brand-200/70 ${theme.glow} ring-2 ring-brand-100/50`
-              : 'border-cream-200/80 hover:border-sage-200'
+      className={`plans-pricing-card plans-pricing-card--ref relative z-0 flex h-full flex-col overflow-visible rounded-2xl border bg-white px-3.5 pb-3.5 pt-5 shadow-[0_8px_24px_rgba(15,40,60,0.06)] sm:px-4 sm:pb-4 sm:pt-6 ${
+        isElite
+          ? 'border-amber-300/80 shadow-[0_10px_28px_rgba(217,160,32,0.14)] ring-1 ring-amber-100'
+          : isFeatured
+            ? 'border-emerald-300/80 shadow-[0_10px_28px_rgba(16,145,90,0.12)] ring-1 ring-emerald-100'
+            : 'border-slate-200/90 hover:border-slate-300'
       }`}
     >
-      <div className={`h-2 w-full bg-gradient-to-r ${theme.accent}`} />
-
       {badge && (
-        <span className={`absolute -top-0 left-1/2 z-10 -translate-x-1/2 translate-y-3 whitespace-nowrap rounded-full px-4 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-lg ${
-          plan.id === 'vip'
-            ? 'bg-gradient-to-r from-brand-500 to-violet-500'
-            : isOneTime
-              ? 'bg-gradient-to-r from-teal-500 to-cyan-600'
-              : 'bg-gradient-to-r from-brand-500 to-sage-500'
-        }`}>
+        <span
+          className={`absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md sm:text-[10px] ${
+            isElite
+              ? 'bg-gradient-to-r from-amber-400 to-amber-600'
+              : isOneTime
+                ? 'bg-gradient-to-r from-teal-500 to-cyan-600'
+                : 'bg-gradient-to-r from-emerald-500 to-green-600'
+          }`}
+        >
           {badge}
         </span>
       )}
 
-      <div className="flex flex-col items-center px-6 pt-10 text-center sm:px-8">
-        <span
-          className={`plans-pricing-icon flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ${isFeatured || plan.id === 'vip' || isOneTime ? theme.icon : theme.iconIdle}`}
-        >
-          {planVisual(plan, 'h-7 w-7', 'text-2xl leading-none')}
+      <div className="flex flex-col items-center text-center">
+        <span className={`flex h-10 w-10 items-center justify-center sm:h-11 sm:w-11 ${theme.label}`}>
+          {planVisual(plan, 'h-7 w-7 sm:h-8 sm:w-8', 'text-2xl leading-none')}
         </span>
-        <h3 className={`mt-4 font-display text-xl font-bold ${theme.label}`}>{plan.name}</h3>
-        {isOneTime && (
-          <p className="mt-1 text-xs font-medium text-teal-700/90">Uzman doktor ile online sağlık danışmanlığı</p>
-        )}
+        <h3 className={`mt-2 font-display text-[0.95rem] font-bold leading-snug sm:text-base ${theme.label}`}>
+          {plan.name}
+        </h3>
       </div>
 
-      <div className="mt-5 px-6 text-center sm:px-8">
-        <p className={`font-display text-2xl font-bold ${isFree ? 'text-sage-700' : 'text-cream-900'}`}>
+      <div className="mt-3 text-center">
+        <p className="font-display text-xl font-bold tracking-tight text-slate-900 sm:text-[1.35rem]">
           {formatPlanPrice(plan)}
         </p>
-        {isFree ? (
-          <p className="mt-1 text-sm text-sage-600">Süre bitmiş üyelik fallback</p>
-        ) : isOneTime ? (
-          <p className="mt-1 text-sm text-cream-800/60">{durationLabel} · mevcut üyeliğe eklenebilir</p>
-        ) : (
-          <>
-            <p className="mt-1 text-sm text-cream-800/60">
-              {`${durationLabel} · 3 ve 6 aylık seçenekler de mevcut`}
-            </p>
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-sage-50 px-2.5 py-1 text-[10px] font-semibold text-sage-700 ring-1 ring-sage-100">
-              Günde ~{daily.toLocaleString('tr-TR')}₺
-            </p>
-          </>
+        {!isFree && !isOneTime && (
+          <p className="mt-1 text-[10px] font-medium text-slate-500 sm:text-[11px]">
+            Günde ~{daily.toLocaleString('tr-TR')}₺
+          </p>
         )}
+        <p className="mx-auto mt-2 max-w-[16rem] text-[11px] leading-relaxed text-slate-500 sm:text-xs">
+          {description}
+        </p>
       </div>
 
-      <div className="mt-6 flex flex-1 flex-col px-6 sm:px-8">
-        <ul className="space-y-3">
-          {visibleFeatures.map((f, i) => (
-            <li key={i} className="flex items-start gap-2.5 text-sm">
-              {f.included ? (
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-sage-500" />
-              ) : (
-                <X className="mt-0.5 h-4 w-4 shrink-0 text-cream-300" />
-              )}
-              <span className={f.included ? 'text-cream-800' : 'text-cream-800/40'}>{f.text}</span>
-            </li>
-          ))}
-        </ul>
+      <ul className="mt-4 flex flex-1 flex-col gap-2 px-0.5">
+        {visibleFeatures.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-left text-[11px] leading-snug text-slate-700 sm:text-xs">
+            <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${theme.label}`} strokeWidth={2.75} />
+            <span>{f.text}</span>
+          </li>
+        ))}
+      </ul>
 
-        {hasMore && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50/80"
-          >
-            {expanded ? 'Daha az göster' : `${hiddenCount} özellik daha`}
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
-          </button>
-        )}
-      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-1 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          {expanded ? 'Daha az' : `+${hiddenCount} özellik`}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      )}
 
       <Link
         to={ctaTo}
-        className={`mx-6 mb-6 mt-6 block rounded-full py-3.5 text-center text-sm font-semibold transition sm:mx-8 ${
-          isFeatured || isOneTime || plan.id === 'vip'
-            ? theme.btn + ' shadow-lg hover:brightness-105'
-            : 'border border-cream-200 bg-gradient-to-r from-cream-50 to-white text-cream-900 hover:border-sage-200 hover:shadow-md'
+        className={`mt-4 block rounded-full py-2.5 text-center text-xs font-semibold transition sm:text-[13px] ${
+          solidCta
+            ? `${theme.btn} shadow-md hover:brightness-105`
+            : `border-2 border-current bg-white ${theme.label} hover:bg-slate-50`
         }`}
       >
         {ctaLabel}

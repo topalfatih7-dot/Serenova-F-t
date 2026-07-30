@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
-  ArrowRight, ChevronLeft, ChevronRight, X,
+  ArrowRight,
   ShieldCheck, Lock, BadgeCheck,
 } from 'lucide-react'
 import PricingCard from '../components/landing/PricingCard'
@@ -49,7 +49,6 @@ export default function LandingPage() {
   const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
   const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
-  const [swipeHint, setSwipeHint] = useState(true)
 
   const memberStatValue = `${displayMembers.toLocaleString('tr-TR')}${showMemberPlus ? '+' : ''}`
   const heroStats = [
@@ -237,50 +236,27 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════
           ÜYELİK SEÇENEKLERİ — Mobil Swipe Hint
       ═══════════════════════════════════════════ */}
-      <PlansAnimatedBackground>
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '50px' }} className="text-center">
+      <PlansAnimatedBackground className="plans-section-ref !flex min-h-[100svh] !flex-col !justify-center !overflow-x-hidden !overflow-y-visible !py-10 sm:!py-12">
+        <div className="mx-auto w-full max-w-[92rem] px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '50px' }}
+            className="text-center"
+          >
             <span className="section-badge">Planlar</span>
-            <h2 className="section-title mt-4">Üyelik Seçenekleri</h2>
-            <p className="section-subtitle">Size en uygun planı seçin — kayıt anında başlasın</p>
+            <h2 className="section-title mt-3 text-[clamp(1.5rem,3.2vw,2.15rem)]">Üyelik Seçenekleri</h2>
+            <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600 sm:text-[0.95rem]">
+              Size en uygun planı seçin — kayıt anında başlasın
+            </p>
           </motion.div>
 
-          {/* Mobil swipe ipucu — ok animasyonu CSS (.plans-swipe-nudge), Framer infinite kaldırıldı */}
-          <AnimatePresence>
-            {swipeHint && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="mt-6 flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 lg:hidden"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="plans-swipe-nudge flex items-center gap-0.5 text-brand-600">
-                    <ChevronLeft className="h-4 w-4" />
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                  <p className="text-xs font-medium text-brand-700">
-                    Tüm planları karşılaştırmak için sola kaydırın
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSwipeHint(false)}
-                  className="ml-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 transition hover:bg-brand-200"
-                  aria-label="Kapat"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Masaüstü: grid — kart girişi CSS (.plans-card-reveal), Framer whileInView ×3 kaldırıldı */}
-          <div className="mt-8 hidden items-stretch gap-6 lg:grid lg:grid-cols-3">
+          {/* pt: üst badge’ler taşmasın; overflow-y visible */}
+          <div className="mt-6 flex items-stretch gap-3 overflow-x-auto overflow-y-visible pt-4 pb-2 [scrollbar-width:thin] sm:mt-8 sm:gap-3.5 sm:overflow-x-visible md:gap-4">
             {displayPlans.map((plan, i) => (
               <div
                 key={plan.id}
-                className={`plans-card-reveal plans-card-reveal-delay-${i + 1} h-full`}
+                className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative z-0 w-[min(48vw,14.5rem)] shrink-0 overflow-visible sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0`}
               >
                 <PricingCard
                   plan={plan}
@@ -290,27 +266,6 @@ export default function LandingPage() {
                 />
               </div>
             ))}
-          </div>
-
-          {/* Tablet + mobil: yatay kaydırma */}
-          <div className="mt-4 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-6 lg:hidden [scroll-padding:1rem]">
-            {displayPlans.map((plan, i) => (
-              <div
-                key={plan.id}
-                className={`plans-card-reveal plans-card-reveal-delay-${i + 1} flex w-[min(78vw,340px)] max-w-xs shrink-0 snap-start self-stretch sm:w-[320px] md:w-[340px]`}
-              >
-                <div className="h-full w-full">
-                <PricingCard
-                  plan={plan}
-                  featured={plan.id === 'vip'}
-                  ctaTo={`/onboarding?plan=${plan.id}`}
-                  ctaLabel={getPlanCtaLabel(plan)}
-                />
-                </div>
-              </div>
-            ))}
-            {/* Son elemandan sonra hafif boşluk */}
-            <div className="w-4 shrink-0" />
           </div>
         </div>
       </PlansAnimatedBackground>

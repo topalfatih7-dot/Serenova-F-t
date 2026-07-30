@@ -3,7 +3,7 @@ export default function PlansAnimatedBackground({ children, className = '' }) {
   return (
     <section className={`plans-aurora-section relative overflow-hidden py-16 sm:py-20 ${className}`}>
       <div aria-hidden className="plans-aurora-bg" />
-      <div className="relative z-[1]">{children}</div>
+      <div className="relative z-[1] flex h-full min-h-0 flex-col">{children}</div>
     </section>
   )
 }
