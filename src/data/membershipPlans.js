@@ -413,7 +413,7 @@ export const EKO_DIYET_PLAN = {
     { text: 'Sınırsız Destek', included: true },
     { text: 'Birebir Koç Görüşmesi', included: false },
   ],
-  limits: ['Ayda 1 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
+  limits: ['Uzman diyetisyen desteğiyle sürdürülebilir beslenme', 'Kişisel diyet programı', 'Sınırsız destek'],
 }
 
 export const DIYET_PLAN = {
@@ -443,7 +443,7 @@ export const DIYET_PLAN = {
     { text: 'Sınırsız Destek', included: true },
     { text: 'Birebir Koç Görüşmesi', included: false },
   ],
-  limits: ['Ayda 2 diyetisyen görüşmesi', 'Kişisel diyet programı', 'Sınırsız destek'],
+  limits: ['Uzman diyetisyen desteğiyle sürdürülebilir beslenme', 'Kişisel diyet programı', 'Sınırsız destek'],
 }
 
 export const EKO_SPOR_PLAN = {
@@ -473,7 +473,7 @@ export const EKO_SPOR_PLAN = {
     { text: 'Takip Programı', included: true },
     { text: 'Sınırsız Destek', included: true },
   ],
-  limits: ['Ayda 1 koç görüşmesi', 'Kişisel spor programı', 'Sınırsız video'],
+  limits: ['Spor yapanlar için profesyonel takip', 'Kişisel spor programı', 'Sınırsız video'],
 }
 
 export const SPOR_PLAN = {
@@ -502,7 +502,7 @@ export const SPOR_PLAN = {
     { text: 'Takip Programı', included: true },
     { text: 'Sınırsız Destek', included: true },
   ],
-  limits: ['Ayda 2 koç görüşmesi', 'Kişisel spor programı', 'Sınırsız video'],
+  limits: ['Spor yapanlar için profesyonel takip', 'Kişisel spor programı', 'Sınırsız video'],
 }
 
 export const DOKTOR_PLAN = {
@@ -527,7 +527,7 @@ export const DOKTOR_PLAN = {
     { text: 'Görüntülü Görüşme', included: true },
     { text: 'Mevcut üyeliğe ek paket olarak eklenebilir', included: true },
   ],
-  limits: ['Tek seferlik doktor görüşmesi'],
+  limits: ['İhtiyaç duyduğunuz anda uzman desteği alın'],
 }
 
 export const VIP_PLAN = {
@@ -561,7 +561,7 @@ export const VIP_PLAN = {
     { text: 'Sınırsız Destek', included: true },
     { text: 'Vip Üye Rozeti', included: true },
   ],
-  limits: ['Ayda 2 koç + 2 diyetisyen', 'Sınırsız destek', 'VIP rozeti'],
+  limits: ['En kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
 }
 
 // Geriye dönük uyumluluk
