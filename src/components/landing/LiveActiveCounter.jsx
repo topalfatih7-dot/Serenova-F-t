@@ -96,14 +96,6 @@ export default function LiveActiveCounter({ className = '' }) {
             </p>
           </div>
         </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full text-center text-xs text-cream-800/50 sm:w-auto sm:text-left"
-        >
-          Canlı veri · anlık güncellenir
-        </motion.p>
       </div>
     </section>
   )

@@ -122,7 +122,7 @@ export default function LandingPage() {
               custom={1}
               className="mt-5 font-display text-[2rem] font-bold leading-[1.15] tracking-tight text-white sm:text-[2.75rem] lg:text-5xl"
             >
-              Kişisel koçluk ve beslenme desteği —{' '}
+              <span className="block">Kişisel koçluk ve beslenme desteği —</span>
               <RotatingHeroText />
             </motion.h1>
 
@@ -337,7 +337,7 @@ export default function LandingPage() {
         <section className="relative isolate overflow-hidden py-16 sm:py-24">
           <FAQQuestionMarksBackground />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-            <FAQAccordion items={allFaqs} />
+            <FAQAccordion items={allFaqs.slice(0, 6)} />
           </div>
         </section>
       )}

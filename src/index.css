@@ -550,6 +550,183 @@ body {
   box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand-400) 35%, transparent);
 }
 
+/* HowItWorks — 3D telefon sahnesi */
+.hiw-phone-scene {
+  min-height: 460px;
+  padding-block: 0.75rem 1.5rem;
+  cursor: default;
+}
+.hiw-phone-hit {
+  touch-action: none;
+}
+
+/* Telefon arkasında renkli ışıklandırma — telefon ışığın ortasında */
+.hiw-phone-backlight {
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  inset: -8% -12% -4%;
+  overflow: visible;
+}
+.hiw-phone-backlight__core,
+.hiw-phone-backlight__orb,
+.hiw-phone-backlight__halo {
+  position: absolute;
+  border-radius: 50%;
+  will-change: opacity, transform;
+}
+.hiw-phone-backlight__core {
+  left: 50%;
+  top: 48%;
+  width: min(72%, 220px);
+  height: min(58%, 340px);
+  translate: -50% -50%;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      color-mix(in srgb, white 88%, var(--color-brand-200)) 0%,
+      color-mix(in srgb, var(--color-brand-200) 55%, transparent) 38%,
+      transparent 72%
+    );
+  filter: blur(22px);
+  opacity: 0.95;
+  animation: hiwBacklightPulse 6.5s ease-in-out infinite;
+}
+.hiw-phone-backlight__orb {
+  filter: blur(36px);
+  animation: hiwBacklightPulse 7.5s ease-in-out infinite;
+}
+.hiw-phone-backlight__orb--brand {
+  left: 50%;
+  top: 42%;
+  width: min(92%, 300px);
+  height: min(70%, 420px);
+  translate: -58% -52%;
+  background:
+    radial-gradient(
+      ellipse 65% 55% at 50% 50%,
+      color-mix(in srgb, var(--color-brand-400) 72%, transparent) 0%,
+      color-mix(in srgb, var(--color-brand-500) 38%, transparent) 42%,
+      transparent 70%
+    );
+  opacity: 0.9;
+  animation-delay: -1.2s;
+}
+.hiw-phone-backlight__orb--sage {
+  left: 50%;
+  top: 54%;
+  width: min(86%, 280px);
+  height: min(62%, 380px);
+  translate: -38% -48%;
+  background:
+    radial-gradient(
+      ellipse 60% 55% at 50% 50%,
+      color-mix(in srgb, var(--color-sage-400) 68%, transparent) 0%,
+      color-mix(in srgb, var(--color-sage-500) 32%, transparent) 45%,
+      transparent 72%
+    );
+  opacity: 0.82;
+  animation-delay: -3.4s;
+  animation-duration: 8.2s;
+}
+.hiw-phone-backlight__orb--warm {
+  left: 50%;
+  top: 36%;
+  width: min(58%, 190px);
+  height: min(42%, 240px);
+  translate: -42% -55%;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      color-mix(in srgb, var(--color-warm-400) 55%, transparent) 0%,
+      color-mix(in srgb, var(--color-gold-400) 28%, transparent) 40%,
+      transparent 68%
+    );
+  filter: blur(40px);
+  opacity: 0.7;
+  animation-delay: -5s;
+  animation-duration: 9s;
+}
+.hiw-phone-backlight__halo {
+  left: 50%;
+  top: 48%;
+  width: min(120%, 380px);
+  height: min(92%, 560px);
+  translate: -50% -50%;
+  background:
+    radial-gradient(
+      ellipse 55% 48% at 50% 48%,
+      color-mix(in srgb, var(--color-brand-300) 22%, transparent) 0%,
+      color-mix(in srgb, var(--color-sage-300) 14%, transparent) 38%,
+      transparent 68%
+    );
+  filter: blur(48px);
+  opacity: 0.75;
+  animation: hiwBacklightDrift 11s ease-in-out infinite;
+}
+@keyframes hiwBacklightPulse {
+  0%, 100% { opacity: 0.68; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+@keyframes hiwBacklightDrift {
+  0%, 100% { opacity: 0.62; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.88; transform: scale(1.08) rotate(3deg); }
+}
+
+.hiw-phone-chassis {
+  isolation: isolate;
+}
+.hiw-phone-depth {
+  outline: 1px solid transparent;
+  backface-visibility: hidden;
+}
+
+/* Chip bob — CSS GPU */
+@keyframes hiwChipBob {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -5px, 0); }
+}
+.hiw-float-chip-bob {
+  animation: hiwChipBob 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+.hiw-float-chip-bob--1 {
+  animation-duration: 4.1s;
+  animation-delay: -1.1s;
+}
+.hiw-float-chip-bob--2 {
+  animation-duration: 4.6s;
+  animation-delay: -2.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiw-phone-device,
+  .hiw-float-chip,
+  .hiw-float-chip-bob,
+  .hiw-phone-backlight,
+  .hiw-phone-backlight__core,
+  .hiw-phone-backlight__orb,
+  .hiw-phone-backlight__halo {
+    animation: none !important;
+    transition: none !important;
+  }
+  .hiw-phone-backlight__core {
+    opacity: 0.9;
+  }
+  .hiw-phone-backlight__orb--brand {
+    opacity: 0.85;
+  }
+  .hiw-phone-backlight__orb--sage {
+    opacity: 0.78;
+  }
+  .hiw-phone-backlight__orb--warm {
+    opacity: 0.65;
+  }
+  .hiw-phone-backlight__halo {
+    opacity: 0.7;
+  }
+}
+
 /* ── Panel animasyonlu arka plan (yüzen emoji + orb) ── */
 @keyframes panelFloatA {
   0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }

@@ -151,13 +151,13 @@ export default function TrustSection() {
             >
               <Link
                 to="/hakkimizda"
-                className="group inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-6 py-3 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50"
+                className="group inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-7 py-3.5 font-display text-base font-bold text-white shadow-md shadow-brand-500/25 transition hover:brightness-105 hover:shadow-lg hover:shadow-brand-500/30"
               >
                 Bizi Daha Yakından Tanıyın
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-cream-800/60">
-                <MessageCircle className="h-4 w-4 text-sage-600" />
+              <span className="inline-flex items-center gap-2 font-display text-sm font-semibold text-cream-800 sm:text-base">
+                <MessageCircle className="h-5 w-5 text-sage-600" />
                 Sorularınız için buradayız
               </span>
             </motion.div>

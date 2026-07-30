@@ -1,164 +1,200 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ClipboardList, Sparkles, Video, ArrowRight } from 'lucide-react'
+import {
+  ClipboardList,
+  Sparkles,
+  TrendingUp,
+  ArrowRight,
+  CreditCard,
+  Timer,
+} from 'lucide-react'
+import MemberPanelPhoneScene from './MemberPanelPhoneScene'
 
 const STEPS = [
   {
     step: '01',
     icon: ClipboardList,
-    title: 'Profilinizi netleştirin',
+    title: 'Sağlık profilinizi oluşturun',
     desc: 'Hedef, yaşam tarzı ve sağlık bilgilerinizi paylaşın. Birkaç dakikada size özel başlangıç için sağlam bir temel oluşur.',
-    accent: 'from-brand-500 to-brand-600',
+    card: 'from-brand-50 via-white to-brand-100/60 border-brand-200/70 hover:border-brand-300',
+    rail: 'from-brand-400 to-brand-600',
+    iconWrap: 'from-brand-500 to-brand-600 shadow-brand-500/30',
+    num: 'from-brand-500 via-brand-400 to-sage-500 shadow-brand-500/35 ring-brand-200/80',
+    numGlow: 'bg-brand-400/40',
   },
   {
     step: '02',
     icon: Sparkles,
-    title: 'Planınız şekillensin',
+    title: 'Size özel plan oluşturulsun',
     desc: 'Sağlık analizinizle başlayın. Paketinizde koç ve diyetisyen eşleşmesiyle programınız netleşir.',
-    accent: 'from-sage-500 to-sage-600',
+    card: 'from-sage-50 via-white to-emerald-50/70 border-sage-200/70 hover:border-sage-300',
+    rail: 'from-sage-400 to-emerald-500',
+    iconWrap: 'from-sage-500 to-emerald-500 shadow-sage-500/30',
+    num: 'from-sage-500 via-sage-400 to-brand-500 shadow-sage-500/35 ring-sage-200/80',
+    numGlow: 'bg-sage-400/40',
   },
   {
     step: '03',
-    icon: Video,
-    title: 'Takip edin, görüşün, güncelleyin',
+    icon: TrendingUp,
+    title: 'Takip edin, gelişin, hedefinize ulaşın',
     desc: 'Panelden ilerlemenizi görün. Randevularınıza video ile katılın; planınız ihtiyaçlarınıza göre birlikte güncellenir.',
-    accent: 'from-brand-400 to-sage-500',
+    card: 'from-warm-50 via-white to-brand-50/70 border-warm-200/60 hover:border-brand-200',
+    rail: 'from-warm-400 to-brand-500',
+    iconWrap: 'from-warm-400 to-brand-500 shadow-brand-500/25',
+    num: 'from-warm-400 via-brand-500 to-sage-500 shadow-warm-400/30 ring-warm-200/70',
+    numGlow: 'bg-warm-400/35',
   },
 ]
 
-function StepIcon({ step, className = '' }) {
-  const Icon = step.icon
-  return (
-    <span className={`flex items-center justify-center rounded-2xl bg-gradient-to-br ${step.accent} text-white shadow-lg ${className}`}>
-      <Icon className="h-6 w-6" strokeWidth={2.2} />
-    </span>
-  )
-}
+const TRUST = [
+  { icon: CreditCard, label: 'Kredi kartı gerekmez' },
+  { icon: Timer, label: '2 dakikada üye olun' },
+]
 
 export default function HowItWorksSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-cream-50 to-white py-14 sm:py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* Mobil: fotoğraf üstte tam genişlik */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "50px" }}
-          className="relative mb-10 overflow-hidden rounded-3xl shadow-xl shadow-brand-900/10 md:hidden"
-        >
-          <div className="aspect-[16/10] w-full">
-            <img
-              src="/how-it-works-bg.jpg"
-              alt="Evde wellness egzersizi yapan kadın"
-              className="h-full w-full object-cover object-[65%_center]"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <span className="section-badge !bg-white/90 !text-brand-700">Süreç</span>
-          </div>
-        </motion.div>
+    <section className="relative overflow-hidden py-14 sm:py-20">
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-b from-white via-cream-50/90 to-brand-50/30"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.28]"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle, color-mix(in srgb, var(--color-brand-400) 12%, transparent) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+          maskImage:
+            'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+        }}
+      />
 
-        <div className="grid items-start gap-10 md:grid-cols-12 md:gap-8 lg:gap-12">
-          {/* Tablet+: sol panel — fotoğraf net görünür */}
+      <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="grid items-center gap-10 md:grid-cols-12 md:gap-8 lg:gap-12">
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "50px" }}
-            transition={{ duration: 0.6 }}
-            className="relative hidden md:col-span-5 md:block"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '50px' }}
+            className="text-center md:col-span-7 md:col-start-6 md:row-start-1 md:text-left"
           >
-            <div className="sticky top-24 overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-black/5">
-              <div className="aspect-[4/5] w-full">
-                <img
-                  src="/how-it-works-bg.jpg"
-                  alt="Evde wellness egzersizi yapan kadın"
-                  className="h-full w-full object-cover object-center"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-900/20 via-transparent to-transparent" />
-            </div>
-            <div
-              aria-hidden
-              className="absolute -bottom-4 -left-4 -z-10 h-full w-full rounded-3xl bg-gradient-to-br from-brand-100 to-sage-100"
-            />
+            <span className="section-badge">NASIL BAŞLIYOR?</span>
+            <h2 className="section-title mt-4">
+              Sağlığınıza giden yol, yalnızca{' '}
+              <span className="bg-gradient-to-r from-sage-600 to-brand-600 bg-clip-text text-transparent">
+                3 adım
+              </span>
+              .
+            </h2>
+            <p className="section-subtitle mx-auto mt-3 max-w-xl md:mx-0">
+              Yeni Form yalnızca bir diyet programı değil — beslenme, hareket ve sağlık
+              analizini bir araya getirerek sürdürülebilir bir yaşam tarzı kurmanıza yardımcı olur.
+            </p>
           </motion.div>
 
-          {/* Sağ: başlık + adımlar */}
-          <div className="md:col-span-7">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "50px" }}
-              className="text-center md:text-left"
-            >
-              <span className="section-badge hidden md:inline-flex">Süreç</span>
-              <h2 className="section-title mt-4">Nasıl Çalışır?</h2>
-              <p className="section-subtitle mx-auto max-w-xl md:mx-0">
-                Üç net adım. Karmaşık süreç yok — kayıt, plan ve takip; her aşamada ne yapacağınız belli.
-              </p>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '40px' }}
+            transition={{ duration: 0.55 }}
+            className="relative md:col-span-5 md:col-start-1 md:row-span-3 md:row-start-1 md:self-start"
+          >
+            <div className="md:sticky md:top-24 md:self-start">
+              <MemberPanelPhoneScene />
+            </div>
+          </motion.div>
 
-            <div className="relative mt-10 md:space-y-5">
+          <div className="md:col-span-7 md:col-start-6 md:row-start-2 md:self-start">
+            <div className="relative mt-2 flex flex-col justify-center gap-4 md:mt-6">
               <div
                 aria-hidden
-                className="absolute bottom-8 left-6 top-8 hidden w-0.5 bg-gradient-to-b from-brand-200 via-sage-300 to-brand-200 md:block"
+                className="absolute bottom-10 left-[19px] top-10 hidden w-px bg-gradient-to-b from-brand-300 via-sage-400 to-warm-300 md:block"
               />
 
-              {STEPS.map((s, i) => (
-                <div key={s.step} className="flex flex-col items-center md:block">
-                  {i > 0 && (
-                    <div
-                      aria-hidden
-                      className="how-it-works-connector mb-0 h-8 w-1 rounded-full md:hidden"
-                    />
-                  )}
-
+              {STEPS.map((s, i) => {
+                const Icon = s.icon
+                return (
                   <motion.div
+                    key={s.step}
                     initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    whileInView={{ opacity: 1, y: 0, x: 0 }}
                     viewport={{ once: true, margin: '-40px' }}
                     transition={{ delay: i * 0.1, duration: 0.45 }}
-                    className="relative flex w-full gap-4 sm:gap-5"
+                    className="relative flex items-center gap-3.5 sm:gap-4"
                   >
-                    <StepIcon step={s} className="relative z-10 hidden h-12 w-12 shrink-0 md:flex lg:h-14 lg:w-14" />
-
-                    <div className="relative w-full flex-1">
-                      <StepIcon
-                        step={s}
-                        className="absolute left-1/2 top-0 z-10 h-12 w-12 -translate-x-1/2 -translate-y-1/2 md:hidden"
+                    {/* Numara — dikey ortalı, süslü halka */}
+                    <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12">
+                      <span
+                        aria-hidden
+                        className={`absolute inset-0 rounded-full ${s.numGlow} blur-md`}
                       />
-                      <div className="rounded-2xl border border-cream-200/80 bg-white p-5 pt-9 shadow-sm transition hover:border-brand-200 hover:shadow-md sm:p-6 sm:pt-10 md:pt-6">
-                        <div className="flex items-start justify-between gap-3">
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-full bg-white/80 ring-2 ring-white"
+                      />
+                      <span
+                        className={`relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${s.num} font-display text-[11px] font-bold text-white shadow-lg ring-4 sm:h-10 sm:w-10 sm:text-xs`}
+                      >
+                        {s.step}
+                      </span>
+                    </span>
+
+                    <div
+                      className={`group relative flex-1 overflow-hidden rounded-2xl border bg-gradient-to-br p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:p-5 ${s.card}`}
+                    >
+                      <div
+                        aria-hidden
+                        className={`absolute inset-y-3 left-0 w-1 rounded-full bg-gradient-to-b ${s.rail}`}
+                      />
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/50 blur-2xl transition group-hover:bg-white/70"
+                      />
+                      <div className="relative flex items-start gap-3 pl-2.5">
+                        <span
+                          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ${s.iconWrap}`}
+                        >
+                          <Icon className="h-4 w-4" strokeWidth={2.2} />
+                        </span>
+                        <div className="min-w-0">
                           <h3 className="font-display text-base font-bold leading-snug tracking-tight text-cream-900 sm:text-lg">
                             {s.title}
                           </h3>
-                          <span className="font-display text-2xl font-bold tabular-nums text-cream-100">{s.step}</span>
+                          <p className="mt-1.5 text-sm leading-relaxed text-cream-800/70">
+                            {s.desc}
+                          </p>
                         </div>
-                        <p className="mt-2 text-sm leading-relaxed text-cream-800/70">
-                          {s.desc}
-                        </p>
                       </div>
                     </div>
                   </motion.div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "50px" }}
+              viewport={{ once: true, margin: '50px' }}
               className="mt-10 text-center md:text-left"
             >
               <Link to="/membership" className="btn-wellness group inline-flex">
-                Paket Seçin
+                Ücretsiz Başlayın
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
+
+              <ul className="mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:flex-wrap sm:justify-center md:justify-start md:gap-x-5">
+                {TRUST.map(({ icon: Icon, label }) => (
+                  <li
+                    key={label}
+                    className="flex items-center gap-1.5 text-xs font-medium text-cream-800/65"
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-sage-600" strokeWidth={2.2} />
+                    {label}
+                  </li>
+                ))}
+              </ul>
             </motion.div>
           </div>
         </div>
