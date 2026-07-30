@@ -24,10 +24,6 @@
     {
       "path": "/api/ai-blog-generate",
       "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/ai-blog-generate?task=session-reminders",
-      "schedule": "0 * * * *"
     }
   ],
   "rewrites": [

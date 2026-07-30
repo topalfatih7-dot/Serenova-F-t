@@ -47,12 +47,12 @@ Kategori: **Utility**. Marketing / İYS bu fazda yok.
 | Olay | Üye | Staff |
 |------|-----|-------|
 | Randevu kaydı | in-app + WA | in-app + WA |
-| T-24s / T-1s (saatlik cron) | in-app + WA | in-app + WA |
+| T-24s / T-1s (manuel / Pro cron) | in-app + WA | in-app + WA |
 | İptal / erteleme (üye) | — | in-app + WA |
 | Program / diyet listesi | in-app + Expo + WA | — |
 | Sohbet mesajı | WA (staff→üye; 30 dk throttle) | in-app + WA (üye→staff) |
 
-Cron: `vercel.json` → `/api/ai-blog-generate?task=session-reminders` (`0 * * * *`, `CRON_SECRET`).
+Cron: `session-reminders` Vercel Hobby saatlik cron engeli nedeniyle `vercel.json`’dan kaldırıldı. Manuel/dry-run: `curl -H "Authorization: Bearer $CRON_SECRET" ".../api/ai-blog-generate?task=session-reminders"`. Pro’ya geçince saatlik cron eklenebilir.
 
 Opt-out: `settings.whatsappNotifs === false` (üye profil / staff güvenlik sekmesi). Telefon yoksa sessiz skip.
 
