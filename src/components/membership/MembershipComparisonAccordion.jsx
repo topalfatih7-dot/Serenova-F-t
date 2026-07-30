@@ -7,9 +7,24 @@ import { getPlanTheme, planIcon } from './planTheme'
 import { getPlanCtaLabel } from '../../utils/planCta'
 
 function CellValue({ value }) {
-  if (value === false) return <X className="h-4 w-4 text-cream-300" />
-  if (value === true) return <Check className="h-4 w-4 text-sage-500" />
-  return <span className="text-xs font-semibold text-cream-800">{value}</span>
+  if (value === false) {
+    return (
+      <span className="flex h-6 w-6 items-center justify-center" aria-label="Yok">
+        <X className="h-3.5 w-3.5 text-slate-300" strokeWidth={2.5} />
+      </span>
+    )
+  }
+  if (value === true) {
+    return (
+      <span
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-sage-500 to-emerald-500 text-white shadow-sm shadow-sage-500/25"
+        aria-label="Var"
+      >
+        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+      </span>
+    )
+  }
+  return <span className="text-xs font-semibold text-slate-700">{value}</span>
 }
 
 export default function MembershipComparisonAccordion({

@@ -1,15 +1,33 @@
 import { motion } from 'framer-motion'
-import { Shield, RefreshCw, Headphones } from 'lucide-react'
+import { ShieldCheck, RefreshCw, Headphones } from 'lucide-react'
 
 const ITEMS = [
-  { icon: Shield, label: 'KVKK uyumlu', sub: 'Verileriniz güvende', color: 'from-sage-100 to-emerald-50 text-sage-700' },
-  { icon: RefreshCw, label: 'Esnek süre', sub: '1, 3 veya 6 ay', color: 'from-teal-100 to-cyan-50 text-teal-700' },
-  { icon: Headphones, label: 'Destek ekibi', sub: 'Yalnız kalmazsınız', color: 'from-brand-100 to-violet-50 text-brand-700' },
+  {
+    icon: ShieldCheck,
+    label: 'KVKK uyumlu',
+    sub: 'Verileriniz güvende.',
+    iconWrap: 'bg-teal-50 text-teal-600 ring-teal-100',
+    labelClass: 'text-teal-700',
+  },
+  {
+    icon: RefreshCw,
+    label: 'Esnek süre',
+    sub: '1, 3 veya 6 ay seçenekleri.',
+    iconWrap: 'bg-sky-50 text-sky-600 ring-sky-100',
+    labelClass: 'text-teal-700',
+  },
+  {
+    icon: Headphones,
+    label: 'Destek ekibi',
+    sub: 'Yalnız kalmazsınız.',
+    iconWrap: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
+    labelClass: 'text-teal-700',
+  },
 ]
 
 export default function MembershipReassurance({ compact = false }) {
   return (
-    <div className={`grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'} sm:gap-3`}>
+    <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'}`}>
       {ITEMS.map((item, i) => {
         const Icon = item.icon
         return (
@@ -19,14 +37,16 @@ export default function MembershipReassurance({ compact = false }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.06, duration: 0.4 }}
-            className={`flex items-center gap-2.5 rounded-2xl border border-white/80 bg-gradient-to-br ${item.color} px-3 py-2.5 shadow-sm backdrop-blur-sm ${compact ? '' : 'sm:px-4 sm:py-3'}`}
+            className={`flex items-center gap-3 rounded-2xl border border-slate-100/90 bg-white px-4 py-3.5 shadow-[0_8px_24px_-16px_rgba(30,70,55,0.35)] ${
+              compact ? '' : 'sm:px-5 sm:py-4'
+            }`}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/70 shadow-sm">
-              <Icon className="h-4 w-4" strokeWidth={2.2} />
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${item.iconWrap}`}>
+              <Icon className="h-4 w-4" strokeWidth={2.1} aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold leading-tight sm:text-xs">{item.label}</p>
-              <p className="text-[10px] opacity-75 sm:text-[11px]">{item.sub}</p>
+              <p className={`text-sm font-bold leading-tight ${item.labelClass}`}>{item.label}</p>
+              <p className="mt-0.5 text-xs leading-snug text-slate-500">{item.sub}</p>
             </div>
           </motion.div>
         )
