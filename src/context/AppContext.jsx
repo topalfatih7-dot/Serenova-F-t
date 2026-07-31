@@ -1217,9 +1217,15 @@ export function AppProvider({ children }) {
     }
   }, [currentMember, patchCurrentRemote])
 
-  // Self-servis randevu: personel müsaitliğinden çakışmasız randevu oluştur
+  // Self-servis randevu: personel müsaitliğinden çakışmasız talep (pending)
   const bookSession = useCallback(async (type, dateISO, duration) => {
     const r = await sb.bookStaffSession(type, dateISO, duration)
+    if (r.success) await reloadRemote()
+    return r
+  }, [reloadRemote])
+
+  const respondSession = useCallback(async ({ memberId, sessionId, sessionType, decision }) => {
+    const r = await sb.respondStaffSession({ memberId, sessionId, sessionType, decision })
     if (r.success) await reloadRemote()
     return r
   }, [reloadRemote])
@@ -1588,6 +1594,7 @@ export function AppProvider({ children }) {
     rescheduleSession,
     cancelSession,
     bookSession,
+    respondSession,
     getStaffBookedSlots,
     toggleTask,
     toggleActivityCompletion,
@@ -1670,6 +1677,7 @@ export function AppProvider({ children }) {
     rescheduleSession,
     cancelSession,
     bookSession,
+    respondSession,
     getStaffBookedSlots,
     toggleTask,
     toggleActivityCompletion,

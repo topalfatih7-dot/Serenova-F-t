@@ -65,7 +65,7 @@ export function isFreeTrialActive() {
 
 export function countUsedDoctorSessions(member) {
   return (member?.doctorSessions || []).filter((s) =>
-    ['scheduled', 'rescheduled', 'completed'].includes(s?.status || 'scheduled')
+    ['pending', 'scheduled', 'rescheduled', 'completed'].includes(s?.status || 'scheduled')
   ).length
 }
 

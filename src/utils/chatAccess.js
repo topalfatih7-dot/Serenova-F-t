@@ -219,12 +219,20 @@ export function staffRoleLabel(role) {
 
 export function staffCollabThreadUnreadCount(thread, perspective = 'coach') {
   if (!thread) return 0
-  const key = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
+  const key = perspective === 'dietitian'
+    ? 'dietitianUnread'
+    : perspective === 'doctor'
+      ? 'doctorUnread'
+      : 'coachUnread'
   return Number(thread[key] ?? thread.data?.[key] ?? 0)
 }
 
 export function sortStaffCollabThreads(threads, perspective = 'coach') {
-  const unreadKey = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
+  const unreadKey = perspective === 'dietitian'
+    ? 'dietitianUnread'
+    : perspective === 'doctor'
+      ? 'doctorUnread'
+      : 'coachUnread'
   return [...threads].sort((a, b) => {
     const aUnread = Number(a[unreadKey] || a.data?.[unreadKey] || 0) > 0 ? 1 : 0
     const bUnread = Number(b[unreadKey] || b.data?.[unreadKey] || 0) > 0 ? 1 : 0
@@ -238,13 +246,18 @@ export function sortStaffCollabThreads(threads, perspective = 'coach') {
 export function buildStaffCollabInbox(members, threads, staffUser) {
   const role = normalizeStaffRole(staffUser?.role)
   const threadByMember = new Map((threads || []).map((t) => [String(t.memberId), t]))
-  return (members || []).map((member) => ({
-    member,
-    thread: threadByMember.get(String(member.id)) || null,
-    peerName: role === 'coach'
-      ? (threadByMember.get(String(member.id))?.dietitianName || '')
-      : (threadByMember.get(String(member.id))?.coachName || ''),
-  }))
+  return (members || []).map((member) => {
+    const thread = threadByMember.get(String(member.id)) || null
+    let peerName = ''
+    if (role === 'coach') {
+      peerName = [thread?.dietitianName, thread?.doctorName].filter(Boolean).join(' · ')
+    } else if (role === 'dietitian') {
+      peerName = [thread?.coachName, thread?.doctorName].filter(Boolean).join(' · ')
+    } else if (role === 'doctor') {
+      peerName = [thread?.coachName, thread?.dietitianName].filter(Boolean).join(' · ')
+    }
+    return { member, thread, peerName }
+  })
 }
 
 export function sortStaffCollabInbox(items, perspective = 'coach') {

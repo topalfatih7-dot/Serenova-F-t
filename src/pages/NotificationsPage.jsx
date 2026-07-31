@@ -44,6 +44,14 @@ export default function NotificationsPage() {
     }
     if (n.type === 'support-reply' || n.type === 'support') {
       navigate('/support')
+      return
+    }
+    if (n.type === 'assignment') {
+      navigate('/profile')
+      return
+    }
+    if (n.type === 'appointment') {
+      navigate('/schedule')
     }
   }
 

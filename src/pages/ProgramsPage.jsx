@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ClipboardList, Dumbbell, Apple, UserCheck, Clock, LayoutGrid } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -13,6 +13,10 @@ import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation, isCycle14SameDaily } from '../utils/programSchedule'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
+import {
+  packageIncludesCoach,
+  packageIncludesDietitian,
+} from '../data/membershipPlans'
 
 const FILTERS = [
   { id: 'all', label: 'Tümü', icon: LayoutGrid, accent: 'warm' },
@@ -83,7 +87,7 @@ function groupBySchedule(entries = [], program = null) {
 }
 
 export default function ProgramsPage() {
-  const { myPrograms, isUnpaidMember } = useApp()
+  const { myPrograms, isUnpaidMember, user, packageConfig } = useApp()
   const [filter, setFilter] = useState('all')
   const [activeExercise, setActiveExercise] = useState(null)
 
@@ -106,6 +110,17 @@ export default function ProgramsPage() {
   }
 
   const filtered = filter === 'all' ? myPrograms : myPrograms.filter((p) => p.type === filter)
+
+  const needsProgramStaff = useMemo(() => {
+    const needCoach = packageIncludesCoach(packageConfig) && !user?.assignedCoachId
+    const needDiet = packageIncludesDietitian(packageConfig) && !user?.assignedDietitianId
+    return needCoach || needDiet
+  }, [packageConfig, user?.assignedCoachId, user?.assignedDietitianId])
+
+  const emptyTitle = needsProgramStaff ? 'Uzmanınız atanıyor' : 'Uzmanınız program hazırlıyor'
+  const emptyDescription = needsProgramStaff
+    ? 'Paketinizdeki koç veya diyetisyen ataması tamamlanınca programlar burada görünecek.'
+    : 'Koçunuz veya diyetisyeniniz program gönderdiğinde burada görünecek ve bildirim alacaksınız.'
 
   return (
     <PanelPageShell>
@@ -134,8 +149,8 @@ export default function ProgramsPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="Henüz program yok"
-          description="Koçunuz veya diyetisyeniniz size bir program oluşturduğunda burada görünecek ve bildirim alacaksınız."
+          title={emptyTitle}
+          description={emptyDescription}
         />
       ) : (
         <div className="space-y-5">

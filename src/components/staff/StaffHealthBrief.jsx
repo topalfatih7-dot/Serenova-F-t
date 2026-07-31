@@ -83,9 +83,12 @@ export default function StaffHealthBrief({
   rerunning = false,
   rerunError = null,
   showBrief = true,
+  briefKeys = STAFF_BRIEF_KEYS,
 }) {
   const brief = analysis?.staffBrief
-  const hasBrief = Boolean(showBrief && brief && STAFF_BRIEF_KEYS.some((k) => brief[k]))
+  const visibleBriefKeys = (briefKeys?.length ? briefKeys : STAFF_BRIEF_KEYS)
+    .filter((k) => STAFF_BRIEF_KEYS.includes(k))
+  const hasBrief = Boolean(showBrief && brief && visibleBriefKeys.some((k) => brief[k]))
   const scores = analysis?.scores || {}
   const overall = analysis?.overallScore
   const hasScores = HEALTH_SCORE_KEYS.some((k) => scores[k] != null) || overall != null
@@ -166,7 +169,7 @@ export default function StaffHealthBrief({
 
       {hasBrief && (
         <div className="space-y-3">
-          {STAFF_BRIEF_KEYS.map((key) => {
+          {visibleBriefKeys.map((key) => {
             const text = brief[key]
             if (!text) return null
             return (

@@ -1,6 +1,6 @@
 import { format, isToday } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Clock, Check, X } from 'lucide-react'
 import VideoJoinLink from './VideoJoinLink'
 import { normalizeStaffRole } from '../../utils/staffRoles'
 
@@ -23,6 +23,10 @@ export default function StaffAppointmentRow({
   accentRole,
   live = false,
   showJoin = true,
+  pending = false,
+  onApprove,
+  onReject,
+  responding = false,
 }) {
   const role = normalizeStaffRole(accentRole || (isCoach ? 'coach' : sessionType === 'doctor' ? 'doctor' : 'dietitian'))
   const styles = AVATAR_STYLES[role] || AVATAR_STYLES.coach
@@ -69,7 +73,28 @@ export default function StaffAppointmentRow({
         </span>
       </div>
 
-      {showJoin && session && (
+      {pending && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={responding}
+            onClick={() => onApprove?.(session)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sage-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sage-700 disabled:opacity-60"
+          >
+            <Check className="h-3.5 w-3.5" /> Onayla
+          </button>
+          <button
+            type="button"
+            disabled={responding}
+            onClick={() => onReject?.(session)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+          >
+            <X className="h-3.5 w-3.5" /> Reddet
+          </button>
+        </div>
+      )}
+
+      {!pending && showJoin && session && (
         <div className="mt-3">
           <VideoJoinLink
             session={session}

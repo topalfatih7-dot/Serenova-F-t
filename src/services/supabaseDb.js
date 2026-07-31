@@ -1528,7 +1528,7 @@ export async function getStaffBookedSlots(staffId, type, fromISO, toISO) {
   return (data || []).map((d) => new Date(d).toISOString())
 }
 
-/** Self-servis randevu: çakışmasız randevu oluşturur (API sunucu tarafında doğrular) */
+/** Self-servis randevu: çakışmasız talep oluşturur (pending; personel onayı gerekir) */
 export async function bookStaffSession(type, startsAtISO, duration = 30) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) return { success: false, error: 'Oturum gerekli.' }
@@ -1549,6 +1549,34 @@ export async function bookStaffSession(type, startsAtISO, duration = 30) {
     })
     const json = await res.json()
     if (!json.ok) return { success: false, error: json.error || 'Randevu oluşturulamadı.' }
+    return { success: true, session: json.session }
+  } catch (e) {
+    return { success: false, error: String(e.message || e) }
+  }
+}
+
+/** Personel: pending randevu onay / red */
+export async function respondStaffSession({ memberId, sessionId, sessionType, decision }) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return { success: false, error: 'Oturum gerekli.' }
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        action: 'respond-session',
+        memberId,
+        sessionId,
+        sessionType,
+        decision,
+      }),
+    })
+    const json = await res.json()
+    if (!json.ok) return { success: false, error: json.error || 'İşlem başarısız.' }
     return { success: true, session: json.session }
   } catch (e) {
     return { success: false, error: String(e.message || e) }

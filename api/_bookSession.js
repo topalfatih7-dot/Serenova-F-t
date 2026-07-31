@@ -28,8 +28,9 @@ function sessionKey(type) {
   return SESSION_KEYS[type] || 'dietitianSessions'
 }
 
+/** Limit + slot kilidi — onay bekleyen talepler de yer tutar */
 function activeStatuses() {
-  return new Set(['scheduled', 'rescheduled'])
+  return new Set(['pending', 'scheduled', 'rescheduled'])
 }
 
 function parseSessionDate(s) {
@@ -170,7 +171,7 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
     title: TITLES[sessionType],
     date: startsAt.toISOString(),
     duration: Math.max(Number(duration) || 30, 15),
-    status: 'scheduled',
+    status: 'pending',
     coach: staffRow.name || '',
     bookedBy: 'member',
     createdAt: new Date().toISOString(),
@@ -198,8 +199,8 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
     const notification = {
       id: `n-appointment-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
       type: 'appointment',
-      title: 'Yeni randevu',
-      message: `${memberRow.name || 'Danışan'} — ${when}`,
+      title: 'Yeni randevu talebi',
+      message: `${memberRow.name || 'Danışan'} — ${when} (onay bekliyor)`,
       read: false,
       createdAt: new Date().toISOString(),
       memberId: userId,
@@ -214,19 +215,9 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
       .from('staff')
       .update({ data: staffData })
       .eq('id', staffId)
-
-    const { notifyAppointmentConfirmed } = await import('./_whatsappEvents.js')
-    await notifyAppointmentConfirmed(admin, {
-      memberId: userId,
-      staffId,
-      sessionType,
-      startsAt: session.date,
-      sessionId: session.id,
-      memberName: memberRow.name,
-      staffName: staffRow.name,
-    })
+    /* WhatsApp “confirmed” onay sonrası; talep aşamasında gönderilmez */
   } catch {
-    /* randevu oluştu; bildirim opsiyonel */
+    /* talep oluştu; bildirim opsiyonel */
   }
 
   return { ok: true, session }

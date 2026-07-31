@@ -15,7 +15,7 @@ export function staffNavForRole(role) {
     { to: '/staff/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true, iconTone: 'text-sky-500', labelTone: 'text-sky-700/80' },
   ]
   const normalizedRole = normalizeStaffRole(role)
-  if (normalizedRole === 'coach' || normalizedRole === 'dietitian') {
+  if (normalizedRole === 'coach' || normalizedRole === 'dietitian' || normalizedRole === 'doctor') {
     base.push({
       to: '/staff/collab-messages',
       icon: Users2,
@@ -33,6 +33,12 @@ export function staffNavForRole(role) {
     iconTone: 'text-rose-500',
     labelTone: 'text-rose-700/80',
   })
+  if (normalizedRole === 'doctor') {
+    return [
+      ...base,
+      { to: '/staff/payments', icon: Wallet, label: 'Ödeme Yönetimi', iconTone: 'text-emerald-500', labelTone: 'text-emerald-700/80' },
+    ]
+  }
   if (normalizedRole === 'dietitian') {
     return [
       ...base,

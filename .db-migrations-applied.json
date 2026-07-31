@@ -68,5 +68,7 @@
   "20260729_plans_icon_column.sql",
   "20260729_stripe_portal_staff_earnings.sql",
   "20260731_doctor_only_in_doktor_plan.sql",
-  "20260731_restore_lab_analysis_copy.sql"
+  "20260731_restore_lab_analysis_copy.sql",
+  "20260731_session_pending_and_lab_staff_read.sql",
+  "20260731_staff_collab_doctor.sql"
 ]

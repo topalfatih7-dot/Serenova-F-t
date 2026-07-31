@@ -5,56 +5,64 @@ import { useState } from 'react'
 import VideoJoinLink from '../video/VideoJoinLink'
 
 const STATUS_STYLES = {
+  pending: 'bg-amber-50 text-amber-800',
   scheduled: 'bg-brand-50 text-brand-700',
   completed: 'bg-sage-50 text-sage-700',
   cancelled: 'bg-red-50 text-red-600',
+  rejected: 'bg-red-50 text-red-700',
   rescheduled: 'bg-amber-50 text-amber-700',
 }
 
 const STATUS_LABELS = {
+  pending: 'Onay bekliyor',
   scheduled: 'Planlandı',
   completed: 'Tamamlandı',
   cancelled: 'İptal',
+  rejected: 'Reddedildi',
   rescheduled: 'Yeniden planlandı',
 }
 
 export default function SessionCard({ session, sessionType = 'coach', onReschedule, onCancel }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isPast = new Date(session.date) < new Date()
-  const canModify = session.status === 'scheduled' && !isPast
+  const status = session.status || 'scheduled'
+  const canReschedule = status === 'scheduled' && !isPast
+  const canCancel = (status === 'scheduled' || status === 'pending') && !isPast
 
   return (
     <div className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between">
         <div>
-          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase ${STATUS_STYLES[session.status]}`}>
-            {STATUS_LABELS[session.status]}
+          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase ${STATUS_STYLES[status] || STATUS_STYLES.scheduled}`}>
+            {STATUS_LABELS[status] || status}
           </span>
           <h4 className="mt-2 font-semibold text-cream-900">{session.title}</h4>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-cream-800/60">
             <User className="h-3.5 w-3.5" /> {session.coach}
           </p>
         </div>
-        {canModify && (
+        {canCancel && (
           <div className="relative">
             <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="rounded-lg p-1.5 hover:bg-cream-100">
               <MoreVertical className="h-4 w-4 text-cream-800/50" />
             </button>
             {menuOpen && (
               <div className="absolute right-0 z-10 mt-1 w-40 rounded-xl border border-cream-200 bg-white py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => { onReschedule?.(session); setMenuOpen(false) }}
-                  className="block w-full px-4 py-2 text-left text-sm hover:bg-cream-50"
-                >
-                  Yeniden Planla
-                </button>
+                {canReschedule && (
+                  <button
+                    type="button"
+                    onClick={() => { onReschedule?.(session); setMenuOpen(false) }}
+                    className="block w-full px-4 py-2 text-left text-sm hover:bg-cream-50"
+                  >
+                    Yeniden Planla
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => { onCancel?.(session); setMenuOpen(false) }}
                   className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                 >
-                  İptal Et
+                  {status === 'pending' ? 'Talebi İptal Et' : 'İptal Et'}
                 </button>
               </div>
             )}

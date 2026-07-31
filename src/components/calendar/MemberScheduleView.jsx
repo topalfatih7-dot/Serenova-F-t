@@ -26,6 +26,7 @@ export default function MemberScheduleView({
   sessions = [],
   canBook = true,
   monthlyLimit = 0,
+  limitScope = 'month',
   lockedTitle,
   lockedDescription,
   upgradeHref = '/plans',
@@ -48,8 +49,13 @@ export default function MemberScheduleView({
   )
 
   const filtered = sessions.filter((s) => {
-    if (filter === 'upcoming') return ['scheduled', 'rescheduled'].includes(s.status || 'scheduled') && new Date(s.date) >= new Date()
-    if (filter === 'past') return s.status === 'completed' || new Date(s.date) < new Date()
+    const st = s.status || 'scheduled'
+    if (filter === 'upcoming') {
+      return ['pending', 'scheduled', 'rescheduled'].includes(st) && new Date(s.date) >= new Date()
+    }
+    if (filter === 'past') {
+      return ['completed', 'cancelled', 'rejected'].includes(st) || new Date(s.date) < new Date()
+    }
     return true
   })
 
@@ -140,6 +146,7 @@ export default function MemberScheduleView({
         staff={assignedStaff}
         existingSessions={sessions}
         monthlyLimit={monthlyLimit}
+        limitScope={limitScope}
         accent={accent}
         onBook={handleBook}
         getBookedSlots={getStaffBookedSlots}

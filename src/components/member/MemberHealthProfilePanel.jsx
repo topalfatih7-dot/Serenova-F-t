@@ -11,6 +11,29 @@ import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/he
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
 import StaffHealthBrief from '../staff/StaffHealthBrief'
 import { isPaidMembership } from '../../data/membershipPlans'
+import { normalizeStaffRole } from '../../utils/staffRoles'
+
+/** Rolün görebileceği sağlık testi audience etiketleri */
+function sectionVisibleForRole(sectionAudience, viewerRole) {
+  const role = normalizeStaffRole(viewerRole)
+  if (!role || role === 'admin') return true
+  const aud = sectionAudience || 'shared'
+  if (aud === 'shared') return true
+  if (role === 'coach') return aud === 'coach'
+  if (role === 'dietitian') return aud === 'dietitian'
+  if (role === 'doctor') return aud === 'shared' // doktor-specific section yok; shared
+  return true
+}
+
+/** Brief alanları — role göre */
+export function briefKeysForRole(viewerRole) {
+  const role = normalizeStaffRole(viewerRole)
+  if (!role || role === 'admin') return ['general', 'nutrition', 'movement', 'risks', 'actions']
+  if (role === 'coach') return ['general', 'movement', 'risks', 'actions']
+  if (role === 'dietitian') return ['general', 'nutrition', 'risks', 'actions']
+  if (role === 'doctor') return ['general', 'nutrition', 'movement', 'risks', 'actions']
+  return ['general', 'risks', 'actions']
+}
 
 function Chips({ values, map, tone = 'cream' }) {
   if (!values?.length) return <span className="text-sm text-cream-800/40">—</span>
@@ -125,6 +148,7 @@ export default function MemberHealthProfilePanel({
   notesSaving = false,
   showHealthAnalysis = false,
   showStaffBrief = false,
+  viewerRole = 'admin',
   analysisStale = false,
   onRerunAnalysis = null,
   analysisRerunning = false,
@@ -136,6 +160,8 @@ export default function MemberHealthProfilePanel({
   const complete = isHealthTestComplete(member.healthTest, member.gender, member.packageConfig)
   const hasProgress = hasHealthTestProgress(member.healthTest, member.gender, member.packageConfig)
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
+    .filter((sec) => sectionVisibleForRole(sec.audience, viewerRole))
+  const briefKeys = briefKeysForRole(viewerRole)
 
   return (
     <div className="space-y-6">
@@ -189,6 +215,7 @@ export default function MemberHealthProfilePanel({
           analysis={member.healthAnalysis}
           stale={analysisStale}
           showBrief={memberPaid}
+          briefKeys={briefKeys}
           onRerun={memberPaid ? onRerunAnalysis : null}
           rerunning={analysisRerunning}
           rerunError={analysisRerunError}

@@ -25,3 +25,20 @@ Shell: `src/components/layout/AdminShell.jsx` → `PanelSidebar` + `TopBar` + `P
 - `src/pages/admin/AdminPremiumPage.jsx`, `AdminProgramsPage.jsx`, `AdminProgramEditPage.jsx`, `ManualSessionEditor.jsx`
 - `src/pages/payments/PaymentManagementPage.jsx` — staff hakediş (`staff_earnings`)
 - `src/services/staffAssignment.js`, `sessionAttendance.js`, `supabaseDb.adminUpdatePremiumMembership`
+
+## Member UX tied to assignment (2026-07-31)
+
+- `memberNeedsStaffAssignment` → `DashboardPage` sage banner (“Uzmanınız atanıyor”)
+- `ProfilePage` expert cards filtered by package entitlements (hidden if role not in package)
+- `NotificationsPage`: `type === 'assignment'` → `/profile`; `appointment` → `/schedule`
+
+## Randevu onay modeli (2026-07-31)
+
+- Üye book → `status: 'pending'` (`api/_bookSession.js`); personel onay/red → `respond-session` (`api/_respondSession.js`)
+- Pending limit + slot kilitler; video yalnız `scheduled`
+- Admin manuel seans → doğrudan `scheduled`
+- Staff overview: “Onay bekleyen talepler” paneli
+
+## İleri faz
+
+Hâlâ sonraya: staff adherence, doktor hakediş, lab UI, pazarlama copy — [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ClipboardList, Star, CalendarDays, Play, BookOpen, Sparkles,
-  ArrowRight, Clock, HeartPulse,
+  ArrowRight, Clock, HeartPulse, UserCheck, Stethoscope,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
@@ -13,7 +13,14 @@ import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import HealthScoreCard from '../components/dashboard/HealthScoreCard'
 import ActivationChecklist from '../components/dashboard/ActivationChecklist'
-import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
+import {
+  getPlanLabel,
+  isPaidMembership,
+  memberNeedsStaffAssignment,
+  packageIncludesCoach,
+  packageIncludesDietitian,
+  packageIncludesDoctor,
+} from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
@@ -42,7 +49,7 @@ export default function DashboardPage() {
   const location = useLocation()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, isUnpaidMember,
+    doctorSessions, myPrograms, progress, isUnpaidMember,
     premiumExpiresAt, refresh,
     posts, packageConfig,
   } = useApp()
@@ -72,6 +79,7 @@ export default function DashboardPage() {
   const goMembership = useCallback(() => navigate('/plans'), [navigate])
   const goCoachSchedule = useCallback(() => navigate('/schedule?tab=coach'), [navigate])
   const goDietitianSchedule = useCallback(() => navigate('/schedule?tab=dietitian'), [navigate])
+  const goDoctorSchedule = useCallback(() => navigate('/schedule?tab=doctor'), [navigate])
 
   const premiumRemainingDays = useMemo(
     () => getRemainingDays(premiumExpiresAt),
@@ -81,6 +89,37 @@ export default function DashboardPage() {
     isPaidMembership(membership)
     && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
   )
+
+  const showAssignmentPendingBanner = Boolean(
+    isPaidMembership(membership)
+    && !isUnpaidMember
+    && memberNeedsStaffAssignment({
+      packageConfig,
+      assignedCoachId: user?.assignedCoachId,
+      assignedDietitianId: user?.assignedDietitianId,
+      assignedDoctorId: user?.assignedDoctorId,
+    }),
+  )
+
+  const assignmentPendingHint = useMemo(() => {
+    if (!showAssignmentPendingBanner) return ''
+    const parts = []
+    if (packageIncludesCoach(packageConfig) && !user?.assignedCoachId) parts.push('koç')
+    if (packageIncludesDietitian(packageConfig) && !user?.assignedDietitianId) parts.push('diyetisyen')
+    if (packageIncludesDoctor(packageConfig) && !user?.assignedDoctorId) parts.push('doktor')
+    if (parts.length === 0) return 'Uzman atamanız hazırlanıyor.'
+    if (parts.length === 1) {
+      const label = parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+      return `${label} atamanız hazırlanıyor.`
+    }
+    return `${parts.slice(0, -1).join(', ')} ve ${parts[parts.length - 1]} atamanız hazırlanıyor.`
+  }, [
+    showAssignmentPendingBanner,
+    packageConfig,
+    user?.assignedCoachId,
+    user?.assignedDietitianId,
+    user?.assignedDoctorId,
+  ])
 
   const latestPosts = useMemo(
     () => (posts || [])
@@ -97,6 +136,12 @@ export default function DashboardPage() {
 
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
+  const nextDoctor = (doctorSessions || user?.doctorSessions || []).find(
+    (s) => s.status === 'scheduled' && new Date(s.date) > new Date(),
+  )
+  const showDoctorStat = packageIncludesDoctor(packageConfig)
+    || (Number(packageConfig?.doctorSessionsTotal) || 0) > 0
+    || Boolean(user?.assignedDoctorId)
 
   const planLabel = getPlanLabel(membership)
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
@@ -161,6 +206,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {showAssignmentPendingBanner && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-sage-300 bg-sage-50 px-4 py-3.5">
+          <UserCheck className="h-5 w-5 shrink-0 text-sage-700" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-sage-950">Uzmanınız atanıyor</p>
+            <p className="mt-0.5 text-xs text-sage-900/70">
+              {assignmentPendingHint} Atama tamamlanınca profilinizde görünecek; randevu ve mesajlaşma o zaman açılır.
+            </p>
+          </div>
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sage-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-sage-800"
+          >
+            Profil <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
       {showExpiringBanner && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3.5">
           <Clock className="h-5 w-5 shrink-0 text-amber-600" />
@@ -195,10 +258,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 sm:grid-cols-2 ${showDoctorStat ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
         <StatsCard label="Aktif Plan" value={planLabel} sub={membership === 'free' ? 'Kişisel sağlık analizi' : 'Koç & Diyetisyen destekli'} icon={Crown} accent="brand" onClick={goMembership} />
         <StatsCard label="Sonraki Koç" value={nextCoach ? format(new Date(nextCoach.date), 'd MMM', { locale: tr }) : '—'} sub={nextCoach?.title || 'Planlanmadı'} icon={Dumbbell} accent="sage" onClick={goCoachSchedule} />
         <StatsCard label="Sonraki Diyetisyen" value={nextDietitian ? format(new Date(nextDietitian.date), 'd MMM', { locale: tr }) : '—'} sub={nextDietitian?.title || 'Planlanmadı'} icon={Apple} accent="gold" onClick={goDietitianSchedule} />
+        {showDoctorStat && (
+          <StatsCard
+            label="Sonraki Doktor"
+            value={nextDoctor ? format(new Date(nextDoctor.date), 'd MMM', { locale: tr }) : '—'}
+            sub={nextDoctor?.title || 'Planlanmadı'}
+            icon={Stethoscope}
+            accent="brand"
+            onClick={goDoctorSchedule}
+          />
+        )}
         <StatsCard label="Seri" value={`${user.streak ?? 0} gün`} sub="Kesintisiz gün" icon={Flame} accent="brand" />
       </div>
 

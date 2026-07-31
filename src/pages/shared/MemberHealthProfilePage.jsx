@@ -6,7 +6,6 @@ import { useToast } from '../../context/ToastContext'
 import MemberHealthProfilePanel from '../../components/member/MemberHealthProfilePanel'
 import { getStaffClients } from '../../utils/chatAccess'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
-import { isCoachRole, isDietitianRole } from '../../utils/staffRoles'
 import { isPaidMembership } from '../../data/membershipPlans'
 import { isHealthAnalysisStale } from '../../services/healthScoreAnalysis'
 import { useStaffHealthAnalysisRerun } from '../../hooks/useStaffHealthAnalysisRerun'
@@ -134,8 +133,9 @@ export default function MemberHealthProfilePage({ audience = 'staff' }) {
         showHealthAnalysis={audience === 'admin'}
         showStaffBrief={
           audience === 'admin'
-          || (audience === 'staff' && (isCoachRole(staffUser?.role) || isDietitianRole(staffUser?.role)))
+          || audience === 'staff'
         }
+        viewerRole={audience === 'admin' ? 'admin' : (staffUser?.role || 'coach')}
         analysisStale={analysisStale}
         onRerunAnalysis={handleRerunAnalysis}
         analysisRerunning={analysisRerunning}

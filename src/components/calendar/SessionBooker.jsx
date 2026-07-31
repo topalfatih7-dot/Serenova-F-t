@@ -44,6 +44,8 @@ export default function SessionBooker({
   staff,
   existingSessions = [],
   monthlyLimit = 0,
+  /** 'month' = ay kotası; 'all' = tek seferlik toplam (doktor) */
+  limitScope = 'month',
   duration = 30,
   accent = 'brand',
   onBook,
@@ -97,10 +99,12 @@ export default function SessionBooker({
     return () => { active = false }
   }, [open, staff?.id, type, getBookedSlots])
 
+  const ACTIVE_STATUSES = ['pending', 'scheduled', 'rescheduled']
+
   const ownActive = useMemo(() => {
     const s = new Set()
     ;(existingSessions || []).forEach((x) => {
-      if (['scheduled', 'rescheduled'].includes(x.status || 'scheduled') && x.date) {
+      if (ACTIVE_STATUSES.includes(x.status || 'scheduled') && x.date) {
         s.add(new Date(x.date).getTime())
       }
     })
@@ -111,12 +115,18 @@ export default function SessionBooker({
   const slots = selectedDay ? buildDaySlots(selectedDay, availability) : []
 
   const usedThisMonth = useMemo(() => {
+    if (limitScope === 'all') {
+      return (existingSessions || []).filter((x) => (
+        ACTIVE_STATUSES.includes(x.status || 'scheduled')
+        || x.status === 'completed'
+      )).length
+    }
     if (!selectedDay) return 0
     return (existingSessions || []).filter((x) => (
-      ['scheduled', 'rescheduled'].includes(x.status || 'scheduled')
+      ACTIVE_STATUSES.includes(x.status || 'scheduled')
       && x.date && isSameMonth(new Date(x.date), selectedDay)
     )).length
-  }, [existingSessions, selectedDay])
+  }, [existingSessions, selectedDay, limitScope])
 
   const limitReached = monthlyLimit > 0 && usedThisMonth >= monthlyLimit
 
@@ -151,7 +161,7 @@ export default function SessionBooker({
         toast(r.error || 'Randevu oluşturulamadı.', 'error')
         return
       }
-      toast('Randevunuz oluşturuldu.', 'success')
+      toast('Randevu talebiniz gönderildi. Uzman onayından sonra görüşme kesinleşir.', 'success')
       setPendingTime(null)
       onClose?.()
     } finally {
@@ -181,8 +191,12 @@ export default function SessionBooker({
           <div className="flex items-start gap-2 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/70">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
             <span>
-              <span className="font-semibold">{staff.name}</span> ile gün ve saati seçin, ardından randevuyu onaylayın.
-              {monthlyLimit > 0 && ` Bu ay kalan hakkınız: ${Math.max(monthlyLimit - usedThisMonth, 0)}/${monthlyLimit}.`}
+              <span className="font-semibold">{staff.name}</span> ile gün ve saati seçin. Talep uzman onayına gönderilir.
+              {monthlyLimit > 0 && (
+                limitScope === 'all'
+                  ? ` Kalan hakkınız: ${Math.max(monthlyLimit - usedThisMonth, 0)}/${monthlyLimit}.`
+                  : ` Bu ay kalan hakkınız: ${Math.max(monthlyLimit - usedThisMonth, 0)}/${monthlyLimit}.`
+              )}
             </span>
           </div>
 

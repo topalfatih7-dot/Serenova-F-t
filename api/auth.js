@@ -11,6 +11,7 @@ import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_
 import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
+import { respondSessionForStaff } from './_respondSession.js'
 import { recordSessionAttendance } from './_sessionAttendance.js'
 import { handleGa4Report } from './_ga4Report.js'
 import { handleAiUsageReport } from './_aiUsageReport.js'
@@ -665,6 +666,26 @@ async function handleBookSession(req, res, body) {
   return res.status(200).json(result)
 }
 
+async function handleRespondSession(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await respondSessionForStaff(admin, userData.user, {
+    memberId: body.memberId,
+    sessionId: body.sessionId,
+    sessionType: body.sessionType || body.type,
+    decision: body.decision,
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
 async function handleSessionAttendance(req, res, body) {
   const token = getBearerToken(req)
   if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
@@ -866,6 +887,7 @@ export default async function handler(req, res) {
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
+    if (action === 'respond-session') return handleRespondSession(req, res, body)
     if (action === 'session-attendance') return handleSessionAttendance(req, res, body)
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'exercise-video-urls') return handleExerciseVideoUrls(req, res, body)

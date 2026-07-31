@@ -130,8 +130,8 @@ export default function MessagesPage() {
         <PanelPageHeader title="Mesajlar" subtitle="Paketinize atanmış uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" image={PANEL_IMAGES.messages} />
         <EmptyState
           icon={MessageCircle}
-          title="Mesajlaşma henüz aktif değil"
-          description="Premium paketinizde koç, diyetisyen veya doktor atandığında buradan mesajlaşabilirsiniz."
+          title="Uzmanınız atanıyor"
+          description="Paketinizdeki uzman ataması tamamlanınca buradan mesajlaşabilirsiniz. Atama profilinizde görünecektir."
         />
       </PanelPageShell>
     )

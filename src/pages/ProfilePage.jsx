@@ -18,7 +18,11 @@ import HealthSummarySection from '../components/profile/HealthSummarySection'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 
-import { getPlanLabel } from '../data/membershipPlans'
+import {
+  getPlanLabel,
+  packageIncludesCoach,
+  packageIncludesDietitian,
+} from '../data/membershipPlans'
 import { isHealthTestComplete } from '../data/healthTest'
 import {
   countUsedDoctorSessions,
@@ -58,11 +62,48 @@ export default function ProfilePage() {
     photo: user.photo || null,
   })
 
-  const expertCards = [
-    { icon: Dumbbell, label: 'Koç', name: assignedCoach?.name, to: '/schedule?tab=coach', iconClass: 'text-brand-500' },
-    { icon: Apple, label: 'Diyetisyen', name: assignedDietitian?.name, to: '/schedule?tab=dietitian', iconClass: 'text-sage-500' },
-    { icon: Stethoscope, label: 'Doktor', name: assignedDoctor?.name, to: '/schedule?tab=doctor', iconClass: 'text-teal-600' },
-  ]
+  const expertCards = useMemo(() => {
+    const cards = []
+    if (packageIncludesCoach(packageConfig)) {
+      cards.push({
+        icon: Dumbbell,
+        label: 'Koç',
+        name: assignedCoach?.name,
+        to: '/schedule?tab=coach',
+        iconClass: 'text-brand-500',
+      })
+    }
+    if (packageIncludesDietitian(packageConfig)) {
+      cards.push({
+        icon: Apple,
+        label: 'Diyetisyen',
+        name: assignedDietitian?.name,
+        to: '/schedule?tab=dietitian',
+        iconClass: 'text-sage-500',
+      })
+    }
+    const offersDoctor = (
+      (Number(packageConfig?.doctorSessionsTotal) || 0) > 0
+      || (Number(packageConfig?.doctorMeetingsPerMonth) || 0) > 0
+      || Boolean(user.assignedDoctorId)
+    )
+    if (offersDoctor) {
+      cards.push({
+        icon: Stethoscope,
+        label: 'Doktor',
+        name: assignedDoctor?.name,
+        to: '/schedule?tab=doctor',
+        iconClass: 'text-teal-600',
+      })
+    }
+    return cards
+  }, [
+    packageConfig,
+    assignedCoach?.name,
+    assignedDietitian?.name,
+    assignedDoctor?.name,
+    user.assignedDoctorId,
+  ])
 
   const handleSave = async () => {
     try {
@@ -242,29 +283,39 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Uzmanlar */}
-          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-            {expertCards.map((item, i) => (
-              <motion.div
-                key={item.label}
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                custom={i + 1}
-              >
-                <Link
-                  to={item.to}
-                  className="flex flex-col items-center rounded-2xl border border-white/80 bg-gradient-to-br from-white to-cream-50/80 p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md sm:p-4"
+          {/* Uzmanlar — yalnızca pakette olan roller */}
+          {expertCards.length > 0 && (
+            <div
+              className={`mt-5 grid gap-2 sm:gap-3 ${
+                expertCards.length === 1
+                  ? 'grid-cols-1 max-w-xs mx-auto sm:mx-0'
+                  : expertCards.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-3'
+              }`}
+            >
+              {expertCards.map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="show"
+                  custom={i + 1}
                 >
-                  <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${item.iconClass}`} />
-                  <p className="mt-2 text-sm font-semibold text-cream-900 sm:text-base">{item.label}</p>
-                  <p className="mt-0.5 truncate text-[10px] text-cream-800/50 sm:text-xs">
-                    {item.name || 'Atanmadı'}
-                  </p>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+                  <Link
+                    to={item.to}
+                    className="flex flex-col items-center rounded-2xl border border-white/80 bg-gradient-to-br from-white to-cream-50/80 p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md sm:p-4"
+                  >
+                    <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${item.iconClass}`} />
+                    <p className="mt-2 text-sm font-semibold text-cream-900 sm:text-base">{item.label}</p>
+                    <p className="mt-0.5 truncate text-[10px] text-cream-800/50 sm:text-xs">
+                      {item.name || 'Atanmadı'}
+                    </p>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.div>
 

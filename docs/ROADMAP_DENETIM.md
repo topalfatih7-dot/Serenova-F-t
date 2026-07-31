@@ -128,3 +128,8 @@ Kararlar: istatistik floor **tutuldu**; kütüphane **program-scoped kaldı**; F
 - Webhook: `customer.subscription.deleted` → `stripeSubscriptionId` temizliği
 - **Ops:** Stripe Dashboard webhook’a `invoice.paid` + `customer.subscription.deleted` ekleyin (mevcut `checkout.session.*` kalsın)
 - `eko` plan pasif / satış kapalı; üye 0
+
+### Personel ↔ üye akış denetimi (2026-07-31)
+
+- Tur 1–8 uygulandı: atama banner/profil; program empty ayrımı; randevu `pending`→onay/red; üçlü collab; brief+audience filtre; lab RLS; doktor min nav + Sonraki Doktor.
+- Sonraya: staff adherence, doktor hakediş, lab UI, pazarlama copy — [`STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](STAFF_MEMBER_FLOWS_ILERI_FAZ.md)

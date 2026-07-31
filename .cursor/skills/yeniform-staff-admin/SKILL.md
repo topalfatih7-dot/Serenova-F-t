@@ -35,6 +35,14 @@ Zamanlama: `cycle14` | `weekly` | `date` (süresiz her gün yok). Başlık `buil
 - Messages: staff threads, audit, collab
 - Dense tables → mobile: list + detail sheet; mark desktop-heavy tools clearly
 
+## Assignment (üye ↔ personel)
+
+- Atama **yalnızca admin** (`AdminPremiumPage`). Koç/diyet `autoAssign` var; **doktor her zaman manuel**.
+- Ücretli + eksik atama → üye dashboard “Uzmanınız atanıyor” (`memberNeedsStaffAssignment`).
+- Profil uzman kartları: yalnızca pakette olan roller (`packageIncludes*`).
+- Assignment bildirimi → `/profile`.
+- İleri faz (claim, kuyruk, lab RLS, adherence UI, doktor nav): [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)
+
 ## Related
 
-[reference.md](reference.md)
+[reference.md](reference.md) · [İleri faz akışlar](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)

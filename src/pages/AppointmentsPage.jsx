@@ -10,6 +10,7 @@ import {
   packageIncludesDietitian,
   packageIncludesDoctor,
 } from '../data/membershipPlans'
+import { doctorLimitIsOneTime } from '../utils/memberPackages'
 
 const TABS = [
   {
@@ -53,6 +54,11 @@ export default function AppointmentsPage() {
     packageConfig,
     isUnpaidMember,
   } = useApp()
+
+  const doctorIsOneTime = doctorLimitIsOneTime(packageConfig)
+  const doctorLimit = doctorIsOneTime
+    ? (Number(packageConfig?.doctorSessionsTotal) || 0)
+    : (Number(packageConfig?.doctorMeetingsPerMonth) || 0)
 
   const activeTab = useMemo(() => {
     const tab = searchParams.get('tab')
@@ -146,7 +152,8 @@ export default function AppointmentsPage() {
           accent="teal"
           sessions={doctorSessions}
           canBook={packageIncludesDoctor(packageConfig)}
-          monthlyLimit={1}
+          monthlyLimit={doctorLimit}
+          limitScope={doctorIsOneTime ? 'all' : 'month'}
           lockedTitle="Doktor randevuları paketinizde yok"
           lockedDescription="Online doktor görüşmesi için Doktor Paketi satın alın. Diğer abonelik planlarına dahil değildir."
         />
