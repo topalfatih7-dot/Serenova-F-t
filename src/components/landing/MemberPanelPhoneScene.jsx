@@ -34,6 +34,12 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+// Mobil / dokunmatik cihazlarda 3D hareket kapalı — sayfa kaydırması engellenmesin
+function isTouchDevice() {
+  if (typeof window === 'undefined') return true
+  return !window.matchMedia('(hover: hover) and (pointer: fine)').matches
+}
+
 function cancelSafe(a) {
   try {
     a?.pause?.()
@@ -66,7 +72,7 @@ export default function MemberPanelPhoneScene({ className = '' }) {
     const root = rootRef.current
     if (!phone || !root) return undefined
 
-    const reduced = prefersReducedMotion()
+    const reduced = prefersReducedMotion() || isTouchDevice()
 
     utils.set(phone, {
       rotateY: REST_Y,
@@ -239,7 +245,7 @@ export default function MemberPanelPhoneScene({ className = '' }) {
   return (
     <div
       ref={rootRef}
-      className={`hiw-phone-scene relative mx-auto w-full max-w-[380px] select-none touch-none ${className}`}
+      className={`hiw-phone-scene relative mx-auto w-full max-w-[380px] select-none ${className}`}
       style={{ perspective: '1400px' }}
       aria-hidden
     >

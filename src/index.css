@@ -715,8 +715,16 @@ body {
   padding-block: 0.75rem 1.5rem;
   cursor: default;
 }
+/* Mobilde dokunuşlar sayfa kaydırmasına gitsin; 3D tilt yalnızca mouse'lu cihazlarda */
 .hiw-phone-hit {
-  touch-action: none;
+  pointer-events: none;
+  touch-action: auto;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hiw-phone-hit {
+    pointer-events: auto;
+    touch-action: none;
+  }
 }
 
 /* Telefon arkasında renkli ışıklandırma — telefon ışığın ortasında */
