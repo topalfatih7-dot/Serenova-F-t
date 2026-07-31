@@ -523,19 +523,12 @@ export default function OnboardingPage() {
         >
           <AuthFormShell>
           <AuthFormCard>
-            <div className="h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
-            <h2 className="mt-5 font-display text-[1.75rem] font-bold leading-tight text-cream-900">
+            <h2 className="font-display text-[1.75rem] font-bold leading-tight text-cream-900">
               {isOAuthFlow ? 'Son bir adım kaldı' : 'Hesabınızı oluşturun'}
             </h2>
-            <p className="mt-2 text-base leading-relaxed text-cream-800/65">
-              {isOAuthFlow
-                ? 'Google hesabınızla bağlandınız. İletişim için telefon numaranızı girin.'
-                : wantsPaidPath
-                  ? 'Ücretsiz hesap oluşturun; ardından seçtiğiniz pakete geçebilirsiniz.'
-                  : 'Birkaç bilgi yeterli — ücretsiz üye olun, paketleri panelden seçin.'}
-            </p>
+            <div className="mt-4 h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
 
-            <div className="mt-6 space-y-3.5">
+            <div className="mt-5 space-y-3.5">
               {showErrors && !canSubmit() && (
                 <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
                   <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
@@ -578,36 +571,36 @@ export default function OnboardingPage() {
 
               {!isOAuthFlow && (
               <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div>
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
+                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-cream-800">Şifre</span>
                   <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cream-700" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={data.password}
                       onChange={(e) => update({ password: e.target.value })}
-                      className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-11 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                      className="w-full rounded-xl border border-cream-400 bg-white py-2.5 pl-9 pr-10 text-xs text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                     />
-                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-cream-800">Tekrar</span>
+                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-cream-800">Şifre tekrar</span>
                   <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700" />
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cream-700" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={data.confirmPassword}
                       onChange={(e) => update({ confirmPassword: e.target.value })}
-                      className="w-full rounded-2xl border border-cream-400 bg-white py-3.5 pl-11 pr-11 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+                      className="w-full rounded-xl border border-cream-400 bg-white py-2.5 pl-9 pr-10 text-xs text-cream-900 outline-none transition placeholder:text-cream-800/55 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                     />
-                    <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500">
+                      {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
