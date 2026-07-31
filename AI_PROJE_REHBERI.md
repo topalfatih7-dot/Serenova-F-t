@@ -74,7 +74,7 @@ Browser → Supabase Auth
 | `doktor` | evet | tek sefer doktor | |
 | `vip` | evet | koç+diyet | |
 
-Onboarding: zorunlu ücretli plan → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
+Onboarding: tek adım ücretsiz kayıt (`free` + 48s deneme); ücretli paket panelden / `?plan=` sonrası PlanChangeView → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
 
 ---
 

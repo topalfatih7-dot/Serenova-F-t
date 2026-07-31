@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Building2, Compass, Trophy, HeartHandshake } from 'lucide-react'
+import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Building2, Compass, Trophy, HeartHandshake, ChevronDown } from 'lucide-react'
 import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
@@ -70,9 +70,14 @@ const teamDropdownFooter = {
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState(null)
+  const [mobileSections, setMobileSections] = useState({ discover: false, team: false })
   const [overlayTop, setOverlayTop] = useState(64)
   const navRef = useRef(null)
   const headerRef = useRef(null)
+
+  const toggleMobileSection = useCallback((key) => {
+    setMobileSections((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
 
   const closeDropdown = useCallback(() => setOpenDropdown(null), [])
 
@@ -142,6 +147,16 @@ export default function PublicLayout() {
     setOpenDropdown(null)
     setMenuOpen(false)
   }
+
+  // Menü açılınca aktif rotaya göre ilgili bölümü açık getir
+  useEffect(() => {
+    if (!menuOpen) return
+    const discoverActive = discoverSubLinks.some(
+      (sub) => pathname === sub.to || pathname.startsWith(`${sub.to}/`),
+    )
+    const teamActive = pathname.startsWith('/team')
+    setMobileSections({ discover: discoverActive, team: teamActive })
+  }, [menuOpen, pathname])
   const firstName = (user?.name || staffUser?.name || '').trim().split(' ')[0]
 
   // Kayıt/ödeme akışı sırasında (Stripe'a yönlendirilmeden önce) gerçek bir üye satırı
@@ -324,47 +339,143 @@ export default function PublicLayout() {
             >
               <div className="py-3">
                 {publicLinks.map((l) => renderMobileLink(l))}
-                <div className="mt-1">
-                  <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-cream-800/40">Keşfet</p>
-                  {discoverSubLinks.map((sub) => (
-                    <Link
-                      key={sub.to}
-                      to={sub.to}
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === sub.to || pathname.startsWith(`${sub.to}/`) ? 'bg-brand-100/70 text-brand-700' : 'text-cream-800 hover:bg-cream-100'}`}
-                    >
-                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
-                        <sub.icon className="h-4 w-4" />
-                      </span>
-                      {sub.label}
-                    </Link>
-                  ))}
-                </div>
-                <div className="mt-1">
-                  <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-cream-800/40">Kadromuz</p>
-                  {teamSubLinks.map((sub) => (
-                    <Link
-                      key={sub.to}
-                      to={sub.to}
-                      onClick={() => setMenuOpen(false)}
-                      onMouseEnter={sub.onPrefetch}
-                      onFocus={sub.onPrefetch}
-                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-cream-800 transition hover:bg-cream-100"
-                    >
-                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
-                        <sub.icon className="h-4 w-4" />
-                      </span>
-                      {sub.label}
-                    </Link>
-                  ))}
-                  <Link
-                    to="/team/apply"
-                    onClick={() => setMenuOpen(false)}
-                    className="mx-1 mt-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-3 py-3 text-sm font-semibold text-white shadow-md"
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleMobileSection('discover')}
+                    aria-expanded={mobileSections.discover}
+                    aria-controls="mobile-menu-discover"
+                    className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3.5 py-3 text-left shadow-sm transition active:scale-[0.98] ${
+                      mobileSections.discover
+                        ? 'border-brand-300 bg-gradient-to-r from-brand-500 to-sage-500 text-white shadow-brand-500/25'
+                        : 'border-brand-200/80 bg-gradient-to-r from-brand-50 via-white to-sage-50 text-cream-900 hover:border-brand-300 hover:shadow-md'
+                    }`}
                   >
-                    <UserPlus className="h-4 w-4" />
-                    Kadromuza Katıl
-                  </Link>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        mobileSections.discover ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-600'
+                      }`}>
+                        <Compass className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-bold tracking-wide ${mobileSections.discover ? 'text-white' : 'text-cream-900'}`}>
+                          Keşfet
+                        </span>
+                        <span className={`block text-[11px] font-medium ${mobileSections.discover ? 'text-white/80' : 'text-cream-800/55'}`}>
+                          Hizmetler & içerikler
+                        </span>
+                      </span>
+                    </span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      mobileSections.discover ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-600'
+                    }`}>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${mobileSections.discover ? 'rotate-180' : ''}`}
+                        aria-hidden
+                      />
+                    </span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {mobileSections.discover && (
+                      <motion.div
+                        id="mobile-menu-discover"
+                        key="discover-links"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        {discoverSubLinks.map((sub) => (
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            onClick={() => setMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === sub.to || pathname.startsWith(`${sub.to}/`) ? 'bg-brand-100/70 text-brand-700' : 'text-cream-800 hover:bg-cream-100'}`}
+                          >
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
+                              <sub.icon className="h-4 w-4" />
+                            </span>
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleMobileSection('team')}
+                    aria-expanded={mobileSections.team}
+                    aria-controls="mobile-menu-team"
+                    className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3.5 py-3 text-left shadow-sm transition active:scale-[0.98] ${
+                      mobileSections.team
+                        ? 'border-sage-300 bg-gradient-to-r from-sage-500 to-brand-500 text-white shadow-sage-500/25'
+                        : 'border-sage-200/80 bg-gradient-to-r from-sage-50 via-white to-brand-50 text-cream-900 hover:border-sage-300 hover:shadow-md'
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        mobileSections.team ? 'bg-white/20 text-white' : 'bg-sage-100 text-sage-700'
+                      }`}>
+                        <Users className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-bold tracking-wide ${mobileSections.team ? 'text-white' : 'text-cream-900'}`}>
+                          Kadromuz
+                        </span>
+                        <span className={`block text-[11px] font-medium ${mobileSections.team ? 'text-white/80' : 'text-cream-800/55'}`}>
+                          Koç, diyetisyen & doktor
+                        </span>
+                      </span>
+                    </span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      mobileSections.team ? 'bg-white/20 text-white' : 'bg-sage-100 text-sage-700'
+                    }`}>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${mobileSections.team ? 'rotate-180' : ''}`}
+                        aria-hidden
+                      />
+                    </span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {mobileSections.team && (
+                      <motion.div
+                        id="mobile-menu-team"
+                        key="team-links"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        {teamSubLinks.map((sub) => (
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            onClick={() => setMenuOpen(false)}
+                            onMouseEnter={sub.onPrefetch}
+                            onFocus={sub.onPrefetch}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-cream-800 transition hover:bg-cream-100"
+                          >
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${sub.color}`}>
+                              <sub.icon className="h-4 w-4" />
+                            </span>
+                            {sub.label}
+                          </Link>
+                        ))}
+                        <Link
+                          to="/team/apply"
+                          onClick={() => setMenuOpen(false)}
+                          className="mx-1 mt-1 mb-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-3 py-3 text-sm font-semibold text-white shadow-md"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Kadromuza Katıl
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="mt-2 border-t border-cream-200 pt-3">
                   {isFullyRegistered ? (

@@ -14,10 +14,11 @@ description: >-
 2. Auth session may exist **before** `members` row (Stripe pending paid path). Free signup creates `members` immediately. UI must use `hasRegisteredMember` — no fake profile header.
 3. `ProfileCompletionGate`: if member role and not registered → `/onboarding?plan=…` (+ `oauth=1` when social).
 
-## Onboarding steps (current web)
+## Onboarding (current web)
 
-**Step 0 Hesap:** name, email (non-OAuth), phone+country, gender, password×2 + PASSWORD_RULES, legal consents.  
-**Step 1 Üyelik:** `FREE_PLAN` + satılan plan kartları; süre yalnızca ücretli. Turnstile → `free` ise `register` / OAuth complete; ücretli ise Stripe.
+**Tek adım ücretsiz kayıt:** name, email (non-OAuth), phone+country, gender, password×2 + PASSWORD_RULES, legal consents, Turnstile → her zaman `register` / `completeOAuthMember` ile `membership: 'free'`.  
+**Form taslağı:** `sessionStorage` `yf-onboarding-draft` (şifreler hariç).  
+**Ücretli CTA (`?plan=spor`):** kayıt sonrası aynı sayfada `PlanChangeView` (önseçili plan) → Stripe `change` checkout. Paket seçimi panelden `/membership` veya `/onboarding?plan=…`.
 
 ## Roles after login
 
