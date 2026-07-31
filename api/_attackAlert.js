@@ -158,7 +158,9 @@ export async function reportFormAttack(req, {
     reason === 'honeypot' ||
     reason === 'disposable_email' ||
     force
-  const hitThreshold = count >= ALERT_THRESHOLD || (urgent && count >= 1)
+  /* Eksik token genelde client reset yarışı — credential stuffing’den yüksek eşik */
+  const threshold = reason === 'turnstile_missing' ? 8 : ALERT_THRESHOLD
+  const hitThreshold = count >= threshold || (urgent && count >= 1)
   if (!hitThreshold) {
     console.info('[attack-alert]', { reason, alerted: false, count, skip: 'below_threshold' })
     return { ok: true, alerted: false, count, reason: 'below_threshold' }
@@ -202,6 +204,8 @@ export async function reportFormAttack(req, {
 export function mapGuardToAttackReason(guard) {
   if (!guard || guard.ok) return null
   if (guard.status === 429) return 'rate_limit'
+  if (guard.code === 'TURNSTILE_REQUIRED') return 'turnstile_missing'
+  if (guard.code === 'TURNSTILE_INVALID') return 'turnstile_failed'
   const err = String(guard.error || '').toLowerCase()
   if (err.includes('oturum')) return 'invalid_session'
   if (err.includes('başarısız') || err.includes('basarisiz')) return 'turnstile_failed'

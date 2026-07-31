@@ -4,7 +4,7 @@ import { Mail, Phone, User, MessageSquare, Send, Loader2, CheckCircle2 } from 'l
 import { useToast } from '../../context/ToastContext'
 import { submitContactForm } from '../../services/contactForm'
 import TurnstileWidget from '../security/TurnstileWidget'
-import { isTurnstileEnabled } from '../../config/turnstile'
+import { useTurnstile } from '../../hooks/useTurnstile'
 
 const SUBJECTS = [
   { value: 'general', label: 'Genel bilgi' },
@@ -23,7 +23,13 @@ export default function ContactSection() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  const [turnstileToken, setTurnstileToken] = useState('')
+  const {
+    enabled: turnstileEnabled,
+    widgetRef,
+    setToken: setTurnstileToken,
+    getTokenForSubmit,
+    reset: resetTurnstile,
+  } = useTurnstile()
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
 
@@ -34,7 +40,6 @@ export default function ContactSection() {
     if (form.phone && form.phone.replace(/\D/g, '').length < 10) e.phone = 'Geçerli telefon girin'
     if (!form.message.trim() || form.message.trim().length < 10) e.message = 'Mesaj en az 10 karakter olmalı'
     if (!form.consent) e.consent = 'Devam etmek için onay gerekli'
-    if (isTurnstileEnabled() && !turnstileToken) e.turnstile = 'Bot doğrulamasını tamamlayın'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -46,19 +51,30 @@ export default function ContactSection() {
 
     setLoading(true)
     try {
+      let captchaToken = ''
+      try {
+        captchaToken = await getTokenForSubmit()
+      } catch (err) {
+        setErrors((prev) => ({ ...prev, turnstile: err?.message || 'Bot doğrulamasını tamamlayın' }))
+        toast(err?.message || 'Bot doğrulamasını tamamlayın', 'error')
+        resetTurnstile()
+        return
+      }
       const result = await submitContactForm({
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         subject: form.subject,
         message: form.message.trim(),
-        turnstileToken,
+        turnstileToken: captchaToken,
         website: form.website,
       })
       if (!result.ok) {
+        resetTurnstile()
         toast(result.error || 'Mesaj gönderilemedi', 'error')
         return
       }
+      resetTurnstile()
       setSent(true)
       setForm(EMPTY)
       toast('Mesajınız alındı, en kısa sürede dönüş yapacağız', 'success')
@@ -220,7 +236,9 @@ export default function ContactSection() {
                 </label>
                 {errors.consent && <p className="text-xs text-red-500">{errors.consent}</p>}
 
-                <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />
+                {turnstileEnabled && (
+                  <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
+                )}
                 {errors.turnstile && <p className="text-xs text-red-500">{errors.turnstile}</p>}
 
                 <button

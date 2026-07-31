@@ -31,7 +31,7 @@ import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import { supabase } from '../services/supabaseClient'
 import TurnstileWidget from '../components/security/TurnstileWidget'
-import { isTurnstileEnabled } from '../config/turnstile'
+import { useTurnstile } from '../hooks/useTurnstile'
 
 const DRAFT_KEY = 'yf-onboarding-draft'
 
@@ -256,8 +256,13 @@ export default function OnboardingPage() {
       confirmPassword: '',
     }
   })
-  const [turnstileToken, setTurnstileToken] = useState('')
-  const [turnstileKey, setTurnstileKey] = useState(0)
+  const {
+    enabled: turnstileEnabled,
+    widgetRef,
+    setToken: setTurnstileToken,
+    getTokenForSubmit,
+    reset: resetTurnstile,
+  } = useTurnstile()
 
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -390,24 +395,18 @@ export default function OnboardingPage() {
     )
   }
 
-  const buildProfile = () => ({
+  const buildProfile = (captchaToken = '') => ({
     name: data.name.trim(),
     email: sanitizeEmailInput(isOAuthFlow ? (user?.email || authUser?.email || data.email) : data.email),
     phone: toE164(data.phoneCountry, data.phone),
     phoneCountry: data.phoneCountry,
     gender: data.gender,
     password: isOAuthFlow ? undefined : data.password,
-    turnstileToken: isOAuthFlow ? undefined : turnstileToken,
+    turnstileToken: isOAuthFlow ? undefined : captchaToken,
     fitnessLevel: 'beginner',
     goals: [],
     nutritionPrefs: [],
   })
-
-  const requireTurnstileOrError = () => {
-    if (isOAuthFlow || !isTurnstileEnabled()) return null
-    if (!turnstileToken) return 'Bot doğrulamasını tamamlayın.'
-    return null
-  }
 
   const finishFreeRegister = async () => {
     if (submitting) return
@@ -416,19 +415,24 @@ export default function OnboardingPage() {
       showFormError(getValidationError())
       return
     }
-    const turnstileErr = requireTurnstileOrError()
-    if (turnstileErr) {
-      showFormError(turnstileErr)
-      return
-    }
     setSubmitting(true)
-    const profile = buildProfile()
+    let captchaToken = ''
+    if (!isOAuthFlow && turnstileEnabled) {
+      try {
+        captchaToken = await getTokenForSubmit()
+      } catch (err) {
+        showFormError(err?.message || 'Bot doğrulamasını tamamlayın.')
+        resetTurnstile()
+        setSubmitting(false)
+        return
+      }
+    }
+    const profile = buildProfile(captchaToken)
     const r = isOAuthFlow
       ? await completeOAuthMember(profile, 'free')
       : await register(profile, 'free')
     if (!r.success) {
-      setTurnstileToken('')
-      setTurnstileKey((k) => k + 1)
+      resetTurnstile()
       showFormError(r.error || 'Kayıt oluşturulamadı.')
       setSubmitting(false)
       return
@@ -631,10 +635,10 @@ export default function OnboardingPage() {
               error={showErrors && !termsAccepted}
             />
 
-            {!isOAuthFlow && isTurnstileEnabled() && (
+            {!isOAuthFlow && turnstileEnabled && (
               <div className="mt-4 flex justify-center">
                 <TurnstileWidget
-                  key={turnstileKey}
+                  ref={widgetRef}
                   onToken={setTurnstileToken}
                 />
               </div>

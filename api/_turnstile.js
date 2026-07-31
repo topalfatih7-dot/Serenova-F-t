@@ -44,7 +44,12 @@ export async function verifyTurnstile(token, remoteip, req) {
   }
 
   if (!token || typeof token !== 'string' || token.length < 10) {
-    return { ok: false, status: 400, error: 'Bot doğrulaması gerekli. Sayfayı yenileyip tekrar deneyin.' }
+    return {
+      ok: false,
+      status: 400,
+      code: 'TURNSTILE_REQUIRED',
+      error: 'Bot doğrulaması gerekli. Lütfen tekrar deneyin.',
+    }
   }
 
   try {
@@ -60,10 +65,15 @@ export async function verifyTurnstile(token, remoteip, req) {
     })
     const data = await res.json().catch(() => ({}))
     if (!data?.success) {
-      return { ok: false, status: 403, error: 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.' }
+      return {
+        ok: false,
+        status: 403,
+        code: 'TURNSTILE_INVALID',
+        error: 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.',
+      }
     }
     return { ok: true }
   } catch {
-    return { ok: false, status: 502, error: 'Bot doğrulama servisine ulaşılamadı.' }
+    return { ok: false, status: 502, code: 'TURNSTILE_UNAVAILABLE', error: 'Bot doğrulama servisine ulaşılamadı.' }
   }
 }

@@ -47,6 +47,7 @@ async function requireTurnstile(req, token) {
   return {
     ok: false,
     status: result.status || 403,
+    code: result.code || 'TURNSTILE_INVALID',
     error: result.error || 'Bot doğrulaması gerekli.',
   }
 }
@@ -77,7 +78,8 @@ async function requireBotGuard(req, body, { allowAuthSession = false, deferToSup
       return {
         ok: false,
         status: 400,
-        error: 'Bot doğrulaması gerekli. Sayfayı yenileyip tekrar deneyin.',
+        code: 'TURNSTILE_REQUIRED',
+        error: 'Bot doğrulaması gerekli. Lütfen tekrar deneyin.',
       }
     }
     return { ok: true, via: 'supabase-captcha', captchaToken: token }
@@ -162,7 +164,8 @@ async function passwordGrant(email, password, captchaToken, { localBypass = fals
     return {
       ok: false,
       status: 403,
-      error: 'Bot doğrulaması başarısız. Kutuyu yenileyip tekrar deneyin.',
+      code: 'TURNSTILE_INVALID',
+      error: 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.',
     }
   }
   return { ok: false, status: 401, error: 'E-posta veya şifre hatalı.' }
@@ -299,10 +302,63 @@ async function handlePasswordLogin(req, res, body) {
     ? verifyFormSession(body.authSessionToken, { ip: getClientIp(req), kind: 'auth-signup' })
     : { ok: false }
 
+  /* Captcha spam (yanık token retry) credential 12/saat kotasını yakmasın */
+  const captchaRl = await enforceRateLimit({
+    req,
+    prefix: 'auth-login-captcha',
+    limit: 40,
+    windowMs: 60 * 60 * 1000,
+  })
+  applyRateLimitHeaders(res, captchaRl.headers)
+  if (!captchaRl.ok) {
+    try {
+      await reportFormAttack(req, {
+        action: 'password-login',
+        reason: 'auth_rate_limit',
+        status: captchaRl.status,
+        email: email.slice(0, 80),
+        path: '/api/auth',
+      })
+    } catch {
+      /* ignore */
+    }
+    return res.status(captchaRl.status).json({ ok: false, error: captchaRl.error })
+  }
+
   const result = await passwordGrant(email, password, captchaToken, {
     localBypass: isLocalDevAuth(req) || authSession.ok,
   })
   if (!result.ok) {
+    if (result.code === 'TURNSTILE_INVALID' || result.code === 'TURNSTILE_REQUIRED') {
+      return res.status(result.status || 403).json({
+        ok: false,
+        code: result.code,
+        error: result.error || 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.',
+      })
+    }
+    /* Yalnızca kimlik bilgisi hataları credential limitine sayılır */
+    const credRl = await enforceRateLimit({
+      req,
+      prefix: 'auth-password-login',
+      limit: 12,
+      windowMs: 60 * 60 * 1000,
+      extraKey: email,
+    })
+    applyRateLimitHeaders(res, credRl.headers)
+    if (!credRl.ok) {
+      try {
+        await reportFormAttack(req, {
+          action: 'password-login',
+          reason: 'auth_rate_limit',
+          status: credRl.status,
+          email: email.slice(0, 80),
+          path: '/api/auth',
+        })
+      } catch {
+        /* ignore */
+      }
+      return res.status(credRl.status).json({ ok: false, error: credRl.error })
+    }
     return res.status(result.status || 401).json({
       ok: false,
       error: formatPasswordAuthError(result.error) || result.error,
@@ -344,7 +400,11 @@ async function handleUnlockSignup(req, res, body) {
       localBypass: isLocalDevAuth(req),
     })
     if (!grant.ok && !grant.unconfirmed) {
-      return res.status(grant.status || 401).json({ ok: false, error: grant.error })
+      return res.status(grant.status || 401).json({
+        ok: false,
+        code: grant.code || undefined,
+        error: grant.error,
+      })
     }
   }
 
@@ -678,17 +738,21 @@ export default async function handler(req, res) {
         } catch {
           /* ignore */
         }
-        return res.status(guard.status).json({ ok: false, error: guard.error })
+        return res.status(guard.status).json({
+          ok: false,
+          code: guard.code || undefined,
+          error: guard.error,
+        })
       }
     }
 
-    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-login', 'password-reset', 'email-send'])
+    /* password-login credential limiti handlePasswordLogin içinde (captcha fail kotayı yakmaz) */
+    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-reset', 'email-send'])
     if (sensitiveAuth.has(action)) {
       const emailKey = String(body.email || '').trim().toLowerCase()
       const limits = {
         signup: 3,
         'unlock-signup': 5,
-        'password-login': 12,
         'password-reset': 5,
         'email-send': 10,
       }
@@ -697,7 +761,7 @@ export default async function handler(req, res) {
         prefix: `auth-${action}`,
         limit: limits[action] ?? 8,
         windowMs: 60 * 60 * 1000,
-        extraKey: emailKey && ['signup', 'password-login', 'password-reset', 'unlock-signup'].includes(action)
+        extraKey: emailKey && ['signup', 'password-reset', 'unlock-signup'].includes(action)
           ? emailKey
           : '',
       })

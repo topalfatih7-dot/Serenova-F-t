@@ -13,7 +13,7 @@ import PhotoUpload from '../components/ui/PhotoUpload'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import { useToast } from '../context/ToastContext'
 import TurnstileWidget from '../components/security/TurnstileWidget'
-import { isTurnstileEnabled } from '../config/turnstile'
+import { useTurnstile } from '../hooks/useTurnstile'
 import { submitStaffApplication, uploadStaffApplicationDoc } from '../services/supabaseDb'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 import {
@@ -78,10 +78,21 @@ export default function StaffApplicationPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadingCerts, setUploadingCerts] = useState(false)
   const [done, setDone] = useState(false)
-  const [turnstileToken, setTurnstileToken] = useState('')
   const [formSessionToken, setFormSessionToken] = useState('')
+  const {
+    enabled: turnstileEnabled,
+    widgetRef,
+    setToken: setTurnstileToken,
+    getTokenForSubmit,
+    reset: resetTurnstile,
+  } = useTurnstile()
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }))
+
+  const obtainCaptchaIfNeeded = async () => {
+    if (formSessionToken || !turnstileEnabled) return ''
+    return getTokenForSubmit()
+  }
   const dietitianGroups = useMemo(() => [{ id: 'all', label: 'Uzmanlık Alanları', tone: 'sage', items: DIETITIAN_SPECIALTIES }], [])
   const specialtyGroups = form.role === 'dietitian' ? dietitianGroups : COACH_SPECIALTY_GROUPS
   const districts = useMemo(() => getDistricts(form.city), [form.city])
@@ -116,19 +127,25 @@ export default function StaffApplicationPage() {
       toast(errors[0], 'error')
       return
     }
-    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
-      toast('Bot doğrulamasını tamamlayın', 'error')
-      return
-    }
     setSubmitting(true)
     try {
-      const r = await submitStaffApplication(form, { turnstileToken, formSessionToken })
+      let captchaToken = ''
+      try {
+        captchaToken = await obtainCaptchaIfNeeded()
+      } catch (err) {
+        toast(err?.message || 'Bot doğrulamasını tamamlayın', 'error')
+        resetTurnstile()
+        return
+      }
+      const r = await submitStaffApplication(form, { turnstileToken: captchaToken, formSessionToken })
       if (!r.success) {
+        resetTurnstile()
         toast(r.error || 'Başvuru gönderilemedi', 'error')
         return
       }
       if (r.formSessionToken) setFormSessionToken(r.formSessionToken)
       if (r.photo && r.photo !== form.photo) update({ photo: r.photo })
+      resetTurnstile()
       setSummaryOpen(false)
       setDone(true)
       toast('Başvurunuz alındı! İnceleme sonrası e-posta ile bilgilendirileceksiniz.', 'success')
@@ -147,17 +164,28 @@ export default function StaffApplicationPage() {
   const uploadDocs = async (fileOrList) => {
     const fileList = Array.isArray(fileOrList) ? fileOrList : (fileOrList ? [fileOrList] : [])
     if (!fileList.length) return []
-    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
-      toast('Belge yüklemeden önce bot doğrulamasını tamamlayın', 'error')
-      return []
-    }
     setUploadingCerts(true)
     try {
+      let captchaToken = ''
+      try {
+        captchaToken = await obtainCaptchaIfNeeded()
+      } catch (err) {
+        toast(err?.message || 'Belge yüklemeden önce bot doğrulamasını tamamlayın', 'error')
+        resetTurnstile()
+        return []
+      }
       const uploaded = []
       let session = formSessionToken
+      let oneShotToken = captchaToken
       for (const file of fileList) {
-        const r = await uploadStaffApplicationDoc(file, { turnstileToken: session ? '' : turnstileToken, formSessionToken: session })
+        const tokenForFile = session ? '' : oneShotToken
+        oneShotToken = '' // tek kullanımlık; sonraki dosyalar form session ile
+        const r = await uploadStaffApplicationDoc(file, {
+          turnstileToken: tokenForFile,
+          formSessionToken: session,
+        })
         if (!r.success) {
+          resetTurnstile()
           toast(r.error || `${file.name} yüklenemedi`, 'error')
           continue
         }
@@ -168,6 +196,7 @@ export default function StaffApplicationPage() {
         uploaded.push({ name: file.name, url: r.url })
       }
       if (uploaded.length) toast(`${uploaded.length} belge yüklendi`, 'success')
+      else resetTurnstile()
       return uploaded
     } finally {
       setUploadingCerts(false)
@@ -180,15 +209,21 @@ export default function StaffApplicationPage() {
   }
 
   const persistApplicationPhoto = async (file) => {
-    if (isTurnstileEnabled() && !turnstileToken && !formSessionToken) {
-      throw new Error('Fotoğraf yüklemeden önce bot doğrulamasını tamamlayın')
+    let captchaToken
+    try {
+      captchaToken = await obtainCaptchaIfNeeded()
+    } catch (err) {
+      resetTurnstile()
+      const msg = err?.message || 'Fotoğraf yüklemeden önce bot doğrulamasını tamamlayın'
+      throw new Error(msg, { cause: err })
     }
     const session = formSessionToken
     const r = await uploadStaffApplicationDoc(file, {
-      turnstileToken: session ? '' : turnstileToken,
+      turnstileToken: session ? '' : (captchaToken || ''),
       formSessionToken: session,
     })
     if (!r.success || !r.url) {
+      resetTurnstile()
       throw new Error(r.error || 'Fotoğraf yüklenemedi')
     }
     if (r.formSessionToken) setFormSessionToken(r.formSessionToken)
@@ -266,8 +301,8 @@ export default function StaffApplicationPage() {
                 <>
                   <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
-                      {isTurnstileEnabled() && !formSessionToken && (
-                        <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                      {turnstileEnabled && !formSessionToken && (
+                        <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
                       )}
                       <PhotoUpload
                         value={form.photo}
@@ -383,8 +418,8 @@ export default function StaffApplicationPage() {
 
               {step === 3 && form.role === 'coach' && (
                 <>
-                  {needsAnyDocUpload && (
-                    <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                  {needsAnyDocUpload && turnstileEnabled && !formSessionToken && (
+                    <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
                   )}
                   <AccordionSection id="education" title="Eğitim Bilgisi" icon={GraduationCap} tone="brand" open={openSection === 'education'} onToggle={toggleSection}>
                     <div className="space-y-3">
@@ -483,8 +518,8 @@ export default function StaffApplicationPage() {
               {step === 3 && form.role === 'dietitian' && (
                 <AccordionSection id="diet-edu" title="Eğitim & Sertifikalar" icon={GraduationCap} tone="sage" open={openSection === 'diet-edu'} onToggle={toggleSection}>
                   <div className="space-y-6">
-                    {needsAnyDocUpload && (
-                      <TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />
+                    {needsAnyDocUpload && turnstileEnabled && !formSessionToken && (
+                      <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
                     )}
                     {form.education.map((edu, i) => (
                       <div key={`edu-${i}`} className="space-y-2">
@@ -608,7 +643,11 @@ export default function StaffApplicationPage() {
         form={form}
         submitting={submitting}
         onSubmit={submit}
-        turnstileSlot={<TurnstileWidget onToken={setTurnstileToken} className="flex justify-center" />}
+        turnstileSlot={
+          turnstileEnabled && !formSessionToken
+            ? <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
+            : null
+        }
       />
     </div>
   )

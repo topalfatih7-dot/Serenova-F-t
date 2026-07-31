@@ -51,7 +51,12 @@ async function guardBotAndRate(req, { prefix, limit, email = '', kind = 'public'
   } else {
     const turnstile = await verifyTurnstile(req._formTurnstileToken, ip, req)
     if (!turnstile.ok) {
-      return { ok: false, status: turnstile.status, error: turnstile.error }
+      return {
+        ok: false,
+        status: turnstile.status,
+        code: turnstile.code,
+        error: turnstile.error,
+      }
     }
     formSessionToken = issueFormSession({ ip, kind })
   }
@@ -93,6 +98,7 @@ async function applyGuardFailure(res, guard, req, action) {
     }
   }
   const payload = { ok: false, error: guard.error }
+  if (guard.code) payload.code = guard.code
   if (attackDebugEnabled(req) && attackAlert) payload._attackAlert = attackAlert
   return res.status(guard.status).json(payload)
 }

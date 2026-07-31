@@ -11,14 +11,16 @@
 ## Saldırı Telegram uyarısı (OPS chat)
 
 - Kanal: `TELEGRAM_OPS_CHAT_ID` (yoksa `TELEGRAM_CHAT_ID`) — supabase-health ile aynı.
-- Tetikleyenler: Turnstile fail/eksik (≥3/10dk), rate limit (ilk 429), honeypot, auth rate limit, disposable email.
+- Tetikleyenler: Turnstile fail (≥3/10dk), Turnstile eksik (≥8/10dk — client reset yarışı), rate limit (ilk 429), honeypot, auth rate limit, disposable email.
 - Cooldown: aynı neden için 10 dakika (Upstash key `serenova:attack-cooldown:*`).
 - Kod: `api/_attackAlert.js` ← `api/contact.js` + `api/auth.js`.
 
 ## Auth bot koruması (signup / login)
 
-- UI giriş/kayıt → Turnstile; `POST /api/auth` (`password-login` / `signup`) sunucuda doğrular.
-- Signup 3/saat, login 12/saat (IP+email); disposable domain engeli (`api/_disposableEmail.js`).
+- UI giriş/kayıt → Turnstile **execute-on-submit** (`TurnstileWidget` + `useTurnstile`); token tek kullanımlık — hata sonrası `reset()`, asla React `key` remount / token reuse yok.
+- Stabil hata kodları: `TURNSTILE_REQUIRED` | `TURNSTILE_INVALID` (client reset tetikler).
+- Signup 3/saat (IP+email); login credential fail 12/saat (IP+email); login captcha denemesi 40/saat (IP) — yanık token credential kotasını yakmaz.
+- Disposable domain engeli (`api/_disposableEmail.js`).
 - Production’da client doğrudan `signUp` / `signInWithPassword` kullanmaz.
 - **Dashboard (zorunlu sıfıra yaklaşmak için):** Authentication → Bot and Abuse Protection → CAPTCHA = Cloudflare Turnstile + aynı `TURNSTILE_SECRET_KEY`. Bu, anon key ile doğrudan `/auth/v1/token` brute-force’unu keser.
 - Login/unlock: Turnstile token **Supabase’e iletilir** (biz siteverify etmeyiz — token tek kullanımlık). Signup API hâlâ kendi siteverify’ını yapar (admin RPC).

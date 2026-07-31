@@ -23,7 +23,7 @@ const GENDER_STYLE = {
  * `locked`: kayıt sonrası değiştirilemez (görüntüleme).
  */
 export default function GenderSelect({ value, onChange, error, large = false, hint, locked = false }) {
-  const pad = large ? 'py-4' : 'py-3'
+  const pad = large ? 'py-3' : 'py-2'
 
   return (
     <div>
@@ -42,7 +42,7 @@ export default function GenderSelect({ value, onChange, error, large = false, hi
               type="button"
               disabled={locked}
               onClick={() => !locked && onChange?.(g.value)}
-              className={`flex items-center gap-2.5 rounded-2xl border-2 px-3 font-semibold transition ${pad} ${
+              className={`flex items-center gap-2 rounded-xl border-2 px-2.5 font-semibold transition ${pad} ${
                 selected
                   ? style.active
                   : locked
@@ -53,11 +53,11 @@ export default function GenderSelect({ value, onChange, error, large = false, hi
               }`}
             >
               <span
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                   selected ? style.iconActive : style.iconIdle
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
               </span>
               <span className={`flex-1 text-left ${large ? 'text-base' : 'text-sm'}`}>{g.label}</span>
               {selected ? (
