@@ -255,7 +255,6 @@ export default function LoginPage() {
                 <TurnstileWidget
                   ref={widgetRef}
                   onToken={setTurnstileToken}
-                  className="flex justify-center"
                 />
               )}
 

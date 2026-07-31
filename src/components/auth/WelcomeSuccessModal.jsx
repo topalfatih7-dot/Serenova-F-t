@@ -90,7 +90,7 @@ export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue
                 <p className="text-sm leading-relaxed text-cream-800/80">
                   {isPaid
                     ? 'Hesabınız hazır. Kişisel panelinizden programlarınızı takip edebilir, uzmanlarınızla iletişime geçebilir ve hedeflerinize adım adım ilerleyebilirsiniz.'
-                    : 'Hesabınız hazır. İsterseniz sağlık testinizi doldurun; paket seçerek tüm hizmetleri açabilirsiniz.'}
+                    : 'Hesabınız hazır. Panelinizden programları, takvimi ve içerikleri keşfedebilirsiniz; bir paket seçerek tüm hizmetleri açabilirsiniz.'}
                 </p>
               </div>
 
@@ -102,7 +102,7 @@ export default function WelcomeSuccessModal({ open, planName, isPaid, onContinue
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25"
               >
                 {isPaid && <Crown className="h-4 w-4 text-gold-200" />}
-                {isPaid ? 'Panele Git' : 'Sağlık Testine Git'}
+                {isPaid ? 'Panele Git' : 'Panele Başla'}
               </motion.button>
             </div>
           </motion.div>

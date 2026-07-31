@@ -85,7 +85,8 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       'refresh-expired': 'auto',
       retry: 'auto',
       theme: 'light',
-      size: 'normal',
+      // flexible: iframe kapsayıcı genişliğine uyar (responsive)
+      size: 'flexible',
       callback: (token) => {
         setStatus('ready')
         onTokenRef.current?.(token || '')
@@ -270,7 +271,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       </div>
       <div
         ref={hostRef}
-        className="flex min-h-[65px] items-center justify-center overflow-hidden"
+        className="min-h-[65px] w-full overflow-hidden rounded-xl [&_iframe]:!w-full [&_iframe]:max-w-full"
         aria-live="polite"
       />
     </div>

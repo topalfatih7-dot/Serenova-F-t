@@ -119,7 +119,7 @@ export default function CorporateApplicationPage() {
           <input type="date" value={form.preferredStart} onChange={(e) => update({ preferredStart: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
           <p className="text-xs text-cream-800/45">Tercih edilen başlangıç tarihi (opsiyonel)</p>
           {turnstileEnabled && (
-            <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center py-2" />
+            <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
           )}
           <button type="submit" disabled={submitting} className="btn-wellness w-full !py-3 disabled:opacity-60">
             <Send className="h-4 w-4" />

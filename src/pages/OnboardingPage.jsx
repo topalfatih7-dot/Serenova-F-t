@@ -11,7 +11,6 @@ import LegalConsentCheckbox from '../components/ui/LegalConsentCheckbox'
 import PhoneField from '../components/ui/PhoneField'
 import BrandLogo from '../components/ui/BrandLogo'
 import AuthFormShell, { AuthFormCard } from '../components/auth/AuthFormShell'
-import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import SocialAuthButtons from '../components/auth/SocialAuthButtons'
 import FormErrorModal from '../components/ui/FormErrorModal'
 import GenderSelect from '../components/ui/GenderSelect'
@@ -234,13 +233,11 @@ export default function OnboardingPage() {
   } = useApp()
   const catalogPlans = plans?.length ? plans : ALL_PLANS
   const preselectedPlan = resolvePlanFromQuery(rawPlan, catalogPlans)
-  const wantsPaidPath = isSellablePlanId(preselectedPlan, catalogPlans)
 
   const [submitting, setSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
-  const [welcomeOpen, setWelcomeOpen] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(() => loadDraft()?.termsAccepted || false)
   const [errorModal, setErrorModal] = useState({ open: false, message: '' })
 
@@ -269,6 +266,7 @@ export default function OnboardingPage() {
   const isExistingMember = isAuthenticated && !isAdmin && !isStaff && hasRegisteredMember(user)
   const isOAuthFlow = isAuthenticated && isSocialAuthUser(authUser) && !hasRegisteredMember(user)
   const oauthPrefilledRef = useRef(false)
+  const justRegisteredRef = useRef(false)
 
   useEffect(() => {
     if (searchParams.get('oauth') !== '1' || isAuthenticated || loading) return
@@ -314,7 +312,7 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isExistingMember && !welcomeOpen && !isOAuthFlow) {
+  if (isExistingMember && !justRegisteredRef.current && !isOAuthFlow) {
     return (
       <PlanChangeView
         plans={sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)}
@@ -415,12 +413,14 @@ export default function OnboardingPage() {
       showFormError(getValidationError())
       return
     }
+    justRegisteredRef.current = true
     setSubmitting(true)
     let captchaToken = ''
     if (!isOAuthFlow && turnstileEnabled) {
       try {
         captchaToken = await getTokenForSubmit()
       } catch (err) {
+        justRegisteredRef.current = false
         showFormError(err?.message || 'Bot doğrulamasını tamamlayın.')
         resetTurnstile()
         setSubmitting(false)
@@ -432,6 +432,7 @@ export default function OnboardingPage() {
       ? await completeOAuthMember(profile, 'free')
       : await register(profile, 'free')
     if (!r.success) {
+      justRegisteredRef.current = false
       resetTurnstile()
       showFormError(r.error || 'Kayıt oluşturulamadı.')
       setSubmitting(false)
@@ -443,13 +444,7 @@ export default function OnboardingPage() {
       plan: 'free',
       trial: true,
     })
-    setSubmitting(false)
-    if (wantsPaidPath) {
-      // isExistingMember true olunca PlanChangeView otomatik açılır (önseçili plan URL'den)
-      toast('Hesabınız oluşturuldu — şimdi paketinizi seçin.', 'success')
-      return
-    }
-    setWelcomeOpen(true)
+    navigate('/dashboard', { replace: true, state: { welcome: true } })
   }
 
   return (
@@ -680,13 +675,6 @@ export default function OnboardingPage() {
         open={errorModal.open}
         message={errorModal.message}
         onClose={() => setErrorModal({ open: false, message: '' })}
-      />
-
-      <WelcomeSuccessModal
-        open={welcomeOpen}
-        planName="Ücretsiz"
-        isPaid={false}
-        onContinue={() => navigate('/health-test')}
       />
     </div>
   )

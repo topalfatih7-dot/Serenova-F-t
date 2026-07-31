@@ -237,7 +237,7 @@ export default function ContactSection() {
                 {errors.consent && <p className="text-xs text-red-500">{errors.consent}</p>}
 
                 {turnstileEnabled && (
-                  <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
+                  <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
                 )}
                 {errors.turnstile && <p className="text-xs text-red-500">{errors.turnstile}</p>}
 

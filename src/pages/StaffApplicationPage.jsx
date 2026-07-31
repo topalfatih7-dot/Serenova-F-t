@@ -519,7 +519,7 @@ export default function StaffApplicationPage() {
                 <AccordionSection id="diet-edu" title="Eğitim & Sertifikalar" icon={GraduationCap} tone="sage" open={openSection === 'diet-edu'} onToggle={toggleSection}>
                   <div className="space-y-6">
                     {needsAnyDocUpload && turnstileEnabled && !formSessionToken && (
-                      <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
+                      <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
                     )}
                     {form.education.map((edu, i) => (
                       <div key={`edu-${i}`} className="space-y-2">
@@ -645,7 +645,7 @@ export default function StaffApplicationPage() {
         onSubmit={submit}
         turnstileSlot={
           turnstileEnabled && !formSessionToken
-            ? <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center" />
+            ? <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
             : null
         }
       />

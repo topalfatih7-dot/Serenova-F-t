@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
   ClipboardList, Star, CalendarDays, Play, BookOpen, Sparkles,
@@ -8,6 +8,7 @@ import {
 import StatsCard from '../components/ui/StatsCard'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
+import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import HealthScoreCard from '../components/dashboard/HealthScoreCard'
@@ -52,6 +53,7 @@ function formatTrialRemaining(ms) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
     myPrograms, progress, canAccessMemberDashboard, isFreeTrialActive,
@@ -59,6 +61,7 @@ export default function DashboardPage() {
     posts, packageConfig,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
+  const [welcomeOpen, setWelcomeOpen] = useState(() => Boolean(location.state?.welcome))
   const [nowMs, setNowMs] = useState(() => Date.now())
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
   const {
@@ -70,6 +73,16 @@ export default function DashboardPage() {
   } = useHealthAnalysisSync()
 
   useStripePaymentReturn(refresh)
+
+  useEffect(() => {
+    if (!location.state?.welcome) return
+    setWelcomeOpen(true)
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [location.state?.welcome, location.pathname, navigate])
+
+  const dismissWelcome = useCallback(() => {
+    setWelcomeOpen(false)
+  }, [])
 
   useEffect(() => {
     if (!isFreeTrialActive || !freeTrialExpiresAt) return undefined
@@ -383,6 +396,12 @@ export default function DashboardPage() {
       )}
 
       <SuccessStorySubmitModal open={storyOpen} onClose={() => setStoryOpen(false)} />
+      <WelcomeSuccessModal
+        open={welcomeOpen}
+        planName="Ücretsiz"
+        isPaid={false}
+        onContinue={dismissWelcome}
+      />
     </div>
   )
 }
