@@ -3,9 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { ToastProvider } from './context/ToastContext'
 import PublicLayout from './components/layout/PublicLayout'
-import AppShell from './components/layout/AppShell'
-import AdminShell from './components/layout/AdminShell'
-import StaffShell from './components/layout/StaffShell'
 import RequireAuth from './components/auth/RequireAuth'
 import ProfileCompletionGate from './components/auth/ProfileCompletionGate'
 import NotificationToastBridge from './components/notifications/NotificationToastBridge'
@@ -13,6 +10,10 @@ import NotificationAudioUnlock from './components/notifications/NotificationAudi
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
 import AuthRedirectHandler from './components/auth/AuthRedirectHandler'
+
+const AppShell = lazy(() => import('./components/layout/AppShell'))
+const AdminShell = lazy(() => import('./components/layout/AdminShell'))
+const StaffShell = lazy(() => import('./components/layout/StaffShell'))
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))

@@ -153,9 +153,6 @@ export default function HealthScoreCard({
             <h3 className="mt-1 font-display text-xl font-bold text-cream-900 sm:text-2xl">
               Kişisel sağlık analizinizi tamamlayın
             </h3>
-            <p className="mt-1 text-sm text-cream-800/60 break-words">
-              Analiz bittiğinde 100 üzerinden genel skorunuz ve 8 boyutlu profiliniz burada görünür.
-            </p>
           </div>
           <Link
             to="/health-test"

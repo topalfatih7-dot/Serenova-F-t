@@ -14,13 +14,16 @@ function StoryPhoto({ className = '', variant = 'banner' }) {
   return (
     <div className={`relative overflow-hidden rounded-3xl shadow-2xl shadow-brand-900/15 ring-1 ring-black/5 ${className}`}>
       <div className={aspectClass}>
-        <img
-          src="/success-stories-bg.jpg"
-          alt="Antrenman yapan erkek üye — dönüşüm hikayesi"
-          className="h-full w-full object-cover object-[30%_center]"
-          loading="lazy"
-          decoding="async"
-        />
+        <picture>
+          <source srcSet="/success-stories-bg.webp" type="image/webp" />
+          <img
+            src="/success-stories-bg.webp"
+            alt="Antrenman yapan erkek üye — dönüşüm hikayesi"
+            className="h-full w-full object-cover object-[30%_center]"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-brand-900/30 via-transparent to-transparent" />
       <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/30 bg-white/15 px-4 py-3 backdrop-blur-md">

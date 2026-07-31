@@ -29,7 +29,7 @@ const comparisonRows = [
 ]
 
 const MEMBERSHIP_FAQ = [
-  { q: 'Hangi paketlerle başlayabilirim?', a: 'Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP paketlerinden birini seçerek Stripe ile kayıt olabilirsiniz. Antrenman ve beslenme programları koç / diyetisyen tarafından hazırlanır.' },
+  { q: 'Hangi paketlerle başlayabilirim?', a: 'Tamamen ücretsiz başlayın, paneli keşfedin. Hedefinize uygun paketi — Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP — seçerek yolculuğunuza devam edin. Programlarınız koç ve diyetisyen tarafından hazırlanır; ödemeler Stripe ile güvenle alınır.' },
   { q: 'Eko paketler ne fark eder?', a: 'Eko Diyet ve Eko Spor, ana paketlerle aynı özellikleri sunar; fark yalnızca ayda 1 görüşme hakkıdır (Diyet/Spor’da 2).' },
   { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
   { q: 'Online koçluk hangi pakette?', a: 'Ayda 1 görüşme Eko Spor’da, ayda 2 Spor ve VIP’tedir. Ayrıntılar online koçluk hizmet sayfasında.' },

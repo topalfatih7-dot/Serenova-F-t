@@ -91,6 +91,14 @@ export function AppProvider({ children }) {
     let active = true
     ;(async () => {
       try {
+        /* Anonim: UI’yi bloklama — session yoksa soft hydrate (cache / arka plan) */
+        const session = await sb.getSession()
+        if (!session?.user) {
+          if (active) setLoading(false)
+          const d = await sb.hydrate({ force: false })
+          if (active) setRemoteDb(d)
+          return
+        }
         const d = await sb.hydrate({ force: true })
         if (active) setRemoteDb(d)
       } finally {

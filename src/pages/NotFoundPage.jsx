@@ -11,6 +11,7 @@ import {
   Sparkles,
   Compass,
 } from 'lucide-react'
+import '../styles/panel.css'
 import { useApp } from '../context/AppContext'
 import SeoHead from '../components/seo/SeoHead'
 

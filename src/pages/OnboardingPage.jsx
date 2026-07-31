@@ -457,7 +457,7 @@ export default function OnboardingPage() {
           loop
           playsInline
           aria-hidden
-          poster="/hero-bg.png"
+          poster="/hero-poster.webp"
           className="absolute inset-0 h-full w-full object-cover"
           style={{ filter: 'brightness(0.45) saturate(1.15)' }}
         >

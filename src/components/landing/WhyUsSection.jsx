@@ -61,13 +61,17 @@ export default function WhyUsSection() {
     <section className="relative isolate min-h-[560px] overflow-hidden sm:min-h-[620px] lg:min-h-[720px]">
       {/* Arka plan — sağda canlı fotoğraf için filtre + keskin sol overlay */}
       <div className="absolute inset-0">
-        <img
-          src="/why-us-bg.jpg"
-          alt=""
-          aria-hidden
-          className="h-full w-full scale-110 object-cover object-[70%_28%] brightness-125 contrast-115 saturate-[1.35] sm:object-[78%_22%] lg:object-[85%_18%]"
-          loading="lazy"
-        />
+        <picture>
+          <source srcSet="/why-us-bg.webp" type="image/webp" />
+          <img
+            src="/why-us-bg.webp"
+            alt=""
+            aria-hidden
+            className="h-full w-full scale-110 object-cover object-[70%_28%] brightness-125 contrast-115 saturate-[1.35] sm:object-[78%_22%] lg:object-[85%_18%]"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
         {/* Sol okunabilir · sağ neredeyse tamamen açık (kadın net görünsün) */}
         <div className="absolute inset-0 bg-gradient-to-r from-cream-900/95 via-cream-900/88 to-cream-900/70 sm:via-cream-900/75 sm:to-cream-900/25 lg:from-cream-900/94 lg:via-cream-900/55 lg:to-transparent lg:via-40%" />
         <div className="absolute inset-0 bg-gradient-to-t from-cream-900/50 via-transparent to-transparent lg:from-cream-900/25" />

@@ -1,26 +1,19 @@
 /**
  * Stripe Checkout + Customer Portal servisi.
  */
-import { supabase } from './supabaseClient'
-
-async function getAccessToken() {
-  try {
-    const { data } = await supabase.auth.getSession()
-    return data?.session?.access_token || null
-  } catch {
-    return null
-  }
-}
+import { getApiAuthHeaders } from './apiAuth'
 
 export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null) {
-  const token = await getAccessToken()
-  if (!token) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+  const headers = await getApiAuthHeaders()
+  if (!headers.Authorization) {
+    return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+  }
 
   let json
   try {
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers,
       body: JSON.stringify({ planId, flow, durationMonths, email: email || undefined }),
     })
     json = await res.json().catch(() => ({}))
@@ -47,13 +40,15 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
 
 /** Stripe Customer Portal — kart / fatura yönetimi */
 export async function startStripePortal() {
-  const token = await getAccessToken()
-  if (!token) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+  const headers = await getApiAuthHeaders()
+  if (!headers.Authorization) {
+    return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+  }
 
   try {
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers,
       body: JSON.stringify({ action: 'create-portal-session' }),
     })
     const json = await res.json().catch(() => ({}))

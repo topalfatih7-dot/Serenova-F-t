@@ -137,7 +137,7 @@ export default function HealthSummarySection({ user }) {
           <MetricCard
             icon={Gauge}
             value={bmi != null ? String(bmi) : '—'}
-            label="VKİ"
+            label="Vücut Kitle Endeksi"
             iconClass="text-rose-500"
           />
         </div>

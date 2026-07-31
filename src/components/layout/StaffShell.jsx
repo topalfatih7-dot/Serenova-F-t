@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Outlet, Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
+import '../../styles/panel.css'
 import { useApp } from '../../context/AppContext'
 import PanelSidebar from './PanelSidebar'
 import PanelMobileMenu from './PanelMobileMenu'

@@ -2,8 +2,6 @@ import { Crown } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { ALL_PLANS, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
-import MembershipReassurance from '../components/membership/MembershipReassurance'
-import MembershipTrialCta from '../components/membership/MembershipTrialCta'
 import MembershipComparisonSection from '../components/membership/MembershipComparisonSection'
 import PricingCard from '../components/landing/PricingCard'
 import { getPlanCtaLabel } from '../utils/planCta'
@@ -67,10 +65,6 @@ export default function MemberPlansPage() {
         membership={membership}
         user={user}
       />
-
-      <MembershipTrialCta isMember />
-
-      <MembershipReassurance />
     </PanelPageShell>
   )
 }

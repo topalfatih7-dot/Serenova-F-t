@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -16,10 +16,11 @@ import TrustSection from '../components/landing/TrustSection'
 import LiveActiveCounter from '../components/landing/LiveActiveCounter'
 import RotatingHeroText from '../components/landing/RotatingHeroText'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
-import HowItWorksSection from '../components/landing/HowItWorksSection'
 import SuccessStoriesPreview from '../components/landing/SuccessStoriesPreview'
 import LatestBlogPosts from '../components/landing/LatestBlogPosts'
 import HeroBackgroundVideo from '../components/ui/HeroBackgroundVideo'
+
+const HowItWorksSection = lazy(() => import('../components/landing/HowItWorksSection'))
 import { scrollToContactSection } from '../utils/scrollToContact'
 import { ALL_PLANS, sortPlansForDisplay } from '../data/membershipPlans'
 import { getPlanCtaLabel } from '../utils/planCta'
@@ -88,7 +89,7 @@ export default function LandingPage() {
         <div aria-hidden className="absolute inset-0 bg-cream-900" />
         <HeroBackgroundVideo
           src="https://assets.mixkit.co/active_storage/video_items/100526/1725383305/100526-video-720.mp4"
-          poster="https://assets.mixkit.co/videos/100526/100526-thumb-720-0.jpg"
+          poster="/hero-poster.webp"
           videoStyle={{ filter: 'blur(3px) brightness(0.5) saturate(1.2)' }}
         />
 
@@ -235,8 +236,10 @@ export default function LandingPage() {
       {/* CANLI AKTİF ÜYE SAYACI */}
       <LiveActiveCounter />
 
-      {/* NASIL ÇALIŞIR */}
-      <HowItWorksSection />
+      {/* NASIL ÇALIŞIR — animejs aşağı kaydırma; LCP dışı */}
+      <Suspense fallback={<div className="min-h-[28rem]" aria-hidden />}>
+        <HowItWorksSection />
+      </Suspense>
 
       {/* ═══════════════════════════════════════════
           ÜYELİK SEÇENEKLERİ

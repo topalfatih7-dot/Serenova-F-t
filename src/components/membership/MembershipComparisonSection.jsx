@@ -214,28 +214,26 @@ export default function MembershipComparisonSection({
           </div>
         </motion.div>
 
-        <div className="membership-compare-cta mt-6 flex flex-col items-start gap-4 rounded-2xl border border-sage-100/80 bg-gradient-to-r from-slate-50/90 via-white to-sage-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex items-start gap-3 sm:items-center">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-100 text-sage-700 ring-1 ring-sage-200/80">
-              <MessageCircle className="h-5 w-5" strokeWidth={2} aria-hidden />
-            </span>
-            <p className="text-sm leading-relaxed text-slate-600">
-              {isMember
-                ? 'Planınızı değiştirmek veya ek paket almak için profilinizden devam edebilirsiniz.'
-                : 'Hangi planın size uygun olduğundan emin değil misiniz? Uzman ekibimiz size en uygun planı seçmeniz için yardımcı olsun.'}
-            </p>
+        {!isMember && (
+          <div className="membership-compare-cta mt-6 flex flex-col items-start gap-4 rounded-2xl border border-sage-100/80 bg-gradient-to-r from-slate-50/90 via-white to-sage-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex items-start gap-3 sm:items-center">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-100 text-sage-700 ring-1 ring-sage-200/80">
+                <MessageCircle className="h-5 w-5" strokeWidth={2} aria-hidden />
+              </span>
+              <p className="text-sm leading-relaxed text-slate-600">
+                Hangi planın size uygun olduğundan emin değil misiniz? Uzman ekibimiz size en uygun planı seçmeniz için yardımcı olsun.
+              </p>
+            </div>
+            <Link
+              to="/#bize-ulasin"
+              onClick={() => scrollToContactSection()}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-sage-600 to-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sage-600/25 transition hover:brightness-110"
+            >
+              Ücretsiz Danışmanlık Al
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
-          <Link
-            to={isMember ? '/profile' : '/#bize-ulasin'}
-            onClick={() => {
-              if (!isMember) scrollToContactSection()
-            }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-sage-600 to-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-sage-600/25 transition hover:brightness-110"
-          >
-            {isMember ? 'Profilime dön' : 'Ücretsiz Danışmanlık Al'}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
+        )}
       </div>
     </section>
   )

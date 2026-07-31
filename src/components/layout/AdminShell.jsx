@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Outlet } from 'react-router-dom'
+import '../../styles/panel.css'
 import { useApp } from '../../context/AppContext'
 import PanelSidebar from './PanelSidebar'
 import PanelMobileMenu from './PanelMobileMenu'

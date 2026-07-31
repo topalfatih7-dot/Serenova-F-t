@@ -1,6 +1,6 @@
 -- Kadro vitrin profilleri: public/team görselleri ile 4 uzman (idempotent)
--- Koç: team-coach-1.png, team-coach-2.png
--- Diyetisyen: team-dietitian-1.png, team-dietitian-2.png
+-- Koç: team-coach-1.webp, team-coach-2.webp
+-- Diyetisyen: team-dietitian-1.webp, team-dietitian-2.webp
 
 INSERT INTO public.staff (id, email, name, role, active, data)
 VALUES
@@ -17,7 +17,7 @@ VALUES
     'specialties', jsonb_build_array('Fonksiyonel antrenman', 'Vücut kompozisyonu', 'Kuvvet geliştirme', 'Mobilite'),
     'headline', 'Bilim temelli antrenmanla sürdürülebilir güç ve form kazanın.',
     'bio', '10 yılı aşkın deneyimiyle bireysel ve online koçluk alanında çalışan Ahmet, hareket kalitesi ve sürdürülebilir alışkanlıklara odaklanır.',
-    'photo', '/team/team-coach-1.png',
+    'photo', '/team/team-coach-1.webp',
     'city', 'İzmir',
     'district', 'Konak',
     'gender', 'male',
@@ -46,7 +46,7 @@ VALUES
     'specialties', jsonb_build_array('Kuvvet antrenmanı', 'HIIT', 'Sporcu performansı', 'Online koçluk'),
     'headline', 'Hedef odaklı programlarla performansınızı bir üst seviyeye taşıyın.',
     'bio', 'Amatör ve rekreatif sporcularla çalışan Mert, periodize antrenman planları ve mobilite çalışmalarıyla sürdürülebilir gelişim sağlar.',
-    'photo', '/team/team-coach-2.png',
+    'photo', '/team/team-coach-2.webp',
     'city', 'İstanbul',
     'district', 'Kadıköy',
     'gender', 'male',
@@ -75,7 +75,7 @@ VALUES
     'specialties', jsonb_build_array('Spor beslenmesi', 'Kilo yönetimi', 'Metabolik sağlık'),
     'headline', 'Sürdürülebilir beslenme alışkanlıklarıyla enerjinizi yükseltin.',
     'bio', 'Klinik ve spor beslenmesi alanında uzmanlaşan Elif, yaşam tarzına uyumlu beslenme planları oluşturur.',
-    'photo', '/team/team-dietitian-1.png',
+    'photo', '/team/team-dietitian-1.webp',
     'city', 'Ankara',
     'district', 'Çankaya',
     'gender', 'female',
@@ -101,7 +101,7 @@ VALUES
     'specialties', jsonb_build_array('Kilo yönetimi', 'Duygusal yeme', 'Plant-based beslenme', 'Hamilelik beslenmesi'),
     'headline', 'Kısıtlayıcı olmayan, yaşam tarzınıza uygun beslenme rehberliği.',
     'bio', 'Online danışmanlıkta davranışsal beslenme yaklaşımını benimseyen Zeynep, sürdürülebilir alışkanlıklar kazandırmaya odaklanır.',
-    'photo', '/team/team-dietitian-2.png',
+    'photo', '/team/team-dietitian-2.webp',
     'city', 'İstanbul',
     'district', 'Beşiktaş',
     'gender', 'female',

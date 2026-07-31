@@ -1,5 +1,6 @@
 import { Outlet, Navigate, Link } from 'react-router-dom'
 import { Bell } from 'lucide-react'
+import '../../styles/panel.css'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import PanelMobileMenu from './PanelMobileMenu'

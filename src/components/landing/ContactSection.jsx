@@ -93,11 +93,13 @@ export default function ContactSection() {
       {/* Arka plan: hero görseli, filtreli (Üyelerimiz Ne Diyor bölümüyle aynı görsel dil) */}
       <div className="absolute inset-0">
         <img
-          src="/hero-bg.png"
+          src="/hero-bg.webp"
           alt=""
           aria-hidden
           className="h-full w-full object-cover object-center"
           style={{ filter: 'brightness(0.3) saturate(0.85) blur(1px)' }}
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-brand-900/75 via-cream-900/65 to-sage-900/55" />
       </div>

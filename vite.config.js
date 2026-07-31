@@ -137,7 +137,9 @@ export default defineConfig({
             !dep.includes('recharts')
             && !dep.includes('html2pdf')
             && !dep.includes('daily-js')
-            && !dep.includes('jspdf'),
+            && !dep.includes('jspdf')
+            // Anonim landing: supabase chunk’ı entry’den preload etme
+            && !dep.includes('supabase'),
         ),
     },
     rollupOptions: {

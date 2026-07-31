@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 /**
- * Hero arka plan videosu — prefers-reduced-motion ve düşük veri modunda poster gösterir.
+ * Hero arka plan videosu — prefers-reduced-motion / düşük veri modunda yalnızca poster.
  *
  * @param {'cover'|'inline'} layout
  *   - cover (varsayılan): absolute inset-0 — tam ekran hero bölümleri (Landing, Corporate hero)
  *   - inline: relative w-full — kart/vitrin içinde; aspect-ratio sınıfı akışta yükseklik verir
  */
+function shouldPreferPosterOnly() {
+  if (typeof window === 'undefined') return false
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true
+    if (window.matchMedia('(prefers-reduced-data: reduce)').matches) return true
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+    if (conn?.saveData) return true
+  } catch {
+    /* ignore */
+  }
+  return false
+}
+
 export default function HeroBackgroundVideo({
   src,
   poster,
@@ -16,26 +29,22 @@ export default function HeroBackgroundVideo({
   overlayClassName = '',
   layout = 'cover',
 }) {
-  const [reducedMotion, setReducedMotion] = useState(false)
-  const [saveData, setSaveData] = useState(false)
+  const videoRef = useRef(null)
+  const [posterOnly, setPosterOnly] = useState(shouldPreferPosterOnly)
 
   useEffect(() => {
-    const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const dataMq = window.matchMedia('(prefers-reduced-data: reduce)')
-    const update = () => {
-      setReducedMotion(motionMq.matches)
-      setSaveData(dataMq.matches)
-    }
-    update()
-    motionMq.addEventListener('change', update)
-    dataMq.addEventListener('change', update)
-    return () => {
-      motionMq.removeEventListener('change', update)
-      dataMq.removeEventListener('change', update)
-    }
+    setPosterOnly(shouldPreferPosterOnly())
   }, [])
 
-  const showVideo = src && !reducedMotion && !saveData
+  useEffect(() => {
+    if (posterOnly || !src) return undefined
+    const el = videoRef.current
+    if (!el) return undefined
+    void el.play?.().catch(() => {})
+    return undefined
+  }, [posterOnly, src])
+
+  const showVideo = Boolean(src) && !posterOnly
   const isCover = layout === 'cover'
   const wrapperClass = isCover
     ? `absolute inset-0 ${className}`.trim()
@@ -46,31 +55,30 @@ export default function HeroBackgroundVideo({
   if (isCover) {
     return (
       <div className={wrapperClass}>
-        {poster && (
-          <img
-            src={poster}
-            alt=""
-            aria-hidden
-            className={`absolute inset-0 h-full w-full object-cover ${showVideo ? 'opacity-0' : 'opacity-100'}`}
-            loading="eager"
-            decoding="async"
-          />
-        )}
-        {showVideo && (
+        {showVideo ? (
           <video
+            ref={videoRef}
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
-            poster={poster || undefined}
+            preload="auto"
             aria-hidden
             className={coverMediaClass}
             style={videoStyle}
           >
             <source src={src} type="video/mp4" />
           </video>
-        )}
+        ) : poster ? (
+          <img
+            src={poster}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+          />
+        ) : null}
         {overlayClassName ? <div className={overlayClassName} aria-hidden /> : null}
       </div>
     )
@@ -80,12 +88,12 @@ export default function HeroBackgroundVideo({
     <div className={wrapperClass}>
       {showVideo ? (
         <video
+          ref={videoRef}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
-          poster={poster || undefined}
+          preload="auto"
           aria-hidden
           className={inlineMediaClass}
           style={videoStyle}
