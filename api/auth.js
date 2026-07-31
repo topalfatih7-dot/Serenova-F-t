@@ -261,6 +261,59 @@ async function handleSignup(req, res, body) {
   }
 
   const admin = getSupabaseAdmin()
+
+  /* Mevcut hesap: signup 3/saat kotasını yakmadan (Turnstile zaten doğrulandı) */
+  const existingEarly = await findAuthUserByEmail(admin, email)
+  if (existingEarly) {
+    const grant = await passwordGrant(email, password, '', { localBypass: true })
+    if (grant.ok && grant.session) {
+      const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
+      return res.status(200).json({
+        ok: true,
+        alreadyRegistered: true,
+        userId: existingEarly.id,
+        authSessionToken,
+        session: {
+          access_token: grant.session.access_token,
+          refresh_token: grant.session.refresh_token,
+          expires_in: grant.session.expires_in,
+          expires_at: grant.session.expires_at,
+          token_type: grant.session.token_type || 'bearer',
+        },
+      })
+    }
+    return res.status(409).json({
+      ok: false,
+      error: 'already_registered',
+      code: 'ALREADY_REGISTERED',
+      message: 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.',
+    })
+  }
+
+  /* Yalnızca yeni e-posta kayıtları */
+  const rl = await enforceRateLimit({
+    req,
+    prefix: 'auth-signup',
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+    extraKey: email,
+  })
+  applyRateLimitHeaders(res, rl.headers)
+  if (!rl.ok) {
+    try {
+      await reportFormAttack(req, {
+        action: 'signup',
+        reason: 'auth_rate_limit',
+        status: rl.status,
+        email: email.slice(0, 80),
+        path: '/api/auth',
+      })
+    } catch {
+      /* ignore */
+    }
+    return res.status(rl.status).json({ ok: false, error: rl.error })
+  }
+
   const { data, error } = await admin.rpc('register_email_user', {
     p_email: email,
     p_password: password,
@@ -274,7 +327,29 @@ async function handleSignup(req, res, body) {
   const payload = data && typeof data === 'object' ? data : {}
   if (!payload.ok) {
     if (payload.error === 'already_registered') {
-      return res.status(409).json({ ok: false, error: 'already_registered' })
+      const grant = await passwordGrant(email, password, '', { localBypass: true })
+      if (grant.ok && grant.session) {
+        const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
+        return res.status(200).json({
+          ok: true,
+          alreadyRegistered: true,
+          userId: payload.user_id || null,
+          authSessionToken,
+          session: {
+            access_token: grant.session.access_token,
+            refresh_token: grant.session.refresh_token,
+            expires_in: grant.session.expires_in,
+            expires_at: grant.session.expires_at,
+            token_type: grant.session.token_type || 'bearer',
+          },
+        })
+      }
+      return res.status(409).json({
+        ok: false,
+        error: 'already_registered',
+        code: 'ALREADY_REGISTERED',
+        message: 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.',
+      })
     }
     return res.status(400).json({
       ok: false,
@@ -746,12 +821,14 @@ export default async function handler(req, res) {
       }
     }
 
-    /* password-login credential limiti handlePasswordLogin içinde (captcha fail kotayı yakmaz) */
-    const sensitiveAuth = new Set(['signup', 'unlock-signup', 'password-reset', 'email-send'])
+    /*
+     * signup rate limit handleSignup içinde (already_registered 3/saat kotasını yakmasın).
+     * password-login credential limiti handlePasswordLogin içinde.
+     */
+    const sensitiveAuth = new Set(['unlock-signup', 'password-reset', 'email-send'])
     if (sensitiveAuth.has(action)) {
       const emailKey = String(body.email || '').trim().toLowerCase()
       const limits = {
-        signup: 3,
         'unlock-signup': 5,
         'password-reset': 5,
         'email-send': 10,
@@ -761,7 +838,7 @@ export default async function handler(req, res) {
         prefix: `auth-${action}`,
         limit: limits[action] ?? 8,
         windowMs: 60 * 60 * 1000,
-        extraKey: emailKey && ['signup', 'password-reset', 'unlock-signup'].includes(action)
+        extraKey: emailKey && ['password-reset', 'unlock-signup'].includes(action)
           ? emailKey
           : '',
       })

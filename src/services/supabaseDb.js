@@ -1069,18 +1069,30 @@ export async function ensureAuthForRegistration(profile) {
     })
     const signupData = await signupRes.json().catch(() => ({}))
     if (signupRes.ok && signupData.ok) {
+      /* Signup siteverify token’ı yaktı — oturum authSessionToken / dönen session ile açılır */
+      if (signupData.session?.access_token && signupData.session?.refresh_token) {
+        const { error: sessErr } = await supabase.auth.setSession({
+          access_token: signupData.session.access_token,
+          refresh_token: signupData.session.refresh_token,
+        })
+        if (!sessErr) return { success: true, alreadyRegistered: Boolean(signupData.alreadyRegistered) }
+      }
       const signIn = await signInAfterSignup(email, password, {
-        turnstileToken,
+        turnstileToken: '',
         authSessionToken: signupData.authSessionToken || '',
         userId: signupData.userId || '',
       })
-      if (signIn.success) return { success: true }
+      if (signIn.success) return { success: true, alreadyRegistered: Boolean(signupData.alreadyRegistered) }
       return { success: false, error: signIn.error || 'Kayıt oluştu ancak giriş yapılamadı. Lütfen giriş sayfasından deneyin.' }
     }
     if (signupData.error === 'already_registered' || signupRes.status === 409) {
-      const signIn = await signInAfterSignup(email, password, { turnstileToken })
-      if (signIn.success) return { success: true }
-      return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
+      /* Yanık Turnstile ile otomatik giriş deneme — captcha döngüsü yaratır */
+      return {
+        success: false,
+        code: 'ALREADY_REGISTERED',
+        error: signupData.message
+          || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.',
+      }
     }
     if (signupData.error) {
       return { success: false, error: signupData.error }
@@ -1116,9 +1128,11 @@ export async function ensureAuthForRegistration(profile) {
       return { success: false, error: 'Geçerli bir e-posta adresi girin (ör. ad@site.com). Boşluk veya geçersiz karakter olmamalı.' }
     }
     if (/registered|already|exists/i.test(signUpError.message)) {
-      const signIn = await signInAfterSignup(email, password, { turnstileToken })
-      if (signIn.success) return { success: true }
-      return { success: false, error: signIn.error || 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.' }
+      return {
+        success: false,
+        code: 'ALREADY_REGISTERED',
+        error: 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın veya şifrenizi sıfırlayın.',
+      }
     }
     if (/known to be weak|easy to guess|pwned|leaked|hibp|weak.?password/i.test(signUpError.message)) {
       return {
