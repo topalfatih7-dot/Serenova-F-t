@@ -6,7 +6,7 @@
 
 ## Key files
 
-- `src/pages/auth/LoginPage.jsx`, `ForgotPasswordPage.jsx`, `ResetPasswordPage.jsx`, `AuthCallbackPage.jsx`
+- `src/pages/auth/LoginPage.jsx`, `ForgotPasswordPage.jsx` (`POST /api/auth` `password-reset` + Turnstile; client `resetPasswordForEmail` kullanılmaz), `ResetPasswordPage.jsx`, `AuthCallbackPage.jsx`
 - `src/pages/OnboardingPage.jsx`
 - `src/components/auth/RequireAuth.jsx`, `ProfileCompletionGate.jsx`
 - `src/services/supabaseDb.js` — `login`, `ensureAuthForRegistration`, `register*`, `completeOAuthMember`

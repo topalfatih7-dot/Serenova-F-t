@@ -89,6 +89,8 @@ export default function MembershipComparisonSection({
   isMember,
   membership,
   user,
+  selectedPlanId = null,
+  onSelectPlan,
 }) {
   return (
     <section className="membership-compare-section relative overflow-visible">
@@ -117,6 +119,8 @@ export default function MembershipComparisonSection({
             isMember={isMember}
             membership={membership}
             user={user}
+            selectedPlanId={selectedPlanId}
+            onSelectPlan={onSelectPlan}
           />
         </div>
 
@@ -148,22 +152,44 @@ export default function MembershipComparisonSection({
                             En kapsamlı
                           </span>
                         )}
-                        <Link
-                          to={`/onboarding?plan=${plan.id}`}
-                          className={`group mx-auto flex max-w-[9rem] flex-col items-center gap-1.5 rounded-2xl px-2 py-1 transition hover:bg-white/70 ${isVip ? 'mt-3' : ''}`}
-                        >
-                          <span
-                            className={`flex h-11 w-11 items-center justify-center rounded-full shadow-md transition group-hover:scale-105 ${theme.icon}`}
+                        {isMember && onSelectPlan ? (
+                          <button
+                            type="button"
+                            onClick={() => onSelectPlan(plan.id)}
+                            className={`group mx-auto flex max-w-[9rem] flex-col items-center gap-1.5 rounded-2xl px-2 py-1 transition hover:bg-white/70 ${isVip ? 'mt-3' : ''} ${
+                              selectedPlanId === plan.id ? 'ring-2 ring-brand-300 bg-brand-50/60' : ''
+                            }`}
                           >
-                            {planIcon(plan, 'h-5 w-5')}
-                          </span>
-                          <span className={`font-display text-[13px] font-bold leading-tight ${theme.label}`}>
-                            {plan.name}
-                          </span>
-                          <span className="text-[11px] font-medium text-slate-500">
-                            {plan.price === 0 ? 'Ücretsiz' : formatPlanPrice(plan)}
-                          </span>
-                        </Link>
+                            <span
+                              className={`flex h-11 w-11 items-center justify-center rounded-full shadow-md transition group-hover:scale-105 ${theme.icon}`}
+                            >
+                              {planIcon(plan, 'h-5 w-5')}
+                            </span>
+                            <span className={`font-display text-[13px] font-bold leading-tight ${theme.label}`}>
+                              {plan.name}
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500">
+                              {plan.price === 0 ? 'Ücretsiz' : formatPlanPrice(plan)}
+                            </span>
+                          </button>
+                        ) : (
+                          <Link
+                            to={`/onboarding?plan=${plan.id}`}
+                            className={`group mx-auto flex max-w-[9rem] flex-col items-center gap-1.5 rounded-2xl px-2 py-1 transition hover:bg-white/70 ${isVip ? 'mt-3' : ''}`}
+                          >
+                            <span
+                              className={`flex h-11 w-11 items-center justify-center rounded-full shadow-md transition group-hover:scale-105 ${theme.icon}`}
+                            >
+                              {planIcon(plan, 'h-5 w-5')}
+                            </span>
+                            <span className={`font-display text-[13px] font-bold leading-tight ${theme.label}`}>
+                              {plan.name}
+                            </span>
+                            <span className="text-[11px] font-medium text-slate-500">
+                              {plan.price === 0 ? 'Ücretsiz' : formatPlanPrice(plan)}
+                            </span>
+                          </Link>
+                        )}
                       </th>
                     )
                   })}

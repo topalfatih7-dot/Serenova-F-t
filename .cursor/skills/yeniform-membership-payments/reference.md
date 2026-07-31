@@ -4,13 +4,16 @@
 
 | Plan | Coach/mo | Dietitian/mo | Doctor | photo | manual | video |
 |------|----------|--------------|--------|-------|--------|-------|
-| eko_diyet | 0 | 1 | 1/mo | yes | yes | no |
-| diyet | 0 | 2 | 1/mo | yes | yes | no |
+| eko_diyet | 0 | 1 | 0 | yes | yes | no |
+| diyet | 0 | 2 | 0 | yes | yes | no |
 | eko_spor | 1 | 0 | 0 | yes | yes | yes |
 | spor | 2 | 0 | 0 | yes | yes | yes |
 | doktor | 0 | 0 | `doctorSessionsTotal: 1`, `billing_type: one_time` | no | no | no |
-| vip | 2 | 2 | 1/mo | yes | yes | yes |
+| vip | 2 | 2 | 0 | yes | yes | yes |
 | eko (legacy) | 0 | 0 | 0 | no | yes | no |
+
+Doktor görüşmesi yalnızca `doktor` paketinde (ek paket / tek seferlik). Abonelik planlarında `doctorMeetingsPerMonth: 0`.
+Marketing: Eko Diyet / Diyet / VIP feature listesinde “kan tahlili analizi” yazısı olabilir; bu doktor randevu hakkı vermez.
 
 Admin may create additional plan IDs with custom entitlements.
 

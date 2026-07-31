@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
@@ -7,6 +8,7 @@ import MembershipHero from '../components/membership/MembershipHero'
 import MembershipReassurance from '../components/membership/MembershipReassurance'
 import MembershipTrialCta from '../components/membership/MembershipTrialCta'
 import MembershipComparisonSection from '../components/membership/MembershipComparisonSection'
+import MemberPlanCheckout from '../components/membership/MemberPlanCheckout'
 import PricingCard from '../components/landing/PricingCard'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import JsonLd from '../components/seo/JsonLd'
@@ -33,8 +35,9 @@ const MEMBERSHIP_FAQ = [
   { q: 'Eko paketler ne fark eder?', a: 'Eko Diyet ve Eko Spor, ana paketlerle aynı özellikleri sunar; fark yalnızca ayda 1 görüşme hakkıdır (Diyet/Spor’da 2).' },
   { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
   { q: 'Online koçluk hangi pakette?', a: 'Ayda 1 görüşme Eko Spor’da, ayda 2 Spor ve VIP’tedir. Ayrıntılar online koçluk hizmet sayfasında.' },
-  { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç, diyetisyen ve doktor desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
-  { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket satın alabilirsiniz.' },
+  { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç ve diyetisyen desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
+  { q: 'Doktor görüşmesi hangi pakette?', a: 'Online doktor görüşmesi yalnızca Doktor Paketi ile sunulur; abonelik planlarına dahil değildir. Mevcut üyeliğinize ek paket olarak satın alabilirsiniz.' },
+  { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket (ör. Doktor) satın alabilirsiniz.' },
 ]
 
 export default function MembershipComparisonPage() {
@@ -43,6 +46,7 @@ export default function MembershipComparisonPage() {
   const isMember = isAuthenticated && !isAdmin && !isStaff
   const displayPlans = isMember ? allPlans.filter((p) => p.id !== membership) : allPlans
   const comparisonPlans = displayPlans.filter((p) => p.id !== 'doktor')
+  const [selectedPlanId, setSelectedPlanId] = useState(() => displayPlans[0]?.id || null)
 
   const ctaForPlan = (plan) => getPlanCtaLabel(plan, {
     forMember: isMember,
@@ -59,7 +63,7 @@ export default function MembershipComparisonPage() {
         title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Online diyetisyen ve online koçluk paketleri'}
         subtitle={
           isMember
-            ? 'Giriş yapmış hesabınızla plan değiştirebilir veya ek paket (ör. Doktor) satın alabilirsiniz. Yeni kayıt gerekmez.'
+            ? 'Planı seçin, süreyi belirleyin ve ödemeye geçin. Yeni kayıt gerekmez.'
             : 'Video görüşmeli diyetisyen / koç paketlerinden birini seçin. Gizli ücret yok, süre seçimi sizde.'
         }
       />
@@ -84,25 +88,38 @@ export default function MembershipComparisonPage() {
               seçin.
             </h2>
             <p className="section-subtitle mx-auto mt-2 max-w-2xl text-sm text-slate-600">
-              Yeni Form&apos;un tüm planları uzman desteğiyle hazırlanır. İhtiyaçlarınıza ve
-              hedeflerinize göre planınızı yükseltebilir veya değiştirebilirsiniz.
+              {isMember
+                ? 'Paketi seçin, 1 / 3 / 6 aylık süreyi belirleyin ve doğrudan ödemeye geçin.'
+                : 'Yeni Form\'un tüm planları uzman desteğiyle hazırlanır. İhtiyaçlarınıza ve hedeflerinize göre planınızı seçin.'}
             </p>
           </motion.div>
 
-          <div className="plans-cards-grid mt-5 sm:mt-6 lg:mt-8">
-            {displayPlans.map((plan, i) => (
-              <div
-                key={plan.id}
-                className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative min-w-0`}
-              >
-                <PricingCard
-                  plan={plan}
-                  featured={plan.id === 'vip'}
-                  ctaTo={`/onboarding?plan=${plan.id}${plan.id === RECOMMENDED_PLAN ? `&months=${RECOMMENDED_DURATION_MONTHS}` : ''}`}
-                  ctaLabel={ctaForPlan(plan)}
-                />
+          <div className="mt-5 sm:mt-6 lg:mt-8">
+            {isMember ? (
+              <MemberPlanCheckout
+                plans={allPlans}
+                membership={membership}
+                userEmail={user?.email}
+                selectedPlanId={selectedPlanId}
+                onSelectedPlanChange={setSelectedPlanId}
+              />
+            ) : (
+              <div className="plans-cards-grid">
+                {displayPlans.map((plan, i) => (
+                  <div
+                    key={plan.id}
+                    className={`plans-card-reveal plans-card-reveal-delay-${Math.min(i + 1, 3)} relative min-w-0`}
+                  >
+                    <PricingCard
+                      plan={plan}
+                      featured={plan.id === 'vip'}
+                      ctaTo={`/onboarding?plan=${plan.id}${plan.id === RECOMMENDED_PLAN ? `&months=${RECOMMENDED_DURATION_MONTHS}` : ''}`}
+                      ctaLabel={ctaForPlan(plan)}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </PlansAnimatedBackground>
@@ -115,6 +132,8 @@ export default function MembershipComparisonPage() {
             isMember={isMember}
             membership={membership}
             user={user}
+            selectedPlanId={isMember ? selectedPlanId : null}
+            onSelectPlan={isMember ? setSelectedPlanId : undefined}
           />
         </div>
       </PlansAnimatedBackground>

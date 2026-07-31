@@ -252,7 +252,7 @@ export default async function handler(req, res) {
       : (durationMonths === 1 ? '1 ay' : `${durationMonths} ay`)
     const origin = getOrigin(req)
     const successPath = flow === 'change' ? '/profile' : '/dashboard'
-    const cancelPath = flow === 'change' ? '/onboarding' : '/onboarding'
+    const cancelPath = flow === 'change' ? '/plans' : '/onboarding'
 
     const stripe = getStripe()
     const customerId = await ensureStripeCustomer(stripe, admin, user, checkoutEmail, memberName)

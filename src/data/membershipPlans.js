@@ -386,7 +386,7 @@ export const EKO_DIYET_PLAN = {
   billingType: 'recurring',
   sortOrder: 0,
   entitlements: {
-    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
     photoCalorie: true, manualCalorie: true, fullVideo: false,
   },
   pricingTiers: buildPricingTiers('eko_diyet'),
@@ -416,7 +416,7 @@ export const DIYET_PLAN = {
   billingType: 'recurring',
   sortOrder: 1,
   entitlements: {
-    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
     photoCalorie: true, manualCalorie: true, fullVideo: false,
   },
   pricingTiers: buildPricingTiers('diyet'),
@@ -531,7 +531,7 @@ export const VIP_PLAN = {
   billingType: 'recurring',
   sortOrder: 5,
   entitlements: {
-    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
     photoCalorie: true, manualCalorie: true, fullVideo: true,
   },
   pricingTiers: buildPricingTiers('vip'),
@@ -581,18 +581,18 @@ export const DEFAULT_PACKAGE = {
 
 const PACKAGE_BY_PLAN = {
   eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 1 },
+  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0 },
   eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
+  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
   doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, billingType: 'one_time' },
-  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1 },
+  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
   // legacy
   gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
   altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
-  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 3 },
-  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 1, coachMeetingsPerWeek: 2 },
+  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 3 },
+  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
 }
 
 const LEGACY_PHOTO_CALORIE = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])

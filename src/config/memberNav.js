@@ -30,15 +30,14 @@ export const MEMBER_UPGRADE_NAV = {
 }
 
 export function buildMemberNavItems({
-  membership,
+  membership: _membership,
   chatUnreadCount = 0,
   notificationUnreadCount = 0,
   openSupportTicketsCount = 0,
   healthTestIncomplete = false,
 } = {}) {
-  const base = membership === 'free'
-    ? [...MEMBER_NAV, MEMBER_UPGRADE_NAV]
-    : MEMBER_NAV
+  // Tüm paketlerde: yükseltme / ek paket seçimi (/plans).
+  const base = [...MEMBER_NAV, MEMBER_UPGRADE_NAV]
 
   return base.map((item) => ({
     ...item,

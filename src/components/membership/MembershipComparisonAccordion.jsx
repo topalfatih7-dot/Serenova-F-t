@@ -33,6 +33,8 @@ export default function MembershipComparisonAccordion({
   isMember = false,
   membership,
   user,
+  selectedPlanId = null,
+  onSelectPlan,
 }) {
   const [openId, setOpenId] = useState(() => plans.find((p) => p.id === 'vip')?.id || plans[0]?.id)
 
@@ -99,12 +101,24 @@ export default function MembershipComparisonAccordion({
                         </li>
                       ))}
                     </ul>
-                    <Link
-                      to={`/onboarding?plan=${plan.id}`}
-                      className={`mt-4 flex w-full items-center justify-center rounded-xl py-2.5 text-xs font-bold ${theme.btnIdle}`}
-                    >
-                      {ctaForPlan(plan)}
-                    </Link>
+                    {isMember && onSelectPlan ? (
+                      <button
+                        type="button"
+                        onClick={() => onSelectPlan(plan.id)}
+                        className={`mt-4 flex w-full items-center justify-center rounded-xl py-2.5 text-xs font-bold ${
+                          selectedPlanId === plan.id ? theme.btn : theme.btnIdle
+                        }`}
+                      >
+                        {selectedPlanId === plan.id ? 'Seçildi — yukarıdan ödemeye geçin' : ctaForPlan(plan)}
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/onboarding?plan=${plan.id}`}
+                        className={`mt-4 flex w-full items-center justify-center rounded-xl py-2.5 text-xs font-bold ${theme.btnIdle}`}
+                      >
+                        {ctaForPlan(plan)}
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               )}

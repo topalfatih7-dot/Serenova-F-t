@@ -148,7 +148,7 @@ export default function AppointmentsPage() {
           canBook={packageIncludesDoctor(packageConfig)}
           monthlyLimit={1}
           lockedTitle="Doktor randevuları paketinizde yok"
-          lockedDescription="Online doktor görüşmesi için Doktor Paketi veya VIP pakete geçin."
+          lockedDescription="Online doktor görüşmesi için Doktor Paketi satın alın. Diğer abonelik planlarına dahil değildir."
         />
       )}
     </div>

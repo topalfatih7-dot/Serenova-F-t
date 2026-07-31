@@ -2,31 +2,70 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, ArrowLeft, Loader2, CheckCircle2, Send } from 'lucide-react'
-import { supabase, isSupabaseEnabled } from '../../services/supabaseClient'
-import { getSiteUrl } from '../../config/seo'
 import { useToast } from '../../context/ToastContext'
 import { BRAND } from '../../config/brand'
+import { sanitizeEmailInput, isValidEmailAddress } from '../../utils/emailAddress'
+import TurnstileWidget from '../../components/security/TurnstileWidget'
+import { useTurnstile } from '../../hooks/useTurnstile'
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail]   = useState('')
-  const [sent, setSent]     = useState(false)
+  const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const {
+    enabled: turnstileEnabled,
+    widgetRef,
+    setToken: setTurnstileToken,
+    getTokenForSubmit,
+    reset: resetTurnstile,
+  } = useTurnstile()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email.includes('@')) { toast('Geçerli bir e-posta girin', 'error'); return }
-    if (!isSupabaseEnabled || !supabase) { toast('Supabase yapılandırması eksik', 'error'); return }
+    const cleanEmail = sanitizeEmailInput(email)
+    if (!isValidEmailAddress(cleanEmail)) {
+      toast('Geçerli bir e-posta girin', 'error')
+      return
+    }
 
     setLoading(true)
     try {
-      // client-side zorunlu: PKCE code_verifier localStorage'a kaydedilmeli.
-      const redirectTo = `${getSiteUrl()}/auth/callback?next=reset-password`
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo })
-      if (error) throw error
+      let captchaToken = ''
+      try {
+        captchaToken = await getTokenForSubmit()
+      } catch (err) {
+        toast(err?.message || 'Bot doğrulamasını tamamlayın.', 'error')
+        resetTurnstile()
+        return
+      }
+
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'password-reset',
+          email: cleanEmail,
+          turnstileToken: captchaToken || undefined,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json?.ok) {
+        resetTurnstile()
+        const msg = json?.error
+          || (json?.code === 'TURNSTILE_REQUIRED' || json?.code === 'TURNSTILE_INVALID'
+            ? 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.'
+            : 'Bağlantı gönderilemedi')
+        toast(msg, 'error')
+        return
+      }
+
+      setEmail(cleanEmail)
       setSent(true)
+      resetTurnstile()
     } catch (err) {
-      toast(err.message || 'Bağlantı gönderilemedi', 'error')
+      resetTurnstile()
+      toast(err?.message || 'Bağlantı gönderilemedi', 'error')
     } finally {
       setLoading(false)
     }
@@ -34,12 +73,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-cream-900 via-brand-900 to-sage-900 px-4 py-10">
-      {/* dekorasyon */}
       <div aria-hidden className="pointer-events-none absolute left-[6%] top-[10%] h-64 w-64 rounded-full bg-brand-400/25 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute bottom-[8%] right-[5%] h-80 w-80 rounded-full bg-sage-400/20 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute right-[20%] top-[40%] h-48 w-48 rounded-full bg-violet-400/15 blur-3xl" />
 
-      {/* logo */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -50,20 +87,17 @@ export default function ForgotPasswordPage() {
         <img src={BRAND.assets.logo} alt={BRAND.name} className="h-8 brightness-0 invert" />
       </motion.div>
 
-      {/* kart */}
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-2xl shadow-black/25 backdrop-blur-xl"
       >
-        {/* üst şerit */}
         <div aria-hidden className="h-1.5 w-full bg-gradient-to-r from-brand-500 via-sage-500 to-violet-500" />
 
         <div className="p-8">
           <AnimatePresence mode="wait">
             {sent ? (
-              /* başarı durumu */
               <motion.div
                 key="sent"
                 initial={{ opacity: 0, y: 10 }}
@@ -98,7 +132,11 @@ export default function ForgotPasswordPage() {
                 <div className="mt-6 flex flex-col gap-2.5">
                   <button
                     type="button"
-                    onClick={() => { setSent(false); setEmail('') }}
+                    onClick={() => {
+                      setSent(false)
+                      setEmail('')
+                      resetTurnstile()
+                    }}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"
                   >
                     Farklı e-posta dene
@@ -112,7 +150,6 @@ export default function ForgotPasswordPage() {
                 </div>
               </motion.div>
             ) : (
-              /* form */
               <motion.div
                 key="form"
                 initial={{ opacity: 0, y: 10 }}
@@ -149,6 +186,13 @@ export default function ForgotPasswordPage() {
                       required
                     />
                   </div>
+
+                  {turnstileEnabled && (
+                    <TurnstileWidget
+                      ref={widgetRef}
+                      onToken={setTurnstileToken}
+                    />
+                  )}
 
                   <button
                     type="submit"

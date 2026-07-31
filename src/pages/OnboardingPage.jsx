@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Check, Sparkles,
@@ -18,13 +18,9 @@ import { isValidMemberGender } from '../data/genders'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { BRAND } from '../config/brand'
-import { isPaidMembership, ALL_PLANS, getTierPrice, isSellablePlanId, sortPlansForDisplay, RECOMMENDED_PLAN, RECOMMENDED_DURATION_MONTHS } from '../data/membershipPlans'
+import { ALL_PLANS, isSellablePlanId, RECOMMENDED_PLAN } from '../data/membershipPlans'
 import { DEFAULT_COUNTRY_ISO, isValidNationalNumber, toE164 } from '../data/countryCodes'
 import { PASSWORD_RULES, isPasswordValid } from '../services/password'
-import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../config/stripe'
-import { startStripeCheckout } from '../services/stripePayment'
-import MembershipPlanCard from '../components/membership/MembershipPlanCard'
-import MembershipDurationPicker from '../components/membership/MembershipDurationPicker'
 import { trackGa4Event } from '../utils/ga4Loader'
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/emailAddress'
 import { displayNameFromAuthUser, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
@@ -55,13 +51,6 @@ const BENEFITS = [
   { icon: Dumbbell, text: 'Kişiye özel antrenman & beslenme programları' },
   { icon: HeartPulse, text: 'Uzman koç ve diyetisyen desteği' },
 ]
-
-function resolveDurationMonths(planId, searchParams) {
-  const fromQuery = Number(searchParams.get('months'))
-  if ([1, 3, 6].includes(fromQuery)) return fromQuery
-  if (planId === RECOMMENDED_PLAN) return RECOMMENDED_DURATION_MONTHS
-  return 1
-}
 
 function loadDraft() {
   try {
@@ -105,122 +94,11 @@ function clearDraft() {
   }
 }
 
-function PlanChangeView({ plans, currentMembership, preselectedPlan, changePlan, userEmail }) {
-  const { toast } = useToast()
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const initial = preselectedPlan && preselectedPlan !== currentMembership ? preselectedPlan : currentMembership
-  const [selected, setSelected] = useState(initial)
-  const [durationMonths, setDurationMonths] = useState(() => resolveDurationMonths(initial, searchParams))
-  const [prevDurationKey, setPrevDurationKey] = useState(`${selected}|${searchParams.toString()}`)
-  const durationKey = `${selected}|${searchParams.toString()}`
-  if (durationKey !== prevDurationKey) {
-    setPrevDurationKey(durationKey)
-    setDurationMonths(resolveDurationMonths(selected, searchParams))
-  }
-  const [saving, setSaving] = useState(false)
-
-  const selectedPlan = plans.find((p) => p.id === selected) || plans[0]
-  const selectedPrice = isPaidMembership(selected)
-    ? getTierPrice(selected, durationMonths, selectedPlan)
-    : 0
-  const isPaid = isPaidMembership(selected)
-  const isCurrent = selected === currentMembership
-
-  useEffect(() => {
-    if (searchParams.get('payment') === 'cancelled') {
-      toast('Ödeme iptal edildi. Planınız değişmedi.', 'info')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnızca mount toast
-  }, [])
-
-  const applyChange = async (price = 0) => {
-    if (isPaid && price <= 0) {
-      toast('Geçersiz plan fiyatı. Lütfen geçerli bir paket seçin.', 'error')
-      return false
-    }
-    setSaving(true)
-    const r = await changePlan(selected, price, durationMonths)
-    setSaving(false)
-    if (!r?.success) { toast(r?.error || 'Plan değiştirilemedi', 'error'); return false }
-    return true
-  }
-
-  const handleConfirm = async () => {
-    if (isCurrent) return
-    if (isPaid) {
-      setSaving(true)
-      const r = await startStripeCheckout(selected, 'change', durationMonths, userEmail)
-      if (!r.success) {
-        setSaving(false)
-        toast(r.error || (isStripeEnabled() ? 'Ödeme başlatılamadı' : STRIPE_REQUIRED_MESSAGE), 'error')
-      }
-      return
-    }
-    if (await applyChange(0)) {
-      toast('Planınız güncellendi.', 'success')
-      navigate('/profile')
-    }
-  }
-
-  return (
-    <div className="auth-page-bg">
-      <div className="relative mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <span className="section-badge mx-auto block w-fit">Plan Değiştir</span>
-        <h1 className="mt-4 text-center font-display text-2xl font-bold text-cream-900 sm:text-3xl">Üyelik Planını Değiştir</h1>
-        <p className="mt-2 text-center text-sm text-cream-800/65">
-          Mevcut hesabınızın planını güncelleyin — yeni hesap oluşturulmaz.
-        </p>
-
-        <div className="mt-8 rounded-3xl border border-cream-200 bg-white/95 p-5 shadow-lg shadow-brand-900/5 backdrop-blur sm:p-8">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {plans.map((m, idx) => (
-              <MembershipPlanCard
-                key={m.id}
-                plan={m}
-                index={idx}
-                selected={selected === m.id}
-                onSelect={setSelected}
-                current={m.id === currentMembership}
-                compact
-              />
-            ))}
-          </div>
-
-          <MembershipDurationPicker planId={selected} value={durationMonths} onChange={setDurationMonths} />
-
-          <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button type="button" onClick={() => navigate('/profile')} className="rounded-xl px-4 py-2.5 text-sm font-medium text-cream-800 hover:bg-cream-50">
-              Vazgeç
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={isCurrent || saving}
-              className={`flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${
-                isCurrent ? 'bg-cream-300' : 'bg-brand-500 hover:bg-brand-600'
-              }`}
-            >
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isCurrent
-                ? 'Zaten bu plandasınız'
-                : isPaid
-                  ? `${selectedPlan?.name} · ${selectedPrice.toLocaleString('tr-TR')}₺ ile Geç`
-                  : 'Pakete geç'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function OnboardingPage() {
   const [searchParams] = useSearchParams()
   const rawPlan = searchParams.get('plan') || 'free'
   const {
     plans,
-    changePlan,
     register,
     completeOAuthMember,
     isAuthenticated,
@@ -313,15 +191,10 @@ export default function OnboardingPage() {
   }, [])
 
   if (isExistingMember && !justRegisteredRef.current && !isOAuthFlow) {
-    return (
-      <PlanChangeView
-        plans={sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)}
-        currentMembership={currentMembership}
-        preselectedPlan={preselectedPlan}
-        changePlan={changePlan}
-        userEmail={user?.email}
-      />
-    )
+    const planQs = preselectedPlan && preselectedPlan !== 'free' && preselectedPlan !== currentMembership
+      ? `?plan=${encodeURIComponent(preselectedPlan)}`
+      : ''
+    return <Navigate to={`/plans${planQs}`} replace />
   }
 
   const persistDraft = (nextData, nextTerms = termsAccepted) => {

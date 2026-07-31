@@ -882,12 +882,12 @@ insert into public.plans (id, name, price, period, is_active, badge, features, l
  '[{"months":1,"label":"Aylık","price":1299},{"months":3,"label":"3 Aylık","price":2999},{"months":6,"label":"6 Aylık","price":3999}]'::jsonb,
  'sage', 1),
 ('diyet', 'Diyet Paketi', 2499, 'Aylık', true, null,
- '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Diyet Üyeye Özel Diyet Programı","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Birebir Koç Görüşmesi","included":false}]'::jsonb,
+ '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Yeniform Kişisel Sağlık Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Diyet Üyeye Özel Diyet Programı","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Birebir Koç Görüşmesi","included":false}]'::jsonb,
  '["Ayda 2 diyetisyen görüşmesi","Kişisel diyet programı"]'::jsonb,
  '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
  'emerald', 2),
 ('spor', 'Spor Paketi', 2499, 'Aylık', true, null,
- '[{"text":"Doktor Tarafından Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Spor Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true}]'::jsonb,
+ '[{"text":"Yeniform Kişisel Sağlık Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Spor Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Takip Programı","included":true},{"text":"Sınırsız Destek","included":true}]'::jsonb,
  '["Ayda 2 koç görüşmesi","Kişisel spor programı"]'::jsonb,
  '[{"months":1,"label":"Aylık","price":2499},{"months":3,"label":"3 Aylık","price":6499},{"months":6,"label":"6 Aylık","price":9999}]'::jsonb,
  'blue', 3),
@@ -897,7 +897,7 @@ insert into public.plans (id, name, price, period, is_active, badge, features, l
  '[{"months":1,"label":"Tek Seferlik","price":1500}]'::jsonb,
  'teal', 4),
 ('vip', 'Vip Paket', 4999, 'Aylık', true, 'VIP',
- '[{"text":"Kan Tahlili Testi Analizi","included":true},{"text":"Kişisel Sağlık & Vücut Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Vip Üye Rozeti","included":true}]'::jsonb,
+ '[{"text":"Kan Tahlili Testi Analizi","included":true},{"text":"Yeniform Kişisel Sağlık Analizi","included":true},{"text":"Fotoğraflı ve Manuel Kalori Hesaplama","included":true},{"text":"Ayda 2 Diyetisyen ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Diyet Programı","included":true},{"text":"Ayda 2 Koç ile Online Görüşme","included":true},{"text":"Vip Üyeye Özel Spor Programı","included":true},{"text":"Sınırsız Video Kütüphanesi Erişimi","included":true},{"text":"Sınırsız İlerleme Raporları","included":true},{"text":"Ücretsiz Takip Programı","included":true},{"text":"Sınırsız Destek","included":true},{"text":"Vip Üye Rozeti","included":true}]'::jsonb
  '["Ayda 2 koç + 2 diyetisyen","Sınırsız destek"]'::jsonb,
  '[{"months":1,"label":"Aylık","price":4999},{"months":3,"label":"3 Aylık","price":12999},{"months":6,"label":"6 Aylık","price":19999}]'::jsonb,
  'brand', 5)
