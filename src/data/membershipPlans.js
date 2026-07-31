@@ -213,39 +213,27 @@ export function getAdminAssignablePlanIds(plans = []) {
   return ids.length > 1 ? ids : [...ADMIN_ASSIGNABLE_PLAN_IDS]
 }
 
-/** Ücretsiz kayıt denemesi — kayıt anından itibaren. */
-export const FREE_TRIAL_MS = 48 * 60 * 60 * 1000
+/** @deprecated 48s deneme kaldırıldı — uyumluluk için stub. */
+export const FREE_TRIAL_MS = 0
 
-export function computeFreeTrialExpiresAt(fromDate = new Date()) {
-  const base = fromDate instanceof Date ? fromDate.getTime() : new Date(fromDate).getTime()
-  const t = Number.isFinite(base) ? base : Date.now()
-  return new Date(t + FREE_TRIAL_MS).toISOString()
+/** @deprecated 48s deneme kaldırıldı. */
+export function computeFreeTrialExpiresAt() {
+  return null
 }
 
-/** Aktif 48s deneme (yalnızca membership === 'free' + geçerli expiresAt). */
-export function isFreeTrialActive(memberOrFields = {}, now = Date.now()) {
-  const membership = memberOrFields?.membership || 'free'
-  const expiresAt = memberOrFields?.freeTrialExpiresAt
-  if (membership !== 'free' || !expiresAt) return false
-  const t = new Date(expiresAt).getTime()
-  if (!Number.isFinite(t)) return false
-  return now < t
+/** @deprecated 48s deneme kaldırıldı — her zaman false. */
+export function isFreeTrialActive() {
+  return false
 }
 
-/** free + expiresAt geçmiş (deneme verilmiş ama bitmiş). */
-export function isFreeTrialExpired(memberOrFields = {}, now = Date.now()) {
-  const membership = memberOrFields?.membership || 'free'
-  const expiresAt = memberOrFields?.freeTrialExpiresAt
-  if (membership !== 'free' || !expiresAt) return false
-  const t = new Date(expiresAt).getTime()
-  if (!Number.isFinite(t)) return false
-  return now >= t
+/** @deprecated 48s deneme kaldırıldı — her zaman false. */
+export function isFreeTrialExpired() {
+  return false
 }
 
-/** Dashboard erişimi: ücretli veya aktif 48s deneme. */
-export function canAccessMemberDashboard(memberOrFields = {}, now = Date.now()) {
-  if (isPaidMembership(memberOrFields?.membership)) return true
-  return isFreeTrialActive(memberOrFields, now)
+/** Dashboard erişimi: kayıtlı üye (ücretsiz dahil) süresiz gezebilir. */
+export function canAccessMemberDashboard() {
+  return true
 }
 
 export function isSellablePlanId(id, plans) {
@@ -356,14 +344,14 @@ export const FREE_PLAN = {
   entitlements: emptyEntitlements(),
   pricingTiers: [],
   features: [
-    { text: 'Hesap oluşturma', included: true },
-    { text: 'Sağlık testi doldurma (kayıt)', included: true },
-    { text: '48 saat AI sağlık skorları (panel)', included: true },
-    { text: 'Koç & diyetisyen paneli', included: false },
+    { text: 'Süresiz hesap ve panele giriş', included: true },
+    { text: 'Sağlık testi doldurma', included: true },
+    { text: 'AI sağlık skorları (genel + kategoriler)', included: true },
+    { text: 'Uzman raporu & skor grafiği', included: false },
     { text: 'Program, takvim, kütüphane', included: false },
     { text: 'Mesajlar & kalori AI', included: false },
   ],
-  limits: ['48 saat sonra panel kilitlenir; istediğiniz zaman ücretli pakete geçebilirsiniz'],
+  limits: ['Ücretli özellikler kilitlidir; istediğiniz zaman paket seçebilirsiniz'],
 }
 
 export const EKO_PLAN = {

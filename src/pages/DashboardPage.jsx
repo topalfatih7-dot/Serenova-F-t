@@ -13,7 +13,6 @@ import { WeightChart } from '../components/dashboard/ProgressChart'
 import WeeklyAdherenceTable from '../components/dashboard/WeeklyAdherenceTable'
 import HealthScoreCard from '../components/dashboard/HealthScoreCard'
 import ActivationChecklist from '../components/dashboard/ActivationChecklist'
-import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { getPlanLabel, isPaidMembership } from '../data/membershipPlans'
 import { useApp } from '../context/AppContext'
 import { resolveFirstName } from '../utils/displayName'
@@ -29,6 +28,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
 function ChartEmpty({ message = 'Henüz veri yok' }) {
+  //console.log('message', message)
   return (
     <div className="flex h-56 flex-col items-center justify-center gap-2 text-center text-sm text-cream-800/50">
       <LineChart className="h-7 w-7 text-cream-800/30" />
@@ -37,32 +37,17 @@ function ChartEmpty({ message = 'Henüz veri yok' }) {
   )
 }
 
-function formatTrialRemaining(ms) {
-  if (ms <= 0) return 'Süre doldu'
-  const totalMin = Math.ceil(ms / 60000)
-  const hours = Math.floor(totalMin / 60)
-  const mins = totalMin % 60
-  if (hours >= 24) {
-    const days = Math.floor(hours / 24)
-    const remH = hours % 24
-    return remH > 0 ? `${days}g ${remH}s` : `${days} gün`
-  }
-  if (hours > 0) return mins > 0 ? `${hours}s ${mins}dk` : `${hours} saat`
-  return `${Math.max(1, mins)} dk`
-}
-
 export default function DashboardPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const {
     user, membership, membershipStatus, coachSessions, dietitianSessions,
-    myPrograms, progress, canAccessMemberDashboard, isFreeTrialActive,
-    freeTrialExpiresAt, premiumExpiresAt, refresh,
+    myPrograms, progress, isUnpaidMember,
+    premiumExpiresAt, refresh,
     posts, packageConfig,
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(() => Boolean(location.state?.welcome))
-  const [nowMs, setNowMs] = useState(() => Date.now())
   const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
   const {
     analysis: healthAnalysis,
@@ -84,23 +69,7 @@ export default function DashboardPage() {
     setWelcomeOpen(false)
   }, [])
 
-  useEffect(() => {
-    if (!isFreeTrialActive || !freeTrialExpiresAt) return undefined
-    const expires = new Date(freeTrialExpiresAt).getTime()
-    if (!Number.isFinite(expires)) return undefined
-    const tick = () => setNowMs(Date.now())
-    tick()
-    const remaining = expires - Date.now()
-    if (remaining <= 0) return undefined
-    const interval = setInterval(tick, Math.min(60_000, Math.max(1000, remaining)))
-    const endTimer = setTimeout(tick, remaining + 50)
-    return () => {
-      clearInterval(interval)
-      clearTimeout(endTimer)
-    }
-  }, [isFreeTrialActive, freeTrialExpiresAt])
-
-  const goMembership = useCallback(() => navigate('/membership'), [navigate])
+  const goMembership = useCallback(() => navigate('/plans'), [navigate])
   const goCoachSchedule = useCallback(() => navigate('/schedule?tab=coach'), [navigate])
   const goDietitianSchedule = useCallback(() => navigate('/schedule?tab=dietitian'), [navigate])
 
@@ -112,17 +81,6 @@ export default function DashboardPage() {
     isPaidMembership(membership)
     && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
   )
-
-  const trialRemainingMs = useMemo(() => {
-    if (!isFreeTrialActive || !freeTrialExpiresAt) return 0
-    return Math.max(0, new Date(freeTrialExpiresAt).getTime() - nowMs)
-  }, [isFreeTrialActive, freeTrialExpiresAt, nowMs])
-
-  const dashboardOpen = useMemo(() => {
-    if (isPaidMembership(membership)) return true
-    if (!freeTrialExpiresAt) return false
-    return nowMs < new Date(freeTrialExpiresAt).getTime()
-  }, [membership, freeTrialExpiresAt, nowMs])
 
   const latestPosts = useMemo(
     () => (posts || [])
@@ -137,49 +95,24 @@ export default function DashboardPage() {
     [myPrograms, user],
   )
 
-  if (!canAccessMemberDashboard || !dashboardOpen) {
-    return <UnpaidMemberGate />
-  }
-
   const nextCoach = coachSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
   const nextDietitian = dietitianSessions.find((s) => s.status === 'scheduled' && new Date(s.date) > new Date())
 
   const planLabel = getPlanLabel(membership)
   const firstName = resolveFirstName({ name: user?.name, email: user?.email })
-  const showTrialBanner = Boolean(isFreeTrialActive && freeTrialExpiresAt)
 
   const today = new Date()
 
   return (
     <div className="space-y-6">
-      {showTrialBanner && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-brand-50/40 px-4 py-3.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-cream-900">
-              Ücretsiz deneme — kalan süre: {formatTrialRemaining(trialRemainingMs)}
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-cream-800/65">
-              Sağlık skorlarınızı görüntüleyebilirsiniz. Süre bitince panel kilitlenir; tam erişim için paket seçin.
-            </p>
-          </div>
-          <Link
-            to="/membership"
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
-          >
-            <Crown className="h-4 w-4" /> Plan Seç
-          </Link>
-        </div>
-      )}
-
       <ActivationChecklist
         user={user}
         membership={membership}
         packageConfig={packageConfig}
-        myPrograms={myPrograms}
+        myPrograms={isUnpaidMember ? [] : myPrograms}
         coachSessions={coachSessions}
         dietitianSessions={dietitianSessions}
         doctorSessions={user?.doctorSessions}
-        isFreeTrialActive={isFreeTrialActive}
       />
 
       <div className="welcome-banner">
@@ -213,6 +146,7 @@ export default function DashboardPage() {
         loading={healthScoreLoading}
         complete={healthAnalysisComplete}
         error={healthScoreError}
+        scoresOnly={isUnpaidMember}
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
@@ -242,7 +176,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <Link
-            to="/membership"
+            to="/plans"
             className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-amber-700"
           >
             Yenile <ArrowRight className="h-3.5 w-3.5" />

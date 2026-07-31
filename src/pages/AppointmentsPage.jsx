@@ -64,7 +64,14 @@ export default function AppointmentsPage() {
   }
 
   if (isUnpaidMember) {
-    return <UnpaidMemberGate />
+    return (
+      <div className="space-y-5">
+        <UnpaidMemberGate
+          title="Randevular paket gerektirir"
+          description="Bu sayfayı gezebilirsiniz. Koç, diyetisyen veya doktor randevusu almak için bir plan seçin."
+        />
+      </div>
+    )
   }
 
   return (

@@ -2538,6 +2538,16 @@ body {
   font-size: max(16px, 1em);
 }
 
+/* Dokunmatik cihazlarda tüm form alanları 16px+ — iOS'un input odağında
+   otomatik yakınlaştırma yapmasını (header'ın ekran dışında kalmasını) önler */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
 /* ── 404 sayfası — aurora + animasyonlu tipografi ── */
 @keyframes notFoundAuroraShift {
   0%, 100% { background-position: 0% 50%; }

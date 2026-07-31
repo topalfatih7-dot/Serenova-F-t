@@ -139,6 +139,8 @@ export default function HealthScoreCard({
   loading = false,
   complete = false,
   error = null,
+  /** Ücretsiz üye: yalnızca skorlar; özet metin + grafik gizli */
+  scoresOnly = false,
 }) {
   if (!complete) {
     return (
@@ -186,11 +188,13 @@ export default function HealthScoreCard({
               {tone.label}
             </span>
           )}
-          {analysis?.summary ? (
+          {!scoresOnly && analysis?.summary ? (
             <p className="mt-2 text-sm leading-relaxed text-cream-800/65 break-words">{analysis.summary}</p>
           ) : (
             <p className="mt-2 text-sm text-cream-800/55">
-              Sağlık analizi cevaplarınıza göre 8 boyutta değerlendirildiniz.
+              {scoresOnly
+                ? 'Skorlarınız hazır. Uzman raporu ve skor grafiği paketle açılır.'
+                : 'Sağlık analizi cevaplarınıza göre 8 boyutta değerlendirildiniz.'}
             </p>
           )}
           {error && (
@@ -207,7 +211,7 @@ export default function HealthScoreCard({
         ))}
       </div>
 
-      <HealthScoreSimpleTrend history={history} />
+      {!scoresOnly && <HealthScoreSimpleTrend history={history} />}
     </div>
   )
 }

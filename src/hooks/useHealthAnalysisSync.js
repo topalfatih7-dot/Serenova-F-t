@@ -9,19 +9,15 @@ import {
 import { trackGa4Event } from '../utils/ga4Loader'
 
 /**
- * Kişisel sağlık analizi tamamlandığında skor + staffBrief üretir (bir kez).
- * Ücretli üyelik veya aktif 48s ücretsiz denemede çalışır.
- * Denemede yalnızca ilk analiz; fingerprint değişiminde personel yeniden analizi
- * yalnızca ücretli üyelikte kullanılır.
+ * Sağlık testi tamamlandığında skor + analiz üretir.
+ * Ücretsiz ve ücretli üyelikte çalışır; üye UI'si skor-only gösterebilir.
  */
 export function useHealthAnalysisSync() {
-  const { user, packageConfig, updateProfile, isUnpaidMember, isFreeTrialActive } = useApp()
+  const { user, packageConfig, updateProfile, isUnpaidMember } = useApp()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const runningRef = useRef(false)
   const lastKeyRef = useRef('')
-
-  const canRunAnalysis = !isUnpaidMember || isFreeTrialActive
 
   const analysis = user?.healthAnalysis || null
   const history = user?.healthScoreHistory || []
@@ -33,7 +29,6 @@ export function useHealthAnalysisSync() {
   )
 
   const runSync = useCallback(async ({ force = false } = {}) => {
-    if (!canRunAnalysis) return null
     if (!user?.id || !complete) return null
     if (runningRef.current) return analysis
     if (!force && !needsInitialHealthAnalysis(analysis)) {
@@ -59,7 +54,8 @@ export function useHealthAnalysisSync() {
       if (!analysis?.overallScore) {
         trackGa4Event('health_test_complete', {
           has_scores: next?.overallScore != null,
-          trial: Boolean(isFreeTrialActive && isUnpaidMember),
+          trial: false,
+          unpaid: Boolean(isUnpaidMember),
         })
       }
       return next
@@ -70,14 +66,13 @@ export function useHealthAnalysisSync() {
       runningRef.current = false
       setLoading(false)
     }
-  }, [user, packageConfig, complete, analysis, updateProfile, canRunAnalysis, isFreeTrialActive, isUnpaidMember])
+  }, [user, packageConfig, complete, analysis, updateProfile, isUnpaidMember])
 
   useEffect(() => {
-    if (!canRunAnalysis) return
     if (!complete) return
     if (!needsInitialHealthAnalysis(analysis)) return
     runSync()
-  }, [complete, analysis, runSync, canRunAnalysis])
+  }, [complete, analysis, runSync])
 
   return {
     analysis,

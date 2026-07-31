@@ -95,7 +95,11 @@ export default function MessagesPage() {
   if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <UnpaidMemberGate />
+        <PanelPageHeader title="Mesajlar" subtitle="Uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" image={PANEL_IMAGES.messages} />
+        <UnpaidMemberGate
+          title="Mesajlaşma paket gerektirir"
+          description="Geçmiş sohbetleriniz saklanır; yeni mesaj göndermek ve uzmanlarla görüşmek için bir plan seçin."
+        />
       </PanelPageShell>
     )
   }

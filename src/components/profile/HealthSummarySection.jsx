@@ -13,9 +13,14 @@ const LIMITS = {
   waist: { min: 40, max: 200 },
 }
 
+/** iOS/TR klavyede ondalık ayracı virgül olabilir — sayıya çevirmeden önce normalize et. */
+function normalizeDecimal(value) {
+  return String(value ?? '').trim().replace(',', '.')
+}
+
 function rangeError(field, value) {
   if (value === '' || value == null) return ''
-  const num = Number(value)
+  const num = Number(normalizeDecimal(value))
   const { min, max } = LIMITS[field]
   if (Number.isNaN(num) || num < min || num > max) return `${min}–${max} arası olmalı`
   return ''
@@ -69,9 +74,9 @@ export default function HealthSummarySection({ user }) {
     setSaving(true)
     try {
       const patch = {
-        weight: form.weight,
-        height: form.height,
-        waist: form.waist,
+        weight: normalizeDecimal(form.weight),
+        height: normalizeDecimal(form.height),
+        waist: normalizeDecimal(form.waist),
       }
       await updateProfile(patch)
       setOpen(false)
@@ -146,7 +151,8 @@ export default function HealthSummarySection({ user }) {
           <FormField
             label="Kilo (kg)"
             icon={Scale}
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.weight}
             onChange={(e) => setForm({ ...form, weight: e.target.value })}
             error={errors.weight}
@@ -156,7 +162,8 @@ export default function HealthSummarySection({ user }) {
           <FormField
             label="Boy (cm)"
             icon={Ruler}
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.height}
             onChange={(e) => setForm({ ...form, height: e.target.value })}
             error={errors.height}
@@ -166,7 +173,8 @@ export default function HealthSummarySection({ user }) {
           <FormField
             label="Bel çevresi (cm)"
             icon={RulerDimensionLine}
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.waist}
             onChange={(e) => setForm({ ...form, waist: e.target.value })}
             error={errors.waist}
@@ -181,7 +189,7 @@ export default function HealthSummarySection({ user }) {
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wide text-orange-700/70">Vücut Kitle Endeksi</p>
                 <p className="font-display text-xl font-bold text-orange-900">
-                  {calculateBMI(form.weight, form.height) ?? '—'}
+                  {calculateBMI(normalizeDecimal(form.weight), normalizeDecimal(form.height)) ?? '—'}
                 </p>
               </div>
             </div>

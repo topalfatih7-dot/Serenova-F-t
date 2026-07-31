@@ -92,9 +92,11 @@ export function isProgramVisibleOnDate(program, date, member) {
   return isStaffProgramVisibleOnDate(program, date, member)
 }
 
-/** Program listesi: üyenin şu an görme hakkı var mı? */
+/** Program listesi: üyenin şu an görme hakkı var mı? Ücretsiz üye listesi görmez. */
 export function isProgramListedForMember(program, member) {
   if (!program || !member) return Boolean(program)
+  const membership = member.membership || 'free'
+  if (membership === 'free') return false
   return true
 }
 

@@ -44,6 +44,7 @@ export default function HealthTestHub({
   analysisReady = false,
   analysisLoading = false,
   saveOnly = false,
+  scoresOnly = false,
 }) {
   const [localAck, setLocalAck] = useState(!!healthAck)
   const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
@@ -110,23 +111,23 @@ export default function HealthTestHub({
         <div className="rounded-2xl border border-sage-200 bg-sage-50/60 px-4 py-3 text-sm text-sage-900">
           <span className="flex items-center gap-2 font-semibold">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-sage-600" />
-            {saveOnly ? 'Cevaplarınız kaydedildi' : 'Kişisel sağlık analizi kaydedildi'}
+            {scoresOnly ? 'Skorlarınız hesaplandı' : 'Kişisel sağlık analizi kaydedildi'}
           </span>
           <p className="mt-1 text-xs text-sage-800/75 break-words">
-            {saveOnly
-              ? 'Bilgileriniz profilinizde saklanır. AI skor ve uzman raporu aktif paketle açılır. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
+            {scoresOnly
+              ? 'Genel ve kategori skorlarınız hazır. Uzman raporu ve öneriler paket seçince açılır. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
               : analysisReady
                 ? 'Sağlık analiziniz hazır; koç ve diyetisyeniniz görüntüler. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
                 : analysisLoading
                   ? 'Cevaplarınız kaydedildi; koç/diyetisyen raporu hazırlanıyor…'
                   : 'Cevaplarınız profilinizde saklanır. Koç ve diyetisyeniniz için AI raporu arka planda üretilir. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'}
           </p>
-          {saveOnly && (
+          {scoresOnly && (
             <Link
-              to="/membership"
+              to="/plans"
               className="mt-3 inline-flex text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
             >
-              Plan seç &amp; analizi aç
+              Plan seç &amp; uzman raporunu aç
             </Link>
           )}
         </div>

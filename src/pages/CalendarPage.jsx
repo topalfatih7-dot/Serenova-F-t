@@ -209,7 +209,17 @@ export default function CalendarPage() {
   if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <UnpaidMemberGate />
+        <PanelPageHeader
+          title="Program Takvimi"
+          subtitle="Koçunuz ve diyetisyeninizin hazırladığı günlük programlar"
+          icon={Calendar}
+          accent="brand"
+          image={PANEL_IMAGES.calendar}
+        />
+        <UnpaidMemberGate
+          title="Takvim paket gerektirir"
+          description="Bu sayfayı gezebilirsiniz. Program takvimi ve tamamlamalar ücretli paketle açılır."
+        />
       </PanelPageShell>
     )
   }

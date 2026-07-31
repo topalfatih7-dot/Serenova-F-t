@@ -16,9 +16,6 @@ import {
 import {
   ALL_PLANS,
   isPaidMembership,
-  isFreeTrialActive as checkFreeTrialActive,
-  isFreeTrialExpired as checkFreeTrialExpired,
-  canAccessMemberDashboard as checkCanAccessMemberDashboard,
   setPlanCatalog,
 } from '../data/membershipPlans'
 import { startPresenceTracker } from '../services/presenceService'
@@ -326,6 +323,9 @@ export function AppProvider({ children }) {
   }, [])
 
   const sendChatMessage = useCallback(async (thread, senderType, senderId, text) => {
+    if (senderType === 'member' && !isPaidMembership(currentMember?.membership || 'free')) {
+      return { success: false, error: 'Mesaj göndermek için bir paket seçin.' }
+    }
     const r = await chatDb.sendChatMessage({ thread, senderType, senderId, text })
     if (r.success) {
       setChatMessages((prev) => ({
@@ -335,7 +335,7 @@ export function AppProvider({ children }) {
       setChatThreads((prev) => prev.map((t) => (t.id === thread.id ? r.thread : t)))
     }
     return r
-  }, [])
+  }, [currentMember?.membership])
 
   const markChatThreadRead = useCallback(async (threadId, readerType) => {
     const updated = await chatDb.markChatThreadRead(threadId, readerType)
@@ -1361,32 +1361,15 @@ export function AppProvider({ children }) {
     payments: db.payments,
   }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
 
-  // Paketsiz üye (free = ücretsiz kayıt veya süresi bitmiş fallback).
-  // Mesaj/takvim/kütüphane/program gate'leri bunu kullanır (denemede de kilitli).
+  // Paketsiz üye — soft-lock (sayfa gezinilir, ücretli aksiyonlar kilitli).
   const isUnpaidMember = useMemo(
     () => !isPaidMembership(currentMember?.membership || 'free'),
     [currentMember?.membership],
   )
 
-  const trialFields = useMemo(() => ({
-    membership: currentMember?.membership || 'free',
-    freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
-  }), [currentMember?.membership, currentMember?.freeTrialExpiresAt])
-
-  const isFreeTrialActive = useMemo(
-    () => checkFreeTrialActive(trialFields),
-    [trialFields],
-  )
-
-  const isFreeTrialExpired = useMemo(
-    () => checkFreeTrialExpired(trialFields),
-    [trialFields],
-  )
-
-  const canAccessMemberDashboard = useMemo(
-    () => checkCanAccessMemberDashboard(trialFields),
-    [trialFields],
-  )
+  const isFreeTrialActive = false
+  const isFreeTrialExpired = false
+  const canAccessMemberDashboard = true
 
   const authValue = useMemo(() => ({
     mode: 'supabase',

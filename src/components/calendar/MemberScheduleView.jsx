@@ -28,7 +28,7 @@ export default function MemberScheduleView({
   monthlyLimit = 0,
   lockedTitle,
   lockedDescription,
-  upgradeHref = '/membership',
+  upgradeHref = '/plans',
 }) {
   const { staff, user, bookSession, getStaffBookedSlots, rescheduleSession, cancelSession } = useApp()
   const { toast } = useToast()

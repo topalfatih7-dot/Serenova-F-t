@@ -29,6 +29,16 @@ function planRank(planId) {
 
 const today = () => new Date().toISOString().split('T')[0]
 
+export const DEFAULT_PACKAGE = {
+  coachMeetingsPerMonth: 0,
+  dietitianMeetingsPerMonth: 0,
+  doctorMeetingsPerMonth: 0,
+  coachMeetingsPerWeek: 0,
+  durationMonths: 1,
+  durationWeeks: 4,
+  addOns: [],
+}
+
 export function isOneTimePlan(planId) {
   return ONE_TIME_PLANS.has(planId)
 }
@@ -40,26 +50,17 @@ export function isPaidMembership(planId) {
   return /^[a-z][a-z0-9_]*$/.test(planId)
 }
 
-/** Ücretsiz kayıt denemesi — kayıt anından itibaren (client FREE_TRIAL_MS ile aynı). */
-export const FREE_TRIAL_MS = 48 * 60 * 60 * 1000
+/** @deprecated 48s deneme kaldırıldı — uyumluluk için stub. */
+export const FREE_TRIAL_MS = 0
 
-export function computeFreeTrialExpiresAt(fromDate = new Date()) {
-  const base = fromDate instanceof Date ? fromDate.getTime() : new Date(fromDate).getTime()
-  const t = Number.isFinite(base) ? base : Date.now()
-  return new Date(t + FREE_TRIAL_MS).toISOString()
+/** @deprecated 48s deneme kaldırıldı. */
+export function computeFreeTrialExpiresAt() {
+  return null
 }
 
-/** Aktif 48s deneme — member satırı veya { membership, freeTrialExpiresAt }. */
-export function isFreeTrialActive(memberOrFields = {}, now = Date.now()) {
-  const membership = memberOrFields?.membership || 'free'
-  const data = memberOrFields?.data && typeof memberOrFields.data === 'object'
-    ? memberOrFields.data
-    : null
-  const expiresAt = memberOrFields?.freeTrialExpiresAt ?? data?.freeTrialExpiresAt ?? null
-  if (membership !== 'free' || !expiresAt) return false
-  const t = new Date(expiresAt).getTime()
-  if (!Number.isFinite(t)) return false
-  return now < t
+/** @deprecated 48s deneme kaldırıldı — her zaman false. */
+export function isFreeTrialActive() {
+  return false
 }
 
 export function countUsedDoctorSessions(member) {
@@ -241,26 +242,36 @@ export function syncMemberPackages(member) {
     membershipStatus = member.membershipStatus
   }
 
-  // Ücretli geçmişi olan üyede eski 48s deneme kilidi kalmasın
-  let freeTrialExpiresAt = member.freeTrialExpiresAt ?? null
-  const hadPaidHistory = wasPaid
-    || Boolean(member.premiumStartedAt)
-    || packages.some((p) => isPaidMembership(p.planId))
-  if (membership === 'free' && hadPaidHistory && !active.length) {
-    freeTrialExpiresAt = null
-  }
-
+  const goingFree = membership === 'free' && !active.length
   const synced = {
     ...member,
     activePackages: packages,
-    packageConfig: merged,
+    packageConfig: goingFree ? { ...DEFAULT_PACKAGE } : merged,
     membership,
     membershipStatus,
-    premiumExpiresAt: latestExpiry ?? (active.length ? member.premiumExpiresAt : null),
-    premiumStartedAt: member.premiumStartedAt || packages[0]?.startedAt || null,
-    freeTrialExpiresAt,
+    premiumExpiresAt: goingFree ? null : (latestExpiry ?? member.premiumExpiresAt ?? null),
+    premiumStartedAt: goingFree ? null : (member.premiumStartedAt || packages[0]?.startedAt || null),
+    freeTrialExpiresAt: null,
   }
-  return sanitizeStaffForPackage(merged, synced)
+  return sanitizeStaffForPackage(synced.packageConfig, synced)
+}
+
+/** Abonelik iptali: paketleri expire et + hemen free + atama/randevu temizliği */
+export function forceMemberToFree(member) {
+  if (!member) return member
+  const packages = migrateLegacyToPackages(member).map((pkg) => ({
+    ...pkg,
+    status: isOneTimePlan(pkg.planId) ? 'consumed' : 'expired',
+  }))
+  return syncMemberPackages({
+    ...member,
+    activePackages: packages,
+    membership: 'free',
+    membershipStatus: member.membershipStatus === 'paused' ? 'paused' : 'active',
+    premiumExpiresAt: null,
+    premiumStartedAt: null,
+    freeTrialExpiresAt: null,
+  })
 }
 
 export function memberExpirySyncNeedsPersist(before, after) {
@@ -272,6 +283,7 @@ export function memberExpirySyncNeedsPersist(before, after) {
   if (before.assignedDoctorId !== after.assignedDoctorId) return true
   if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
   if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
+  if ((before.premiumStartedAt || null) !== (after.premiumStartedAt || null)) return true
   // Gelecek seans iptalleri (paket bitişi) de yazılsın — client ile aynı
   for (const key of ['coachSessions', 'dietitianSessions', 'doctorSessions']) {
     if (JSON.stringify(before[key] || []) !== JSON.stringify(after[key] || [])) return true

@@ -74,7 +74,7 @@ function CategoryScoreCard({ scoreKey, score }) {
 
 /**
  * Koç / diyetisyen — GPT sağlık skoru + staffBrief (üyeye gösterilmez).
- * showBrief=false iken yalnızca skorlar (ücretsiz/deneme üyede brief kilitli).
+ * showBrief=false iken yalnızca skorlar (ücretsiz üyede brief kilitli; personel ücretli+atamada full).
  */
 export default function StaffHealthBrief({
   analysis,

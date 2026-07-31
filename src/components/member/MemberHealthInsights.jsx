@@ -17,7 +17,7 @@ function Chips({ values, map }) {
   )
 }
 
-export function AnalysisBlock({ analysis }) {
+export function AnalysisBlock({ analysis, scoresOnly = false }) {
   if (!analysis) return null
   const cal = analysis.dailyCalories
   const scores = analysis.scores || {}
@@ -41,7 +41,7 @@ export function AnalysisBlock({ analysis }) {
         )}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {analysis.bmi != null && (
+        {!scoresOnly && analysis.bmi != null && (
           <div className="rounded-xl bg-white/80 px-3 py-2">
             <p className="text-[10px] uppercase tracking-wide text-cream-800/50">VKİ</p>
             <p className="text-sm font-semibold text-cream-900">
@@ -56,7 +56,7 @@ export function AnalysisBlock({ analysis }) {
             <p className="text-sm font-semibold text-cream-900">{overall}/100</p>
           </div>
         )}
-        {cal?.recommended != null && (
+        {!scoresOnly && cal?.recommended != null && (
           <div className="rounded-xl bg-white/80 px-3 py-2 sm:col-span-2">
             <p className="text-[10px] uppercase tracking-wide text-cream-800/50">Önerilen Günlük Kalori</p>
             <p className="text-sm font-semibold text-cream-900">
@@ -66,7 +66,7 @@ export function AnalysisBlock({ analysis }) {
           </div>
         )}
       </div>
-      {analysis.summary && (
+      {!scoresOnly && analysis.summary && (
         <p className="mt-3 text-xs leading-relaxed text-cream-800/75">{analysis.summary}</p>
       )}
       {Object.keys(scores).length > 0 && (
@@ -81,20 +81,20 @@ export function AnalysisBlock({ analysis }) {
           ))}
         </div>
       )}
-      {analysis.coachRecommendations?.message && (
+      {!scoresOnly && analysis.coachRecommendations?.message && (
         <p className="mt-3 text-xs leading-relaxed text-cream-800/75">
           <span className="font-semibold text-cream-900">Antrenman: </span>
           {analysis.coachRecommendations.message}
         </p>
       )}
-      {analysis.dietitianRecommendations?.tips?.length > 0 && (
+      {!scoresOnly && analysis.dietitianRecommendations?.tips?.length > 0 && (
         <ul className="mt-2 space-y-1 border-t border-brand-100/80 pt-3">
           {analysis.dietitianRecommendations.tips.slice(0, 4).map((tip, i) => (
             <li key={i} className="text-xs text-cream-800/70">• {tip}</li>
           ))}
         </ul>
       )}
-      {analysis.healthTestInsights?.length > 0 && (
+      {!scoresOnly && analysis.healthTestInsights?.length > 0 && (
         <ul className="mt-3 space-y-1 border-t border-brand-100/80 pt-3">
           {analysis.healthTestInsights.map((tip, i) => (
             <li key={i} className="text-xs text-cream-800/70">• {tip}</li>
@@ -152,12 +152,17 @@ export default function MemberHealthInsights({
         </div>
       )}
 
-      {showHealthAnalysis && <AnalysisBlock analysis={member.healthAnalysis} />}
+      {showHealthAnalysis && (
+        <AnalysisBlock
+          analysis={member.healthAnalysis}
+          scoresOnly={!memberPaid}
+        />
+      )}
 
-      {showStaffBrief && (
+      {showStaffBrief && memberPaid && (
         <StaffHealthBrief
           analysis={member.healthAnalysis}
-          showBrief={memberPaid}
+          showBrief
         />
       )}
 

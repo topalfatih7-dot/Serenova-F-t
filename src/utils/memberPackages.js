@@ -297,27 +297,37 @@ export function syncMemberPackages(member) {
     membershipStatus = member.membershipStatus
   }
 
-  // Ücretli geçmişi olan üyede eski 48s deneme kilidi kalmasın
-  // (DB membership zaten free olsa bile premiumStartedAt / paket geçmişi yeter)
-  let freeTrialExpiresAt = member.freeTrialExpiresAt ?? null
-  const hadPaidHistory = wasPaid
-    || Boolean(member.premiumStartedAt)
-    || packages.some((p) => isPaidMembership(p.planId))
-  if (membership === 'free' && hadPaidHistory && !active.length) {
-    freeTrialExpiresAt = null
-  }
-
+  // Ücretsiz: deneme alanı kullanılmaz; ücretli düşüşte premium tarihleri temizlenir
+  const goingFree = membership === 'free' && !active.length
   const synced = {
     ...member,
     activePackages: packages,
-    packageConfig: merged,
+    packageConfig: goingFree ? { ...DEFAULT_PACKAGE } : merged,
     membership,
     membershipStatus,
-    premiumExpiresAt: latestExpiry ?? (active.length ? member.premiumExpiresAt : null),
-    premiumStartedAt: member.premiumStartedAt || packages[0]?.startedAt || null,
-    freeTrialExpiresAt,
+    premiumExpiresAt: goingFree ? null : (latestExpiry ?? member.premiumExpiresAt ?? null),
+    premiumStartedAt: goingFree ? null : (member.premiumStartedAt || packages[0]?.startedAt || null),
+    freeTrialExpiresAt: null,
   }
-  return sanitizeStaffForPackage(merged, synced)
+  return sanitizeStaffForPackage(synced.packageConfig, synced)
+}
+
+/** Abonelik iptali / anında free: paketleri expire et + atama/randevu temizliği */
+export function forceMemberToFree(member) {
+  if (!member) return member
+  const packages = migrateLegacyToPackages(member).map((pkg) => ({
+    ...pkg,
+    status: isOneTimePlan(pkg.planId) ? 'consumed' : 'expired',
+  }))
+  return syncMemberPackages({
+    ...member,
+    activePackages: packages,
+    membership: 'free',
+    membershipStatus: member.membershipStatus === 'paused' ? 'paused' : 'active',
+    premiumExpiresAt: null,
+    premiumStartedAt: null,
+    freeTrialExpiresAt: null,
+  })
 }
 
 /** hydrate sırasında süre dolumu senkronunun DB'ye yazılması gerekip gerekmediği */
@@ -330,6 +340,7 @@ export function memberExpirySyncNeedsPersist(before, after) {
   if (before.assignedDoctorId !== after.assignedDoctorId) return true
   if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
   if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
+  if ((before.premiumStartedAt || null) !== (after.premiumStartedAt || null)) return true
   // Gelecek seans iptalleri (paket bitişi) de yazılsın
   for (const key of ['coachSessions', 'dietitianSessions', 'doctorSessions']) {
     if (JSON.stringify(before[key] || []) !== JSON.stringify(after[key] || [])) return true

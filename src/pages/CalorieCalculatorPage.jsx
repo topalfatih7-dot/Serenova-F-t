@@ -207,7 +207,17 @@ export default function CalorieCalculatorPage() {
   if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <UnpaidMemberGate />
+        <PanelPageHeader
+          title="Kalori Hesaplama"
+          subtitle="Yazarak veya fotoğrafla kalori tahmini"
+          icon={Flame}
+          accent="flame"
+          image={PANEL_IMAGES.calorie}
+        />
+        <UnpaidMemberGate
+          title="Kalori analizi paket gerektirir"
+          description="Sayfayı gezebilirsiniz. Yazılı veya fotoğraflı kalori AI için uygun bir plan seçin."
+        />
       </PanelPageShell>
     )
   }
@@ -226,7 +236,7 @@ export default function CalorieCalculatorPage() {
           <p className="mt-2 text-sm leading-relaxed text-cream-800/70">
             Yazarak veya fotoğrafla kalori analizi paket haklarınıza dahil değil. Uygun bir plan seçerek devam edebilirsiniz.
           </p>
-          <Link to="/membership" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600">
+          <Link to="/plans" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600">
             <Crown className="h-4 w-4" /> Plan Seç &amp; Devam Et
           </Link>
         </div>
@@ -257,7 +267,7 @@ export default function CalorieCalculatorPage() {
             return (
               <Link
                 key={id}
-                to="/membership"
+                to="/plans"
                 className="group flex items-center gap-3 rounded-2xl border-2 border-dashed border-cream-300 bg-cream-50/80 px-3.5 py-3.5 transition hover:border-sage-300 hover:bg-sage-50/50 sm:px-4 sm:py-4"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cream-200 text-cream-800/50 sm:h-12 sm:w-12">

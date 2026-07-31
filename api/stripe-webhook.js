@@ -10,6 +10,7 @@ import {
   migrateLegacyToPackages,
   sanitizeStaffForPackage,
   syncMemberPackages,
+  forceMemberToFree,
 } from './_memberPackages.js'
 import { createMemberFromPendingRegistration } from './_createMemberFromPending.js'
 import {
@@ -474,26 +475,58 @@ export default async function handler(req, res) {
         break
       }
       case 'customer.subscription.deleted': {
-        // Dönem sonunda iptal — expiry cron free'ye indirger; subscription id temizle
+        // Abonelik silindi → hemen free + atama/randevu temizliği
         const subscription = event.data.object
         const meta = subscription.metadata || {}
         if (!isYeniFormCheckoutMetadata(meta)) break
         const admin = getSupabaseAdmin()
         const { data: row } = await admin
           .from('members')
-          .select('id, data')
+          .select('id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
           .eq('id', meta.memberId)
           .maybeSingle()
-        if (row) {
-          const data = { ...(row.data || {}) }
-          if (data.stripeSubscriptionId === subscription.id) {
-            delete data.stripeSubscriptionId
-            await admin
-              .from('members')
-              .update({ data, updated_at: nowISO() })
-              .eq('id', row.id)
-          }
+        if (!row) break
+
+        const data = { ...(row.data || {}) }
+        if (data.stripeSubscriptionId === subscription.id) {
+          delete data.stripeSubscriptionId
         }
+
+        const before = {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          membership: row.membership,
+          membershipStatus: row.membership_status,
+          assignedCoachId: row.assigned_coach_id ?? null,
+          assignedDietitianId: row.assigned_dietitian_id ?? null,
+          assignedDoctorId: row.assigned_doctor_id ?? null,
+          ...data,
+        }
+        const after = forceMemberToFree(before)
+        const {
+          id: _id,
+          name: _name,
+          email: _email,
+          membership: _m,
+          membershipStatus: _ms,
+          assignedCoachId: _c,
+          assignedDietitianId: _d,
+          assignedDoctorId: _doc,
+          ...rest
+        } = after
+        await admin
+          .from('members')
+          .update({
+            membership: 'free',
+            membership_status: after.membershipStatus || 'active',
+            assigned_coach_id: null,
+            assigned_dietitian_id: null,
+            assigned_doctor_id: null,
+            data: { ...data, ...rest },
+            updated_at: nowISO(),
+          })
+          .eq('id', row.id)
         break
       }
       default:

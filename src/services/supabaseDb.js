@@ -7,7 +7,7 @@ import { ADMIN_CREDENTIALS } from '../config/brand'
 import {
   DEFAULT_PACKAGE, isPaidMembership, getDefaultPackageForPlan, ALL_PLANS, getPlanLabel,
   normalizeEntitlements, isValidPlanId, setPlanCatalog,
-  sanitizeStaffForPackage, computeFreeTrialExpiresAt,
+  sanitizeStaffForPackage,
   packageIncludesCoach, packageIncludesDietitian,
 } from '../data/membershipPlans'
 import { assignStaffOnly } from './staffAssignment'
@@ -862,7 +862,7 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     healthAnalysis: profile.healthAnalysis || null,
     membership,
     membershipStatus: 'active',
-    freeTrialExpiresAt: membership === 'free' ? computeFreeTrialExpiresAt() : null,
+    freeTrialExpiresAt: null,
     packageConfig: packageConfig || getDefaultPackageForPlan(membership),
     joinedAt: today(),
     lastActiveAt: today(),

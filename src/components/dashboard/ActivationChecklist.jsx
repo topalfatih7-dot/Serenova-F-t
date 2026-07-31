@@ -18,7 +18,7 @@ function wasDismissed(userId) {
 }
 
 /**
- * Yeni üye / deneme — sonraki adımlar checklist.
+ * Yeni üye — sonraki adımlar checklist.
  * Tamamlanınca veya kullanıcı kapatınca gizlenir.
  */
 export default function ActivationChecklist({
@@ -29,7 +29,6 @@ export default function ActivationChecklist({
   coachSessions = [],
   dietitianSessions = [],
   doctorSessions = [],
-  isFreeTrialActive = false,
 }) {
   const userId = user?.id
   const [dismissed, setDismissed] = useState(() => wasDismissed(userId))
@@ -50,7 +49,7 @@ export default function ActivationChecklist({
       {
         id: 'health_test',
         label: 'Kişisel sağlık analizini tamamla',
-        hint: 'Skorlarınız ve personel özeti için gerekli',
+        hint: 'Skorlarınızın doğru hesaplanması için gerekli',
         done: htDone,
         to: '/health-test',
         icon: HeartPulse,
@@ -60,10 +59,10 @@ export default function ActivationChecklist({
     if (!paid) {
       list.push({
         id: 'plan',
-        label: isFreeTrialActive ? 'Deneme bitmeden plan seç' : 'Üyelik planı seç',
-        hint: 'Mesaj, takvim, program ve kütüphane için',
+        label: 'Paket seç',
+        hint: 'Mesaj, takvim, program ve uzman raporları için',
         done: false,
-        to: '/membership',
+        to: '/plans',
         icon: Crown,
       })
     } else {
@@ -88,7 +87,7 @@ export default function ActivationChecklist({
     return list
   }, [
     user, membership, packageConfig, myPrograms,
-    coachSessions, dietitianSessions, doctorSessions, isFreeTrialActive,
+    coachSessions, dietitianSessions, doctorSessions,
   ])
 
   const allDone = steps.every((s) => s.done)

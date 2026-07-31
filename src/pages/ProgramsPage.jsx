@@ -90,7 +90,17 @@ export default function ProgramsPage() {
   if (isUnpaidMember) {
     return (
       <PanelPageShell>
-        <UnpaidMemberGate />
+        <PanelPageHeader
+          title="Programlarım"
+          subtitle="Koçunuz ve diyetisyeniniz tarafından hazırlanan programlar"
+          icon={ClipboardList}
+          accent="brand"
+          image={PANEL_IMAGES.programs}
+        />
+        <UnpaidMemberGate
+          title="Programlar paket gerektirir"
+          description="Ücretsiz hesapla bu sayfayı gezebilirsiniz. Size özel antrenman ve beslenme programları ücretli paketle açılır."
+        />
       </PanelPageShell>
     )
   }

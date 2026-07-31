@@ -98,7 +98,17 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
   if (!staffMode && isUnpaidMember) {
     return (
       <PanelPageShell>
-        <UnpaidMemberGate />
+        <PanelPageHeader
+          title="Hareket Kütüphanesi"
+          subtitle="Programınızdaki hareket videolarını doğru formla izleyin"
+          icon={Library}
+          accent="violet"
+          image={PANEL_IMAGES.library}
+        />
+        <UnpaidMemberGate
+          title="Video kütüphanesi paket gerektirir"
+          description="Sayfayı gezebilirsiniz. Hareket videolarını izlemek için bir plan seçin."
+        />
       </PanelPageShell>
     )
   }

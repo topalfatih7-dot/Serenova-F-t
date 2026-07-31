@@ -21,6 +21,7 @@ const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
 const AuthCallbackPage = lazy(() => import('./pages/auth/AuthCallbackPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const MembershipComparisonPage = lazy(() => import('./pages/MembershipComparisonPage'))
+const MemberPlansPage = lazy(() => import('./pages/MemberPlansPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'))
@@ -158,6 +159,7 @@ export default function App() {
                 <Route path="library" element={<ExerciseLibraryPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="profile/payments" element={<PaymentManagementPage audience="member" />} />
+                <Route path="plans" element={<MemberPlansPage />} />
               </Route>
               </Route>
             </Route>

@@ -11,7 +11,7 @@ import { requestNotificationPermission, unlockNotificationAudio } from '../utils
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Shield, Stethoscope, Clock, Loader2,
+  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import HealthSummarySection from '../components/profile/HealthSummarySection'
@@ -19,6 +19,7 @@ import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 
 import { getPlanLabel } from '../data/membershipPlans'
+import { isHealthTestComplete } from '../data/healthTest'
 import {
   countUsedDoctorSessions,
   isOneTimePlan,
@@ -37,7 +38,7 @@ export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, myPrograms, staff,
     updateProfile, updateSettings, logout, loggingOut,
-    refresh,
+    refresh, packageConfig,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
   } = useApp()
@@ -130,9 +131,46 @@ export default function ProfilePage() {
     { to: '/support', icon: Shield, label: 'Destek', sub: 'Yardım & talepler', color: 'from-violet-500 to-purple-600' },
   ]
 
+  const healthTestDone = Boolean(
+    user?.healthAck
+    && user?.disclaimer
+    && isHealthTestComplete(user?.healthTest, user?.gender, packageConfig),
+  )
+
   return (
     <div className="relative w-full space-y-5 pb-10 sm:space-y-6">
       <div aria-hidden className="pointer-events-none absolute -left-6 -right-6 -top-6 -z-10 h-64 rounded-[2rem] bg-gradient-to-br from-brand-100/50 via-cream-50 to-sage-100/40 blur-2xl sm:-left-10 sm:-right-10" />
+
+      {!healthTestDone && (
+        <motion.div
+          role="alert"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border-2 border-brand-300 bg-gradient-to-r from-brand-50 via-white to-sage-50/60 px-4 py-4 shadow-sm ring-2 ring-brand-100/80 sm:px-5"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white shadow">
+                <AlertTriangle className="h-5 w-5" strokeWidth={2.5} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold uppercase tracking-wide text-brand-700">
+                  Sağlık testi eksik
+                </p>
+                <p className="mt-1 text-sm font-semibold leading-snug text-cream-900/80">
+                  Skorlarınızın doğru çıkması için kişisel sağlık analizinizi tamamlayın.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/health-test"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-brand-600"
+            >
+              <HeartPulse className="h-4 w-4" /> Sağlık testine git
+            </Link>
+          </div>
+        </motion.div>
+      )}
 
       {/* Hero */}
       <motion.div variants={fadeUp} initial="hidden" animate="show" className="relative overflow-hidden rounded-3xl border border-white/80 bg-white shadow-lg shadow-brand-900/[0.06]">
@@ -366,11 +404,11 @@ export default function ProfilePage() {
             {membership === 'free' && (
               <p className="mt-4 text-sm text-cream-800/60">
                 Ücretsiz plandasınız.{' '}
-                <Link to="/membership" className="font-semibold text-brand-600 hover:text-brand-700">Premium özellikler için plan yükseltin</Link>
+                <Link to="/plans" className="font-semibold text-brand-600 hover:text-brand-700">Premium özellikler için plan yükseltin</Link>
               </p>
             )}
             <Link
-              to="/membership"
+              to="/plans"
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 transition hover:bg-violet-100"
             >
               Planları karşılaştır / değiştir

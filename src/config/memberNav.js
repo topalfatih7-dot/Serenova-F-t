@@ -22,7 +22,7 @@ export const MEMBER_NAV = [
 ]
 
 export const MEMBER_UPGRADE_NAV = {
-  to: '/membership',
+  to: '/plans',
   icon: Crown,
   label: 'Planları İncele',
   iconTone: 'text-gold-500',
