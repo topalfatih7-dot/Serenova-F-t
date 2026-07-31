@@ -378,6 +378,146 @@ export function isHealthTestComplete(healthTest, gender, packageConfig = null) {
   return getApplicableSections(gender, packageConfig).every((s) => isSectionComplete(s, healthTest))
 }
 
+/** Serbest metin "İsteğe bağlı" — detaylı analiz katı tamamlanmasından muaf. */
+const DETAILED_OPTIONAL_TEXT_KEYS = new Set([
+  'nutritionExtraNotes',
+  'movementExtraNotes',
+  'lifestyleExtraNotes',
+  'womenExtraNotes',
+  'menExtraNotes',
+  'currentComplaints',
+])
+
+/**
+ * Bölüm sorularından çekirdek anahtarları çıkarır (2. faz kategori akışı).
+ * @param {string} sectionId
+ * @param {string} gender
+ * @param {Set<string>|string[]} coreKeys
+ */
+export function getRemainingSectionQuestions(sectionId, gender, coreKeys = []) {
+  const coreSet = coreKeys instanceof Set ? coreKeys : new Set(coreKeys)
+  const section = getApplicableSections(gender).find((s) => s.id === sectionId)
+  if (!section) return []
+  return section.questions
+    .filter((q) => !coreSet.has(q.key))
+    .map((q) => ({
+      ...q,
+      sectionId: section.id,
+      sectionTitle: section.title,
+      sectionIcon: section.icon,
+      audience: section.audience || 'shared',
+      /** Kategori fazında zorunlu değil — kullanıcı istediği kadar doldurur. */
+      required: false,
+    }))
+}
+
+/**
+ * Katı tamamlanma: çekirdek dışı her soru dolu mu?
+ * exemptOptionalText: true ise "İsteğe bağlı" serbest metinler muaf.
+ * @param {object} section
+ * @param {object} healthTest
+ * @param {{ exemptOptionalText?: boolean, coreKeys?: Set<string>|string[] }} opts
+ */
+export function isSectionStrictlyComplete(section, healthTest, opts = {}) {
+  if (!section?.questions?.length) return false
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  const coreSet = opts.coreKeys instanceof Set
+    ? opts.coreKeys
+    : new Set(opts.coreKeys || [])
+  const exemptText = opts.exemptOptionalText !== false
+
+  const remaining = section.questions.filter((q) => {
+    if (coreSet.has(q.key)) return false
+    if (exemptText && DETAILED_OPTIONAL_TEXT_KEYS.has(q.key)) return false
+    return true
+  })
+  if (!remaining.length) return true
+
+  return remaining.every((q) => {
+    if (!hasStoredAnswer(q, ht)) return false
+    return isQuestionFullyAnswered({ ...q, required: true }, ht)
+  })
+}
+
+/** Tüm bölümler katı tamamlandı mı? (2. AI analizi tetikleyici) */
+export function isDetailedHealthTestComplete(healthTest, gender, packageConfig = null, coreKeys = []) {
+  const coreSet = coreKeys instanceof Set ? coreKeys : new Set(coreKeys)
+  return getApplicableSections(gender, packageConfig).every((s) => (
+    isSectionStrictlyComplete(s, healthTest, {
+      coreKeys: coreSet,
+      exemptOptionalText: true,
+    })
+  ))
+}
+
+/** Hub 2. faz — kalan sorulara göre ilerleme. */
+export function getRemainingHubSections(gender, packageConfig = null, healthTest = {}, coreKeys = []) {
+  const coreSet = coreKeys instanceof Set ? coreKeys : new Set(coreKeys)
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+
+  return getApplicableSections(gender, packageConfig).map((section) => {
+    const remaining = section.questions.filter((q) => {
+      if (coreSet.has(q.key)) return false
+      if (DETAILED_OPTIONAL_TEXT_KEYS.has(q.key)) return false
+      return true
+    })
+    const answered = remaining.filter((q) => (
+      hasStoredAnswer(q, ht) && isQuestionFullyAnswered({ ...q, required: true }, ht)
+    )).length
+    const total = remaining.length
+    const complete = isSectionStrictlyComplete(section, ht, {
+      coreKeys: coreSet,
+      exemptOptionalText: true,
+    })
+    const started = remaining.some((q) => hasStoredAnswer(q, ht)
+      || (q.detail && isDetailFilled(q.detail, ht))
+      || (q.followUps || []).some((fu) => hasStoredAnswer(fu, ht)))
+
+    return {
+      section,
+      progress: {
+        requiredTotal: total,
+        requiredAnswered: answered,
+        complete,
+        started,
+        percent: total ? Math.round((answered / total) * 100) : 100,
+      },
+    }
+  })
+}
+
+/** Kalan sorularda bölüm resume indeksi (required: false ile; boş bırakılabilir). */
+export function getRemainingSectionResumeState(section, healthTest, coreKeys = []) {
+  const coreSet = coreKeys instanceof Set ? coreKeys : new Set(coreKeys)
+  const mapped = (section.questions || [])
+    .filter((q) => !coreSet.has(q.key))
+    .map((q) => ({
+      ...q,
+      sectionId: section.id,
+      sectionTitle: section.title,
+      sectionIcon: section.icon,
+      audience: section.audience || 'shared',
+      required: false,
+    }))
+
+  if (!mapped.length) return { questionIndex: 0, phase: 'questions' }
+
+  const ht = { ...EMPTY_HEALTH_TEST, ...healthTest }
+  // Yarım kalan bağımlılık (detail/follow-up) varsa oraya dön
+  const gap = mapped.findIndex((q) => hasStoredAnswer(q, ht) && !isQuestionFullyAnswered(q, ht))
+  if (gap >= 0) return { questionIndex: gap, phase: 'questions' }
+
+  let lastAnsweredIndex = -1
+  for (let i = 0; i < mapped.length; i++) {
+    if (hasStoredAnswer(mapped[i], ht)) lastAnsweredIndex = i
+  }
+  if (lastAnsweredIndex < 0) return { questionIndex: 0, phase: 'questions' }
+  return {
+    questionIndex: Math.min(lastAnsweredIndex + 1, mapped.length - 1),
+    phase: 'questions',
+  }
+}
+
 function formatAnswerDisplay(q, v, healthTest) {
   if (q.type === 'multi') {
     if (!Array.isArray(v) || v.length === 0) return null

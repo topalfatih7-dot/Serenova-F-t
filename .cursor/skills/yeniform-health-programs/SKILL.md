@@ -9,21 +9,26 @@ description: >-
 
 # Yeni Form Health, Programs & Calendar
 
-## Health test
+## Health test (iki aşamalı)
 
-- Hub `/health-test` → section `/health-test/:sectionId` (label: **Kişisel Sağlık Analizi**)
-- Sections (6): `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men` by gender
-- Stored in `members.data.healthTest` JSONB
-- HT + onaylar tamamlanınca `useHealthAnalysisSync` → `POST /api/ai-health-analysis` (GPT-5.4)
-  - **Ücretli** veya **aktif 48s deneme** (`isFreeTrialActive`): sync/API çalışır
-  - Denemede yalnızca **1×** ilk analiz; `force` / yeniden analiz yalnızca ücretli
-  - Deneme bitmiş / denemesiz free: HT kaydı serbest; AI 403; dashboard gate
-  - Çıktı: 8 skor + `staffBrief` → `members.data.healthAnalysis` (paket alınca aynı kayıt kullanılır)
-  - Üye dashboard: `HealthScoreCard` (genel /100 + boyutlar; `staffBrief` yok)
-  - Personel: skorlar görülebilir; `staffBrief` paragrafları **yalnızca ücretli** üyelikte
-  - Program / diyet listesi AI **üretilmez**
-  - Fingerprint stale → personel yeniden analiz (ücretli); değişmediyse UI/API engeller
-- Programlar personel (koç/diyetisyen) tarafından gönderilir
+- Hub `/health-test` → çekirdek `/health-test/core` → opsiyonel kategori `/health-test/:sectionId`
+- Label: **Kişisel Sağlık Analizi**
+- **Gate:** boy/kilo/doğum tarihi (+ cinsiyet) zorunlu — `HealthProfileGateForm` (inline); `hasCompleteAnalysisProfile`
+- **Onay:** `healthAck` + `disclaimer` (mevcut consent)
+- **1. Aşama — Genel Sağlık Testi** (`src/data/coreHealthTest.js`): kategori göstermeden 25 (erkek) / 26 (kadın) sabit soru
+  - Bitince `useHealthAnalysisSync` → `POST /api/ai-health-analysis` → `healthAnalysis.analysisStage = 'core'`
+- **2. Aşama — Opsiyonel kategoriler:** `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men`
+  - Çekirdek sorular kategoride tekrar sorulmaz (`getRemainingSectionQuestions`)
+  - Katı tamamlanma (`isDetailedHealthTestComplete`) → 2. AI analizi (`analysisStage = 'detailed'`)
+  - Serbest metin "İsteğe bağlı" alanları (`OPTIONAL_TEXT_EXEMPT_KEYS`) detaylı tetikleyiciden muaf
+- Stored in `members.data.healthTest` JSONB; analiz `members.data.healthAnalysis`
+- AI erişim: çekirdek + detaylı analiz **herkese açık**; `force` yeniden analiz yalnızca ücretli
+- Çıktı: 8 skor + `staffBrief` (şema aynı)
+- Üye dashboard: `HealthScoreCard` (skorlar; `staffBrief` yok)
+- Personel: skorlar + `staffBrief` (ücretli üyelikte)
+- Program / diyet listesi AI **üretilmez**
+- Fingerprint stale → personel yeniden analiz (ücretli)
+- Eski `isHealthTestComplete` (zorunlu sorular) checklist/rozet/istatistik için korunur
 
 ## Calendar / programs
 

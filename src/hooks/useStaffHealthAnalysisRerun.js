@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react'
 import { isPaidMembership } from '../data/membershipPlans'
+import { isDetailedHealthTestComplete } from '../data/healthTest'
+import { getCoreHealthTestKeySet } from '../data/coreHealthTest'
 import {
   appendHealthScoreHistory,
   isHealthAnalysisStale,
@@ -44,9 +46,23 @@ export function useStaffHealthAnalysisRerun({
     setLoading(true)
     setError(null)
     try {
+      const gender = member.gender
+      const detailed = Boolean(
+        gender
+        && isDetailedHealthTestComplete(
+          member.healthTest,
+          gender,
+          packageConfig || member.packageConfig,
+          getCoreHealthTestKeySet(gender),
+        ),
+      )
       const next = await resolveHealthScoreAnalysis(
         { ...member, packageConfig: packageConfig || member.packageConfig },
-        { memberId: member.id, force: true },
+        {
+          memberId: member.id,
+          force: true,
+          analysisStage: detailed ? 'detailed' : 'core',
+        },
       )
       const healthScoreHistory = appendHealthScoreHistory(member.healthScoreHistory, next)
       await patchMember(member.id, { healthAnalysis: next, healthScoreHistory })

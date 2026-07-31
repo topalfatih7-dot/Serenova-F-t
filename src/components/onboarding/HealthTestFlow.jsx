@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2 } from 'lucide-react'
 import HealthTestStep from './HealthTestStep'
@@ -8,12 +8,20 @@ import {
   getApplicableQuestions,
   getSectionQuestions,
   getSectionResumeState,
+  getRemainingSectionQuestions,
+  getRemainingSectionResumeState,
   getApplicableSections,
   getHealthTestResumeState,
   hasHealthTestProgress,
   isQuestionAnswered,
   isQuestionFullyAnswered,
 } from '../../data/healthTest'
+import {
+  getCoreHealthTestKeySet,
+  getCoreHealthTestQuestions,
+  getCoreHealthTestResumeIndex,
+  isCoreQuestionAnswered,
+} from '../../data/coreHealthTest'
 
 function migrateLegacyHealthTestKeys(ht = {}) {
   const next = { ...ht }
@@ -44,6 +52,8 @@ export default function HealthTestFlow({
   open,
   onClose,
   layout = 'modal',
+  /** 'default' | 'core' | 'remaining' — core: Genel Sağlık Testi; remaining: çekirdek dışı kategori */
+  mode = 'default',
   sectionId = null,
   gender = '',
   packageConfig = null,
@@ -53,18 +63,36 @@ export default function HealthTestFlow({
   onProgressSave,
   onComplete,
   onSectionComplete,
+  onCoreComplete,
   saving = false,
+  flowTitle = null,
 }) {
-  const section = sectionId
+  const coreMode = mode === 'core'
+  const remainingMode = mode === 'remaining'
+  const coreKeys = useMemo(() => getCoreHealthTestKeySet(gender), [gender])
+
+  const section = sectionId && !coreMode
     ? getApplicableSections(gender, packageConfig).find((s) => s.id === sectionId)
     : null
 
-  const resume = sectionId && section
-    ? getSectionResumeState(section, initialHealthTest)
-    : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
-        healthAck: initialHealthAck,
-        disclaimer: initialDisclaimer,
-      })
+  const resume = (() => {
+    if (coreMode) {
+      return {
+        questionIndex: getCoreHealthTestResumeIndex(initialHealthTest, gender),
+        phase: 'questions',
+      }
+    }
+    if (remainingMode && section) {
+      return getRemainingSectionResumeState(section, initialHealthTest, coreKeys)
+    }
+    if (sectionId && section) {
+      return getSectionResumeState(section, initialHealthTest)
+    }
+    return getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+      healthAck: initialHealthAck,
+      disclaimer: initialDisclaimer,
+    })
+  })()
 
   const [questionIndex, setQuestionIndex] = useState(resume.questionIndex)
   const [showErrors, setShowErrors] = useState(false)
@@ -130,12 +158,22 @@ export default function HealthTestFlow({
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      const next = sectionId && section
-        ? getSectionResumeState(section, initialHealthTest)
-        : getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
-            healthAck: initialHealthAck,
-            disclaimer: initialDisclaimer,
-          })
+      let next
+      if (coreMode) {
+        next = {
+          questionIndex: getCoreHealthTestResumeIndex(initialHealthTest, gender),
+          phase: 'questions',
+        }
+      } else if (remainingMode && section) {
+        next = getRemainingSectionResumeState(section, initialHealthTest, coreKeys)
+      } else if (sectionId && section) {
+        next = getSectionResumeState(section, initialHealthTest)
+      } else {
+        next = getHealthTestResumeState(initialHealthTest, gender, packageConfig, {
+          healthAck: initialHealthAck,
+          disclaimer: initialDisclaimer,
+        })
+      }
       const merged = {
         ...EMPTY_HEALTH_TEST,
         ...migrateLegacyHealthTestKeys(initialHealthTest || {}),
@@ -149,7 +187,10 @@ export default function HealthTestFlow({
       lastPersistedRef.current = JSON.stringify(merged)
     }
     prevOpenRef.current = open
-  }, [open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer, sectionId, section])
+  }, [
+    open, initialHealthTest, gender, packageConfig, initialHealthAck, initialDisclaimer,
+    sectionId, section, coreMode, remainingMode, coreKeys,
+  ])
 
   const persistProgress = useCallback(() => {
     const save = onProgressSaveRef.current
@@ -181,12 +222,23 @@ export default function HealthTestFlow({
     }
   }, [gender, packageConfig])
 
-  const questions = sectionId
-    ? getSectionQuestions(sectionId, gender, packageConfig)
-    : getApplicableQuestions(gender, packageConfig)
+  const questions = (() => {
+    if (coreMode) return getCoreHealthTestQuestions(gender)
+    if (remainingMode && sectionId) {
+      return getRemainingSectionQuestions(sectionId, gender, coreKeys)
+    }
+    if (sectionId) return getSectionQuestions(sectionId, gender, packageConfig)
+    return getApplicableQuestions(gender, packageConfig)
+  })()
   const currentQuestion = questions[questionIndex]
   const lastQuestion = isLastHealthQuestion(questionIndex, questions)
-  const sectionMode = Boolean(sectionId)
+  const sectionMode = Boolean(sectionId) || remainingMode
+
+  const questionReady = (q) => {
+    if (!q) return false
+    if (coreMode) return isCoreQuestionAnswered(q, healthTest)
+    return isQuestionAnswered(q, healthTest)
+  }
 
   const goNext = () => {
     if (phase === 'ack') {
@@ -199,7 +251,7 @@ export default function HealthTestFlow({
       setQuestionIndex(0)
       return
     }
-    if (!isQuestionAnswered(currentQuestion, healthTest)) {
+    if (!questionReady(currentQuestion)) {
       setShowErrors(true)
       return
     }
@@ -208,7 +260,18 @@ export default function HealthTestFlow({
       setQuestionIndex((i) => i + 1)
       return
     }
+    if (coreMode) {
+      const allCoreDone = questions.every((q) => isCoreQuestionAnswered(q, healthTest))
+      if (!allCoreDone) {
+        setShowErrors(true)
+        return
+      }
+      persistProgress()
+      onCoreComplete?.({ healthTest })
+      return
+    }
     if (sectionMode) {
+      // remainingMode: required:false — boş bırakılabilir; yalnızca yarım bağımlılık engeller
       const allSectionDone = questions.every((q) => isQuestionFullyAnswered(q, healthTest))
       if (!allSectionDone) {
         setShowErrors(true)
@@ -223,7 +286,7 @@ export default function HealthTestFlow({
 
   const goBack = () => {
     setShowErrors(false)
-    if (phase === 'questions' && questionIndex === 0 && !sectionMode) {
+    if (phase === 'questions' && questionIndex === 0 && !sectionMode && !coreMode) {
       setPhase('ack')
       return
     }
@@ -236,8 +299,13 @@ export default function HealthTestFlow({
   const nextLabel = phase === 'ack'
     ? 'Onayla ve başla'
     : lastQuestion
-      ? (sectionMode ? (saving ? 'Kaydediliyor…' : 'Testi Bitir') : (saving ? 'Kaydediliyor…' : 'Tamamla'))
+      ? (saving
+        ? 'Kaydediliyor…'
+        : (coreMode ? 'Testi Bitir' : (sectionMode ? 'Kaydet ve Bitir' : 'Tamamla')))
       : 'İleri'
+
+  const headerTitle = flowTitle
+    || (coreMode ? 'Genel Sağlık Testi' : (section?.title || 'Sağlık Profili Testi'))
 
   const body = (
         <div className={layout === 'page' ? '' : 'p-4 sm:p-6'}>
@@ -280,7 +348,9 @@ export default function HealthTestFlow({
                     question={currentQuestion}
                     questionIndex={questionIndex}
                     totalQuestions={questions.length}
-                    sectionTitle={section?.title}
+                    sectionTitle={coreMode ? 'Genel Sağlık Testi' : section?.title}
+                    hideAudienceChip={coreMode}
+                    forceRequired={coreMode}
                     healthTest={healthTest}
                     updateHealthTest={updateHealthTest}
                     showErrors={showErrors}
@@ -294,7 +364,10 @@ export default function HealthTestFlow({
             <button
               type="button"
               onClick={goBack}
-              disabled={(phase === 'questions' && questionIndex === 0 && sectionMode) || phase === 'ack'}
+              disabled={
+                (phase === 'questions' && questionIndex === 0 && (sectionMode || coreMode))
+                || phase === 'ack'
+              }
               className="text-sm font-medium text-cream-800 disabled:opacity-30"
             >
               Geri
@@ -338,7 +411,7 @@ export default function HealthTestFlow({
         className="fixed inset-x-0 bottom-0 z-[113] mx-auto max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-cream-50 shadow-2xl sm:inset-x-4 sm:top-1/2 sm:bottom-auto sm:max-h-[88dvh] sm:-translate-y-1/2 sm:rounded-3xl"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cream-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
-          <p className="text-sm font-semibold text-cream-900">Sağlık Profili Testi</p>
+          <p className="text-sm font-semibold text-cream-900">{headerTitle}</p>
           {onClose && (
             <button
               type="button"

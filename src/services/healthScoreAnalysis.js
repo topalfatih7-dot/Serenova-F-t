@@ -73,6 +73,27 @@ export function needsInitialHealthAnalysis(analysis) {
   return false
 }
 
+/**
+ * Çekirdek analiz var, opsiyonel sorular tamamlandı → detaylı yeniden üretim gerekir.
+ * analysisStage === 'detailed' ise false.
+ */
+export function needsDetailedHealthAnalysis(analysis, isDetailedComplete) {
+  if (!isDetailedComplete) return false
+  if (needsInitialHealthAnalysis(analysis)) return false
+  if (analysis?.analysisStage === 'detailed') return false
+  return true
+}
+
+/** Eski kayıtlarda analysisStage yoksa çıkarım. */
+export function resolveAnalysisStage(analysis, isDetailedComplete = false) {
+  if (!analysis || needsInitialHealthAnalysis(analysis)) return null
+  if (analysis.analysisStage === 'detailed' || analysis.analysisStage === 'core') {
+    return analysis.analysisStage
+  }
+  // Geriye dönük: tam skorlu kayıt varsa, detaylı tamamlandıysa detailed say
+  return isDetailedComplete ? 'detailed' : 'core'
+}
+
 /** HT / profil değişti; personel yeniden analiz etmeli. */
 export function isHealthAnalysisStale(analysis, profile = {}) {
   if (!analysis || needsInitialHealthAnalysis(analysis)) return false
@@ -394,6 +415,7 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
     profile?.packageConfig,
   )
   const fingerprint = buildHealthAnalysisFingerprint(profile)
+  const analysisStage = opts.analysisStage === 'detailed' ? 'detailed' : 'core'
   const ai = await fetchAiHealthScore({
     profile,
     categorySummaries,
@@ -403,6 +425,7 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
   if (ai.ok) {
     return {
       ...ai,
+      analysisStage,
       sourceFingerprint: ai.sourceFingerprint || fingerprint,
       bmi: profile?.healthAnalysis?.bmi ?? null,
       bmiCategory: profile?.healthAnalysis?.bmiCategory ?? null,
@@ -411,6 +434,8 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
     }
   }
   if (ai.unchanged) {
+    // Detaylı aşamaya yükseltirken fingerprint aynı olabilir (yalnızca stage farkı) —
+    // force ile gelinmediyse ve stage yükseltiliyorsa client zaten force kullanır.
     const err = new Error(ai.error || 'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz')
     err.code = 'health_analysis_unchanged'
     throw err
@@ -418,6 +443,7 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
   const fallback = computeFallbackHealthScores(profile)
   return {
     ...fallback,
+    analysisStage,
     version: HEALTH_SCORE_ANALYSIS_VERSION,
     sourceFingerprint: fingerprint,
     bmi: profile?.healthAnalysis?.bmi ?? null,

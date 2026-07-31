@@ -416,21 +416,27 @@ export default function HealthTestStep({
   healthTest,
   updateHealthTest,
   showErrors,
+  hideAudienceChip = false,
+  /** Çekirdek akış: required bayrağından bağımsız zorunlu göster */
+  forceRequired = false,
 }) {
   const { user } = useApp()
   if (!question) return null
 
-  const theme = themeFor(question.sectionId)
+  const theme = themeFor(hideAudienceChip ? 'general' : question.sectionId)
   const SectionIcon = ICONS[question.sectionIcon] || HeartPulse
   const audienceMeta = HEALTH_AUDIENCE_META[question.audience] || HEALTH_AUDIENCE_META.shared
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
-  const q = question
+  const q = forceRequired ? { ...question, required: true } : question
   const parentVal = healthTest?.[q.key]
   const detailVisible = q.detail && isDetailVisible(q.detail, parentVal)
   const visibleFollowUps = (q.followUps || []).filter((fu) => isFollowUpVisible(fu, parentVal))
   const softWarning = getSoftWarningMessage(q, healthTest)
 
-  const missing = showErrors && !isQuestionFullyAnswered(q, healthTest)
+  const missing = showErrors && !isQuestionFullyAnswered(
+    forceRequired ? { ...q, required: true } : q,
+    healthTest,
+  )
   const detailMissing = showErrors && detailVisible && !isDetailFilled(q.detail, healthTest)
   const infoNote = typeof q.infoNote === 'function'
     ? q.infoNote(healthTest)
@@ -470,10 +476,16 @@ export default function HealthTestStep({
               </span>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/75">{question.sectionTitle}</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${audienceMeta.chip}`}>
-                    {audienceMeta.label}
-                  </span>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/75">
+                    {hideAudienceChip
+                      ? (sectionTitle || 'Genel Sağlık Testi')
+                      : (question.sectionTitle || sectionTitle)}
+                  </p>
+                  {!hideAudienceChip && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${audienceMeta.chip}`}>
+                      {audienceMeta.label}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm font-medium text-white/90">Soru {questionIndex + 1}</p>
               </div>

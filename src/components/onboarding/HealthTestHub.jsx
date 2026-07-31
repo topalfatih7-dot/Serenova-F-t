@@ -2,16 +2,20 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, MoonStar, Clock3,
-  CheckCircle2, Circle, Sparkles,
+  CheckCircle2, Circle, Sparkles, ArrowRight, Loader2,
 } from 'lucide-react'
 import HealthTestConsentForm from './HealthTestConsentForm'
-import HealthTestProfilePrepBanner from './HealthTestProfilePrepBanner'
+import HealthProfileGateForm from './HealthProfileGateForm'
 import {
   HEALTH_AUDIENCE_META,
-  getHealthTestHubSections,
-  getOverallHealthTestProgress,
-  isHealthTestComplete,
+  getRemainingHubSections,
 } from '../../data/healthTest'
+import {
+  getCoreHealthTestKeySet,
+  getCoreHealthTestProgress,
+  isCoreHealthTestComplete,
+} from '../../data/coreHealthTest'
+import { hasCompleteAnalysisProfile } from '../../utils/healthProfile'
 
 const ICONS = {
   HeartPulse, Stethoscope, Dumbbell, Activity, Venus, Mars, Apple, MoonStar, Clock3,
@@ -41,20 +45,32 @@ export default function HealthTestHub({
   onConsentSave,
   consentSaving = false,
   profile = null,
+  onProfileGateSave,
+  profileGateSaving = false,
   analysisReady = false,
   analysisLoading = false,
-  saveOnly = false,
+  analysisStage = null,
+  detailedComplete = false,
   scoresOnly = false,
+  onStartCoreAnalysis = null,
 }) {
   const [localAck, setLocalAck] = useState(!!healthAck)
   const [localDisclaimer, setLocalDisclaimer] = useState(!!disclaimer)
   const [showErrors, setShowErrors] = useState(false)
 
-  const sections = getHealthTestHubSections(gender, packageConfig, healthTest)
-  const overall = getOverallHealthTestProgress(healthTest, gender, packageConfig)
+  const profileReady = hasCompleteAnalysisProfile(profile)
   const needsConsent = !healthAck || !disclaimer
-  const fullyComplete = isHealthTestComplete(healthTest, gender, packageConfig)
-    && healthAck && disclaimer
+  const coreKeys = getCoreHealthTestKeySet(gender)
+  const coreProgress = getCoreHealthTestProgress(healthTest, gender)
+  const coreComplete = isCoreHealthTestComplete(healthTest, gender)
+  const sections = getRemainingHubSections(gender, packageConfig, healthTest, coreKeys)
+
+  const remainingTotal = sections.reduce((n, s) => n + (s.progress.requiredTotal || 0), 0)
+  const remainingAnswered = sections.reduce((n, s) => n + (s.progress.requiredAnswered || 0), 0)
+  const remainingSectionsDone = sections.filter((s) => s.progress.complete).length
+  const remainingPercent = remainingTotal
+    ? Math.round((remainingAnswered / remainingTotal) * 100)
+    : (detailedComplete ? 100 : 0)
 
   const handleConsentSubmit = () => {
     if (!localAck || !localDisclaimer) {
@@ -64,10 +80,21 @@ export default function HealthTestHub({
     onConsentSave?.({ healthAck: localAck, disclaimer: localDisclaimer })
   }
 
+  if (!profileReady) {
+    return (
+      <div className="w-full space-y-5">
+        <HealthProfileGateForm
+          profile={profile}
+          onSave={onProfileGateSave}
+          saving={profileGateSaving}
+        />
+      </div>
+    )
+  }
+
   if (needsConsent) {
     return (
       <div className="w-full space-y-5">
-        <HealthTestProfilePrepBanner profile={profile} />
         <HealthTestConsentForm
           healthAck={localAck}
           disclaimer={localDisclaimer}
@@ -81,55 +108,159 @@ export default function HealthTestHub({
     )
   }
 
+  if (!coreComplete) {
+    return (
+      <div className="w-full min-w-0 space-y-6 overflow-x-hidden">
+        <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+                1. Aşama
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold text-cream-900">
+                Genel Sağlık Testi
+              </p>
+              <p className="mt-1 text-sm text-cream-800/60 break-words">
+                {coreProgress.total} soruluk temel test — tamamlandığında skorlarınız hazırlanır.
+                İsterseniz daha sonra kategori sorularıyla analizi derinleştirebilirsiniz.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+              <span className="font-display text-lg font-bold">{coreProgress.percent}%</span>
+            </div>
+          </div>
+          <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-cream-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-brand-500 to-sage-500 transition-all duration-500"
+              style={{ width: `${coreProgress.percent}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-medium text-cream-800/55">
+            {coreProgress.answered} / {coreProgress.total} soru
+          </p>
+        </div>
+
+        <Link
+          to="/health-test/core"
+          className="group flex min-w-0 flex-col overflow-hidden rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-500/10 to-sage-500/5 p-6 shadow-sm transition hover:border-brand-300 hover:shadow-md"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/90 text-brand-600 shadow-sm">
+              <HeartPulse className="h-6 w-6" />
+            </span>
+            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${
+              coreProgress.started
+                ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                : 'bg-brand-100 text-brand-800 ring-brand-200'
+            }`}>
+              {coreProgress.started ? 'Devam et' : 'Başla'}
+            </span>
+          </div>
+          <h3 className="mt-4 font-display text-xl font-bold text-cream-900 group-hover:text-brand-700">
+            Genel Sağlık Testi
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+            Genel sağlık, tıbbi geçmiş, beslenme, hareket ve yaşam tarzından seçilmiş temel sorular.
+            Kategori seçmeden tek akışta ilerlersiniz.
+          </p>
+          <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
+            {coreProgress.started ? 'Kaldığınız yerden devam' : 'Teste başla'}
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      </div>
+    )
+  }
+
+  const awaitingCoreAnalysis = coreComplete && !analysisReady
+
   return (
     <div className="w-full min-w-0 space-y-6 overflow-x-hidden">
-      <HealthTestProfilePrepBanner profile={profile} />
-      <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">Toplam ilerleme</p>
-            <p className="mt-1 font-display text-2xl font-bold text-cream-900">
-              {overall.completed} / {overall.total} kategori
-            </p>
-            <p className="mt-1 text-sm text-cream-800/60 break-words">
-              Her kategoriyi ayrı ayrı tamamlayın — istediğiniz sırayla ilerleyebilirsiniz.
-            </p>
-          </div>
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-            <span className="font-display text-lg font-bold">{overall.percent}%</span>
-          </div>
-        </div>
-        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-cream-100">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-sage-500 transition-all duration-500"
-            style={{ width: `${overall.percent}%` }}
-          />
-        </div>
+      <div className={`rounded-3xl px-4 py-4 text-sm sm:px-5 ${
+        awaitingCoreAnalysis
+          ? 'border-2 border-brand-300 bg-gradient-to-br from-brand-50 via-white to-sage-50/40 text-cream-900 shadow-sm'
+          : 'border border-sage-200 bg-sage-50/50 text-sage-900'
+      }`}>
+        <span className="flex items-center gap-2 font-semibold">
+          <CheckCircle2 className={`h-4 w-4 shrink-0 ${awaitingCoreAnalysis ? 'text-brand-600' : 'text-sage-600'}`} />
+          Genel Sağlık Testi tamamlandı
+        </span>
+        <p className={`mt-1 text-xs break-words ${awaitingCoreAnalysis ? 'text-cream-800/75' : 'text-sage-800/75'}`}>
+          {analysisLoading
+            ? 'Analiziniz hazırlanıyor…'
+            : analysisReady
+              ? (analysisStage === 'detailed' || detailedComplete
+                ? 'Detaylı sağlık analiziniz hazır.'
+                : 'Temel skorlarınız hazır. İsterseniz aşağıdaki opsiyonel kategorileri tamamlayarak daha detaylı analiz alın.')
+              : 'Cevaplarınız kaydedildi. Skorlarınızı görmek için analizi başlatın.'}
+          {scoresOnly && analysisReady
+            ? ' Uzman raporu paket seçince açılır.'
+            : ''}
+        </p>
+        {awaitingCoreAnalysis && (
+          <button
+            type="button"
+            onClick={() => onStartCoreAnalysis?.()}
+            disabled={!onStartCoreAnalysis || analysisLoading}
+            className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-sage-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {analysisLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {analysisLoading ? 'Analiz hazırlanıyor…' : 'Analizi Başlat'}
+          </button>
+        )}
+        {scoresOnly && analysisReady && (
+          <Link
+            to="/plans"
+            className="mt-2 inline-flex text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
+          >
+            Plan seç &amp; uzman raporunu aç
+          </Link>
+        )}
       </div>
 
-      {fullyComplete && (
+      {!detailedComplete && (
+        <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-cream-800/50">
+                2. Aşama — Opsiyonel
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold text-cream-900">
+                {remainingSectionsDone} / {sections.length} kategori
+              </p>
+              <p className="mt-1 text-sm text-cream-800/60 break-words">
+                Kalan soruları istediğiniz sırayla tamamlayın. Tümü bitince daha detaylı analiz üretilir.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+              <span className="font-display text-lg font-bold">{remainingPercent}%</span>
+            </div>
+          </div>
+          <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-cream-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-brand-500 to-sage-500 transition-all duration-500"
+              style={{ width: `${remainingPercent}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-medium text-cream-800/55">
+            {remainingAnswered} / {remainingTotal} kalan soru
+          </p>
+        </div>
+      )}
+
+      {detailedComplete && (
         <div className="rounded-2xl border border-sage-200 bg-sage-50/60 px-4 py-3 text-sm text-sage-900">
           <span className="flex items-center gap-2 font-semibold">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-sage-600" />
-            {scoresOnly ? 'Skorlarınız hesaplandı' : 'Kişisel sağlık analizi kaydedildi'}
+            {analysisStage === 'detailed'
+              ? 'Detaylı analiz tamamlandı'
+              : 'Tüm opsiyonel sorular tamamlandı'}
           </span>
           <p className="mt-1 text-xs text-sage-800/75 break-words">
-            {scoresOnly
-              ? 'Genel ve kategori skorlarınız hazır. Uzman raporu ve öneriler paket seçince açılır. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
-              : analysisReady
-                ? 'Sağlık analiziniz hazır; koç ve diyetisyeniniz görüntüler. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'
-                : analysisLoading
-                  ? 'Cevaplarınız kaydedildi; koç/diyetisyen raporu hazırlanıyor…'
-                  : 'Cevaplarınız profilinizde saklanır. Koç ve diyetisyeniniz için AI raporu arka planda üretilir. İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'}
+            {analysisLoading
+              ? 'Detaylı analiz hazırlanıyor…'
+              : 'İstediğiniz kategoriyi tekrar açıp güncelleyebilirsiniz.'}
           </p>
-          {scoresOnly && (
-            <Link
-              to="/plans"
-              className="mt-3 inline-flex text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
-            >
-              Plan seç &amp; uzman raporunu aç
-            </Link>
-          )}
         </div>
       )}
 
@@ -149,9 +280,7 @@ export default function HealthTestHub({
             statusClass = 'bg-amber-100 text-amber-800'
           }
 
-          const progressPercent = progress.complete
-            ? 100
-            : progress.percent
+          const progressPercent = progress.complete ? 100 : progress.percent
 
           return (
             <Link
@@ -171,9 +300,14 @@ export default function HealthTestHub({
               <h3 className="mt-3 min-w-0 break-words font-display text-base font-bold text-cream-900 group-hover:text-brand-700">
                 {section.title}
               </h3>
-              <p className="mt-1 min-w-0 flex-1 break-words text-xs leading-relaxed text-cream-800/60">{section.subtitle}</p>
+              <p className="mt-1 min-w-0 flex-1 break-words text-xs leading-relaxed text-cream-800/60">
+                {section.subtitle}
+              </p>
+              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-cream-800/40">
+                Opsiyonel
+              </p>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-2">
                 <div className="flex min-w-0 items-center justify-between gap-2 text-xs font-medium text-cream-800/55">
                   <span className="min-w-0 truncate">
                     {progress.complete
