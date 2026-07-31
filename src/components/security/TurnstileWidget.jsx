@@ -1,53 +1,56 @@
-import { forwardRef, useEffect, useRef, useCallback, useImperativeHandle } from 'react'
+import { forwardRef, useEffect, useRef, useCallback, useImperativeHandle, useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
 import { TURNSTILE_SITE_KEY } from '../../config/turnstile'
 
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const RESET_DEBOUNCE_MS = 400
-const EXECUTE_TIMEOUT_MS = 15_000
+const TOKEN_WAIT_MS = 15_000
 
 /**
- * Cloudflare Turnstile widget (execute-on-submit).
- * Imperative API: reset(), execute(), getResponse()
- * Site key yoksa (local) boş render eder; sunucu da doğrulamayı atlar.
+ * Cloudflare Turnstile — görünür managed widget (sektör standardı).
+ * - appearance: always → formda her zaman görünür
+ * - execution: render → yüklenince challenge çalışır
+ * Imperative: reset(), execute()/waitForToken(), getResponse()
  */
 const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className = '' }, ref) {
   const hostRef = useRef(null)
   const widgetIdRef = useRef(null)
   const onTokenRef = useRef(onToken)
   const resetTimerRef = useRef(0)
-  const executeResolveRef = useRef(null)
-  const executeRejectRef = useRef(null)
-  const executeTimerRef = useRef(0)
-  const readyRef = useRef(false)
+  const waitResolveRef = useRef(null)
+  const waitRejectRef = useRef(null)
+  const waitTimerRef = useRef(0)
+  const [status, setStatus] = useState('loading') // loading | ready | error
 
   useEffect(() => {
     onTokenRef.current = onToken
   }, [onToken])
 
-  const clearExecuteWaiters = useCallback((error) => {
-    if (executeTimerRef.current) {
-      window.clearTimeout(executeTimerRef.current)
-      executeTimerRef.current = 0
+  const clearWaiters = useCallback((error) => {
+    if (waitTimerRef.current) {
+      window.clearTimeout(waitTimerRef.current)
+      waitTimerRef.current = 0
     }
-    const reject = executeRejectRef.current
-    executeResolveRef.current = null
-    executeRejectRef.current = null
+    const reject = waitRejectRef.current
+    waitResolveRef.current = null
+    waitRejectRef.current = null
     if (error && reject) reject(error)
   }, [])
 
-  const settleExecute = useCallback((token) => {
-    if (executeTimerRef.current) {
-      window.clearTimeout(executeTimerRef.current)
-      executeTimerRef.current = 0
+  const settleWait = useCallback((token) => {
+    if (waitTimerRef.current) {
+      window.clearTimeout(waitTimerRef.current)
+      waitTimerRef.current = 0
     }
-    const resolve = executeResolveRef.current
-    executeResolveRef.current = null
-    executeRejectRef.current = null
+    const resolve = waitResolveRef.current
+    waitResolveRef.current = null
+    waitRejectRef.current = null
     if (resolve) resolve(token || '')
   }, [])
 
   const softReset = useCallback(() => {
     onTokenRef.current?.('')
+    setStatus('loading')
     if (!window.turnstile || widgetIdRef.current == null) return
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
     resetTimerRef.current = window.setTimeout(() => {
@@ -71,47 +74,89 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       widgetIdRef.current = null
     }
     hostRef.current.innerHTML = ''
-    readyRef.current = false
     onTokenRef.current?.('')
+    setStatus('loading')
 
     widgetIdRef.current = window.turnstile.render(hostRef.current, {
       sitekey: TURNSTILE_SITE_KEY,
-      execution: 'execute',
-      appearance: 'interaction-only',
+      // Görünür managed widget — kullanıcı bot korumasını görür
+      execution: 'render',
+      appearance: 'always',
       'refresh-expired': 'auto',
       retry: 'auto',
       theme: 'light',
       size: 'normal',
       callback: (token) => {
-        readyRef.current = true
+        setStatus('ready')
         onTokenRef.current?.(token || '')
-        settleExecute(token || '')
+        settleWait(token || '')
       },
       'expired-callback': () => {
-        readyRef.current = false
+        setStatus('loading')
         onTokenRef.current?.('')
         softReset()
       },
       'error-callback': () => {
-        readyRef.current = false
+        setStatus('error')
         onTokenRef.current?.('')
-        clearExecuteWaiters(new Error('Bot doğrulaması başarısız. Lütfen tekrar deneyin.'))
+        clearWaiters(new Error('Bot doğrulaması başarısız. Lütfen tekrar deneyin.'))
         softReset()
       },
       'timeout-callback': () => {
-        readyRef.current = false
+        setStatus('error')
         onTokenRef.current?.('')
-        clearExecuteWaiters(new Error('Bot doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.'))
+        clearWaiters(new Error('Bot doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.'))
         softReset()
       },
     })
-  }, [clearExecuteWaiters, settleExecute, softReset])
+  }, [clearWaiters, settleWait, softReset])
+
+  const waitForToken = useCallback(() => {
+    if (!TURNSTILE_SITE_KEY) return Promise.resolve('')
+    if (!window.turnstile || widgetIdRef.current == null) {
+      return Promise.reject(new Error('Bot doğrulaması henüz hazır değil. Lütfen birkaç saniye bekleyin.'))
+    }
+
+    try {
+      const existing = window.turnstile.getResponse(widgetIdRef.current) || ''
+      if (existing.length >= 10) {
+        onTokenRef.current?.(existing)
+        setStatus('ready')
+        return Promise.resolve(existing)
+      }
+    } catch {
+      /* continue wait */
+    }
+
+    return new Promise((resolve, reject) => {
+      clearWaiters()
+      waitResolveRef.current = resolve
+      waitRejectRef.current = reject
+      waitTimerRef.current = window.setTimeout(() => {
+        waitTimerRef.current = 0
+        waitResolveRef.current = null
+        waitRejectRef.current = null
+        reject(new Error('Bot doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.'))
+      }, TOKEN_WAIT_MS)
+
+      // Token yoksa challenge’ı yeniden tetikle (render mode’da reset yeter)
+      try {
+        window.turnstile.reset(widgetIdRef.current)
+      } catch {
+        try {
+          window.turnstile.execute?.(widgetIdRef.current)
+        } catch {
+          /* ignore */
+        }
+      }
+    })
+  }, [clearWaiters])
 
   useImperativeHandle(ref, () => ({
     reset() {
-      readyRef.current = false
       onTokenRef.current?.('')
-      clearExecuteWaiters()
+      setStatus('loading')
+      clearWaiters()
       if (!window.turnstile || widgetIdRef.current == null) return
       try {
         window.turnstile.reset(widgetIdRef.current)
@@ -127,44 +172,10 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
         return ''
       }
     },
-    execute() {
-      if (!TURNSTILE_SITE_KEY) return Promise.resolve('')
-      if (!window.turnstile || widgetIdRef.current == null) {
-        return Promise.reject(new Error('Bot doğrulaması henüz hazır değil. Lütfen birkaç saniye bekleyin.'))
-      }
-      const existing = (() => {
-        try {
-          return window.turnstile.getResponse(widgetIdRef.current) || ''
-        } catch {
-          return ''
-        }
-      })()
-      if (existing && existing.length >= 10) {
-        onTokenRef.current?.(existing)
-        return Promise.resolve(existing)
-      }
-
-      return new Promise((resolve, reject) => {
-        clearExecuteWaiters()
-        executeResolveRef.current = resolve
-        executeRejectRef.current = reject
-        executeTimerRef.current = window.setTimeout(() => {
-          executeTimerRef.current = 0
-          executeResolveRef.current = null
-          executeRejectRef.current = null
-          reject(new Error('Bot doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.'))
-          softReset()
-        }, EXECUTE_TIMEOUT_MS)
-
-        try {
-          window.turnstile.execute(widgetIdRef.current)
-        } catch (err) {
-          clearExecuteWaiters()
-          reject(err instanceof Error ? err : new Error('Bot doğrulaması başlatılamadı.'))
-        }
-      })
-    },
-  }), [clearExecuteWaiters, renderWidget, softReset])
+    /** Submit öncesi taze token bekle (execute alias) */
+    execute: waitForToken,
+    waitForToken,
+  }), [clearWaiters, renderWidget, waitForToken])
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY) {
@@ -186,13 +197,15 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       }
       document.head.appendChild(script)
     } else if (existing.dataset.loaded === '1' || existing.readyState === 'complete') {
-      // Script DOM'da ama load event kaçırılmış olabilir
       const waitForApi = (attempts = 0) => {
         if (window.turnstile) {
           renderWidget()
           return
         }
-        if (attempts > 40) return
+        if (attempts > 40) {
+          setStatus('error')
+          return
+        }
         window.setTimeout(() => waitForApi(attempts + 1), 50)
       }
       waitForApi()
@@ -205,7 +218,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       return () => {
         existing.removeEventListener('load', onLoad)
         if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
-        clearExecuteWaiters()
+        clearWaiters()
         if (widgetIdRef.current != null && window.turnstile) {
           try {
             window.turnstile.remove(widgetIdRef.current)
@@ -219,7 +232,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
 
     return () => {
       if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
-      clearExecuteWaiters()
+      clearWaiters()
       if (widgetIdRef.current != null && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current)
@@ -229,11 +242,39 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
         widgetIdRef.current = null
       }
     }
-  }, [renderWidget, clearExecuteWaiters])
+  }, [renderWidget, clearWaiters])
 
   if (!TURNSTILE_SITE_KEY) return null
 
-  return <div ref={hostRef} className={className} />
+  return (
+    <div
+      className={[
+        'w-full rounded-2xl border border-cream-200/90 bg-gradient-to-br from-cream-50/80 via-white to-brand-50/40 px-3 py-3 shadow-sm',
+        className,
+      ].filter(Boolean).join(' ')}
+    >
+      <div className="mb-2 flex items-center gap-2 px-0.5">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-cream-900">Güvenlik doğrulaması</p>
+          <p className="text-[11px] leading-snug text-cream-800/55">
+            {status === 'ready'
+              ? 'Doğrulama tamamlandı'
+              : status === 'error'
+                ? 'Doğrulama başarısız — yenileniyor…'
+                : 'Cloudflare ile bot koruması hazırlanıyor…'}
+          </p>
+        </div>
+      </div>
+      <div
+        ref={hostRef}
+        className="flex min-h-[65px] items-center justify-center overflow-hidden"
+        aria-live="polite"
+      />
+    </div>
+  )
 })
 
 export default TurnstileWidget

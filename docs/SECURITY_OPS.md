@@ -17,7 +17,7 @@
 
 ## Auth bot koruması (signup / login)
 
-- UI giriş/kayıt → Turnstile **execute-on-submit** (`TurnstileWidget` + `useTurnstile`); token tek kullanımlık — hata sonrası `reset()`, asla React `key` remount / token reuse yok.
+- UI giriş/kayıt → görünür Turnstile managed widget (`appearance: always`, `execution: render`) + `useTurnstile`; token tek kullanımlık — hata sonrası `reset()`, asla React `key` remount / token reuse yok.
 - Stabil hata kodları: `TURNSTILE_REQUIRED` | `TURNSTILE_INVALID` (client reset tetikler).
 - Signup 3/saat (IP+email); login credential fail 12/saat (IP+email); login captcha denemesi 40/saat (IP) — yanık token credential kotasını yakmaz.
 - Disposable domain engeli (`api/_disposableEmail.js`).

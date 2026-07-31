@@ -2,10 +2,10 @@ import { useCallback, useRef, useState } from 'react'
 import { isTurnstileEnabled } from '../config/turnstile'
 
 /**
- * Turnstile form sözleşmesi:
- * - getTokenForSubmit(): taze token (varsa tüket, yoksa execute)
- * - reset(): her API yanıtından sonra çağır (başarı/hata)
- * - Token tek kullanımlık; asla React key remount ile yenileme
+ * Turnstile form sözleşmesi (görünür managed widget):
+ * - getTokenForSubmit(): mevcut token’ı tüket; yoksa waitForToken/reset
+ * - reset(): her API yanıtından sonra (başarı/hata)
+ * - Token tek kullanımlık; asla React key remount / reuse
  */
 export function useTurnstile() {
   const enabled = isTurnstileEnabled()

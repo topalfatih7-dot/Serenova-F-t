@@ -302,7 +302,7 @@ export default function StaffApplicationPage() {
                   <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
                       {turnstileEnabled && !formSessionToken && (
-                        <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                        <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
                       )}
                       <PhotoUpload
                         value={form.photo}
@@ -419,7 +419,7 @@ export default function StaffApplicationPage() {
               {step === 3 && form.role === 'coach' && (
                 <>
                   {needsAnyDocUpload && turnstileEnabled && !formSessionToken && (
-                    <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} className="flex justify-center rounded-2xl border border-cream-200 bg-white px-4 py-3" />
+                    <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
                   )}
                   <AccordionSection id="education" title="Eğitim Bilgisi" icon={GraduationCap} tone="brand" open={openSection === 'education'} onToggle={toggleSection}>
                     <div className="space-y-3">

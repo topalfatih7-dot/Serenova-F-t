@@ -13,7 +13,7 @@ description: >-
 1. Production clients should not call `signInWithPassword` / `signUp` raw against Supabase for password flows — use `POST /api/auth` actions (Turnstile / rate limit). See `api/auth.js` and `docs/SECURITY_OPS.md`.
 2. Auth session may exist **before** `members` row (Stripe pending paid path). Free signup creates `members` immediately. UI must use `hasRegisteredMember` — no fake profile header.
 3. `ProfileCompletionGate`: if member role and not registered → `/onboarding?plan=…` (+ `oauth=1` when social).
-4. **Turnstile:** `execution: 'execute'` + `useTurnstile().getTokenForSubmit()`; after every API response call `reset()`. Never remount via React `key` or reuse a token. Codes: `TURNSTILE_REQUIRED` / `TURNSTILE_INVALID`.
+4. **Turnstile:** Visible managed widget (`appearance: always`, `execution: render`) + `useTurnstile().getTokenForSubmit()`; after every API response call `reset()`. Never remount via React `key` or reuse a token. Codes: `TURNSTILE_REQUIRED` / `TURNSTILE_INVALID`.
 
 ## Onboarding (current web)
 
