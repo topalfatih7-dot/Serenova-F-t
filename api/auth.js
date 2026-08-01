@@ -236,6 +236,7 @@ async function sendRecoveryEmail(email, redirectTo) {
 }
 
 function sessionPayload(session) {
+  if (!session?.access_token) return null
   return {
     access_token: session.access_token,
     refresh_token: session.refresh_token,
@@ -314,6 +315,7 @@ async function handleSignup(req, res, body) {
     if (grant.ok && grant.session) {
       const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
       const finalized = await finalizeLoginSession(grant.session)
+      const payload = sessionPayload(finalized.session || grant.session)
       return res.status(200).json({
         ok: true,
         alreadyRegistered: true,
@@ -321,7 +323,7 @@ async function handleSignup(req, res, body) {
         authSessionToken,
         sessionClaimed: finalized.sessionClaimed,
         sessionId: finalized.sessionId,
-        session: sessionPayload(finalized.session),
+        session: payload,
       })
     }
     return res.status(409).json({
@@ -373,6 +375,7 @@ async function handleSignup(req, res, body) {
       if (grant.ok && grant.session) {
         const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
         const finalized = await finalizeLoginSession(grant.session)
+        const sess = sessionPayload(finalized.session || grant.session)
         return res.status(200).json({
           ok: true,
           alreadyRegistered: true,
@@ -380,7 +383,7 @@ async function handleSignup(req, res, body) {
           authSessionToken,
           sessionClaimed: finalized.sessionClaimed,
           sessionId: finalized.sessionId,
-          session: sessionPayload(finalized.session),
+          session: sess,
         })
       }
       return res.status(409).json({
@@ -410,13 +413,14 @@ async function handleSignup(req, res, body) {
   const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
   if (grant.ok && grant.session) {
     const finalized = await finalizeLoginSession(grant.session)
+    const sess = sessionPayload(finalized.session || grant.session)
     return res.status(200).json({
       ok: true,
       userId,
       authSessionToken,
       sessionClaimed: finalized.sessionClaimed,
       sessionId: finalized.sessionId,
-      session: sessionPayload(finalized.session),
+      session: sess,
     })
   }
 
@@ -503,11 +507,15 @@ async function handlePasswordLogin(req, res, body) {
   }
 
   const finalized = await finalizeLoginSession(result.session)
+  const payload = sessionPayload(finalized.session || result.session)
+  if (!payload) {
+    return res.status(500).json({ ok: false, error: 'Oturum üretilemedi.' })
+  }
   return res.status(200).json({
     ok: true,
     sessionClaimed: finalized.sessionClaimed,
     sessionId: finalized.sessionId,
-    session: sessionPayload(finalized.session),
+    session: payload,
   })
 }
 
@@ -839,9 +847,18 @@ async function handleClaimActiveSession(req, res) {
   const admin = getSupabaseAdmin()
   const result = await claimActiveSession(admin, user, token)
   if (!result.ok) {
-    return res.status(500).json({ ok: false, error: result.error || 'Aktif oturum kaydedilemedi.' })
+    /* Girişi bozma — istemci grace / verify ile devam eder */
+    return res.status(200).json({
+      ok: false,
+      softFail: true,
+      error: result.error || 'Aktif oturum kaydedilemedi.',
+    })
   }
-  return res.status(200).json({ ok: true, sessionId: result.sessionId })
+  return res.status(200).json({
+    ok: true,
+    sessionId: result.sessionId,
+    signOutWarning: result.signOutWarning || null,
+  })
 }
 
 async function handleVerifyActiveSession(req, res) {

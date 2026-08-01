@@ -92,8 +92,14 @@ export async function registerActiveSession() {
         } catch {
           /* yenileme başarısız olsa da claim sunucuda tamamlandı */
         }
+        return { ok: true, sessionId: json.sessionId || null }
       }
-      return { ok: Boolean(json.ok), sessionId: json.sessionId || null }
+      /* softFail: 200 + ok:false — girişi düşürme */
+      if (json.softFail) {
+        lastClaimOkAt = Date.now()
+        return { ok: false, softFail: true, sessionId: null }
+      }
+      return { ok: false, sessionId: null }
     } catch {
       return { ok: false }
     } finally {

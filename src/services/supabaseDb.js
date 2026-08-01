@@ -749,6 +749,8 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
       }
       return { ok: false, error: loginData.error || 'E-posta veya şifre hatalı.' }
     }
+    /* SIGNED_IN → registerActiveSession yarışını önle: claim bayrağı setSession öncesi */
+    await markClaimedIfNeeded(loginData.sessionClaimed)
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
       access_token: loginData.session.access_token,
       refresh_token: loginData.session.refresh_token,
@@ -756,7 +758,6 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
     if (sessionError || !sessionData?.user) {
       return { ok: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
     }
-    await markClaimedIfNeeded(loginData.sessionClaimed)
     return { ok: true, user: sessionData.user }
   } catch {
     /* API yoksa (yalnızca Vite) klasik girişe düş — production’da /api/auth zorunlu */

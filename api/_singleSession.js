@@ -25,22 +25,33 @@ export async function claimActiveSession(admin, user, accessToken) {
   if (!sessionId) {
     return { ok: false, error: 'Oturum kimliği alınamadı.' }
   }
-
-  const appMeta = user.app_metadata || {}
-  const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, {
-    app_metadata: {
-      ...appMeta,
-      active_session_id: sessionId,
-      active_session_at: new Date().toISOString(),
-    },
-  })
-  if (updateErr) {
-    return { ok: false, error: updateErr.message || 'Aktif oturum kaydedilemedi.' }
+  if (!accessToken) {
+    return { ok: false, error: 'Access token gerekli.' }
   }
 
-  const { error: signOutErr } = await admin.auth.admin.signOut(user.id, 'others')
+  const appMeta = user.app_metadata || {}
+  /* Zaten bu session claim’liyse metadata yazmayı atla */
+  if (appMeta.active_session_id !== sessionId) {
+    const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: {
+        ...appMeta,
+        active_session_id: sessionId,
+        active_session_at: new Date().toISOString(),
+      },
+    })
+    if (updateErr) {
+      return { ok: false, error: updateErr.message || 'Aktif oturum kaydedilemedi.' }
+    }
+  }
+
+  /*
+   * GoTrueAdminApi.signOut(jwt, scope) — ilk argüman user.id DEĞİL, access token.
+   * Yanlış UUID gönderimi logout’u 4xx/5xx yapıp claim’i düşürüyordu.
+   */
+  const { error: signOutErr } = await admin.auth.admin.signOut(accessToken, 'others')
   if (signOutErr) {
-    return { ok: false, error: signOutErr.message || 'Diğer oturumlar kapatılamadı.' }
+    /* Metadata yazıldıysa claim başarılı; diğer cihazların kapanmaması soft-warn */
+    return { ok: true, sessionId, signOutWarning: signOutErr.message || 'others_signout_failed' }
   }
 
   return { ok: true, sessionId }
