@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { BRAND } from '../config/brand'
 import { staffRoleLabel } from '../utils/staffRoles'
-import { EDUCATION_LEVELS, getOfficialCoachingCertLabels } from '../data/staffApplication'
+import { educationLevelLabel, formatEducationEntry, getOfficialCoachingCertLabels } from '../data/staffApplication'
 import { supabase } from '../services/supabaseClient'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
@@ -53,6 +53,9 @@ export function collectApplicationDocuments(d = {}) {
     docs.push({ name: name || 'Belge', url, kind })
   }
 
+  if (d.graduationDocFile?.url) {
+    push(d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi', d.graduationDocFile.url, 'graduation')
+  }
   if (d.educationFile?.url) {
     push(d.educationFile.name || 'Eğitim belgesi', d.educationFile.url, 'education')
   }
@@ -220,10 +223,18 @@ function buildDocumentsSection(docPreviews) {
   return section('Ek Belgeler (görsel önizleme)', blocks)
 }
 
-function buildCoachSections(d) {
-  const eduLevel = EDUCATION_LEVELS.find((l) => l.value === d.educationLevel)?.label || d.educationLevel
+function educationListHtml(d) {
+  const fromList = (d.education || []).filter((e) => e.school || e.level || e.degree)
+  if (fromList.length) {
+    return listItems(fromList, (e) => formatEducationEntry(e))
+  }
+  // Eski başvuru fallback
+  const eduLevel = educationLevelLabel(d.educationLevel) || d.educationLevel
   const eduLine = [eduLevel, d.educationDepartment, d.educationGpa ? `GPA ${d.educationGpa}` : ''].filter(Boolean).join(' · ')
+  return eduLine ? `<p>${escapeHtml(eduLine)}</p>` : ''
+}
 
+function buildCoachSections(d) {
   return [
     section('Uzmanlık', `
       ${tagList(d.specialties)}
@@ -235,7 +246,7 @@ function buildCoachSections(d) {
       ${d.competentGroupOther ? `<p class="note">Diğer: ${escapeHtml(d.competentGroupOther)}</p>` : ''}
       ${d.chronicDiseaseExamples ? `<p class="note">Kronik hastalık örnekleri: ${escapeHtml(d.chronicDiseaseExamples)}</p>` : ''}
     `),
-    section('Eğitim', eduLine ? `<p>${escapeHtml(eduLine)}</p>` : ''),
+    section('Eğitim', educationListHtml(d)),
     section('GSB Federasyon Antrenörlük', tagList(getOfficialCoachingCertLabels(d))),
     section('Uluslararası Sertifikalar', `
       ${tagList(d.internationalCerts)}
@@ -262,10 +273,7 @@ function buildDietitianSections(d) {
     section('Mezuniyet & Lisans', `
       ${row('Bölüm', d.graduationDepartment)}
     `),
-    section('Eğitim', listItems(
-      (d.education || []).filter((e) => e.degree || e.school),
-      (e) => [e.degree, e.school, e.year].filter(Boolean).join(' · '),
-    )),
+    section('Eğitim', educationListHtml(d)),
     section('Sertifikalar', listItems(
       (d.certificates || []).filter((c) => c.name),
       (c) => [c.name, c.issuer, c.year].filter(Boolean).join(' · '),

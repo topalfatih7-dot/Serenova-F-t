@@ -15,6 +15,8 @@ export const SCORE_KEYS = [
 
 export const STAFF_BRIEF_KEYS = ['general', 'nutrition', 'movement', 'risks', 'actions']
 
+export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
+
 export function clampScore(n, fallback = null) {
   const num = Number(n)
   if (!Number.isFinite(num)) return fallback
@@ -68,6 +70,21 @@ export function normalizeStaffBrief(parsed = {}) {
   return out
 }
 
+/** Üyeye dönük motive edici brief — eksikse null (istek başarısız sayılmaz). */
+export function normalizeMemberBrief(parsed = {}) {
+  const raw = parsed.memberBrief && typeof parsed.memberBrief === 'object'
+    ? parsed.memberBrief
+    : null
+  if (!raw) return null
+  const out = {}
+  for (const key of MEMBER_BRIEF_KEYS) {
+    const text = String(raw[key] || '').trim()
+    if (!text) return null
+    out[key] = text.slice(0, 1200)
+  }
+  return out
+}
+
 export function normalizeHealthScores(parsed = {}) {
   const rawScores = parsed.scores && typeof parsed.scores === 'object' ? parsed.scores : parsed
   const scores = {}
@@ -85,5 +102,6 @@ export function normalizeHealthScores(parsed = {}) {
     overallScore: overall,
     summary: String(parsed.summary || '').trim().slice(0, 400),
     staffBrief: normalizeStaffBrief(parsed),
+    memberBrief: normalizeMemberBrief(parsed),
   }
 }

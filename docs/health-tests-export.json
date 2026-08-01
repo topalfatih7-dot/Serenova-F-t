@@ -2639,6 +2639,10 @@
             {
               "value": "office",
               "label": "Ofiste"
+            },
+            {
+              "value": "not_planning",
+              "label": "Spor yapmayı planlamıyorum"
             }
           ]
         },

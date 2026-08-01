@@ -16,6 +16,8 @@
     "og:image": "node scripts/generate-og-image.mjs",
     "preview": "vite preview",
     "db:migrate": "node scripts/db-migrate.mjs",
+    "migrate:auth-users": "node scripts/migrate-auth-users.mjs",
+    "migrate:storage": "node scripts/migrate-storage-buckets.mjs",
     "import:exercises": "node scripts/import-exercises.mjs",
     "import:exercises:dry": "node scripts/import-exercises.mjs --dry-run --upsert-taxonomy",
     "sync:exercise-names": "node scripts/sync-exercise-names-from-json.mjs",

@@ -802,6 +802,7 @@ export const HEALTH_SECTIONS = [
           { value: 'home', label: 'Evde' },
           { value: 'gym', label: 'Spor salonunda' },
           { value: 'office', label: 'Ofiste' },
+          { value: 'not_planning', label: 'Spor yapmayı planlamıyorum' },
         ],
       },
       {

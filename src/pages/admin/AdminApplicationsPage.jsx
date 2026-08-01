@@ -9,7 +9,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { downloadStaffApplicationCvPdf } from '../../utils/exportStaffApplicationCv'
-import { getOfficialCoachingCertLabels } from '../../data/staffApplication'
+import { getOfficialCoachingCertLabels, educationLevelLabel, formatEducationEntry } from '../../data/staffApplication'
 
 const SECTIONS = [
   { id: 'staff', label: 'Kadro', icon: UserPlus },
@@ -318,7 +318,6 @@ export default function AdminApplicationsPage() {
 }
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
-const EDU_LEVEL_LABELS = { lise: 'Lise', onlisans: 'Önlisans', lisans: 'Lisans' }
 
 function DetailBlock({ title, children }) {
   if (!children) return null
@@ -416,16 +415,32 @@ function StaffApplicationDetail({ app, d }) {
             {d.competentGroupOther && <p className="mt-1 text-xs text-cream-800/60">Diğer: {d.competentGroupOther}</p>}
             {d.chronicDiseaseExamples && <p className="mt-2 text-xs text-cream-800/60">Kronik hastalık örnekleri: {d.chronicDiseaseExamples}</p>}
           </DetailBlock>
+          {(d.graduationDocFile?.url || d.educationFile?.url) && (
+            <DetailBlock title="e-Devlet Mezuniyet Belgesi">
+              {d.graduationDocFile?.url ? (
+                <a href={d.graduationDocFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                  {d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi'} <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : (
+                <a href={d.educationFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                  {d.educationFile.name || 'Eğitim belgesi'} <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </DetailBlock>
+          )}
           <DetailBlock title="Eğitim">
-            <p>
-              {EDU_LEVEL_LABELS[d.educationLevel] || d.educationLevel || '—'}
-              {d.educationDepartment ? ` · ${d.educationDepartment}` : ''}
-              {d.educationGpa ? ` · GPA ${d.educationGpa}` : ''}
-            </p>
-            {d.educationFile?.url && (
-              <a href={d.educationFile.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
-                {d.educationFile.name || 'Eğitim belgesi'} <ExternalLink className="h-3 w-3" />
-              </a>
+            {(d.education || []).some((e) => e.school || e.level || e.degree) ? (
+              <ul className="space-y-1.5 text-cream-800/75">
+                {(d.education || []).filter((e) => e.school || e.level || e.degree).map((e, i) => (
+                  <li key={i}>{formatEducationEntry(e)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                {educationLevelLabel(d.educationLevel) || d.educationLevel || '—'}
+                {d.educationDepartment ? ` · ${d.educationDepartment}` : ''}
+                {d.educationGpa ? ` · GPA ${d.educationGpa}` : ''}
+              </p>
             )}
           </DetailBlock>
           <DetailBlock title="GSB Federasyon Antrenörlük">
@@ -448,7 +463,7 @@ function StaffApplicationDetail({ app, d }) {
                 {(d.certificateFiles || []).map((f, i) => (
                   <li key={f.url || i}>
                     <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
-                      {f.name || `Belge ${i + 1}`} <ExternalLink className="h-3 w-3" />
+                      {f.name || `Belge ${i + 1}`}{f.kind === 'graduation' ? ' (mezuniyet)' : ''} <ExternalLink className="h-3 w-3" />
                     </a>
                   </li>
                 ))}
@@ -476,12 +491,19 @@ function StaffApplicationDetail({ app, d }) {
           {d.graduationDepartment && <DetailBlock title="Mezuniyet"><p>{d.graduationDepartment}</p></DetailBlock>}
           {d.licenseNumber && <DetailBlock title="Diploma / Oda No"><p>{d.licenseNumber}</p></DetailBlock>}
           {d.bio && <DetailBlock title="Tanıtım"><p className="text-cream-800/75">{d.bio}</p></DetailBlock>}
-          {(d.education || []).length > 0 && (
+          {d.graduationDocFile?.url && (
+            <DetailBlock title="e-Devlet Mezuniyet Belgesi">
+              <a href={d.graduationDocFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                {d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi'} <ExternalLink className="h-3 w-3" />
+              </a>
+            </DetailBlock>
+          )}
+          {(d.education || []).some((e) => e.school || e.level || e.degree) && (
             <DetailBlock title="Eğitim">
               <ul className="space-y-1.5 text-cream-800/75">
-                {d.education.filter((e) => e.degree || e.school).map((e, i) => (
+                {d.education.filter((e) => e.school || e.level || e.degree).map((e, i) => (
                   <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>{[e.degree, e.school, e.year].filter(Boolean).join(' · ')}</span>
+                    <span>{formatEducationEntry(e)}</span>
                     {e.file?.url && (
                       <a href={e.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
                         Belge <ExternalLink className="h-3 w-3" />
@@ -492,7 +514,7 @@ function StaffApplicationDetail({ app, d }) {
               </ul>
             </DetailBlock>
           )}
-          {(d.certificates || []).length > 0 && (
+          {(d.certificates || []).some((c) => c.name) && (
             <DetailBlock title="Sertifikalar">
               <ul className="space-y-1.5 text-cream-800/75">
                 {d.certificates.filter((c) => c.name).map((c, i) => (
@@ -514,7 +536,7 @@ function StaffApplicationDetail({ app, d }) {
                 {(d.certificateFiles || []).map((f, i) => (
                   <li key={f.url || i}>
                     <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
-                      {f.name || `Belge ${i + 1}`} <ExternalLink className="h-3 w-3" />
+                      {f.name || `Belge ${i + 1}`}{f.kind === 'graduation' ? ' (mezuniyet)' : ''} <ExternalLink className="h-3 w-3" />
                     </a>
                   </li>
                 ))}

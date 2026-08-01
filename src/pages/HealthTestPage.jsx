@@ -20,7 +20,7 @@ export default function HealthTestPage() {
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
   const [profileGateSaving, setProfileGateSaving] = useState(false)
-  const { analysis, loading: analysisLoading, runSync } = useHealthAnalysisSync()
+  const { analysis, history: analysisHistory, loading: analysisLoading, runSync } = useHealthAnalysisSync()
   const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
 
   const coreComplete = Boolean(
@@ -120,6 +120,8 @@ export default function HealthTestPage() {
         analysisReady={analysisReady}
         analysisLoading={analysisLoading}
         analysisStage={analysisStage}
+        analysis={analysis}
+        analysisHistory={analysisHistory}
         detailedComplete={detailedComplete}
         scoresOnly={isUnpaidMember}
         onStartCoreAnalysis={handleStartCoreAnalysis}

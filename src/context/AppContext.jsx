@@ -111,7 +111,7 @@ export function AppProvider({ children }) {
         void registerActiveSession()
       }
       if (event === 'TOKEN_REFRESHED' && session) {
-        await verifyActiveSessionOrSignOut()
+        await verifyActiveSessionOrSignOut({ forceRemote: true })
       }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
       if (event === 'SIGNED_OUT') sb.invalidateHydrateCache()
@@ -150,8 +150,9 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseEnabled || !isAuthenticated) return undefined
 
-    const tick = () => { verifyActiveSessionOrSignOut() }
-    const interval = setInterval(tick, 60_000)
+    /* Yerel JWT kontrolü — API yalnızca TOKEN_REFRESHED'da (forceRemote) */
+    const tick = () => { verifyActiveSessionOrSignOut({ forceRemote: false }) }
+    const interval = setInterval(tick, 5 * 60_000)
     const onVis = () => {
       if (document.visibilityState === 'visible') tick()
     }
@@ -839,69 +840,129 @@ export function AppProvider({ children }) {
     }
   }, [flushNotificationReads, reloadRemote])
 
+  const patchMemberInDb = useCallback((member) => {
+    if (!member?.id) return
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      const idx = prev.members.findIndex((m) => m.id === member.id)
+      const members = idx >= 0
+        ? prev.members.map((m, i) => (i === idx ? member : m))
+        : [member, ...prev.members]
+      return { ...prev, members }
+    })
+  }, [])
+
+  const patchStaffInDb = useCallback((staffRow) => {
+    if (!staffRow?.id) return
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      const idx = prev.staff.findIndex((s) => s.id === staffRow.id)
+      const staff = idx >= 0
+        ? prev.staff.map((s, i) => (i === idx ? { ...s, ...staffRow } : s))
+        : [...prev.staff, staffRow]
+      return { ...prev, staff }
+    })
+  }, [])
+
+  const contentListKey = (kind) => ({
+    testimonial: 'testimonials',
+    faq: 'faqs',
+    success_story: 'successStories',
+  }[kind] || null)
+
   const register = useCallback(async (profile, membership, packageConfig) => {
     const r = await sb.register(profile, membership, packageConfig)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      if (r.member) patchMemberInDb(r.member)
+      void reloadRemote({ force: false })
+    }
     return r
-  }, [reloadRemote])
+  }, [reloadRemote, patchMemberInDb])
 
   const registerWithPayment = useCallback(async (profile, packageConfig) => {
     const r = await sb.registerWithPayment(profile, packageConfig)
-    if (r.success) await reloadRemote()
+    if (r.success) void reloadRemote({ force: false })
     return r
   }, [reloadRemote])
 
   const registerWithPlan = useCallback(async (profile, planId, planPrice, durationMonths = 1) => {
     const r = await sb.registerWithPlan(profile, planId, planPrice, durationMonths)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      if (r.member) patchMemberInDb(r.member)
+      void reloadRemote({ force: false })
+    }
     return r
-  }, [reloadRemote])
+  }, [reloadRemote, patchMemberInDb])
 
   const completeOAuthMember = useCallback(async (profile, membership, packageConfig, opts = {}) => {
     const r = await sb.completeOAuthMember(profile, membership, packageConfig, opts)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      if (r.member) patchMemberInDb(r.member)
+      void reloadRemote({ force: false })
+    }
     return r
-  }, [reloadRemote])
+  }, [reloadRemote, patchMemberInDb])
 
   const savePlan = useCallback(async (plan) => {
-    await sb.upsertPlan(plan)
-    await reloadRemote()
-  }, [reloadRemote])
+    const saved = await sb.upsertPlan(plan)
+    setRemoteDb((prev) => {
+      if (!prev || !saved) return prev
+      const idx = (prev.plans || []).findIndex((p) => p.id === saved.id)
+      const plans = idx >= 0
+        ? prev.plans.map((p, i) => (i === idx ? saved : p))
+        : [...(prev.plans || []), saved]
+      return { ...prev, plans }
+    })
+  }, [])
 
   const createPlan = useCallback(async (plan) => {
-    await sb.upsertPlan({ ...plan, isActive: plan.isActive !== false })
-    await reloadRemote()
-  }, [reloadRemote])
+    const saved = await sb.upsertPlan({ ...plan, isActive: plan.isActive !== false })
+    setRemoteDb((prev) => {
+      if (!prev || !saved) return prev
+      const idx = (prev.plans || []).findIndex((p) => p.id === saved.id)
+      const plans = idx >= 0
+        ? prev.plans.map((p, i) => (i === idx ? saved : p))
+        : [...(prev.plans || []), saved]
+      return { ...prev, plans }
+    })
+  }, [])
 
   const deletePlan = useCallback(async (planId, opts = {}) => {
     const result = await sb.deletePlan(planId, opts)
-    await reloadRemote()
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      if (result?.hard) {
+        return { ...prev, plans: (prev.plans || []).filter((p) => p.id !== planId) }
+      }
+      return {
+        ...prev,
+        plans: (prev.plans || []).map((p) => (
+          p.id === planId ? { ...p, isActive: false, isSellable: false } : p
+        )),
+      }
+    })
     return result
-  }, [reloadRemote])
+  }, [])
 
   // Mevcut üyenin planını değiştirir (yeni kayıt oluşturmaz)
   const changePlan = useCallback(async (planId, planPrice = 0, durationMonths = 1) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
     const r = await sb.changeMemberPlan(currentMember, planId, planPrice, durationMonths)
-    if (r.success) {
-      await reloadRemote()
-    }
+    if (r.success && r.member) patchMemberInDb(r.member)
     return r
-  }, [currentMember, reloadRemote])
+  }, [currentMember, patchMemberInDb])
 
   const processPremiumPayment = useCallback(async (packageConfig, schedule) => {
     if (!currentMember) return { success: false, error: 'Oturum bulunamadı' }
     const r = await sb.processPremiumPayment(currentMember, packageConfig, schedule)
-    await reloadRemote()
     return r
-  }, [currentMember, reloadRemote])
+  }, [currentMember])
 
   const upgradeToPremium = useCallback(async (packageConfig, schedule) => {
     if (!currentMember) return
     const r = await sb.processPremiumPayment(currentMember, packageConfig, schedule)
-    await reloadRemote()
     return r.pricing
-  }, [currentMember, reloadRemote])
+  }, [currentMember])
 
   const savePackage = useCallback(async (config) => {
     if (!currentMember) return
@@ -910,65 +971,70 @@ export function AppProvider({ children }) {
 
   const saveSupportSchedule = useCallback(async (schedule) => {
     if (!currentMember) return
-    await sb.saveSupportSchedule(currentMember, schedule)
-    await reloadRemote()
-  }, [currentMember, reloadRemote])
+    const updated = await sb.saveSupportSchedule(currentMember, schedule)
+    if (updated) patchMemberInDb(updated)
+  }, [currentMember, patchMemberInDb])
 
   const adminPatchMember = useCallback(async (memberId, patch) => {
-    const member = (remoteDb?.members || []).find((m) => m.id === memberId)
+    const member = (remoteDbRef.current?.members || []).find((m) => m.id === memberId)
     if (!member) return
-    await sb.saveMemberPatch(member, patch)
-    await reloadRemote()
-  }, [remoteDb, reloadRemote])
+    const updated = await sb.saveMemberPatch(member, patch)
+    if (updated) patchMemberInDb(updated)
+  }, [patchMemberInDb])
 
   const staffPatchMember = useCallback(async (memberId, patch) => {
-    const member = (remoteDb?.members || []).find((m) => m.id === memberId)
+    const member = (remoteDbRef.current?.members || []).find((m) => m.id === memberId)
     if (!member) return
-    await sb.saveMemberPatch(member, patch)
-    await reloadRemote()
-  }, [remoteDb, reloadRemote])
+    const updated = await sb.saveMemberPatch(member, patch)
+    if (updated) patchMemberInDb(updated)
+  }, [patchMemberInDb])
 
   const adminUpdatePremium = useCallback(async (memberId, options) => {
     const r = await sb.adminUpdatePremiumMembership(memberId, options)
     if (!r.success) return r
-
-    await reloadRemote()
+    if (r.member) patchMemberInDb(r.member)
     return r
-  }, [reloadRemote])
+  }, [patchMemberInDb])
 
   const adminSetMembershipStatus = useCallback(async (memberId, options) => {
     const r = await sb.adminSetMembershipStatus(memberId, options)
-    if (r.success) await reloadRemote()
+    if (r.success && r.member) patchMemberInDb(r.member)
     return r
-  }, [reloadRemote])
+  }, [patchMemberInDb])
 
   const addStaff = useCallback(async (data) => {
     const r = await sb.addStaff(data)
-    if (r.success) await reloadRemote()
+    if (r.success && r.staff) patchStaffInDb(r.staff)
     return r
-  }, [reloadRemote])
+  }, [patchStaffInDb])
 
   const editStaff = useCallback(async (id, patch) => {
     const r = await sb.editStaff(id, patch)
-    await reloadRemote()
+    if (r.success && r.staff) patchStaffInDb(r.staff)
     return r
-  }, [reloadRemote])
+  }, [patchStaffInDb])
 
   const updateStaffProfile = useCallback(async (id, patch) => {
     const r = await sb.updateStaffSelfProfile(id, patch)
-    if (r.success) await reloadRemote()
+    if (r.success && r.staff) patchStaffInDb(r.staff)
     return r
-  }, [reloadRemote])
+  }, [patchStaffInDb])
 
   const removeStaff = useCallback(async (id) => {
     await sb.removeStaff(id)
-    await reloadRemote()
-  }, [reloadRemote])
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return { ...prev, staff: (prev.staff || []).filter((s) => s.id !== id) }
+    })
+  }, [])
 
   const removeMember = useCallback(async (id) => {
     await sb.removeMember(id)
-    await reloadRemote()
-  }, [reloadRemote])
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return { ...prev, members: (prev.members || []).filter((m) => m.id !== id) }
+    })
+  }, [])
 
   const createProgram = useCallback(async (data) => {
     const p = await sb.createProgram(data)
@@ -1016,19 +1082,32 @@ export function AppProvider({ children }) {
 
   const addPost = useCallback(async (data) => {
     const p = await sb.addPost(data)
-    await reloadRemote()
+    if (p) {
+      setRemoteDb((prev) => (prev ? { ...prev, posts: [p, ...(prev.posts || [])] } : prev))
+    }
     return p
-  }, [reloadRemote])
+  }, [])
 
   const editPost = useCallback(async (id, patch) => {
-    await sb.editPost(id, patch)
-    await reloadRemote()
-  }, [reloadRemote])
+    const p = await sb.editPost(id, patch)
+    if (p) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          posts: (prev.posts || []).map((x) => (x.id === id ? p : x)),
+        }
+      })
+    }
+  }, [])
 
   const removePost = useCallback(async (id) => {
     await sb.removePost(id)
-    await reloadRemote()
-  }, [reloadRemote])
+    setRemoteDb((prev) => {
+      if (!prev) return prev
+      return { ...prev, posts: (prev.posts || []).filter((p) => p.id !== id) }
+    })
+  }, [])
 
   const createTicket = useCallback(async (ticketData) => {
     const t = await sb.createTicket(currentMember, ticketData)
@@ -1043,73 +1122,194 @@ export function AppProvider({ children }) {
 
   const addExercise = useCallback(async (data) => {
     const r = await sb.addExercise(data)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const exercises = r.exercise
+          ? [r.exercise, ...(prev.exercises || [])]
+          : prev.exercises
+        return {
+          ...prev,
+          exercises,
+          exerciseCount: (prev.exerciseCount || 0) + 1,
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const editExercise = useCallback(async (id, patch) => {
     const r = await sb.editExercise(id, patch)
-    if (r.success) await reloadRemote()
+    if (r.success && r.exercise) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          exercises: (prev.exercises || []).map((x) => (x.id === id ? r.exercise : x)),
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const removeExercise = useCallback(async (id) => {
-    await sb.removeExercise(id)
-    await reloadRemote()
-  }, [reloadRemote])
+    const r = await sb.removeExercise(id)
+    if (r?.success !== false) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          exercises: (prev.exercises || []).filter((x) => x.id !== id),
+          exerciseCount: Math.max(0, (prev.exerciseCount || 0) - 1),
+        }
+      })
+    }
+  }, [])
 
   const reassignExerciseCategory = useCallback(async (fromCategory, toCategory) => {
     const r = await sb.reassignExerciseCategory(fromCategory, toCategory)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          exercises: (prev.exercises || []).map((x) => (
+            x.category === fromCategory || x.bodyPart === fromCategory
+              ? { ...x, category: toCategory, bodyPart: toCategory }
+              : x
+          )),
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const resolveStaffApplication = useCallback(async (application, approve, adminNote = '') => {
     const r = await sb.resolveStaffApplication(application, approve, adminNote)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const staffApplications = (prev.staffApplications || []).map((a) => (
+          a.id === application.id ? (r.application || { ...a, status: approve ? 'approved' : 'rejected' }) : a
+        ))
+        let staff = prev.staff || []
+        if (r.staff) {
+          const idx = staff.findIndex((s) => s.id === r.staff.id)
+          staff = idx >= 0
+            ? staff.map((s, i) => (i === idx ? r.staff : s))
+            : [...staff, r.staff]
+        }
+        return { ...prev, staffApplications, staff }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const resolveCorporateApplication = useCallback(async (application, status, adminNote = '') => {
     const r = await sb.resolveCorporateApplication(application, status, adminNote)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          corporateApplications: (prev.corporateApplications || []).map((a) => (
+            a.id === application.id ? (r.application || { ...a, status }) : a
+          )),
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const updateContactInquiryStatus = useCallback(async (inquiry, status) => {
     const r = await sb.updateContactInquiryStatus(inquiry, status)
-    if (r.success) await reloadRemote()
+    if (r.success) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          contactInquiries: (prev.contactInquiries || []).map((a) => (
+            a.id === inquiry.id ? (r.inquiry || { ...a, status }) : a
+          )),
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const addContent = useCallback(async (kind, data) => {
     const r = await sb.addContent(kind, data)
-    if (r.success) await reloadRemote()
+    if (r.success && r.item) {
+      const listKey = contentListKey(kind)
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const content = { ...(prev.content || {}) }
+        if (listKey) {
+          content[listKey] = [r.item, ...(content[listKey] || [])]
+        }
+        return { ...prev, content }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const editContent = useCallback(async (id, data) => {
     const r = await sb.editContent(id, data)
-    if (r.success) await reloadRemote()
+    if (r.success && r.item) {
+      const listKey = contentListKey(r.kind)
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const content = { ...(prev.content || {}) }
+        if (listKey) {
+          content[listKey] = (content[listKey] || []).map((x) => (x.id === id ? r.item : x))
+        }
+        return { ...prev, content }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const removeContent = useCallback(async (id) => {
-    await sb.removeContent(id)
-    await reloadRemote()
-  }, [reloadRemote])
+    const r = await sb.removeContent(id)
+    if (r?.success !== false) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const content = { ...(prev.content || {}) }
+        ;['testimonials', 'faqs', 'successStories'].forEach((key) => {
+          content[key] = (content[key] || []).filter((x) => x.id !== id)
+        })
+        if (content.exerciseTaxonomy?.id === id) content.exerciseTaxonomy = null
+        return { ...prev, content }
+      })
+    }
+  }, [])
 
   const saveExerciseTaxonomy = useCallback(async (taxonomy) => {
     const r = await sb.upsertExerciseTaxonomy(taxonomy)
-    if (r.success) await reloadRemote()
+    if (r.success && r.taxonomy) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          content: { ...(prev.content || {}), exerciseTaxonomy: r.taxonomy },
+        }
+      })
+    }
     return r
-  }, [reloadRemote])
+  }, [])
 
   const submitSuccessStory = useCallback(async (data) => {
     const r = await sb.submitSuccessStory(currentMember, data)
-    if (r.success) await reloadRemote()
+    if (r.success && r.item) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        const content = { ...(prev.content || {}) }
+        content.successStories = [r.item, ...(content.successStories || [])]
+        return { ...prev, content }
+      })
+    }
     return r
-  }, [currentMember, reloadRemote])
+  }, [currentMember])
 
   const setTicketStatus = useCallback(async (ticketId, status) => {
     await sb.setTicketStatus(ticketId, status)
@@ -1220,13 +1420,34 @@ export function AppProvider({ children }) {
   // Self-servis randevu: personel müsaitliğinden çakışmasız talep (pending)
   const bookSession = useCallback(async (type, dateISO, duration) => {
     const r = await sb.bookStaffSession(type, dateISO, duration)
-    if (r.success) await reloadRemote()
+    if (r.success && r.session && currentMember) {
+      const key = sessionKey(type)
+      const nextSessions = [...(currentMember[key] || []), r.session]
+      patchMemberInDb({ ...currentMember, [key]: nextSessions })
+    } else if (r.success) {
+      void reloadRemote({ force: false })
+    }
     return r
-  }, [reloadRemote])
+  }, [currentMember, patchMemberInDb, reloadRemote])
 
   const respondSession = useCallback(async ({ memberId, sessionId, sessionType, decision }) => {
     const r = await sb.respondStaffSession({ memberId, sessionId, sessionType, decision })
-    if (r.success) await reloadRemote()
+    if (r.success && r.session) {
+      const key = sessionKey(sessionType)
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          members: (prev.members || []).map((m) => {
+            if (m.id !== memberId) return m
+            const sessions = (m[key] || []).map((s) => (s.id === sessionId ? { ...s, ...r.session } : s))
+            return { ...m, [key]: sessions }
+          }),
+        }
+      })
+    } else if (r.success) {
+      void reloadRemote({ force: false })
+    }
     return r
   }, [reloadRemote])
 

@@ -218,6 +218,7 @@ let hydrateInFlight = null
 let hydrateCache = null
 const HYDRATE_CACHE_TTL_MS = 2500
 const MEMBER_ACTIVITIES_HYDRATE_LIMIT = 50
+const STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT = 200
 
 export function invalidateHydrateCache() {
   hydrateCache = null
@@ -256,7 +257,7 @@ async function fetchAuthenticatedBundle(user, staff) {
       supabase.from(membersTable).select('*'),
       supabase.from('programs').select('*').order('created_at', { ascending: false }),
       supabase.from('tickets').select('*').order('created_at', { ascending: false }),
-      supabase.from('activities').select('*').order('created_at', { ascending: false }),
+      supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT),
       supabase.from('payments').select('*').order('created_at', { ascending: false }),
     ])
     members = (membersRes.data || []).map((row) => rowToMember(row, { contactHidden: role === 'staff' }))
@@ -576,7 +577,7 @@ export async function upsertPlan(plan) {
     throw new Error('Geçersiz plan ID. Küçük harf, rakam ve alt çizgi kullanın.')
   }
   const billingType = plan.billingType === 'one_time' ? 'one_time' : 'recurring'
-  const { error } = await supabase.from('plans').upsert({
+  const { data, error } = await supabase.from('plans').upsert({
     id: plan.id,
     name: plan.name,
     price: plan.price,
@@ -594,8 +595,14 @@ export async function upsertPlan(plan) {
     entitlements: normalizeEntitlements(plan.entitlements || {}),
     sort_order: Number(plan.sortOrder) || 0,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
+  }, { onConflict: 'id' }).select().single()
   if (error) throw error
+  return data ? rowToPlan(data) : {
+    ...plan,
+    isActive: plan.isActive !== false,
+    billingType,
+    entitlements: normalizeEntitlements(plan.entitlements || {}),
+  }
 }
 
 /** Soft-delete: is_active=false, is_sellable=false. Hard delete yalnızca üye yoksa. */
@@ -677,7 +684,7 @@ export async function login(email, password, remember = false, turnstileToken = 
   const user = await authenticatePasswordUser(cleanEmail, password, turnstileToken)
   if (!user.ok) return { success: false, error: user.error }
 
-  /* Role için hafif sorgu; activity/telegram UI dönüşünü bloklamaz */
+  /* Yönlendirme için hafif rol (2 maybeSingle); yan etkiler arka planda */
   const role = await resolveLoginRole(user.user)
   void recordLoginSideEffects(user.user, role)
 
@@ -744,13 +751,36 @@ async function resolveLoginRole(user) {
   return 'member'
 }
 
-async function recordLoginSideEffects(user, role) {
+async function recordLoginSideEffects(user, roleHint) {
   try {
-    const { data: staffRows } = await supabase.from('staff').select('*')
-    const staffList = (staffRows || []).map(rowToStaff)
-    const resolvedRole = role || roleForUser(user, staffList)
-    const displayName = await resolveActorName(user, resolvedRole, staffList)
-    const staffMember = findStaffMatch(user, staffList)
+    const e = (user.email || '').toLowerCase()
+    let resolvedRole = roleHint
+    let staffMember = null
+    if (!resolvedRole || resolvedRole === 'member') {
+      if (e === ADMIN_EMAIL) {
+        resolvedRole = 'admin'
+      } else {
+        const [byIdRes, byEmailRes] = await Promise.all([
+          supabase.from('staff').select('id, name, role, email').eq('id', user.id).maybeSingle(),
+          e
+            ? supabase.from('staff').select('id, name, role, email').eq('email', e).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ])
+        const row = byIdRes.data || byEmailRes.data
+        if (row) {
+          resolvedRole = 'staff'
+          staffMember = rowToStaff(row)
+        } else {
+          resolvedRole = 'member'
+        }
+      }
+    }
+
+    const displayName = resolvedRole === 'admin'
+      ? (user.user_metadata?.name || 'Admin')
+      : resolvedRole === 'staff'
+        ? (staffMember?.name || user.user_metadata?.name || 'Personel')
+        : (user.user_metadata?.name || displayNameFromAuthUser(user) || 'Üye')
 
     const loginText = resolvedRole === 'admin'
       ? `${displayName} (Admin) giriş yaptı`
@@ -758,7 +788,7 @@ async function recordLoginSideEffects(user, role) {
         ? `${displayName} (${staffRoleLabel(staffMember?.role)}) giriş yaptı`
         : `${displayName} giriş yaptı`
 
-    await addActivity('login', loginText, resolvedRole === 'member' ? user.id : null)
+    void addActivity('login', loginText, resolvedRole === 'member' ? user.id : null)
 
     if (resolvedRole === 'admin') {
       notifyTelegram('admin_login', { name: displayName, email: user.email })
@@ -778,24 +808,38 @@ async function recordLoginSideEffects(user, role) {
 
 export async function logout() {
   invalidateHydrateCache()
-  const user = await getUser()
-  if (user) {
-    const { data: staffRows } = await supabase.from('staff').select('*')
-    const staffList = (staffRows || []).map(rowToStaff)
-    const role = roleForUser(user, staffList)
-    const displayName = await resolveActorName(user, role, staffList)
-    const staffMember = findStaffMatch(user, staffList)
+  const sessionPromise = getUser()
 
-    if (role === 'staff') {
-      await addActivity('logout', `${displayName} (${staffRoleLabel(staffMember?.role)}) çıkış yaptı`)
-      notifyTelegram('staff_logout', { name: displayName, role: staffRoleLabel(staffMember?.role) })
-    } else if (role === 'admin') {
-      await addActivity('logout', `${displayName} (Admin) çıkış yaptı`)
-    } else {
-      await addActivity('logout', `${displayName} çıkış yaptı`, user.id)
-      notifyTelegram('member_logout', { name: displayName })
+  /* Yan etkiler çıkışı bloklamaz */
+  void (async () => {
+    try {
+      const user = await sessionPromise
+      if (!user) return
+      const e = (user.email || '').toLowerCase()
+      if (e === ADMIN_EMAIL) {
+        void addActivity('logout', `${user.user_metadata?.name || 'Admin'} (Admin) çıkış yaptı`)
+        return
+      }
+      const [byIdRes, byEmailRes] = await Promise.all([
+        supabase.from('staff').select('id, name, role, email').eq('id', user.id).maybeSingle(),
+        e
+          ? supabase.from('staff').select('id, name, role, email').eq('email', e).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      const row = byIdRes.data || byEmailRes.data
+      if (row) {
+        const staffMember = rowToStaff(row)
+        void addActivity('logout', `${staffMember.name || 'Personel'} (${staffRoleLabel(staffMember.role)}) çıkış yaptı`)
+        notifyTelegram('staff_logout', { name: staffMember.name, role: staffRoleLabel(staffMember.role) })
+      } else {
+        const name = user.user_metadata?.name || displayNameFromAuthUser(user) || 'Üye'
+        void addActivity('logout', `${name} çıkış yaptı`, user.id)
+        notifyTelegram('member_logout', { name })
+      }
+    } catch {
+      /* yoksay */
     }
-  }
+  })()
 
   await supabase.auth.signOut()
   clearAllAuthTokens()
@@ -889,7 +933,8 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 
   await upsertMember(member)
   const planLabel = membership === 'free' ? 'Ücretsiz' : getPlanLabel(membership)
-  await addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
+  /* Yan etkiler UI dönüşünü bloklamaz */
+  void addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
   notifyTelegram('member_signup', {
     name: member.name,
     email: member.email,
@@ -897,14 +942,13 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   })
 
   if (opts.payment) {
-    await supabase.from('payments').insert({
+    void supabase.from('payments').insert({
       member_id: member.id,
       data: { memberName: member.name, amount: opts.payment, packageConfig, status: 'completed', createdAt: nowISO() },
-    })
-    await addActivity('payment', `${member.name} ödeme tamamladı (${opts.payment.toLocaleString('tr-TR')}₺)`, member.id)
+    }).then(() => addActivity('payment', `${member.name} ödeme tamamladı (${opts.payment.toLocaleString('tr-TR')}₺)`, member.id))
   }
 
-  await clearPendingRegistrationMetadata()
+  void clearPendingRegistrationMetadata()
 
   return { success: true, member }
 }
@@ -1043,18 +1087,12 @@ export async function ensureAuthForRegistration(profile) {
   const password = profile.password
   const emailRedirectTo = `${getSiteUrl()}/auth/callback?verify=email`
 
-  if (profile.phone) {
-    const { data: phoneTaken, error: phoneErr } = await supabase.rpc('phone_in_use', { p_phone: profile.phone })
-    if (!phoneErr && phoneTaken) {
-      return { success: false, error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.' }
-    }
-  }
-
   try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
 
   const turnstileToken = profile.turnstileToken || ''
 
   // GoTrue HIBP (sızmış şifre) kaydı engellemesin diye service-role RPC ile oluştur
+  // phone_in_use kontrolü signup API içinde (ekstra istemci turu yok)
   try {
     const signupRes = await fetch('/api/auth', {
       method: 'POST',
@@ -1064,12 +1102,13 @@ export async function ensureAuthForRegistration(profile) {
         email,
         password,
         name: profile.name || '',
+        phone: profile.phone || '',
         turnstileToken,
       }),
     })
     const signupData = await signupRes.json().catch(() => ({}))
     if (signupRes.ok && signupData.ok) {
-      /* Signup siteverify token’ı yaktı — oturum authSessionToken / dönen session ile açılır */
+      /* Signup siteverify token’ı yaktı — oturum tercihen aynı yanıtta gelir */
       if (signupData.session?.access_token && signupData.session?.refresh_token) {
         const { error: sessErr } = await supabase.auth.setSession({
           access_token: signupData.session.access_token,
@@ -1084,6 +1123,9 @@ export async function ensureAuthForRegistration(profile) {
       })
       if (signIn.success) return { success: true, alreadyRegistered: Boolean(signupData.alreadyRegistered) }
       return { success: false, error: signIn.error || 'Kayıt oluştu ancak giriş yapılamadı. Lütfen giriş sayfasından deneyin.' }
+    }
+    if (signupData.code === 'PHONE_IN_USE' || signupData.error?.includes?.('telefon')) {
+      return { success: false, error: signupData.error || 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.' }
     }
     if (signupData.error === 'already_registered' || signupRes.status === 409) {
       /* Yanık Turnstile ile otomatik giriş deneme — captcha döngüsü yaratır */
@@ -1454,17 +1496,25 @@ export async function addStaff(data) {
   const email = data.email?.toLowerCase().trim()
   if (!email) return { success: false, error: 'E-posta gerekli.' }
   if (!data.password) return { success: false, error: 'Şifre gerekli.' }
+  const role = normalizeStaffRole(data.role)
   const { data: staffId, error } = await supabase.rpc('admin_upsert_staff', {
     p_id: null,
     p_email: email,
     p_password: data.password,
     p_name: data.name,
-    p_role: normalizeStaffRole(data.role),
+    p_role: role,
     p_active: true,
     p_data: staffDataPayload(data),
   })
   if (error) return { success: false, error: error.message }
-  return { success: true, id: staffId }
+  const staff = normalizeStaffProfile({
+    ...data,
+    id: staffId,
+    email,
+    role,
+    active: true,
+  })
+  return { success: true, id: staffId, staff }
 }
 
 export async function editStaff(id, patch) {
@@ -1482,7 +1532,8 @@ export async function editStaff(id, patch) {
     p_data: staffDataPayload(merged),
   })
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  const { password: _pwd, ...staffSafe } = merged
+  return { success: true, staff: normalizeStaffProfile(staffSafe) }
 }
 
 /** Personelin kendi profilini güncellemesi — RPC staff_update_self_profile + RLS */
@@ -1500,7 +1551,11 @@ export async function updateStaffSelfProfile(id, patch) {
   if (id && staffId && id !== staffId) {
     return { success: false, error: 'Yetkisiz profil güncellemesi.' }
   }
-  return { success: true, id: staffId }
+  return {
+    success: true,
+    id: staffId,
+    staff: normalizeStaffProfile({ ...merged, id: staffId || id }),
+  }
 }
 
 /** Stripe webhook idempotency — ödeme tamamlandı mı */
@@ -1627,7 +1682,7 @@ export async function addPost(data) {
 export async function editPost(id, patch) {
   const { data: rows } = await supabase.from('posts').select('*').eq('id', id).limit(1)
   const current = rows?.[0]
-  if (!current) return
+  if (!current) return null
   const merged = { ...rowToPost(current), ...patch }
   const content = merged.content || ''
   const category = merged.category || 'Yaşam'
@@ -1637,7 +1692,7 @@ export async function editPost(id, patch) {
   const cover = merged.coverImage
     ? { coverImage: merged.coverImage, coverImageAlt: merged.coverImageAlt || merged.title || '' }
     : coverForCategory(category)
-  await supabase.from('posts').update({
+  const payload = {
     published: merged.published !== false,
     data: {
       title: merged.title,
@@ -1653,7 +1708,10 @@ export async function editPost(id, patch) {
       createdAt: merged.createdAt,
       updatedAt: today(),
     },
-  }).eq('id', id)
+  }
+  const { data: row, error } = await supabase.from('posts').update(payload).eq('id', id).select().single()
+  if (error) return null
+  return rowToPost(row)
 }
 
 export async function removePost(id) {
@@ -1662,36 +1720,48 @@ export async function removePost(id) {
 
 // --------------------------- site content (yorum / SSS / başarı hikâyesi) ---------------------------
 export async function addContent(kind, data) {
-  const { error } = await supabase.from('site_content').insert({ kind, sort: data.sort || 0, data })
+  const { data: row, error } = await supabase
+    .from('site_content')
+    .insert({ kind, sort: data.sort || 0, data })
+    .select()
+    .single()
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, item: { id: row.id, kind, ...(row.data || {}) }, kind }
 }
 
 export async function editContent(id, data) {
-  const { error } = await supabase.from('site_content').update({ data, sort: data.sort || 0 }).eq('id', id)
+  const { data: row, error } = await supabase
+    .from('site_content')
+    .update({ data, sort: data.sort || 0 })
+    .eq('id', id)
+    .select()
+    .single()
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, item: { id: row.id, kind: row.kind, ...(row.data || {}) }, kind: row.kind }
 }
 
 export async function removeContent(id) {
-  await supabase.from('site_content').delete().eq('id', id)
+  const { error } = await supabase.from('site_content').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function submitSuccessStory(member, data) {
-  const { error } = await supabase.from('site_content').insert({
+  const payload = {
+    name: member?.name || data.name || 'Üye',
+    memberId: member?.id || null,
+    duration: data.duration || '',
+    highlight: data.highlight || '',
+    story: String(data.story || '').slice(0, 2000),
+    consent: true,
+    approved: false,
+  }
+  const { data: row, error } = await supabase.from('site_content').insert({
     kind: 'success_story', sort: 0,
-    data: {
-      name: member?.name || data.name || 'Üye',
-      memberId: member?.id || null,
-      duration: data.duration || '',
-      highlight: data.highlight || '',
-      story: String(data.story || '').slice(0, 2000),
-      consent: true,
-      approved: false,
-    },
-  })
+    data: payload,
+  }).select().single()
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, item: { id: row.id, ...payload } }
 }
 
 // --------------------------- exercises (library) ---------------------------
@@ -1874,11 +1944,11 @@ export async function upsertExerciseTaxonomy(taxonomy) {
   if (taxonomy.id) {
     const { error } = await supabase.from('site_content').update({ data: payload }).eq('id', taxonomy.id)
     if (error) return { success: false, error: error.message }
-    return { success: true, id: taxonomy.id }
+    return { success: true, id: taxonomy.id, taxonomy: { id: taxonomy.id, ...payload } }
   }
   const { data, error } = await supabase.from('site_content').insert({ kind: 'exercise_taxonomy', sort: 0, data: payload }).select('id').single()
   if (error) return { success: false, error: error.message }
-  return { success: true, id: data.id }
+  return { success: true, id: data.id, taxonomy: { id: data.id, ...payload } }
 }
 
 // Bazı eski veritabanlarında exercises tablosunda sport_type / body_part
@@ -1920,26 +1990,28 @@ function buildExercisePayload(data) {
 
 export async function addExercise(data) {
   const payload = buildExercisePayload(data)
-  let { error } = await supabase.from('exercises').insert(payload)
+  let { data: row, error } = await supabase.from('exercises').insert(payload).select().single()
   if (isMissingExerciseColumnError(error)) {
-    ;({ error } = await supabase.from('exercises').insert(stripOptionalExerciseColumns(payload)))
+    ;({ data: row, error } = await supabase.from('exercises').insert(stripOptionalExerciseColumns(payload)).select().single())
   }
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, exercise: row ? rowToExercise(row) : null }
 }
 
 export async function editExercise(id, patch) {
   const payload = buildExercisePayload(patch)
-  let { error } = await supabase.from('exercises').update(payload).eq('id', id)
+  let { data: row, error } = await supabase.from('exercises').update(payload).eq('id', id).select().single()
   if (isMissingExerciseColumnError(error)) {
-    ;({ error } = await supabase.from('exercises').update(stripOptionalExerciseColumns(payload)).eq('id', id))
+    ;({ data: row, error } = await supabase.from('exercises').update(stripOptionalExerciseColumns(payload)).eq('id', id).select().single())
   }
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, exercise: row ? rowToExercise(row) : null }
 }
 
 export async function removeExercise(id) {
-  await supabase.from('exercises').delete().eq('id', id)
+  const { error } = await supabase.from('exercises').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function reassignExerciseCategory(fromCategory, toCategory) {
@@ -2105,14 +2177,23 @@ function generateTempPassword() {
 
 export async function resolveStaffApplication(application, approve, adminNote = '') {
   if (!approve) {
+    const reviewedAt = nowISO()
     const { error } = await supabase.from('staff_applications').update({
       status: 'rejected',
       admin_note: adminNote || '',
-      reviewed_at: nowISO(),
+      reviewed_at: reviewedAt,
     }).eq('id', application.id)
     if (error) return { success: false, error: error.message }
-    await addActivity('staff_apply', `${application.name} kadro başvurusu reddedildi`)
-    return { success: true }
+    void addActivity('staff_apply', `${application.name} kadro başvurusu reddedildi`)
+    return {
+      success: true,
+      application: {
+        ...application,
+        status: 'rejected',
+        adminNote: adminNote || '',
+        reviewedAt,
+      },
+    }
   }
 
   const tempPassword = generateTempPassword()
@@ -2121,16 +2202,30 @@ export async function resolveStaffApplication(application, approve, adminNote = 
   const created = await addStaff(staffPayload)
   if (!created.success) return created
 
+  const reviewedAt = nowISO()
+  const nextData = { ...application.data, staffId: created.id, tempPasswordIssued: true }
   const { error } = await supabase.from('staff_applications').update({
     status: 'approved',
     admin_note: adminNote || '',
-    reviewed_at: nowISO(),
-    data: { ...application.data, staffId: created.id, tempPasswordIssued: true },
+    reviewed_at: reviewedAt,
+    data: nextData,
   }).eq('id', application.id)
   if (error) return { success: false, error: error.message }
 
-  await addActivity('staff_apply', `${application.name} kadro başvurusu onaylandı — personel hesabı açıldı`)
-  return { success: true, staffId: created.id, tempPassword }
+  void addActivity('staff_apply', `${application.name} kadro başvurusu onaylandı — personel hesabı açıldı`)
+  return {
+    success: true,
+    staffId: created.id,
+    tempPassword,
+    staff: created.staff || null,
+    application: {
+      ...application,
+      status: 'approved',
+      adminNote: adminNote || '',
+      reviewedAt,
+      data: nextData,
+    },
+  }
 }
 
 export async function submitCorporateApplication(form, turnstileToken = '') {
@@ -2173,20 +2268,29 @@ export async function submitContactInquiry(form, turnstileToken = '') {
 }
 
 export async function resolveCorporateApplication(application, status, adminNote = '') {
+  const reviewedAt = nowISO()
   const { error } = await supabase.from('corporate_applications').update({
     status,
     admin_note: adminNote || '',
-    reviewed_at: nowISO(),
+    reviewed_at: reviewedAt,
   }).eq('id', application.id)
   if (error) return { success: false, error: error.message }
-  await addActivity('corporate_apply', `${application.companyName} kurumsal başvuru: ${status}`)
-  return { success: true }
+  void addActivity('corporate_apply', `${application.companyName} kurumsal başvuru: ${status}`)
+  return {
+    success: true,
+    application: {
+      ...application,
+      status,
+      adminNote: adminNote || '',
+      reviewedAt,
+    },
+  }
 }
 
 export async function updateContactInquiryStatus(inquiry, status) {
   const { error } = await supabase.from('contact_inquiries').update({ status }).eq('id', inquiry.id)
   if (error) return { success: false, error: error.message }
-  return { success: true }
+  return { success: true, inquiry: { ...inquiry, status } }
 }
 
 // --------------------------- programs (staff/admin) ---------------------------

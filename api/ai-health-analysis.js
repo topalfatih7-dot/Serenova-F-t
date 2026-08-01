@@ -274,6 +274,7 @@ export default async function handler(req, res) {
       overallScore: normalized.overallScore,
       summary: normalized.summary,
       staffBrief: normalized.staffBrief,
+      memberBrief: normalized.memberBrief || null,
       aiGenerated,
       model: usedModel,
       usage,

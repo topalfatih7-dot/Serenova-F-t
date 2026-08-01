@@ -6,10 +6,27 @@ export const GENDERS = [
 ]
 
 export const EDUCATION_LEVELS = [
-  { value: 'lise', label: 'Lise' },
   { value: 'onlisans', label: 'Önlisans' },
   { value: 'lisans', label: 'Lisans' },
+  { value: 'yukseklisans', label: 'Yüksek Lisans' },
+  { value: 'doktora', label: 'Doktora' },
 ]
+
+/** Eski başvurulardaki düzey değerleri için etiket fallback */
+export const EDUCATION_LEVEL_LABELS = {
+  lise: 'Lise',
+  onlisans: 'Önlisans',
+  lisans: 'Lisans',
+  yukseklisans: 'Yüksek Lisans',
+  doktora: 'Doktora',
+}
+
+export function educationLevelLabel(value) {
+  if (!value) return ''
+  return EDUCATION_LEVEL_LABELS[value]
+    || EDUCATION_LEVELS.find((l) => l.value === value)?.label
+    || value
+}
 
 export const OTHER_OPTION = 'Diğer'
 
@@ -223,12 +240,9 @@ export const EMPTY_STAFF_APPLICATION = {
   competentGroups: [],
   competentGroupOther: '',
   chronicDiseaseExamples: '',
-  educationLevel: '',
-  educationDepartment: '',
-  educationGpa: '',
-  educationFile: null,
+  graduationDocFile: null,
   noOfficialCoachingCert: false,
-  federationCerts: [{ federation: 'tvgfbf', federationOther: '', levels: [] }],
+  federationCerts: [{ ...EMPTY_FEDERATION_CERT }],
   officialCoachingCerts: [],
   internationalCerts: [],
   branchCerts: [],
@@ -241,22 +255,24 @@ export const EMPTY_STAFF_APPLICATION = {
   languages: ['Türkçe'],
   // Diyetisyen
   graduationDepartment: '',
-  education: [{ degree: '', school: '', year: '', file: null }],
-  certificates: [{ name: '', issuer: '', year: '', file: null }],
+  education: [{ school: '', level: '' }],
+  certificates: [{ name: '', file: null }],
   bio: '',
   title: '',
 }
 
 export function hasEducationEntryInfo(edu) {
-  return !!(edu?.degree?.trim() || edu?.school?.trim() || edu?.year?.trim())
+  return !!(edu?.school?.trim() || edu?.level || edu?.degree?.trim() || edu?.year?.trim())
 }
 
 export function hasCertificateEntryInfo(cert) {
-  return !!(cert?.name?.trim() || cert?.issuer?.trim() || cert?.year?.trim())
+  return !!(cert?.name?.trim())
 }
 
-export function hasCoachEducationInfo(form) {
-  return !!(form?.educationLevel || form?.educationDepartment?.trim() || form?.educationGpa)
+export function formatEducationEntry(edu) {
+  if (!edu) return ''
+  const level = educationLevelLabel(edu.level) || edu.degree || ''
+  return [edu.school, level, edu.year].filter(Boolean).join(' · ')
 }
 
 export function toggleInList(list, item) {
@@ -268,12 +284,25 @@ export function applicationToStaffPayload(app, tempPassword) {
   const specialties = (d.specialties || []).filter(Boolean)
   const primarySpecialty = specialties.find((s) => s !== OTHER_OPTION) || specialties[0] || ''
 
-  let education = Array.isArray(d.education) ? [...d.education] : []
-  let certificates = Array.isArray(d.certificates) ? [...d.certificates] : []
+  let education = (Array.isArray(d.education) ? d.education : [])
+    .filter(hasEducationEntryInfo)
+    .map((e) => ({
+      degree: educationLevelLabel(e.level) || e.degree || '',
+      school: e.school || '',
+      year: e.year || '',
+    }))
+  let certificates = (Array.isArray(d.certificates) ? d.certificates : [])
+    .filter(hasCertificateEntryInfo)
+    .map((c) => ({
+      name: c.name || '',
+      issuer: c.issuer || '',
+      year: c.year || '',
+    }))
 
   if (app.role === 'coach') {
-    if (d.educationLevel && d.educationDepartment) {
-      const levelLabel = EDUCATION_LEVELS.find((l) => l.value === d.educationLevel)?.label || d.educationLevel
+    // Eski başvuru fallback: tekil eğitim alanları
+    if (!education.length && d.educationLevel && d.educationDepartment) {
+      const levelLabel = educationLevelLabel(d.educationLevel)
       education.unshift({
         degree: `${levelLabel} — ${d.educationDepartment}`,
         school: d.educationGpa ? `GPA: ${d.educationGpa}` : '',
@@ -287,7 +316,7 @@ export function applicationToStaffPayload(app, tempPassword) {
       ...(d.branchCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Branş Sertifikası', year: '' })),
       ...certificates,
     ]
-  } else if (d.graduationDepartment) {
+  } else if (d.graduationDepartment && !education.some((e) => e.degree === d.graduationDepartment)) {
     education.unshift({
       degree: d.graduationDepartment,
       school: '',
@@ -373,52 +402,40 @@ function dietitianStep2Errors(form) {
   return errors
 }
 
+function graduationDocError(form) {
+  if (!form.graduationDocFile?.url) return 'e-Devlet mezuniyet belgenizi yükleyin'
+  return null
+}
+
 function coachStep3Errors(form) {
   const errors = []
-  if (!form.educationLevel) errors.push('Eğitim düzeyi seçin')
-  if (!form.educationDepartment?.trim()) errors.push('Bölüm bilgisi gerekli')
-  if (hasCoachEducationInfo(form) && !form.educationFile?.url) {
-    errors.push('Eğitim belgesi PDF / görselini yükleyin')
-  }
-  const hasOfficial = !form.noOfficialCoachingCert && (
-    (form.federationCerts || []).some((fc) => fc.federation && (fc.levels || []).length)
-    || (form.officialCoachingCerts || []).some((c) => c && c !== OFFICIAL_COACHING_CERT_NONE)
-  )
+  const gradErr = graduationDocError(form)
+  if (gradErr) errors.push(gradErr)
+
   if (!form.noOfficialCoachingCert) {
     const entries = form.federationCerts || []
-    if (!entries.length) errors.push('Federasyon antrenörlük bilgisi ekleyin veya “belgem yok” seçeneğini işaretleyin')
+    // Boş bırakmak serbest; kısmen doldurulmuş kayıt varsa tamamlanması istenir
     entries.forEach((fc, i) => {
+      const started = !!(fc.federation || (fc.levels || []).length || fc.federationOther?.trim())
+      if (!started) return
       if (!fc.federation) errors.push(`${i + 1}. federasyon kaydı için federasyon seçin`)
       else if (fc.federation === 'diger' && !fc.federationOther?.trim()) errors.push(`${i + 1}. federasyon için federasyon adını yazın`)
       else if (!(fc.levels || []).length) errors.push(`${i + 1}. federasyon kaydı için en az bir kademe seçin`)
     })
   }
-  const hasIntl = (form.internationalCerts || []).some((c) => c !== OTHER_OPTION) || ((form.internationalCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.international?.trim())
-  const hasBranch = (form.branchCerts || []).some((c) => c !== OTHER_OPTION) || ((form.branchCerts || []).includes(OTHER_OPTION) && form.certOtherNotes?.branch?.trim())
-  if (!hasOfficial && !hasIntl && !hasBranch) errors.push('En az bir sertifika türü seçin')
-  if ((form.internationalCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.international?.trim()) errors.push('Diğer uluslararası sertifikayı yazın')
-  if ((form.branchCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.branch?.trim()) errors.push('Diğer branş sertifikasını yazın')
-  const needsFiles = hasOfficial || hasIntl || hasBranch
-  if (needsFiles && !(form.certificateFiles || []).length) errors.push('Seçtiğiniz sertifikalar için PDF / görsel yükleyin')
+  if ((form.internationalCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.international?.trim()) {
+    errors.push('Diğer uluslararası sertifikayı yazın')
+  }
+  if ((form.branchCerts || []).includes(OTHER_OPTION) && !form.certOtherNotes?.branch?.trim()) {
+    errors.push('Diğer branş sertifikasını yazın')
+  }
   return errors
 }
 
 function dietitianStep3Errors(form) {
   const errors = []
-  const edu = (form.education || []).find((e) => e.degree?.trim() && e.school?.trim())
-  if (!edu) errors.push('En az bir eğitim bilgisi girin')
-  const cert = (form.certificates || []).find((c) => c.name?.trim())
-  if (!cert) errors.push('En az bir sertifika / diploma girin')
-  ;(form.education || []).forEach((e, i) => {
-    if (hasEducationEntryInfo(e) && !e.file?.url) {
-      errors.push(`${i + 1}. eğitim kaydı için belge PDF / görselini yükleyin`)
-    }
-  })
-  ;(form.certificates || []).forEach((c, i) => {
-    if (hasCertificateEntryInfo(c) && !c.file?.url) {
-      errors.push(`${i + 1}. sertifika kaydı için belge PDF / görselini yükleyin`)
-    }
-  })
+  const gradErr = graduationDocError(form)
+  if (gradErr) errors.push(gradErr)
   return errors
 }
 
@@ -466,21 +483,31 @@ export function buildStaffApplicationPayload(form) {
     languages: form.languages || ['Türkçe'],
   }
 
-  if (form.role === 'dietitian') {
-    const education = (form.education || []).map((e) => ({
-      degree: e.degree || '',
+  const graduationDocFile = form.graduationDocFile?.url
+    ? { name: form.graduationDocFile.name || 'e-Devlet mezuniyet belgesi', url: form.graduationDocFile.url, kind: 'graduation' }
+    : null
+
+  const education = (form.education || [])
+    .filter(hasEducationEntryInfo)
+    .map((e) => ({
       school: e.school || '',
+      level: e.level || '',
+      // Eski alan adları fallback (admin/CV okuma)
+      degree: educationLevelLabel(e.level) || e.degree || '',
       year: e.year || '',
-      file: e.file?.url ? { name: e.file.name || '', url: e.file.url } : null,
     }))
-    const certificates = (form.certificates || []).map((c) => ({
-      name: c.name || '',
-      issuer: c.issuer || '',
-      year: c.year || '',
-      file: c.file?.url ? { name: c.file.name || '', url: c.file.url } : null,
-    }))
+
+  if (form.role === 'dietitian') {
+    const certificates = (form.certificates || [])
+      .filter(hasCertificateEntryInfo)
+      .map((c) => ({
+        name: c.name || '',
+        issuer: c.issuer || '',
+        year: c.year || '',
+        file: c.file?.url ? { name: c.file.name || '', url: c.file.url } : null,
+      }))
     const certificateFiles = [
-      ...education.filter((e) => e.file?.url).map((e) => ({ name: e.file.name || `Eğitim — ${e.degree || e.school}`, url: e.file.url, kind: 'education' })),
+      ...(graduationDocFile ? [graduationDocFile] : []),
       ...certificates.filter((c) => c.file?.url).map((c) => ({ name: c.file.name || `Sertifika — ${c.name}`, url: c.file.url, kind: 'certificate' })),
     ]
     return {
@@ -491,6 +518,7 @@ export function buildStaffApplicationPayload(form) {
       officeDistrict: form.officeDistrict || '',
       officeAddress: form.officeAddress || '',
       graduationDepartment: form.graduationDepartment || '',
+      graduationDocFile,
       education,
       certificates,
       certificateFiles,
@@ -498,10 +526,6 @@ export function buildStaffApplicationPayload(form) {
       title: form.title || '',
     }
   }
-
-  const educationFile = form.educationFile?.url
-    ? { name: form.educationFile.name || 'Eğitim belgesi', url: form.educationFile.url, kind: 'education' }
-    : null
 
   return {
     ...common,
@@ -512,10 +536,8 @@ export function buildStaffApplicationPayload(form) {
     competentGroups: form.competentGroups || [],
     competentGroupOther: form.competentGroupOther || '',
     chronicDiseaseExamples: form.chronicDiseaseExamples || '',
-    educationLevel: form.educationLevel || '',
-    educationDepartment: form.educationDepartment || '',
-    educationGpa: form.educationGpa || '',
-    educationFile,
+    graduationDocFile,
+    education,
     noOfficialCoachingCert: !!form.noOfficialCoachingCert,
     federationCerts: (form.federationCerts || []).map((fc) => ({
       federation: fc.federation || '',
@@ -525,11 +547,14 @@ export function buildStaffApplicationPayload(form) {
     officialCoachingCerts: form.officialCoachingCerts || [],
     internationalCerts: form.internationalCerts || [],
     branchCerts: form.branchCerts || [],
-    certificateFiles: (form.certificateFiles || []).map((f) => ({
-      name: f.name || '',
-      url: f.url,
-      kind: f.kind || 'certificate',
-    })),
+    certificateFiles: [
+      ...(graduationDocFile ? [graduationDocFile] : []),
+      ...(form.certificateFiles || []).map((f) => ({
+        name: f.name || '',
+        url: f.url,
+        kind: f.kind || 'certificate',
+      })),
+    ],
     certOtherNotes: form.certOtherNotes || {},
     workApproaches: form.workApproaches || [],
     workApproachOther: form.workApproachOther || '',

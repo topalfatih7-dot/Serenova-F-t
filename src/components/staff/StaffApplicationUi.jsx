@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronDown, Upload, Loader2, X, FileText, UserPlus, Plus, Trash2 } from 'lucide-react'
 import Modal from '../ui/Modal'
-import { toggleInList, OTHER_OPTION, COACHING_FEDERATIONS, COACHING_LICENSE_LEVELS, EMPTY_FEDERATION_CERT, getOfficialCoachingCertLabels } from '../../data/staffApplication'
+import { toggleInList, OTHER_OPTION, COACHING_FEDERATIONS, COACHING_LICENSE_LEVELS, EMPTY_FEDERATION_CERT, getOfficialCoachingCertLabels, formatEducationEntry } from '../../data/staffApplication'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { TONE_STYLES } from './staffApplicationUiStyles'
 
@@ -242,7 +242,7 @@ export function BulkCertUpload({ files, uploading, onUpload, onRemove, title = '
   )
 }
 
-/** Bilgi girildiğinde hemen altında belgenin PDF/görselini ister */
+/** Belge PDF/görsel yükleme alanı — required=false ile opsiyonel kullanılabilir */
 export function InlineDocUpload({
   label = 'Belge PDF / görseli',
   hint = 'Girdiğiniz bilgiye ait belgeyi yükleyin (PDF, JPG, PNG).',
@@ -250,14 +250,15 @@ export function InlineDocUpload({
   files = null,
   uploading = false,
   multiple = false,
+  required = true,
   onUpload,
   onRemove,
 }) {
   const inputRef = useRef(null)
   const list = files || (file ? [file] : [])
   return (
-    <div className="rounded-xl border border-dashed border-amber-200/80 bg-amber-50/50 p-3.5">
-      <p className="text-xs font-semibold text-cream-900">{label} *</p>
+    <div className={`rounded-xl border border-dashed p-3.5 ${required ? 'border-amber-200/80 bg-amber-50/50' : 'border-cream-200 bg-cream-50/40'}`}>
+      <p className="text-xs font-semibold text-cream-900">{label}{required ? ' *' : ' (opsiyonel)'}</p>
       <p className="mt-0.5 text-[11px] leading-relaxed text-cream-800/55">{hint}</p>
       <input
         ref={inputRef}
@@ -432,7 +433,15 @@ export function FederationCertEditor({ federationCerts, noOfficialCoachingCert, 
 export function ApplicationSummaryModal({ open, onClose, form, submitting, onSubmit, turnstileSlot = null }) {
   const isCoach = form.role === 'coach'
   const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
-  const EDU = { lise: 'Lise', onlisans: 'Önlisans', lisans: 'Lisans' }
+  const educationSummary = (form.education || [])
+    .filter((e) => e.school || e.level || e.degree)
+    .map((e) => formatEducationEntry(e))
+    .filter(Boolean)
+    .join(' | ')
+  const certificateSummary = (form.certificates || [])
+    .filter((c) => c.name)
+    .map((c) => [c.name, c.file?.name && '📄'].filter(Boolean).join(' · '))
+    .join(' | ')
 
   return (
     <Modal open={open} onClose={() => !submitting && onClose()} title="Başvuru Özeti" size="lg">
@@ -473,29 +482,24 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
           )}
         </SummarySection>
 
-        {isCoach && (
-          <SummarySection title="Eğitim & Sertifika">
-            <SummaryRow label="Eğitim" value={[EDU[form.educationLevel], form.educationDepartment, form.educationGpa && `GPA ${form.educationGpa}`].filter(Boolean).join(' · ')} />
-            <SummaryRow label="Eğitim belgesi" value={form.educationFile?.name || (form.educationFile?.url ? 'Yüklendi' : '')} />
-            <SummaryRow label="Resmi antrenörlük" value={getOfficialCoachingCertLabels(form).join(' · ') || (form.noOfficialCoachingCert ? 'Belge yok' : '')} />
-            <SummaryRow label="Uluslararası" value={[...(form.internationalCerts || []), form.certOtherNotes?.international].filter(Boolean).join(', ')} />
-            <SummaryRow label="Branş" value={[...(form.branchCerts || []), form.certOtherNotes?.branch].filter(Boolean).join(', ')} />
-            <SummaryRow label="Sertifika belgeleri" value={`${(form.certificateFiles || []).length} dosya yüklendi`} />
-          </SummarySection>
-        )}
-
-        {!isCoach && (
-          <SummarySection title="Eğitim & Sertifika">
-            <SummaryRow
-              label="Eğitim"
-              value={(form.education || []).filter((e) => e.degree || e.school).map((e) => [e.degree, e.school, e.year, e.file?.name && '📄'].filter(Boolean).join(' · ')).join(' | ')}
-            />
-            <SummaryRow
-              label="Sertifikalar"
-              value={(form.certificates || []).filter((c) => c.name).map((c) => [c.name, c.issuer, c.year, c.file?.name && '📄'].filter(Boolean).join(' · ')).join(' | ')}
-            />
-          </SummarySection>
-        )}
+        <SummarySection title="Eğitim & Sertifika">
+          <SummaryRow
+            label="e-Devlet mezuniyet belgesi"
+            value={form.graduationDocFile?.name || (form.graduationDocFile?.url ? 'Yüklendi' : '')}
+          />
+          <SummaryRow label="Eğitim" value={educationSummary} />
+          {isCoach && (
+            <>
+              <SummaryRow label="Resmi antrenörlük" value={getOfficialCoachingCertLabels(form).join(' · ') || (form.noOfficialCoachingCert ? 'Belge yok' : '')} />
+              <SummaryRow label="Uluslararası" value={[...(form.internationalCerts || []), form.certOtherNotes?.international].filter(Boolean).join(', ')} />
+              <SummaryRow label="Branş" value={[...(form.branchCerts || []), form.certOtherNotes?.branch].filter(Boolean).join(', ')} />
+              <SummaryRow label="Sertifika belgeleri" value={(form.certificateFiles || []).length ? `${form.certificateFiles.length} dosya yüklendi` : ''} />
+            </>
+          )}
+          {!isCoach && (
+            <SummaryRow label="Sertifikalar" value={certificateSummary} />
+          )}
+        </SummarySection>
 
         {isCoach && (
           <SummarySection title="Yaklaşım & Hizmet">

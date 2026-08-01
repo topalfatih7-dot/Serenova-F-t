@@ -62,48 +62,33 @@ export async function fetchPresenceForUsers(userIds = [], { includeAdmins = fals
   })
 }
 
+/** Sekme oturumu boyunca last_seen — read-before-write turunu önler. */
+const presenceBeatCache = new Map()
+
 export async function pingPresence({ userId, email, name, role, pagePath }) {
   const now = new Date().toISOString()
-  const { data: existing } = await supabase
-    .from('user_presence')
-    .select('session_started_at, last_seen_at')
-    .eq('user_id', userId)
-    .maybeSingle()
+  const cached = presenceBeatCache.get(userId)
+  const wasOffline = !cached || (Date.now() - cached.lastSeenMs > OFFLINE_MS)
 
-  const wasOffline = !existing
-    || (Date.now() - new Date(existing.last_seen_at).getTime() > OFFLINE_MS)
-
-  let error
-  if (!existing) {
-    ;({ error } = await supabase.from('user_presence').insert({
-      user_id: userId,
-      email,
-      name: name || email,
-      role: role || 'member',
-      session_started_at: now,
-      last_seen_at: now,
-      page_path: pagePath || null,
-    }))
-  } else if (wasOffline) {
-    ;({ error } = await supabase.from('user_presence').update({
-      email,
-      name: name || email,
-      role: role || 'member',
-      session_started_at: now,
-      last_seen_at: now,
-      page_path: pagePath || null,
-    }).eq('user_id', userId))
-  } else {
-    ;({ error } = await supabase.from('user_presence').update({
-      email,
-      name: name || email,
-      role: role || 'member',
-      last_seen_at: now,
-      page_path: pagePath || null,
-    }).eq('user_id', userId))
+  const row = {
+    user_id: userId,
+    email,
+    name: name || email,
+    role: role || 'member',
+    last_seen_at: now,
+    page_path: pagePath || null,
   }
+  /* Yeni / offline dönüş: session_started_at yaz. Online heartbeat'te alanı gönderme
+   * ki PostgREST upsert mevcut değeri ezmesin. */
+  if (wasOffline) row.session_started_at = now
+
+  const { error } = await supabase
+    .from('user_presence')
+    .upsert(row, { onConflict: 'user_id' })
 
   if (error) return null
+
+  presenceBeatCache.set(userId, { lastSeenMs: Date.now() })
 
   const stats = await fetchOnlineStats()
   void broadcastPresenceStats(stats)

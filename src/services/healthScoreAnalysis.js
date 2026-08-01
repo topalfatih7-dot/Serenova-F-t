@@ -39,6 +39,8 @@ export const STAFF_BRIEF_META = {
   actions: { label: 'Aksiyon' },
 }
 
+export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
+
 export const HEALTH_SCORE_HISTORY_MAX = 24
 
 /** Deterministik fingerprint — api/_healthScoreAnalysis.js ile aynı (djb2). */
@@ -136,6 +138,63 @@ export function buildFallbackStaffBrief(scores = {}, overallScore = 50) {
     risks: `Uyku (${s.sleep ?? '—'}) ve stres yönetimi (${s.stress ?? '—'}) skorları toparlanma riskini etkiler. Yaşam tarzı skoru ${s.lifestyle ?? '—'}; sigara/alkol/ekran gibi faktörler varsa yük artışı temkinli yapılmalıdır. Tıbbi geçmişteki uyarılar varsa program öncesi netleştirin.`,
     actions: `Önümüzdeki 2–4 haftada en düşük skorlu 1–2 alana odaklanın. Koç ve diyetisyen aynı hedef dilini kullansın; kısa check-in'lerle adherence takip edin. Skor güncellemelerini sağlık testi yenilemeleriyle izleyin.`,
   }
+}
+
+function normalizeMemberBrief(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const out = {}
+  for (const key of MEMBER_BRIEF_KEYS) {
+    const text = String(raw[key] || '').trim()
+    if (!text) return null
+    out[key] = text.slice(0, 1200)
+  }
+  return out
+}
+
+/**
+ * AI memberBrief üretmediyse / eski kayıtsa skorlardan üyeye dönük
+ * motive edici (pazarlama tonlu) metin üretir.
+ */
+export function buildFallbackMemberBrief(scores = {}, overallScore = 50) {
+  const s = scores || {}
+  const strong = HEALTH_SCORE_KEYS
+    .filter((k) => (s[k] ?? 50) >= 70)
+    .map((k) => HEALTH_SCORE_META[k]?.label || k)
+  const weak = HEALTH_SCORE_KEYS
+    .filter((k) => (s[k] ?? 50) < 55)
+    .map((k) => HEALTH_SCORE_META[k]?.label || k)
+
+  const strengths = strong.length
+    ? `Tebrikler — ${strong.join(', ').toLowerCase()} alanlarında gerçekten iyi durumdasın. Bu alışkanlıklar en büyük avantajın; doğru bir planla bunların üstüne koymak çok daha kolay.`
+    : `Genel skorun ${overallScore}/100 — bu bir başlangıç noktası, etiket değil. Küçük ve düzenli adımlarla bu skorun yükseldiğini kısa sürede görebilirsin.`
+
+  const focus = weak.length
+    ? `${weak.join(', ')} tarafında gelişime açık alanların var. Bunlar irade eksikliği değil, çoğu zaman doğru plan eksikliğinden kaynaklanır — birlikte, küçük hedeflerle adım adım düzeltebiliriz.`
+    : 'Belirgin bir zayıf alanın yok; şimdi hedefin mevcut dengeyi korumak ve skorlarını bir üst seviyeye taşımak olabilir.'
+
+  const nutritionWeak = (s.nutrition ?? 50) < 55
+  const movementWeak = (s.movement ?? 50) < 55
+  let planPitch
+  if (nutritionWeak && movementWeak) {
+    planPitch = 'Hem beslenme hem hareket tarafında destek almak için Vip Paket senin için çok avantajlı: koç, diyetisyen ve doktor görüşmesi tek pakette — iki alanı aynı anda, birbirini destekleyecek şekilde toparlarsın.'
+  } else if (nutritionWeak) {
+    planPitch = 'Beslenme skorunu en hızlı yükseltecek şey birebir diyetisyen desteği. Diyet Paketi ile sana özel beslenme planı ve düzenli takip alırsın — tek başına deneme-yanılma yapmana gerek kalmaz.'
+  } else if (movementWeak) {
+    planPitch = 'Hareket tarafını toparlamak için Spor Paketi senin için ideal: antrenörün seviyene uygun kişisel program hazırlar ve seni düzenli takip eder — böylece başladığın gibi bırakmazsın.'
+  } else {
+    planPitch = 'Bu iyi tabloyu kalıcı hale getirmenin en kolay yolu profesyonel takip. Yeni Form paketleriyle koç ve diyetisyen desteği alarak skorlarını korur, hedeflerine daha hızlı ulaşırsın.'
+  }
+
+  return { strengths, focus, planPitch }
+}
+
+/** Kayıtlı analizden üye brief'i döndürür; yoksa skorlardan üretir. */
+export function resolveMemberBrief(analysis) {
+  if (!analysis) return null
+  const stored = normalizeMemberBrief(analysis.memberBrief)
+  if (stored) return stored
+  if (analysis.overallScore == null && analysis.overallScore !== 0) return null
+  return buildFallbackMemberBrief(analysis.scores, analysis.overallScore)
 }
 
 function normalizeStaffBrief(raw) {
@@ -344,6 +403,7 @@ export function computeFallbackHealthScores(profile = {}) {
     overallScore,
     summary: 'Cevaplarınıza göre kişisel sağlık skorunuz hesaplandı. Düzenli güncellemelerle skoru yükseltebilirsiniz.',
     staffBrief,
+    memberBrief: buildFallbackMemberBrief(scores, overallScore),
     aiGenerated: false,
     aiAttemptedAt: new Date().toISOString(),
   }
@@ -379,6 +439,8 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
     }
     const staffBrief = normalizeStaffBrief(data.staffBrief)
       || buildFallbackStaffBrief(data.scores, data.overallScore)
+    const memberBrief = normalizeMemberBrief(data.memberBrief)
+      || buildFallbackMemberBrief(data.scores, data.overallScore)
     const sourceFingerprint = data.sourceFingerprint
       || buildHealthAnalysisFingerprint(profile)
     return {
@@ -389,6 +451,7 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
       overallScore: data.overallScore,
       summary: data.summary || '',
       staffBrief,
+      memberBrief,
       aiGenerated: data.aiGenerated !== false,
       model: data.model || null,
       promptTokens: Number(data.promptTokens ?? data.usage?.promptTokens) || 0,

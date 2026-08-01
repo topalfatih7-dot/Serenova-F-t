@@ -6,6 +6,9 @@ import {
 } from 'lucide-react'
 import HealthTestConsentForm from './HealthTestConsentForm'
 import HealthProfileGateForm from './HealthProfileGateForm'
+import HealthScoreCard from '../dashboard/HealthScoreCard'
+import MemberHealthBrief from '../dashboard/MemberHealthBrief'
+import { resolveMemberBrief } from '../../services/healthScoreAnalysis'
 import {
   HEALTH_AUDIENCE_META,
   getRemainingHubSections,
@@ -50,6 +53,8 @@ export default function HealthTestHub({
   analysisReady = false,
   analysisLoading = false,
   analysisStage = null,
+  analysis = null,
+  analysisHistory = [],
   detailedComplete = false,
   scoresOnly = false,
   onStartCoreAnalysis = null,
@@ -217,6 +222,22 @@ export default function HealthTestHub({
           </Link>
         )}
       </div>
+
+      {analysisReady && analysis && (
+        <>
+          <HealthScoreCard
+            analysis={analysis}
+            history={analysisHistory}
+            loading={analysisLoading}
+            complete
+            scoresOnly={scoresOnly}
+          />
+          <MemberHealthBrief
+            brief={resolveMemberBrief(analysis)}
+            showPitch={scoresOnly}
+          />
+        </>
+      )}
 
       {!detailedComplete && (
         <div className="rounded-3xl border border-cream-200 bg-white p-5 shadow-sm sm:p-6">

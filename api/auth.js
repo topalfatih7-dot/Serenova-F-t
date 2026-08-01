@@ -239,6 +239,7 @@ async function handleSignup(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   const name = String(body.name || '').trim()
+  const phone = String(body.phone || '').trim()
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta adresi girin.' })
@@ -262,6 +263,17 @@ async function handleSignup(req, res, body) {
   }
 
   const admin = getSupabaseAdmin()
+
+  if (phone) {
+    const { data: phoneTaken, error: phoneErr } = await admin.rpc('phone_in_use', { p_phone: phone })
+    if (!phoneErr && phoneTaken) {
+      return res.status(409).json({
+        ok: false,
+        error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.',
+        code: 'PHONE_IN_USE',
+      })
+    }
+  }
 
   /* Mevcut hesap: signup 3/saat kotasını yakmadan (Turnstile zaten doğrulandı) */
   const existingEarly = await findAuthUserByEmail(admin, email)
@@ -358,8 +370,34 @@ async function handleSignup(req, res, body) {
     })
   }
 
+  /* Yeni kayıt: e-posta onayı + session aynı turda — istemci unlock/login turlarını atlar */
+  const userId = payload.user_id
+  if (userId) {
+    try {
+      await admin.auth.admin.updateUserById(userId, { email_confirm: true })
+    } catch {
+      /* session grant yine de denenecek */
+    }
+  }
+
+  const grant = await passwordGrant(email, password, '', { localBypass: true })
   const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
-  return res.status(200).json({ ok: true, userId: payload.user_id, authSessionToken })
+  if (grant.ok && grant.session) {
+    return res.status(200).json({
+      ok: true,
+      userId,
+      authSessionToken,
+      session: {
+        access_token: grant.session.access_token,
+        refresh_token: grant.session.refresh_token,
+        expires_in: grant.session.expires_in,
+        expires_at: grant.session.expires_at,
+        token_type: grant.session.token_type || 'bearer',
+      },
+    })
+  }
+
+  return res.status(200).json({ ok: true, userId, authSessionToken })
 }
 
 async function handlePasswordLogin(req, res, body) {

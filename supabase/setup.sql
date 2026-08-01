@@ -455,20 +455,20 @@ drop policy if exists payments_insert on public.payments;
 create policy payments_insert on public.payments for insert with check (public.is_admin() or member_id = (select auth.uid()));
 create index if not exists idx_payments_member_id on public.payments (member_id);
 
--- site_content — site_content_admin_write (FOR ALL) kaldırıldı; SELECT kapsamı
--- site_content_select (true) tarafından zaten karşılanıyor. INSERT için admin/üye
--- ayrımı (site_content_member_story) kasıtlı olarak ayrı politika kalıyor.
+-- site_content — INSERT tek OR politikası (multiple_permissive_policies önlenir)
 drop policy if exists site_content_select on public.site_content;
 create policy site_content_select on public.site_content for select using (true);
 drop policy if exists site_content_admin_write on public.site_content;
 drop policy if exists site_content_admin_insert on public.site_content;
-create policy site_content_admin_insert on public.site_content for insert with check (public.is_admin());
+drop policy if exists site_content_member_story on public.site_content;
+drop policy if exists site_content_insert on public.site_content;
+create policy site_content_insert on public.site_content
+  for insert to authenticated
+  with check (public.is_admin() or kind = 'success_story');
 drop policy if exists site_content_admin_update on public.site_content;
 create policy site_content_admin_update on public.site_content for update using (public.is_admin()) with check (public.is_admin());
 drop policy if exists site_content_admin_delete on public.site_content;
 create policy site_content_admin_delete on public.site_content for delete using (public.is_admin());
-drop policy if exists site_content_member_story on public.site_content;
-create policy site_content_member_story on public.site_content for insert to authenticated with check (kind = 'success_story');
 
 -- exercises — exercises_admin_write (FOR ALL) kaldırıldı; SELECT kapsamı exercises_select
 -- (true) tarafından zaten karşılanıyor (multiple_permissive_policies, 2026-07-05).
