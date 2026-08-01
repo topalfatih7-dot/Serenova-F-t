@@ -2203,9 +2203,49 @@ export async function submitStaffApplication(form, { turnstileToken = '', formSe
 
 function generateTempPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#'
+  const bytes = new Uint8Array(14)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256)
+  }
   let pwd = ''
-  for (let i = 0; i < 14; i += 1) pwd += chars[Math.floor(Math.random() * chars.length)]
+  for (let i = 0; i < bytes.length; i += 1) pwd += chars[bytes[i] % chars.length]
   return pwd
+}
+
+async function notifyStaffDecisionEmail({ applicationId, decision, tempPassword = '', note = '' }) {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+    if (!token) {
+      return { emailSent: false, error: 'Oturum bulunamadı — e-posta gönderilemedi' }
+    }
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: 'staff_decision_notify',
+        applicationId,
+        decision,
+        tempPassword: tempPassword || undefined,
+        note: note || undefined,
+      }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return { emailSent: false, error: json?.error || `E-posta API hatası (${res.status})` }
+    }
+    return {
+      emailSent: Boolean(json.emailSent),
+      error: json.emailSent ? null : (json.error || null),
+    }
+  } catch (e) {
+    return { emailSent: false, error: e?.message || 'E-posta gönderilemedi' }
+  }
 }
 
 export async function resolveStaffApplication(application, approve, adminNote = '') {
@@ -2218,8 +2258,15 @@ export async function resolveStaffApplication(application, approve, adminNote = 
     }).eq('id', application.id)
     if (error) return { success: false, error: error.message }
     void addActivity('staff_apply', `${application.name} kadro başvurusu reddedildi`)
+    const mail = await notifyStaffDecisionEmail({
+      applicationId: application.id,
+      decision: 'rejected',
+      note: adminNote || '',
+    })
     return {
       success: true,
+      emailSent: mail.emailSent,
+      emailError: mail.error || null,
       application: {
         ...application,
         status: 'rejected',
@@ -2246,10 +2293,17 @@ export async function resolveStaffApplication(application, approve, adminNote = 
   if (error) return { success: false, error: error.message }
 
   void addActivity('staff_apply', `${application.name} kadro başvurusu onaylandı — personel hesabı açıldı`)
+  const mail = await notifyStaffDecisionEmail({
+    applicationId: application.id,
+    decision: 'approved',
+    tempPassword,
+  })
   return {
     success: true,
     staffId: created.id,
     tempPassword,
+    emailSent: mail.emailSent,
+    emailError: mail.error || null,
     staff: created.staff || null,
     application: {
       ...application,

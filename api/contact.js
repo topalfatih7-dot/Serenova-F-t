@@ -1,11 +1,12 @@
 /**
  * Public form kapısı — Turnstile + rate limit + service-role DB yazımı + Telegram.
- * action: contact | staff_application | corporate_application | staff_doc_upload
+ * action: contact | staff_application | corporate_application | staff_doc_upload | staff_decision_notify
  *
  * Client asla notify secret göndermez; Telegram yalnızca bu route içinden tetiklenir.
+ * staff_decision_notify: admin bearer + Resend mail (onay/red).
  */
 
-import { setCorsHeaders, handleOptions } from './_guards.js'
+import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { verifyTurnstile } from './_turnstile.js'
 import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
@@ -16,6 +17,13 @@ import {
 } from './_formNotify.js'
 import { issueFormSession, verifyFormSession } from './_formSession.js'
 import { reportFormAttack, mapGuardToAttackReason } from './_attackAlert.js'
+import { getAppUrl } from './_appUrl.js'
+import {
+  sendMail,
+  staffApprovedEmail,
+  staffRejectedEmail,
+  isMailConfigured,
+} from './_mailer.js'
 
 const MAX_MESSAGE = 2000
 const MAX_NAME = 120
@@ -309,9 +317,98 @@ async function handleStaffDocUpload(req, res, body) {
   })
 }
 
+/**
+ * Admin: personel başvurusu onay/red bildirimi (Resend).
+ * Alıcı e-posta sunucuda staff_applications satırından okunur.
+ */
+async function handleStaffDecisionNotify(req, res, body) {
+  const auth = await requireAdmin(req)
+  if (!auth.ok) {
+    return res.status(auth.status).json({ ok: false, error: auth.error })
+  }
+
+  const applicationId = trimStr(body.applicationId, 80)
+  const decision = trimStr(body.decision, 20).toLowerCase()
+  const tempPassword = String(body.tempPassword || '')
+  const note = trimStr(body.note || body.adminNote, 500)
+
+  if (!applicationId) {
+    return res.status(400).json({ ok: false, error: 'applicationId gerekli' })
+  }
+  if (!['approved', 'rejected'].includes(decision)) {
+    return res.status(400).json({ ok: false, error: 'decision: approved | rejected' })
+  }
+
+  const admin = getSupabaseAdmin()
+  const { data: row, error } = await admin
+    .from('staff_applications')
+    .select('id, email, name, status, admin_note')
+    .eq('id', applicationId)
+    .maybeSingle()
+
+  if (error) {
+    return res.status(500).json({ ok: false, error: error.message || 'Başvuru okunamadı' })
+  }
+  if (!row) {
+    return res.status(404).json({ ok: false, error: 'Başvuru bulunamadı' })
+  }
+
+  const to = String(row.email || '').trim().toLowerCase()
+  if (!to.includes('@')) {
+    return res.status(400).json({ ok: false, emailSent: false, error: 'Başvuruda geçerli e-posta yok' })
+  }
+
+  if (!isMailConfigured()) {
+    return res.status(200).json({
+      ok: true,
+      emailSent: false,
+      error: 'RESEND_API_KEY tanımlı değil — mail atlandı.',
+    })
+  }
+
+  let template
+  if (decision === 'approved') {
+    if (!tempPassword || tempPassword.length < 8) {
+      return res.status(400).json({
+        ok: false,
+        emailSent: false,
+        error: 'Onay maili için geçici şifre gerekli',
+      })
+    }
+    template = staffApprovedEmail({
+      name: row.name,
+      email: to,
+      tempPassword,
+      loginUrl: `${getAppUrl()}/login`,
+    })
+  } else {
+    template = staffRejectedEmail({
+      name: row.name,
+      note: note || row.admin_note || '',
+    })
+  }
+
+  const sent = await sendMail({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+  })
+
+  if (!sent.ok) {
+    return res.status(200).json({
+      ok: true,
+      emailSent: false,
+      error: sent.error || 'E-posta gönderilemedi',
+    })
+  }
+
+  return res.status(200).json({ ok: true, emailSent: true, id: sent.id || null })
+}
+
 export default async function handler(req, res) {
-  if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type')) return
-  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type', req)
+  if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type, Authorization')) return
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
 
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
@@ -331,6 +428,7 @@ export default async function handler(req, res) {
     if (action === 'staff_application') return handleStaffApplication(req, res, body)
     if (action === 'corporate_application') return handleCorporateApplication(req, res, body)
     if (action === 'staff_doc_upload') return handleStaffDocUpload(req, res, body)
+    if (action === 'staff_decision_notify') return handleStaffDecisionNotify(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz form türü' })
   } catch (e) {

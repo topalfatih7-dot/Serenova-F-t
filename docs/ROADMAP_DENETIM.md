@@ -10,6 +10,7 @@
 ## AÇIK OPS — kullanıcı (kritik)
 
 - [ ] **Stripe webhook event’leri** — Dashboard’a `invoice.paid` + `customer.subscription.deleted` ekle (kod hazır; eklenmezse abonelik yenilenmez). Adım adım: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
+- [x] **Resend e-posta (kod + env)** — API key, domain verified, Vercel env, `staff_decision_notify` production’da. Kalan manuel: Supabase şablon subject/HTML. [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md)  
 - [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 - [ ] **WhatsApp Cloud API** — Meta şablon onayı + env + webhook. Kod hazır. Adım adım: [`OPS_WHATSAPP.md`](OPS_WHATSAPP.md)  
 - [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)

@@ -2,18 +2,27 @@
 
 Bu doküman, **yalnızca** `info@yeniform.com` adresini ücretsiz kurmak içindir: gelen mailleri almak ve aynı adresten cevap/gönderim yapmak.
 
-**Mevcut altyapı (değiştirme):**
+## Durum (2026-08 tarama)
+
+| Kontrol | Sonuç |
+| --- | --- |
+| Nameserver | **Turhost** (`dns1.turhost.com` / `dns2.turhost.com`) — DNS burada yönetilir |
+| Kök MX | `0 yeniform.com.` → **bozuk / kendi kendine** — dışarıdan gelen mail kutuya düşmez |
+| Resend (uygulama mailleri) | `send.yeniform.com` MX + kök SPF `amazonses` — **dokunma**; giden sistem mailleri ayrı |
+| Gelen kutu | Henüz yok — aşağıdaki ImprovMX + Gmail kurulacak |
+
+**Mevcut altyapı:**
 
 | Parça | Nerede | Rol |
 | --- | --- | --- |
-| Domain sahibi | **Turhost** | Domain satın alındı / yenilenir |
-| DNS (MX, TXT, A, CNAME) | **Vercel** | Site + e-posta DNS kayıtları burada yönetilir |
-| Site hosting | **Vercel** | `yeniform.com` uygulaması |
-| Hedef gelen kutusu | **Gmail** (kişisel) | Gerçek posta kutusu (ücretsiz) |
-| Yönlendirme (receive) | **ImprovMX** (ücretsiz plan) | `info@` → Gmail’e forward |
-| Gönderim (send) | **Gmail “Send mail as” + SMTP** | Gmail’den `info@yeniform.com` olarak yazma |
+| Domain sahibi + DNS | **Turhost** | NS burada; MX/SPF/TXT buraya eklenir |
+| Site hosting | **Vercel** | `yeniform.com` A/CNAME (site) — mail MX’si Turhost’ta |
+| Hedef gelen kutusu | **Gmail** (kişisel) | Mailleri burada okursun / cevaplarsın |
+| Yönlendirme (receive) | **ImprovMX** (ücretsiz) | `info@` → Gmail’e forward |
+| Gönderim (insan) | **Gmail “Send mail as”** | From = `info@yeniform.com` |
+| Gönderim (uygulama) | **Resend** | Onay/red, şifre sıfırlama — [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md) |
 
-> **Önemli:** Turhost panelinde DNS’i “Vercel’e verdiysen”, e-posta için MX/TXT kayıtlarını **Turhost’ta değil, Vercel DNS’te** ekleyeceksin. Turhost’ta nameserver’lar Vercel’i gösteriyorsa, Turhost’taki DNS satırları genelde etkisizdir.
+> **Önemli:** Nameserver Turhost olduğu için e-posta MX/TXT kayıtlarını **Turhost DNS**’e ekle. Vercel Domains’teki DNS bu domain için etkili değil (NS Turhost’tayken).
 
 ---
 
@@ -28,7 +37,7 @@ Bu doküman, **yalnızca** `info@yeniform.com` adresini ücretsiz kurmak içindi
 ### Yapmaz
 
 - Gerçek bir `info@` sunucu kutusu (IMAP/POP) açmaz; kutu Gmail’dir.
-- Uygulamanın otomatik maillerini (kayıt, şifre sıfırlama, Stripe vb.) yönetmez — onlar ayrı (Supabase / Resend vb.).
+- Uygulamanın otomatik maillerini (kayıt, şifre sıfırlama, personel onay/red vb.) yönetmez — onlar **Resend** ile yapılır: [`docs/OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md).
 - Google Workspace / Microsoft 365 değildir; ekip büyürse ileride ücretli plana geçilebilir.
 - ImprovMX ücretsiz planında **kendi SMTP’si yoktur**; gönderim Gmail SMTP ile yapılır (aşağıda).
 
@@ -121,47 +130,36 @@ ImprovMX genelde şunları ister (değerler panelde de yazar; paneldeki güncel 
 | --- | --- | --- | --- |
 | **MX** | `@` veya boş / `yeniform.com` | `mx1.improvmx.com` | **10** |
 | **MX** | `@` veya boş / `yeniform.com` | `mx2.improvmx.com` | **20** |
-| **TXT (SPF)** | `@` | `v=spf1 include:spf.improvmx.com include:_spf.google.com ~all` | — |
+| **TXT (SPF)** | `@` | aşağıdaki birleşik SPF | — |
 
-> SPF’te hem ImprovMX hem Google var: gelen yönlendirme + Gmail’den gönderim için. **Aynı domainde birden fazla SPF TXT olmamalı** — tek kayıt, `include` birleştirilmiş.
+> SPF’te ImprovMX + Google + Amazon SES (Resend) bir arada. **Aynı domainde birden fazla SPF TXT olmamalı** — tek kayıt, `include` birleştirilmiş.
 
 ---
 
-## 4) Vercel DNS kayıtları (en kritik adım)
+## 4) Turhost DNS kayıtları (en kritik adım)
 
 ### 4.1 Panele gir
 
-1. [https://vercel.com/dashboard](https://vercel.com/dashboard)
-2. `yeniform.com`’un bağlı olduğu projeyi aç **veya** hesap → **Domains**.
-3. `yeniform.com` → **DNS** sekmesi.
+1. Turhost müşteri paneli → domain `yeniform.com`
+2. **DNS yönetimi** / Zone Editor / DNS kayıtları
 
 ### 4.2 Eski / çakışan MX’leri temizle
 
-1. Mevcut kayıtlarda **MX** tipinde satır var mı bak.
-2. Turhost, eski hosting, Google Workspace denemesi vb. MX varsa **sil**.
-3. Aynı anda iki farklı mail sağlayıcısı (ör. Turhost mail + ImprovMX) çalışmaz; **yalnızca ImprovMX MX** kalmalı.
+1. Mevcut **MX** satırlarını bul (şu an muhtemelen `yeniform.com` priority 0 — sil).
+2. Turhost “e-posta oluştur / Roundcube” kutusu açıksa ve MX’i kendine çekiyorsa kapat veya MX’i ImprovMX’e çevir.
+3. Aynı anda iki sağlayıcı çalışmaz; kökte **yalnızca ImprovMX MX** kalsın.
 
-Site için **A / AAAA / CNAME** (Vercel) kayıtlarına dokunma.
+Site A / CNAME kayıtlarına dokunma (Vercel site).  
+`send` subdomain MX’ine (Resend bounce) **dokunma**.
 
-### 4.3 Kolay yol: ImprovMX DNS Preset (varsa)
-
-Vercel bazı hesaplarda:
-
-1. DNS → **Add DNS Preset** (veya benzeri)
-2. **ImprovMX [MX]** seç
-3. **Add records**
-
-Preset yalnızca ImprovMX MX + basit SPF ekler. Sonra SPF’i Google ile birleştirmeyi **elle** yap (bölüm 4.5).
-
-### 4.4 Elle MX ekleme
+### 4.3 Elle MX ekleme
 
 **Kayıt 1**
 
 - Type: `MX`
-- Name: `@` (veya boş — Vercel’de kök domain için ne isteniyorsa)
-- Value / Mail server: `mx1.improvmx.com`
+- Name / Host: `@` (veya boş / `yeniform.com` — Turhost ne istiyorsa)
+- Value: `mx1.improvmx.com`
 - Priority: `10`
-- TTL: Auto / 60
 
 **Kayıt 2**
 
@@ -169,59 +167,43 @@ Preset yalnızca ImprovMX MX + basit SPF ekler. Sonra SPF’i Google ile birleş
 - Name: `@`
 - Value: `mx2.improvmx.com`
 - Priority: `20`
-- TTL: Auto
-
-Kaydet. Yazımda sonda nokta (`.`) Vercel bazen ekler; `mx1.improvmx.com` yeterli.
 
 ### 4.5 SPF (TXT) — tek kayıt, birleştirilmiş
 
-1. Mevcut **TXT** kayıtlarında `v=spf1` ile başlayan var mı bak.
-2. Varsa **düzenle**; yoksa **yeni TXT** ekle.
-3. İkinci bir SPF TXT **ekleme**.
-
-Önerilen tek SPF değeri:
+1. Mevcut **TXT** içinde `v=spf1` ile başlayanı bul → **düzenle** (ikinci SPF ekleme).
+2. Şu anki kayıt genelde yalnız `include:amazonses.com` (Resend). Bunu genişlet:
 
 ```text
-v=spf1 include:spf.improvmx.com include:_spf.google.com ~all
+v=spf1 include:spf.improvmx.com include:_spf.google.com include:amazonses.com ~all
 ```
 
 | Alan | Değer |
 | --- | --- |
 | Type | `TXT` |
 | Name | `@` |
-| Value | `v=spf1 include:spf.improvmx.com include:_spf.google.com ~all` |
+| Value | `v=spf1 include:spf.improvmx.com include:_spf.google.com include:amazonses.com ~all` |
 
-**Neden Google include?**  
-Gmail “Send mail as” ile giden mailler Google sunucularından çıkar. Alıcı sunucular SPF’te Google’ı görmezse spam / reject riski artar.
+- **ImprovMX** → gelen forward  
+- **Google** → Gmail “Send mail as”  
+- **amazonses** → Resend uygulama mailleri (kalsın)
 
-**Başka `include` gerekirse** (ör. ileride Resend ile `info@` değil transactional domain):  
-Aynı satıra ekle, örneğin `include:amazonses.com` — ama **lookup limiti 10**; şimdilik ImprovMX + Google yeterli.
+### 4.6 DMARC
 
-### 4.6 (Önerilen) DMARC — soft başlangıç
+Zaten `_dmarc` = `v=DMARC1; p=none` görünüyorsa bırak veya `rua` ekle:
 
-Spam skorunu iyileştirmek için basit DMARC:
+```text
+v=DMARC1; p=none; rua=mailto:info@yeniform.com
+```
 
-| Alan | Değer |
-| --- | --- |
-| Type | `TXT` |
-| Name | `_dmarc` |
-| Value | `v=DMARC1; p=none; rua=mailto:info@yeniform.com` |
-
-- `p=none`: şimdilik sadece izle, agresif reddetme yok.  
-- İleride `p=quarantine` düşünülebilir; erken `reject` önerme.
-
-### 4.7 Vercel DNS — hedef görünüm (özet)
-
-Kök domainde (e-posta ile ilgili) kabaca:
+### 4.7 Turhost DNS — hedef görünüm (özet)
 
 ```text
 MX   @   mx1.improvmx.com     10
 MX   @   mx2.improvmx.com     20
-TXT  @   v=spf1 include:spf.improvmx.com include:_spf.google.com ~all
-TXT  _dmarc   v=DMARC1; p=none; rua=mailto:info@yeniform.com
+TXT  @   v=spf1 include:spf.improvmx.com include:_spf.google.com include:amazonses.com ~all
+TXT  _dmarc   v=DMARC1; p=none; ...
+(+ site A/CNAME + Resend: send MX / resend._domainkey — dokunma)
 ```
-
-(+ Vercel’in site için A/CNAME kayıtları — dokunma)
 
 ---
 
@@ -411,7 +393,7 @@ Alıcı Gmail’de mail → üç nokta → **Show original** / Orijinali göster
 - Turhost DNS’ine MX ekleme (NS Vercel’deyse genelde işe yaramaz ve kafa karıştırır).  
 - Ücretli Turhost mail paketi (bu doküman ücretsiz yol).
 
-Özet: **Turhost = kayıt şirketi**, **Vercel = DNS**, **ImprovMX = MX/forward**, **Gmail = kutu + SMTP**.
+Özet: **Turhost = kayıt + DNS**, **Vercel = site hosting**, **ImprovMX = MX/forward**, **Gmail = kutu + insan SMTP**.
 
 ---
 
@@ -420,8 +402,8 @@ Alıcı Gmail’de mail → üç nokta → **Show original** / Orijinali göster
 | Tür | Adres örneği | Bu doküman mı? |
 | --- | --- | --- |
 | İnsan okur-yazar | `info@yeniform.com` | **Evet** |
-| Auth (Supabase) | kullanıcıya sistem maili | Hayır — Supabase SMTP / şablon |
-| Transactional (Resend vb.) | fatura, bildirim | Hayır — `.env` API key |
+| Auth (Supabase → Resend SMTP) | şifre sıfırlama, doğrulama | Hayır — [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md) |
+| Transactional (Resend API) | personel onay/red | Hayır — `RESEND_API_KEY` + [`api/_mailer.js`](../api/_mailer.js) |
 | Admin hesap | `admin@yeniform.com` (uygulama login) | Hayır — Supabase Auth kullanıcısı; DNS mail ile aynı şey değil |
 
 `info@` DNS MX’i ImprovMX’e verdikten sonra Turhost/eski mail kutuları o adrese gelmeyi **bırakır**. Yalnızca Gmail forward çalışır.
@@ -457,36 +439,35 @@ Alıcı Gmail’de mail → üç nokta → **Show original** / Orijinali göster
 ## 14) Adım adım özet (tek bakışta)
 
 1. [ ] ImprovMX’e üye ol → domain `yeniform.com`  
-2. [ ] Alias: `info` → Gmail  
-3. [ ] Vercel DNS: MX `mx1` (10) + `mx2` (20)  
-4. [ ] Vercel DNS: tek SPF `improvmx` + `_spf.google.com`  
-5. [ ] (Opsiyonel) `_dmarc` TXT  
-6. [ ] `dig` / ImprovMX check → aktif  
-7. [ ] Dışarıdan `info@`’a test mail → Gmail’de gör  
-8. [ ] Gmail 2FA + App Password  
-9. [ ] Send mail as → SMTP `smtp.gmail.com:587`  
-10. [ ] Onay linki → From: `info@` ile giden test  
+2. [ ] Alias: `info` → kendi Gmail’in  
+3. [ ] **Turhost DNS:** eski MX sil → `mx1` (10) + `mx2` (20)  
+4. [ ] **Turhost DNS:** tek SPF = improvmx + google + amazonses  
+5. [ ] ImprovMX → Check DNS → aktif  
+6. [ ] Başka hesaptan `info@`’a test → **Gmail Inbox**  
+7. [ ] Gmail 2FA + App Password  
+8. [ ] Send mail as → From `info@yeniform.com`  
+9. [ ] Giden test  
+
+Mailleri **nerede görürsün?** → Kişisel **Gmail** (ImprovMX oraya forward eder). Ayrı Roundcube / Turhost webmail yok.
 
 ---
 
 ## 15) Referans linkler
 
-- ImprovMX + Vercel DNS: [https://improvmx.com/guides/vercel/](https://improvmx.com/guides/vercel/)  
 - ImprovMX generic MX: [https://improvmx.com/guides/generic-dns-configuration/](https://improvmx.com/guides/generic-dns-configuration/)  
 - SPF birleştirme: [https://improvmx.com/guides/combining-spf-records/](https://improvmx.com/guides/combining-spf-records/)  
 - Google App Passwords: [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)  
 - MX Toolbox: [https://mxtoolbox.com](https://mxtoolbox.com)  
-- Vercel Dashboard: [https://vercel.com/dashboard](https://vercel.com/dashboard)  
 
 ---
 
 ## 16) Bu repoda not
 
 - Yasal metinlerde iletişim: `info@yeniform.com` / `destek@yeniform.com` geçebilir; DNS’te şimdilik **yalnızca `info`** kuruluyor.  
-- `destek@` ileride aynı ImprovMX alias ile eklenebilir (aynı MX yeter; yeni alias + aynı veya farklı Gmail).  
-- Uygulama kodunda SMTP değiştirmek **gerekmez**; bu insan iletişimi içindir.
+- `destek@` ileride aynı ImprovMX alias ile eklenebilir.  
+- Uygulama kodunda değişiklik yok; Resend transactional ayrı kalır.
 
 ---
 
 **Son durum hedefi:**  
-Müşteri `info@yeniform.com` yazar → sen Gmail’de okursun → Gmail’den `info@yeniform.com` olarak cevap verirsin. Turhost’ta domain kalır, DNS Vercel’de kalır, ekstra aylık ücret yok.
+Müşteri `info@yeniform.com` yazar → ImprovMX → senin Gmail’in → Gmail’den From=`info@` ile cevap. Ücretsiz; Turhost DNS + Gmail.

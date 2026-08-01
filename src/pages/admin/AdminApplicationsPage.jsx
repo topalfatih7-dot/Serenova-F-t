@@ -77,8 +77,24 @@ export default function AdminApplicationsPage() {
     try {
       const r = await resolveStaffApplication(app, true)
       if (!r.success) { toast(r.error || 'Onaylanamadı', 'error'); return }
-      toast('Personel hesabı oluşturuldu', 'success')
-      if (r.tempPassword) setApprovedCreds({ email: app.email, name: app.name, password: r.tempPassword })
+      toast(
+        r.emailSent
+          ? 'Personel hesabı oluşturuldu — e-posta gönderildi'
+          : 'Personel hesabı oluşturuldu',
+        'success',
+      )
+      if (r.tempPassword) {
+        setApprovedCreds({
+          email: app.email,
+          name: app.name,
+          password: r.tempPassword,
+          emailSent: Boolean(r.emailSent),
+          emailError: r.emailError || null,
+        })
+      }
+      if (!r.emailSent) {
+        toast(r.emailError || 'E-posta gönderilemedi — şifreyi manuel iletin', 'error')
+      }
     } finally { setBusy(null) }
   }
 
@@ -88,7 +104,13 @@ export default function AdminApplicationsPage() {
     try {
       const r = await resolveStaffApplication(rejectTarget, false, rejectNote)
       if (!r.success) { toast(r.error, 'error'); return }
-      toast('Reddedildi', 'info')
+      toast(
+        r.emailSent ? 'Reddedildi — bildirim e-postası gönderildi' : 'Reddedildi',
+        'info',
+      )
+      if (!r.emailSent) {
+        toast(r.emailError || 'Red bildirimi e-postası gönderilemedi', 'error')
+      }
       setRejectTarget(null)
       setRejectNote('')
     } finally { setBusy(null) }
@@ -311,6 +333,16 @@ export default function AdminApplicationsPage() {
           <p className="mt-2">E-posta: <strong>{approvedCreds?.email}</strong></p>
           <p className="mt-1">Geçici şifre: <strong>{approvedCreds?.password}</strong></p>
         </div>
+        {approvedCreds?.emailSent ? (
+          <p className="mt-3 rounded-xl bg-sage-50 px-3 py-2 text-xs font-medium text-sage-700 ring-1 ring-sage-200">
+            Başvurana e-posta gönderildi (giriş bilgileri içerir).
+          </p>
+        ) : (
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+            E-posta gönderilemedi{approvedCreds?.emailError ? `: ${approvedCreds.emailError}` : ''}.
+            {' '}Şifreyi başvurana manuel iletin.
+          </p>
+        )}
         <button type="button" onClick={copyCreds} className="btn-wellness mt-4 w-full !py-3"><Copy className="h-4 w-4" /> Kopyala</button>
       </Modal>
     </div>

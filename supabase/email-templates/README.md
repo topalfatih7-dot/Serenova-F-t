@@ -5,28 +5,33 @@ Bu klasördeki HTML dosyalarını Supabase Dashboard'a **manuel** yapıştırın
 **Proje:** Yeni Form · ref `rvzksmyhsgxgrxgeabmi`  
 **Dashboard:** [Authentication → Email Templates](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/templates)
 
-| Dosya | Dashboard şablonu | Konu satırı önerisi |
-|-------|-------------------|---------------------|
-| `recovery.html` | **Reset Password** | `Yeni Form — Şifre sıfırlama bağlantınız` |
-| `magic-link.html` | **Magic Link** | `Yeni Form — E-posta doğrulama bağlantınız` |
-| `confirm-signup.html` | **Confirm signup** | `Yeni Form — Hesabınızı doğrulayın` |
+| Dosya | Dashboard şablonu | Konu satırı önerisi | Durum |
+|-------|-------------------|---------------------|--------|
+| `recovery.html` | **Reset Password** | `Yeni Form — Şifre sıfırlama bağlantınız` | Zorunlu |
+| `magic-link.html` | **Magic Link** | `Yeni Form — E-posta doğrulama bağlantınız` | Zorunlu (profil doğrulama OTP) |
+| `confirm-signup.html` | **Confirm signup** | — | **Kullanılmıyor** — kayıt sunucuda `email_confirm: true` ile açılır |
 
 ## Önemli — PKCE + token_hash
 
 Uygulama `flowType: 'pkce'` kullanır. **Recovery** şablonunda `{{ .ConfirmationURL }}` yerine `{{ .TokenHash }}` zorunludur; aksi halde şifre sıfırlama farklı cihaz/tarayıcıda çalışmaz.
 
-## Özel gönderen (info@yeniform.com)
+Repo şablonu zaten doğru link kullanır:
 
-Varsayılan Supabase göndericisi (`noreply@mail.app.supabase.io`) yerine kendi adresiniz için:
+`{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=reset-password`
+
+## Özel gönderen (info@yeniform.com) — Resend SMTP
+
+Varsayılan Supabase göndericisi (`noreply@mail.app.supabase.io`) saatte ~2 mail ile sınırlıdır; production için Custom SMTP gerekir.
+
+Tam adımlar: [`docs/OPS_RESEND_MAIL.md`](../../docs/OPS_RESEND_MAIL.md)
+
+Kısa özet:
 
 1. [Authentication → SMTP Settings](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/smtp)
 2. **Enable Custom SMTP**
-3. Önerilen değerler:
-   - **Sender email:** `info@yeniform.com`
-   - **Sender name:** `Yeni Form`
-   - SMTP sağlayıcı: Resend, SendGrid, Brevo, Amazon SES vb. (domain DNS kayıtları gerekir)
-
-`info@yeniform.com` için domain sağlayıcınızda SPF, DKIM ve (önerilen) DMARC kayıtlarını SMTP sağlayıcınızın verdiği değerlerle ekleyin.
+3. Host `smtp.resend.com` · Port `465` · User `resend` · Password = `RESEND_API_KEY`
+4. Sender: `info@yeniform.com` / `Yeni Form`
+5. Resend’de `yeniform.com` domain verified olmalı
 
 ## Site URL
 

@@ -1,0 +1,178 @@
+/**
+ * Transactional e-posta — Resend REST API (SDK yok).
+ * Env: RESEND_API_KEY, MAIL_FROM (örn. "Yeni Form <info@yeniform.com>")
+ */
+import { getAppUrl } from './_appUrl.js'
+
+const RESEND_API = 'https://api.resend.com/emails'
+const DEFAULT_FROM = 'Yeni Form <info@yeniform.com>'
+
+export function isMailConfigured() {
+  return Boolean(String(process.env.RESEND_API_KEY || '').trim())
+}
+
+export function getMailFrom() {
+  return String(process.env.MAIL_FROM || DEFAULT_FROM).trim() || DEFAULT_FROM
+}
+
+/**
+ * @param {{ to: string|string[], subject: string, html: string, text?: string }} opts
+ * @returns {Promise<{ ok: true, id?: string } | { ok: false, error: string, skipped?: boolean }>}
+ */
+export async function sendMail({ to, subject, html, text }) {
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim()
+  if (!apiKey) {
+    return { ok: false, skipped: true, error: 'RESEND_API_KEY tanımlı değil.' }
+  }
+
+  const recipients = (Array.isArray(to) ? to : [to])
+    .map((e) => String(e || '').trim().toLowerCase())
+    .filter((e) => e.includes('@'))
+  if (!recipients.length) {
+    return { ok: false, error: 'Alıcı e-posta gerekli.' }
+  }
+  if (!subject || !html) {
+    return { ok: false, error: 'Konu ve HTML gövde gerekli.' }
+  }
+
+  const body = {
+    from: getMailFrom(),
+    to: recipients,
+    subject: String(subject).slice(0, 200),
+    html,
+  }
+  if (text) body.text = String(text)
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const msg = json?.message || json?.error || `Resend HTTP ${res.status}`
+      return { ok: false, error: String(msg) }
+    }
+    return { ok: true, id: json?.id || null }
+  } catch (e) {
+    return { ok: false, error: String(e?.message || e) }
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function wrapBrandEmail({ title, bodyHtml, footerNote }) {
+  return `<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f5f0e8;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f0e8;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e8dfd0;">
+        <tr><td style="height:6px;background:linear-gradient(90deg,#2d6a4f,#40916c,#52b788);"></td></tr>
+        <tr><td style="padding:32px 28px 8px;">
+          <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#2d6a4f;letter-spacing:0.04em;text-transform:uppercase;">Yeni Form</p>
+          <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1b4332;">${escapeHtml(title)}</h1>
+          ${bodyHtml}
+        </td></tr>
+        <tr><td style="padding:20px 28px 28px;border-top:1px solid #f0ebe3;">
+          <p style="margin:0;font-size:12px;color:#888;text-align:center;">
+            ${escapeHtml(footerNote || 'Yeni Form · yeniform.com')}
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+/**
+ * Personel başvurusu onaylandı — geçici şifre ile giriş bilgileri.
+ */
+export function staffApprovedEmail({ name, email, tempPassword, loginUrl }) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const safeEmail = escapeHtml(email)
+  const safePwd = escapeHtml(tempPassword)
+  const url = loginUrl || `${getAppUrl()}/login`
+  const title = 'Başvurunuz onaylandı'
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, kadro başvurunuz onaylandı. Personel panelinize aşağıdaki bilgilerle giriş yapabilirsiniz.
+    </p>
+    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin:0 0 20px;background:#f6faf7;border-radius:12px;border:1px solid #d8ebe0;">
+      <tr><td style="padding:16px 18px;font-size:14px;line-height:1.7;color:#1b4332;">
+        <strong>E-posta:</strong> ${safeEmail}<br />
+        <strong>Geçici şifre:</strong> <code style="font-size:15px;background:#fff;padding:2px 8px;border-radius:6px;border:1px solid #cfe3d6;">${safePwd}</code>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      İlk girişte şifrenizi değiştirmeniz istenecektir. Bu e-postayı kimseyle paylaşmayın.
+    </p>
+    <p style="margin:0 0 8px;text-align:center;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
+        Giriş Yap
+      </a>
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    'Kadro başvurunuz onaylandı.',
+    `E-posta: ${email}`,
+    `Geçici şifre: ${tempPassword}`,
+    '',
+    'İlk girişte şifrenizi değiştirmeniz istenecektir.',
+    `Giriş: ${url}`,
+  ].join('\n')
+
+  return {
+    subject: 'Yeni Form — Başvurunuz onaylandı',
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}
+
+/**
+ * Personel başvurusu reddedildi.
+ */
+export function staffRejectedEmail({ name, note }) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const noteBlock = note
+    ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#4a4a4a;background:#faf6f0;border-radius:12px;padding:14px 16px;border:1px solid #ebe3d6;">
+         <strong>Not:</strong> ${escapeHtml(note)}
+       </p>`
+    : ''
+  const title = 'Başvuru sonucu'
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, kadro başvurunuz bu aşamada onaylanmadı.
+    </p>
+    ${noteBlock}
+    <p style="margin:0;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      İleride yeni fırsatlar için tekrar başvurabilirsiniz. Sorularınız için info@yeniform.com adresine yazabilirsiniz.
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    'Kadro başvurunuz bu aşamada onaylanmadı.',
+    note ? `Not: ${note}` : '',
+    '',
+    'Sorularınız için: info@yeniform.com',
+  ].filter(Boolean).join('\n')
+
+  return {
+    subject: 'Yeni Form — Başvuru sonucu',
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}

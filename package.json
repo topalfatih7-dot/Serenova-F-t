@@ -13,6 +13,8 @@
     "test:stripe": "node scripts/test-stripe-webhook.mjs",
     "test:stripe:checkout": "node scripts/test-stripe-checkout.mjs",
     "test:rls": "node scripts/test-rls-policies.mjs",
+    "test:mail": "node scripts/mail-smoke.mjs",
+    "test:mail:probe": "node scripts/auth-mail-probe.mjs && node scripts/staff-decision-notify-local.mjs",
     "og:image": "node scripts/generate-og-image.mjs",
     "preview": "vite preview",
     "db:migrate": "node scripts/db-migrate.mjs",
