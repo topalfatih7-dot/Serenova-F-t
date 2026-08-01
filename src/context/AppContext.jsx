@@ -500,8 +500,10 @@ export function AppProvider({ children }) {
 
     return startPresenceTracker({
       resolvePresenceInfo: async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return null
+        /* getSession yerel — getUser ağ çağrısı presence heartbeat’ini geciktirmesin */
+        const { data: { session } } = await supabase.auth.getSession()
+        const user = session?.user
+        if (!user?.id || !session?.access_token) return null
         const dbNow = remoteDbRef.current
         const s = dbNow?.session
         // Oturum tipi henüz çözülmediyse presence yazma — yanlış 'member' rolü

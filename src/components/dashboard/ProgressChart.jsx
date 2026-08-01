@@ -6,8 +6,8 @@ import {
 
 export const WeightChart = memo(function WeightChart({ data }) {
   return (
-    <div className="h-56">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-56 w-full min-w-0">
+      <ResponsiveContainer width="100%" height={224} minWidth={0}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
           <XAxis dataKey="date" tick={{ fontSize: 12 }} />

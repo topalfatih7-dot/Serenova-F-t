@@ -97,17 +97,30 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
         onTokenRef.current?.('')
         softReset()
       },
-      'error-callback': () => {
+      'error-callback': (code) => {
+        /* 600010: genelde tarayıcı/uzantı/DevTools — anında reset iframe postMessage yarışı yaratır */
         setStatus('error')
         onTokenRef.current?.('')
-        clearWaiters(new Error('Bot doğrulaması başarısız. Lütfen tekrar deneyin.'))
-        softReset()
+        clearWaiters(new Error(
+          code === '600010'
+            ? 'Bot doğrulaması engellendi. Uzantıları kapatıp sayfayı yenileyin.'
+            : 'Bot doğrulaması başarısız. Lütfen tekrar deneyin.',
+        ))
+        if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+        resetTimerRef.current = window.setTimeout(() => {
+          resetTimerRef.current = 0
+          renderWidget()
+        }, 2500)
       },
       'timeout-callback': () => {
         setStatus('error')
         onTokenRef.current?.('')
         clearWaiters(new Error('Bot doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.'))
-        softReset()
+        if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+        resetTimerRef.current = window.setTimeout(() => {
+          resetTimerRef.current = 0
+          renderWidget()
+        }, 2500)
       },
     })
   }, [clearWaiters, settleWait, softReset])

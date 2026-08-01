@@ -31,8 +31,9 @@ export const HealthScoreSimpleTrend = memo(function HealthScoreSimpleTrend({ his
   return (
     <div className="mt-5 border-t border-brand-100/80 pt-4">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-700/60">Skor trendi</p>
-      <div className="h-40">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-40 w-full min-w-0">
+        {/* Sabit yükseklik: gizli/0 boyutlu kapsayıcıda width/height -1 uyarısını önler */}
+        <ResponsiveContainer width="100%" height={160} minWidth={0}>
           <LineChart data={data} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} />

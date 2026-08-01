@@ -65,7 +65,17 @@ export async function fetchPresenceForUsers(userIds = [], { includeAdmins = fals
 /** Sekme oturumu boyunca last_seen — read-before-write turunu önler. */
 const presenceBeatCache = new Map()
 
+async function hasAuthSession() {
+  if (!supabase) return false
+  const { data } = await supabase.auth.getSession()
+  return Boolean(data?.session?.access_token)
+}
+
 export async function pingPresence({ userId, email, name, role, pagePath }) {
+  if (!userId || !supabase) return null
+  /* Logout / token yokken upsert → 401 gürültüsü */
+  if (!(await hasAuthSession())) return null
+
   const now = new Date().toISOString()
   const cached = presenceBeatCache.get(userId)
   const wasOffline = !cached || (Date.now() - cached.lastSeenMs > OFFLINE_MS)
@@ -86,7 +96,12 @@ export async function pingPresence({ userId, email, name, role, pagePath }) {
     .from('user_presence')
     .upsert(row, { onConflict: 'user_id' })
 
-  if (error) return null
+  if (error) {
+    if (error.code === 'PGRST301' || /JWT|401|not authenticated/i.test(error.message || '')) {
+      presenceBeatCache.delete(userId)
+    }
+    return null
+  }
 
   presenceBeatCache.set(userId, { lastSeenMs: Date.now() })
 
@@ -96,8 +111,12 @@ export async function pingPresence({ userId, email, name, role, pagePath }) {
 }
 
 export async function clearPresence(userId) {
-  if (!userId) return
-  await supabase.from('user_presence').delete().eq('user_id', userId)
+  if (!userId || !supabase) return
+  presenceBeatCache.delete(userId)
+  /* Local signOut sonrası JWT yok — DELETE 401 üretmesin */
+  if (!(await hasAuthSession())) return
+  const { error } = await supabase.from('user_presence').delete().eq('user_id', userId)
+  if (error) return
   const stats = await fetchOnlineStats()
   void broadcastPresenceStats(stats)
 }
