@@ -99,9 +99,9 @@ export function AppProvider({ children }) {
           if (active) setRemoteDb(d)
           return
         }
-        /* İlk yükleme: tek getUser() doğrulaması; sonraki hydrate’ler session.user kullanır */
+        /* İlk yükleme: tek getUser() doğrulaması; hydrate INITIAL_SESSION ile birleşir */
         await sb.resolveAuthUser({ verify: true })
-        const d = await sb.hydrate({ force: true })
+        const d = await sb.hydrate({ force: false })
         if (active) setRemoteDb(d)
       } finally {
         if (active) setLoading(false)

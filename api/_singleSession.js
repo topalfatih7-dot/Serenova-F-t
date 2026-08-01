@@ -46,13 +46,9 @@ export async function claimActiveSession(admin, user, accessToken) {
 
   /*
    * GoTrueAdminApi.signOut(jwt, scope) — ilk argüman user.id DEĞİL, access token.
-   * Yanlış UUID gönderimi logout’u 4xx/5xx yapıp claim’i düşürüyordu.
+   * Diğer cihazları kapatmayı login kritik yolunda beklemeyiz (metadata zaten yazıldı).
    */
-  const { error: signOutErr } = await admin.auth.admin.signOut(accessToken, 'others')
-  if (signOutErr) {
-    /* Metadata yazıldıysa claim başarılı; diğer cihazların kapanmaması soft-warn */
-    return { ok: true, sessionId, signOutWarning: signOutErr.message || 'others_signout_failed' }
-  }
+  void admin.auth.admin.signOut(accessToken, 'others').catch(() => {})
 
   return { ok: true, sessionId }
 }
@@ -61,6 +57,24 @@ export async function claimActiveSession(admin, user, accessToken) {
  * Login/signup yanıtında tek tur: claim + refresh_token ile güncel JWT.
  * Başarısızsa orijinal session döner (istemci arka planda claim edebilir).
  */
+function userFromSessionOrJwt(session) {
+  if (session?.user?.id) return session.user
+  const token = session?.access_token
+  if (!token) return null
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+    if (!payload?.sub) return null
+    return {
+      id: payload.sub,
+      app_metadata: payload.app_metadata || {},
+      user_metadata: payload.user_metadata || {},
+      email: payload.email || null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function claimAndRefreshSession(admin, session, {
   supabaseUrl,
   anonKey,
@@ -69,23 +83,30 @@ export async function claimAndRefreshSession(admin, session, {
     return { ok: false, session: session || null, sessionId: null }
   }
 
-  const { data: userData, error: userErr } = await admin.auth.getUser(session.access_token)
-  if (userErr || !userData?.user) {
-    return { ok: false, session, sessionId: null }
+  /* getUser ağ turunu atla — grant session.user veya JWT sub yeterli */
+  let user = userFromSessionOrJwt(session)
+  if (!user?.id) {
+    const { data: userData, error: userErr } = await admin.auth.getUser(session.access_token)
+    if (userErr || !userData?.user) {
+      return { ok: false, session, sessionId: null }
+    }
+    user = userData.user
   }
 
-  const claimed = await claimActiveSession(admin, userData.user, session.access_token)
+  const claimed = await claimActiveSession(admin, user, session.access_token)
   if (!claimed.ok) {
     return { ok: false, session, sessionId: null, error: claimed.error }
   }
 
+  /*
+   * Login kritik yolu: refresh_token ile JWT yenilemeyi BEKLEME (~0.5–1s).
+   * İstemci sessionClaimed grace + markSessionClaimedLocally kullanır;
+   * app_metadata bir sonraki doğal refresh’te gelir.
+   */
   const refreshToken = session.refresh_token
-  if (!refreshToken || !supabaseUrl || !anonKey) {
-    return { ok: true, session, sessionId: claimed.sessionId, refreshed: false }
-  }
-
-  try {
-    const res = await fetch(`${String(supabaseUrl).replace(/\/$/, '')}/auth/v1/token?grant_type=refresh_token`, {
+  if (refreshToken && supabaseUrl && anonKey) {
+    const base = String(supabaseUrl).replace(/\/$/, '')
+    void fetch(`${base}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -93,24 +114,7 @@ export async function claimAndRefreshSession(admin, session, {
         Authorization: `Bearer ${anonKey}`,
       },
       body: JSON.stringify({ refresh_token: refreshToken }),
-    })
-    const json = await res.json().catch(() => ({}))
-    if (res.ok && json?.access_token) {
-      return {
-        ok: true,
-        sessionId: claimed.sessionId,
-        refreshed: true,
-        session: {
-          access_token: json.access_token,
-          refresh_token: json.refresh_token || refreshToken,
-          expires_in: json.expires_in,
-          expires_at: json.expires_at,
-          token_type: json.token_type || 'bearer',
-        },
-      }
-    }
-  } catch {
-    /* refresh yoksa claim yine de sunucuda tamamlandı */
+    }).catch(() => {})
   }
 
   return { ok: true, session, sessionId: claimed.sessionId, refreshed: false }

@@ -433,18 +433,16 @@ async function hydrateOnce() {
  * @param {{ force?: boolean }} [opts]
  * force=true: cache atlanır (mutasyon / logout sonrası).
  * force=false: uçuştaki hydrate’e katılır veya kısa TTL cache döner.
+ * Eşzamanlı çağrılar her zaman tek turda birleşir (force bile ikinci tur başlatmaz).
  */
 export async function hydrate({ force = false } = {}) {
-  if (hydrateInFlight) {
-    const shared = await hydrateInFlight
-    if (!force) return shared
-  } else if (!force && hydrateCache && (Date.now() - hydrateCache.at) < HYDRATE_CACHE_TTL_MS) {
+  if (hydrateInFlight) return hydrateInFlight
+
+  if (!force && hydrateCache && (Date.now() - hydrateCache.at) < HYDRATE_CACHE_TTL_MS) {
     return hydrateCache.data
   }
 
   if (force) invalidateHydrateCache()
-
-  if (hydrateInFlight) return hydrateInFlight
 
   hydrateInFlight = hydrateOnce()
     .then((data) => {
