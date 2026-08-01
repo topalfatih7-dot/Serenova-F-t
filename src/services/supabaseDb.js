@@ -186,14 +186,20 @@ export async function getUser() {
   return data.user
 }
 
-/** Oturumu doğrular; geçersiz token varsa temizler. */
-export async function resolveAuthUser() {
+/**
+ * Oturum kullanıcısı.
+ * verify=false (varsayılan, hydrate hot-path): yalnızca yerel getSession — ağ yok.
+ * verify=true (ilk yükleme): getUser() ile sunucu doğrulaması; geçersizse temizler.
+ */
+export async function resolveAuthUser({ verify = false } = {}) {
   const session = await getSession()
   if (!session?.user) return null
 
+  if (!verify) return session.user
+
   const user = await getUser()
   if (!user) {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
     clearAllAuthTokens()
     return null
   }
@@ -224,71 +230,56 @@ export function invalidateHydrateCache() {
   hydrateCache = null
 }
 
-async function fetchAuthenticatedBundle(user, staff) {
-  const role = roleForUser(user, staff)
-  const staffMatch = findStaffMatch(user, staff)
+function buildStaffList(staffRes, staffDirectoryRes) {
+  const staffById = new Map()
+  ;(staffDirectoryRes?.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
+  ;(staffRes?.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
+  return Array.from(staffById.values())
+}
 
-  let members
-  let programs
-  let tickets
-  let activities
-  let payments
+function buildContentFromRows(contentRes) {
+  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
+  ;(contentRes?.data || []).forEach((r) => {
+    const item = { id: r.id, ...(r.data || {}) }
+    if (r.kind === 'testimonial') content.testimonials.push(item)
+    else if (r.kind === 'faq') content.faqs.push(item)
+    else if (r.kind === 'success_story') content.successStories.push(item)
+    else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
+  })
+  return content
+}
+
+/** Staff/admin — tam liste (üye hot-path’ten ayrı dalga). */
+async function fetchStaffAdminBundle(role) {
+  const membersTable = role === 'staff' ? 'members_staff_safe' : 'members'
+  const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
+    supabase.from(membersTable).select('*'),
+    supabase.from('programs').select('*').order('created_at', { ascending: false }),
+    supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+    supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT),
+    supabase.from('payments').select('*').order('created_at', { ascending: false }),
+  ])
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
   let contactInqRes = { data: [] }
-
-  if (role === 'member') {
-    const memberId = user.id
-    const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
-      supabase.from('members').select('*').eq('id', memberId).maybeSingle(),
-      supabase.from('programs').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
-      supabase.from('tickets').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
-      supabase.from('activities').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(MEMBER_ACTIVITIES_HYDRATE_LIMIT),
-      supabase.from('payments').select('*').eq('member_id', memberId).order('created_at', { ascending: false }),
+  if (role === 'admin') {
+    const [sa, ca, ci] = await Promise.all([
+      supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
+      supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
+      supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
     ])
-    members = membersRes.data ? [rowToMember(membersRes.data)] : []
-    programs = (programsRes.data || []).map(rowToProgram)
-    tickets = (ticketsRes.data || []).map(rowToTicket)
-    activities = (activitiesRes.data || []).map(rowToActivity)
-    payments = (paymentsRes.data || []).map(rowToPayment)
-  } else {
-    const membersTable = role === 'staff' ? 'members_staff_safe' : 'members'
-    const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
-      supabase.from(membersTable).select('*'),
-      supabase.from('programs').select('*').order('created_at', { ascending: false }),
-      supabase.from('tickets').select('*').order('created_at', { ascending: false }),
-      supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT),
-      supabase.from('payments').select('*').order('created_at', { ascending: false }),
-    ])
-    members = (membersRes.data || []).map((row) => rowToMember(row, { contactHidden: role === 'staff' }))
-    const memberIds = memberIdSet(members)
-    programs = filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds)
-    tickets = filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds)
-    activities = filterByMemberIds((activitiesRes.data || []).map(rowToActivity), memberIds)
-    payments = filterByMemberIds((paymentsRes.data || []).map(rowToPayment), memberIds)
-
-    if (role === 'admin') {
-      const [sa, ca, ci] = await Promise.all([
-        supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
-        supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
-        supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
-      ])
-      staffAppsRes = sa
-      corporateAppsRes = ca
-      contactInqRes = ci
-    }
+    staffAppsRes = sa
+    corporateAppsRes = ca
+    contactInqRes = ci
   }
-
-  members = compactMembersForRole(members, role, staffMatch)
-
+  const members = (membersRes.data || []).map((row) => rowToMember(row, { contactHidden: role === 'staff' }))
+  const memberIds = memberIdSet(members)
   return {
     members,
-    programs,
-    tickets,
-    activities,
-    payments,
-    role,
-    staffMatch,
+    programs: filterProgramsForMembers((programsRes.data || []).map(rowToProgram), memberIds),
+    tickets: filterByMemberIds((ticketsRes.data || []).map(rowToTicket), memberIds),
+    activities: filterByMemberIds((activitiesRes.data || []).map(rowToActivity), memberIds),
+    payments: filterByMemberIds((paymentsRes.data || []).map(rowToPayment), memberIds),
     staffAppsRes,
     corporateAppsRes,
     contactInqRes,
@@ -296,38 +287,58 @@ async function fetchAuthenticatedBundle(user, staff) {
 }
 
 async function hydrateOnce() {
-  const user = await resolveAuthUser()
+  /* Hot-path: getUser() ağ çağrısı yok — INITIAL_SESSION’da AppContext verify eder */
+  const user = await resolveAuthUser({ verify: false })
+  const memberId = user?.id || null
+  const isAdminEmail = Boolean(user && (user.email || '').toLowerCase() === ADMIN_EMAIL)
 
-  const [staffRes, staffDirectoryRes, postsRes, contentRes, exercisesRes, plansRes] = await Promise.all([
-    // staff tablosunun ham SELECT'i artık RLS ile admin/kendi kaydına daraltılmış
-    // (bkz. 20260715_staff_contact_field_hardening.sql) — email/telefon/sosyal
-    // medya sızıntısını önler. Herkese güvenli alanlar staff_directory'den gelir.
+  /*
+   * Tek dalga (üye / anon): public + (üye ise) kendi satırı/program/ticket…
+   * Staff/admin: aynı dalgada staff listesi gelir → rol belli olunca ikinci dalga.
+   */
+  const [
+    staffRes,
+    staffDirectoryRes,
+    postsRes,
+    contentRes,
+    exercisesRes,
+    plansRes,
+    membersRes,
+    programsRes,
+    ticketsRes,
+    activitiesRes,
+    paymentsRes,
+  ] = await Promise.all([
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
     supabase.from('staff_directory').select('*').order('created_at', { ascending: true }),
     supabase.from('posts').select('*').order('created_at', { ascending: false }),
     supabase.from('site_content').select('*').order('sort', { ascending: true }),
     supabase.from('exercises').select('id', { count: 'exact', head: true }),
     supabase.from('plans').select('*').order('sort_order', { ascending: true }),
+    memberId && !isAdminEmail
+      ? supabase.from('members').select('*').eq('id', memberId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    memberId && !isAdminEmail
+      ? supabase.from('programs').select('*').eq('member_id', memberId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+    memberId && !isAdminEmail
+      ? supabase.from('tickets').select('*').eq('member_id', memberId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+    memberId && !isAdminEmail
+      ? supabase.from('activities').select('*').eq('member_id', memberId).order('created_at', { ascending: false }).limit(MEMBER_ACTIVITIES_HYDRATE_LIMIT)
+      : Promise.resolve({ data: [] }),
+    memberId && !isAdminEmail
+      ? supabase.from('payments').select('*').eq('member_id', memberId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
   ])
 
-  // Güvenli temel liste (herkes) + erişimi olanlarda (admin/kendi kaydı) tam veriyle üzerine yaz.
-  const staffById = new Map()
-  ;(staffDirectoryRes.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
-  ;(staffRes.data || []).forEach((row) => staffById.set(row.id, rowToStaff(row)))
-  const staff = Array.from(staffById.values())
+  const staff = buildStaffList(staffRes, staffDirectoryRes)
   const posts = (postsRes.data || []).map(rowToPost)
   const exerciseCount = exercisesRes.count ?? 0
   const exercises = []
   const allPlansFromDb = plansRes.data?.length ? plansRes.data.map(rowToPlan) : null
   setPlanCatalog(allPlansFromDb || ALL_PLANS)
-  const content = { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null }
-  ;(contentRes.data || []).forEach((r) => {
-    const item = { id: r.id, ...(r.data || {}) }
-    if (r.kind === 'testimonial') content.testimonials.push(item)
-    else if (r.kind === 'faq') content.faqs.push(item)
-    else if (r.kind === 'success_story') content.successStories.push(item)
-    else if (r.kind === 'exercise_taxonomy') content.exerciseTaxonomy = { id: r.id, ...item }
-  })
+  const content = buildContentFromRows(contentRes)
 
   if (!user) {
     const publicPlans = allPlansFromDb
@@ -344,20 +355,38 @@ async function hydrateOnce() {
     app_metadata: user.app_metadata || {},
   }
 
-  const {
-    members: initialMembers,
-    programs,
-    tickets,
-    activities,
-    payments,
-    role,
-    staffMatch,
-    staffAppsRes,
-    corporateAppsRes,
-    contactInqRes,
-  } = await fetchAuthenticatedBundle(user, staff)
+  const role = roleForUser(user, staff)
+  const staffMatch = findStaffMatch(user, staff)
 
-  let members = initialMembers
+  let members
+  let programs
+  let tickets
+  let activities
+  let payments
+  let staffAppsRes = { data: [] }
+  let corporateAppsRes = { data: [] }
+  let contactInqRes = { data: [] }
+
+  if (role === 'member') {
+    members = membersRes.data ? [rowToMember(membersRes.data)] : []
+    programs = (programsRes.data || []).map(rowToProgram)
+    tickets = (ticketsRes.data || []).map(rowToTicket)
+    activities = (activitiesRes.data || []).map(rowToActivity)
+    payments = (paymentsRes.data || []).map(rowToPayment)
+  } else {
+    const bundle = await fetchStaffAdminBundle(role)
+    members = bundle.members
+    programs = bundle.programs
+    tickets = bundle.tickets
+    activities = bundle.activities
+    payments = bundle.payments
+    staffAppsRes = bundle.staffAppsRes
+    corporateAppsRes = bundle.corporateAppsRes
+    contactInqRes = bundle.contactInqRes
+  }
+
+  members = compactMembersForRole(members, role, staffMatch)
+
   let session
   if (role === 'admin') session = { type: 'admin', memberId: null, email: authUser.email }
   else if (role === 'staff') {
@@ -375,7 +404,6 @@ async function hydrateOnce() {
     }
   }
 
-  // Admin: tüm planlar (pasif dahil); diğerleri yalnızca aktif
   const plans = allPlansFromDb
     ? (role === 'admin' ? allPlansFromDb : allPlansFromDb.filter((p) => p.isActive !== false))
     : ALL_PLANS
@@ -673,6 +701,14 @@ async function addActivity(type, text, memberId = null) {
 }
 
 // --------------------------- auth flows ---------------------------
+async function markClaimedIfNeeded(sessionClaimed) {
+  if (!sessionClaimed) return
+  try {
+    const { markSessionClaimedLocally } = await import('./singleSession')
+    markSessionClaimedLocally()
+  } catch { /* ignore */ }
+}
+
 export async function login(email, password, remember = false, turnstileToken = '') {
   setRememberMe(remember)
   if (!remember) {
@@ -684,11 +720,11 @@ export async function login(email, password, remember = false, turnstileToken = 
   const user = await authenticatePasswordUser(cleanEmail, password, turnstileToken)
   if (!user.ok) return { success: false, error: user.error }
 
-  /* Yönlendirme için hafif rol (2 maybeSingle); yan etkiler arka planda */
-  const role = await resolveLoginRole(user.user)
-  void recordLoginSideEffects(user.user, role)
+  /* Rol: AppContext hydrate session.type — ekstra staff sorgusu yok */
+  const roleHint = (user.user.email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : 'member'
+  void recordLoginSideEffects(user.user, roleHint)
 
-  return { success: true, role, remember }
+  return { success: true, role: roleHint, remember }
 }
 
 async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
@@ -720,6 +756,7 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
     if (sessionError || !sessionData?.user) {
       return { ok: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
     }
+    await markClaimedIfNeeded(loginData.sessionClaimed)
     return { ok: true, user: sessionData.user }
   } catch {
     /* API yoksa (yalnızca Vite) klasik girişe düş — production’da /api/auth zorunlu */
@@ -734,21 +771,6 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
     if (error || !data?.user) return { ok: false, error: 'E-posta veya şifre hatalı.' }
     return { ok: true, user: data.user }
   }
-}
-
-/** Admin e-posta veya kendi staff satırı — tam staff tablosu çekmez. */
-async function resolveLoginRole(user) {
-  if (!user) return 'member'
-  const e = (user.email || '').toLowerCase()
-  if (e === ADMIN_EMAIL) return 'admin'
-  const [byIdRes, byEmailRes] = await Promise.all([
-    supabase.from('staff').select('id').eq('id', user.id).maybeSingle(),
-    e
-      ? supabase.from('staff').select('id').eq('email', e).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-  if (byIdRes.data || byEmailRes.data) return 'staff'
-  return 'member'
 }
 
 async function recordLoginSideEffects(user, roleHint) {
@@ -808,12 +830,13 @@ async function recordLoginSideEffects(user, roleHint) {
 
 export async function logout() {
   invalidateHydrateCache()
-  const sessionPromise = getUser()
+  /* Yerel session.user — getUser() ağ çağrısı çıkışı geciktirmesin */
+  const localUser = (await getSession())?.user || null
 
   /* Yan etkiler çıkışı bloklamaz */
   void (async () => {
     try {
-      const user = await sessionPromise
+      const user = localUser
       if (!user) return
       const e = (user.email || '').toLowerCase()
       if (e === ADMIN_EMAIL) {
@@ -841,7 +864,8 @@ export async function logout() {
     }
   })()
 
-  await supabase.auth.signOut()
+  /* local: sunucu RTT yok; diğer cihazlar single-session claim ile düşer */
+  await supabase.auth.signOut({ scope: 'local' })
   clearAllAuthTokens()
   syncAutoRefresh(false)
 }
@@ -1002,6 +1026,7 @@ async function setSessionFromApiLogin(email, password, { turnstileToken = '', au
     refresh_token: data.session.refresh_token,
   })
   if (error) return { ok: false, status: 500, error: error.message }
+  await markClaimedIfNeeded(data.sessionClaimed)
   return { ok: true }
 }
 
@@ -1087,7 +1112,13 @@ export async function ensureAuthForRegistration(profile) {
   const password = profile.password
   const emailRedirectTo = `${getSiteUrl()}/auth/callback?verify=email`
 
-  try { await supabase.auth.signOut() } catch { /* oturum yoksa yoksay */ }
+  /* Yalnızca gerçek oturum varsa çık — boş signOut SIGNED_OUT hydrate tetiklemesin */
+  try {
+    const existing = await getSession()
+    if (existing?.user) {
+      await supabase.auth.signOut({ scope: 'local' })
+    }
+  } catch { /* oturum yoksa yoksay */ }
 
   const turnstileToken = profile.turnstileToken || ''
 
@@ -1114,7 +1145,10 @@ export async function ensureAuthForRegistration(profile) {
           access_token: signupData.session.access_token,
           refresh_token: signupData.session.refresh_token,
         })
-        if (!sessErr) return { success: true, alreadyRegistered: Boolean(signupData.alreadyRegistered) }
+        if (!sessErr) {
+          await markClaimedIfNeeded(signupData.sessionClaimed)
+          return { success: true, alreadyRegistered: Boolean(signupData.alreadyRegistered) }
+        }
       }
       const signIn = await signInAfterSignup(email, password, {
         turnstileToken: '',

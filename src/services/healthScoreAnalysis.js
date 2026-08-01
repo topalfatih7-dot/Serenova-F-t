@@ -43,6 +43,67 @@ export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
 
 export const HEALTH_SCORE_HISTORY_MAX = 24
 
+/** Analiz sonrası sağlık testi yeniden çözme aralığı (gün). */
+export const HEALTH_TEST_RETAKE_DAYS = 14
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/** Analiz zaman damgası (aiAttemptedAt → generatedAt). */
+export function getAnalysisTimestamp(analysis) {
+  const raw = analysis?.aiAttemptedAt || analysis?.generatedAt || null
+  if (!raw) return null
+  const t = new Date(raw).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+/**
+ * 14 günlük kilit durumu.
+ * - locked: analiz var ve süre dolmamış
+ * - fullLock: detailed aşamada tüm sorular kapalı
+ * - canRetake: süre dolmuş → sıfırdan yeniden çözülebilir
+ */
+export function getHealthTestLockState({ healthAnalysis, detailedComplete = false } = {}) {
+  if (needsInitialHealthAnalysis(healthAnalysis)) {
+    return {
+      locked: false,
+      lockedUntil: null,
+      daysLeft: 0,
+      canRetake: false,
+      fullLock: false,
+    }
+  }
+
+  const ts = getAnalysisTimestamp(healthAnalysis)
+  if (!ts) {
+    return {
+      locked: false,
+      lockedUntil: null,
+      daysLeft: 0,
+      canRetake: true,
+      fullLock: false,
+    }
+  }
+
+  const lockedUntilMs = ts + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
+  const lockedUntil = new Date(lockedUntilMs)
+  const now = Date.now()
+  const locked = now < lockedUntilMs
+  const daysLeft = locked
+    ? Math.max(1, Math.ceil((lockedUntilMs - now) / MS_PER_DAY))
+    : 0
+  const canRetake = !locked
+  const stage = healthAnalysis?.analysisStage
+  const fullLock = locked && (stage === 'detailed' || detailedComplete === true)
+
+  return {
+    locked,
+    lockedUntil,
+    daysLeft,
+    canRetake,
+    fullLock,
+  }
+}
+
 /** Deterministik fingerprint — api/_healthScoreAnalysis.js ile aynı (djb2). */
 export function buildHealthAnalysisFingerprint(profile = {}) {
   const ht = profile.healthTest && typeof profile.healthTest === 'object' ? profile.healthTest : {}
@@ -434,7 +495,14 @@ export async function fetchAiHealthScore({ profile, categorySummaries, memberId 
       return {
         ok: false,
         unchanged: data.unchanged === true || res.status === 409,
-        error: formatAiError(data.error || res.statusText),
+        locked: data.locked === true || res.status === 423,
+        lockedUntil: data.lockedUntil || null,
+        error: formatAiError(
+          data.error
+          || (res.status === 423
+            ? 'Sağlık testi 14 gün boyunca kilitli; süre dolunca yeniden çözebilirsiniz'
+            : res.statusText),
+        ),
       }
     }
     const staffBrief = normalizeStaffBrief(data.staffBrief)
@@ -495,6 +563,12 @@ export async function resolveHealthScoreAnalysis(profile, opts = {}) {
       dailyCalories: profile?.healthAnalysis?.dailyCalories ?? null,
       fitnessScore: profile?.healthAnalysis?.fitnessScore ?? null,
     }
+  }
+  if (ai.locked) {
+    const err = new Error(ai.error || 'Sağlık testi 14 gün boyunca kilitli; süre dolunca yeniden çözebilirsiniz')
+    err.code = 'health_analysis_locked'
+    err.lockedUntil = ai.lockedUntil || null
+    throw err
   }
   if (ai.unchanged) {
     // Detaylı aşamaya yükseltirken fingerprint aynı olabilir (yalnızca stage farkı) —

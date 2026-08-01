@@ -48,13 +48,36 @@ export function isActiveSessionLocal(accessToken) {
   return 'stale'
 }
 
+/** password-login/signup zaten claim ettiyse istemci grace işaretler (ekstra POST yok). */
+export function markSessionClaimedLocally() {
+  lastClaimOkAt = Date.now()
+}
+
 /** Yeni giriş — sunucuda aktif oturumu işaretle, diğerlerini kapat, JWT yenile. */
 export async function registerActiveSession() {
   if (!supabase) return { ok: false }
   if (claimInFlight) return claimInFlight
+  if (lastClaimOkAt && Date.now() - lastClaimOkAt < CLAIM_GRACE_MS) {
+    return { ok: true, sessionId: null, skipped: true }
+  }
 
   claimInFlight = (async () => {
     try {
+      /* password-login finalizeLoginSession JWT'yi zaten claim ettiyse POST atlama */
+      const { data: sessData } = await supabase.auth.getSession()
+      const token = sessData?.session?.access_token
+      if (token && isActiveSessionLocal(token) === true) {
+        const payload = parseJwtPayload(token)
+        if (payload?.app_metadata?.active_session_id) {
+          lastClaimOkAt = Date.now()
+          return {
+            ok: true,
+            sessionId: payload.app_metadata.active_session_id,
+            skipped: true,
+          }
+        }
+      }
+
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: await getApiAuthHeaders(),

@@ -29,6 +29,7 @@ import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
 import { useDailyTip } from '../hooks/useDailyTip'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
+import { getHealthTestLockState } from '../services/healthScoreAnalysis'
 import { buildWeeklyAdherence } from '../utils/memberProgress'
 import { getRemainingDays } from '../services/premiumMembership'
 import { format } from 'date-fns'
@@ -62,7 +63,15 @@ export default function DashboardPage() {
     loading: healthScoreLoading,
     error: healthScoreError,
     complete: healthAnalysisComplete,
+    detailedComplete: healthDetailedComplete,
   } = useHealthAnalysisSync()
+  const healthLockState = useMemo(
+    () => getHealthTestLockState({
+      healthAnalysis,
+      detailedComplete: healthDetailedComplete,
+    }),
+    [healthAnalysis, healthDetailedComplete],
+  )
 
   useStripePaymentReturn(refresh)
 
@@ -192,6 +201,7 @@ export default function DashboardPage() {
         complete={healthAnalysisComplete}
         error={healthScoreError}
         scoresOnly={isUnpaidMember}
+        lockState={healthLockState}
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">

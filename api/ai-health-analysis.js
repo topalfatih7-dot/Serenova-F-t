@@ -17,6 +17,7 @@ import {
 } from './_ai-prompts.js'
 import {
   buildHealthAnalysisFingerprint,
+  getHealthTestLockState,
   isCompleteHealthAnalysis,
   normalizeHealthScores,
   normalizeStaffBrief,
@@ -175,6 +176,21 @@ export default async function handler(req, res) {
       ...profile,
       healthTest: dbProfile.healthTest,
     })
+
+    // Detaylı analiz + 14 gün kilit (personel force muaf; core→detailed yükseltme serbest)
+    if (!force && isCompleteHealthAnalysis(existingAnalysis)) {
+      const lock = getHealthTestLockState(existingAnalysis)
+      if (lock.locked && existingAnalysis.analysisStage === 'detailed') {
+        return res.status(423).json({
+          ok: false,
+          error: `Sağlık testi ${lock.daysLeft} gün boyunca kilitli; süre dolunca yeniden çözebilirsiniz`,
+          locked: true,
+          lockedUntil: lock.lockedUntil ? lock.lockedUntil.toISOString() : null,
+          daysLeft: lock.daysLeft,
+          sourceFingerprint: fingerprint,
+        })
+      }
+    }
 
     if (
       isCompleteHealthAnalysis(existingAnalysis)

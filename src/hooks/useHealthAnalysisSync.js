@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { isDetailedHealthTestComplete } from '../data/healthTest'
 import {
@@ -7,6 +7,8 @@ import {
 } from '../data/coreHealthTest'
 import {
   appendHealthScoreHistory,
+  buildHealthAnalysisFingerprint,
+  isHealthAnalysisStale,
   needsDetailedHealthAnalysis,
   needsInitialHealthAnalysis,
   resolveAnalysisStage,
@@ -24,24 +26,65 @@ export function useHealthAnalysisSync() {
   const [error, setError] = useState(null)
   const runningRef = useRef(false)
   const lastKeyRef = useRef('')
+  /** 423 kilit — aynı fingerprint için tekrar AI çağrısı yok */
+  const lockedFingerprintRef = useRef('')
 
   const analysis = user?.healthAnalysis || null
   const history = user?.healthScoreHistory || []
+  const userId = user?.id || null
+  const gender = user?.gender || null
+  const healthAck = Boolean(user?.healthAck)
+  const disclaimer = Boolean(user?.disclaimer)
+  const analysisFingerprint = analysis?.sourceFingerprint || ''
+  const analysisOverall = analysis?.overallScore
+  const analysisStageRaw = analysis?.analysisStage || ''
+
+  const healthTest = user?.healthTest
+  const birthDate = user?.birthDate
+  const weight = user?.weight
+  const height = user?.height
+  const goals = user?.goals
+  const fitnessLevel = user?.fitnessLevel
+  const nutritionPrefs = user?.nutritionPrefs
+
+  const profileFingerprint = useMemo(() => {
+    if (!userId) return ''
+    return buildHealthAnalysisFingerprint({
+      healthTest,
+      birthDate,
+      weight,
+      height,
+      goals,
+      fitnessLevel,
+      nutritionPrefs,
+      gender,
+    })
+  }, [
+    userId,
+    gender,
+    healthTest,
+    birthDate,
+    weight,
+    height,
+    goals,
+    fitnessLevel,
+    nutritionPrefs,
+  ])
 
   const coreComplete = Boolean(
-    user?.id
-    && user?.healthAck
-    && user?.disclaimer
-    && user?.gender
-    && isCoreHealthTestComplete(user.healthTest, user.gender),
+    userId
+    && healthAck
+    && disclaimer
+    && gender
+    && isCoreHealthTestComplete(user?.healthTest, gender),
   )
 
-  const coreKeys = user?.gender ? getCoreHealthTestKeySet(user.gender) : new Set()
+  const coreKeys = gender ? getCoreHealthTestKeySet(gender) : new Set()
   const detailedComplete = Boolean(
     coreComplete
     && isDetailedHealthTestComplete(
       user?.healthTest,
-      user?.gender,
+      gender,
       packageConfig,
       coreKeys,
     ),
@@ -50,28 +93,44 @@ export function useHealthAnalysisSync() {
   const analysisStage = resolveAnalysisStage(analysis, detailedComplete)
 
   const runSync = useCallback(async ({ force = false, stage = null } = {}) => {
-    if (!user?.id || !coreComplete) return null
+    if (!userId || !coreComplete || !user) return null
     if (runningRef.current) return analysis
 
+    const stale = isHealthAnalysisStale(analysis, user)
     const targetStage = stage
       || (needsDetailedHealthAnalysis(analysis, detailedComplete)
         ? 'detailed'
-        : 'core')
+        : (stale && detailedComplete ? 'detailed' : 'core'))
 
-    if (targetStage === 'core' && !force && !needsInitialHealthAnalysis(analysis)) {
+    if (targetStage === 'core' && !force && !needsInitialHealthAnalysis(analysis) && !stale) {
       // Çekirdek analiz var; detaylı gerekmiyorsa çık
       if (!needsDetailedHealthAnalysis(analysis, detailedComplete)) {
         return analysis
       }
     }
-    if (targetStage === 'detailed' && !force && !needsDetailedHealthAnalysis(analysis, detailedComplete)) {
+    if (
+      targetStage === 'detailed'
+      && !force
+      && !needsDetailedHealthAnalysis(analysis, detailedComplete)
+      && !stale
+    ) {
       return analysis
     }
     if (targetStage === 'detailed' && !detailedComplete) return analysis
 
-    const key = `${user.id}:${targetStage}`
-    if (!force && lastKeyRef.current === key && analysis?.overallScore != null
-      && (targetStage !== 'detailed' || analysis?.analysisStage === 'detailed')) {
+    const currentFp = profileFingerprint || analysisFingerprint || 'none'
+    if (!force && lockedFingerprintRef.current && lockedFingerprintRef.current === currentFp) {
+      return analysis
+    }
+
+    const key = `${userId}:${targetStage}:${analysisFingerprint || 'none'}`
+    if (
+      !force
+      && !stale
+      && lastKeyRef.current === key
+      && analysisOverall != null
+      && (targetStage !== 'detailed' || analysisStageRaw === 'detailed')
+    ) {
       return analysis
     }
 
@@ -93,7 +152,8 @@ export function useHealthAnalysisSync() {
       const healthScoreHistory = appendHealthScoreHistory(user.healthScoreHistory, next)
       await updateProfile({ healthAnalysis: next, healthScoreHistory })
       lastKeyRef.current = key
-      if (!analysis?.overallScore || targetStage === 'detailed') {
+      lockedFingerprintRef.current = ''
+      if (!analysis?.overallScore || targetStage === 'detailed' || stale) {
         trackGa4Event('health_test_complete', {
           has_scores: next?.overallScore != null,
           stage: targetStage,
@@ -103,6 +163,12 @@ export function useHealthAnalysisSync() {
       }
       return next
     } catch (e) {
+      if (e?.code === 'health_analysis_locked') {
+        lockedFingerprintRef.current = currentFp
+        lastKeyRef.current = key
+        setError(e.message || 'Sağlık testi kilitli')
+        return null
+      }
       // Fingerprint değişmediyse (geriye dönük tam kayıt) yalnızca stage etiketle
       if (
         (e?.code === 'health_analysis_unchanged' || /değişmedi/i.test(e?.message || ''))
@@ -126,28 +192,62 @@ export function useHealthAnalysisSync() {
       setLoading(false)
     }
   }, [
-    user, packageConfig, coreComplete, detailedComplete, analysis,
+    user, userId, packageConfig, coreComplete, detailedComplete, analysis,
+    profileFingerprint, analysisFingerprint, analysisOverall, analysisStageRaw,
     updateProfile, isUnpaidMember,
   ])
 
   // Çekirdek (1.) analiz otomatik değil — kullanıcı "Analizi Başlat" tuşuna basmalı.
   // Detaylı (2.) analiz opsiyonel sorular bitince otomatik tetiklenir.
+  // Retake sonrası fingerprint stale ise detaylı tamamlanınca yeniden üretir.
   useEffect(() => {
-    if (!coreComplete) return
+    if (!coreComplete || !userId) return
     if (needsInitialHealthAnalysis(analysis)) return
-    if (needsDetailedHealthAnalysis(analysis, detailedComplete)) {
-      runSync({ stage: 'detailed' })
+    const stale = Boolean(
+      profileFingerprint
+      && analysisFingerprint
+      && profileFingerprint !== analysisFingerprint,
+    ) || (analysis && !analysisFingerprint)
+    if (lockedFingerprintRef.current
+      && lockedFingerprintRef.current === (profileFingerprint || analysisFingerprint || 'none')) {
+      return undefined
     }
-  }, [coreComplete, detailedComplete, analysis, runSync])
+    let cancelled = false
+    const kick = () => {
+      queueMicrotask(() => {
+        if (cancelled) return
+        void runSync({ stage: 'detailed' })
+      })
+    }
+    if (needsDetailedHealthAnalysis(analysis, detailedComplete)) {
+      kick()
+      return () => { cancelled = true }
+    }
+    if (detailedComplete && stale) {
+      kick()
+      return () => { cancelled = true }
+    }
+    return undefined
+  }, [
+    coreComplete,
+    detailedComplete,
+    userId,
+    profileFingerprint,
+    analysisFingerprint,
+    analysisOverall,
+    analysisStageRaw,
+    analysis,
+    runSync,
+  ])
 
   // Eski kayıtlarda analysisStage yoksa bir kez etiketle (AI çağrısı yok)
   useEffect(() => {
-    if (!user?.id || !analysis || needsInitialHealthAnalysis(analysis)) return
+    if (!userId || !analysis || needsInitialHealthAnalysis(analysis)) return
     if (analysis.analysisStage === 'core' || analysis.analysisStage === 'detailed') return
     const inferred = resolveAnalysisStage(analysis, detailedComplete)
     if (!inferred) return
     updateProfile({ healthAnalysis: { ...analysis, analysisStage: inferred } }).catch(() => {})
-  }, [user?.id, analysis, detailedComplete, updateProfile])
+  }, [userId, analysis, detailedComplete, updateProfile])
 
   return {
     analysis,

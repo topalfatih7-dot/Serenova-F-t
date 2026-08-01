@@ -17,6 +17,64 @@ export const STAFF_BRIEF_KEYS = ['general', 'nutrition', 'movement', 'risks', 'a
 
 export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
 
+/** Analiz sonrası sağlık testi yeniden çözme aralığı (gün). Client ile aynı. */
+export const HEALTH_TEST_RETAKE_DAYS = 14
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/** Analiz zaman damgası (aiAttemptedAt → generatedAt). */
+export function getAnalysisTimestamp(analysis) {
+  const raw = analysis?.aiAttemptedAt || analysis?.generatedAt || null
+  if (!raw) return null
+  const t = new Date(raw).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+/**
+ * Detaylı analiz için 14 günlük sunucu kilidi.
+ * force / core aşaması yükseltmesi muaf tutulur (handler tarafında).
+ */
+export function getHealthTestLockState(analysis) {
+  if (!isCompleteHealthAnalysis(analysis)) {
+    return {
+      locked: false,
+      lockedUntil: null,
+      daysLeft: 0,
+      canRetake: false,
+      fullLock: false,
+    }
+  }
+
+  const ts = getAnalysisTimestamp(analysis)
+  if (!ts) {
+    return {
+      locked: false,
+      lockedUntil: null,
+      daysLeft: 0,
+      canRetake: true,
+      fullLock: false,
+    }
+  }
+
+  const lockedUntilMs = ts + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
+  const lockedUntil = new Date(lockedUntilMs)
+  const now = Date.now()
+  const locked = now < lockedUntilMs
+  const daysLeft = locked
+    ? Math.max(1, Math.ceil((lockedUntilMs - now) / MS_PER_DAY))
+    : 0
+  const canRetake = !locked
+  const fullLock = locked && analysis?.analysisStage === 'detailed'
+
+  return {
+    locked,
+    lockedUntil,
+    daysLeft,
+    canRetake,
+    fullLock,
+  }
+}
+
 export function clampScore(n, fallback = null) {
   const num = Number(n)
   if (!Number.isFinite(num)) return fallback

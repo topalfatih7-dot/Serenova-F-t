@@ -7,7 +7,11 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
-import { needsInitialHealthAnalysis } from '../services/healthScoreAnalysis'
+import {
+  getHealthTestLockState,
+  isHealthAnalysisStale,
+  needsInitialHealthAnalysis,
+} from '../services/healthScoreAnalysis'
 import {
   getCoreHealthTestKeySet,
   isCoreHealthTestComplete,
@@ -20,6 +24,7 @@ export default function HealthTestPage() {
   const { toast } = useToast()
   const [consentSaving, setConsentSaving] = useState(false)
   const [profileGateSaving, setProfileGateSaving] = useState(false)
+  const [retakeSaving, setRetakeSaving] = useState(false)
   const { analysis, history: analysisHistory, loading: analysisLoading, runSync } = useHealthAnalysisSync()
   const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
 
@@ -37,6 +42,13 @@ export default function HealthTestPage() {
   )
   const analysisStage = analysis?.analysisStage
     || (analysisReady && detailedComplete ? 'detailed' : (analysisReady ? 'core' : null))
+  const lockState = getHealthTestLockState({
+    healthAnalysis: analysis,
+    detailedComplete,
+  })
+  const analysisStale = Boolean(
+    analysisReady && user && isHealthAnalysisStale(analysis, user),
+  )
 
   const handleStartCoreAnalysis = useCallback(async () => {
     try {
@@ -50,6 +62,24 @@ export default function HealthTestPage() {
       toast(err?.message || 'Analiz başlatılamadı.', 'error')
     }
   }, [runSync, toast])
+
+  const handleRetake = useCallback(async () => {
+    if (!lockState.canRetake) {
+      toast('Yeniden çözme süresi henüz dolmadı.', 'error')
+      return
+    }
+    setRetakeSaving(true)
+    try {
+      await updateProfile({
+        healthTest: { retakeAt: new Date().toISOString() },
+      })
+      toast('Cevaplar sıfırlandı. Genel Sağlık Testini baştan çözebilirsiniz.', 'success')
+    } catch (err) {
+      toast(err?.message || 'Test sıfırlanamadı.', 'error')
+    } finally {
+      setRetakeSaving(false)
+    }
+  }, [lockState.canRetake, updateProfile, toast])
 
   const handleConsentSave = useCallback(async ({ healthAck, disclaimer }) => {
     setConsentSaving(true)
@@ -87,14 +117,20 @@ export default function HealthTestPage() {
     subtitle = 'Analize başlamadan önce onayları işaretleyin'
   } else if (!coreComplete) {
     subtitle = 'Genel Sağlık Testini tamamlayın — ardından analizi başlatın'
-  } else if (!analysisReady) {
+  } else if (!analysisReady || analysisStale) {
     subtitle = 'Test tamamlandı — skorlarınız için Analizi Başlat’a tıklayın'
+  } else if (lockState.canRetake && coreComplete) {
+    subtitle = '14 gün doldu — testi yeniden çözerek skorlarınızı güncelleyebilirsiniz'
+  } else if (lockState.locked) {
+    subtitle = lockState.fullLock
+      ? `Cevaplarınız kilitli — ${lockState.daysLeft} gün sonra yeniden çözebilirsiniz`
+      : `Temel analiz kilitli — başlamadığınız opsiyonel kategorilerle derinleştirebilirsiniz`
   } else if (isUnpaidMember) {
     subtitle = 'Opsiyonel kategorilerle analizi derinleştirin — uzman raporu paketle açılır'
   } else if (!detailedComplete) {
     subtitle = 'Temel analiziniz hazır — opsiyonel kategorilerle detaylı analiz alın'
   } else {
-    subtitle = 'Detaylı sağlık analiziniz hazır — kategorileri istediğiniz zaman güncelleyebilirsiniz'
+    subtitle = 'Detaylı sağlık analiziniz hazır'
   }
 
   return (
@@ -125,6 +161,8 @@ export default function HealthTestPage() {
         detailedComplete={detailedComplete}
         scoresOnly={isUnpaidMember}
         onStartCoreAnalysis={handleStartCoreAnalysis}
+        onRetake={handleRetake}
+        retakeSaving={retakeSaving}
       />
     </PanelPageShell>
   )

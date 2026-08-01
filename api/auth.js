@@ -15,7 +15,7 @@ import { respondSessionForStaff } from './_respondSession.js'
 import { recordSessionAttendance } from './_sessionAttendance.js'
 import { handleGa4Report } from './_ga4Report.js'
 import { handleAiUsageReport } from './_aiUsageReport.js'
-import { claimActiveSession, isActiveSession } from './_singleSession.js'
+import { claimActiveSession, claimAndRefreshSession, isActiveSession } from './_singleSession.js'
 import { isPasswordValid, passwordRequirementsMessage, formatPasswordAuthError } from './_password.js'
 import { setCorsHeaders, handleOptions } from './_guards.js'
 import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
@@ -235,6 +235,35 @@ async function sendRecoveryEmail(email, redirectTo) {
   return { ok: true }
 }
 
+function sessionPayload(session) {
+  return {
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_in: session.expires_in,
+    expires_at: session.expires_at,
+    token_type: session.token_type || 'bearer',
+  }
+}
+
+/** passwordGrant sonrası tek oturum claim + güncel JWT (ayrı claim-active-session turu yok). */
+async function finalizeLoginSession(session) {
+  if (!session?.access_token) return { session: null, sessionClaimed: false, sessionId: null }
+  try {
+    const admin = getSupabaseAdmin()
+    const claimed = await claimAndRefreshSession(admin, session, {
+      supabaseUrl: getSupabaseUrl(),
+      anonKey: getAnonKey(),
+    })
+    return {
+      session: claimed.session || session,
+      sessionClaimed: Boolean(claimed.ok),
+      sessionId: claimed.sessionId || null,
+    }
+  } catch {
+    return { session, sessionClaimed: false, sessionId: null }
+  }
+}
+
 async function handleSignup(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
@@ -264,35 +293,35 @@ async function handleSignup(req, res, body) {
 
   const admin = getSupabaseAdmin()
 
-  if (phone) {
-    const { data: phoneTaken, error: phoneErr } = await admin.rpc('phone_in_use', { p_phone: phone })
-    if (!phoneErr && phoneTaken) {
-      return res.status(409).json({
-        ok: false,
-        error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.',
-        code: 'PHONE_IN_USE',
-      })
-    }
+  /* Turnstile handler’da bitti — phone + email lookup paralel */
+  const [phoneCheck, existingEarly] = await Promise.all([
+    phone
+      ? admin.rpc('phone_in_use', { p_phone: phone })
+      : Promise.resolve({ data: false, error: null }),
+    findAuthUserByEmail(admin, email),
+  ])
+  if (!phoneCheck.error && phoneCheck.data) {
+    return res.status(409).json({
+      ok: false,
+      error: 'Bu telefon numarası zaten kayıtlı. Lütfen farklı bir numara kullanın.',
+      code: 'PHONE_IN_USE',
+    })
   }
 
   /* Mevcut hesap: signup 3/saat kotasını yakmadan (Turnstile zaten doğrulandı) */
-  const existingEarly = await findAuthUserByEmail(admin, email)
   if (existingEarly) {
     const grant = await passwordGrant(email, password, '', { localBypass: true })
     if (grant.ok && grant.session) {
       const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
+      const finalized = await finalizeLoginSession(grant.session)
       return res.status(200).json({
         ok: true,
         alreadyRegistered: true,
         userId: existingEarly.id,
         authSessionToken,
-        session: {
-          access_token: grant.session.access_token,
-          refresh_token: grant.session.refresh_token,
-          expires_in: grant.session.expires_in,
-          expires_at: grant.session.expires_at,
-          token_type: grant.session.token_type || 'bearer',
-        },
+        sessionClaimed: finalized.sessionClaimed,
+        sessionId: finalized.sessionId,
+        session: sessionPayload(finalized.session),
       })
     }
     return res.status(409).json({
@@ -343,18 +372,15 @@ async function handleSignup(req, res, body) {
       const grant = await passwordGrant(email, password, '', { localBypass: true })
       if (grant.ok && grant.session) {
         const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
+        const finalized = await finalizeLoginSession(grant.session)
         return res.status(200).json({
           ok: true,
           alreadyRegistered: true,
           userId: payload.user_id || null,
           authSessionToken,
-          session: {
-            access_token: grant.session.access_token,
-            refresh_token: grant.session.refresh_token,
-            expires_in: grant.session.expires_in,
-            expires_at: grant.session.expires_at,
-            token_type: grant.session.token_type || 'bearer',
-          },
+          sessionClaimed: finalized.sessionClaimed,
+          sessionId: finalized.sessionId,
+          session: sessionPayload(finalized.session),
         })
       }
       return res.status(409).json({
@@ -383,17 +409,14 @@ async function handleSignup(req, res, body) {
   const grant = await passwordGrant(email, password, '', { localBypass: true })
   const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
   if (grant.ok && grant.session) {
+    const finalized = await finalizeLoginSession(grant.session)
     return res.status(200).json({
       ok: true,
       userId,
       authSessionToken,
-      session: {
-        access_token: grant.session.access_token,
-        refresh_token: grant.session.refresh_token,
-        expires_in: grant.session.expires_in,
-        expires_at: grant.session.expires_at,
-        token_type: grant.session.token_type || 'bearer',
-      },
+      sessionClaimed: finalized.sessionClaimed,
+      sessionId: finalized.sessionId,
+      session: sessionPayload(finalized.session),
     })
   }
 
@@ -479,16 +502,12 @@ async function handlePasswordLogin(req, res, body) {
     })
   }
 
-  const session = result.session
+  const finalized = await finalizeLoginSession(result.session)
   return res.status(200).json({
     ok: true,
-    session: {
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_in: session.expires_in,
-      expires_at: session.expires_at,
-      token_type: session.token_type || 'bearer',
-    },
+    sessionClaimed: finalized.sessionClaimed,
+    sessionId: finalized.sessionId,
+    session: sessionPayload(finalized.session),
   })
 }
 

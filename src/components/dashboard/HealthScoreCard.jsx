@@ -1,11 +1,24 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { HeartPulse, Loader2, Sparkles, ArrowRight } from 'lucide-react'
+import { HeartPulse, Loader2, Sparkles, ArrowRight, Clock3 } from 'lucide-react'
 import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
 } from '../../services/healthScoreAnalysis'
 import { HealthScoreSimpleTrend } from './HealthScoreTrendChart'
+
+function formatRetakeDate(date) {
+  if (!date) return ''
+  try {
+    return new Intl.DateTimeFormat('tr-TR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(date instanceof Date ? date : new Date(date))
+  } catch {
+    return ''
+  }
+}
 
 function scoreTone(score) {
   if (score >= 75) {
@@ -139,8 +152,10 @@ export default function HealthScoreCard({
   loading = false,
   complete = false,
   error = null,
-  /** Ücretsiz üye: yalnızca skorlar; özet metin + grafik gizli */
+  /** Ücretsiz üye: özet metin gizli; skorlar ve trend grafiği herkese açık */
   scoresOnly = false,
+  /** 14 günlük kilit durumu — güncellenebilir tarih rozeti */
+  lockState = null,
 }) {
   if (!complete) {
     return (
@@ -181,16 +196,30 @@ export default function HealthScoreCard({
             Genel puanınız
           </h3>
           {overall != null && !showSkeleton && (
-            <span className={`mt-2 inline-flex rounded-lg px-2.5 py-1 text-xs font-bold ${tone.chip}`}>
-              {tone.label}
-            </span>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-bold ${tone.chip}`}>
+                {tone.label}
+              </span>
+              {lockState?.locked && lockState?.lockedUntil && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  <Clock3 className="h-3 w-3" />
+                  Güncellenebilir: {formatRetakeDate(lockState.lockedUntil)}
+                </span>
+              )}
+              {lockState?.canRetake && (
+                <span className="inline-flex items-center gap-1 rounded-lg bg-sage-100 px-2.5 py-1 text-xs font-semibold text-sage-800">
+                  <Clock3 className="h-3 w-3" />
+                  Yeniden çözebilirsiniz
+                </span>
+              )}
+            </div>
           )}
           {!scoresOnly && analysis?.summary ? (
             <p className="mt-2 text-sm leading-relaxed text-cream-800/65 break-words">{analysis.summary}</p>
           ) : (
             <p className="mt-2 text-sm text-cream-800/55">
               {scoresOnly
-                ? 'Skorlarınız hazır. Uzman raporu ve skor grafiği paketle açılır.'
+                ? 'Skorlarınız hazır. Uzman raporu paketle açılır.'
                 : 'Sağlık analizi cevaplarınıza göre 8 boyutta değerlendirildiniz.'}
             </p>
           )}
@@ -208,7 +237,7 @@ export default function HealthScoreCard({
         ))}
       </div>
 
-      {!scoresOnly && <HealthScoreSimpleTrend history={history} />}
+      <HealthScoreSimpleTrend history={history} />
     </div>
   )
 }

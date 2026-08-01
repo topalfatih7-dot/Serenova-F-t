@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
   getApplicableSections,
+  getRemainingHubSections,
   getRemainingSectionQuestions,
   isDetailedHealthTestComplete,
   isQuestionFullyAnswered,
@@ -18,6 +19,10 @@ import {
 } from '../data/coreHealthTest'
 import { hasCompleteAnalysisProfile } from '../utils/healthProfile'
 import { PANEL_IMAGES } from '../utils/panelImages'
+import {
+  getHealthTestLockState,
+  needsInitialHealthAnalysis,
+} from '../services/healthScoreAnalysis'
 
 export default function HealthTestSectionPage() {
   const { sectionId } = useParams()
@@ -32,6 +37,26 @@ export default function HealthTestSectionPage() {
   const section = user?.id && !isCoreRoute
     ? getApplicableSections(user.gender, packageConfig).find((s) => s.id === sectionId)
     : null
+
+  const analysis = user?.healthAnalysis || null
+  const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
+  const detailedComplete = Boolean(
+    user?.gender
+    && isDetailedHealthTestComplete(
+      user.healthTest,
+      user.gender,
+      packageConfig,
+      coreKeys,
+    ),
+  )
+  const lockState = getHealthTestLockState({
+    healthAnalysis: analysis,
+    detailedComplete,
+  })
+  const coreComplete = Boolean(
+    user?.gender && isCoreHealthTestComplete(user.healthTest, user.gender),
+  )
+  const awaitingRetake = Boolean(lockState.canRetake && coreComplete && analysisReady)
 
   const handleProgressSave = useCallback(async ({ healthTest }) => {
     if (saving) return
@@ -105,6 +130,10 @@ export default function HealthTestSectionPage() {
     return <Navigate to="/health-test" replace />
   }
 
+  if (lockState.fullLock || awaitingRetake) {
+    return <Navigate to="/health-test" replace />
+  }
+
   if (isCoreRoute) {
     if (isCoreHealthTestComplete(user.healthTest, user.gender)) {
       return <Navigate to="/health-test" replace />
@@ -142,6 +171,24 @@ export default function HealthTestSectionPage() {
 
   if (!isCoreHealthTestComplete(user.healthTest, user.gender)) {
     return <Navigate to="/health-test" replace />
+  }
+
+  // Akıllı kilit: başlanmış / tamamlanmış opsiyonel kategoriler kapalı
+  if (lockState.locked && !lockState.fullLock) {
+    const hubSections = getRemainingHubSections(
+      user.gender,
+      packageConfig,
+      user.healthTest,
+      coreKeys,
+    )
+    const current = hubSections.find((s) => s.section.id === sectionId)
+    const progress = current?.progress
+    if (
+      progress
+      && (progress.started || progress.complete || progress.requiredAnswered > 0)
+    ) {
+      return <Navigate to="/health-test" replace />
+    }
   }
 
   return (

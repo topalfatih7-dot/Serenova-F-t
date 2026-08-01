@@ -99,16 +99,18 @@ export function AppProvider({ children }) {
           if (active) setRemoteDb(d)
           return
         }
+        /* İlk yükleme: tek getUser() doğrulaması; sonraki hydrate’ler session.user kullanır */
+        await sb.resolveAuthUser({ verify: true })
         const d = await sb.hydrate({ force: true })
         if (active) setRemoteDb(d)
       } finally {
         if (active) setLoading(false)
       }
     })()
-    const unsub = sb.onAuthChange(async (event, session) => {
+    const unsub = sb.onAuthChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         /* onAuthStateChange içinde await auth çağrısı deadlock yapabilir —
-         * claimInFlight + grace, TOKEN_REFRESHED verify ile senkronize eder */
+         * password-login zaten claim ettiyse registerActiveSession no-op (local JWT / grace) */
         void registerActiveSession()
       }
       if (event === 'TOKEN_REFRESHED' && session) {
@@ -117,10 +119,12 @@ export function AppProvider({ children }) {
       }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
       if (event === 'SIGNED_OUT') sb.invalidateHydrateCache()
-      const d = await sb.hydrate({
+      /* await callback dışında — auth lock / deadlock riskini azaltır */
+      void sb.hydrate({
         force: event === 'SIGNED_OUT' || event === 'USER_UPDATED',
+      }).then((d) => {
+        if (active) setRemoteDb(d)
       })
-      if (active) setRemoteDb(d)
     })
     return () => { active = false; unsub?.() }
   }, [])
@@ -823,24 +827,42 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password, remember = false, turnstileToken = '') => {
     const r = await sb.login(email, password, remember, turnstileToken)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
-    /* SIGNED_IN hydrate ile birleş / kısa cache — ikinci tam tur yok */
-    await reloadRemote({ force: false })
-    return { success: true, role: r.role, isAdmin: r.role === 'admin' }
+    /* SIGNED_IN hydrate ile birleş / kısa cache — rol hydrate session’dan */
+    const d = await reloadRemote({ force: false })
+    const role = d?.session?.type || r.role || 'member'
+    return { success: true, role, isAdmin: role === 'admin' }
   }, [reloadRemote])
 
   const logout = useCallback(async () => {
     setLoggingOut(true)
     try {
-      await flushNotificationReads()
+      /* Bildirim flush çıkışı bloklamaz — arka planda */
+      void flushNotificationReads()
       clearIncomingChatSoundState()
       clearNotificationAlertState()
       markIntentionalLogout()
       await sb.logout()
-      await reloadRemote()
+      /* Anında oturumu düşür — SIGNED_OUT hydrate arka planda public veriyi yeniler */
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          session: null,
+          authUser: null,
+          members: [],
+          programs: [],
+          tickets: [],
+          activities: [],
+          payments: [],
+          staffApplications: [],
+          corporateApplications: [],
+          contactInquiries: [],
+        }
+      })
     } finally {
       setLoggingOut(false)
     }
-  }, [flushNotificationReads, reloadRemote])
+  }, [flushNotificationReads])
 
   const patchMemberInDb = useCallback((member) => {
     if (!member?.id) return
