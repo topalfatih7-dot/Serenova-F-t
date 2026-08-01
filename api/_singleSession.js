@@ -50,6 +50,7 @@ export function isActiveSession(user, accessToken) {
   const activeId = user?.app_metadata?.active_session_id
   if (!activeId) return true
   const sessionId = parseSessionIdFromAccessToken(accessToken)
-  if (!sessionId) return false
+  /* session_id yoksa veya metadata henüz senkron değilse düşürme */
+  if (!sessionId) return true
   return sessionId === activeId
 }

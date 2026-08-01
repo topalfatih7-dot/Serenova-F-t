@@ -107,11 +107,13 @@ export function AppProvider({ children }) {
     })()
     const unsub = sb.onAuthChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        /* Kritik yolu bloklama — hydrate ile paralel çalışsın */
+        /* onAuthStateChange içinde await auth çağrısı deadlock yapabilir —
+         * claimInFlight + grace, TOKEN_REFRESHED verify ile senkronize eder */
         void registerActiveSession()
       }
       if (event === 'TOKEN_REFRESHED' && session) {
-        await verifyActiveSessionOrSignOut({ forceRemote: true })
+        /* Claim sonrası refreshSession da TOKEN_REFRESHED üretir — grace içinde no-op */
+        void verifyActiveSessionOrSignOut({ forceRemote: true })
       }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
       if (event === 'SIGNED_OUT') sb.invalidateHydrateCache()
