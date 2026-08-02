@@ -3,12 +3,10 @@ import { subscribeOnlineStats } from '../services/presenceService'
 import {
   getDisplayMemberCount,
   getDisplayOnlineCount,
-  pickSessionOnlineBoost,
 } from '../utils/displayPlatformStats'
 
 export function usePlatformDisplayStats() {
   const [stats, setStats] = useState({ onlineNow: 0, totalMembers: 0 })
-  const [sessionBoost] = useState(pickSessionOnlineBoost)
 
   useEffect(() => subscribeOnlineStats((s) => {
     setStats({
@@ -23,7 +21,7 @@ export function usePlatformDisplayStats() {
       raw: stats,
       displayMembers: members.value,
       showMemberPlus: members.showPlus,
-      displayOnline: getDisplayOnlineCount(stats.onlineNow, sessionBoost),
+      displayOnline: getDisplayOnlineCount(stats.onlineNow),
     }
-  }, [stats, sessionBoost])
+  }, [stats])
 }

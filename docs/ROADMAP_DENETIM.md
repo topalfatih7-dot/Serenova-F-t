@@ -1,9 +1,8 @@
 ﻿# Yeni Form — Denetim Yol Haritası
 
-> **Kaynak:** 2026-07-17 proje denetimi · **Güncelleme:** 2026-07-29  
-> **Durum:** Faz 0–5 + web ops (legal/GSC) 2026-07-29 · **Mobil / Expo erteledi**  
+> **Güncelleme:** 2026-08-02 · **Durum:** Web-only (mobil/Expo bu repoda yok); freemium SoT  
 > Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · Google OAuth marka: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
-> Mobil not: [`mobile/README.md`](mobile/README.md) — şu an genişletilmiyor.
+> Mobil: bu repo yalnızca web; Expo handoff kaldırıldı.
 
 ---
 
@@ -34,7 +33,7 @@
 ## 2026-07-28 / 29 delta (ürün)
 
 - AI Basic/Eko program+diyet üretimi kaldırıldı; koç/diyetisyen builder + admin program CRUD.
-- Ücretsiz kayıt kapalı; eski tek `eko` yeni satış kapalı. Satılan: `eko_diyet` / `diyet` / `eko_spor` / `spor` / `doktor` / `vip`.
+- Freemium: ücretsiz kayıt + soft-lock; eski tek `eko` yeni satış kapalı. Satılan: `eko_diyet` / `diyet` / `eko_spor` / `spor` / `doktor` / `vip`.
 - Staff GPT-5.4 sağlık skoru + `staffBrief`; üye dashboard `HealthScoreCard` (brief yok).
 - Pazarlama / legal copy paid-only modele hizalandı (2026-07-28).
 - Faz 2–3: `UnpaidMemberGate`, Stripe Portal (`stripe_customer_id`), `staff_earnings` + video attendance.
@@ -85,10 +84,10 @@
 - [x] Stripe Subscription otomatik yenileme (2026-07-29): recurring planlar `mode: subscription` + `invoice.paid` yenileme; doktor `payment`; iptal Portal
 - [ ] **Manuel:** Stripe Dashboard webhook event’leri (`invoice.paid`, `customer.subscription.deleted`) — [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 - [x] `eko` DB temizliği — 0 üye; plan `is_active/is_sellable=false` (JS legacy okuma saklandı)
-- [x] Expo mobil **handoff foundations** (taslak) — **2026-07-29 itibarıyla mobil işler ertelendi; genişletme yok**
+- [x] Expo/mobil handoff bu web reposundan kaldırıldı (2026-08-02)
 - [x] GSC ops — mülk + sitemap Başarılı (2026-07-29); checklist dosyası kaldırıldı (tamamlandı)
-- [x] Yasal ince ayar: üyelik + iptal metinleri 48s deneme / Eko paketler / Subscription Portal (2026-07-29)
-- [x] Admin FAQ kopya hizası (paketler + 48s + kalori hakları; SEO static FAQ aynı) — 2026-07-29
+- [x] Yasal ince ayar: üyelik + iptal metinleri freemium / Eko paketler / Subscription Portal (2026-07-29; 2026-08-02 freemium hizası)
+- [x] Admin FAQ kopya hizası (paketler + freemium + kalori hakları; SEO static FAQ aynı)
 
 Detay: [`AI_PROJE_REHBERI.md`](../AI_PROJE_REHBERI.md).
 
@@ -102,7 +101,7 @@ Kanıta dayalı envanter + ölü kod + UX + gap listesi: [`docs/TAM_TARAMA_RAPOR
 
 - DB: aktif `eko` üye **0** (cleanup için uygun).
 - P0 adayları: SEO `/online-*` hydrate pass-through eksik; Supabase `members_staff_safe` SECURITY DEFINER advisor ERROR; anon/authenticated EXECUTE WARN’lar.
-- P1: gate UX tutarsızlığı (kalori/randevu vs `UnpaidMemberGate`); landing “Ücretsiz Başla” / stats floor; `fullVideo` entitlement runtime’da kullanılmıyor → video-pazarlama kararı hâlâ açık.
+- P1 (çoğu kapandı 2026-08-02): freemium + UnpaidMemberGate SoT; stats floor kaldırıldı; `fullVideo` entitlement koddan silindi (program-scoped video).
 - Ölü export (0 çağrı): `shouldAutoplayExerciseVideo`, `getHealthPackageContext`, `buildCoachProgramPayload`.
 - Uygulama sırası: Tur 1 P0 → Tur 2 ölü kod → Tur 3 UX → Tur 4 Faz 4/5 (ürün onayı).
 
@@ -114,7 +113,7 @@ Kararlar: istatistik floor **tutuldu**; kütüphane **program-scoped kaldı**; F
 |-----|---------|
 | 1 | `authPaths` ← `/online-diyetisyen`, `/online-kocluk`; `members_staff_safe` → `security_invoker` (advisor ERROR kapandı). Anon/authenticated EXECUTE WARN’lar bilinçli (RLS/`phone_in_use`/landing stats). |
 | 2 | Silindi: `shouldAutoplayExerciseVideo`, `getHealthPackageContext`, `buildCoachProgramPayload`, `applyStaffAssignments` → `assignStaffOnly` |
-| 3 | `/schedule` + unpaid kalori → `UnpaidMemberGate`; landing CTA “48 saat ücretsiz dene”; SEO/onboarding copy program-scoped |
+| 3 | `/schedule` + unpaid kalori → `UnpaidMemberGate`; landing CTA “Ücretsiz Başla”; SEO/onboarding copy program-scoped |
 
 ### Faz 4 uygulandı (2026-07-29)
 

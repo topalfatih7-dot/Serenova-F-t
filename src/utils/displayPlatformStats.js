@@ -1,24 +1,19 @@
-export const MEMBER_DISPLAY_FLOOR = 1250
-export const ONLINE_DISPLAY_FLOOR = 25
-export const ONLINE_DISPLAY_MIN = 16
-export const ONLINE_DISPLAY_MAX = 25
+export const MEMBER_DISPLAY_FLOOR = 0
+export const ONLINE_DISPLAY_FLOOR = 0
+export const ONLINE_DISPLAY_MIN = 0
+export const ONLINE_DISPLAY_MAX = 0
 
 export function pickSessionOnlineBoost() {
-  return Math.floor(Math.random() * (ONLINE_DISPLAY_MAX - ONLINE_DISPLAY_MIN + 1)) + ONLINE_DISPLAY_MIN
+  return 0
 }
 
-/** Gerçek üye sayısı 1250'nin altındaysa 1250+ göster; üstündeyse gerçek sayı. */
+/** Gerçek üye sayısını gösterir (sahte floor yok). */
 export function getDisplayMemberCount(actual) {
-  const count = actual ?? 0
-  if (count < MEMBER_DISPLAY_FLOOR) {
-    return { value: MEMBER_DISPLAY_FLOOR, showPlus: true }
-  }
+  const count = Math.max(0, actual ?? 0)
   return { value: count, showPlus: false }
 }
 
-/** Aktif kullanıcı 25'ten azsa oturum boyunca 16–25 arası sabit rastgele sayı. */
-export function getDisplayOnlineCount(actual, sessionBoost) {
-  const count = actual ?? 0
-  if (count >= ONLINE_DISPLAY_FLOOR) return count
-  return sessionBoost
+/** Gerçek çevrimiçi sayısını gösterir. */
+export function getDisplayOnlineCount(actual) {
+  return Math.max(0, actual ?? 0)
 }

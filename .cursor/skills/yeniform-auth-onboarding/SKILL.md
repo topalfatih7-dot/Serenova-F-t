@@ -29,10 +29,9 @@ description: >-
 
 ## Checklist
 
-- [ ] Deep link auth callback + reset password
-- [ ] Google OAuth; **Apple Sign-In required on iOS** for store
+- [ ] Auth callback + reset password
+- [ ] Google OAuth (web)
 - [ ] Disposable email + rate limits honored via API
-- [ ] Specs: `docs/mobile/05-auth-onboarding.md`, `flows/F01–F03`
 
 ## Related
 

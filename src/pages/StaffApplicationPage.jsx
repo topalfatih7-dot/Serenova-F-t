@@ -14,7 +14,11 @@ import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackgrou
 import { useToast } from '../context/ToastContext'
 import TurnstileWidget from '../components/security/TurnstileWidget'
 import { useTurnstile } from '../hooks/useTurnstile'
-import { submitStaffApplication, uploadStaffApplicationDoc } from '../services/supabaseDb'
+import {
+  submitStaffApplication,
+  uploadStaffApplicationDoc,
+  precheckStaffApplicationEmail,
+} from '../services/supabaseDb'
 import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 import {
   AccordionSection,
@@ -75,6 +79,8 @@ export default function StaffApplicationPage() {
   }))
   const [submitting, setSubmitting] = useState(false)
   const [uploadingCerts, setUploadingCerts] = useState(false)
+  const [precheckingEmail, setPrecheckingEmail] = useState(false)
+  const [emailFieldError, setEmailFieldError] = useState('')
   const [done, setDone] = useState(false)
   const [formSessionToken, setFormSessionToken] = useState('')
   const {
@@ -85,7 +91,10 @@ export default function StaffApplicationPage() {
     reset: resetTurnstile,
   } = useTurnstile()
 
-  const update = (patch) => setForm((f) => ({ ...f, ...patch }))
+  const update = (patch) => {
+    if (Object.prototype.hasOwnProperty.call(patch, 'email')) setEmailFieldError('')
+    setForm((f) => ({ ...f, ...patch }))
+  }
 
   const obtainCaptchaIfNeeded = async () => {
     if (formSessionToken || !turnstileEnabled) return ''
@@ -103,7 +112,15 @@ export default function StaffApplicationPage() {
     setOpenSection((prev) => (prev === id ? null : id))
   }
 
-  const next = () => {
+  const advanceStep = () => {
+    setStep((s) => {
+      const nextStep = s + 1
+      setOpenSection(defaultOpenSection(nextStep, form.role))
+      return nextStep
+    })
+  }
+
+  const next = async () => {
     if (stepErrors.length) {
       toast(stepErrors[0], 'error')
       return
@@ -112,11 +129,38 @@ export default function StaffApplicationPage() {
       setSummaryOpen(true)
       return
     }
-    setStep((s) => {
-      const nextStep = s + 1
-      setOpenSection(defaultOpenSection(nextStep, form.role))
-      return nextStep
-    })
+
+    if (step === 1) {
+      setPrecheckingEmail(true)
+      setEmailFieldError('')
+      try {
+        let captchaToken = ''
+        try {
+          captchaToken = await obtainCaptchaIfNeeded()
+        } catch (err) {
+          toast(err?.message || 'Bot doğrulamasını tamamlayın', 'error')
+          resetTurnstile()
+          return
+        }
+        const r = await precheckStaffApplicationEmail(form.email, {
+          turnstileToken: captchaToken,
+          formSessionToken,
+        })
+        if (r.formSessionToken) setFormSessionToken(r.formSessionToken)
+        if (!r.available) {
+          const msg = r.error || 'Bu e-posta kullanılamaz'
+          setEmailFieldError(msg)
+          toast(msg, 'error')
+          if (!r.formSessionToken) resetTurnstile()
+          return
+        }
+        if (!r.failOpen) resetTurnstile()
+      } finally {
+        setPrecheckingEmail(false)
+      }
+    }
+
+    advanceStep()
   }
 
   const submit = async () => {
@@ -302,7 +346,26 @@ export default function StaffApplicationPage() {
                         hint="Fotoğraf başvurunuza kaydedilir; onay sonrası profilinizde görünür."
                       />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
-                      <input type="email" value={form.email} onChange={(e) => update({ email: e.target.value })} placeholder="E-posta *" className={inputCls} />
+                      <div>
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => update({ email: e.target.value })}
+                          placeholder="E-posta *"
+                          className={`${inputCls} ${emailFieldError ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-100' : ''}`}
+                          aria-invalid={Boolean(emailFieldError)}
+                          aria-describedby={emailFieldError ? 'staff-email-error' : undefined}
+                        />
+                        {emailFieldError ? (
+                          <p id="staff-email-error" className="mt-1.5 text-xs font-medium text-rose-600">
+                            {emailFieldError}
+                          </p>
+                        ) : (
+                          <p className="mt-1.5 text-[11px] text-cream-800/50">
+                            Bu e-posta henüz kayıtlı bir hesaba ait olmamalı. Onay sonrası giriş bilgileri buraya gönderilir.
+                          </p>
+                        )}
+                      </div>
                       <PhoneField value={form.phone} onValueChange={(phone) => update({ phone })} label="" />
                       <select value={form.gender} onChange={(e) => update({ gender: e.target.value })} className={`${selectCls} ${form.gender ? '' : 'text-cream-800/40'}`}>
                         <option value="">Cinsiyet seçin *</option>
@@ -644,8 +707,18 @@ export default function StaffApplicationPage() {
                 <ArrowLeft className="h-4 w-4" /> Geri
               </button>
             )}
-            <button type="button" onClick={next} className="btn-wellness flex-1 !py-3">
-              {step === 4 ? 'Özeti Gör & Gönder' : 'Devam'} <ArrowRight className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={next}
+              disabled={precheckingEmail}
+              className="btn-wellness flex-1 !py-3 disabled:opacity-60"
+            >
+              {precheckingEmail
+                ? 'E-posta kontrol ediliyor…'
+                : step === 4
+                  ? 'Özeti Gör & Gönder'
+                  : 'Devam'}
+              {!precheckingEmail && <ArrowRight className="h-4 w-4" />}
             </button>
           </div>
         </div>

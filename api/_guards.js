@@ -29,14 +29,11 @@ function allowedCorsOrigins() {
     const o = part.trim().replace(/\/$/, '')
     if (o) origins.add(o)
   }
-  // Yerel geliştirme: Vite (5173) + Expo Metro web (8081) + Next (3000).
-  // Production API'ye localhost'tan test (mobil Expo web) için Vercel'de de açık.
+  // Yerel geliştirme: Vite (5173) + Next (3000).
   // Not: yalnızca Origin yansıtılır; credential'sız POST + Turnstile hâlâ zorunlu.
   for (const origin of [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://localhost:8081',
-    'http://127.0.0.1:8081',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
   ]) {

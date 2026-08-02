@@ -225,6 +225,7 @@ let hydrateCache = null
 const HYDRATE_CACHE_TTL_MS = 2500
 const MEMBER_ACTIVITIES_HYDRATE_LIMIT = 50
 const STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT = 200
+const STAFF_ADMIN_LIST_HYDRATE_LIMIT = 2000
 
 export function invalidateHydrateCache() {
   hydrateCache = null
@@ -253,20 +254,20 @@ function buildContentFromRows(contentRes) {
 async function fetchStaffAdminBundle(role) {
   const membersTable = role === 'staff' ? 'members_staff_safe' : 'members'
   const [membersRes, programsRes, ticketsRes, activitiesRes, paymentsRes] = await Promise.all([
-    supabase.from(membersTable).select('*'),
-    supabase.from('programs').select('*').order('created_at', { ascending: false }),
-    supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+    supabase.from(membersTable).select('*').order('updated_at', { ascending: false }).limit(STAFF_ADMIN_LIST_HYDRATE_LIMIT),
+    supabase.from('programs').select('*').order('created_at', { ascending: false }).limit(STAFF_ADMIN_LIST_HYDRATE_LIMIT),
+    supabase.from('tickets').select('*').order('created_at', { ascending: false }).limit(500),
     supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT),
-    supabase.from('payments').select('*').order('created_at', { ascending: false }),
+    supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(500),
   ])
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
   let contactInqRes = { data: [] }
   if (role === 'admin') {
     const [sa, ca, ci] = await Promise.all([
-      supabase.from('staff_applications').select('*').order('created_at', { ascending: false }),
-      supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }),
-      supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }),
+      supabase.from('staff_applications').select('*').order('created_at', { ascending: false }).limit(300),
+      supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }).limit(300),
+      supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }).limit(300),
     ])
     staffAppsRes = sa
     corporateAppsRes = ca
@@ -2162,6 +2163,52 @@ async function resolveStaffApplicationPhoto(photo, { turnstileToken = '', formSe
   }
 }
 
+/**
+ * Kadro başvurusu adım 1 — e-posta müsaitlik ön kontrolü.
+ * Ağ hatasında fail-open (otoriter kontrol submit RPC'de).
+ */
+export async function precheckStaffApplicationEmail(email, { turnstileToken = '', formSessionToken = '' } = {}) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized || !normalized.includes('@')) {
+    return { ok: false, available: false, error: 'Geçerli e-posta gerekli' }
+  }
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'staff_email_precheck',
+        email: normalized,
+        turnstileToken: formSessionToken ? '' : (turnstileToken || ''),
+        formSessionToken: formSessionToken || '',
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      return {
+        ok: false,
+        available: false,
+        error: data.error || 'E-posta kontrolü başarısız',
+        code: data.code || null,
+        formSessionToken: data.formSessionToken || formSessionToken || '',
+      }
+    }
+    return {
+      ok: true,
+      available: true,
+      formSessionToken: data.formSessionToken || formSessionToken || '',
+    }
+  } catch (e) {
+    return {
+      ok: true,
+      available: true,
+      failOpen: true,
+      error: e?.message || 'Ağ hatası',
+      formSessionToken: formSessionToken || '',
+    }
+  }
+}
+
 export async function submitStaffApplication(form, { turnstileToken = '', formSessionToken = '' } = {}) {
   const photoResolved = await resolveStaffApplicationPhoto(form.photo, { turnstileToken, formSessionToken })
   if (!photoResolved.ok) {
@@ -2544,10 +2591,14 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
   const member = memberRows?.[0] ? rowToMember(memberRows[0]) : null
   if (!member) return { success: false, error: 'Üye bulunamadı.' }
 
-  const { data: staffRows } = await supabase.from('staff').select('*')
+  const { data: staffRows } = await supabase
+    .from('staff')
+    .select('id, name, email, role, active, data')
   const staffList = (staffRows || []).map(rowToStaff)
-  const { data: allMemberRows } = await supabase.from('members').select('*')
-  const members = (allMemberRows || []).map(rowToMember)
+  const { data: allMemberRows } = await supabase
+    .from('members')
+    .select('id, membership, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+  const members = (allMemberRows || []).map((row) => rowToMember(row))
 
   const prevCoachId = member.assignedCoachId
   const prevDietitianId = member.assignedDietitianId

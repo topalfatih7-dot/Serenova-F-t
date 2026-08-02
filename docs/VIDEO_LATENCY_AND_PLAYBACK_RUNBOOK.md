@@ -129,7 +129,7 @@ Gereksinim: `ffmpeg` (veya `ffmpeg-static`), `.env.local` içinde `SUPABASE_URL`
 1. Oturum var mı? (client imza JWT ister)
 2. TTL: 15 dk doldu mu? → `invalidateExerciseVideoUrlCache` + recover (`VideoPlayer` stall/error).
 3. Path geçerli mi? `^[\w.-]+$`, `video_pending=false`.
-4. Paket gate: `memberHasFullVideoAccess` — Spor/VIP dışı üyede oynatma kilitli (liste açık).
+4. Paket gate: ödenmemiş üye (`UnpaidMemberGate` / `isUnpaidMember`) kütüphaneyi soft-lock eder; video erişimi program-scoped.
 5. API fallback: `api/auth.js` `handleExerciseVideoUrl` + service role.
 
 ### 5.3 iOS: play butonu takılı / siyah ekran

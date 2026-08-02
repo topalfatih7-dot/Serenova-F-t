@@ -23,7 +23,7 @@ Search, category, difficulty, body part, equipment, **locations** (home/gym/offi
 
 ## Full library access
 
-Gated by `hasFullVideoAccess` (spor/vip/…); limited access on lower plans — document UX locks in screen specs.
+Access: unpaid members soft-locked via `UnpaidMemberGate`; paid members see program-scoped exercise videos only.
 
 ## Related
 

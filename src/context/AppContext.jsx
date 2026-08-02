@@ -1628,8 +1628,6 @@ export function AppProvider({ children }) {
     [currentMember?.membership],
   )
 
-  const isFreeTrialActive = false
-  const isFreeTrialExpired = false
   const canAccessMemberDashboard = true
 
   const authValue = useMemo(() => ({
@@ -1648,8 +1646,6 @@ export function AppProvider({ children }) {
     premiumStartedAt: currentMember?.premiumStartedAt,
     freeTrialExpiresAt: currentMember?.freeTrialExpiresAt || null,
     isUnpaidMember,
-    isFreeTrialActive,
-    isFreeTrialExpired,
     canAccessMemberDashboard,
     verificationStatus,
     loggingOut,
@@ -1672,8 +1668,6 @@ export function AppProvider({ children }) {
     currentMember?.premiumStartedAt,
     currentMember?.freeTrialExpiresAt,
     isUnpaidMember,
-    isFreeTrialActive,
-    isFreeTrialExpired,
     canAccessMemberDashboard,
     verificationStatus,
     loggingOut,

@@ -226,6 +226,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
+                    aria-label={showPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-cream-800/40 hover:text-brand-500"
                   >
                     {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

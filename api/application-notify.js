@@ -1,21 +1,17 @@
 /**
- * Üye bildirimleri — Expo Push (mobil) + WhatsApp (Meta Cloud API).
- * Eski başvuru notify yolu kapatıldı; formlar /api/contact kullanır.
+ * Üye outbound bildirimleri — WhatsApp (Meta Cloud API) + in-app fan-out yardımcısı.
+ * Formlar /api/contact kullanır.
  *
  * Multiplex:
  * - GET  → Meta webhook verify
  * - POST Meta (X-Hub-Signature-256) → delivery status
  * - POST { action: 'whatsapp-event', ... } → auth’lu olay fan-out
- * - POST { memberId, notification } → Expo (+ optional WA from notification type)
+ * - POST { memberId, notification } → WhatsApp (program/chat tipleri)
  */
 
-import { setCorsHeaders, handleOptions, requireAuth, requireCronSecret } from './_guards.js'
+import { setCorsHeaders, handleOptions, requireAuth, requireCronSecret, getAdminEmail } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
-import {
-  isExpoPushToken,
-  notificationToPushData,
-  sendExpoPushMessages,
-} from './_expoPush.js'
+import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import {
   verifyWhatsAppSubscribe,
   verifyWhatsAppWebhookSignature,
@@ -32,6 +28,13 @@ export const config = { api: { bodyParser: false } }
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
+    // Vite local API middleware (ve bazı host’lar) body’yi önceden parse eder
+    if (req.body != null && typeof req.on !== 'function') {
+      const b = req.body
+      if (Buffer.isBuffer(b)) return resolve(b)
+      if (typeof b === 'string') return resolve(Buffer.from(b))
+      return resolve(Buffer.from(JSON.stringify(b)))
+    }
     if (req.readableEnded && req.body != null) {
       const b = req.body
       if (Buffer.isBuffer(b)) return resolve(b)
@@ -54,39 +57,100 @@ function parseJsonBody(raw) {
   }
 }
 
-async function handleExpoPush(admin, body, res) {
+async function isAdminUser(admin, user) {
+  const email = (user?.email || '').toLowerCase()
+  if (email && email === getAdminEmail()) return true
+  const { data } = await admin.from('members').select('role').eq('id', user.id).maybeSingle()
+  return data?.role === 'admin'
+}
+
+async function canNotifyMember(admin, authUser, memberId, hint = {}) {
+  if (!memberId || !authUser?.id) return false
+  if (authUser.id === memberId) return true
+  if (await isAdminUser(admin, authUser)) return true
+
+  const { data: staff } = await admin
+    .from('staff')
+    .select('id')
+    .eq('id', authUser.id)
+    .maybeSingle()
+  if (!staff) return false
+
+  const { data: member } = await admin
+    .from('members')
+    .select('assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .eq('id', memberId)
+    .maybeSingle()
+  if (!member) return false
+
+  if (
+    member.assigned_coach_id === authUser.id
+    || member.assigned_dietitian_id === authUser.id
+    || member.assigned_doctor_id === authUser.id
+  ) {
+    return true
+  }
+
+  const threadId = hint.threadId || null
+  if (threadId) {
+    const { data: thread } = await admin
+      .from('chat_threads')
+      .select('member_id, staff_id')
+      .eq('id', threadId)
+      .maybeSingle()
+    if (thread?.member_id === memberId && thread?.staff_id === authUser.id) return true
+  }
+
+  const { data: anyThread } = await admin
+    .from('chat_threads')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('staff_id', authUser.id)
+    .limit(1)
+    .maybeSingle()
+  if (anyThread) return true
+
+  const { data: anyProgram } = await admin
+    .from('programs')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('staff_id', authUser.id)
+    .limit(1)
+    .maybeSingle()
+  return Boolean(anyProgram)
+}
+
+async function assertStaffActor(admin, auth, memberId) {
+  if (auth.role === 'cron') return { ok: true }
+  if (await isAdminUser(admin, auth.user)) return { ok: true }
+  const { data: staff } = await admin
+    .from('staff')
+    .select('id')
+    .eq('id', auth.user.id)
+    .maybeSingle()
+  if (!staff) return { ok: false, status: 403, error: 'Yalnızca personel' }
+  if (memberId) {
+    const allowed = await canNotifyMember(admin, auth.user, memberId)
+    if (!allowed) return { ok: false, status: 403, error: 'Yetkisiz' }
+  }
+  return { ok: true }
+}
+
+/** In-app bildirim sonrası WhatsApp fan-out (program / chat). */
+async function handleMemberOutbound(admin, body, auth, res) {
   const memberId = body.memberId
   const notification = body.notification
   if (!notification?.title) {
     return res.status(400).json({ ok: false, error: 'notification.title gerekli' })
   }
 
-  const { data: row, error } = await admin
-    .from('members')
-    .select('data')
-    .eq('id', memberId)
-    .maybeSingle()
-
-  if (error) return res.status(500).json({ ok: false, error: error.message })
-
-  const data = row?.data || {}
-  const settings = data.settings || {}
-  let expoResult = { ok: true, skipped: true, reason: 'pushNotifs or token' }
-
-  if (settings.pushNotifs !== false) {
-    const token = data.pushToken
-    if (isExpoPushToken(token)) {
-      const pushData = notificationToPushData(notification)
-      expoResult = await sendExpoPushMessages([
-        {
-          to: token,
-          title: String(notification.title).slice(0, 80),
-          body: String(notification.message || notification.title).slice(0, 200),
-          sound: 'default',
-          data: pushData,
-          channelId: 'default',
-        },
-      ])
+  if (auth.role !== 'cron') {
+    const hint = {
+      threadId: notification.threadId || body.threadId || null,
+    }
+    const allowed = await canNotifyMember(admin, auth.user, memberId, hint)
+    if (!allowed) {
+      return res.status(403).json({ ok: false, error: 'Yetkisiz' })
     }
   }
 
@@ -110,15 +174,7 @@ async function handleExpoPush(admin, body, res) {
     }
   }
 
-  if (expoResult?.ok === false) {
-    return res.status(502).json({ ok: false, error: expoResult.error, whatsapp: waResult })
-  }
-  return res.status(200).json({
-    ok: true,
-    sent: expoResult?.sent || 0,
-    skipped: expoResult?.skipped,
-    whatsapp: waResult,
-  })
+  return res.status(200).json({ ok: true, whatsapp: waResult })
 }
 
 async function handleWhatsAppEvent(admin, body, auth, res) {
@@ -130,9 +186,13 @@ async function handleWhatsAppEvent(admin, body, auth, res) {
     if (actor === 'member' && body.memberId && body.memberId !== userId) {
       return res.status(403).json({ ok: false, error: 'Yetkisiz' })
     }
+    if (actor === 'staff') {
+      const gate = await assertStaffActor(admin, auth, body.memberId || userId)
+      if (!gate.ok) return res.status(gate.status).json({ ok: false, error: gate.error })
+    }
     const result = await notifyAppointmentCancelled(admin, {
       memberId: body.memberId || userId,
-      staffId: body.staffId || null,
+      staffId: body.staffId || (actor === 'staff' ? userId : null),
       sessionType: body.sessionType,
       startsAt: body.startsAt,
       sessionId: body.sessionId,
@@ -146,9 +206,13 @@ async function handleWhatsAppEvent(admin, body, auth, res) {
     if (actor === 'member' && body.memberId && body.memberId !== userId) {
       return res.status(403).json({ ok: false, error: 'Yetkisiz' })
     }
+    if (actor === 'staff') {
+      const gate = await assertStaffActor(admin, auth, body.memberId || userId)
+      if (!gate.ok) return res.status(gate.status).json({ ok: false, error: gate.error })
+    }
     const result = await notifyAppointmentRescheduled(admin, {
       memberId: body.memberId || userId,
-      staffId: body.staffId || null,
+      staffId: body.staffId || (actor === 'staff' ? userId : null),
       sessionType: body.sessionType,
       oldStartsAt: body.oldStartsAt,
       newStartsAt: body.newStartsAt,
@@ -159,6 +223,11 @@ async function handleWhatsAppEvent(admin, body, auth, res) {
   }
 
   if (event === 'program_ready') {
+    const gate = await assertStaffActor(admin, auth, body.memberId)
+    if (!gate.ok) return res.status(gate.status).json({ ok: false, error: gate.error })
+    if (!body.memberId) {
+      return res.status(400).json({ ok: false, error: 'memberId gerekli' })
+    }
     const result = await notifyProgramReady(admin, {
       memberId: body.memberId,
       staffName: body.staffName,
@@ -174,7 +243,7 @@ async function handleWhatsAppEvent(admin, body, auth, res) {
     const { data: thread } = await admin.from('chat_threads').select('member_id, staff_id').eq('id', threadId).maybeSingle()
     if (!thread) return res.status(404).json({ ok: false, error: 'thread yok' })
     const isParticipant = thread.member_id === userId || thread.staff_id === userId
-    if (!isParticipant && auth.role !== 'cron') {
+    if (!isParticipant && auth.role !== 'cron' && !(await isAdminUser(admin, auth.user))) {
       return res.status(403).json({ ok: false, error: 'Yetkisiz' })
     }
     const result = await notifyNewChatMessage(admin, {
@@ -260,14 +329,24 @@ export default async function handler(req, res) {
     if (!auth.ok) {
       return res.status(auth.status).json({ ok: false, error: auth.error })
     }
+    const rl = await enforceRateLimit({
+      req,
+      prefix: 'notify-wa-event',
+      limit: 60,
+      windowMs: 60 * 60 * 1000,
+      extraKey: auth.user.id,
+    })
+    applyRateLimitHeaders(res, rl)
+    if (!rl.ok) {
+      return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
+    }
     return handleWhatsAppEvent(admin, body, auth, res)
   }
 
-  // Expo path (legacy + mobile)
   if (!body.memberId || !body.notification) {
     return res.status(410).json({
       ok: false,
-      error: 'Formlar /api/contact; push için memberId + notification; WA için action=whatsapp-event.',
+      error: 'Formlar /api/contact; bildirim için memberId + notification; WA için action=whatsapp-event.',
     })
   }
 
@@ -276,8 +355,20 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ ok: false, error: auth.error })
   }
 
+  const rl = await enforceRateLimit({
+    req,
+    prefix: 'notify-outbound',
+    limit: 120,
+    windowMs: 60 * 60 * 1000,
+    extraKey: auth.user.id,
+  })
+  applyRateLimitHeaders(res, rl)
+  if (!rl.ok) {
+    return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
+  }
+
   try {
-    return await handleExpoPush(admin, body, res)
+    return await handleMemberOutbound(admin, body, auth, res)
   } catch (err) {
     return res.status(500).json({ ok: false, error: err?.message || 'Notify hatası' })
   }

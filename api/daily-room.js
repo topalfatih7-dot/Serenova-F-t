@@ -5,6 +5,7 @@
  */
 
 import { setCorsHeaders, handleOptions, requireAuth, getAdminEmail } from './_guards.js'
+import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
 import { findSessionContext, resolveCaller } from './_sessionAttendance.js'
 import {
@@ -130,6 +131,18 @@ export default async function handler(req, res) {
   const auth = await requireAuth(req)
   if (!auth.ok) {
     return res.status(auth.status).json({ ok: false, error: auth.error })
+  }
+
+  const rl = await enforceRateLimit({
+    req,
+    prefix: 'daily-room',
+    limit: 60,
+    windowMs: 60 * 60 * 1000,
+    extraKey: auth.user.id,
+  })
+  applyRateLimitHeaders(res, rl)
+  if (!rl.ok) {
+    return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.', code: 'rate_limit' })
   }
 
   if (!process.env.DAILY_API_KEY) {

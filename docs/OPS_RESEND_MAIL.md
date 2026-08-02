@@ -94,7 +94,7 @@ URL Configuration:
 
 ```bash
 # Yerel .env.local yüklü olmalı
-node scripts/mail-smoke.mjs --to=senin@gmail.com
+Resend Dashboard → Logs / veya kendi hesabına test e-posta gönderimi
 ```
 
 Beklenen: Resend API 200 + gelen kutuda (spam’e bak) test maili.
@@ -112,7 +112,7 @@ Personel: Admin → Başvurular → Onayla → başvurana şifreli mail; Reddet 
 - [x] Domain `yeniform.com` verified (DKIM/SPF/MX subdomain)
 - [x] Supabase Custom SMTP → Resend (auth recover mailleri Resend log’da görünüyor)
 - [ ] Recovery + Magic Link şablonları Dashboard’da (Türkçe + TokenHash) ← **senin yapman gereken**
-- [x] `node scripts/mail-smoke.mjs` OK (info@yeniform.com)
+- [x] Resend production gönderim doğrulandı (info@yeniform.com)
 - [ ] Forgot-password link tıklama (şablon güncellendikten sonra)
 - [ ] Staff approve/reject mail OK (Admin panelden canlı test)
 

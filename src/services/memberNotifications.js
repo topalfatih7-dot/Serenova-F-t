@@ -3,7 +3,7 @@ import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
 
-/** Fire-and-forget Expo Push + WhatsApp (mobile / Meta). */
+/** Fire-and-forget WhatsApp outbound (Meta Cloud API). */
 async function dispatchOutbound(memberId, notification, extra = {}) {
   try {
     const headers = await getApiAuthHeaders()

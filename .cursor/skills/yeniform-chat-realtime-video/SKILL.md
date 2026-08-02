@@ -2,8 +2,9 @@
 name: yeniform-chat-realtime-video
 description: >-
   Handles Yeni Form chat systems, Supabase realtime, Daily.co video calls, and
-  push notifications. Use when working on mesajlar, chat, realtime, Daily,
-  video görüşme, unread badge, collab messages, admin staff chat, or push.
+  in-app / browser / WhatsApp notifications. Use when working on mesajlar, chat,
+  realtime, Daily, video görüşme, unread badge, collab messages, admin staff chat,
+  or push (browser).
 ---
 
 # Yeni Form Chat, Realtime & Video
@@ -19,18 +20,18 @@ RLS: member own threads; `staff_manages_member`; admin. Realtime via `useRealtim
 ## Daily video
 
 - Route: `/call/:sessionType/:sessionId` (member) or `/staff/call/...`
-- API: `POST /api/daily-room` `{ sessionType, sessionId, userName }` — üye/atanmış staff/admin; join penceresi sektör bazlı (koç 10/20, diyetisyen·doktor 15/30); `is_owner` yalnız staff/admin; token ~1h; room ~2h; max 4
-- Mobile: Daily React Native SDK; camera/mic permissions
+- API: `POST /api/daily-room` `{ sessionType, sessionId, userName }` — üye/atanmış staff/admin; join penceresi sektör bazlı; `is_owner` yalnız staff/admin
 
-## Push (mobile addition)
+## Notifications (web)
 
-Web uses in-app + browser notifications. Mobile must add Expo Push for chat/session/support; store tokens server-side (design in `docs/mobile/domains/realtime.md`).
+- In-app: `members.data.notifications` via `append_member_notification`
+- Browser: `pushNotifs` + Notification API (`browserNotifications.js`)
+- WhatsApp: `/api/application-notify` (`whatsapp-event` + member outbound fan-out)
 
 ## Checklist
 
 - [ ] Unread badges parity (memberNav / staffNav)
 - [ ] Presence only where web has it (admin active users)
-- [ ] Specs: `domains/chat-model.md`, `10`/flows F06–F07
 
 ## Related
 

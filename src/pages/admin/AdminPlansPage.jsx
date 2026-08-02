@@ -573,7 +573,6 @@ function ViewMode({ plan }) {
         <p>Koç: {e.coachMeetingsPerMonth}/ay · Diyetisyen: {e.dietitianMeetingsPerMonth}/ay · Doktor: {e.doctorMeetingsPerMonth}/ay{e.doctorSessionsTotal ? ` (+${e.doctorSessionsTotal} tek sefer)` : ''}</p>
         <p>
           Kalori: {e.manualCalorie ? 'manuel' : '—'}{e.photoCalorie ? ' + foto' : ''}
-          {' · '}Video: {e.fullVideo ? 'tam' : 'sınırlı'}
         </p>
       </div>
 
@@ -754,7 +753,6 @@ function EditForm({
           {[
             { key: 'manualCalorie', label: 'Manuel kalori' },
             { key: 'photoCalorie', label: 'Foto kalori' },
-            { key: 'fullVideo', label: 'Tam video' },
           ].map(({ key, label }) => (
             <label key={key} className="flex items-center gap-2 text-xs font-medium text-cream-800">
               <input

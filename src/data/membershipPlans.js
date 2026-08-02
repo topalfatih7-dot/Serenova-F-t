@@ -89,7 +89,6 @@ export function emptyEntitlements() {
     doctorSessionsTotal: 0,
     photoCalorie: false,
     manualCalorie: false,
-    fullVideo: false,
   }
 }
 
@@ -102,7 +101,6 @@ export function normalizeEntitlements(raw = {}) {
   e.doctorSessionsTotal = Math.max(0, Number(raw.doctorSessionsTotal) || 0)
   e.photoCalorie = Boolean(raw.photoCalorie)
   e.manualCalorie = Boolean(raw.manualCalorie)
-  e.fullVideo = Boolean(raw.fullVideo)
   return e
 }
 
@@ -211,24 +209,6 @@ export function getAdminAssignablePlanIds(plans = []) {
     ids.push(p.id)
   }
   return ids.length > 1 ? ids : [...ADMIN_ASSIGNABLE_PLAN_IDS]
-}
-
-/** @deprecated 48s deneme kaldırıldı — uyumluluk için stub. */
-export const FREE_TRIAL_MS = 0
-
-/** @deprecated 48s deneme kaldırıldı. */
-export function computeFreeTrialExpiresAt() {
-  return null
-}
-
-/** @deprecated 48s deneme kaldırıldı — her zaman false. */
-export function isFreeTrialActive() {
-  return false
-}
-
-/** @deprecated 48s deneme kaldırıldı — her zaman false. */
-export function isFreeTrialExpired() {
-  return false
 }
 
 /** Dashboard erişimi: kayıtlı üye (ücretsiz dahil) süresiz gezebilir. */
@@ -387,7 +367,7 @@ export const EKO_DIYET_PLAN = {
   sortOrder: 0,
   entitlements: {
     coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
-    photoCalorie: true, manualCalorie: true, fullVideo: false,
+    photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('eko_diyet'),
   features: [
@@ -417,7 +397,7 @@ export const DIYET_PLAN = {
   sortOrder: 1,
   entitlements: {
     coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
-    photoCalorie: true, manualCalorie: true, fullVideo: false,
+    photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('diyet'),
   features: [
@@ -448,7 +428,7 @@ export const EKO_SPOR_PLAN = {
   sortOrder: 2,
   entitlements: {
     coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
-    photoCalorie: true, manualCalorie: true, fullVideo: true,
+    photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('eko_spor'),
   features: [
@@ -477,7 +457,7 @@ export const SPOR_PLAN = {
   sortOrder: 3,
   entitlements: {
     coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
-    photoCalorie: true, manualCalorie: true, fullVideo: true,
+    photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('spor'),
   features: [
@@ -507,7 +487,7 @@ export const DOKTOR_PLAN = {
   sortOrder: 4,
   entitlements: {
     coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1,
-    photoCalorie: false, manualCalorie: false, fullVideo: false,
+    photoCalorie: false, manualCalorie: false,
   },
   pricingTiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
   features: [
@@ -532,7 +512,7 @@ export const VIP_PLAN = {
   sortOrder: 5,
   entitlements: {
     coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
-    photoCalorie: true, manualCalorie: true, fullVideo: true,
+    photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('vip'),
   features: [
@@ -553,11 +533,6 @@ export const VIP_PLAN = {
 }
 
 // Geriye dönük uyumluluk
-export const GUMUS_PLAN = EKO_PLAN
-export const ALTIN_PLAN = DOKTOR_PLAN
-export const PLATINUM_PLAN = VIP_PLAN
-export const PREMIUM_PLAN = VIP_PLAN
-export const KURUCU_PLAN = DOKTOR_PLAN
 
 export const ALL_PLANS = [EKO_DIYET_PLAN, DIYET_PLAN, EKO_SPOR_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
 
@@ -596,7 +571,6 @@ const PACKAGE_BY_PLAN = {
 }
 
 const LEGACY_PHOTO_CALORIE = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const LEGACY_FULL_VIDEO = new Set(['eko_spor', 'spor', 'vip', 'platinum', 'premium'])
 const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
 
 function planHasEntitlementFlags(plan) {
@@ -610,7 +584,6 @@ function planHasEntitlementFlags(plan) {
     || Number(e.doctorSessionsTotal) > 0
     || e.photoCalorie === true
     || e.manualCalorie === true
-    || e.fullVideo === true
   )
 }
 
@@ -657,11 +630,6 @@ export function hasManualCalorieAccess(membership) {
 }
 
 /** Tam video kütüphanesi erişimi */
-export function hasFullVideoAccess(membership) {
-  const plan = getPlanFromCatalog(membership)
-  if (plan && typeof plan.entitlements?.fullVideo === 'boolean') return plan.entitlements.fullVideo
-  return LEGACY_FULL_VIDEO.has(membership)
-}
 
 export const COACH_MAX_PER_MONTH = 6
 export const DIETITIAN_MAX_PER_MONTH = 6

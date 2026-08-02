@@ -1,13 +1,13 @@
 /**
  * Public form kapısı — Turnstile + rate limit + service-role DB yazımı + Telegram.
- * action: contact | staff_application | corporate_application | staff_doc_upload | staff_decision_notify
+ * action: contact | staff_application | staff_email_precheck | corporate_application | staff_doc_upload | staff_decision_notify
  *
  * Client asla notify secret göndermez; Telegram yalnızca bu route içinden tetiklenir.
  * staff_decision_notify: admin bearer + Resend mail (onay/red).
  */
 
 import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
-import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { verifyTurnstile } from './_turnstile.js'
 import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
 import {
@@ -160,6 +160,107 @@ async function handleContact(req, res, body) {
 
   notifyContactTelegram({ name, email, phone, subject, message }).catch(() => {})
   return res.status(200).json({ ok: true, id: data })
+}
+
+/** GoTrue admin — e-posta ile auth kullanıcısı (listUsers taraması yerine). */
+async function findAuthUserByEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized) return null
+  const base = getSupabaseUrl()
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  if (!base || !key) return null
+  try {
+    const url = `${base.replace(/\/$/, '')}/auth/v1/admin/users?email=${encodeURIComponent(normalized)}`
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${key}`,
+        apikey: key,
+      },
+    })
+    if (!resp.ok) return null
+    const payload = await resp.json().catch(() => ({}))
+    const users = Array.isArray(payload?.users) ? payload.users : []
+    const match = users.find((u) => (u.email || '').toLowerCase() === normalized)
+    if (match) return match
+    if (payload?.id && (payload.email || '').toLowerCase() === normalized) return payload
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+/**
+ * Adım 1 → 2 erken e-posta kontrolü (Turnstile/formSession + rate limit).
+ * Otoriter kontrol submit_staff_application RPC'de kalır.
+ */
+async function handleStaffEmailPrecheck(req, res, body) {
+  if (body.website || body.hp) {
+    return res.status(200).json({ ok: true, available: true })
+  }
+
+  const email = trimStr(body.email, 200).toLowerCase()
+  if (!email.includes('@') || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ ok: false, error: 'Geçerli e-posta gerekli' })
+  }
+
+  const guard = await guardBotAndRate(req, {
+    prefix: 'form-staff-precheck',
+    limit: 8,
+    email,
+    kind: 'staff',
+    allowFormSession: true,
+  })
+  if (!guard.ok) return applyGuardFailure(res, guard, req, 'staff_email_precheck')
+  applyRateLimitHeaders(res, guard.headers)
+
+  const admin = getSupabaseAdmin()
+
+  const [{ count: pendingCount }, { count: staffCount }, authUser] = await Promise.all([
+    admin
+      .from('staff_applications')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', email)
+      .eq('status', 'pending'),
+    admin
+      .from('staff')
+      .select('id', { count: 'exact', head: true })
+      .ilike('email', email),
+    findAuthUserByEmail(email),
+  ])
+
+  if ((pendingCount || 0) > 0) {
+    return res.status(409).json({
+      ok: false,
+      available: false,
+      code: 'PENDING_APPLICATION',
+      error: 'Bu e-posta ile bekleyen bir başvuru zaten var',
+      formSessionToken: guard.formSessionToken,
+    })
+  }
+  if ((staffCount || 0) > 0) {
+    return res.status(409).json({
+      ok: false,
+      available: false,
+      code: 'STAFF_EXISTS',
+      error: 'Bu e-posta kadromuzda kayıtlı',
+      formSessionToken: guard.formSessionToken,
+    })
+  }
+  if (authUser) {
+    return res.status(409).json({
+      ok: false,
+      available: false,
+      code: 'ACCOUNT_EXISTS',
+      error: 'Bu e-posta adresi mevcut bir hesaba ait. Lütfen farklı bir e-posta kullanın.',
+      formSessionToken: guard.formSessionToken,
+    })
+  }
+
+  return res.status(200).json({
+    ok: true,
+    available: true,
+    formSessionToken: guard.formSessionToken,
+  })
 }
 
 async function handleStaffApplication(req, res, body) {
@@ -425,6 +526,7 @@ export default async function handler(req, res) {
 
     const action = trimStr(body.action || 'contact', 40)
     if (action === 'contact') return handleContact(req, res, body)
+    if (action === 'staff_email_precheck') return handleStaffEmailPrecheck(req, res, body)
     if (action === 'staff_application') return handleStaffApplication(req, res, body)
     if (action === 'corporate_application') return handleCorporateApplication(req, res, body)
     if (action === 'staff_doc_upload') return handleStaffDocUpload(req, res, body)

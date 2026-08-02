@@ -8,14 +8,6 @@ export function computePremiumExpiresAt(startDate, durationMonths) {
   return d.toISOString().split('T')[0]
 }
 
-/** Geriye dönük: hafta bazlı hesaplama (eski kayıtlar) */
-export function computePremiumExpiresAtWeeks(startDate, durationWeeks) {
-  const start = startDate || today()
-  const d = new Date(start)
-  d.setDate(d.getDate() + (Number(durationWeeks) || 4) * 7)
-  return d.toISOString().split('T')[0]
-}
-
 export function getRemainingDays(expiresAt) {
   if (!expiresAt) return null
   const now = new Date()

@@ -25,7 +25,6 @@ const LEGACY_PACKAGE = {
 }
 
 const LEGACY_PHOTO = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const LEGACY_FULL_VIDEO = new Set(['eko_spor', 'spor', 'vip', 'platinum', 'premium'])
 const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
 const LEGACY_PAID = new Set([
   'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip',
@@ -43,7 +42,6 @@ export function normalizeEntitlements(raw = {}) {
     doctorSessionsTotal: Math.max(0, Number(raw.doctorSessionsTotal) || 0),
     photoCalorie: Boolean(raw.photoCalorie),
     manualCalorie: Boolean(raw.manualCalorie),
-    fullVideo: Boolean(raw.fullVideo),
   }
 }
 
@@ -152,10 +150,6 @@ export function planHasManualCalorie(planId, plan = null) {
   return planId !== 'free'
 }
 
-export function planHasFullVideo(planId, plan = null) {
-  if (plan && typeof plan.entitlements?.fullVideo === 'boolean') return plan.entitlements.fullVideo
-  return LEGACY_FULL_VIDEO.has(planId)
-}
 
 export function isLegacyPaidPlanId(id) {
   return LEGACY_PAID.has(id)

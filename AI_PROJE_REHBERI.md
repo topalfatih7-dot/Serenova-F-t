@@ -14,12 +14,12 @@
 2. Ücretli plan **yalnızca** Stripe webhook / admin — istemci `changeMemberPlan` ile açılmaz.
 3. Kayıt: ücretsiz → `members` hemen (`membership: 'free'`); ücretli → auth session Stripe öncesi, `members` webhook ile → header `hasRegisteredMember()` / `isFullyRegistered`.
 4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz.
-5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4 — ücretli **veya** aktif 48s ücretsiz deneme; denemede 1×). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` personelde yalnızca ücretli üyelikte.
+5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4 — ücretli üyelikte). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` personelde yalnızca ücretli üyelikte.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
-8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = ücretsiz kayıt + süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
+8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = ücretsiz kayıt + soft-lock + süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
-10. **Paketsiz üye:** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. **Yeni ücretsiz kayıt:** `freeTrialExpiresAt` (+48s) → aktifken dashboard + skorlar + `/health-test` + AI 1×; süre bitince dashboard da gate (analiz DB’de kalır). Süresi bitmiş ücretli → yeni deneme yok. Profil + `/membership` açık. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
+10. **Paketsiz üye (freemium):** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Dashboard + profil + `/membership` + `/health-test` açık. Süresi bitmiş ücretli → `free` fallback. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 
 ---
 
@@ -30,7 +30,7 @@
 | App | Vite 8 + React 19 + RR7 + Tailwind 4 · `src/main.jsx` → `App.jsx` |
 | State | `AppContext` dilimleri: `useAuth` / `useData` / `useActions` (+ `useApp`) |
 | DB/Auth/Storage | Supabase · `setup.sql` + `migrations/` |
-| Ödeme | Stripe Checkout **Subscription** (recurring) + one-shot doktor · Portal · webhook. RevenueCat/IAP **bu repoda yok**. |
+| Ödeme | Stripe Checkout **Subscription** (recurring) + one-shot doktor · Portal · webhook. |
 | Video | Daily.co · `api/daily-room.js` |
 | AI | Kalori GPT-4o · Staff sağlık GPT-5.4 · Blog/ipucu Gemini flash-lite |
 | Deploy | `vercel.json` SPA rewrite + cron + `sitemap.xml` → `api/sitemap` · build: `vite` + `prerender-seo.mjs` |
@@ -43,9 +43,9 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam (mülk + sitemap Başarılı). **Mobil / Expo ertelendi**. Denetim → `docs/ROADMAP_DENETIM.md`.
+**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
 
-**Mobil:** Expo app **bu repoda yok**. Handoff spec’ler henüz `docs/mobile/` altında yok — skill’ler hedef yapıyı tanımlar.
+**Mobil:** Bu repo yalnızca web. Native/Expo kod ve handoff docs kaldırıldı (2026-08-02).
 
 ---
 
@@ -65,7 +65,7 @@ Browser → Supabase Auth
 
 | ID | Satış | İnsan koç/diyet | Not |
 |----|-------|-----------------|-----|
-| `free` | hayır | — | Ücretsiz kayıt (+48s skor denemesi) + süre bitmiş fallback |
+| `free` | hayır | — | Ücretsiz kayıt + soft-lock + süre bitmiş fallback |
 | `eko` | hayır (eski) | — | Mevcut üyeler admin ile taşınır |
 | `eko_diyet` | evet | diyetisyen (1/ay) | Diyet’in ekonomik versiyonu |
 | `diyet` | evet | diyetisyen (2/ay) | |
@@ -74,7 +74,7 @@ Browser → Supabase Auth
 | `doktor` | evet | tek sefer doktor | |
 | `vip` | evet | koç+diyet | |
 
-Onboarding: tek adım ücretsiz kayıt (`free` + 48s deneme); ücretli paket panelden / `?plan=` sonrası PlanChangeView → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
+Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket panelden / `?plan=` sonrası PlanChangeView → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
 
 ---
 
@@ -85,7 +85,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + 48s deneme); ücretli paket pan
 | Endpoint | Model | Not |
 |----------|-------|-----|
 | `ai-food-text` / `ai-food-vision` | GPT-4o | plan guard · `food_dictionary` cache |
-| `ai-health-analysis` | GPT-5.4 (`OPENAI_HEALTH_MODEL`) | HT tamamlanınca 1×; ücretli veya 48s deneme; 8 skor + `staffBrief`; force yalnız ücretli; program/diyet yok |
+| `ai-health-analysis` | GPT-5.4 (`OPENAI_HEALTH_MODEL`) | HT tamamlanınca 1× (ücretli); 8 skor + `staffBrief`; force yalnız ücretli; program/diyet yok |
 | `ai-blog-generate` default | Gemini | cron 05:00 |
 | `?task=daily-tip` | Gemini | cron 04:00 · `site_content` |
 | `?task=membership-expiry` | — | cron 03:00 · `api/_membershipExpiry.js` |
@@ -93,10 +93,10 @@ Onboarding: tek adım ücretsiz kayıt (`free` + 48s deneme); ücretli paket pan
 ### 5.2 Sağlık testi + staff AI rapor
 
 - HT 6 kategori: `healthTestSections.js`
-- Tamamlanınca `useHealthAnalysisSync` → `/api/ai-health-analysis` → `members.data.healthAnalysis` (+ `healthScoreHistory`) — ücretli veya aktif 48s deneme
+- Tamamlanınca `useHealthAnalysisSync` → `/api/ai-health-analysis` → `members.data.healthAnalysis` (+ `healthScoreHistory`) — ücretli üyelik
 - Üye dashboard: `HealthScoreCard` — genel skor /100 + 8 boyut (+ trend); `staffBrief` **gösterilmez**
 - Koç/diyetisyen: `StaffHealthBrief` — skorlar her zaman (analiz varsa); brief paragrafları **yalnızca ücretli**; fingerprint stale → yeniden analiz yalnızca ücretli. HT/profil değişmediyse yeniden analiz **yok** (UI + hook + API 409)
-- Deneme: kayıtta `computeFreeTrialExpiresAt`; AI 1×; paket alınca aynı analiz; paket sonrası HT değişince personel rerun
+- Freemium: AI sağlık analizi ücretli üyelikte; HT değişince personel rerun (ücretli)
 - Programlar: personel (koç/diyetisyen) gönderir → `programs` tablosu
   - Koç: `/staff/clients/:id/program` — haftalık şablon (`scheduleType: 'weekly'`, `entry.day` + gün bazlı seans saati); aralık bugün→paket bitişi; müsait olmayan günlere yazılmaz
   - Diyetisyen: `/staff/clients/:id/list` — `NutritionProgramBuilder` (mantık aynı, tam sayfa UX)
@@ -161,13 +161,12 @@ Onboarding: tek adım ücretsiz kayıt (`free` + 48s deneme); ücretli paket pan
 | `npm run dev` / `dev:vercel` | Vite / local API |
 | `npm run build` | Vite + SEO prerender |
 | `npm run db:migrate` | Migration uygula |
-| `npm run test:ai` / `test:stripe` / `test:rls` | Smoke |
 
 ---
 
 ## 11. Son delta (2026-07-29)
 
-- **48s ücretsiz deneme:** yeni `free` kayıtta `freeTrialExpiresAt`; dashboard + skorlar + HT + AI 1×; süre bitince tam gate; brief personelde paket sonrası; süresi bitmiş ücretliye deneme yok.
+- **Freemium:** ücretsiz kayıt; ücretli özellikler paketle; süre bitince soft-lock.
 - Paket kataloğu: `eko_diyet` / `eko_spor` satışa açıldı (1299/2999/3999; ayda 1 görüşme).
 - Spor / Eko Spor: kan tahlili (doktor hakkı) kaldırıldı; Diyet / Eko Diyet / Vip’te kaldı.
 - Özellik satırı: “Yeniform Kişisel Sağlık Analizi” (diyet/spor/vip + eko’lar).

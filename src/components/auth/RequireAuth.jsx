@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { shouldSkipReturnUrl } from '../../utils/authRedirect'
+import LoadingScreen from '../ui/LoadingScreen'
 
 /**
  * Oturum ve rol kontrolü. Giriş yapmamış kullanıcıları login'e yönlendirir.
@@ -10,7 +11,7 @@ export default function RequireAuth({ role = null }) {
   const { isAuthenticated, isAdmin, isStaff, loading } = useApp()
   const location = useLocation()
 
-  if (loading) return null
+  if (loading) return <LoadingScreen />
 
   if (!isAuthenticated) {
     if (shouldSkipReturnUrl()) {

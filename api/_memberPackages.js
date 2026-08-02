@@ -50,18 +50,6 @@ export function isPaidMembership(planId) {
   return /^[a-z][a-z0-9_]*$/.test(planId)
 }
 
-/** @deprecated 48s deneme kaldırıldı — uyumluluk için stub. */
-export const FREE_TRIAL_MS = 0
-
-/** @deprecated 48s deneme kaldırıldı. */
-export function computeFreeTrialExpiresAt() {
-  return null
-}
-
-/** @deprecated 48s deneme kaldırıldı — her zaman false. */
-export function isFreeTrialActive() {
-  return false
-}
 
 export function countUsedDoctorSessions(member) {
   return (member?.doctorSessions || []).filter((s) =>

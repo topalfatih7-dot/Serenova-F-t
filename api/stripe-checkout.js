@@ -21,6 +21,7 @@ import {
 } from './_planEntitlements.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { normalizeEmailAddress } from './_email.js'
+import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 
 function getOrigin(req) {
   return (
@@ -151,6 +152,17 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
     const admin = getSupabaseAdmin()
+
+    const rl = await enforceRateLimit({
+      req,
+      prefix: 'stripe-checkout',
+      limit: 30,
+      windowMs: 60 * 60 * 1000,
+    })
+    applyRateLimitHeaders(res, rl)
+    if (!rl.ok) {
+      return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
+    }
 
     if (body.action === 'create-portal-session') {
       return await handlePortalSession(req, res, admin)

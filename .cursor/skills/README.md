@@ -6,16 +6,13 @@ Bu skill’ler **otomatik tetiklenir** (`disable-model-invocation` yok). Agent, 
 
 | İş türü | Skill |
 |---------|--------|
-| Her mobil / Expo / RN / docs/mobile işi | **yeniform-mobile-router** (önce) |
-| Spesifikasyon / handoff | yeniform-mobile-spec |
-| Expo uygulama kodu | yeniform-expo-app |
-| Paket / IAP / Stripe | yeniform-membership-payments |
+| Paket / Stripe / üyelik | yeniform-membership-payments |
 | Auth / onboarding | yeniform-auth-onboarding |
-| Chat / Daily / push | yeniform-chat-realtime-video |
+| Chat / Daily / bildirim | yeniform-chat-realtime-video |
 | Sağlık / takvim / program / kalori | yeniform-health-programs |
 | Staff / admin | yeniform-staff-admin |
 | Egzersiz videosu / signed URL | yeniform-media-exercises |
 
 Supabase şema/RLS: `.agents/skills/supabase*`.
 
-Mobil handoff: hedef dizin `docs/mobile/` (henüz repoda yok). Spec yazarken `yeniform-mobile-spec`; uygulama `yeniform-expo-app`. Web SoT: `src/` + `api/` + `AI_PROJE_REHBERI.md`.
+Bu repo **yalnızca web** (Vite + Vercel + Supabase). Native / Expo / IAP bu projede yok. SoT: `src/` + `api/` + `AI_PROJE_REHBERI.md`.

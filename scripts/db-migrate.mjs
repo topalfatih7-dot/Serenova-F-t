@@ -77,7 +77,7 @@ const ACTIVE_PLANS = [
   {
     id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage', icon: 'Salad',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -99,7 +99,7 @@ const ACTIVE_PLANS = [
   {
     id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald', icon: 'Apple',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: false },
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -121,7 +121,7 @@ const ACTIVE_PLANS = [
   {
     id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sky', icon: 'Footprints',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
+    entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -142,7 +142,7 @@ const ACTIVE_PLANS = [
   {
     id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue', icon: 'Dumbbell',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -163,7 +163,7 @@ const ACTIVE_PLANS = [
   {
     id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'violet', icon: 'Stethoscope',
     billing_type: 'one_time',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, photoCalorie: false, manualCalorie: false, fullVideo: false },
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, photoCalorie: false, manualCalorie: false },
     features: [
       { text: '1 Online Doktor Görüşmesi', included: true },
       { text: 'Görüntülü Görüşme', included: true },
@@ -175,7 +175,7 @@ const ACTIVE_PLANS = [
   {
     id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'gold', icon: 'Crown',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true, fullVideo: true },
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },

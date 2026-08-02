@@ -2,15 +2,17 @@
 
 ## Quotas (seed / `plans.entitlements`)
 
-| Plan | Coach/mo | Dietitian/mo | Doctor | photo | manual | video |
-|------|----------|--------------|--------|-------|--------|-------|
-| eko_diyet | 0 | 1 | 0 | yes | yes | no |
-| diyet | 0 | 2 | 0 | yes | yes | no |
-| eko_spor | 1 | 0 | 0 | yes | yes | yes |
-| spor | 2 | 0 | 0 | yes | yes | yes |
-| doktor | 0 | 0 | `doctorSessionsTotal: 1`, `billing_type: one_time` | no | no | no |
-| vip | 2 | 2 | 0 | yes | yes | yes |
-| eko (legacy) | 0 | 0 | 0 | no | yes | no |
+| Plan | Coach/mo | Dietitian/mo | Doctor | photo | manual |
+|------|----------|--------------|--------|-------|--------|
+| eko_diyet | 0 | 1 | 0 | yes | yes |
+| diyet | 0 | 2 | 0 | yes | yes |
+| eko_spor | 1 | 0 | 0 | yes | yes |
+| spor | 2 | 0 | 0 | yes | yes |
+| doktor | 0 | 0 | `doctorSessionsTotal: 1`, `billing_type: one_time` | no | no |
+| vip | 2 | 2 | 0 | yes | yes |
+| eko (legacy) | 0 | 0 | 0 | no | yes |
+
+Video erişimi program-scoped (üyenin kendi programındaki hareketler); ayrı video entitlement yok.
 
 Doktor görüşmesi yalnızca `doktor` paketinde (ek paket / tek seferlik). Abonelik planlarında `doctorMeetingsPerMonth: 0`.
 Marketing: Eko Diyet / Diyet / VIP feature listesinde “kan tahlili analizi” yazısı olabilir; bu doktor randevu hakkı vermez.
@@ -49,8 +51,3 @@ Admin may create additional plan IDs with custom entitlements.
 ## DB columns (`public.plans`)
 
 `emoji`, `is_sellable`, `billing_type` (`recurring`|`one_time`), `entitlements` jsonb — migration `20260729_plans_entitlements.sql`
-
-## IAP SKU naming (convention for docs)
-
-`yf_{plan}_{months}m` e.g. `yf_vip_6m`, `yf_eko_diyet_1m`, `yf_doktor_once`  
-(New admin plan IDs need matching store products separately — not auto-created.)

@@ -2,7 +2,6 @@ import {
   DEFAULT_PACKAGE,
   getDefaultPackageForPlan,
   getPlanFromCatalog,
-  hasFullVideoAccess,
   hasManualCalorieAccess,
   hasPhotoCalorieAccess,
   isPaidMembership,
@@ -387,8 +386,4 @@ export function memberHasPhotoCalorieAccess(member) {
 
 export function memberHasManualCalorieAccess(member) {
   return activePlanIds(member).some((id) => hasManualCalorieAccess(id))
-}
-
-export function memberHasFullVideoAccess(member) {
-  return activePlanIds(member).some((id) => hasFullVideoAccess(id))
 }

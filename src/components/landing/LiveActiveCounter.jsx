@@ -5,7 +5,6 @@ import { subscribeOnlineStats } from '../../services/presenceService'
 import {
   getDisplayMemberCount,
   getDisplayOnlineCount,
-  pickSessionOnlineBoost,
 } from '../../utils/displayPlatformStats'
 
 function AnimatedNumber({ value }) {
@@ -34,7 +33,6 @@ function AnimatedNumber({ value }) {
 
 export default function LiveActiveCounter({ className = '' }) {
   const [stats, setStats] = useState({ onlineNow: 0, totalMembers: 0 })
-  const [sessionBoost] = useState(pickSessionOnlineBoost)
 
   useEffect(() => subscribeOnlineStats((s) => {
     setStats({
@@ -44,7 +42,7 @@ export default function LiveActiveCounter({ className = '' }) {
   }), [])
 
   const members = getDisplayMemberCount(stats.totalMembers)
-  const onlineDisplay = getDisplayOnlineCount(stats.onlineNow, sessionBoost)
+  const onlineDisplay = getDisplayOnlineCount(stats.onlineNow)
 
   return (
     <section className={`relative overflow-hidden border-y border-brand-100/80 bg-gradient-to-r from-brand-50/90 via-white to-sage-50/90 ${className}`}>

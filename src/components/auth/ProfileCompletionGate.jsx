@@ -1,13 +1,14 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { hasRegisteredMember, isSocialAuthUser } from '../../utils/memberProfile'
+import LoadingScreen from '../ui/LoadingScreen'
 
 /** Kayıt tamamlanmamış üyeleri onboarding'e yönlendirir. */
 export default function ProfileCompletionGate() {
   const { isAdmin, isStaff, user, authUser, loading } = useApp()
   const location = useLocation()
 
-  if (loading) return null
+  if (loading) return <LoadingScreen />
   if (isAdmin || isStaff) return <Outlet />
 
   const onOnboarding = location.pathname === '/onboarding'
