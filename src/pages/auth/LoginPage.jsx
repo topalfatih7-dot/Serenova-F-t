@@ -115,8 +115,8 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-[calc(100svh-64px)] overflow-hidden">
-      {/* Sol panel — marka */}
-      <div className="relative hidden w-[42%] overflow-hidden md:flex md:flex-col md:justify-between lg:w-[45%]">
+      {/* Sol panel — marka (yalnız laptop+; tablet tek kolon) */}
+      <div className="relative hidden w-[40%] overflow-hidden lg:flex lg:flex-col lg:justify-between xl:w-[45%]">
         <video
           autoPlay
           muted
@@ -137,59 +137,60 @@ export default function LoginPage() {
           className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-brand-400/30 blur-3xl"
         />
 
-        <div className="relative z-10 p-8 md:p-10 xl:p-14">
+        <div className="relative z-10 p-8 xl:p-14">
           <BrandLogo size="lg" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="mt-16 max-w-md"
+            className="mt-10 max-w-md xl:mt-16"
           >
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/90 backdrop-blur">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur xl:px-4 xl:text-xs">
               <Sparkles className="h-3.5 w-3.5 text-gold-300" />
               {BRAND.tagline}
             </span>
-            <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-white xl:text-[2.75rem]">
+            <h1 className="mt-5 font-display text-3xl font-bold leading-tight text-white xl:mt-6 xl:text-[2.75rem]">
               Dönüşüm yolculuğunuza{' '}
               <span className="bg-gradient-to-r from-brand-200 to-sage-200 bg-clip-text text-transparent">
                 kaldığınız yerden
               </span>{' '}
               devam edin
             </h1>
-            <p className="mt-4 text-base leading-relaxed text-white/70">
+            <p className="mt-3 text-sm leading-relaxed text-white/70 xl:mt-4 xl:text-base">
               Programlarınız, randevularınız ve ilerlemeniz tek panelde sizi bekliyor.
             </p>
           </motion.div>
         </div>
 
-        <div className="relative z-10 space-y-3 p-10 xl:p-14">
+        <div className="relative z-10 space-y-2.5 p-8 xl:space-y-3 xl:p-14">
           {FEATURES.map(({ icon: Icon, text }, i) => (
             <motion.div
               key={text}
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 + i * 0.1 }}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-3.5 py-2.5 backdrop-blur-md xl:px-4 xl:py-3"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="text-sm font-medium text-white/90">{text}</span>
+              <span className="text-sm font-medium leading-snug text-white/90">{text}</span>
             </motion.div>
           ))}
         </div>
       </div>
 
       {/* Sağ panel — form */}
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-4 py-10 sm:px-8">
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-5 py-10 sm:px-8 md:px-12 lg:px-8 xl:px-10">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[440px]"
         >
           <AuthFormShell>
           <AuthFormCard className="bg-white/90 shadow-brand-900/[0.06]">
-            <h2 className="font-display text-[1.75rem] font-bold leading-tight text-cream-900">Tekrar hoş geldiniz</h2>
+            <h2 className="font-display text-2xl font-bold leading-tight text-cream-900 sm:text-[1.75rem]">Tekrar hoş geldiniz</h2>
             <p className="mt-2 text-base text-cream-800/60">Hesabınıza giriş yapın</p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
