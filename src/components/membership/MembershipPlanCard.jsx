@@ -66,7 +66,7 @@ export default function MembershipPlanCard({
             : isOneTime
               ? `border-teal-200/80 shadow-md ${theme.glow} hover:border-teal-300 hover:shadow-lg`
               : 'border-cream-200/80 hover:border-sage-200 hover:shadow-md'
-      } ${compact ? 'min-h-[17.5rem]' : 'min-h-[22rem]'}`}
+      } ${compact ? 'min-h-[15rem] sm:min-h-[17.5rem]' : 'min-h-[22rem]'}`}
     >
       {isRecommended && (
         <motion.span

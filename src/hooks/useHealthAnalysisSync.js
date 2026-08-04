@@ -102,11 +102,9 @@ export function useHealthAnalysisSync() {
         ? 'detailed'
         : (stale && detailedComplete ? 'detailed' : 'core'))
 
-    if (targetStage === 'core' && !force && !needsInitialHealthAnalysis(analysis) && !stale) {
-      // Çekirdek analiz var; detaylı gerekmiyorsa çık
-      if (!needsDetailedHealthAnalysis(analysis, detailedComplete)) {
-        return analysis
-      }
+    // Skorlar varken core yeniden koşma yok — 2. analiz yalnızca detailedComplete + auto-kick
+    if (targetStage === 'core' && !force && !needsInitialHealthAnalysis(analysis)) {
+      return analysis
     }
     if (
       targetStage === 'detailed'

@@ -126,13 +126,13 @@ function DimensionCard({ scoreKey, score }) {
   const meta = HEALTH_SCORE_META[scoreKey]
   const tone = scoreTone(score ?? 0)
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-cream-100 bg-white/90 p-3 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-cream-900">
-          <span aria-hidden className="shrink-0 text-base leading-none">{meta.emoji}</span>
-          <span className="truncate">{meta.label}</span>
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-cream-100 bg-white/90 p-2.5 shadow-sm sm:p-3">
+      <div className="flex min-w-0 items-start justify-between gap-1.5">
+        <span className="flex min-w-0 items-start gap-1 text-[11px] font-semibold leading-snug text-cream-900 sm:items-center sm:gap-1.5 sm:text-xs">
+          <span aria-hidden className="shrink-0 text-sm leading-none sm:text-base">{meta.emoji}</span>
+          <span className="min-w-0 break-words">{meta.label}</span>
         </span>
-        <span className={`shrink-0 text-sm font-bold ${tone.text}`}>{score ?? '—'}</span>
+        <span className={`shrink-0 text-sm font-bold tabular-nums ${tone.text}`}>{score ?? '—'}</span>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-cream-100">
         <motion.div
@@ -216,13 +216,11 @@ export default function HealthScoreCard({
           )}
           {!scoresOnly && analysis?.summary ? (
             <p className="mt-2 text-sm leading-relaxed text-cream-800/65 break-words">{analysis.summary}</p>
-          ) : (
+          ) : !scoresOnly ? (
             <p className="mt-2 text-sm text-cream-800/55">
-              {scoresOnly
-                ? 'Skorlarınız hazır. Uzman raporu paketle açılır.'
-                : 'Sağlık analizi cevaplarınıza göre 8 boyutta değerlendirildiniz.'}
+              Sağlık analizi cevaplarınıza göre 8 boyutta değerlendirildiniz.
             </p>
-          )}
+          ) : null}
           {error && (
             <p className="mt-2 text-xs text-amber-700">{error}</p>
           )}

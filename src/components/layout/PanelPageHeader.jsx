@@ -107,7 +107,7 @@ export function PanelFilterBar({ value, onChange, options, accent = 'brand' }) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(id)}
-            className={`panel-filter-tab ${active ? 'panel-filter-tab-active' : ''}`}
+            className={`panel-filter-tab min-w-0 ${active ? 'panel-filter-tab-active' : ''}`}
           >
             {Icon ? <Icon className="panel-filter-tab-icon" strokeWidth={2.25} /> : null}
             <span className="panel-filter-tab-label">{label}</span>

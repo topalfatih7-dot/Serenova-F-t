@@ -9,7 +9,6 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import {
   getHealthTestLockState,
-  isHealthAnalysisStale,
   needsInitialHealthAnalysis,
 } from '../services/healthScoreAnalysis'
 import {
@@ -47,10 +46,6 @@ export default function HealthTestPage() {
     detailedComplete,
     optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
   })
-  const analysisStale = Boolean(
-    analysisReady && user && isHealthAnalysisStale(analysis, user),
-  )
-
   const handleStartCoreAnalysis = useCallback(async () => {
     try {
       const next = await runSync({ stage: 'core' })
@@ -118,7 +113,7 @@ export default function HealthTestPage() {
     subtitle = 'Analize başlamadan önce onayları işaretleyin'
   } else if (!coreComplete) {
     subtitle = 'Genel Sağlık Testini tamamlayın — ardından analizi başlatın'
-  } else if (!analysisReady || analysisStale) {
+  } else if (!analysisReady) {
     subtitle = 'Test tamamlandı — skorlarınız için Analizi Başlat’a tıklayın'
   } else if (lockState.canRetake && coreComplete) {
     subtitle = '14 gün doldu — testi yeniden çözerek skorlarınızı güncelleyebilirsiniz'

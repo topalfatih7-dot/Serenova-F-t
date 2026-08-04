@@ -10,7 +10,6 @@ import HealthScoreCard from '../dashboard/HealthScoreCard'
 import MemberHealthBrief from '../dashboard/MemberHealthBrief'
 import {
   getHealthTestLockState,
-  isHealthAnalysisStale,
   resolveMemberBrief,
 } from '../../services/healthScoreAnalysis'
 import {
@@ -94,9 +93,6 @@ export default function HealthTestHub({
     detailedComplete,
     optionalCompletedAt: healthTest?.optionalCompletedAt || null,
   })
-  const analysisStale = Boolean(
-    analysisReady && profile && isHealthAnalysisStale(analysis, profile),
-  )
   /** Süre dolmuş ama henüz sıfırlanmamış cevaplar → retake butonu */
   const awaitingRetake = Boolean(lockState.canRetake && coreComplete && analysisReady)
 
@@ -207,7 +203,9 @@ export default function HealthTestHub({
     )
   }
 
-  const awaitingCoreAnalysis = coreComplete && (!analysisReady || analysisStale)
+  // Skorlar varken opsiyonel cevap değişimi (stale) core yeniden analiz istemez —
+  // 2. analiz yalnızca tüm opsiyoneller bitince otomatik çalışır.
+  const awaitingCoreAnalysis = coreComplete && !analysisReady
   const showOptionalGrid = !lockState.fullLock && !awaitingRetake
   const lockedUntilLabel = formatLockedUntil(lockState.lockedUntil)
 
@@ -225,16 +223,11 @@ export default function HealthTestHub({
         <p className={`mt-1 text-xs break-words ${awaitingCoreAnalysis ? 'text-cream-800/75' : 'text-sage-800/75'}`}>
           {analysisLoading
             ? 'Analiziniz hazırlanıyor…'
-            : analysisStale && analysisReady
-              ? 'Cevaplarınız güncellendi. Yeni skorlarınız için analizi başlatın.'
-              : analysisReady
-                ? (analysisStage === 'detailed' || detailedComplete
-                  ? 'Detaylı sağlık analiziniz hazır.'
-                  : 'Temel skorlarınız hazır. İsterseniz aşağıdaki opsiyonel kategorileri tamamlayarak daha detaylı analiz alın.')
-                : 'Cevaplarınız kaydedildi. Skorlarınızı görmek için analizi başlatın.'}
-          {scoresOnly && analysisReady && !analysisStale
-            ? ' Uzman raporu paket seçince açılır.'
-            : ''}
+            : analysisReady
+              ? (analysisStage === 'detailed' || detailedComplete
+                ? 'Detaylı sağlık analiziniz hazır.'
+                : 'Temel skorlarınız hazır. İsterseniz aşağıdaki opsiyonel kategorileri tamamlayarak daha detaylı analiz alın.')
+              : 'Cevaplarınız kaydedildi. Skorlarınızı görmek için analizi başlatın.'}
         </p>
         {awaitingCoreAnalysis && (
           <button
@@ -247,7 +240,7 @@ export default function HealthTestHub({
             {analysisLoading ? 'Analiz hazırlanıyor…' : 'Analizi Başlat'}
           </button>
         )}
-        {scoresOnly && analysisReady && !analysisStale && (
+        {scoresOnly && analysisReady && (
           <Link
             to="/plans"
             className="mt-2 inline-flex text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
