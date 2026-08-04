@@ -1,7 +1,7 @@
 ---
 name: yeniform-auth-onboarding
 description: >-
-  Handles Yeni Form auth, login, signup, Google OAuth, password reset,
+  Handles Yeni Form auth, login, signup, Google/Facebook OAuth, password reset,
   ProfileCompletionGate, and onboarding. Use when working on giriş, kayıt,
   onboarding, OAuth, şifre sıfırlama, Turnstile, auth gate, or session unlock.
 ---
@@ -30,7 +30,8 @@ description: >-
 ## Checklist
 
 - [ ] Auth callback + reset password
-- [ ] Google OAuth (web)
+- [x] Google OAuth (web)
+- [ ] Facebook OAuth (web) — kod hazır; Meta + Supabase Providers: `docs/OPS_FACEBOOK_OAUTH.md`
 - [ ] Disposable email + rate limits honored via API
 
 ## Related

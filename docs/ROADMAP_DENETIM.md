@@ -1,7 +1,7 @@
 ﻿# Yeni Form — Denetim Yol Haritası
 
 > **Güncelleme:** 2026-08-02 · **Durum:** Web-only (mobil/Expo bu repoda yok); freemium SoT  
-> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · Google OAuth marka: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
+> Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · Google OAuth marka: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md) · Facebook: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
 > Mobil: bu repo yalnızca web; Expo handoff kaldırıldı.
 
 ---
@@ -11,6 +11,7 @@
 - [ ] **Stripe webhook event’leri** — Dashboard’a `invoice.paid` + `customer.subscription.deleted` ekle (kod hazır; eklenmezse abonelik yenilenmez). Adım adım: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
 - [x] **Resend e-posta (kod + env)** — API key, domain verified, Vercel env, `staff_decision_notify` production’da. Kalan manuel: Supabase şablon subject/HTML. [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md)  
 - [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
+- [ ] **Facebook OAuth** — Meta app (Login) + Supabase Providers; Development smoke → Live. Kod hazır. Adım adım: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
 - [ ] **WhatsApp Cloud API** — Meta şablon onayı + env + webhook. Kod hazır. Adım adım: [`OPS_WHATSAPP.md`](OPS_WHATSAPP.md)  
 - [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)
 

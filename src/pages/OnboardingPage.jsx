@@ -312,8 +312,11 @@ export default function OnboardingPage() {
       return
     }
     clearDraft()
+    const oauthMethod = authUser?.app_metadata?.provider
+      || authUser?.identities?.find((i) => i.provider && i.provider !== 'email')?.provider
+      || 'social'
     trackGa4Event('sign_up', {
-      method: isOAuthFlow ? 'google' : 'email',
+      method: isOAuthFlow ? oauthMethod : 'email',
       plan: 'free',
       trial: true,
     })

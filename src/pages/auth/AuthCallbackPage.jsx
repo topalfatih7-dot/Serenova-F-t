@@ -258,7 +258,7 @@ export default function AuthCallbackPage() {
   const copy = {
     loading: isOAuthCallback ? {
       title: 'Giriş tamamlanıyor…',
-      description: 'Google hesabınız doğrulandı, oturumunuz açılıyor.',
+      description: 'Sosyal hesabınız doğrulandı, oturumunuz açılıyor.',
     } : {
       title: 'E-postanız doğrulanıyor…',
       description: 'Lütfen bekleyin, işleminiz güvenli bir şekilde tamamlanıyor.',
@@ -274,7 +274,7 @@ export default function AuthCallbackPage() {
     },
     error: isOAuthCallback ? {
       title: 'Giriş tamamlanamadı',
-      description: 'Google oturumu kurulamadı. Lütfen tekrar deneyin veya e-posta ile giriş yapın.',
+      description: 'Sosyal oturum kurulamadı. Lütfen tekrar deneyin veya e-posta ile giriş yapın.',
     } : {
       title: 'Bağlantı doğrulanamadı',
       description: 'Bağlantının süresi dolmuş veya zaten kullanılmış olabilir. Tekrar giriş yapıp yeni bağlantı isteyin.',

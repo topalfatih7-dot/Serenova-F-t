@@ -10,7 +10,8 @@
 - `src/pages/OnboardingPage.jsx`
 - `src/components/auth/RequireAuth.jsx`, `ProfileCompletionGate.jsx`
 - `src/services/supabaseDb.js` — `login`, `ensureAuthForRegistration`, `register*`, `completeOAuthMember`
-- `src/services/oauthAuth.js` — Google only on web
+- `src/services/oauthAuth.js` — Google + Facebook on web (`signInWithSocial`)
+- Ops: `docs/OPS_GOOGLE_OAUTH.md`, `docs/OPS_FACEBOOK_OAUTH.md`
 - `src/utils/memberProfile.js` — `hasRegisteredMember`, `isSocialAuthUser`
 
 ## Staff force password

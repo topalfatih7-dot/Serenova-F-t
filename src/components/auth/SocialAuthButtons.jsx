@@ -15,11 +15,29 @@ function GoogleIcon() {
   )
 }
 
+function FacebookIcon() {
+  return (
+    <svg className="h-[22px] w-[22px] shrink-0" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="#1877F2"
+        d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"
+      />
+    </svg>
+  )
+}
+
 const BUTTONS = [
   {
     id: 'google',
     label: 'Google ile devam et',
     Icon: GoogleIcon,
+    className: 'border-cream-300 bg-white text-cream-900 hover:bg-cream-50',
+    iconWrap: 'bg-transparent',
+  },
+  {
+    id: 'facebook',
+    label: 'Facebook ile devam et',
+    Icon: FacebookIcon,
     className: 'border-cream-300 bg-white text-cream-900 hover:bg-cream-50',
     iconWrap: 'bg-transparent',
   },
@@ -113,7 +131,7 @@ export default function SocialAuthButtons({
       {buttons}
       {isBottom && !compact && (
         <p className="text-center text-xs leading-relaxed text-cream-800/50">
-          Google hesabınızla şifresiz devam edin.
+          Google veya Facebook hesabınızla şifresiz devam edin.
         </p>
       )}
     </div>

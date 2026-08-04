@@ -2,7 +2,7 @@
 
 > **Amaç:** Az token ile doğru bağlam. Detay için kod / `.cursor/skills/yeniform-*` / `docs/*`.  
 > **Canlı:** https://www.yeniform.com · Vercel `serenova-f-t` · Supabase `rvzksmyhsgxgrxgeabmi`  
-> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-07-29
+> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-04
 
 **AI okuma sırası:** §0 kurallar → §2 durum → ilgili skill → kod. Tam dosya envanteri / eski changelog **yok** (git history).
 
@@ -39,11 +39,11 @@
 
 ## 2. Durum (2026-07-29)
 
-**Canlı / tamam:** Stripe Checkout+webhook · Google OAuth · HT hub `/health-test` · kalori AI · **sağlık skoru (üye dashboard) + staff brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
+**Canlı / tamam:** Stripe Checkout+webhook · Google + Facebook OAuth · HT hub `/health-test` · kalori AI · **sağlık skoru (üye dashboard) + staff brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
+**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Bu repo yalnızca web. Native/Expo kod ve handoff docs kaldırıldı (2026-08-02).
 
@@ -139,8 +139,12 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 | Stripe | `api/stripe-*.js`, `api/_stripe.js` |
 | Şema | `supabase/setup.sql`, `supabase/migrations/` |
 | Env şablon | `.env.example` |
+| Sosyal OAuth | `src/services/oauthAuth.js` · UI `SocialAuthButtons` |
+| OAuth ops | [`docs/OPS_GOOGLE_OAUTH.md`](docs/OPS_GOOGLE_OAUTH.md) · [`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md) |
 
-**Cursor skills:** `auth-onboarding` · `health-programs` · `media-exercises` · `membership-payments` · `chat-realtime-video` · `staff-admin` · `mobile-*` (spec only).
+Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret Dashboard Providers’da (env’de yok). Yeni üye → `/onboarding?oauth=1` → `completeOAuthMember`.
+
+**Cursor skills:** `auth-onboarding` · `health-programs` · `media-exercises` · `membership-payments` · `chat-realtime-video` · `staff-admin`.
 
 ---
 

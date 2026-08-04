@@ -2,10 +2,11 @@ import { supabase } from './supabaseClient'
 import { setRememberMe } from './authStorage'
 import { syncAutoRefresh } from './supabaseClient'
 
-const PROVIDERS = ['google']
+const PROVIDERS = ['google', 'facebook']
 
 const PROVIDER_LABELS = {
   google: 'Google',
+  facebook: 'Facebook',
 }
 
 /** Site URL köküne ?code= düştüğünde flow kaybolmasın diye. */
@@ -93,7 +94,7 @@ export function providerNotEnabledMessage(provider) {
 }
 
 /**
- * @param {'google'} provider
+ * @param {'google'|'facebook'} provider
  * @param {{ flow?: 'login'|'signup', plan?: string, remember?: boolean }} opts
  */
 export async function signInWithSocial(provider, opts = {}) {
@@ -121,6 +122,9 @@ export async function signInWithSocial(provider, opts = {}) {
   const options = { redirectTo }
   if (provider === 'google') {
     options.queryParams = { access_type: 'offline', prompt: 'select_account' }
+  }
+  if (provider === 'facebook') {
+    options.scopes = 'email,public_profile'
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({ provider, options })
