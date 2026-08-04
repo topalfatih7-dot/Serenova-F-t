@@ -48,6 +48,10 @@ export const BRAND = {
     mark: '/brand-mark.png',
     /** Sosyal paylaşım / Open Graph — 1200×630 */
     ogImage: '/og-image.png',
+    /** Google Auth Platform App logo — kare PNG */
+    googleOAuthLogo: '/google-oauth-logo.png',
+    /** Meta App Icon (Facebook Login ekranı) — 1024×1024 PNG */
+    facebookOAuthLogo: '/facebook-oauth-logo.png',
     /** Orijinal kaynak — değiştirin, sonra npm run og:image */
     logoSource: '/brand-logo-alt.png',
   },
