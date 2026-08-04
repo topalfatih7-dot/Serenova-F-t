@@ -18,12 +18,13 @@ description: >-
 - **1. Aşama — Genel Sağlık Testi** (`src/data/coreHealthTest.js`): kategori göstermeden 25 (erkek) / 26 (kadın) sabit soru
   - Bitince `useHealthAnalysisSync` → `POST /api/ai-health-analysis` → `healthAnalysis.analysisStage = 'core'`
 - **2. Aşama — Opsiyonel kategoriler:** `general`, `medical`, `nutrition`, `physical`, `lifestyle` + `women`/`men`
-  - Çekirdek sorular kategoride tekrar sorulmaz (`getRemainingSectionQuestions`)
-  - Katı tamamlanma (`isDetailedHealthTestComplete`) → 2. AI analizi (`analysisStage = 'detailed'`)
-  - Serbest metin "İsteğe bağlı" alanları (`OPTIONAL_TEXT_EXEMPT_KEYS`) detaylı tetikleyiciden muaf
+  - Çekirdek sorular kategoride tekrar sorulmaz (`getRemainingSectionQuestions`); hub ile aynı sayım (serbest metin muaf)
+  - Core analiz sonrası tüm opsiyonel kategoriler açık (yarıda bırakılanlar dahil “Devam et”)
+  - Katı tamamlanma (`isDetailedHealthTestComplete`) → `healthTest.optionalCompletedAt` + 2. AI analizi (`analysisStage = 'detailed'`)
+  - Serbest metin "İsteğe bağlı" alanları (`DETAILED_OPTIONAL_TEXT_KEYS`) detaylı tetikleyiciden ve akış sayımından muaf
 - Stored in `members.data.healthTest` JSONB; analiz `members.data.healthAnalysis`
 - AI erişim: çekirdek + detaylı analiz **herkese açık**; `force` yeniden analiz yalnızca ücretli
-- **14 günlük kilit (plan fark etmez):** analiz üretince (`aiAttemptedAt`) sorular kilitlenir; skorlar görünür. Akıllı kapsam: `stage=core` iken hiç başlanmamış opsiyonel kategoriler açık; `detailed` olunca tam kilit. Süre dolunca “Testi Yeniden Çöz” → `healthTest: { retakeAt }` (cevaplar sıfırlanır) → baştan çöz → yeni analiz. Personel `force` muaf. API: `423` (`api/ai-health-analysis.js`).
+- **14 günlük kilit (plan fark etmez):** kilit **tüm opsiyonel sorular bitince** başlar (`optionalCompletedAt`; detaylı AI henüz yoksa da). Core analiz tek başına soru kilidi başlatmaz. `fullLock` süresince tüm sorular kapalı; skorlar görünür. Süre dolunca “Testi Yeniden Çöz” → `healthTest: { retakeAt }` (cevaplar + `optionalCompletedAt` sıfırlanır) → baştan çöz → yeni analiz. Personel `force` muaf. API: `423` yalnızca `fullLock` + `stage=detailed` (`api/ai-health-analysis.js`).
 - Çıktı: 8 skor + `staffBrief` (şema aynı)
 - Üye dashboard: `HealthScoreCard` (skorlar; `staffBrief` yok)
 - Personel: skorlar + `staffBrief` (ücretli üyelikte)

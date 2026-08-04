@@ -45,6 +45,7 @@ export default function HealthTestPage() {
   const lockState = getHealthTestLockState({
     healthAnalysis: analysis,
     detailedComplete,
+    optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
   })
   const analysisStale = Boolean(
     analysisReady && user && isHealthAnalysisStale(analysis, user),
@@ -121,10 +122,8 @@ export default function HealthTestPage() {
     subtitle = 'Test tamamlandı — skorlarınız için Analizi Başlat’a tıklayın'
   } else if (lockState.canRetake && coreComplete) {
     subtitle = '14 gün doldu — testi yeniden çözerek skorlarınızı güncelleyebilirsiniz'
-  } else if (lockState.locked) {
-    subtitle = lockState.fullLock
-      ? `Cevaplarınız kilitli — ${lockState.daysLeft} gün sonra yeniden çözebilirsiniz`
-      : `Temel analiz kilitli — başlamadığınız opsiyonel kategorilerle derinleştirebilirsiniz`
+  } else if (lockState.fullLock) {
+    subtitle = `Cevaplarınız kilitli — ${lockState.daysLeft} gün sonra yeniden çözebilirsiniz`
   } else if (isUnpaidMember) {
     subtitle = 'Opsiyonel kategorilerle analizi derinleştirin — uzman raporu paketle açılır'
   } else if (!detailedComplete) {

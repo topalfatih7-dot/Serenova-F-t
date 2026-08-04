@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react'
 
@@ -18,30 +18,62 @@ const styles = {
   info: 'bg-brand-50 border-brand-300 text-brand-700',
 }
 
+let toastSeq = 0
+
+function nextToastId() {
+  toastSeq += 1
+  return `toast-${toastSeq}-${Date.now().toString(36)}`
+}
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
+  const timersRef = useRef(new Map())
 
-  const toast = useCallback((message, type = 'success', duration = 3500) => {
-    const id = Date.now()
-    setToasts((prev) => [...prev, { id, message, type }])
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration)
+  const clearTimer = useCallback((id) => {
+    const timer = timersRef.current.get(id)
+    if (timer != null) {
+      clearTimeout(timer)
+      timersRef.current.delete(id)
+    }
   }, [])
 
-  const dismiss = (id) => setToasts((prev) => prev.filter((t) => t.id !== id))
+  const dismiss = useCallback((id) => {
+    clearTimer(id)
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [clearTimer])
+
+  const toast = useCallback((message, type = 'success', duration = 3500) => {
+    const id = nextToastId()
+    const safeType = styles[type] ? type : 'info'
+    const ms = Number.isFinite(duration) && duration >= 0 ? duration : 3500
+    setToasts((prev) => [...prev, { id, message, type: safeType }])
+    if (ms > 0) {
+      const timer = setTimeout(() => dismiss(id), ms)
+      timersRef.current.set(id, timer)
+    }
+    return id
+  }, [dismiss])
+
+  useEffect(() => () => {
+    timersRef.current.forEach((timer) => clearTimeout(timer))
+    timersRef.current.clear()
+  }, [])
 
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={{ toast, dismiss }}>
       {children}
       <div className="fixed bottom-6 right-4 z-[500] flex flex-col gap-2 sm:right-6" style={{ pointerEvents: 'auto' }}>
         <AnimatePresence>
           {toasts.map((t) => {
-            const Icon = icons[t.type]
+            const Icon = icons[t.type] || Info
             return (
               <motion.div
                 key={t.id}
+                role="status"
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.2 }}
                 className={`flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-lg ${styles[t.type]}`}
                 style={{ pointerEvents: 'auto' }}
               >
@@ -49,8 +81,8 @@ export function ToastProvider({ children }) {
                 <span className="flex-1 text-sm font-medium">{t.message}</span>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); dismiss(t.id) }}
-                  className="ml-1 shrink-0 rounded-md p-1 opacity-60 hover:opacity-100 hover:bg-black/10 transition"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismiss(t.id) }}
+                  className="ml-1 shrink-0 rounded-md p-1 opacity-60 transition hover:bg-black/10 hover:opacity-100"
                   aria-label="Kapat"
                 >
                   <X className="h-4 w-4" />

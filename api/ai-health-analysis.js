@@ -177,10 +177,14 @@ export default async function handler(req, res) {
       healthTest: dbProfile.healthTest,
     })
 
-    // Detaylı analiz + 14 gün kilit (personel force muaf; core→detailed yükseltme serbest)
+    // 14 gün fullLock + zaten detailed → yeniden analiz engeli (force muaf; core→detailed serbest)
     if (!force && isCompleteHealthAnalysis(existingAnalysis)) {
-      const lock = getHealthTestLockState(existingAnalysis)
-      if (lock.locked && existingAnalysis.analysisStage === 'detailed') {
+      const optionalCompletedAt = dbProfile.healthTest?.optionalCompletedAt || null
+      const lock = getHealthTestLockState(existingAnalysis, {
+        detailedComplete: existingAnalysis.analysisStage === 'detailed' || Boolean(optionalCompletedAt),
+        optionalCompletedAt,
+      })
+      if (lock.fullLock && existingAnalysis.analysisStage === 'detailed') {
         return res.status(423).json({
           ok: false,
           error: `Sağlık testi ${lock.daysLeft} gün boyunca kilitli; süre dolunca yeniden çözebilirsiniz`,

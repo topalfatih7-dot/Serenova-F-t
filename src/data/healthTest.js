@@ -399,7 +399,7 @@ export function getRemainingSectionQuestions(sectionId, gender, coreKeys = []) {
   const section = getApplicableSections(gender).find((s) => s.id === sectionId)
   if (!section) return []
   return section.questions
-    .filter((q) => !coreSet.has(q.key))
+    .filter((q) => !coreSet.has(q.key) && !DETAILED_OPTIONAL_TEXT_KEYS.has(q.key))
     .map((q) => ({
       ...q,
       sectionId: section.id,

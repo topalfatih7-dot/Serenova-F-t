@@ -20,6 +20,9 @@ export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
 /** Analiz sonrası sağlık testi yeniden çözme aralığı (gün). Client ile aynı. */
 export const HEALTH_TEST_RETAKE_DAYS = 14
 
+/** healthTest meta — cevap fingerprint'ine dahil edilmez. Client ile aynı. */
+export const HEALTH_TEST_META_KEYS = new Set(['retakeAt', 'optionalCompletedAt'])
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 /** Analiz zaman damgası (aiAttemptedAt → generatedAt). */
@@ -30,12 +33,43 @@ export function getAnalysisTimestamp(analysis) {
   return Number.isFinite(t) ? t : null
 }
 
+function parseTimestamp(raw) {
+  if (!raw) return null
+  const t = new Date(raw).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+export function getHealthTestLockTimestamp({ optionalCompletedAt = null, healthAnalysis = null } = {}) {
+  return (
+    parseTimestamp(optionalCompletedAt)
+    || parseTimestamp(healthAnalysis?.questionsLockedAt)
+    || getAnalysisTimestamp(healthAnalysis)
+  )
+}
+
+export function stripHealthTestMeta(healthTest) {
+  if (!healthTest || typeof healthTest !== 'object') return {}
+  const out = {}
+  for (const [key, value] of Object.entries(healthTest)) {
+    if (HEALTH_TEST_META_KEYS.has(key)) continue
+    out[key] = value
+  }
+  return out
+}
+
 /**
- * Detaylı analiz için 14 günlük sunucu kilidi.
- * force / core aşaması yükseltmesi muaf tutulur (handler tarafında).
+ * 14 günlük kilit — yalnızca opsiyoneller bitince / stage=detailed.
+ * force / core→detailed yükseltmesi handler tarafında muaf.
+ * @param {object|null} analysis
+ * @param {{ detailedComplete?: boolean, optionalCompletedAt?: string|null }} [opts]
  */
-export function getHealthTestLockState(analysis) {
-  if (!isCompleteHealthAnalysis(analysis)) {
+export function getHealthTestLockState(analysis, opts = {}) {
+  const detailedComplete = opts.detailedComplete === true
+  const optionalCompletedAt = opts.optionalCompletedAt || null
+  const stage = analysis?.analysisStage
+  const questionsDone = detailedComplete || stage === 'detailed' || Boolean(optionalCompletedAt)
+
+  if (!questionsDone) {
     return {
       locked: false,
       lockedUntil: null,
@@ -45,14 +79,15 @@ export function getHealthTestLockState(analysis) {
     }
   }
 
-  const ts = getAnalysisTimestamp(analysis)
+  const ts = getHealthTestLockTimestamp({ optionalCompletedAt, healthAnalysis: analysis })
   if (!ts) {
+    const lockedUntilMs = Date.now() + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
     return {
-      locked: false,
-      lockedUntil: null,
-      daysLeft: 0,
-      canRetake: true,
-      fullLock: false,
+      locked: true,
+      lockedUntil: new Date(lockedUntilMs),
+      daysLeft: HEALTH_TEST_RETAKE_DAYS,
+      canRetake: false,
+      fullLock: true,
     }
   }
 
@@ -63,15 +98,13 @@ export function getHealthTestLockState(analysis) {
   const daysLeft = locked
     ? Math.max(1, Math.ceil((lockedUntilMs - now) / MS_PER_DAY))
     : 0
-  const canRetake = !locked
-  const fullLock = locked && analysis?.analysisStage === 'detailed'
 
   return {
     locked,
     lockedUntil,
     daysLeft,
-    canRetake,
-    fullLock,
+    canRetake: !locked,
+    fullLock: locked,
   }
 }
 
@@ -83,7 +116,7 @@ export function clampScore(n, fallback = null) {
 
 /** Deterministik fingerprint — client ile aynı algoritma (djb2). */
 export function buildHealthAnalysisFingerprint(profile = {}) {
-  const ht = profile.healthTest && typeof profile.healthTest === 'object' ? profile.healthTest : {}
+  const ht = stripHealthTestMeta(profile.healthTest)
   const payload = JSON.stringify({
     ht,
     age: profile.age ?? null,

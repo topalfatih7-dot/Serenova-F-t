@@ -92,14 +92,13 @@ export default function HealthTestHub({
   const lockState = getHealthTestLockState({
     healthAnalysis: analysis,
     detailedComplete,
+    optionalCompletedAt: healthTest?.optionalCompletedAt || null,
   })
   const analysisStale = Boolean(
     analysisReady && profile && isHealthAnalysisStale(analysis, profile),
   )
   /** Süre dolmuş ama henüz sıfırlanmamış cevaplar → retake butonu */
   const awaitingRetake = Boolean(lockState.canRetake && coreComplete && analysisReady)
-  /** Kilitli veya retake bekliyor → soru erişimi yok (akıllı kilit hariç) */
-  const questionsBlocked = Boolean(lockState.locked || awaitingRetake)
 
   const remainingTotal = sections.reduce((n, s) => n + (s.progress.requiredTotal || 0), 0)
   const remainingAnswered = sections.reduce((n, s) => n + (s.progress.requiredAnswered || 0), 0)
@@ -285,10 +284,7 @@ export default function HealthTestHub({
             {lockState.daysLeft} gün sonra
             {lockedUntilLabel ? ` (${lockedUntilLabel})` : ''}
             {' '}
-            testi yeniden çözebilirsiniz. Bu süre boyunca skorlarınızı görebilirsiniz;
-            {lockState.fullLock
-              ? ' sorulara erişim kapalıdır.'
-              : ' tamamladığınız sorular kilitlidir; hiç başlamadığınız opsiyonel kategorileri doldurarak analizi derinleştirebilirsiniz.'}
+            testi yeniden çözebilirsiniz. Bu süre boyunca skorlarınızı görebilirsiniz; sorulara erişim kapalıdır.
           </p>
         </div>
       )}
@@ -356,9 +352,8 @@ export default function HealthTestHub({
                 {remainingSectionsDone} / {sections.length} kategori
               </p>
               <p className="mt-1 text-sm text-cream-800/60 break-words">
-                {lockState.locked && !lockState.fullLock
-                  ? 'Hiç başlamadığınız kategorileri tamamlayabilirsiniz. Başladığınız veya bitirdiğiniz kategoriler kilitlidir.'
-                  : 'Kalan soruları istediğiniz sırayla tamamlayın. Tümü bitince daha detaylı analiz üretilir.'}
+                Kalan soruları istediğiniz sırayla tamamlayın. Yarıda bıraktığınız kategorilere dönebilirsiniz.
+                Tümü bitince detaylı analiz üretilir ve cevaplar 14 gün kilitlenir.
               </p>
             </div>
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
@@ -401,13 +396,7 @@ export default function HealthTestHub({
             const Icon = ICONS[section.icon] || HeartPulse
             const audienceMeta = HEALTH_AUDIENCE_META[section.audience || 'shared']
             const theme = cardTheme(section.id)
-            const sectionLocked = questionsBlocked && (
-              lockState.fullLock
-              || awaitingRetake
-              || progress.started
-              || progress.complete
-              || progress.requiredAnswered > 0
-            )
+            const sectionLocked = Boolean(lockState.fullLock || awaitingRetake)
             const canOpen = !sectionLocked
 
             let statusLabel = 'Başla'

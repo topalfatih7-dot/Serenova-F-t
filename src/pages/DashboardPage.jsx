@@ -69,8 +69,9 @@ export default function DashboardPage() {
     () => getHealthTestLockState({
       healthAnalysis,
       detailedComplete: healthDetailedComplete,
+      optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
     }),
-    [healthAnalysis, healthDetailedComplete],
+    [healthAnalysis, healthDetailedComplete, user?.healthTest?.optionalCompletedAt],
   )
 
   useStripePaymentReturn(refresh)

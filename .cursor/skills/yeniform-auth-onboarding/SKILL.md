@@ -19,7 +19,8 @@ description: >-
 
 **Tek adım ücretsiz kayıt:** name, email (non-OAuth), phone+country, gender, password×2 + PASSWORD_RULES, legal consents, Turnstile → her zaman `register` / `completeOAuthMember` ile `membership: 'free'`.  
 **Form taslağı:** `sessionStorage` `yf-onboarding-draft` (şifreler hariç).  
-**Ücretli CTA (`?plan=spor`):** kayıt sonrası aynı sayfada `PlanChangeView` (önseçili plan) → Stripe `change` checkout. Paket seçimi panelden `/membership` veya `/onboarding?plan=…`.
+**Kayıt sonrası:** `/profile` (+ welcome modal). Mevcut üye `/onboarding` ziyaretinde varsayılan `/profile`; yalnızca ücretli `?plan=` CTA → `/plans?plan=…`.  
+**Paket seçimi:** panelden `/plans` veya `/onboarding?plan=…` (kayıtlı üye).
 
 ## Roles after login
 

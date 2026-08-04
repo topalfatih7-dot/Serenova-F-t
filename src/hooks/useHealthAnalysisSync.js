@@ -249,6 +249,30 @@ export function useHealthAnalysisSync() {
     updateProfile({ healthAnalysis: { ...analysis, analysisStage: inferred } }).catch(() => {})
   }, [userId, analysis, detailedComplete, updateProfile])
 
+  // Tüm opsiyoneller bitince 14 gün kilidi başlatmak için optionalCompletedAt yaz
+  useEffect(() => {
+    if (!userId || !detailedComplete) return
+    const ht = user?.healthTest
+    if (!ht || typeof ht !== 'object') return
+    if (ht.optionalCompletedAt) return
+    // Legacy detailed: mevcut analiz zamanını koru (süre sıfırlanmasın)
+    const fromAnalysis = analysisStageRaw === 'detailed'
+      ? (analysis?.aiAttemptedAt || analysis?.generatedAt || null)
+      : null
+    const optionalCompletedAt = fromAnalysis || new Date().toISOString()
+    updateProfile({
+      healthTest: { ...ht, optionalCompletedAt },
+    }).catch(() => {})
+  }, [
+    userId,
+    detailedComplete,
+    user?.healthTest,
+    analysisStageRaw,
+    analysis?.aiAttemptedAt,
+    analysis?.generatedAt,
+    updateProfile,
+  ])
+
   return {
     analysis,
     history,

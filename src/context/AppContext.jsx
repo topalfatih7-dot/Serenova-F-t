@@ -36,6 +36,7 @@ import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
 import { markIntentionalLogout } from '../utils/authRedirect'
 import { setStaffNotifications as persistStaffNotifications } from '../services/staffNotifications'
+import { HEALTH_TEST_META_KEYS } from '../services/healthScoreAnalysis'
 
 const AuthContext = createContext(null)
 const DataContext = createContext(null)
@@ -46,6 +47,8 @@ const EMPTY_DB = {
   tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, plans: ALL_PLANS, session: null,
   content: { testimonials: [], faqs: [], successStories: [] },
 }
+const EMPTY_LIST = []
+const EMPTY_SETTINGS = {}
 
 export function AppProvider({ children }) {
   const location = useLocation()
@@ -1530,19 +1533,26 @@ export function AppProvider({ children }) {
     const member = memberRef.current
     if (!member) return
 
-    memberRef.current = { ...member, healthTest }
-    setRemoteDb((prev) => {
-      if (!prev) return prev
+    // Flow snapshot meta taşımayabilir; optionalCompletedAt / retakeAt korunur
+    const prev = member.healthTest && typeof member.healthTest === 'object' ? member.healthTest : {}
+    const next = { ...healthTest }
+    for (const key of HEALTH_TEST_META_KEYS) {
+      if (next[key] == null && prev[key] != null) next[key] = prev[key]
+    }
+
+    memberRef.current = { ...member, healthTest: next }
+    setRemoteDb((prevDb) => {
+      if (!prevDb) return prevDb
       return {
-        ...prev,
-        members: prev.members.map((m) => (
-          m.id === member.id ? { ...m, healthTest } : m
+        ...prevDb,
+        members: prevDb.members.map((m) => (
+          m.id === member.id ? { ...m, healthTest: next } : m
         )),
       }
     })
 
     try {
-      await sb.saveMemberPatch(member, { healthTest })
+      await sb.saveMemberPatch(member, { healthTest: next })
     } catch {
       await reloadRemote()
     }
@@ -1693,8 +1703,8 @@ export function AppProvider({ children }) {
     dietitianSessions: currentMember?.dietitianSessions || [],
     doctorSessions: currentMember?.doctorSessions || [],
     notifications: isStaff
-      ? (currentStaff?.notifications || [])
-      : (currentMember?.notifications || []),
+      ? (currentStaff?.notifications || EMPTY_LIST)
+      : (currentMember?.notifications || EMPTY_LIST),
     chatThreads,
     chatMessages,
     chatUnreadCount,
@@ -1710,7 +1720,7 @@ export function AppProvider({ children }) {
     staffCollabUnreadCount,
     tasks: currentMember?.tasks || [],
     progress: currentMember?.progress || { weight: [], workouts: [], meals: [], mood: [] },
-    settings: currentMember?.settings || {},
+    settings: currentMember?.settings || EMPTY_SETTINGS,
     testimonials: db.content?.testimonials || [],
     faqs: db.content?.faqs || [],
     successStories: db.content?.successStories || [],

@@ -74,6 +74,12 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
   const location = useLocation()
   const permissionRequestedRef = useRef(false)
   const userId = user?.id
+  // Auth stub {id,name,email} — notifications yok. Üye/personel satırı gelince Array.isArray true.
+  const profileReady = Array.isArray(user?.notifications)
+
+  const pushEnabled = isPushNotificationEnabled(settings)
+  const soundEnabled = isNotificationSoundEnabled(settings)
+  const remindersEnabled = isReminderNotificationsEnabled(settings)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -82,32 +88,28 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
   }, [isAuthenticated])
 
   useEffect(() => {
-    if (!enabled || !isAuthenticated || !isPushNotificationEnabled(settings)) return
+    if (!enabled || !isAuthenticated || !pushEnabled) return
     if (permissionRequestedRef.current) return
     if (getNotificationPermission() !== 'default') return
 
     permissionRequestedRef.current = true
     requestNotificationPermission().catch(() => {})
-  }, [enabled, isAuthenticated, settings])
+  }, [enabled, isAuthenticated, pushEnabled])
 
   useEffect(() => {
     if (!enabled || !isAuthenticated || !userId) return
-    // Hydrate bitmeden bootstrap etme — boş listeyi "geçmiş" sayıp sonraki dolu listeyi
-    // yeni bildirim sanmayı önler (kayıt / yavaş üye yüklemesi).
-    if (loading) return
+    // Hydrate bitmeden / üye kaydı gelmeden bootstrap etme — boş listeyi "geçmiş"
+    // sayıp sonraki dolu listeyi yeni bildirim sanmayı önler.
+    if (loading || !profileReady) return
 
     const seen = getSeenSet(userId)
-    const list = notifications || []
+    const list = Array.isArray(notifications) ? notifications : []
 
     if (!bootstrappedUsers.has(userId)) {
       bootstrappedUsers.add(userId)
       list.forEach((n) => addSeen(seen, n.id))
       return
     }
-
-    const pushEnabled = isPushNotificationEnabled(settings)
-    const soundEnabled = isNotificationSoundEnabled(settings)
-    const remindersEnabled = isReminderNotificationsEnabled(settings)
 
     list.forEach((n) => {
       if (!n?.id || seen.has(n.id)) return
@@ -121,7 +123,7 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
 
       const body = notificationBody(n)
       const variant = TOAST_BY_TYPE[n.type] || 'info'
-      toast(body ? `${n.title}: ${body}` : n.title, variant)
+      toast(body ? `${n.title}: ${body}` : n.title, variant, 5000)
 
       // Chat sesi sohbet hook'unda; burada yalnızca program / randevu vb.
       if (soundEnabled && n.type !== 'chat') {
@@ -132,5 +134,17 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
         showBrowserNotification(n.title, { body, tag: `yf-${n.type}-${n.id}` })
       }
     })
-  }, [enabled, notifications, isAuthenticated, toast, settings, userId, location.pathname, loading])
+  }, [
+    enabled,
+    notifications,
+    isAuthenticated,
+    toast,
+    userId,
+    location.pathname,
+    loading,
+    profileReady,
+    pushEnabled,
+    soundEnabled,
+    remindersEnabled,
+  ])
 }

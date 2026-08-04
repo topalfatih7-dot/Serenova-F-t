@@ -29,6 +29,8 @@ import TurnstileWidget from '../components/security/TurnstileWidget'
 import { useTurnstile } from '../hooks/useTurnstile'
 
 const DRAFT_KEY = 'yf-onboarding-draft'
+/** Remount sonrası /plans flash’ını engeller — profilde temizlenir. */
+const JUST_REGISTERED_KEY = 'yf-just-registered'
 
 /** Eski URL plan parametrelerini güncel plan id'lerine eşler (`free` ücretsiz kayıt olarak kalır) */
 const LEGACY_PLAN_MAP = {
@@ -190,11 +192,22 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isExistingMember && !justRegisteredRef.current && !isOAuthFlow) {
-    const planQs = preselectedPlan && preselectedPlan !== 'free' && preselectedPlan !== currentMembership
-      ? `?plan=${encodeURIComponent(preselectedPlan)}`
-      : ''
-    return <Navigate to={`/plans${planQs}`} replace />
+  if (isExistingMember && !isOAuthFlow) {
+    let justRegistered = justRegisteredRef.current
+    try {
+      justRegistered = justRegistered || sessionStorage.getItem(JUST_REGISTERED_KEY) === '1'
+    } catch {
+      /* ignore */
+    }
+    // İlk kayıt / yeni üye → her zaman profil (planlar arka planda görünmesin)
+    if (justRegistered) {
+      return <Navigate to="/profile" replace state={{ welcome: true }} />
+    }
+    // Mevcut üye ücretli plan CTA ile geldiyse paket seçimine
+    if (preselectedPlan && preselectedPlan !== 'free' && preselectedPlan !== currentMembership) {
+      return <Navigate to={`/plans?plan=${encodeURIComponent(preselectedPlan)}`} replace />
+    }
+    return <Navigate to="/profile" replace />
   }
 
   const persistDraft = (nextData, nextTerms = termsAccepted) => {
@@ -312,6 +325,11 @@ export default function OnboardingPage() {
       return
     }
     clearDraft()
+    try {
+      sessionStorage.setItem(JUST_REGISTERED_KEY, '1')
+    } catch {
+      /* ignore */
+    }
     const oauthMethod = authUser?.app_metadata?.provider
       || authUser?.identities?.find((i) => i.provider && i.provider !== 'email')?.provider
       || 'social'
@@ -320,7 +338,7 @@ export default function OnboardingPage() {
       plan: 'free',
       trial: true,
     })
-    navigate('/dashboard', { replace: true, state: { welcome: true } })
+    navigate('/profile', { replace: true, state: { welcome: true } })
   }
 
   return (

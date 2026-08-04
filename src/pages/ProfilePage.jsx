@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import MembershipBadge from '../components/ui/MembershipBadge'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
 import PhotoUpload from '../components/ui/PhotoUpload'
+import WelcomeSuccessModal from '../components/auth/WelcomeSuccessModal'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { requestNotificationPermission, unlockNotificationAudio } from '../utils/browserNotifications'
@@ -51,10 +52,30 @@ export default function ProfilePage() {
   const assignedDoctor = (staff || []).find((s) => s.id === user.assignedDoctorId)
   const { toast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [welcomeOpen, setWelcomeOpen] = useState(() => Boolean(location.state?.welcome))
 
   useStripePaymentReturn(refresh, {
     successMessage: 'Ödeme alındı! Planınız birkaç saniye içinde güncellenecek.',
   })
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('yf-just-registered')
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!location.state?.welcome) return
+    setWelcomeOpen(true)
+    navigate(location.pathname, { replace: true, state: {} })
+  }, [location.state?.welcome, location.pathname, navigate])
+
+  const dismissWelcome = useCallback(() => {
+    setWelcomeOpen(false)
+  }, [])
 
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState({
@@ -548,6 +569,13 @@ export default function ProfilePage() {
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
         </div>
       </Modal>
+
+      <WelcomeSuccessModal
+        open={welcomeOpen}
+        planName="Ücretsiz"
+        isPaid={false}
+        onContinue={dismissWelcome}
+      />
     </div>
   )
 }

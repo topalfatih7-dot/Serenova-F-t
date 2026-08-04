@@ -7,7 +7,6 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
   getApplicableSections,
-  getRemainingHubSections,
   getRemainingSectionQuestions,
   isDetailedHealthTestComplete,
   isQuestionFullyAnswered,
@@ -52,6 +51,7 @@ export default function HealthTestSectionPage() {
   const lockState = getHealthTestLockState({
     healthAnalysis: analysis,
     detailedComplete,
+    optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
   })
   const coreComplete = Boolean(
     user?.gender && isCoreHealthTestComplete(user.healthTest, user.gender),
@@ -171,24 +171,6 @@ export default function HealthTestSectionPage() {
 
   if (!isCoreHealthTestComplete(user.healthTest, user.gender)) {
     return <Navigate to="/health-test" replace />
-  }
-
-  // Akıllı kilit: başlanmış / tamamlanmış opsiyonel kategoriler kapalı
-  if (lockState.locked && !lockState.fullLock) {
-    const hubSections = getRemainingHubSections(
-      user.gender,
-      packageConfig,
-      user.healthTest,
-      coreKeys,
-    )
-    const current = hubSections.find((s) => s.section.id === sectionId)
-    const progress = current?.progress
-    if (
-      progress
-      && (progress.started || progress.complete || progress.requiredAnswered > 0)
-    ) {
-      return <Navigate to="/health-test" replace />
-    }
   }
 
   return (
