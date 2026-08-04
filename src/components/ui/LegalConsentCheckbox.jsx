@@ -11,7 +11,7 @@ export default function LegalConsentCheckbox({ accepted, onChange, error, errorM
       <button
         type="button"
         onClick={() => onChange(!accepted)}
-        className={`flex w-full min-h-[5.25rem] items-start gap-4 rounded-2xl border p-5 text-left transition ${
+        className={`flex w-full min-h-[4.5rem] min-w-0 items-start gap-3 rounded-2xl border p-3.5 text-left transition sm:min-h-[5.25rem] sm:gap-4 sm:p-5 ${
           hasError
             ? 'border-red-300 bg-red-50/50'
             : accepted
@@ -22,10 +22,10 @@ export default function LegalConsentCheckbox({ accepted, onChange, error, errorM
       >
         <span className="mt-0.5 shrink-0 text-brand-500">
           {accepted
-            ? <CheckSquare2 className="h-8 w-8" strokeWidth={2.25} />
-            : <Square className="h-8 w-8 text-cream-400" strokeWidth={2.25} />}
+            ? <CheckSquare2 className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.25} />
+            : <Square className="h-7 w-7 text-cream-400 sm:h-8 sm:w-8" strokeWidth={2.25} />}
         </span>
-        <span className="text-base leading-relaxed text-cream-800/85">
+        <span className="min-w-0 text-sm leading-relaxed text-cream-800/85 sm:text-base">
           <Link to="/legal/uyelik-ve-abonelik-sozlesmesi" className="font-semibold text-brand-600 hover:underline" onClick={(ev) => ev.stopPropagation()}>
             Üyelik ve Abonelik Sözleşmesi
           </Link>

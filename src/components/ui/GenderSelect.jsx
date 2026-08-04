@@ -31,7 +31,7 @@ export default function GenderSelect({ value, onChange, error, large = false, hi
         Cinsiyet {!locked && <span className="text-red-500">*</span>}
         {locked && <Lock className="h-3.5 w-3.5 text-cream-800/40" />}
       </span>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {MEMBER_GENDERS.map((g) => {
           const selected = value === g.value
           const style = GENDER_STYLE[g.value] || GENDER_STYLE.male
@@ -42,7 +42,7 @@ export default function GenderSelect({ value, onChange, error, large = false, hi
               type="button"
               disabled={locked}
               onClick={() => !locked && onChange?.(g.value)}
-              className={`flex items-center gap-2 rounded-xl border-2 px-2.5 font-semibold transition ${pad} ${
+              className={`flex min-w-0 items-center gap-1.5 rounded-xl border-2 px-2 font-semibold transition sm:gap-2 sm:px-2.5 ${pad} ${
                 selected
                   ? style.active
                   : locked
@@ -53,13 +53,13 @@ export default function GenderSelect({ value, onChange, error, large = false, hi
               }`}
             >
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                   selected ? style.iconActive : style.iconIdle
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
               </span>
-              <span className={`flex-1 text-left ${large ? 'text-base' : 'text-sm'}`}>{g.label}</span>
+              <span className={`min-w-0 flex-1 truncate text-left ${large ? 'text-base' : 'text-sm'}`}>{g.label}</span>
               {selected ? (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25">
                   <Check className="h-3 w-3" />

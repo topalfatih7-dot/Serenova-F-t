@@ -2027,10 +2027,17 @@ body {
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .auth-form-card {
   font-size: inherit;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
 }
 
 .auth-form-card input,
@@ -2038,6 +2045,7 @@ body {
 .auth-form-card textarea,
 .auth-form-card button[type="button"] {
   font-size: max(16px, 1em);
+  max-width: 100%;
 }
 
 /* Dokunmatik cihazlarda tüm form alanları 16px+ — iOS'un input odağında

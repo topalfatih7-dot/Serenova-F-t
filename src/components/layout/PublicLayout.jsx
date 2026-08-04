@@ -219,7 +219,7 @@ export default function PublicLayout() {
   )
 
   return (
-    <div className="wellness-mesh-bg min-h-screen">
+    <div className="wellness-mesh-bg min-h-screen min-w-0 overflow-x-hidden">
       <ScrollToTop />
       <PublicRouteSeo />
       <a
@@ -513,7 +513,7 @@ export default function PublicLayout() {
           </div>
         )}
       </AnimatePresence>
-      <main id="main-content">
+      <main id="main-content" className="min-w-0 overflow-x-hidden">
         <Outlet />
       </main>
       <footer className="relative overflow-hidden border-t border-brand-800/30 bg-gradient-to-br from-cream-900 via-brand-900 to-sage-900 py-14 text-cream-100">

@@ -5,6 +5,13 @@ import { TURNSTILE_SITE_KEY } from '../../config/turnstile'
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const RESET_DEBOUNCE_MS = 400
 const TOKEN_WAIT_MS = 15_000
+/** flexible widget min ~300px; 320px viewport + padding için compact */
+const NARROW_MQ = '(max-width: 380px)'
+
+function resolveTurnstileSize() {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'flexible'
+  return window.matchMedia(NARROW_MQ).matches ? 'compact' : 'flexible'
+}
 
 /**
  * Cloudflare Turnstile — görünür managed widget (sektör standardı).
@@ -20,11 +27,26 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
   const waitResolveRef = useRef(null)
   const waitRejectRef = useRef(null)
   const waitTimerRef = useRef(0)
+  const sizeRef = useRef(resolveTurnstileSize())
   const [status, setStatus] = useState('loading') // loading | ready | error
+  const [widgetSize, setWidgetSize] = useState(() => resolveTurnstileSize())
 
   useEffect(() => {
     onTokenRef.current = onToken
   }, [onToken])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined
+    const mq = window.matchMedia(NARROW_MQ)
+    const sync = () => {
+      const next = mq.matches ? 'compact' : 'flexible'
+      sizeRef.current = next
+      setWidgetSize((prev) => (prev === next ? prev : next))
+    }
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   const clearWaiters = useCallback((error) => {
     if (waitTimerRef.current) {
@@ -77,6 +99,8 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
     onTokenRef.current?.('')
     setStatus('loading')
 
+    const size = sizeRef.current || resolveTurnstileSize()
+
     widgetIdRef.current = window.turnstile.render(hostRef.current, {
       sitekey: TURNSTILE_SITE_KEY,
       // Görünür managed widget — kullanıcı bot korumasını görür
@@ -85,8 +109,8 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       'refresh-expired': 'auto',
       retry: 'auto',
       theme: 'light',
-      // flexible: iframe kapsayıcı genişliğine uyar (responsive)
-      size: 'flexible',
+      // flexible min ~300px; dar ekranda compact (150px)
+      size,
       callback: (token) => {
         setStatus('ready')
         onTokenRef.current?.(token || '')
@@ -256,19 +280,19 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
         widgetIdRef.current = null
       }
     }
-  }, [renderWidget, clearWaiters])
+  }, [renderWidget, clearWaiters, widgetSize])
 
   if (!TURNSTILE_SITE_KEY) return null
 
   return (
     <div
       className={[
-        'w-full rounded-2xl border border-cream-200/90 bg-gradient-to-br from-cream-50/80 via-white to-brand-50/40 px-3 py-3 shadow-sm',
+        'w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-cream-200/90 bg-gradient-to-br from-cream-50/80 via-white to-brand-50/40 px-2 py-2.5 shadow-sm sm:px-3 sm:py-3',
         className,
       ].filter(Boolean).join(' ')}
     >
-      <div className="mb-2 flex items-center gap-2 px-0.5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
+      <div className="mb-2 flex min-w-0 items-center gap-2 px-0.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
         </span>
         <div className="min-w-0">
@@ -284,7 +308,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       </div>
       <div
         ref={hostRef}
-        className="min-h-[65px] w-full overflow-hidden rounded-xl [&_iframe]:!w-full [&_iframe]:max-w-full"
+        className="flex min-h-[65px] w-full min-w-0 max-w-full justify-center overflow-hidden rounded-xl [&_iframe]:max-w-full"
         aria-live="polite"
       />
     </div>

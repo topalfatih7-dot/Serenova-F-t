@@ -105,7 +105,7 @@ export default function SocialAuthButtons({
       type="button"
       disabled={!!loadingId}
       onClick={() => handleClick(id)}
-      className={`flex w-full items-center justify-center gap-3 rounded-2xl border-2 px-4 py-4 text-base font-semibold transition disabled:opacity-60 ${className}`}
+      className={`flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3.5 text-sm font-semibold transition disabled:opacity-60 sm:gap-3 sm:px-4 sm:py-4 sm:text-base ${className}`}
     >
       {loadingId === id ? (
         <Loader2 className="h-[22px] w-[22px] shrink-0 animate-spin" />
@@ -114,13 +114,13 @@ export default function SocialAuthButtons({
           <Icon />
         </span>
       )}
-      {label}
+      <span className="min-w-0 leading-snug">{label}</span>
     </button>
   ))
 
   return (
     <>
-    <div className={compact ? 'space-y-2.5' : 'space-y-3'}>
+    <div className={compact ? 'min-w-0 space-y-2.5' : 'min-w-0 space-y-3'}>
       {!isBottom && !compact && (
         <p className="text-center text-sm leading-relaxed text-cream-800/65">
           Tek tıkla güvenli giriş — şifre yazmanıza gerek yok.

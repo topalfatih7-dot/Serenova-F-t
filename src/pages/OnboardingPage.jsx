@@ -342,7 +342,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="relative flex min-h-[calc(100svh-64px)] overflow-hidden">
+    <div className="relative flex min-h-[calc(100svh-64px)] overflow-x-hidden">
       {/* Sol panel — marka (yalnız laptop+; tablet tek kolon) */}
       <div className="relative hidden w-[40%] overflow-hidden lg:flex lg:flex-col lg:justify-between xl:w-[45%]">
         <video
@@ -408,16 +408,16 @@ export default function OnboardingPage() {
       </div>
 
       {/* Sağ panel — kayıt formu */}
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-5 py-10 sm:px-8 md:px-12 lg:px-8 xl:px-10">
+      <div className="flex min-w-0 flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-3 py-8 sm:px-8 sm:py-10 md:px-12 lg:px-8 xl:px-10">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-[440px]"
+          className="w-full min-w-0 max-w-[440px]"
         >
           <AuthFormShell>
           <AuthFormCard>
-            <h2 className="font-display text-2xl font-bold leading-tight text-cream-900 sm:text-[1.75rem]">
+            <h2 className="font-display text-xl font-bold leading-tight text-cream-900 sm:text-2xl md:text-[1.75rem]">
               {isOAuthFlow ? 'Son bir adım kaldı' : 'Hesabınızı oluşturun'}
             </h2>
             <div className="mt-4 h-1 w-full rounded-full bg-gradient-to-r from-sage-300 via-brand-300 to-teal-300" />
@@ -501,13 +501,13 @@ export default function OnboardingPage() {
               </div>
 
               {data.password && (
-                <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <ul className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
                   {PASSWORD_RULES.map((r) => {
                     const ok = r.test(data.password)
                     return (
-                      <li key={r.label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-sage-600' : 'text-cream-800/45'}`}>
-                        <Check className={`h-3.5 w-3.5 ${ok ? '' : 'opacity-30'}`} strokeWidth={3} />
-                        {r.label}
+                      <li key={r.label} className={`flex min-w-0 items-center gap-1.5 text-xs ${ok ? 'text-sage-600' : 'text-cream-800/45'}`}>
+                        <Check className={`h-3.5 w-3.5 shrink-0 ${ok ? '' : 'opacity-30'}`} strokeWidth={3} />
+                        <span className="min-w-0 break-words">{r.label}</span>
                       </li>
                     )
                   })}

@@ -31,7 +31,7 @@ export default function PhoneField({
         </span>
       )}
       <div
-        className={`flex items-stretch overflow-hidden rounded-2xl border transition ${
+        className={`flex min-w-0 items-stretch overflow-hidden rounded-2xl border transition ${
           disabled
             ? 'cursor-not-allowed border-cream-200 bg-cream-100/80 opacity-80'
             : error
@@ -41,7 +41,7 @@ export default function PhoneField({
                 : 'border-cream-200 bg-cream-50/60 focus-within:bg-white focus-within:ring-4 focus-within:border-brand-400 focus-within:ring-brand-100'
         }`}
       >
-        <div className={`relative flex items-center gap-1.5 border-r border-cream-200 pl-3 pr-2 ${disabled ? 'bg-cream-50' : 'bg-white/50'}`}>
+        <div className={`relative flex shrink-0 items-center gap-1 border-r border-cream-200 pl-2.5 pr-1.5 sm:gap-1.5 sm:pl-3 sm:pr-2 ${disabled ? 'bg-cream-50' : 'bg-white/50'}`}>
           <span className="text-base leading-none">{selected.flag}</span>
           <span className="text-sm font-semibold text-cream-900">+{selected.dial}</span>
           {!disabled && <ChevronDown className="h-3.5 w-3.5 text-cream-800/40" />}
@@ -60,7 +60,7 @@ export default function PhoneField({
             </select>
           )}
         </div>
-        <div className="relative flex flex-1 items-center">
+        <div className="relative flex min-w-0 flex-1 items-center">
           <input
             type="tel"
             inputMode="numeric"
@@ -70,7 +70,7 @@ export default function PhoneField({
             disabled={disabled}
             readOnly={disabled}
             onChange={(e) => onValueChange?.(formatNationalNumber(country, e.target.value))}
-            className={`w-full bg-transparent outline-none placeholder:text-cream-800/40 disabled:cursor-not-allowed ${large ? 'py-4 pl-3 pr-4 text-base text-cream-900' : 'py-3.5 pl-3 pr-4 text-sm text-cream-900'}`}
+            className={`w-full min-w-0 bg-transparent outline-none placeholder:text-cream-800/40 disabled:cursor-not-allowed ${large ? 'py-4 pl-3 pr-4 text-base text-cream-900' : 'py-3.5 pl-3 pr-4 text-sm text-cream-900'}`}
           />
         </div>
       </div>

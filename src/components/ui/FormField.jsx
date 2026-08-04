@@ -5,7 +5,7 @@ const FormField = forwardRef(function FormField(
   ref,
 ) {
   const field = [
-    'w-full rounded-2xl border outline-none transition',
+    'w-full min-w-0 max-w-full rounded-2xl border outline-none transition',
     large ? 'text-base py-4' : 'text-sm py-3.5',
     emphasis ? 'text-cream-900 placeholder:text-cream-800/55' : 'text-cream-900 placeholder:text-cream-800/40',
     Icon ? (large ? 'pl-12' : 'pl-11') : 'pl-4',
@@ -19,13 +19,13 @@ const FormField = forwardRef(function FormField(
   ].join(' ')
 
   return (
-    <label className="block">
+    <label className="block min-w-0">
       {label && (
         <span className={`mb-2 block font-semibold uppercase tracking-wide ${large ? 'text-sm text-cream-800' : `text-xs ${emphasis ? 'text-cream-800' : 'text-cream-800/55'}`}`}>
           {label}
         </span>
       )}
-      <div className="relative">
+      <div className="relative min-w-0">
         {Icon && (
           <Icon className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${large ? 'left-4 h-5 w-5' : 'left-3.5 h-4 w-4'} ${emphasis ? 'text-cream-700' : 'text-cream-800/40'}`} />
         )}

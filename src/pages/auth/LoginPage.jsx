@@ -114,7 +114,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-[calc(100svh-64px)] overflow-hidden">
+    <div className="relative flex min-h-[calc(100svh-64px)] overflow-x-hidden">
       {/* Sol panel — marka (yalnız laptop+; tablet tek kolon) */}
       <div className="relative hidden w-[40%] overflow-hidden lg:flex lg:flex-col lg:justify-between xl:w-[45%]">
         <video
@@ -181,17 +181,17 @@ export default function LoginPage() {
       </div>
 
       {/* Sağ panel — form */}
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-5 py-10 sm:px-8 md:px-12 lg:px-8 xl:px-10">
+      <div className="flex min-w-0 flex-1 items-center justify-center bg-gradient-to-br from-cream-50 via-white to-brand-50/40 px-3 py-8 sm:px-8 sm:py-10 md:px-12 lg:px-8 xl:px-10">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-[440px]"
+          className="w-full min-w-0 max-w-[440px]"
         >
           <AuthFormShell>
           <AuthFormCard className="bg-white/90 shadow-brand-900/[0.06]">
-            <h2 className="font-display text-2xl font-bold leading-tight text-cream-900 sm:text-[1.75rem]">Tekrar hoş geldiniz</h2>
-            <p className="mt-2 text-base text-cream-800/60">Hesabınıza giriş yapın</p>
+            <h2 className="font-display text-xl font-bold leading-tight text-cream-900 sm:text-2xl md:text-[1.75rem]">Tekrar hoş geldiniz</h2>
+            <p className="mt-2 text-sm text-cream-800/60 sm:text-base">Hesabınıza giriş yapın</p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <FormField
@@ -236,11 +236,11 @@ export default function LoginPage() {
                 {errors.password && <p className="mt-2 block text-sm font-medium text-red-500">{errors.password}</p>}
               </div>
 
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                 <button
                   type="button"
                   onClick={() => setRemember((v) => !v)}
-                  className="flex select-none items-center gap-2.5 text-base font-medium text-cream-800/80"
+                  className="flex min-w-0 select-none items-center gap-2 text-sm font-medium text-cream-800/80 sm:gap-2.5 sm:text-base"
                   aria-pressed={remember}
                 >
                   <span className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors ${remember ? 'bg-brand-500' : 'bg-cream-300'}`}>
@@ -248,7 +248,7 @@ export default function LoginPage() {
                   </span>
                   Beni hatırla
                 </button>
-                <Link to="/forgot-password" className="text-base font-semibold text-brand-600 hover:underline">
+                <Link to="/forgot-password" className="shrink-0 text-sm font-semibold text-brand-600 hover:underline sm:text-base">
                   Şifremi unuttum
                 </Link>
               </div>
@@ -277,7 +277,7 @@ export default function LoginPage() {
               <SocialAuthButtons flow="login" remember={remember} position="bottom" />
             </div>
 
-            <p className="mt-6 text-center text-base text-cream-800/60">
+            <p className="mt-6 text-center text-sm text-cream-800/60 sm:text-base">
               Hesabınız yok mu?{' '}
               <Link to="/onboarding" className="font-semibold text-brand-600 hover:underline">
                 Kayıt olun
