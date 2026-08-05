@@ -656,7 +656,12 @@ async function handlePasswordReset(res, body) {
     return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta girin.' })
   }
 
-  const redirectTo = `${getAppUrl()}/auth/callback?next=reset-password`
+  /* MOBILE DIFF: Expo deep link; aksi halde web callback */
+  const mobileRedirect = String(body.redirectTo || '').trim()
+  const redirectTo =
+    isYeniformMobileClient(body) && /^yeniform:\/\//i.test(mobileRedirect)
+      ? mobileRedirect
+      : `${getAppUrl()}/auth/callback?next=reset-password`
   const sent = await sendRecoveryEmail(email, redirectTo)
   if (!sent.ok) return res.status(500).json({ ok: false, error: sent.error })
 
