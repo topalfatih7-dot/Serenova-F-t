@@ -58,16 +58,29 @@ function readCaptchaToken(body) {
 }
 
 /**
+ * Expo native client — Turnstile yok (MOBILE DIFF).
+ * Rate limit + disposable email + credential limit hâlâ geçerli;
+ * password grant service-role bypass ile CAPTCHA aşılır.
+ */
+function isYeniformMobileClient(body) {
+  return String(body?.client || '').trim() === 'yeniform-mobile'
+}
+
+/**
  * Turnstile koruması.
  * deferToSupabaseCaptcha: token’ı Cloudflare’de BİZ doğrulamayız (tek kullanımlık);
  * Supabase /token CAPTCHA’sına iletilir. Aksi halde siteverify burada yapılır.
  * Localhost: zorunluluk yok (Supabase CAPTCHA için service-role login kullanılır).
+ * yeniform-mobile: Turnstile atlanır (native app; rate limit kalır).
  */
 async function requireBotGuard(req, body, { allowAuthSession = false, deferToSupabaseCaptcha = false } = {}) {
   const ip = getClientIp(req)
   if (allowAuthSession && body.authSessionToken) {
     const session = verifyFormSession(body.authSessionToken, { ip, kind: 'auth-signup' })
     if (session.ok) return { ok: true, via: 'auth-session' }
+  }
+  if (isYeniformMobileClient(body)) {
+    return { ok: true, via: 'yeniform-mobile', captchaToken: '' }
   }
   if (isLocalDevAuth(req)) {
     return { ok: true, via: 'local-dev', captchaToken: readCaptchaToken(body) }
@@ -467,7 +480,7 @@ async function handlePasswordLogin(req, res, body) {
   }
 
   const result = await passwordGrant(email, password, captchaToken, {
-    localBypass: isLocalDevAuth(req) || authSession.ok,
+    localBypass: isLocalDevAuth(req) || authSession.ok || isYeniformMobileClient(body),
   })
   if (!result.ok) {
     if (result.code === 'TURNSTILE_INVALID' || result.code === 'TURNSTILE_REQUIRED') {
@@ -538,7 +551,7 @@ async function handleUnlockSignup(req, res, body) {
   if (!authSession.ok) {
     const captchaToken = readCaptchaToken(body)
     const grant = await passwordGrant(email, password, captchaToken, {
-      localBypass: isLocalDevAuth(req),
+      localBypass: isLocalDevAuth(req) || isYeniformMobileClient(body),
     })
     if (!grant.ok && !grant.unconfirmed) {
       return res.status(grant.status || 401).json({
