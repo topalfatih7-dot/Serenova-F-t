@@ -34,6 +34,7 @@ import {
 import { getRemainingDays } from '../services/premiumMembership'
 import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 import { PANEL_IMAGES } from '../utils/panelImages'
+import { CITY_NAMES, getDistricts } from '../data/turkeyCities'
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }),
@@ -82,6 +83,7 @@ export default function ProfilePage() {
     name: user.name, email: user.email, phone: user.phone || '', city: user.city, district: user.district || '',
     photo: user.photo || null,
   })
+  const districts = useMemo(() => getDistricts(form.city), [form.city])
 
   const expertCards = useMemo(() => {
     const cards = []
@@ -498,9 +500,6 @@ export default function ProfilePage() {
               {[
                 { key: 'emailNotifs', label: 'E-posta bildirimleri', color: 'bg-brand-50' },
                 { key: 'pushNotifs', label: 'Tarayıcı bildirimleri', color: 'bg-sage-50' },
-                { key: 'soundNotifs', label: 'Bildirim sesleri', color: 'bg-violet-50' },
-                { key: 'reminderNotifs', label: 'Hatırlatıcılar', color: 'bg-amber-50' },
-                { key: 'whatsappNotifs', label: 'WhatsApp bildirimleri', color: 'bg-teal-50' },
               ].map((t) => (
                 <label key={t.key} className={`flex cursor-pointer items-center justify-between rounded-2xl border border-white/80 px-4 py-3 shadow-sm transition hover:shadow-md ${t.color}`}>
                   <span className="text-sm font-medium text-cream-800">{t.label}</span>
@@ -542,7 +541,14 @@ export default function ProfilePage() {
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profil Fotoğrafı & İletişim">
         <div className="space-y-4">
-          <PhotoUpload label="" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+          <PhotoUpload
+            label=""
+            variant="portrait"
+            optional
+            value={form.photo}
+            onChange={(photo) => setForm({ ...form, photo })}
+            hint="Sürükleyerek yüzünüzü çerçeveye yerleştirin"
+          />
           <FormField label="Ad Soyad" icon={User} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ad Soyad" />
           <FormField
             label="E-posta"
@@ -564,8 +570,31 @@ export default function ProfilePage() {
             className="cursor-not-allowed opacity-80"
             hint="Telefon numarası kayıt sonrası değiştirilemez."
           />
-          <FormField label="Şehir" icon={MapPin} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Şehir" />
-          <FormField label="İlçe" icon={MapPin} value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="İlçe" />
+          <FormField
+            label="Şehir"
+            as="select"
+            icon={MapPin}
+            value={form.city || ''}
+            onChange={(e) => setForm({ ...form, city: e.target.value, district: '' })}
+          >
+            <option value="">Şehir seçin</option>
+            {CITY_NAMES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </FormField>
+          <FormField
+            label="İlçe"
+            as="select"
+            icon={MapPin}
+            value={form.district || ''}
+            onChange={(e) => setForm({ ...form, district: e.target.value })}
+            disabled={!form.city}
+          >
+            <option value="">{form.city ? 'İlçe seçin' : 'Önce şehir seçin'}</option>
+            {districts.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </FormField>
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
         </div>
       </Modal>

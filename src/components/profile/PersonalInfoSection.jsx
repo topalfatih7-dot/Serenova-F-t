@@ -352,7 +352,14 @@ export default function PersonalInfoSection({ user }) {
       <Modal open={open} onClose={() => !saving && setOpen(false)} title="Kişisel Bilgiler" size="lg">
         <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
           <div className="rounded-2xl border border-brand-100/70 bg-gradient-to-br from-brand-50/50 via-white to-sage-50/40 p-4 sm:p-5">
-            <PhotoUpload value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+            <PhotoUpload
+              label="Profil fotoğrafı"
+              variant="portrait"
+              optional
+              value={form.photo}
+              onChange={(photo) => setForm({ ...form, photo })}
+              hint="Sürükleyerek konumlandırın"
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
