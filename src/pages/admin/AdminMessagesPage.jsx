@@ -287,7 +287,7 @@ export default function AdminMessagesPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{s.name}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
-                  {meta.label}{thread?.lastPreview ? ` · ${thread.lastPreview}` : ''}
+                  {meta.label}
                 </p>
               </div>
               {unread > 0 && (

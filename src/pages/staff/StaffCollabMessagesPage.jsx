@@ -156,7 +156,6 @@ export default function StaffCollabMessagesPage() {
                 <p className="truncate text-sm font-bold">{peer || peerLabel}</p>
                 <p className={`truncate text-[11px] ${isActive ? 'text-white/75' : 'text-cream-800/50'}`}>
                   Danışan adına: {member.name}
-                  {thread?.lastPreview ? ` · ${thread.lastPreview}` : ''}
                 </p>
               </div>
               {unread > 0 && (
