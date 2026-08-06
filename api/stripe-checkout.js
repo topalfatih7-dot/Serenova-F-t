@@ -22,6 +22,7 @@ import {
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { normalizeEmailAddress } from './_email.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
+import { memberHasActiveProviderSubscription } from './_memberPackages.js'
 
 function getOrigin(req) {
   return (
@@ -233,6 +234,31 @@ export default async function handler(req, res) {
     const auth = await resolveAuthUser(admin, req)
     if (auth.error) return res.status(auth.status).json({ ok: false, error: auth.error })
     const user = auth.user
+
+    // Aktif mobil (RevenueCat) aboneliği varken recurring web checkout → çift ödeme riski
+    if (!oneTime) {
+      const { data: memberGuardRow } = await admin
+        .from('members')
+        .select('membership, membership_status, data')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (memberGuardRow) {
+        const data = memberGuardRow.data || {}
+        const memberForGuard = {
+          id: memberGuardRow.id || user.id,
+          membership: memberGuardRow.membership,
+          membershipStatus: memberGuardRow.membership_status,
+          ...data,
+        }
+        if (memberHasActiveProviderSubscription(memberForGuard, 'revenuecat')) {
+          return res.status(409).json({
+            ok: false,
+            code: 'ACTIVE_MOBILE_SUBSCRIPTION',
+            error: 'Mobil aboneliğiniz aktif. Çift ödeme olmaması için önce mobilde iptal edin veya süre bitince deneyin.',
+          })
+        }
+      }
+    }
 
     let checkoutEmail = normalizeEmailAddress(body.email)
       || normalizeEmailAddress(user.email)

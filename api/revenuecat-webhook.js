@@ -2,6 +2,9 @@
  * POST /api/revenuecat-webhook
  * RevenueCat → Supabase members (Stripe webhook parity).
  * Auth: Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>
+ *
+ * Provider izolasyonu: expire yalnız revenuecat paketlerini etkiler;
+ * aktif Stripe paketi varsa üye free olmaz.
  */
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import {
@@ -10,7 +13,7 @@ import {
   migrateLegacyToPackages,
   sanitizeStaffForPackage,
   syncMemberPackages,
-  forceMemberToFree,
+  expirePackagesByProvider,
 } from './_memberPackages.js'
 import {
   loadPlansById,
@@ -107,6 +110,14 @@ async function alreadyProcessed(admin, eventId) {
   return Boolean(data)
 }
 
+async function insertPaymentSafe(admin, row) {
+  const { error } = await admin.from('payments').insert(row)
+  if (error && !/duplicate|unique/i.test(error.message || '')) {
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
 async function activateOrChange(admin, { memberId, planId, durationMonths, eventId, price, eventType }) {
   const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
   if (fetchErr) return { ok: false, error: fetchErr.message }
@@ -126,7 +137,7 @@ async function activateOrChange(admin, { memberId, planId, durationMonths, event
     migrateLegacyToPackages(member),
     planId,
     packageConfig,
-    { price: amount, startedAt: started },
+    { price: amount, startedAt: started, provider: 'revenuecat' },
   )
 
   let draft = syncMemberPackages({
@@ -156,7 +167,7 @@ async function activateOrChange(admin, { memberId, planId, durationMonths, event
   if (updErr) return { ok: false, error: updErr.message }
 
   const durationLabel = oneTime ? 'tek seferlik' : `${months} ay`
-  await admin.from('payments').insert({
+  await insertPaymentSafe(admin, {
     member_id: memberId,
     data: {
       memberName: row.name || '',
@@ -209,7 +220,7 @@ async function renew(admin, { memberId, planId, durationMonths, eventId, price, 
     migrateLegacyToPackages(member),
     planId,
     packageConfig,
-    { price: amount, startedAt: started, expiresAt: newExpiry },
+    { price: amount, startedAt: started, expiresAt: newExpiry, provider: 'revenuecat' },
   )
 
   let draft = syncMemberPackages({
@@ -237,7 +248,7 @@ async function renew(admin, { memberId, planId, durationMonths, eventId, price, 
     .eq('id', memberId)
   if (updErr) return { ok: false, error: updErr.message }
 
-  await admin.from('payments').insert({
+  await insertPaymentSafe(admin, {
     member_id: memberId,
     data: {
       memberName: row.name || '',
@@ -257,21 +268,22 @@ async function renew(admin, { memberId, planId, durationMonths, eventId, price, 
   return { ok: true }
 }
 
-async function expireToFree(admin, { memberId, eventId, eventType }) {
+async function expireProviderPackages(admin, { memberId, eventId, eventType }) {
   const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
   if (fetchErr) return { ok: false, error: fetchErr.message }
   if (!row) return { ok: false, error: 'Üye bulunamadı' }
 
   const data = row.data || {}
   const member = memberFromRow(row)
-  let draft = forceMemberToFree(member)
+  let draft = expirePackagesByProvider(member, 'revenuecat')
   draft = sanitizeStaffForPackage(draft.packageConfig || {}, draft)
+  // stripeSubscriptionId / stripe_customer_id korunur
   const newData = memberDataPayload(draft, data)
 
   const { error: updErr } = await admin
     .from('members')
     .update({
-      membership: 'free',
+      membership: draft.membership || 'free',
       membership_status: draft.membershipStatus || 'active',
       assigned_coach_id: draft.assignedCoachId || null,
       assigned_dietitian_id: draft.assignedDietitianId || null,
@@ -282,12 +294,12 @@ async function expireToFree(admin, { memberId, eventId, eventType }) {
     .eq('id', memberId)
   if (updErr) return { ok: false, error: updErr.message }
 
-  await admin.from('payments').insert({
+  await insertPaymentSafe(admin, {
     member_id: memberId,
     data: {
       memberName: row.name || '',
       amount: 0,
-      planId: 'free',
+      planId: draft.membership || 'free',
       durationMonths: 0,
       status: 'completed',
       provider: 'revenuecat',
@@ -314,7 +326,13 @@ export default async function handler(req, res) {
   }
 
   const admin = getSupabaseAdmin()
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+  let body
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+  } catch {
+    return res.status(400).json({ ok: false, error: 'Geçersiz JSON body.' })
+  }
+
   const event = body.event || body
   const eventType = String(event.type || event.event_type || '').toUpperCase()
   const eventId = String(event.id || event.event_id || '').trim()
@@ -338,7 +356,7 @@ export default async function handler(req, res) {
   }
 
   if (EXPIRE_TYPES.has(eventType)) {
-    const result = await expireToFree(admin, { memberId, eventId, eventType })
+    const result = await expireProviderPackages(admin, { memberId, eventId, eventType })
     if (!result.ok) return res.status(500).json(result)
     return res.status(200).json({ ok: true })
   }
@@ -346,9 +364,12 @@ export default async function handler(req, res) {
   if (ACTIVATE_TYPES.has(eventType) || RENEWAL_TYPES.has(eventType)) {
     const parsed = parseRevenueCatProductId(productId)
     if (!parsed) {
-      return res.status(400).json({
-        ok: false,
-        error: `Bilinmeyen product_id: ${productId || '(boş)'}`,
+      // RC retry storm önlemi — üyelik yazılmaz
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: 'unknown_product_id',
+        productId: productId || null,
       })
     }
 

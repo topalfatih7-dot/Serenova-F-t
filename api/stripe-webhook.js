@@ -10,7 +10,7 @@ import {
   migrateLegacyToPackages,
   sanitizeStaffForPackage,
   syncMemberPackages,
-  forceMemberToFree,
+  expirePackagesByProvider,
 } from './_memberPackages.js'
 import { createMemberFromPendingRegistration } from './_createMemberFromPending.js'
 import {
@@ -174,7 +174,7 @@ async function activateMembership(admin, meta, session) {
     migrateLegacyToPackages(member),
     planId,
     packageConfig,
-    { price: amount, startedAt: started },
+    { price: amount, startedAt: started, provider: 'stripe' },
   )
 
   let draft = syncMemberPackages({
@@ -280,7 +280,7 @@ async function renewMembership(admin, meta, invoice, subscription) {
     migrateLegacyToPackages(member),
     planId,
     packageConfig,
-    { price: amount, startedAt: started, expiresAt: newExpiry },
+    { price: amount, startedAt: started, expiresAt: newExpiry, provider: 'stripe' },
   )
 
   let draft = syncMemberPackages({
@@ -488,10 +488,8 @@ export default async function handler(req, res) {
         if (!row) break
 
         const data = { ...(row.data || {}) }
-        if (data.stripeSubscriptionId === subscription.id) {
-          delete data.stripeSubscriptionId
-        }
-
+        const clearedThisSub = data.stripeSubscriptionId === subscription.id
+        // Legacy paket eşlemesi için expire öncesi id’yi koru
         const before = {
           id: row.id,
           name: row.name,
@@ -502,8 +500,10 @@ export default async function handler(req, res) {
           assignedDietitianId: row.assigned_dietitian_id ?? null,
           assignedDoctorId: row.assigned_doctor_id ?? null,
           ...data,
+          stripeSubscriptionId: data.stripeSubscriptionId || subscription.id,
         }
-        const after = forceMemberToFree(before)
+        // Yalnız Stripe paketlerini expire et — aktif RC varsa üye free olmaz
+        const after = expirePackagesByProvider(before, 'stripe')
         const {
           id: _id,
           name: _name,
@@ -515,15 +515,17 @@ export default async function handler(req, res) {
           assignedDoctorId: _doc,
           ...rest
         } = after
+        const newData = { ...data, ...rest }
+        if (clearedThisSub) delete newData.stripeSubscriptionId
         await admin
           .from('members')
           .update({
-            membership: 'free',
+            membership: after.membership || 'free',
             membership_status: after.membershipStatus || 'active',
-            assigned_coach_id: null,
-            assigned_dietitian_id: null,
-            assigned_doctor_id: null,
-            data: { ...data, ...rest },
+            assigned_coach_id: after.assignedCoachId || null,
+            assigned_dietitian_id: after.assignedDietitianId || null,
+            assigned_doctor_id: after.assignedDoctorId || null,
+            data: newData,
             updated_at: nowISO(),
           })
           .eq('id', row.id)

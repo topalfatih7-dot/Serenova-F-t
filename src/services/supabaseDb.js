@@ -2636,7 +2636,7 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
         activePackages,
         planId,
         cfg,
-        { price: amount },
+        { price: amount, provider: 'admin' },
         { addPackage: options.addPackage },
       )
     }

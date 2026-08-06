@@ -23,6 +23,7 @@ import {
   notifyProgramReady,
   notifyNewChatMessage,
 } from './_whatsappEvents.js'
+import { sendExpoPushToMember } from './_expoPush.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -174,7 +175,13 @@ async function handleMemberOutbound(admin, body, auth, res) {
     }
   }
 
-  return res.status(200).json({ ok: true, whatsapp: waResult })
+  /* Expo push — chat / program / support / availability (prefs + token) */
+  let expoPush = null
+  if (body.expoPush !== false) {
+    expoPush = await sendExpoPushToMember(admin, memberId, notification)
+  }
+
+  return res.status(200).json({ ok: true, whatsapp: waResult, expoPush })
 }
 
 async function handleWhatsAppEvent(admin, body, auth, res) {

@@ -83,6 +83,27 @@ export function migrateLegacyToPackages(member) {
   }]
 }
 
+const KNOWN_PROVIDERS = new Set(['stripe', 'revenuecat', 'admin'])
+
+/** @returns {'stripe'|'revenuecat'|'admin'|'legacy'} */
+export function normalizePackageProvider(pkg) {
+  const p = String(pkg?.provider || '').trim()
+  if (KNOWN_PROVIDERS.has(p)) return p
+  return 'legacy'
+}
+
+/**
+ * Provider izolasyonu: legacy paketler Stripe expire’da (stripeSubscriptionId varken) Stripe sayılır.
+ * RC expire legacy’yi silmez (web koruması).
+ */
+export function packageBelongsToProvider(pkg, provider, member = null) {
+  const p = normalizePackageProvider(pkg)
+  if (p === provider) return true
+  if (p !== 'legacy') return false
+  if (provider === 'stripe') return Boolean(member?.stripeSubscriptionId)
+  return false
+}
+
 export function createPackageEntry(planId, packageConfig, meta = {}) {
   const startedAt = meta.startedAt || today()
   const oneTime = isOneTimePlan(planId) || packageConfig?.billingType === 'one_time'
@@ -97,6 +118,9 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
       expiresAt = d.toISOString().split('T')[0]
     }
   }
+  const provider = KNOWN_PROVIDERS.has(String(meta.provider || '').trim())
+    ? String(meta.provider).trim()
+    : 'legacy'
   return {
     id: meta.id || `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     planId,
@@ -106,6 +130,7 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
     status: 'active',
     purchasedAt: meta.purchasedAt || new Date().toISOString(),
     price: meta.price || 0,
+    provider,
   }
 }
 
@@ -117,6 +142,20 @@ export function memberHasActivePaidPackages(member) {
   return migrateLegacyToPackages(member).some((p) => isPackageEntryActive(p))
 }
 
+/** Alias — webhook free kararı */
+export function hasActivePaidPackages(member) {
+  return memberHasActivePaidPackages(member)
+}
+
+export function memberHasActiveProviderSubscription(member, provider) {
+  return migrateLegacyToPackages(member).some((p) => (
+    isPackageEntryActive(p)
+    && !isOneTimePlan(p.planId)
+    && p.packageConfig?.billingType !== 'one_time'
+    && packageBelongsToProvider(p, provider, member)
+  ))
+}
+
 export function shouldStackNewPackage(member, planId) {
   if (planId === 'free' || !isPaidMembership(planId)) return false
   return memberHasActivePaidPackages(member)
@@ -125,18 +164,49 @@ export function shouldStackNewPackage(member, planId) {
 /**
  * Ücretli plan satın alma / değiştirme:
  * - Tek seferlik (doktor) veya addPackage → mevcut paketlere ekler
- * - Abonelik planı → aktif abonelikleri değiştirir, tek seferlik paketleri korur
+ * - Abonelik: yalnız aynı provider’ın aboneliğini değiştirir; diğer provider + one-time korunur
+ * - Stripe satın alırken legacy (etiketsiz) abonelikler de değiştirilir
  */
 export function resolvePackagePurchase(activePackages = [], planId, packageConfig, meta = {}, options = {}) {
   const { addPackage = false } = options
   const packages = activePackages || []
+  const provider = KNOWN_PROVIDERS.has(String(meta.provider || '').trim())
+    ? String(meta.provider).trim()
+    : 'legacy'
 
   if (addPackage || isOneTimePlan(planId)) {
-    return addMemberPackage(packages, planId, packageConfig, meta)
+    return addMemberPackage(packages, planId, packageConfig, { ...meta, provider })
   }
 
-  const keepOneTime = packages.filter((p) => isOneTimePlan(p.planId) && isPackageEntryActive(p))
-  return [...keepOneTime, createPackageEntry(planId, packageConfig, meta)]
+  const keep = packages.filter((p) => {
+    if (!isPackageEntryActive(p)) return false
+    if (isOneTimePlan(p.planId) || p.packageConfig?.billingType === 'one_time') return true
+    const pProv = normalizePackageProvider(p)
+    if (provider === 'stripe') {
+      return pProv !== 'stripe' && pProv !== 'legacy'
+    }
+    if (provider === 'revenuecat') {
+      return pProv !== 'revenuecat'
+    }
+    return pProv !== provider
+  })
+  return [...keep, createPackageEntry(planId, packageConfig, { ...meta, provider })]
+}
+
+/**
+ * Yalnız ilgili provider paketlerini expire/consume et; kalan aktif paket varsa free olmaz.
+ */
+export function expirePackagesByProvider(member, provider) {
+  if (!member || !provider) return member
+  const packages = migrateLegacyToPackages(member).map((pkg) => {
+    if (!packageBelongsToProvider(pkg, provider, member)) return pkg
+    const oneTime = isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time'
+    return { ...pkg, status: oneTime ? 'consumed' : 'expired' }
+  })
+  return syncMemberPackages({
+    ...member,
+    activePackages: packages,
+  })
 }
 
 export function mergePackageConfigs(packages = [], member = null) {
@@ -190,13 +260,16 @@ export function syncMemberPackages(member) {
   const usedDoctor = countUsedDoctorSessions(member)
 
   packages = packages.map((pkg) => {
+    // Provider expire / admin iptal: açık expired|consumed korunur (süre gelecekte olsa bile)
+    if (pkg.status === 'expired') return { ...pkg, status: 'expired' }
+    if (pkg.status === 'consumed') return { ...pkg, status: 'consumed' }
     if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') {
       const total = Number(pkg.packageConfig?.doctorSessionsTotal) || 1
       if (usedDoctor >= total) return { ...pkg, status: 'consumed' }
       return { ...pkg, status: 'active' }
     }
     if (pkg.expiresAt && pkg.expiresAt < now) return { ...pkg, status: 'expired' }
-    return { ...pkg, status: pkg.status === 'consumed' ? 'consumed' : 'active' }
+    return { ...pkg, status: 'active' }
   })
 
   const active = packages.filter((p) => isPackageEntryActive(p))

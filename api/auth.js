@@ -58,20 +58,27 @@ function readCaptchaToken(body) {
 }
 
 /**
- * Expo native client — Turnstile yok (MOBILE DIFF).
- * Rate limit + disposable email + credential limit hâlâ geçerli;
- * password grant service-role bypass ile CAPTCHA aşılır.
+ * Expo native client — yalnız secret + client etiketi ile doğrulanır.
+ * Secret yok/yanlış → Turnstile yolu (web ile aynı); body.client spoof işe yaramaz.
  */
-function isYeniformMobileClient(body) {
-  return String(body?.client || '').trim() === 'yeniform-mobile'
+function isVerifiedMobileClient(req, body) {
+  const secret = String(process.env.YENIFORM_MOBILE_API_SECRET || '').trim()
+  if (!secret) return false
+  const hdr = String(req.headers['x-yeniform-mobile-key'] || '').trim()
+  return String(body?.client || '').trim() === 'yeniform-mobile' && hdr === secret
 }
+
+const MOBILE_PASSWORD_RESET_REDIRECTS = new Set([
+  'yeniform://auth/callback',
+  'yeniform://reset-password',
+])
 
 /**
  * Turnstile koruması.
  * deferToSupabaseCaptcha: token’ı Cloudflare’de BİZ doğrulamayız (tek kullanımlık);
  * Supabase /token CAPTCHA’sına iletilir. Aksi halde siteverify burada yapılır.
  * Localhost: zorunluluk yok (Supabase CAPTCHA için service-role login kullanılır).
- * yeniform-mobile: Turnstile atlanır (native app; rate limit kalır).
+ * Doğrulanmış mobil client: Turnstile atlanır (native app; rate limit kalır).
  */
 async function requireBotGuard(req, body, { allowAuthSession = false, deferToSupabaseCaptcha = false } = {}) {
   const ip = getClientIp(req)
@@ -79,7 +86,7 @@ async function requireBotGuard(req, body, { allowAuthSession = false, deferToSup
     const session = verifyFormSession(body.authSessionToken, { ip, kind: 'auth-signup' })
     if (session.ok) return { ok: true, via: 'auth-session' }
   }
-  if (isYeniformMobileClient(body)) {
+  if (isVerifiedMobileClient(req, body)) {
     return { ok: true, via: 'yeniform-mobile', captchaToken: '' }
   }
   if (isLocalDevAuth(req)) {
@@ -480,7 +487,7 @@ async function handlePasswordLogin(req, res, body) {
   }
 
   const result = await passwordGrant(email, password, captchaToken, {
-    localBypass: isLocalDevAuth(req) || authSession.ok || isYeniformMobileClient(body),
+    localBypass: isLocalDevAuth(req) || authSession.ok || isVerifiedMobileClient(req, body),
   })
   if (!result.ok) {
     if (result.code === 'TURNSTILE_INVALID' || result.code === 'TURNSTILE_REQUIRED') {
@@ -551,7 +558,7 @@ async function handleUnlockSignup(req, res, body) {
   if (!authSession.ok) {
     const captchaToken = readCaptchaToken(body)
     const grant = await passwordGrant(email, password, captchaToken, {
-      localBypass: isLocalDevAuth(req) || isYeniformMobileClient(body),
+      localBypass: isLocalDevAuth(req) || isVerifiedMobileClient(req, body),
     })
     if (!grant.ok && !grant.unconfirmed) {
       return res.status(grant.status || 401).json({
@@ -650,16 +657,16 @@ async function handleEmailSend(req, res) {
   })
 }
 
-async function handlePasswordReset(res, body) {
+async function handlePasswordReset(req, res, body) {
   const email = String(body.email || '').trim().toLowerCase()
   if (!email || !email.includes('@')) {
     return res.status(400).json({ ok: false, error: 'Geçerli bir e-posta girin.' })
   }
 
-  /* MOBILE DIFF: Expo deep link; aksi halde web callback */
+  /* MOBILE DIFF: yalnız allowlist deep link; aksi halde web callback */
   const mobileRedirect = String(body.redirectTo || '').trim()
   const redirectTo =
-    isYeniformMobileClient(body) && /^yeniform:\/\//i.test(mobileRedirect)
+    isVerifiedMobileClient(req, body) && MOBILE_PASSWORD_RESET_REDIRECTS.has(mobileRedirect)
       ? mobileRedirect
       : `${getAppUrl()}/auth/callback?next=reset-password`
   const sent = await sendRecoveryEmail(email, redirectTo)
@@ -890,8 +897,9 @@ async function handleVerifyActiveSession(req, res) {
 }
 
 export default async function handler(req, res) {
-  if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type, Authorization')) return
-  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
+  const corsHeaders = 'Content-Type, Authorization, X-Yeniform-Mobile-Key'
+  if (handleOptions(req, res, 'POST, OPTIONS', corsHeaders)) return
+  setCorsHeaders(res, 'POST, OPTIONS', corsHeaders, req)
 
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
 
@@ -977,7 +985,7 @@ export default async function handler(req, res) {
     if (action === 'password-login') return handlePasswordLogin(req, res, body)
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
-    if (action === 'password-reset') return handlePasswordReset(res, body)
+    if (action === 'password-reset') return handlePasswordReset(req, res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
     if (action === 'respond-session') return handleRespondSession(req, res, body)
     if (action === 'session-attendance') return handleSessionAttendance(req, res, body)
