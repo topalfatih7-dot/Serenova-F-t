@@ -2,7 +2,7 @@
 
 > **Amaç:** Az token ile doğru bağlam. Detay için kod / `.cursor/skills/yeniform-*` / `docs/*`.  
 > **Canlı:** https://www.yeniform.com · Vercel `serenova-f-t` · Supabase `rvzksmyhsgxgrxgeabmi`  
-> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-04
+> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-08
 
 **AI okuma sırası:** §0 kurallar → §2 durum → ilgili skill → kod. Tam dosya envanteri / eski changelog **yok** (git history).
 
@@ -13,7 +13,7 @@
 1. Production veri SoT: `src/services/supabaseDb.js` (eski `localDb` yok).
 2. Ücretli plan **yalnızca** Stripe webhook / admin — istemci `changeMemberPlan` ile açılmaz.
 3. Kayıt: ücretsiz → `members` hemen (`membership: 'free'`); ücretli → auth session Stripe öncesi, `members` webhook ile → header `hasRegisteredMember()` / `isFullyRegistered`.
-4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz.
+4. **Vercel Hobby ≤12 serverless fn.** Yeni `api/*.js` ekleme (slot dolu: 12/12); mevcut multiplex’e `task=` / `action=` ekle. `_*.js` sayılmaz. `api/revenuecat-webhook.js` **kaldırıldı** (mobil IAP iptal) — slot geri alındı.
 5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4 — ücretli üyelikte). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` personelde yalnızca ücretli üyelikte.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
