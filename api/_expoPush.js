@@ -59,7 +59,8 @@ export async function sendExpoPushToMember(admin, memberId, notification) {
       body: String(notification.message || ''),
       data,
       sound: 'default',
-      channelId: 'yeniform-alerts',
+      // Mobile push.ts CHANNEL_ID — Android kanal sesi için v2
+      channelId: 'yeniform-alerts-v2',
       priority: 'high',
     }))
 
