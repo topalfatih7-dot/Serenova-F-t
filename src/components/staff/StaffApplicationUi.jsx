@@ -524,6 +524,26 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
   )
 }
 
+export function RoleChangeConfirmModal({ open, onClose, onConfirm }) {
+  return (
+    <Modal open={open} onClose={onClose} title="Rolü değiştir" size="sm">
+      <div className="space-y-4">
+        <p className="text-sm leading-relaxed text-cream-800/70">
+          Ortak bilgileriniz (ad, e-posta, fotoğraf, şehir vb.) kalır. Uzmanlık, belge ve rol-özel alanlar silinir; başvuru seçim ekranına dönersiniz.
+        </p>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="btn-wellness-outline !py-2.5 sm:min-w-[7rem]">
+            Vazgeç
+          </button>
+          <button type="button" onClick={onConfirm} className="btn-wellness !py-2.5 sm:min-w-[7rem]">
+            Rolü değiştir
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function SummarySection({ title, children }) {
   return (
     <div className="rounded-xl border border-cream-100 bg-cream-50/50 p-4">

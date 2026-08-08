@@ -261,6 +261,36 @@ export const EMPTY_STAFF_APPLICATION = {
   title: '',
 }
 
+/** Rol değişiminde korunacak ortak alanlar */
+export const SHARED_APPLICATION_KEYS = [
+  'name', 'email', 'phone', 'photo', 'city', 'district', 'gender',
+  'hasGym', 'gymName', 'gymCity', 'gymDistrict',
+  'hasOffice', 'officeName', 'officeCity', 'officeDistrict', 'officeAddress',
+  'instagram', 'youtube', 'website', 'linkedin',
+  'languages', 'experienceYears', 'bio', 'title',
+]
+
+/** Ortak alanları koruyup rol-özel alanları boş forma döndürür */
+export function resetRoleSpecificFields(form, nextRole) {
+  const role = nextRole === 'dietitian' ? 'dietitian' : 'coach'
+  const shared = {}
+  for (const key of SHARED_APPLICATION_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(form || {}, key)) {
+      shared[key] = form[key]
+    }
+  }
+  return {
+    ...EMPTY_STAFF_APPLICATION,
+    ...shared,
+    role,
+    federationCerts: [{ ...EMPTY_FEDERATION_CERT }],
+    education: [{ school: '', level: '' }],
+    certificates: [{ name: '', file: null }],
+    certOtherNotes: { international: '', branch: '' },
+    languages: Array.isArray(shared.languages) ? [...shared.languages] : ['Türkçe'],
+  }
+}
+
 export function hasEducationEntryInfo(edu) {
   return !!(edu?.school?.trim() || edu?.level || edu?.degree?.trim() || edu?.year?.trim())
 }

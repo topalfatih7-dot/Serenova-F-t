@@ -2,15 +2,15 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, ArrowRight, UserPlus, Dumbbell, Apple, CheckCircle,
+  ArrowLeft, ArrowRight, CheckCircle, Lock,
   Plus, Briefcase, GraduationCap, Award,
   Share2, Video, Link2, Globe, MapPin, Building2, Sparkles,
-  Target, Users, User,
+  Target, Users, User, Dumbbell, Apple,
 } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
-import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
+import StaffApplicationHero from '../components/staff/StaffApplicationHero'
 import { useToast } from '../context/ToastContext'
 import TurnstileWidget from '../components/security/TurnstileWidget'
 import { useTurnstile } from '../hooks/useTurnstile'
@@ -28,6 +28,7 @@ import {
   InlineDocUpload,
   ApplicationSummaryModal,
   FederationCertEditor,
+  RoleChangeConfirmModal,
 } from '../components/staff/StaffApplicationUi'
 import {
   EMPTY_STAFF_APPLICATION,
@@ -46,8 +47,15 @@ import {
   getOfficialCoachingCertLabels,
   EMPTY_FEDERATION_CERT,
   hasCertificateEntryInfo,
+  resetRoleSpecificFields,
 } from '../data/staffApplication'
 import { staffRoleLabel } from '../utils/staffRoles'
+
+function roleFromSearchParams(params) {
+  const r = params.get('role')
+  if (r === 'dietitian' || r === 'coach') return r
+  return null
+}
 
 const inputCls = 'w-full rounded-xl border border-cream-200 bg-white px-4 py-3 text-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'
 const selectCls = `${inputCls} appearance-none`
@@ -68,15 +76,18 @@ function defaultOpenSection(step, role) {
 }
 
 export default function StaffApplicationPage() {
-  const [params] = useSearchParams()
+  const [params, setSearchParams] = useSearchParams()
   const { toast } = useToast()
+  const [phase, setPhase] = useState('select')
+  const [gateRole, setGateRole] = useState(() => roleFromSearchParams(params))
+  const [roleChangeOpen, setRoleChangeOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [openSection, setOpenSection] = useState('basic')
   const [summaryOpen, setSummaryOpen] = useState(false)
-  const [form, setForm] = useState(() => ({
-    ...EMPTY_STAFF_APPLICATION,
-    role: params.get('role') === 'dietitian' ? 'dietitian' : 'coach',
-  }))
+  const [form, setForm] = useState(() => {
+    const role = roleFromSearchParams(params) || 'coach'
+    return { ...EMPTY_STAFF_APPLICATION, role }
+  })
   const [submitting, setSubmitting] = useState(false)
   const [uploadingCerts, setUploadingCerts] = useState(false)
   const [precheckingEmail, setPrecheckingEmail] = useState(false)
@@ -94,6 +105,37 @@ export default function StaffApplicationPage() {
   const update = (patch) => {
     if (Object.prototype.hasOwnProperty.call(patch, 'email')) setEmailFieldError('')
     setForm((f) => ({ ...f, ...patch }))
+  }
+
+  const handleSelectGateRole = (role) => {
+    setGateRole(role)
+    setForm((f) => (f.role === role ? { ...f, role } : resetRoleSpecificFields(f, role)))
+    setSearchParams({ role }, { replace: true })
+  }
+
+  const handleStartApplication = () => {
+    if (!gateRole) {
+      toast('Devam etmek için Koç veya Diyetisyen seçin', 'error')
+      return
+    }
+    setForm((f) => ({ ...f, role: gateRole }))
+    setStep(1)
+    setOpenSection(defaultOpenSection(1, gateRole))
+    setSummaryOpen(false)
+    setSearchParams({ role: gateRole }, { replace: true })
+    setPhase('form')
+  }
+
+  const confirmRoleChange = () => {
+    const next = resetRoleSpecificFields(form, form.role)
+    setForm(next)
+    setGateRole(next.role)
+    setStep(1)
+    setOpenSection('basic')
+    setSummaryOpen(false)
+    setRoleChangeOpen(false)
+    setPhase('select')
+    setSearchParams({ role: next.role }, { replace: true })
   }
 
   const obtainCaptchaIfNeeded = async () => {
@@ -285,50 +327,66 @@ export default function StaffApplicationPage() {
     )
   }
 
+  const RoleIcon = form.role === 'dietitian' ? Apple : Dumbbell
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-cream-50 via-white to-sage-50/20">
       <SeoHead title="Kadromuza Katıl — Koç & Diyetisyen Başvurusu" description="Yeni Form ekibine koç veya diyetisyen olarak başvurun." canonicalPath="/team/apply" />
 
-      <PlansAnimatedBackground className="!py-14 sm:!py-20">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-          <span className="section-badge"><UserPlus className="h-3.5 w-3.5" /> Kadromuza Katıl</span>
-          <h1 className="section-title mt-4">Uzman Başvuru Formu</h1>
-          <p className="section-subtitle mx-auto max-w-2xl">Bölümlere dokunarak açın, bilgilerinizi adım adım tamamlayın.</p>
-        </motion.div>
-      </PlansAnimatedBackground>
+      <StaffApplicationHero
+        phase={phase}
+        selectedRole={gateRole}
+        onSelectRole={handleSelectGateRole}
+        onStart={handleStartApplication}
+        lockedRole={form.role}
+      />
 
       <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6">
         <Link to={form.role === 'dietitian' ? '/team/dietitians' : '/team/coaches'} className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/60 hover:text-brand-600">
           <ArrowLeft className="h-4 w-4" /> Kadroya dön
         </Link>
 
-        <div className="mb-8 flex justify-center gap-3">
-          {['coach', 'dietitian'].map((r) => {
-            const Icon = r === 'dietitian' ? Apple : Dumbbell
-            const active = form.role === r
-            return (
-              <motion.button key={r} type="button" whileTap={{ scale: 0.98 }} onClick={() => update({ role: r, specialties: [] })}
-                className={`flex items-center gap-2 rounded-2xl border px-6 py-3.5 text-sm font-semibold shadow-sm transition ${active ? 'border-brand-500 bg-gradient-to-r from-brand-500 to-brand-600 text-white' : 'border-cream-200 bg-white text-cream-800 hover:border-brand-200'}`}>
-                <Icon className="h-4 w-4" /> {staffRoleLabel(r)}
-              </motion.button>
-            )
-          })}
-        </div>
-
-        <div className="mb-8 flex justify-between gap-1">
-          {APPLICATION_STEPS.map((s) => (
-            <div key={s.id} className={`flex-1 text-center ${step >= s.id ? 'text-brand-600' : 'text-cream-300'}`}>
-              <div className={`mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold shadow-sm ${step > s.id ? 'bg-sage-500 text-white' : step === s.id ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-cream-100'}`}>
-                {step > s.id ? <CheckCircle className="h-4 w-4" /> : s.id}
+        {phase === 'form' && (
+          <>
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream-200/90 bg-white/90 px-4 py-3.5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm ${
+                  form.role === 'dietitian'
+                    ? 'bg-gradient-to-br from-sage-500 to-sage-700'
+                    : 'bg-gradient-to-br from-brand-500 to-brand-700'
+                }`}>
+                  <RoleIcon className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-cream-900">
+                    <Lock className="h-3.5 w-3.5 text-cream-800/40" aria-hidden />
+                    {staffRoleLabel(form.role)} başvurusu
+                  </p>
+                </div>
               </div>
-              <p className="hidden text-[10px] font-semibold sm:block">{s.label}</p>
+              <button
+                type="button"
+                onClick={() => setRoleChangeOpen(true)}
+                className="text-xs font-semibold text-brand-600 underline-offset-2 hover:underline"
+              >
+                Rolü değiştir
+              </button>
             </div>
-          ))}
-        </div>
 
-        <div className="space-y-3">
-          <AnimatePresence mode="wait">
-            <motion.div key={`${step}-${form.role}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
+            <div className="mb-8 flex justify-between gap-1">
+              {APPLICATION_STEPS.map((s) => (
+                <div key={s.id} className={`flex-1 text-center ${step >= s.id ? 'text-brand-600' : 'text-cream-300'}`}>
+                  <div className={`mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold shadow-sm ${step > s.id ? 'bg-sage-500 text-white' : step === s.id ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-cream-100'}`}>
+                    {step > s.id ? <CheckCircle className="h-4 w-4" /> : s.id}
+                  </div>
+                  <p className="hidden text-[10px] font-semibold sm:block">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <AnimatePresence mode="wait">
+                <motion.div key={`${step}-${form.role}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
               {step === 1 && (
                 <>
                   <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
@@ -721,11 +779,13 @@ export default function StaffApplicationPage() {
               {!precheckingEmail && <ArrowRight className="h-4 w-4" />}
             </button>
           </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       <ApplicationSummaryModal
-        open={summaryOpen}
+        open={summaryOpen && phase === 'form'}
         onClose={() => setSummaryOpen(false)}
         form={form}
         submitting={submitting}
@@ -735,6 +795,12 @@ export default function StaffApplicationPage() {
             ? <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
             : null
         }
+      />
+
+      <RoleChangeConfirmModal
+        open={roleChangeOpen}
+        onClose={() => setRoleChangeOpen(false)}
+        onConfirm={confirmRoleChange}
       />
     </div>
   )
