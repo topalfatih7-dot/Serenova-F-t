@@ -11,6 +11,7 @@ import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import StaffApplicationHero from '../components/staff/StaffApplicationHero'
+import StaffApplySelectOverview from '../components/staff/StaffApplySelectOverview'
 import { useToast } from '../context/ToastContext'
 import TurnstileWidget from '../components/security/TurnstileWidget'
 import { useTurnstile } from '../hooks/useTurnstile'
@@ -124,6 +125,7 @@ export default function StaffApplicationPage() {
     setSummaryOpen(false)
     setSearchParams({ role: gateRole }, { replace: true })
     setPhase('form')
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
 
   const confirmRoleChange = () => {
@@ -316,21 +318,37 @@ export default function StaffApplicationPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-cream-50/30 px-4 py-16">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mx-auto max-w-lg rounded-3xl border border-sage-200 bg-white p-8 text-center shadow-lg">
-          <CheckCircle className="mx-auto h-14 w-14 text-sage-500" />
-          <h1 className="mt-4 font-display text-2xl font-bold text-cream-900">Başvurunuz Alındı</h1>
-          <p className="mt-2 text-sm text-cream-800/65">Ekibimiz başvurunuzu inceleyecek. Onaylandığında {form.email} adresine giriş bilgileriniz iletilecektir.</p>
-          <Link to="/" className="btn-wellness mt-6 inline-flex !py-3 !px-6">Ana Sayfaya Dön</Link>
+      <div className="min-h-screen staff-apply-page px-4 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="staff-apply-success mx-auto max-w-lg"
+        >
+          <div className="staff-apply-success__icon" aria-hidden>
+            <CheckCircle className="h-8 w-8" strokeWidth={1.75} />
+          </div>
+          <p className="staff-apply-brand staff-apply-brand--sm mt-5">Yeni Form</p>
+          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-cream-900 sm:text-[1.75rem]">
+            Başvurunuz alındı
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-cream-800/65">
+            Ekibimiz başvurunuzu inceleyecek. Onaylandığında{' '}
+            <span className="font-medium text-cream-900">{form.email}</span> adresine giriş bilgileriniz iletilecektir.
+          </p>
+          <Link to="/" className="btn-wellness mt-7 inline-flex !px-7 !py-3">
+            Ana Sayfaya Dön
+          </Link>
         </motion.div>
       </div>
     )
   }
 
   const RoleIcon = form.role === 'dietitian' ? Apple : Dumbbell
+  const stepProgress = Math.max(0, Math.min(1, (step - 1) / (APPLICATION_STEPS.length - 1)))
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-cream-50 via-white to-sage-50/20">
+    <div className="staff-apply-page">
       <SeoHead title="Kadromuza Katıl — Koç & Diyetisyen Başvurusu" description="Yeni Form ekibine koç veya diyetisyen olarak başvurun." canonicalPath="/team/apply" />
 
       <StaffApplicationHero
@@ -341,27 +359,37 @@ export default function StaffApplicationPage() {
         lockedRole={form.role}
       />
 
-      <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6">
-        <Link to={form.role === 'dietitian' ? '/team/dietitians' : '/team/coaches'} className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/60 hover:text-brand-600">
+      <div className={`staff-apply-shell relative mx-auto px-4 pb-20 pt-7 sm:px-6 ${phase === 'select' ? 'max-w-5xl' : 'max-w-3xl'}`}>
+        <Link
+          to={form.role === 'dietitian' ? '/team/dietitians' : '/team/coaches'}
+          className="relative z-[1] mb-7 inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/50 transition hover:text-brand-600"
+        >
           <ArrowLeft className="h-4 w-4" /> Kadroya dön
         </Link>
 
+        {phase === 'select' && (
+          <div className="mb-4">
+            <StaffApplySelectOverview />
+          </div>
+        )}
+
         {phase === 'form' && (
           <>
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream-200/90 bg-white/90 px-4 py-3.5 shadow-sm">
+            <div className="staff-apply-role-chip relative z-[1] mb-7">
               <div className="flex items-center gap-3">
                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm ${
                   form.role === 'dietitian'
                     ? 'bg-gradient-to-br from-sage-500 to-sage-700'
                     : 'bg-gradient-to-br from-brand-500 to-brand-700'
                 }`}>
-                  <RoleIcon className="h-4 w-4" />
+                  <RoleIcon className="h-4 w-4" strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="flex items-center gap-1.5 text-sm font-semibold text-cream-900">
-                    <Lock className="h-3.5 w-3.5 text-cream-800/40" aria-hidden />
+                  <p className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-cream-900">
+                    <Lock className="h-3.5 w-3.5 text-cream-800/35" aria-hidden />
                     {staffRoleLabel(form.role)} başvurusu
                   </p>
+                  <p className="mt-0.5 text-[11px] text-cream-800/45">Adım {step} / {APPLICATION_STEPS.length}</p>
                 </div>
               </div>
               <button
@@ -373,20 +401,33 @@ export default function StaffApplicationPage() {
               </button>
             </div>
 
-            <div className="mb-8 flex justify-between gap-1">
-              {APPLICATION_STEPS.map((s) => (
-                <div key={s.id} className={`flex-1 text-center ${step >= s.id ? 'text-brand-600' : 'text-cream-300'}`}>
-                  <div className={`mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold shadow-sm ${step > s.id ? 'bg-sage-500 text-white' : step === s.id ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-cream-100'}`}>
-                    {step > s.id ? <CheckCircle className="h-4 w-4" /> : s.id}
+            <div className="staff-apply-stepper relative z-[1] mb-8" aria-label="Başvuru adımları">
+              <div className="staff-apply-stepper__track" aria-hidden>
+                <div className="staff-apply-stepper__fill" style={{ width: `${stepProgress * 100}%` }} />
+              </div>
+              {APPLICATION_STEPS.map((s) => {
+                const state = step > s.id ? 'is-done' : step === s.id ? 'is-current' : ''
+                return (
+                  <div key={s.id} className={`staff-apply-step ${state}`}>
+                    <div className="staff-apply-step__dot">
+                      {step > s.id ? <CheckCircle className="h-4 w-4" /> : s.id}
+                    </div>
+                    <p className="staff-apply-step__label">{s.label}</p>
                   </div>
-                  <p className="hidden text-[10px] font-semibold sm:block">{s.label}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
-            <div className="space-y-3">
+            <div className="relative z-[1] space-y-3">
               <AnimatePresence mode="wait">
-                <motion.div key={`${step}-${form.role}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-3">
+                <motion.div
+                  key={`${step}-${form.role}`}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="space-y-3"
+                >
               {step === 1 && (
                 <>
                   <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
@@ -744,14 +785,17 @@ export default function StaffApplicationPage() {
               )}
 
               {step === 4 && form.role === 'dietitian' && (
-                <div className="rounded-2xl border border-sage-200 bg-sage-50/50 p-5 text-center text-sm text-cream-800/70">
-                  Diyetisyen başvurunuz tamamlandı. Devam ederek özeti görüntüleyip gönderebilirsiniz.
+                <div className="rounded-2xl border border-sage-200/80 bg-gradient-to-br from-sage-50/80 to-white p-6 text-center">
+                  <p className="font-display text-base font-semibold text-cream-900">Hazırsınız</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-cream-800/65">
+                    Diyetisyen başvurunuz tamamlandı. Devam ederek özeti görüntüleyip gönderebilirsiniz.
+                  </p>
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
 
-          <div className="mt-6 flex gap-3 rounded-2xl border border-cream-200 bg-white p-4 shadow-sm">
+          <div className="staff-apply-nav mt-6">
             {step > 1 && (
               <button
                 type="button"

@@ -11,23 +11,24 @@ const SERVICE_TONES = ['brand', 'sky', 'emerald', 'amber', 'violet', 'sage', 'ro
 export function AccordionSection({ id, title, subtitle, icon: Icon, tone = 'brand', open, onToggle, count, children }) {
   const style = TONE_STYLES[tone] || TONE_STYLES.brand
   return (
-    <div className="overflow-hidden rounded-2xl border border-cream-200/80 bg-white shadow-sm">
+    <div className={`staff-apply-accordion ${open ? 'is-open' : ''}`}>
       <button
         type="button"
         onClick={() => onToggle(id)}
-        className="flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-cream-50/80 sm:px-5"
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-cream-50/70 sm:px-5"
       >
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${style.bar} text-white shadow-sm`}>
-          {Icon && <Icon className="h-5 w-5" />}
+          {Icon && <Icon className="h-5 w-5" strokeWidth={1.75} />}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-cream-900">{title}</p>
+          <p className="font-semibold tracking-tight text-cream-900">{title}</p>
           {subtitle && <p className="mt-0.5 text-xs text-cream-800/55">{subtitle}</p>}
         </div>
         {count > 0 && (
           <span className="rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-bold text-sage-700">{count}</span>
         )}
-        <motion.span animate={{ rotate: open ? 180 : 0 }} className="text-cream-400">
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="text-cream-400">
           <ChevronDown className="h-5 w-5" />
         </motion.span>
       </button>
@@ -40,7 +41,7 @@ export function AccordionSection({ id, title, subtitle, icon: Icon, tone = 'bran
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-cream-100 px-4 pb-5 pt-4 sm:px-5">{children}</div>
+            <div className="border-t border-cream-100/90 px-4 pb-5 pt-4 sm:px-5">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -446,7 +447,7 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
   return (
     <Modal open={open} onClose={() => !submitting && onClose()} title="Başvuru Özeti" size="lg">
       <div className="space-y-5 text-sm">
-        <p className="rounded-xl bg-sage-50 px-4 py-3 text-xs text-sage-800">
+        <p className="rounded-xl border border-sage-100 bg-gradient-to-br from-sage-50 to-white px-4 py-3 text-xs leading-relaxed text-sage-800">
           Göndermeden önce bilgilerinizi kontrol edin. Onay sonrası personel paneli erişiminiz açılır.
         </p>
 
