@@ -195,7 +195,8 @@ export default async function handler(req, res) {
       })
     }
 
-    if (found.session?.status !== 'scheduled') {
+    const joinStatus = found.session?.status || 'scheduled'
+    if (!['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(joinStatus)) {
       return res.status(403).json({
         ok: false,
         error: 'Bu randevu aktif değil veya iptal edilmiş.',

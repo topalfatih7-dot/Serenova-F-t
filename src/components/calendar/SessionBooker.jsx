@@ -4,6 +4,7 @@ import { tr } from 'date-fns/locale'
 import { CalendarClock, Loader2, CalendarX } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { useToast } from '../../context/ToastContext'
+import { BOOKING_POLICY_ACK_COPY, SLOT_ACTIVE_STATUSES } from '../../utils/sessionCancelRules'
 
 const WINDOW_DAYS = 28
 const EMPTY_AVAIL = Object.freeze({})
@@ -69,6 +70,7 @@ export default function SessionBooker({
   const [pendingTime, setPendingTime] = useState(null)
   const [takenSet, setTakenSet] = useState(() => new Set())
   const [booking, setBooking] = useState(false)
+  const [policyAck, setPolicyAck] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [prevOpen, setPrevOpen] = useState(open)
 
@@ -78,6 +80,7 @@ export default function SessionBooker({
     if (open) {
       setSelectedIdx(0)
       setPendingTime(null)
+      setPolicyAck(false)
     }
   }
 
@@ -99,12 +102,10 @@ export default function SessionBooker({
     return () => { active = false }
   }, [open, staff?.id, type, getBookedSlots])
 
-  const ACTIVE_STATUSES = ['pending', 'scheduled', 'rescheduled']
-
   const ownActive = useMemo(() => {
     const s = new Set()
     ;(existingSessions || []).forEach((x) => {
-      if (ACTIVE_STATUSES.includes(x.status || 'scheduled') && x.date) {
+      if (SLOT_ACTIVE_STATUSES.includes(x.status || 'scheduled') && x.date) {
         s.add(new Date(x.date).getTime())
       }
     })
@@ -117,13 +118,13 @@ export default function SessionBooker({
   const usedThisMonth = useMemo(() => {
     if (limitScope === 'all') {
       return (existingSessions || []).filter((x) => (
-        ACTIVE_STATUSES.includes(x.status || 'scheduled')
+        SLOT_ACTIVE_STATUSES.includes(x.status || 'scheduled')
         || x.status === 'completed'
       )).length
     }
     if (!selectedDay) return 0
     return (existingSessions || []).filter((x) => (
-      ACTIVE_STATUSES.includes(x.status || 'scheduled')
+      SLOT_ACTIVE_STATUSES.includes(x.status || 'scheduled')
       && x.date && isSameMonth(new Date(x.date), selectedDay)
     )).length
   }, [existingSessions, selectedDay, limitScope])
@@ -148,6 +149,10 @@ export default function SessionBooker({
 
   const handleBook = async (time) => {
     if (booking || !selectedDay) return
+    if (!policyAck) {
+      toast('Devam etmek için iptal kurallarını onaylayın.', 'warning')
+      return
+    }
     const dt = slotDateTime(selectedDay, time)
     // Tıklama anı doğrulaması — interval’dan bağımsız güncel saat
     if (dt.getTime() <= Date.now()) {
@@ -280,6 +285,18 @@ export default function SessionBooker({
                   </dd>
                 </div>
               </dl>
+              <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl bg-amber-50 px-3 py-3 text-xs text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={policyAck}
+                  onChange={(e) => setPolicyAck(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-amber-300 text-brand-600 focus:ring-brand-400"
+                />
+                <span>
+                  <span className="font-semibold">Anladım — </span>
+                  {BOOKING_POLICY_ACK_COPY}
+                </span>
+              </label>
               <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -291,7 +308,7 @@ export default function SessionBooker({
                 </button>
                 <button
                   type="button"
-                  disabled={booking}
+                  disabled={booking || !policyAck}
                   onClick={confirmBook}
                   className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${tone.btn}`}
                 >

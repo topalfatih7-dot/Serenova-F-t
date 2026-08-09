@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, CalendarClock, ClipboardList, ArrowRight, Hourglass } from 'lucide-react'
+import { Users, CalendarClock, ClipboardList, ArrowRight, Hourglass, Ban } from 'lucide-react'
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { weekdayLabel } from '../../components/package/supportScheduleConstants'
@@ -9,7 +9,11 @@ import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getStaffClients } from '../../utils/chatAccess'
-import { getStaffAppointments, getStaffPendingAppointments } from './staffAppointments'
+import {
+  getStaffAppointments,
+  getStaffPendingAppointments,
+  getStaffCancelPendingAppointments,
+} from './staffAppointments'
 import { resolveFirstName } from '../../utils/displayName'
 import {
   fallbackNameForRole,
@@ -21,7 +25,7 @@ import {
 } from '../../utils/staffRoles'
 
 export default function StaffOverviewPage() {
-  const { staffUser, platform, respondSession } = useApp()
+  const { staffUser, platform, respondSession, respondCancelSession, cancelSession } = useApp()
   const { toast } = useToast()
   const role = staffUser.role
   const isCoach = isCoachRole(role)
@@ -37,6 +41,10 @@ export default function StaffOverviewPage() {
   })
   const appointments = useMemo(() => getStaffAppointments(clients, role), [clients, role])
   const pendingAppointments = useMemo(() => getStaffPendingAppointments(clients, role), [clients, role])
+  const cancelPendingAppointments = useMemo(
+    () => getStaffCancelPendingAppointments(clients, role),
+    [clients, role],
+  )
   const myPrograms = useMemo(
     () => (platform.programs || []).filter((p) => p.staffId === staffUser.id),
     [platform.programs, staffUser.id]
@@ -62,6 +70,48 @@ export default function StaffOverviewPage() {
     }
   }, [respondSession, sessionType, toast])
 
+  const handleRespondCancel = useCallback(async (session, decision) => {
+    if (!session?.id || !session.memberId) return
+    setRespondingId(session.id)
+    try {
+      const r = await respondCancelSession({
+        memberId: session.memberId,
+        sessionId: session.id,
+        sessionType,
+        decision,
+      })
+      if (r?.success === false) {
+        toast(r.error || 'İşlem başarısız.', 'error')
+        return
+      }
+      toast(
+        decision === 'approve' ? 'İptal onaylandı' : 'İptal talebi reddedildi — randevu devam ediyor',
+        decision === 'approve' ? 'info' : 'success',
+      )
+    } finally {
+      setRespondingId(null)
+    }
+  }, [respondCancelSession, sessionType, toast])
+
+  const handleStaffCancel = useCallback(async (session) => {
+    if (!session?.id || !session.memberId) return
+    setRespondingId(session.id)
+    try {
+      const r = await cancelSession(session.id, sessionType, { memberId: session.memberId })
+      if (r?.success === false) {
+        toast(r.error || 'İptal başarısız.', 'error')
+        return
+      }
+      if (r?.outcome === 'admin_cancel_pending') {
+        toast('İptal talebi yönetime gönderildi (24 saatten az kaldı).', 'info')
+      } else {
+        toast('Randevu iptal edildi', 'info')
+      }
+    } finally {
+      setRespondingId(null)
+    }
+  }, [cancelSession, sessionType, toast])
+
   const weekKey = sessionsKeyForRole(role)
   const thisWeekCount = useMemo(() => {
     const now = new Date()
@@ -69,7 +119,8 @@ export default function StaffOverviewPage() {
     weekEnd.setDate(weekEnd.getDate() + 7)
     return clients.reduce((sum, m) => sum + (m[weekKey] || []).filter((s) => {
       const d = new Date(s.date)
-      return s.status === 'scheduled' && d >= now && d <= weekEnd
+      return ['scheduled', 'rescheduled', 'cancel_pending', 'admin_cancel_pending'].includes(s.status || 'scheduled')
+        && d >= now && d <= weekEnd
     }).length, 0)
   }, [clients, weekKey])
 
@@ -96,7 +147,6 @@ export default function StaffOverviewPage() {
         <StatsCard label="Oluşturulan Program" value={myPrograms.length} sub={isCoach ? 'Antrenman programı' : 'Toplam'} icon={ClipboardList} accent="gold" />
       </div>
 
-      {/* Görüntülü görüşme alanı */}
       <StaffVideoPanel clients={clients} role={staffUser.role} />
 
       {pendingAppointments.length > 0 && (
@@ -131,6 +181,39 @@ export default function StaffOverviewPage() {
         </div>
       )}
 
+      {cancelPendingAppointments.length > 0 && (
+        <div className="rounded-2xl border border-orange-200 bg-orange-50/40 p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 font-semibold text-cream-900">
+              <Ban className="h-4 w-4 text-orange-600" />
+              İptal talepleri
+            </h3>
+            <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-800">
+              {cancelPendingAppointments.length}
+            </span>
+          </div>
+          <div className="mt-4 space-y-2.5">
+            {cancelPendingAppointments.slice(0, 8).map((a) => (
+              <StaffAppointmentRow
+                key={`cancel-${a.id}`}
+                memberName={a.memberName}
+                subtitle={`${a.title || 'Randevu'} · iptal onayı bekliyor`}
+                dateISO={a.date}
+                session={a}
+                sessionType={sessionType}
+                isCoach={isCoach}
+                accentRole={role}
+                cancelPending
+                showJoin={false}
+                responding={respondingId === a.id}
+                onApprove={(s) => handleRespondCancel(s, 'approve')}
+                onReject={(s) => handleRespondCancel(s, 'reject')}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-cream-200 bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-semibold text-cream-900">Yaklaşan Randevular</h3>
@@ -146,12 +229,20 @@ export default function StaffOverviewPage() {
               <StaffAppointmentRow
                 key={a.id}
                 memberName={a.memberName}
-                subtitle={a.title}
+                subtitle={
+                  a.status === 'admin_cancel_pending'
+                    ? `${a.title || 'Randevu'} · yönetim iptal onayı`
+                    : a.status === 'cancel_pending'
+                      ? `${a.title || 'Randevu'} · iptal onayı bekliyor`
+                      : a.title
+                }
                 dateISO={a.date}
                 session={a}
                 sessionType={sessionType}
                 isCoach={isCoach}
                 accentRole={role}
+                responding={respondingId === a.id}
+                onCancel={handleStaffCancel}
               />
             ))}
           </div>

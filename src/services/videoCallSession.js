@@ -39,9 +39,10 @@ export function getSessionTiming(session, now = new Date(), sessionType = 'coach
   }
 }
 
-/** Görüşme odası sayfasına erişilebilir mi? (Randevu planlı ve süresi dolmamış) */
+/** Görüşme odası sayfasına erişilebilir mi? (planlı / iptal onayı bekleyen) */
 export function canAccessCallRoom(session, now = new Date(), sessionType = 'coach') {
-  if (!session || session.status !== 'scheduled') {
+  const st = session?.status || 'scheduled'
+  if (!session || !['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(st)) {
     return { ok: false, reason: 'Bu randevu aktif değil veya iptal edilmiş.' }
   }
   const start = new Date(session.date)

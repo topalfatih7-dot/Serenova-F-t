@@ -478,9 +478,9 @@ export async function fetchAdminSessionSummaries() {
     const sessions = extractSessionsFromMemberData(row.data || {})
     const name = row.name || ''
     return [
-      ...(sessions.coachSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Koç' })),
-      ...(sessions.dietitianSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Diyetisyen' })),
-      ...(sessions.doctorSessions || []).map((s) => ({ ...s, memberName: name, sessionType: 'Doktor' })),
+      ...(sessions.coachSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Koç' })),
+      ...(sessions.dietitianSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Diyetisyen' })),
+      ...(sessions.doctorSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Doktor' })),
     ]
   })
 }
@@ -1670,6 +1670,69 @@ export async function respondStaffSession({ memberId, sessionId, sessionType, de
   } catch (e) {
     return { success: false, error: String(e.message || e) }
   }
+}
+
+async function authSessionAction(body) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return { success: false, error: 'Oturum gerekli.' }
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    if (!json.ok) return { success: false, error: json.error || 'İşlem başarısız.', ...json }
+    return { success: true, ...json }
+  } catch (e) {
+    return { success: false, error: String(e.message || e) }
+  }
+}
+
+/** Üye / personel / admin iptal isteği */
+export async function requestCancelSession({ memberId, sessionId, sessionType, forceAdmin = false }) {
+  return authSessionAction({
+    action: 'request-cancel-session',
+    memberId,
+    sessionId,
+    sessionType,
+    forceAdmin,
+  })
+}
+
+/** Personel: üye iptal talebi onay / red */
+export async function respondCancelSession({ memberId, sessionId, sessionType, decision }) {
+  return authSessionAction({
+    action: 'respond-cancel-session',
+    memberId,
+    sessionId,
+    sessionType,
+    decision,
+  })
+}
+
+/** Admin: personel 24s-içi iptal onayı */
+export async function respondAdminCancel({ memberId, sessionId, sessionType, decision }) {
+  return authSessionAction({
+    action: 'respond-admin-cancel',
+    memberId,
+    sessionId,
+    sessionType,
+    decision,
+  })
+}
+
+/** Üye yeniden planla (≥24s sunucu kontrolü) */
+export async function rescheduleStaffSession({ sessionId, sessionType, days }) {
+  return authSessionAction({
+    action: 'reschedule-session',
+    sessionId,
+    sessionType,
+    days,
+  })
 }
 
 export async function removeStaff(id) {

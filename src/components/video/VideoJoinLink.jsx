@@ -14,7 +14,8 @@ export default function VideoJoinLink({
   size = 'md',
   fullWidth = false,
 }) {
-  if (!session || session.status !== 'scheduled') return null
+  const joinOk = ['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(session?.status || 'scheduled')
+  if (!session || !joinOk) return null
 
   const roomAccess = canAccessCallRoom(session, new Date(), sessionType)
   const joinCheck = canJoinSession(session, new Date(), sessionType)

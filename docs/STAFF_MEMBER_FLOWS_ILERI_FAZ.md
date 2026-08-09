@@ -55,23 +55,28 @@
 |-------|--------|
 | `pending` | Onay bekliyor; video kapalı |
 | `scheduled` | Onaylı; video join açık |
+| `rescheduled` | Üye ≥24s kala +3/+5 gün taşıdı |
+| `cancel_pending` | Üye iptal talebi; personel onay/red; slot dolu; video açık |
+| `admin_cancel_pending` | Personel &lt;24s iptal; yalnız web admin onay/red; slot dolu |
 | `rejected` | Personel reddetti; üye bildirimi; yeni talep açabilir |
-| `cancelled` | Üye iptali |
+| `cancelled` | Kesin iptal (üye talebi onaylandı / personel / admin / paket) |
 | `completed` | Video attendance sonrası (değişmez) |
 
-1. **Pending limit + slot kilitler** — kota ve saat talep anında tutulur (`staff_booked_slots` + aylık/tek sefer limit’e `pending` ekle).
+1. **Pending limit + slot kilitler** — kota ve saat talep anında tutulur (`staff_booked_slots` + aylık/tek sefer limit’e `pending` / `cancel_pending` / `admin_cancel_pending` ekle).
 2. **Red** → `rejected` + üye in-app bildirim; üye yeniden book eder. Zorunlu red nedeni yok (şimdilik).
 3. **Alternatif saat önerme yok** — yalnız onay / red.
-4. **Admin manuel seans** → doğrudan `scheduled` (onay atlanır).
+4. **Admin manuel seans** → doğrudan `scheduled` (onay atlanır); admin her zaman anında iptal edebilir (`forceAdmin`).
 5. **Doktor hakediş** → sonraya (`BILLABLE_TYPES` değişmez).
-6. **Doktor limit hard-code bug** → bu işle birlikte düzelt (`memberScheduleLimits` / `AppointmentsPage`).
+6. **24s iptal/yeniden planla** — üye ≥24s: iptal = `cancel_pending` (personel onay); &lt;24s: iptal/yeniden planla yok. Pending talep anında çekilir. Personel ≥24s anında iptal; &lt;24s → `admin_cancel_pending`. Booker’da kural onayı zorunlu.
+7. **WhatsApp** — yalnız kesin `cancelled` outcome’ta `appt_cancelled`.
 
 ### Personel UI (uygulama)
-- Pending kuyruğu (overview / clients) + Onayla / Reddet.
+- Pending book kuyruğu + **iptal talepleri** kuyruğu (overview) + Onayla / Reddet.
 - Staff kendi adına book açmaz (üye talep eder; admin bypass).
+- Admin (yalnız web): `admin_cancel_pending` kuyruğu.
 
 ### Ana dosyalar
-`api/_bookSession.js`, staff approve/reject API, `SessionCard.jsx`, `staffAppointments.js`, `StaffOverviewPage.jsx`, `StaffAppointmentRow.jsx`, `staff_booked_slots` / limit sayımı, `AppointmentsPage.jsx`, bildirimler + WhatsApp metni (“confirmed” → talep/onay)
+`api/_bookSession.js`, `api/_sessionCancel.js`, `api/_sessionReschedule.js`, staff approve/reject API, `SessionCard.jsx`, `staffAppointments.js`, `StaffOverviewPage.jsx`, `StaffAppointmentRow.jsx`, `AdminSessionsPage.jsx`, `staff_booked_slots` / limit sayımı, `AppointmentsPage.jsx`, bildirimler + WhatsApp
 
 ---
 

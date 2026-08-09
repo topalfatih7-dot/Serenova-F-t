@@ -28,9 +28,9 @@ function sessionKey(type) {
   return SESSION_KEYS[type] || 'dietitianSessions'
 }
 
-/** Limit + slot kilidi — onay bekleyen talepler de yer tutar */
+/** Limit + slot kilidi — onay bekleyen + iptal onay bekleyen talepler de yer tutar */
 function activeStatuses() {
-  return new Set(['pending', 'scheduled', 'rescheduled'])
+  return new Set(['pending', 'scheduled', 'rescheduled', 'cancel_pending', 'admin_cancel_pending'])
 }
 
 function parseSessionDate(s) {

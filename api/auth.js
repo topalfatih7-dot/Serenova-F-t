@@ -12,6 +12,12 @@ import { getAppUrl } from './_appUrl.js'
 import { getBearerToken, getUserFromRequest } from './_apiAuth.js'
 import { bookSessionForMember } from './_bookSession.js'
 import { respondSessionForStaff } from './_respondSession.js'
+import {
+  requestCancelSession,
+  respondCancelSession,
+  respondAdminCancel,
+} from './_sessionCancel.js'
+import { rescheduleSessionForMember } from './_sessionReschedule.js'
 import { recordSessionAttendance } from './_sessionAttendance.js'
 import { handleGa4Report } from './_ga4Report.js'
 import { handleAiUsageReport } from './_aiUsageReport.js'
@@ -776,6 +782,85 @@ async function handleRespondSession(req, res, body) {
   return res.status(200).json(result)
 }
 
+async function handleRequestCancelSession(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await requestCancelSession(admin, userData.user, {
+    memberId: body.memberId,
+    sessionId: body.sessionId,
+    sessionType: body.sessionType || body.type,
+    forceAdmin: Boolean(body.forceAdmin),
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
+async function handleRespondCancelSession(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await respondCancelSession(admin, userData.user, {
+    memberId: body.memberId,
+    sessionId: body.sessionId,
+    sessionType: body.sessionType || body.type,
+    decision: body.decision,
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
+async function handleRespondAdminCancel(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await respondAdminCancel(admin, userData.user, {
+    memberId: body.memberId,
+    sessionId: body.sessionId,
+    sessionType: body.sessionType || body.type,
+    decision: body.decision,
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
+async function handleRescheduleSession(req, res, body) {
+  const token = getBearerToken(req)
+  if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
+
+  const admin = getSupabaseAdmin()
+  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Oturum doğrulanamadı.' })
+  }
+
+  const result = await rescheduleSessionForMember(admin, userData.user.id, {
+    sessionId: body.sessionId,
+    sessionType: body.sessionType || body.type,
+    days: body.days,
+  })
+  if (!result.ok) return res.status(400).json(result)
+  return res.status(200).json(result)
+}
+
 async function handleSessionAttendance(req, res, body) {
   const token = getBearerToken(req)
   if (!token) return res.status(401).json({ ok: false, error: 'Oturum gerekli.' })
@@ -988,6 +1073,10 @@ export default async function handler(req, res) {
     if (action === 'password-reset') return handlePasswordReset(req, res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
     if (action === 'respond-session') return handleRespondSession(req, res, body)
+    if (action === 'request-cancel-session') return handleRequestCancelSession(req, res, body)
+    if (action === 'respond-cancel-session') return handleRespondCancelSession(req, res, body)
+    if (action === 'respond-admin-cancel') return handleRespondAdminCancel(req, res, body)
+    if (action === 'reschedule-session') return handleRescheduleSession(req, res, body)
     if (action === 'session-attendance') return handleSessionAttendance(req, res, body)
     if (action === 'exercise-video-url') return handleExerciseVideoUrl(req, res, body)
     if (action === 'exercise-video-urls') return handleExerciseVideoUrls(req, res, body)

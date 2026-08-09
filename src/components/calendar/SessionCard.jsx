@@ -3,6 +3,12 @@ import { tr } from 'date-fns/locale'
 import { Calendar, Clock, User, Video, MoreVertical } from 'lucide-react'
 import { useState } from 'react'
 import VideoJoinLink from '../video/VideoJoinLink'
+import {
+  canMemberModifySession,
+  memberCancelBlockedCopy,
+  memberCancelLabel,
+  VIDEO_ACTIVE_STATUSES,
+} from '../../utils/sessionCancelRules'
 
 const STATUS_STYLES = {
   pending: 'bg-amber-50 text-amber-800',
@@ -11,6 +17,8 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-50 text-red-600',
   rejected: 'bg-red-50 text-red-700',
   rescheduled: 'bg-amber-50 text-amber-700',
+  cancel_pending: 'bg-orange-50 text-orange-800',
+  admin_cancel_pending: 'bg-orange-50 text-orange-800',
 }
 
 const STATUS_LABELS = {
@@ -20,14 +28,21 @@ const STATUS_LABELS = {
   cancelled: 'İptal',
   rejected: 'Reddedildi',
   rescheduled: 'Yeniden planlandı',
+  cancel_pending: 'İptal onayı bekleniyor',
+  admin_cancel_pending: 'Yönetim iptal onayı',
 }
 
 export default function SessionCard({ session, sessionType = 'coach', onReschedule, onCancel }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isPast = new Date(session.date) < new Date()
   const status = session.status || 'scheduled'
-  const canReschedule = status === 'scheduled' && !isPast
-  const canCancel = (status === 'scheduled' || status === 'pending') && !isPast
+  const withinNotice = canMemberModifySession(session)
+  const canReschedule = (status === 'scheduled' || status === 'rescheduled') && !isPast && withinNotice
+  const canCancelPending = status === 'pending' && !isPast
+  const canRequestCancel = (status === 'scheduled' || status === 'rescheduled') && !isPast && withinNotice
+  const canCancel = canCancelPending || canRequestCancel
+  const showModifyBlocked = (status === 'scheduled' || status === 'rescheduled') && !isPast && !withinNotice
+  const canJoin = VIDEO_ACTIVE_STATUSES.includes(status)
 
   return (
     <div className="rounded-2xl border border-cream-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -47,7 +62,7 @@ export default function SessionCard({ session, sessionType = 'coach', onReschedu
               <MoreVertical className="h-4 w-4 text-cream-800/50" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 z-10 mt-1 w-40 rounded-xl border border-cream-200 bg-white py-1 shadow-lg">
+              <div className="absolute right-0 z-10 mt-1 w-48 rounded-xl border border-cream-200 bg-white py-1 shadow-lg">
                 {canReschedule && (
                   <button
                     type="button"
@@ -62,7 +77,7 @@ export default function SessionCard({ session, sessionType = 'coach', onReschedu
                   onClick={() => { onCancel?.(session); setMenuOpen(false) }}
                   className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                 >
-                  {status === 'pending' ? 'Talebi İptal Et' : 'İptal Et'}
+                  {memberCancelLabel(status)}
                 </button>
               </div>
             )}
@@ -78,13 +93,23 @@ export default function SessionCard({ session, sessionType = 'coach', onReschedu
           <Clock className="h-4 w-4 text-brand-400" />
           {format(new Date(session.date), 'HH:mm')} · {session.duration} dk
         </span>
-        {session.status === 'scheduled' && !isPast && (
+        {canJoin && !isPast && (
           <span className="flex items-center gap-1.5 text-brand-600">
             <Video className="h-4 w-4" /> Video görüşme
           </span>
         )}
       </div>
-      {session.status === 'scheduled' && (
+      {showModifyBlocked && (
+        <p className="mt-3 rounded-xl bg-cream-50 px-3 py-2 text-xs text-cream-800/70">
+          {memberCancelBlockedCopy()}
+        </p>
+      )}
+      {status === 'cancel_pending' && (
+        <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-xs text-orange-800">
+          İptal talebiniz uzman onayını bekliyor. Onaylanana kadar randevu geçerlidir.
+        </p>
+      )}
+      {canJoin && (
         <div className="mt-4 border-t border-cream-100 pt-4">
           <VideoJoinLink session={session} sessionType={sessionType} className="w-full" />
         </div>

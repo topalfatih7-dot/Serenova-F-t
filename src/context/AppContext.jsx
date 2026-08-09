@@ -1409,42 +1409,132 @@ export function AppProvider({ children }) {
     return 'dietitianSessions'
   }
 
-  const rescheduleSession = useCallback(async (id, type, newDate) => {
-    if (!currentMember) return
+  const rescheduleSession = useCallback(async (id, type, _newDate, days) => {
+    if (!currentMember) return { success: false, error: 'Oturum gerekli.' }
     const key = sessionKey(type)
-    const prev = (currentMember[key] || []).find((s) => s.id === id)
-    const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, date: newDate, status: 'rescheduled' } : s))
-    await patchCurrentRemote({ [key]: sessions })
-    if (prev) {
-      const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-      void notifyWhatsAppEvent('appt_rescheduled', {
-        memberId: currentMember.id,
-        sessionId: id,
-        sessionType: type,
-        oldStartsAt: prev.date,
-        newStartsAt: newDate,
-        actor: 'member',
-      })
+    const shiftDays = days ?? (type === 'coach' ? 3 : 5)
+    const r = await sb.rescheduleStaffSession({ sessionId: id, sessionType: type, days: shiftDays })
+    if (r.success && r.session) {
+      const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, ...r.session } : s))
+      patchMemberInDb({ ...currentMember, [key]: sessions })
+      if (r.oldStartsAt && r.newStartsAt) {
+        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+        void notifyWhatsAppEvent('appt_rescheduled', {
+          memberId: currentMember.id,
+          sessionId: id,
+          sessionType: type,
+          oldStartsAt: r.oldStartsAt,
+          newStartsAt: r.newStartsAt,
+          actor: 'member',
+        })
+      }
     }
-  }, [currentMember, patchCurrentRemote])
+    return r
+  }, [currentMember, patchMemberInDb])
 
-  const cancelSession = useCallback(async (id, type) => {
-    if (!currentMember) return
+  const cancelSession = useCallback(async (id, type, opts = {}) => {
+    if (!currentMember && !opts.memberId) return { success: false, error: 'Oturum gerekli.' }
     const key = sessionKey(type)
-    const prev = (currentMember[key] || []).find((s) => s.id === id)
-    const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, status: 'cancelled' } : s))
-    await patchCurrentRemote({ [key]: sessions })
-    if (prev) {
-      const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-      void notifyWhatsAppEvent('appt_cancelled', {
-        memberId: currentMember.id,
-        sessionId: id,
-        sessionType: type,
-        startsAt: prev.date,
-        actor: 'member',
-      })
+    const r = await sb.requestCancelSession({
+      memberId: opts.memberId,
+      sessionId: id,
+      sessionType: type,
+      forceAdmin: Boolean(opts.forceAdmin),
+    })
+    if (r.success && r.session) {
+      const targetId = opts.memberId || currentMember?.id
+      if (currentMember && (!opts.memberId || opts.memberId === currentMember.id)) {
+        const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, ...r.session } : s))
+        patchMemberInDb({ ...currentMember, [key]: sessions })
+      } else if (targetId) {
+        setRemoteDb((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            members: (prev.members || []).map((m) => {
+              if (m.id !== targetId) return m
+              const sessions = (m[key] || []).map((s) => (s.id === id ? { ...s, ...r.session } : s))
+              return { ...m, [key]: sessions }
+            }),
+          }
+        })
+      }
+      // WhatsApp yalnızca kesin iptalde
+      if (r.outcome === 'cancelled') {
+        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+        void notifyWhatsAppEvent('appt_cancelled', {
+          memberId: targetId,
+          sessionId: id,
+          sessionType: type,
+          startsAt: r.session.date,
+          actor: r.actor || 'member',
+        })
+      }
     }
-  }, [currentMember, patchCurrentRemote])
+    return r
+  }, [currentMember, patchMemberInDb])
+
+  const respondCancelSession = useCallback(async ({ memberId, sessionId, sessionType, decision }) => {
+    const r = await sb.respondCancelSession({ memberId, sessionId, sessionType, decision })
+    if (r.success && r.session) {
+      const key = sessionKey(sessionType)
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          members: (prev.members || []).map((m) => {
+            if (m.id !== memberId) return m
+            const sessions = (m[key] || []).map((s) => (s.id === sessionId ? { ...s, ...r.session } : s))
+            return { ...m, [key]: sessions }
+          }),
+        }
+      })
+      if (r.outcome === 'cancelled') {
+        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+        void notifyWhatsAppEvent('appt_cancelled', {
+          memberId,
+          sessionId,
+          sessionType,
+          startsAt: r.session.date,
+          actor: 'staff',
+        })
+      }
+    } else if (r.success) {
+      void reloadRemote({ force: false })
+    }
+    return r
+  }, [reloadRemote])
+
+  const respondAdminCancel = useCallback(async ({ memberId, sessionId, sessionType, decision }) => {
+    const r = await sb.respondAdminCancel({ memberId, sessionId, sessionType, decision })
+    if (r.success && r.session) {
+      const key = sessionKey(sessionType)
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          members: (prev.members || []).map((m) => {
+            if (m.id !== memberId) return m
+            const sessions = (m[key] || []).map((s) => (s.id === sessionId ? { ...s, ...r.session } : s))
+            return { ...m, [key]: sessions }
+          }),
+        }
+      })
+      if (r.outcome === 'cancelled') {
+        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
+        void notifyWhatsAppEvent('appt_cancelled', {
+          memberId,
+          sessionId,
+          sessionType,
+          startsAt: r.session.date,
+          actor: 'admin',
+        })
+      }
+    } else if (r.success) {
+      void reloadRemote({ force: false })
+    }
+    return r
+  }, [reloadRemote])
 
   // Self-servis randevu: personel müsaitliğinden çakışmasız talep (pending)
   const bookSession = useCallback(async (type, dateISO, duration) => {
@@ -1844,6 +1934,8 @@ export function AppProvider({ children }) {
     flushNotificationReads,
     rescheduleSession,
     cancelSession,
+    respondCancelSession,
+    respondAdminCancel,
     bookSession,
     respondSession,
     getStaffBookedSlots,
@@ -1927,6 +2019,8 @@ export function AppProvider({ children }) {
     flushNotificationReads,
     rescheduleSession,
     cancelSession,
+    respondCancelSession,
+    respondAdminCancel,
     bookSession,
     respondSession,
     getStaffBookedSlots,
