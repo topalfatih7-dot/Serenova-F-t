@@ -67,7 +67,7 @@ export default function StaffProfileDisplay({ member }) {
     doctor: 'staff-profile-hero--doctor',
   }[member.role] || 'staff-profile-hero--coach'
 
-  const infoCount = [bio, education.length, experiences.length, showHours].filter(Boolean).length
+  const secondaryCount = [education.length, experiences.length].filter(Boolean).length
 
   return (
     <article className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
@@ -120,11 +120,6 @@ export default function StaffProfileDisplay({ member }) {
                 {profile.title && (
                   <p className="mt-1 text-base font-medium text-white/90 sm:text-lg">{profile.title}</p>
                 )}
-                    {bio && (
-                      <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/80 line-clamp-3 sm:mx-0">
-                        {bio}
-                      </p>
-                    )}
 
                 <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                   {profile.experienceYears > 0 && (
@@ -160,26 +155,18 @@ export default function StaffProfileDisplay({ member }) {
         </div>
 
         <div className="space-y-6 p-5 sm:p-8">
+          {bio ? (
+            <InfoCard title="Hakkında" icon={User} tone="teal" delay={0.05}>
+              <p className="whitespace-pre-line">{bio}</p>
+            </InfoCard>
+          ) : null}
+
           {tags.length > 0 && (
             <StaffSpecialtyShowcase tags={tags} role={member.role} />
           )}
 
-          {infoCount > 0 && (
-            <div
-              className={`grid gap-4 ${
-                infoCount >= 3
-                  ? 'sm:grid-cols-2 lg:grid-cols-3'
-                  : infoCount === 2
-                    ? 'sm:grid-cols-2'
-                    : ''
-              }`}
-            >
-              {bio ? (
-                <InfoCard title="Hakkında" icon={User} tone="teal" delay={0.05}>
-                  <p className="whitespace-pre-line">{bio}</p>
-                </InfoCard>
-              ) : null}
-
+          {secondaryCount > 0 && (
+            <div className={`grid gap-4 ${secondaryCount === 2 ? 'sm:grid-cols-2' : ''}`}>
               {education.length > 0 && (
                 <InfoCard title="Eğitim" icon={GraduationCap} tone="violet" delay={0.1}>
                   <ul className="space-y-3">
@@ -222,32 +209,6 @@ export default function StaffProfileDisplay({ member }) {
                   </ul>
                 </InfoCard>
               )}
-
-              {showHours && (
-                <InfoCard title="Çalışma Saatleri" icon={Clock} tone="orange" delay={0.15}>
-                  {hasAvailabilitySlots(profile.availability) ? (
-                    <ul className="space-y-2">
-                      {formatAvailabilityRanges(profile.availability).map((d) => (
-                        <li key={d.value}>
-                          <p className="font-semibold text-cream-900">{d.label}</p>
-                          <p className="text-xs text-cream-800/55">{d.ranges.join(', ')}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>
-                      <span className="font-semibold text-cream-900">
-                        {profile.workDays.map(weekdayLabel).join(', ')}
-                      </span>
-                      {(profile.workStart || profile.workEnd) && (
-                        <span className="mt-1 block text-sm text-cream-800/60">
-                          {[profile.workStart, profile.workEnd].filter(Boolean).join(' – ')}
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </InfoCard>
-              )}
             </div>
           )}
 
@@ -282,6 +243,32 @@ export default function StaffProfileDisplay({ member }) {
                 })}
               </div>
             </section>
+          )}
+
+          {showHours && (
+            <InfoCard title="Çalışma Saatleri" icon={Clock} tone="orange" delay={0.18}>
+              {hasAvailabilitySlots(profile.availability) ? (
+                <ul className="space-y-2">
+                  {formatAvailabilityRanges(profile.availability).map((d) => (
+                    <li key={d.value}>
+                      <p className="font-semibold text-cream-900">{d.label}</p>
+                      <p className="text-xs text-cream-800/55">{d.ranges.join(', ')}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>
+                  <span className="font-semibold text-cream-900">
+                    {profile.workDays.map(weekdayLabel).join(', ')}
+                  </span>
+                  {(profile.workStart || profile.workEnd) && (
+                    <span className="mt-1 block text-sm text-cream-800/60">
+                      {[profile.workStart, profile.workEnd].filter(Boolean).join(' – ')}
+                    </span>
+                  )}
+                </p>
+              )}
+            </InfoCard>
           )}
 
           <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:flex-wrap sm:justify-center">

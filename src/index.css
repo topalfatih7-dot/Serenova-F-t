@@ -388,6 +388,135 @@ body {
   padding: 1.15rem 1.15rem 1.05rem;
 }
 
+.team-member-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  border-radius: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand-400) 16%, transparent);
+  background: color-mix(in srgb, var(--color-brand-50) 48%, rgb(255 255 255 / 0.78));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0.4rem 0.72rem 0.4rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: color-mix(in srgb, var(--color-brand-900) 78%, var(--color-cream-800));
+  box-shadow: none;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.team-member-card__tag::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 0.08rem;
+  background: var(--color-brand-500);
+  opacity: 0.7;
+  transform: rotate(45deg);
+}
+
+.team-member-card:hover .team-member-card__tag {
+  background: color-mix(in srgb, var(--color-brand-50) 72%, white);
+  border-color: color-mix(in srgb, var(--color-brand-400) 28%, transparent);
+}
+
+.team-member-card:hover .team-member-card__tag::before {
+  opacity: 1;
+}
+
+.team-member-card--dietitian .team-member-card__tag {
+  border-color: color-mix(in srgb, var(--color-sage-400) 16%, transparent);
+  background: color-mix(in srgb, var(--color-sage-50) 48%, rgb(255 255 255 / 0.78));
+  color: color-mix(in srgb, var(--color-sage-900) 78%, var(--color-cream-800));
+}
+
+.team-member-card--dietitian .team-member-card__tag::before {
+  background: var(--color-sage-500);
+}
+
+.team-member-card--dietitian:hover .team-member-card__tag {
+  background: color-mix(in srgb, var(--color-sage-50) 72%, white);
+  border-color: color-mix(in srgb, var(--color-sage-400) 28%, transparent);
+}
+
+.team-member-card--doctor .team-member-card__tag {
+  border-color: color-mix(in srgb, var(--color-cream-500) 22%, transparent);
+  background: color-mix(in srgb, var(--color-cream-100) 42%, rgb(255 255 255 / 0.82));
+  color: var(--color-cream-800);
+}
+
+.team-member-card--doctor .team-member-card__tag::before {
+  background: var(--color-cream-700);
+}
+
+.team-member-card--doctor:hover .team-member-card__tag {
+  background: color-mix(in srgb, var(--color-cream-100) 62%, white);
+  border-color: color-mix(in srgb, var(--color-cream-500) 32%, transparent);
+}
+
+.team-member-card__certs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-brand-200) 50%, white);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, white 90%, var(--color-brand-50)) 0%,
+      color-mix(in srgb, white 72%, var(--color-brand-50)) 100%);
+  padding: 0.2rem 0.75rem 0.2rem 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-brand-800);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px color-mix(in srgb, var(--color-brand-900) 6%, transparent);
+}
+
+.team-member-card__certs-icon {
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-500) 14%, white);
+  color: var(--color-brand-600);
+}
+
+.team-member-card--dietitian .team-member-card__certs {
+  border-color: color-mix(in srgb, var(--color-sage-200) 55%, white);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, white 90%, var(--color-sage-50)) 0%,
+      color-mix(in srgb, white 72%, var(--color-sage-50)) 100%);
+  color: var(--color-sage-800);
+}
+
+.team-member-card--dietitian .team-member-card__certs-icon {
+  background: color-mix(in srgb, var(--color-sage-500) 14%, white);
+  color: var(--color-sage-600);
+}
+
+.team-member-card--doctor .team-member-card__certs {
+  border-color: color-mix(in srgb, var(--color-cream-300) 70%, white);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, white 90%, var(--color-cream-100)) 0%,
+      color-mix(in srgb, white 74%, var(--color-cream-100)) 100%);
+  color: var(--color-cream-800);
+}
+
+.team-member-card--doctor .team-member-card__certs-icon {
+  background: color-mix(in srgb, var(--color-cream-700) 12%, white);
+  color: var(--color-cream-800);
+}
+
 .team-member-card__cta {
   display: inline-flex;
   align-items: center;
@@ -442,7 +571,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .team-member-card,
   .team-member-card__media img,
-  .team-member-card__cta {
+  .team-member-card__cta,
+  .team-member-card__tag {
     transition: none;
   }
 

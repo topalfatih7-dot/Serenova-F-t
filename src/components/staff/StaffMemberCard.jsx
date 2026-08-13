@@ -4,7 +4,6 @@ import { ChevronRight, Award, Briefcase } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { normalizeStaffProfile, publicCertificates, formatStaffDisplayName } from '../../data/staffProfile'
 import { staffProfilePath } from '../../config/seo'
-import { tagToneClass } from './staffProfileVisuals'
 
 function labelKey(value) {
   return String(value || '').trim().toLocaleLowerCase('tr')
@@ -75,17 +74,10 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
         </div>
 
         <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
-          {profile.bio?.trim() && (
-            <p className="line-clamp-2 text-sm leading-relaxed text-cream-800/70">{profile.bio.trim()}</p>
-          )}
-
           {tags.length > 0 && (
-            <div className={`${profile.bio?.trim() ? 'mt-3' : ''} flex flex-wrap gap-1.5`}>
-              {tags.map((tag, i) => (
-                <span
-                  key={tag}
-                  className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tagToneClass(i)}`}
-                >
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span key={tag} className="team-member-card__tag">
                   {tag}
                 </span>
               ))}
@@ -94,10 +86,12 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
 
           <div className="mt-auto flex items-center justify-between gap-3 border-t border-cream-100/80 pt-4">
             {certificateCount > 0 ? (
-              <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
-                <Award className="h-3.5 w-3.5 shrink-0" />
+              <span className="team-member-card__certs">
+                <span className="team-member-card__certs-icon" aria-hidden>
+                  <Award className="h-3.5 w-3.5" strokeWidth={2.2} />
+                </span>
                 {certificateCount} sertifika
-              </p>
+              </span>
             ) : (
               <span />
             )}
