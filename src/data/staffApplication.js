@@ -331,10 +331,35 @@ export function toggleInList(list, item) {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]
 }
 
+/** Formdaki "Diğer" chip'ini specialtyOther metniyle değiştirir; boş yer tutucuyu public profile'a taşımaz. */
+export function resolveSpecialtyTags(specialties = [], specialtyOther = '') {
+  const other = String(specialtyOther || '').trim()
+  const seen = new Set()
+  const resolved = []
+
+  for (const raw of specialties) {
+    const tag = String(raw || '').trim()
+    if (!tag) continue
+    const value = tag === OTHER_OPTION ? other : tag
+    if (!value || value === OTHER_OPTION) continue
+    const key = value.toLocaleLowerCase('tr')
+    if (seen.has(key)) continue
+    seen.add(key)
+    resolved.push(value)
+  }
+
+  if (other) {
+    const key = other.toLocaleLowerCase('tr')
+    if (!seen.has(key)) resolved.push(other)
+  }
+
+  return resolved
+}
+
 export function applicationToStaffPayload(app, tempPassword) {
   const d = app.data || {}
-  const specialties = (d.specialties || []).filter(Boolean)
-  const primarySpecialty = specialties.find((s) => s !== OTHER_OPTION) || specialties[0] || ''
+  const specialties = resolveSpecialtyTags(d.specialties, d.specialtyOther)
+  const primarySpecialty = specialties[0] || ''
 
   let education = (Array.isArray(d.education) ? d.education : [])
     .filter(hasEducationEntryInfo)
@@ -447,7 +472,12 @@ function coachStep2Errors(form) {
 
 function dietitianStep2Errors(form) {
   const errors = []
-  if (!(form.specialties || []).length) errors.push('En az bir uzmanlık alanı seçin')
+  const hasSpecialty = (form.specialties || []).some((s) => s !== OTHER_OPTION)
+    || ((form.specialties || []).includes(OTHER_OPTION) && form.specialtyOther?.trim())
+  if (!hasSpecialty) errors.push('En az bir uzmanlık alanı seçin')
+  if ((form.specialties || []).includes(OTHER_OPTION) && !form.specialtyOther?.trim()) {
+    errors.push('Diğer uzmanlık alanını yazın')
+  }
   if (!form.experienceYears && form.experienceYears !== 0) errors.push('Deneyim yılı gerekli')
   if (!form.graduationDepartment?.trim()) errors.push('Mezuniyet bölümü gerekli')
   return errors

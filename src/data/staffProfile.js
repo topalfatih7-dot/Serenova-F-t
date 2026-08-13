@@ -128,18 +128,32 @@ export function joinLines(items) {
   return (items || []).filter(Boolean).join('\n')
 }
 
+/** Başvuru formundaki yer tutucu — public profilde chip olarak gösterilmez */
+const PLACEHOLDER_SPECIALTY = 'Diğer'
+
+function isPlaceholderSpecialty(value) {
+  return String(value || '').trim() === PLACEHOLDER_SPECIALTY
+}
+
 /** Eski `description` alanını bio'ya taşır; dizileri normalize eder */
 export function normalizeStaffProfile(raw = {}) {
-  const specialties = Array.isArray(raw.specialties)
-    ? raw.specialties.filter(Boolean)
+  const specialties = (Array.isArray(raw.specialties)
+    ? raw.specialties
     : raw.specialty
       ? [raw.specialty]
-      : []
+      : [])
+    .map((t) => String(t).trim())
+    .filter((t) => t && !isPlaceholderSpecialty(t))
+
+  const specialtyRaw = String(raw.specialty || '').trim()
+  const specialty = specialtyRaw && !isPlaceholderSpecialty(specialtyRaw)
+    ? specialtyRaw
+    : (specialties[0] || '')
 
   return {
     ...raw,
     title: raw.title || '',
-    specialty: raw.specialty || specialties[0] || '',
+    specialty,
     specialties,
     bio: raw.bio || raw.description || '',
     photo: raw.photo || null,

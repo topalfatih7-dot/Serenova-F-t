@@ -162,7 +162,7 @@ export default function StaffProfileDisplay({ member }) {
           ) : null}
 
           {tags.length > 0 && (
-            <StaffSpecialtyShowcase tags={tags} role={member.role} />
+            <StaffSpecialtyShowcase tags={tags} role={member.role} specialty={specialty} />
           )}
 
           {secondaryCount > 0 && (

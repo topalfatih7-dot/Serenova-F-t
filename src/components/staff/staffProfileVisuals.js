@@ -2,7 +2,7 @@ import {
   Activity, Apple, Award, Baby, Dumbbell, Flame, HeartPulse, Medal, Salad, Sparkles,
   Stethoscope, Users, Video,
 } from 'lucide-react'
-import { COACH_SPECIALTY_GROUPS, DIETITIAN_SPECIALTY_GROUPS } from '../../data/staffApplication'
+import { COACH_SPECIALTY_GROUPS, DIETITIAN_SPECIALTY_GROUPS, OTHER_OPTION } from '../../data/staffApplication'
 
 export const STAFF_TAG_TONES = [
   'border-brand-200 bg-white text-brand-700',
@@ -105,7 +105,11 @@ export function specialtyGroupsForRole(role) {
 }
 
 export function groupProfileSpecialties(tags = [], role) {
-  const unique = [...new Set((tags || []).map((t) => String(t).trim()).filter(Boolean))]
+  const unique = [...new Set(
+    (tags || [])
+      .map((t) => String(t).trim())
+      .filter((t) => t && t !== OTHER_OPTION),
+  )]
   if (!unique.length) return []
   const remaining = new Set(unique)
   const catalog = specialtyGroupsForRole(role)
@@ -117,7 +121,17 @@ export function groupProfileSpecialties(tags = [], role) {
   })
   const extra = unique.filter((item) => remaining.has(item))
   if (extra.length) {
-    grouped.push({ id: 'other', label: 'Diğer', tone: 'teal', items: extra })
+    if (grouped.length) {
+      const host = grouped[0]
+      grouped[0] = { ...host, items: [...host.items, ...extra] }
+    } else {
+      grouped.push({
+        id: 'other',
+        label: extra.length === 1 ? extra[0] : 'Uzmanlık',
+        tone: 'teal',
+        items: extra,
+      })
+    }
   }
   return grouped
 }
