@@ -1,7 +1,8 @@
 # Yeni Form — SEO Master Plan (2026)
 
-> **Hazırlanma:** 2026-07-30 · **Site:** https://www.yeniform.com  
-> **Hedef:** Türkiye'de "online diyetisyen" ve "online koçluk" aramalarında rakiplerin önüne geç, AI arama araçlarında (GEO) görünür ol.
+> **Hazırlanma:** 2026-07-30 · **Güncelleme:** 2026-08-13 · **Site:** https://www.yeniform.com  
+> **Hedef:** Türkiye'de "online diyetisyen" ve "online koçluk" aramalarında rakiplerin önüne geç, AI arama araçlarında (GEO) görünür ol.  
+> **Uygulama checklist:** [`SEO_SAYFA_EKLEME.md`](SEO_SAYFA_EKLEME.md) · skill: `.cursor/skills/yeniform-seo/`
 
 ---
 
@@ -23,9 +24,9 @@
 | Mobile-first (Tailwind responsive) | ✅ | — |
 | GA4 + Consent Mode v2 | ✅ | — |
 | GSC mülk + sitemap gönderildi | ✅ | — |
-| Sitemap `lastmod` (static routes) | ❌ Eksik | YÜKSEk |
-| SearchAction schema | ❌ Eksik | YÜKSEK |
-| AggregateRating / Review schema | ❌ Eksik | YÜKSEK |
+| Sitemap `lastmod` (static routes) | ✅ Marketing route’larda var | — |
+| SearchAction schema | ✅ WebSite; `/blog?q=` UI zorunlu | — |
+| AggregateRating | ✅ Yalnızca gerçek testimonial (n≥5) | — |
 | Video sitemap | ❌ Eksik | ORTA |
 | Image alt tag denetimi | ⚠️ Denetlenmedi | ORTA |
 | Core Web Vitals ölçümü | ⚠️ Ölçülmedi | YÜKSEK |

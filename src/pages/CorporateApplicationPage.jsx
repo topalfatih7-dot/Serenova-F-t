@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, CheckCircle, Send, ArrowLeft } from 'lucide-react'
-import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
 import TurnstileWidget from '../components/security/TurnstileWidget'
 import { useTurnstile } from '../hooks/useTurnstile'
@@ -80,7 +79,6 @@ export default function CorporateApplicationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-cream-50 to-white py-10 sm:py-14">
-      <SeoHead title="Kurumsal Başvuru" description="Şirketiniz için wellness programı başvurusu." canonicalPath="/corporate/apply" />
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <Link to="/corporate" className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-cream-800/60 hover:text-brand-600">
           <ArrowLeft className="h-4 w-4" /> Kurumsal

@@ -26,7 +26,11 @@ const guestLinks = [
 
 const discoverSubLinks = [
   { to: '/online-diyetisyen', label: 'Online Diyetisyen', icon: Apple, color: 'text-sage-600 bg-sage-50' },
+  { to: '/online-diyetisyen/fiyat', label: 'Diyetisyen Fiyatları', icon: Apple, color: 'text-sage-600 bg-sage-50' },
+  { to: '/kilo-verme', label: 'Kilo Verme', icon: Apple, color: 'text-sage-600 bg-sage-50' },
   { to: '/online-kocluk', label: 'Online Koçluk', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
+  { to: '/online-kocluk/ev-antrenman', label: 'Evde Antrenman', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
+  { to: '/beslenme/sporcu-beslenmesi', label: 'Sporcu Beslenmesi', icon: Apple, color: 'text-sage-600 bg-sage-50' },
   { to: '/hakkimizda', label: 'Hakkımızda', icon: HeartHandshake, color: 'text-sage-600 bg-sage-50' },
   { to: '/stories', label: 'Başarı Hikayeleri', icon: Trophy, color: 'text-warm-500 bg-warm-50' },
   { to: '/blog', label: 'Blog', icon: BookOpen, color: 'text-brand-600 bg-brand-50' },
@@ -248,7 +252,7 @@ export default function PublicLayout() {
               onClose={() => setOpenDropdown(null)}
               layoutId="nav-pill-discover"
               pathname={pathname}
-              activePaths={['/online-diyetisyen', '/online-kocluk', '/hakkimizda', '/stories', '/blog']}
+              activePaths={['/online-diyetisyen', '/online-kocluk', '/kilo-verme', '/beslenme', '/hakkimizda', '/stories', '/blog']}
             />
             <NavDropdown
               label="Kadromuz"
@@ -539,7 +543,11 @@ export default function PublicLayout() {
               <p className="text-sm font-semibold text-white">Platform</p>
               <div className="mt-3 space-y-2 text-sm text-cream-100/60">
                 <Link to="/online-diyetisyen" className="block hover:text-white">Online Diyetisyen</Link>
+                <Link to="/online-diyetisyen/fiyat" className="block hover:text-white">Diyetisyen Fiyatları</Link>
+                <Link to="/kilo-verme" className="block hover:text-white">Kilo Verme</Link>
                 <Link to="/online-kocluk" className="block hover:text-white">Online Koçluk</Link>
+                <Link to="/online-kocluk/ev-antrenman" className="block hover:text-white">Evde Antrenman</Link>
+                <Link to="/beslenme/sporcu-beslenmesi" className="block hover:text-white">Sporcu Beslenmesi</Link>
                 <Link to="/hakkimizda" className="block hover:text-white">Hakkımızda</Link>
                 <Link to="/membership" className="block hover:text-white">Üyelikler</Link>
                 <Link to="/blog" className="block hover:text-white">Blog</Link>

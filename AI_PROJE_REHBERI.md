@@ -2,7 +2,7 @@
 
 > **Amaç:** Az token ile doğru bağlam. Detay için kod / `.cursor/skills/yeniform-*` / `docs/*`.  
 > **Canlı:** https://www.yeniform.com · Vercel `serenova-f-t` · Supabase `rvzksmyhsgxgrxgeabmi`  
-> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-08
+> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-13
 
 **AI okuma sırası:** §0 kurallar → §2 durum → ilgili skill → kod. Tam dosya envanteri / eski changelog **yok** (git history).
 
@@ -20,6 +20,7 @@
 8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = ücretsiz kayıt + soft-lock + süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 10. **Paketsiz üye (freemium):** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Dashboard + profil + `/membership` + `/health-test` açık. Süresi bitmiş ücretli → `free` fallback. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
+11. **KİLİTLİ — public üye/çevrimiçi sayıları** (`displayPlatformStats.js`): üye <750 → **750+**; ≥750 → gerçek. Çevrimiçi <20 → oturumda **20–25** rastgele; ≥20 → gerçek. Floor’u kaldırma / gerçek sayıya çevirme. Admin paneli gerçek sayıyı gösterir.
 
 ---
 
@@ -134,6 +135,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 | HT sorular | `src/data/healthTest.js`, `healthTestSections.js` |
 | VKİ | `src/services/health.js` · UI `HealthSummarySection` |
 | Planlar | `src/data/membershipPlans.js` |
+| Public stats floor | `src/utils/displayPlatformStats.js` (**kilitli** 750+ / 20–25) |
 | SEO içerik | `src/data/seoServiceContent.js` |
 | Promptlar | `api/_ai-prompts.js` (food + health score + blog + tip) |
 | Stripe | `api/stripe-*.js`, `api/_stripe.js` |
@@ -180,6 +182,10 @@ Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret
 - Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
 - Faz 2–3: `UnpaidMemberGate` (`membership === 'free'`), Stripe Portal (`stripe_customer_id`), video attendance → `staff_earnings`, `aiAnalysis` orphan silindi.
+
+## 11c. Delta (2026-08-13)
+
+- Public istatistik **kilitlendi:** üye <750 → 750+; çevrimiçi <20 → oturum 20–25. `displayPlatformStats.js`.
 
 ## 11b. Önceki delta (2026-07-28)
 

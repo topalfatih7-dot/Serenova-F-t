@@ -1,6 +1,7 @@
 # Yeni Form — SEO Anahtar Kelime Haritası
 
-> **Güncelleme:** 2026-07-30 · Kaynak: GSC hedefleri + rakip analizi + sektör arama hacmi verileri
+> **Güncelleme:** 2026-08-13 · Kaynak: GSC hedefleri + rakip analizi + sektör arama hacmi verileri  
+> Ticari küme URL’ler: `/kilo-verme`, `/online-diyetisyen/fiyat`, `/online-kocluk/ev-antrenman`, `/beslenme/sporcu-beslenmesi`
 
 ---
 
@@ -25,10 +26,10 @@
 
 | Anahtar Kelime | Aylık Arama | Niyet | Hedef Sayfa | Durum |
 |----------------|-------------|-------|-------------|-------|
-| kilo verme diyetisyen | ~8.000 | Satın alma | /kilo-verme | **EKSİK** |
+| kilo verme diyetisyen | ~8.000 | Satın alma | /kilo-verme | Canlı küme |
 | kilo vermek için ne yapmalı | ~20.000 | Bilgi | Blog yazısı | **EKSİK** |
 | online diyetisyen fiyat | ~3.000 | Satın alma | /membership | Zayıf |
-| online diyetisyen fiyat 2026 | ~2.000 | Satın alma | /membership | **EKSİK** |
+| online diyetisyen fiyat 2026 | ~2.000 | Satın alma | /online-diyetisyen/fiyat | Canlı küme |
 | video görüşmeli diyetisyen | ~1.500 | Satın alma | /online-diyetisyen | Var (içerikte) |
 | kişiye özel beslenme programı | ~2.500 | Satın alma | /online-diyetisyen | Var (içerikte) |
 | online beslenme programı | ~3.000 | Satın alma | /online-diyetisyen | Zayıf |
@@ -41,8 +42,8 @@
 
 | Anahtar Kelime | Aylık Arama | Niyet | Hedef Sayfa | Durum |
 |----------------|-------------|-------|-------------|-------|
-| evde antrenman programı | ~8.000 | Bilgi/Satın | /online-kocluk/ev-antrenman | **EKSİK** |
-| sporcu beslenmesi | ~5.000 | Bilgi | /beslenme/sporcu-beslenmesi | **EKSİK** |
+| evde antrenman programı | ~8.000 | Bilgi/Satın | /online-kocluk/ev-antrenman | Canlı küme |
+| sporcu beslenmesi | ~5.000 | Bilgi | /beslenme/sporcu-beslenmesi | Canlı küme |
 | kişisel antrenör online | ~2.500 | Satın alma | /online-kocluk | Zayıf |
 | online fitness programı | ~3.000 | Satın alma | /online-kocluk | Zayıf |
 | online personal trainer | ~2.000 | Satın alma | /online-kocluk | **EKSİK** |

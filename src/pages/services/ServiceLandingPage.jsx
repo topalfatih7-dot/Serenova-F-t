@@ -20,9 +20,12 @@ import {
   buildFaqSchema,
   buildBreadcrumbSchema,
   buildHowToSchema,
+  buildSpeakableWebPageSchema,
 } from '../../config/seo'
 import { BRAND } from '../../config/brand'
 import { SERVICE_PAGES } from '../../data/seoServiceContent'
+import { ALL_PLANS } from '../../data/membershipPlans'
+import FAQAccordion from '../../components/landing/FAQAccordion'
 
 /** Bu sayfalara özel hero görselleri — kadro / About görselleriyle paylaşılmaz */
 const SERVICE_HERO_IMAGES = {
@@ -119,7 +122,7 @@ const fadeUp = {
 }
 
 const THEMES = {
-  '/online-diyetisyen': {
+  dietitian: {
     gradientFrom: 'from-sage-900/95',
     gradientVia: 'via-sage-900/75',
     meshA: 'service-mesh-sage',
@@ -128,7 +131,7 @@ const THEMES = {
     ctaGrad: 'from-sage-600 to-brand-600',
     badgeIcon: Apple,
   },
-  '/online-kocluk': {
+  coach: {
     gradientFrom: 'from-brand-950/95',
     gradientVia: 'via-brand-900/75',
     meshA: 'service-mesh-brand',
@@ -156,33 +159,58 @@ function EmphasizedText({ text }) {
 
 export default function ServiceLandingPage({ path }) {
   const page = SERVICE_PAGES[path]
-  const theme = THEMES[path]
-  if (!page || !theme) return null
+  const theme = THEMES[page?.theme] || THEMES.dietitian
+  if (!page) return null
 
-  const hero = SERVICE_HERO_IMAGES[path]
+  const hero = SERVICE_HERO_IMAGES[path] || SERVICE_HERO_IMAGES[page.heroFallback] || SERVICE_HERO_IMAGES['/online-diyetisyen']
   const ThemeIcon = theme.badgeIcon
-  const whyItems = WHY_BY_PATH[path] || WHY_BY_PATH['/online-diyetisyen']
-  const isCoach = path === '/online-kocluk'
+  const whyItems = WHY_BY_PATH[path] || WHY_BY_PATH[page.pillarPath] || WHY_BY_PATH['/online-diyetisyen']
+  const isCoach = (page.theme || path) === 'coach' || path === '/online-kocluk' || path.startsWith('/online-kocluk')
+
+  const planOffers = (page.offerPlanIds || []).map((id) => {
+    const plan = ALL_PLANS.find((p) => p.id === id)
+    if (!plan) return null
+    return {
+      name: plan.name,
+      path: '/membership',
+      description: plan.tagline || plan.name,
+      price: plan.price,
+    }
+  }).filter(Boolean)
 
   const stepsSection = page.sections.find((s) => s.steps?.length)
+  const crumbs = [
+    { name: 'Ana Sayfa', path: '/' },
+    ...(page.pillarPath ? [{ name: page.pillarName || page.pillarPath, path: page.pillarPath }] : []),
+    { name: page.serviceName, path: page.path },
+  ]
   const schemas = [
+    buildSpeakableWebPageSchema({
+      name: page.serviceName,
+      path: page.path,
+      description: page.description,
+    }),
     buildServiceSchema({
       name: page.serviceName,
       description: page.description,
       path: page.path,
       serviceType: page.serviceType,
-      offers: [
-        {
-          name: path === '/online-diyetisyen' ? 'Diyet Paketi' : 'Spor Paketi',
-          path: '/membership',
-          description: page.lead.replace(/\*\*/g, ''),
-        },
-        {
-          name: 'VIP Paket',
-          path: '/membership',
-          description: 'Koç ve diyetisyen desteğini birleştiren paket',
-        },
-      ],
+      offers: planOffers.length
+        ? planOffers
+        : [
+            {
+              name: isCoach ? 'Spor Paketi' : 'Diyet Paketi',
+              path: '/membership',
+              description: page.lead.replace(/\*\*/g, ''),
+              price: isCoach ? 2499 : 2499,
+            },
+            {
+              name: 'VIP Paket',
+              path: '/membership',
+              description: 'Koç ve diyetisyen desteğini birleştiren paket',
+              price: 4999,
+            },
+          ],
     }),
     stepsSection
       ? buildHowToSchema({
@@ -192,10 +220,7 @@ export default function ServiceLandingPage({ path }) {
         })
       : null,
     buildFaqSchema(page.faqs),
-    buildBreadcrumbSchema([
-      { name: 'Ana Sayfa', path: '/' },
-      { name: page.serviceName, path: page.path },
-    ]),
+    buildBreadcrumbSchema(crumbs),
   ]
 
   return (
@@ -242,7 +267,7 @@ export default function ServiceLandingPage({ path }) {
             <h1 className="mt-5 font-display text-[1.85rem] font-bold leading-[1.15] tracking-tight text-cream-950 sm:text-4xl lg:text-[2.75rem]">
               {page.h1}
             </h1>
-            <p className="mt-5 max-w-xl text-sm leading-relaxed text-cream-800 sm:text-base">
+            <p className="speakable-intro mt-5 max-w-xl text-sm leading-relaxed text-cream-800 sm:text-base">
               <EmphasizedText text={page.lead} />
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -473,6 +498,15 @@ export default function ServiceLandingPage({ path }) {
           </p>
         </div>
       </section>
+
+      {page.faqs?.length ? (
+        <section className="faq-section about-section-asymmetric relative py-16 sm:py-20">
+          <div aria-hidden className={`about-mesh ${theme.meshB}`} />
+          <div className="relative z-[1] mx-auto max-w-6xl px-4 sm:px-6">
+            <FAQAccordion items={page.faqs} />
+          </div>
+        </section>
+      ) : null}
 
       {/* ═══ CTA band ═══ */}
       <section className="relative overflow-hidden">

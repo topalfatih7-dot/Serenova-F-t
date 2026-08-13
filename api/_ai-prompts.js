@@ -91,7 +91,7 @@ Yapı (zorunlu):
 1. Giriş — 2-3 paragraf (konuyu bağlamla tanıt, okuyucuyu çek)
 2. En az 4 alt başlık (## ile başlasın) — her bölümde 2-3 paragraf
 3. En az bir madde işaretli pratik ipuçları listesi
-4. Özet/kapanış — 1-2 paragraf; burada doğal şekilde şu sayfalardan EN AZ BİRİNE metin içi referans ver (URL'yi olduğu gibi yaz): https://www.yeniform.com/online-diyetisyen veya https://www.yeniform.com/online-kocluk veya https://www.yeniform.com/membership
+4. Özet/kapanış — 1-2 paragraf; burada doğal şekilde şu sayfalardan EN AZ BİRİNE metin içi referans ver (URL'yi olduğu gibi yaz): https://www.yeniform.com/online-diyetisyen veya https://www.yeniform.com/online-kocluk veya https://www.yeniform.com/kilo-verme veya https://www.yeniform.com/online-diyetisyen/fiyat veya https://www.yeniform.com/online-kocluk/ev-antrenman veya https://www.yeniform.com/beslenme/sporcu-beslenmesi veya https://www.yeniform.com/membership
 5. "Bu içerik genel bilgilendirme amaçlıdır" notu
 
 Paragraflar arasında boş satır bırak. Kısa özet yazma; okuyucuya gerçek değer sun.
@@ -102,7 +102,7 @@ SADECE şu JSON şemasında yanıt ver:
   "title": "çekici başlık (max 80 karakter)",
   "category": "${category}",
   "excerpt": "140 karaktere kadar özet",
-  "author": "Yeni Form Ekibi",
+  "author": "${category === 'Antrenman' ? 'Pelinay Tohumcu' : 'Şevval Dağlı'}",
   "accent": "brand | sage | gold | cream",
   "content": "tam makale metni (${BLOG_MIN_CHARS}+ karakter, hedef ${BLOG_TARGET_CHARS}+)"
 }`

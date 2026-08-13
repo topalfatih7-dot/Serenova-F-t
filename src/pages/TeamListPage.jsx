@@ -11,7 +11,7 @@ import { TEAM_HERO_IMAGES } from '../utils/teamHeroImages'
 const roleConfig = {
   coaches: {
     key: 'coach',
-    label: 'Koçlarımız',
+    label: 'Online Fitness Koçlarımız',
     sub: 'Sertifikalı fitness koçlarımızla hedefinize güvenle ulaşın',
     icon: Dumbbell,
     placeholder: 'from-brand-700 to-brand-900',
@@ -22,7 +22,7 @@ const roleConfig = {
   },
   dietitians: {
     key: 'dietitian',
-    label: 'Diyetisyenlerimiz',
+    label: 'Online Diyetisyenlerimiz',
     sub: 'Uzman diyetisyenlerle sürdürülebilir beslenme alışkanlıkları kazanın',
     icon: Apple,
     placeholder: 'from-sage-600 to-sage-900',
@@ -98,11 +98,11 @@ export default function TeamListPage({ role: roleProp }) {
         <div aria-hidden className="absolute -right-8 bottom-0 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
           <Link
-            to="/"
+            to={role === 'dietitians' ? '/online-diyetisyen' : role === 'coaches' ? '/online-kocluk' : '/'}
             className="mb-6 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/30"
           >
             <ArrowLeft className="h-4 w-4" />
-            Ana Sayfaya Dön
+            {role === 'dietitians' ? 'Online diyetisyen' : role === 'coaches' ? 'Online koçluk' : 'Ana sayfa'}
           </Link>
           <motion.div
             initial={{ opacity: 0, y: 20 }}

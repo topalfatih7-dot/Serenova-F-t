@@ -224,6 +224,14 @@ export default function CorporatePage() {
                     Neden wellness?
                   </a>
                 </motion.div>
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Link
+                    to="/online-kocluk"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                  >
+                    Online koçluk
+                  </Link>
+                </motion.div>
               </motion.div>
 
               <motion.div

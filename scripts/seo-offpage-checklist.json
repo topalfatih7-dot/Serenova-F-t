@@ -31,6 +31,11 @@
       "id": "profile-eeat",
       "action": "Admin’den kadro bio, eğitim, sertifika alanlarını doldur; placeholder isimleri düzelt",
       "owner": "ops"
+    },
+    {
+      "id": "llms-txt",
+      "action": "Deploy sonrası https://www.yeniform.com/llms.txt ve sitemap.xml 200 doğrula; GSC’de sitemap + /kilo-verme /fiyat /ev-antrenman /sporcu-beslenmesi URL Inspection",
+      "owner": "ops"
     }
   ],
   "kpiWeekly": {

@@ -1,0 +1,29 @@
+# Yeni Form
+
+> Türkiye online koçluk ve online diyetisyen platformu. Video görüşme, kişiye özel program, üye paneli.
+
+- Site: https://www.yeniform.com
+- İletişim: info@yeniform.com
+
+## Hizmetler
+
+- Online diyetisyen: https://www.yeniform.com/online-diyetisyen
+- Online diyetisyen fiyat 2026: https://www.yeniform.com/online-diyetisyen/fiyat
+- Kilo verme diyetisyeni: https://www.yeniform.com/kilo-verme
+- Online koçluk: https://www.yeniform.com/online-kocluk
+- Evde antrenman programı: https://www.yeniform.com/online-kocluk/ev-antrenman
+- Sporcu beslenmesi: https://www.yeniform.com/beslenme/sporcu-beslenmesi
+- Üyelik paketleri: https://www.yeniform.com/membership
+
+## Liste fiyat (aylık, TRY)
+
+- Eko Diyet: 1299 (ayda 1 diyetisyen seansı)
+- Diyet: 2499 (ayda 2 diyetisyen seansı)
+- Eko Spor: 1299 (ayda 1 koç seansı)
+- Spor: 2499 (ayda 2 koç seansı)
+- VIP: 4999 (ayda 2 koç + 2 diyetisyen)
+- Doktor: 1500 tek seferlik
+
+## Not
+
+Yeni Form wellness ve koçluk platformudur; tıbbi teşhis veya tedavi yerine geçmez.

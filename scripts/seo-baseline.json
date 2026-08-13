@@ -1,27 +1,26 @@
 {
-  "capturedAt": "2026-07-19T14:16:00Z",
+  "capturedAt": "2026-08-13T12:00:00Z",
   "site": "https://www.yeniform.com",
-  "method": "curl Googlebot UA — GSC Performance/Coverage kullanıcı tarafından tamamlanmalı",
+  "method": "code + MCP audit; GSC screenshots kullanıcıdan bekleniyor",
   "gscQueriesToTrack": [
     "online diyetisyen",
     "online koçluk",
     "online diyet",
     "online spor koçu",
-    "yeni form"
+    "yeni form",
+    "online diyetisyen fiyat",
+    "kilo verme diyetisyen",
+    "evde antrenman programı",
+    "sporcu beslenmesi"
   ],
   "findings": {
-    "homeStatus": 200,
-    "teamDietitiansStatus": 200,
-    "sitemapStatus": 200,
-    "sitemapUrlCount": 60,
-    "botSeesEmptyRoot": true,
-    "teamDietitiansUsesHomepageTitle": true,
-    "teamDietitiansUsesHomepageCanonical": true,
-    "initialTitle": "Yeni Form — Online Koçluk & Wellness",
-    "dedicatedServicePages": false
-  },
-  "kpiTargets": {
-    "weeks": "4-8",
-    "softGoal": "Impression + average position for target queries; index /online-diyetisyen and /online-kocluk"
+    "clusterPages": [
+      "/kilo-verme",
+      "/online-diyetisyen/fiyat",
+      "/online-kocluk/ev-antrenman",
+      "/beslenme/sporcu-beslenmesi"
+    ],
+    "aggregateRating": "yalnızca gerçek testimonial n>=5",
+    "llmsTxt": true
   }
 }

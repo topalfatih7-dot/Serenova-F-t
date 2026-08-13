@@ -117,7 +117,11 @@ export default function App() {
               <Route path="onboarding" element={<OnboardingPage />} />
               <Route path="membership" element={<MembershipComparisonPage />} />
               <Route path="online-diyetisyen" element={<ServiceLandingPage path="/online-diyetisyen" />} />
+              <Route path="online-diyetisyen/fiyat" element={<ServiceLandingPage path="/online-diyetisyen/fiyat" />} />
               <Route path="online-kocluk" element={<ServiceLandingPage path="/online-kocluk" />} />
+              <Route path="online-kocluk/ev-antrenman" element={<ServiceLandingPage path="/online-kocluk/ev-antrenman" />} />
+              <Route path="kilo-verme" element={<ServiceLandingPage path="/kilo-verme" />} />
+              <Route path="beslenme/sporcu-beslenmesi" element={<ServiceLandingPage path="/beslenme/sporcu-beslenmesi" />} />
               <Route path="hakkimizda" element={<AboutPage />} />
               <Route path="about" element={<Navigate to="/hakkimizda" replace />} />
               <Route path="builder" element={<Navigate to="/membership" replace />} />

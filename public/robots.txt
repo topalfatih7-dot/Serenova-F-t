@@ -14,6 +14,9 @@ Allow: /corporate
 Allow: /hakkimizda
 Allow: /legal/
 
+# AI / GEO
+Allow: /llms.txt
+
 Disallow: /login
 Disallow: /forgot-password
 Disallow: /reset-password
@@ -35,3 +38,4 @@ Disallow: /health-test
 Disallow: /api/
 
 Sitemap: https://www.yeniform.com/sitemap.xml
+

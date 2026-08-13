@@ -1,19 +1,50 @@
-export const MEMBER_DISPLAY_FLOOR = 0
-export const ONLINE_DISPLAY_FLOOR = 0
-export const ONLINE_DISPLAY_MIN = 0
-export const ONLINE_DISPLAY_MAX = 0
+/**
+ * KİLİTLİ ÜRÜN KARARI (2026-08-13) — asla değiştirme / geri alma.
+ * SoT: .cursor/rules/platform-display-stats-locked.mdc
+ *
+ * Toplam üye < 750 → 750+; ≥ 750 → gerçek sayı.
+ * Çevrimiçi < 20 → oturumda sabit 20–25 rastgele; ≥ 20 → gerçek sayı.
+ */
+export const MEMBER_DISPLAY_FLOOR = 750
+export const ONLINE_DISPLAY_FLOOR = 20
+export const ONLINE_DISPLAY_MIN = 20
+export const ONLINE_DISPLAY_MAX = 25
 
-export function pickSessionOnlineBoost() {
-  return 0
+const SESSION_KEY = 'yf.onlineDisplayBoost'
+
+function rollOnlineBoost() {
+  return Math.floor(Math.random() * (ONLINE_DISPLAY_MAX - ONLINE_DISPLAY_MIN + 1)) + ONLINE_DISPLAY_MIN
 }
 
-/** Gerçek üye sayısını gösterir (sahte floor yok). */
+/** Oturum boyunca aynı 20–25 değerini döner (SSR’de MIN). */
+export function pickSessionOnlineBoost() {
+  if (typeof sessionStorage === 'undefined') return ONLINE_DISPLAY_MIN
+
+  try {
+    const stored = Number(sessionStorage.getItem(SESSION_KEY))
+    if (Number.isInteger(stored) && stored >= ONLINE_DISPLAY_MIN && stored <= ONLINE_DISPLAY_MAX) {
+      return stored
+    }
+    const next = rollOnlineBoost()
+    sessionStorage.setItem(SESSION_KEY, String(next))
+    return next
+  } catch {
+    return rollOnlineBoost()
+  }
+}
+
+/** Gerçek üye sayısı 750'nin altındaysa 750+; üstündeyse veya eşitse gerçek sayı. */
 export function getDisplayMemberCount(actual) {
-  const count = Math.max(0, actual ?? 0)
+  const count = actual ?? 0
+  if (count < MEMBER_DISPLAY_FLOOR) {
+    return { value: MEMBER_DISPLAY_FLOOR, showPlus: true }
+  }
   return { value: count, showPlus: false }
 }
 
-/** Gerçek çevrimiçi sayısını gösterir. */
-export function getDisplayOnlineCount(actual) {
-  return Math.max(0, actual ?? 0)
+/** Çevrimiçi 20'den azsa oturum boyunca 20–25; 20 ve üzeri gerçek sayı. */
+export function getDisplayOnlineCount(actual, sessionBoost) {
+  const count = actual ?? 0
+  if (count >= ONLINE_DISPLAY_FLOOR) return count
+  return sessionBoost ?? ONLINE_DISPLAY_MIN
 }

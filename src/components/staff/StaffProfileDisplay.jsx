@@ -112,6 +112,9 @@ export default function StaffProfileDisplay({ member }) {
 
               <div className="min-w-0 flex-1 text-center sm:text-left">
                 <h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                  <span className="mb-1 block text-sm font-semibold uppercase tracking-wide text-white/80">
+                    {member.role === 'dietitian' ? 'Online Diyetisyen' : member.role === 'coach' ? 'Online Fitness Koçu' : meta.label}
+                  </span>
                   {displayName}
                 </h1>
                 {profile.title && (

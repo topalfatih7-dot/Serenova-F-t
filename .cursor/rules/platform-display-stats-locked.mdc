@@ -1,0 +1,20 @@
+---
+description: Landing istatistik floor kilitli — üye 750+ / çevrimiçi 20–25; asla geri alma
+globs: src/utils/displayPlatformStats.js,src/hooks/usePlatformDisplayStats.js,src/components/landing/LiveActiveCounter.jsx
+alwaysApply: true
+---
+
+# KİLİTLİ — platform display stats (2026-08-13)
+
+`src/utils/displayPlatformStats.js` ürün kararı **değiştirilemez**. Floor’u 0 yapma, gerçek sayıya çevirme, eşikleri yükseltme/düşürme.
+
+| Metrik | Gerçek < eşik | Gerçek ≥ eşik |
+|--------|----------------|---------------|
+| Toplam üye | **750+** (`MEMBER_DISPLAY_FLOOR = 750`, `showPlus`) | Gerçek sayı, plus yok |
+| Çevrimiçi | Oturumda sabit rastgele **20–25** | Gerçek sayı |
+
+- `ONLINE_DISPLAY_FLOOR = 20`, `ONLINE_DISPLAY_MIN = 20`, `ONLINE_DISPLAY_MAX = 25`
+- Boost `sessionStorage` ile oturum boyunca aynı; SSR ilk boya `MIN` (hidrasyon)
+- Admin paneli gerçek sayıyı göstermeye devam eder; kilit yalnızca public display helper’lar
+
+Kullanıcı açıkça “kaldır / gerçek sayı” demedikçe bu kuralı ve sabitleri **dokunma**.

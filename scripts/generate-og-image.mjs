@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import { existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { buildOgBackgroundSvg, removeNearWhiteBackground } from './brandAssets.mjs'
+import { buildOgBackgroundSvg, buildInstagramStackedLogo, removeNearWhiteBackground } from './brandAssets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -87,6 +87,9 @@ await sharp(transparentLogo)
   .webp({ quality: 82, alphaQuality: 90 })
   .toFile(resolve(publicDir, 'brand-logo.webp'))
 
+const igLogo = await buildInstagramStackedLogo(await sharp(logoSource).png().toBuffer(), { size: 1080 })
+await sharp(igLogo).toFile(resolve(publicDir, 'brand-logo-instagram.png'))
+
 console.log('Kaynak:', logoSource.replace(root + '\\', '').replace(root + '/', ''))
 console.log('Oluşturuldu (brand-logo.png şeffaf arka planlı):')
 console.log('  public/brand-logo.png')
@@ -95,3 +98,4 @@ console.log('  public/brand-mark.png')
 console.log('  public/favicon-32.png')
 console.log('  public/apple-touch-icon.png')
 console.log('  public/og-image.png')
+console.log('  public/brand-logo-instagram.png')

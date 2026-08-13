@@ -52,6 +52,8 @@ export const BRAND = {
     googleOAuthLogo: '/google-oauth-logo.png',
     /** Meta App Icon (Facebook Login ekranı) — 1024×1024 PNG */
     facebookOAuthLogo: '/facebook-oauth-logo.png',
+    /** Instagram profil — kare stacked lockup (ikon / Yeni / Form) */
+    instagramLogo: '/brand-logo-instagram.png',
     /** Orijinal kaynak — değiştirin, sonra npm run og:image */
     logoSource: '/brand-logo-alt.png',
   },

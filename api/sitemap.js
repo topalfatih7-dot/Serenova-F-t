@@ -1,38 +1,39 @@
 /**
- * Dinamik sitemap.xml — blog yazıları ve kadro profilleri Supabase'den eklenir.
- * URL: /sitemap.xml (vercel.json rewrite)
- * Supabase hatası olsa bile static route'lar 200 döner.
- */
-import { createClient } from '@supabase/supabase-js'
-import { getSupabaseUrl, isSupabaseAdminConfigured, getSupabaseAdmin } from './_supabaseAdmin.js'
-
-/**
- * Deploy tarihi — Vercel VERCEL_GIT_COMMIT_SHA ile değişmez, bu yüzden
- * DEPLOY_DATE env ile override edilebilir; yoksa ISO tarih olarak bugün kullanılır.
- * Statik sayfalar için lastmod sinyali Google'a taze içerik olduğunu gösterir.
+ * Dinamik sitemap.xml — blog + kadro + static.
+ * Modül init asla throw etmez (production 500 önlemi).
  */
 function getDeployDate() {
-  const envDate = process.env.DEPLOY_DATE
-  if (envDate && /^\d{4}-\d{2}-\d{2}$/.test(envDate)) return envDate
-  return new Date().toISOString().slice(0, 10)
+  try {
+    const envDate = process.env.DEPLOY_DATE
+    if (envDate && /^\d{4}-\d{2}-\d{2}$/.test(envDate)) return envDate
+    return new Date().toISOString().slice(0, 10)
+  } catch {
+    return '2026-01-01'
+  }
 }
 
-/** Canonical public URL'ler — redirect duplicate'ler (/kvkk, /privacy, /terms) yok */
+const DEPLOY = getDeployDate()
+
+/** Canonical public URL'ler — redirect duplicate'ler yok */
 const STATIC_ROUTES = [
-  { loc: '/', changefreq: 'weekly', priority: '1.0', lastmod: getDeployDate() },
-  { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8', lastmod: getDeployDate() },
-  { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95', lastmod: getDeployDate() },
-  { loc: '/online-kocluk', changefreq: 'weekly', priority: '0.95', lastmod: getDeployDate() },
-  { loc: '/membership', changefreq: 'weekly', priority: '0.9', lastmod: getDeployDate() },
-  { loc: '/onboarding', changefreq: 'monthly', priority: '0.9', lastmod: getDeployDate() },
-  { loc: '/stories', changefreq: 'weekly', priority: '0.8', lastmod: getDeployDate() },
-  { loc: '/blog', changefreq: 'daily', priority: '0.8', lastmod: getDeployDate() },
-  { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
-  { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
-  { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
-  { loc: '/corporate', changefreq: 'monthly', priority: '0.7', lastmod: getDeployDate() },
-  { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6', lastmod: getDeployDate() },
-  { loc: '/team/apply', changefreq: 'monthly', priority: '0.6', lastmod: getDeployDate() },
+  { loc: '/', changefreq: 'weekly', priority: '1.0', lastmod: DEPLOY },
+  { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8', lastmod: DEPLOY },
+  { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95', lastmod: DEPLOY },
+  { loc: '/online-diyetisyen/fiyat', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
+  { loc: '/online-kocluk', changefreq: 'weekly', priority: '0.95', lastmod: DEPLOY },
+  { loc: '/online-kocluk/ev-antrenman', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
+  { loc: '/kilo-verme', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
+  { loc: '/beslenme/sporcu-beslenmesi', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
+  { loc: '/membership', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
+  { loc: '/onboarding', changefreq: 'monthly', priority: '0.9', lastmod: DEPLOY },
+  { loc: '/stories', changefreq: 'weekly', priority: '0.8', lastmod: DEPLOY },
+  { loc: '/blog', changefreq: 'daily', priority: '0.8', lastmod: DEPLOY },
+  { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
+  { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
+  { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
+  { loc: '/corporate', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
+  { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6', lastmod: DEPLOY },
+  { loc: '/team/apply', changefreq: 'monthly', priority: '0.6', lastmod: DEPLOY },
   { loc: '/legal/kvkk', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/kvkk-acik-riza-metni', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/gizlilik-politikasi', changefreq: 'yearly', priority: '0.4' },
@@ -109,6 +110,22 @@ function urlEntry(base, path, { changefreq = 'weekly', priority = '0.5', lastmod
 
 async function fetchDynamicUrls() {
   const urls = []
+  let createClient
+  let getSupabaseUrl
+  let isSupabaseAdminConfigured
+  let getSupabaseAdmin
+  try {
+    ;({ createClient } = await import('@supabase/supabase-js'))
+    ;({
+      getSupabaseUrl,
+      isSupabaseAdminConfigured,
+      getSupabaseAdmin,
+    } = await import('./_supabaseAdmin.js'))
+  } catch (err) {
+    console.error('[sitemap] import', err?.message || err)
+    return urls
+  }
+
   let url
   let key
   try {
@@ -133,6 +150,8 @@ async function fetchDynamicUrls() {
     console.error('[sitemap] client', err?.message || err)
     return urls
   }
+
+  if (!client) return urls
 
   try {
     const { data: posts, error } = await client
@@ -191,6 +210,13 @@ ${routes.map((r) => urlEntry(base, r.loc || r.path, r)).join('\n')}
 </urlset>`
 }
 
+function sendXml(res, body, cacheControl, method) {
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+  res.setHeader('Cache-Control', cacheControl)
+  if (method === 'HEAD') return res.status(200).end()
+  return res.status(200).end(body)
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -205,20 +231,19 @@ export default async function handler(req, res) {
       console.error('[sitemap] dynamic', err?.message || err)
     }
 
-    const all = [...STATIC_ROUTES, ...dynamic]
-    const body = buildXml(base, all)
-
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8')
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
-    if (req.method === 'HEAD') return res.status(200).end()
-    return res.status(200).end(body)
+    const body = buildXml(base, [...STATIC_ROUTES, ...dynamic])
+    return sendXml(res, body, 'public, s-maxage=3600, stale-while-revalidate=86400', req.method)
   } catch (err) {
     console.error('[sitemap] fatal', err?.message || err)
-    // Son çare: yalnızca static — asla 500 ile crawl'ı kırma
-    const body = buildXml(siteBase(), STATIC_ROUTES)
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8')
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
-    if (req.method === 'HEAD') return res.status(200).end()
-    return res.status(200).end(body)
+    try {
+      const body = buildXml(siteBase(), STATIC_ROUTES)
+      return sendXml(res, body, 'public, s-maxage=300, stale-while-revalidate=3600', req.method)
+    } catch (inner) {
+      console.error('[sitemap] static fallback', inner?.message || inner)
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+      return res.status(200).end(
+        `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.yeniform.com/</loc></url></urlset>`,
+      )
+    }
   }
 }

@@ -18,7 +18,7 @@ export default function LegalDocumentPage() {
       <SeoHead
         title={doc.seoTitle}
         description={doc.seoDescription}
-        path={doc.path}
+        canonicalPath={doc.path}
       />
       <Link
         to="/"

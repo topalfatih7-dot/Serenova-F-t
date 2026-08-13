@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Clock, ArrowRight, BookOpen, User } from 'lucide-react'
+import { Clock, ArrowRight, BookOpen, User, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
 import JsonLd from '../components/seo/JsonLd'
+import SeoHead from '../components/seo/SeoHead'
 import { useApp } from '../context/AppContext'
 import { buildItemListSchema } from '../config/seo'
 import { BLOG_CATEGORIES } from '../data/blogPosts'
@@ -16,12 +17,22 @@ import { blogPostPath } from '../utils/blogSlug'
 export default function BlogPage() {
   const { posts } = useApp()
   const [category, setCategory] = useState('all')
+  const [params, setParams] = useSearchParams()
+  const q = (params.get('q') || '').trim()
 
   const published = useMemo(
     () => (posts || []).filter((p) => p.published).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [posts],
   )
-  const filtered = category === 'all' ? published : published.filter((p) => p.category === category)
+  const searched = useMemo(() => {
+    if (!q) return published
+    const needle = q.toLocaleLowerCase('tr-TR')
+    return published.filter((p) => {
+      const hay = `${p.title || ''} ${p.excerpt || ''} ${p.category || ''}`.toLocaleLowerCase('tr-TR')
+      return hay.includes(needle)
+    })
+  }, [published, q])
+  const filtered = category === 'all' ? searched : searched.filter((p) => p.category === category)
   const featured = filtered[0]
   const rest = filtered.slice(1)
 
@@ -37,7 +48,15 @@ export default function BlogPage() {
 
   return (
     <div>
-      <JsonLd data={blogListSchema} />
+      {q ? (
+        <SeoHead
+          title={`Blog arama: ${q}`}
+          description={`Yeni Form blogunda “${q}” araması.`}
+          canonicalPath="/blog"
+          noindex
+        />
+      ) : null}
+      <JsonLd data={q ? null : blogListSchema} />
       <PlansAnimatedBackground className="!py-14 sm:!py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -52,6 +71,28 @@ export default function BlogPage() {
           <p className="section-subtitle mx-auto max-w-2xl">
             Dönüşüm yolculuğunuzda size eşlik edecek uzman içerikler. Herkesin erişimine açık.
           </p>
+          <form
+            className="mx-auto mt-6 flex max-w-md gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const value = new FormData(e.currentTarget).get('q')
+              const next = String(value || '').trim()
+              if (next) setParams({ q: next })
+              else setParams({})
+            }}
+          >
+            <label className="sr-only" htmlFor="blog-search">Blog ara</label>
+            <input
+              id="blog-search"
+              name="q"
+              defaultValue={q}
+              placeholder="Yazılarda ara…"
+              className="min-w-0 flex-1 rounded-full border border-cream-200 bg-white px-4 py-2.5 text-sm text-cream-900"
+            />
+            <button type="submit" className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white">
+              <Search className="h-4 w-4" /> Ara
+            </button>
+          </form>
         </motion.div>
       </PlansAnimatedBackground>
 
@@ -78,7 +119,7 @@ export default function BlogPage() {
 
         {filtered.length === 0 ? (
           <div className="mt-12">
-            <EmptyState icon={BookOpen} title="Henüz yazı yok" description="Bu kategoride yayınlanmış bir makale bulunmuyor." />
+            <EmptyState icon={BookOpen} title={q ? 'Sonuç bulunamadı' : 'Henüz yazı yok'} description={q ? `“${q}” için eşleşen yazı yok.` : 'Bu kategoride yayınlanmış bir makale bulunmuyor.'} />
           </div>
         ) : (
           <div className="mt-10 space-y-8">

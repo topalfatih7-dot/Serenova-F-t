@@ -126,6 +126,7 @@ export default function BlogPostPage() {
         keywords={buildBrandKeywords([post.category, post.author, 'blog', 'sağlıklı yaşam', 'fitness'])}
         canonicalPath={postPath}
         ogType="article"
+        ogImage={cover.url}
         jsonLd={[
           buildArticleSchema(post),
           buildBreadcrumbSchema([
@@ -210,6 +211,21 @@ export default function BlogPostPage() {
           >
             <BlogBodyBlocks blocks={blocks} />
           </motion.div>
+
+          <div className="mt-12 flex flex-wrap gap-3 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
+            <Link to="/online-diyetisyen" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
+              Online diyetisyen
+            </Link>
+            <Link to="/online-kocluk" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
+              Online koçluk
+            </Link>
+            <Link to="/kilo-verme" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
+              Kilo verme
+            </Link>
+            <Link to="/membership" className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+              Paketleri incele
+            </Link>
+          </div>
 
           {related.length > 0 && (
             <aside className="mt-14 border-t border-cream-200 pt-10 sm:mt-16">

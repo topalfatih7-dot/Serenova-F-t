@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import SeoHead from './SeoHead'
 import { PAGE_SEO } from '../../config/seo'
 
@@ -14,8 +14,10 @@ function isDynamicPublicRoute(pathname) {
 
 export default function PublicRouteSeo() {
   const { pathname } = useLocation()
+  const [params] = useSearchParams()
 
   if (isDynamicPublicRoute(pathname)) return null
+  if (pathname === '/blog' && params.get('q')?.trim()) return null
 
   const seo = PAGE_SEO[pathname]
   if (!seo) return null

@@ -1,6 +1,6 @@
 ﻿# Yeni Form — Denetim Yol Haritası
 
-> **Güncelleme:** 2026-08-02 · **Durum:** Web-only (mobil/Expo bu repoda yok); freemium SoT  
+> **Güncelleme:** 2026-08-13 · **Durum:** Web-only (mobil/Expo bu repoda yok); freemium SoT; public stats floor kilitli  
 > Cursor plan: `.cursor/plans/faz2-3_denetim_1af5899b.plan.md` · Tarama: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) · Google OAuth marka: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md) · Facebook: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
 > Mobil: bu repo yalnızca web; Expo handoff kaldırıldı.
 
@@ -102,13 +102,14 @@ Kanıta dayalı envanter + ölü kod + UX + gap listesi: [`docs/TAM_TARAMA_RAPOR
 
 - DB: aktif `eko` üye **0** (cleanup için uygun).
 - P0 adayları: SEO `/online-*` hydrate pass-through eksik; Supabase `members_staff_safe` SECURITY DEFINER advisor ERROR; anon/authenticated EXECUTE WARN’lar.
-- P1 (çoğu kapandı 2026-08-02): freemium + UnpaidMemberGate SoT; stats floor kaldırıldı; `fullVideo` entitlement koddan silindi (program-scoped video).
+- P1 (çoğu kapandı 2026-08-02): freemium + UnpaidMemberGate SoT; `fullVideo` entitlement koddan silindi (program-scoped video).
+- **KİLİTLİ istatistik (2026-08-13):** public display — üye <750 → **750+**, ≥750 gerçek; çevrimiçi <20 → oturumda **20–25**, ≥20 gerçek. `displayPlatformStats.js` + `.cursor/rules/platform-display-stats-locked.mdc`. Asla geri alınmaz. Admin gerçek sayıyı gösterir.
 - Ölü export (0 çağrı): `shouldAutoplayExerciseVideo`, `getHealthPackageContext`, `buildCoachProgramPayload`.
 - Uygulama sırası: Tur 1 P0 → Tur 2 ölü kod → Tur 3 UX → Tur 4 Faz 4/5 (ürün onayı).
 
 ### Tur 1–3 uygulandı (2026-07-29)
 
-Kararlar: istatistik floor **tutuldu**; kütüphane **program-scoped kaldı**; Faz 4/Subscription **hariç**.
+Kararlar: istatistik floor **kilitli (2026-08-13, 750+ / 20–25)**; kütüphane **program-scoped kaldı**; Faz 4/Subscription **hariç**.
 
 | Tur | Yapılan |
 |-----|---------|
@@ -134,3 +135,11 @@ Kararlar: istatistik floor **tutuldu**; kütüphane **program-scoped kaldı**; F
 
 - Tur 1–8 uygulandı: atama banner/profil; program empty ayrımı; randevu `pending`→onay/red; üçlü collab; brief+audience filtre; lab RLS; doktor min nav + Sonraki Doktor.
 - Sonraya: staff adherence, doktor hakediş, lab UI, pazarlama copy — [`STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](STAFF_MEMBER_FLOWS_ILERI_FAZ.md)
+
+### KİLİTLİ — public üye / çevrimiçi sayıları (2026-08-13)
+
+Geri alınmaz. Kod: `src/utils/displayPlatformStats.js`. Kural: `.cursor/rules/platform-display-stats-locked.mdc`. Rapor: [`TAM_TARAMA_RAPORU.md`](TAM_TARAMA_RAPORU.md) P1-3.
+
+- Toplam üye **750’nin altındaysa** `750+`; **750 ve üzeri** gerçek sayı.
+- Çevrimiçi **20’nin altındaysa** oturumda sabit rastgele **20–25**; **20 ve üzeri** gerçek sayı.
+- Admin paneli gerçek sayıyı gösterir.

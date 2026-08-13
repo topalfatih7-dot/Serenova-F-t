@@ -7,7 +7,6 @@ import {
   Share2, Video, Link2, Globe, MapPin, Building2, Sparkles,
   Target, Users, User, Dumbbell, Apple, Clock, BookOpen,
 } from 'lucide-react'
-import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
 import WeeklyAvailability from '../components/package/WeeklyAvailability'
@@ -350,8 +349,6 @@ export default function StaffApplicationPage() {
 
   return (
     <div className="staff-apply-page">
-      <SeoHead title="Kadromuza Katıl — Koç & Diyetisyen Başvurusu" description="Yeni Form ekibine koç veya diyetisyen olarak başvurun." canonicalPath="/team/apply" />
-
       <StaffApplicationHero
         phase={phase}
         selectedRole={gateRole}

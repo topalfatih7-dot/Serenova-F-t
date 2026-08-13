@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import SuccessStoryCard from '../components/social/SuccessStoryCard'
 import SuccessStorySubmitModal from '../components/social/SuccessStorySubmitModal'
 import PlansAnimatedBackground from '../components/landing/PlansAnimatedBackground'
+import JsonLd from '../components/seo/JsonLd'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
 import { Star } from 'lucide-react'
+import { buildItemListSchema } from '../config/seo'
 
 export default function SuccessStoriesPage() {
   const { toast } = useToast()
@@ -27,6 +29,13 @@ export default function SuccessStoriesPage() {
 
   return (
     <div>
+      <JsonLd
+        data={buildItemListSchema({
+          name: 'Başarı Hikayeleri',
+          path: '/stories',
+          items: approvedStories.slice(0, 20).map((s) => ({ name: s.name || s.highlight, path: '/stories' })),
+        })}
+      />
       <PlansAnimatedBackground className="!py-14 sm:!py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -39,6 +48,11 @@ export default function SuccessStoriesPage() {
           <p className="section-subtitle mx-auto max-w-2xl">
             Topluluğumuzun ilham verici yolculukları. Sonuçlar kişiden kişiye değişir.
           </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link to="/online-diyetisyen" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200">Online diyetisyen</Link>
+            <Link to="/online-kocluk" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200">Online koçluk</Link>
+            <Link to="/membership" className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Paketleri incele</Link>
+          </div>
         </motion.div>
       </PlansAnimatedBackground>
 

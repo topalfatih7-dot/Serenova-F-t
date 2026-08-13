@@ -23,8 +23,10 @@ export function getSiteUrl() {
 }
 
 export function absoluteUrl(path = '/') {
+  const raw = String(path || '/')
+  if (/^https?:\/\//i.test(raw)) return raw
   const base = getSiteUrl()
-  const normalized = path.startsWith('/') ? path : `/${path}`
+  const normalized = raw.startsWith('/') ? raw : `/${raw}`
   return base ? `${base}${normalized}` : normalized
 }
 
@@ -238,6 +240,10 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
   { path: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95' },
   { path: '/online-kocluk', changefreq: 'weekly', priority: '0.95' },
+  { path: '/kilo-verme', changefreq: 'weekly', priority: '0.9' },
+  { path: '/online-diyetisyen/fiyat', changefreq: 'weekly', priority: '0.9' },
+  { path: '/online-kocluk/ev-antrenman', changefreq: 'weekly', priority: '0.85' },
+  { path: '/beslenme/sporcu-beslenmesi', changefreq: 'weekly', priority: '0.85' },
   { path: '/membership', changefreq: 'weekly', priority: '0.9' },
   { path: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { path: '/stories', changefreq: 'weekly', priority: '0.8' },
@@ -275,6 +281,30 @@ export const PAGE_SEO = {
     description:
       'Online koçluk ve online spor koçu desteği ile kişiye özel antrenman, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
     keywords: buildBrandKeywords('online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi'),
+  },
+  '/kilo-verme': {
+    title: 'Kilo Verme Diyetisyeni — Online Program ve Takip',
+    description:
+      'Kilo verme diyetisyeni ile video görüşme, kişiye özel beslenme programı ve panel takibi. Yeni Form Diyet ve VIP paketleriyle sürdürülebilir kilo yönetimi.',
+    keywords: buildBrandKeywords('kilo verme diyetisyen, kilo vermek için diyetisyen, online kilo verme, kilo verme programı'),
+  },
+  '/online-diyetisyen/fiyat': {
+    title: 'Online Diyetisyen Fiyatları 2026 — Paket ve Seans',
+    description:
+      '2026 online diyetisyen fiyatları: Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay. Video görüşme seans hakları ve paket karşılaştırması.',
+    keywords: buildBrandKeywords('online diyetisyen fiyat, online diyetisyen fiyat 2026, diyet paketi fiyat, online diyet ücreti'),
+  },
+  '/online-kocluk/ev-antrenman': {
+    title: 'Evde Antrenman Programı — Online Koç ile Ekipmansız',
+    description:
+      'Evde antrenman programı: ekipmansız veya ev aletleriyle kişiye özel plan, video koçluk ve hareket videoları. Spor ve VIP paketleriyle başlayın.',
+    keywords: buildBrandKeywords('evde antrenman programı, ekipmansız antrenman, evde egzersiz, online spor koçu ev'),
+  },
+  '/beslenme/sporcu-beslenmesi': {
+    title: 'Sporcu Beslenmesi — Antrenman Öncesi ve Sonrası',
+    description:
+      'Sporcu beslenmesi: antrenman öncesi/sonrası öğün, protein ve performans. Online diyetisyen + koçluk ile kişiye özel plan. Yeni Form.',
+    keywords: buildBrandKeywords('sporcu beslenmesi, sporcu diyeti, antrenman beslenmesi, sporcu diyetisyen'),
   },
   '/membership': {
     title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları',
@@ -343,31 +373,6 @@ export const PAGE_SEO = {
     title: 'Kadromuza Katıl — Koç & Diyetisyen Başvurusu',
     description: 'Yeni Form kadrosuna koç veya diyetisyen olarak başvurun. Online wellness platformunda uzman ekibimize katılın.',
     keywords: buildBrandKeywords('koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer'),
-  },
-  '/kvkk': {
-    title: 'KVKK Aydınlatma Metni',
-    description: `${BRAND.name} kişisel verilerin korunması ve KVKK aydınlatma metni.`,
-    keywords: 'KVKK, kişisel veriler, aydınlatma metni, gizlilik',
-  },
-  '/legal/kvkk': {
-    title: 'KVKK Aydınlatma Metni',
-    description: `${BRAND.name} kişisel verilerin korunması ve KVKK aydınlatma metni.`,
-    keywords: 'KVKK, kişisel veriler, aydınlatma metni, gizlilik',
-  },
-  '/privacy': {
-    title: 'Gizlilik Politikası',
-    description: `${BRAND.name} gizlilik politikası ve çerez kullanımı hakkında bilgi.`,
-    keywords: 'gizlilik politikası, çerezler, veri güvenliği',
-  },
-  '/legal/gizlilik-politikasi': {
-    title: 'Gizlilik Politikası',
-    description: `${BRAND.name} gizlilik politikası ve çerez kullanımı hakkında bilgi.`,
-    keywords: 'gizlilik politikası, çerezler, veri güvenliği',
-  },
-  '/terms': {
-    title: 'Kullanım Koşulları',
-    description: `${BRAND.name} platform kullanım koşulları ve üyelik sözleşmesi.`,
-    keywords: 'kullanım koşulları, üyelik sözleşmesi, şartlar',
   },
   '/legal/uyelik-ve-abonelik-sozlesmesi': {
     title: 'Üyelik ve Abonelik Sözleşmesi',
@@ -455,7 +460,12 @@ export function buildWebSiteSchema() {
  * AggregateRating schema — testimonial/review verisi varsa kullan.
  * ratingValue: 1-5 arası ortalama, reviewCount: toplam değerlendirme sayısı.
  */
-export function buildAggregateRatingSchema({ ratingValue = 4.9, reviewCount = 100 } = {}) {
+export function buildAggregateRatingSchema({ ratingValue, reviewCount } = {}) {
+  const n = Number(reviewCount)
+  const rating = Number(ratingValue)
+  if (!Number.isFinite(n) || n < 5 || !Number.isFinite(rating) || rating < 1 || rating > 5) {
+    return null
+  }
   const url = absoluteUrl('/')
   return {
     '@context': 'https://schema.org',
@@ -464,10 +474,26 @@ export function buildAggregateRatingSchema({ ratingValue = 4.9, reviewCount = 10
     name: BRAND.name,
     aggregateRating: {
       '@type': 'AggregateRating',
-      ratingValue: String(ratingValue),
+      ratingValue: String(Math.round(rating * 10) / 10),
       bestRating: '5',
       worstRating: '1',
-      reviewCount: String(reviewCount),
+      reviewCount: String(n),
+    },
+  }
+}
+
+export function buildSpeakableWebPageSchema({ name, path, description } = {}) {
+  if (!name || !path) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name,
+    url: absoluteUrl(path),
+    description: description || SEO.defaultDescription,
+    inLanguage: SEO.language,
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['.speakable-intro', '.faq-section'],
     },
   }
 }
@@ -548,7 +574,9 @@ export function buildPersonSchema(member, { profilePath } = {}) {
     name: profile.name,
     jobTitle: profile.title || profile.specialty || profile.role,
     description: profile.bio || profile.description,
-    image: profile.photo || undefined,
+    image: profile.photo ? absoluteUrl(profile.photo) : undefined,
+    sameAs: [profile.instagram, profile.linkedin, profile.website, profile.youtube]
+      .filter((u) => typeof u === 'string' && u.startsWith('http')),
     url: profilePath ? absoluteUrl(profilePath) : undefined,
     knowsAbout: profile.specialties?.length ? profile.specialties : undefined,
     hasCredential: credentials.length ? credentials : undefined,
@@ -601,6 +629,7 @@ export function buildServiceSchema({
       priceCurrency: 'TRY',
       availability: 'https://schema.org/InStock',
       description: o.description,
+      ...(o.price != null && Number(o.price) > 0 ? { price: String(o.price) } : {}),
     }))
   }
   return schema

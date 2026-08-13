@@ -48,6 +48,10 @@ const fadeUp = {
 export default function LandingPage() {
   const { testimonials, faqs, plans, successStories, posts } = useApp()
   const allFaqs = mergeBrandFaqs(faqs)
+  const ratedTestimonials = (testimonials || []).filter((t) => Number(t.rating) >= 1)
+  const ratingAvg = ratedTestimonials.length
+    ? ratedTestimonials.reduce((sum, t) => sum + Number(t.rating), 0) / ratedTestimonials.length
+    : 0
   const { displayMembers, showMemberPlus } = usePlatformDisplayStats()
   const location = useLocation()
   const displayPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
@@ -74,8 +78,8 @@ export default function LandingPage() {
           buildWebSiteSchema(),
           buildFaqSchema(allFaqs),
           buildAggregateRatingSchema({
-            ratingValue: 4.9,
-            reviewCount: testimonials?.length > 0 ? testimonials.length : 47,
+            ratingValue: ratingAvg,
+            reviewCount: ratedTestimonials.length,
           }),
         ]}
       />
@@ -127,7 +131,7 @@ export default function LandingPage() {
               custom={1}
               className="mt-5 font-display text-[2rem] font-bold leading-[1.15] tracking-tight text-white sm:text-[2.75rem] lg:text-5xl"
             >
-              <span className="block">Kişisel koçluk ve beslenme desteği —</span>
+              <span className="block">Online koçluk ve diyetisyen ile size özel program</span>
               <RotatingHeroText />
             </motion.h1>
 

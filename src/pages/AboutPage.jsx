@@ -258,9 +258,12 @@ export default function AboutPage() {
                 Paket Seçin
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link to="/membership" className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
+              <Link to="/online-diyetisyen" className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
                 <Sparkles className="h-4 w-4 text-brand-300" />
-                Planları İncele
+                Online diyetisyen
+              </Link>
+              <Link to="/online-kocluk" className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
+                Online koçluk
               </Link>
             </div>
             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-white/15 pt-5">

@@ -152,7 +152,7 @@ Tanımlı ([`memberPackages.js`](../src/utils/memberPackages.js)) ama **hiçbir 
 |---|--------|-------|--------|
 | P1-1 | Gate UX tutarsızlığı | Kalori entitlement UI; randevu tab-lock; diğerleri `UnpaidMemberGate` | Free için schedule’da da tam gate veya ortak “paket yok” shell |
 | P1-2 | Landing “Ücretsiz Başla” + emoji pill + stats strip | `LandingPage.jsx` hero | 48s deneme copy netleştir; hero clutter azalt (marka + 1 headline + 1 CTA) |
-| P1-3 | Şişirilmiş üye/online sayıları | `displayPlatformStats.js` floor 1250 / online boost | Pazarlama kararı: tut + disclosure **veya** gerçek sayı |
+| P1-3 | Şişirilmiş üye/online sayıları | `displayPlatformStats.js` | **KİLİTLİ (2026-08-13):** üye <750 → 750+; ≥750 gerçek. Çevrimiçi <20 → oturum 20–25; ≥20 gerçek. Asla geri alınmaz. |
 | P1-4 | Video kütüphanesi vaadi vs erişim | SEO/onboarding “kütüphane”; üye program-scoped; `fullVideo` unused | ROADMAP açık maddesini kapat: A) program-only B) fullVideo entitlement uygula C) copy yumuşat |
 | P1-5 | Aktivasyon funnel (Faz 4) | ROADMAP bekliyor | Onboarding → Stripe → ilk HT → ilk program/mesaj ölçümü |
 | P1-6 | Stripe Subscription auto-renew (Faz 5) | Checkout one-shot + Portal | Ürün kararı sonrası |
@@ -188,7 +188,7 @@ Skor: netlik / mobil / boş-hata / vaat uyumu (1–5). Kod walk; canlı QA öner
 | Bildirimler | 4/4/4/4 | False-positive için hydrate wait var | Regresyon izle |
 | Staff builder | 4/4/4/4 | Tam sayfa UX olgun | — |
 | Admin content/analytics | 3/4/3/3 | Ops boşluk “yarım” hissi | İçerik doldurma |
-| LiveActiveCounter | 3/4/3/2 | Boost’lu online | P1-3 |
+| LiveActiveCounter | 3/4/3/2 | Floor 750+ / online 20–25 (kilitli 2026-08-13) | P1-3 kapandı |
 
 ### İyi gidenler
 
@@ -258,7 +258,7 @@ Performance: unindexed FK (`ai_usage_logs`, `meal_analysis_cache`), multiple per
 
 ## Uygulama durumu (Tur 1–5 + ops, 2026-07-29)
 
-**Kararlar:** istatistik floor tutuldu · kütüphane program-scoped · Subscription açık · **mobil ertelendi**.
+**Kararlar:** istatistik floor **kilitli (2026-08-13):** üye <750 → 750+, ≥750 gerçek; çevrimiçi <20 → oturum 20–25, ≥20 gerçek · kütüphane program-scoped · Subscription açık · **mobil ertelendi**.
 
 | Madde | Durum |
 |-------|--------|
@@ -270,9 +270,25 @@ Performance: unindexed FK (`ai_usage_logs`, `meal_analysis_cache`), multiple per
 | Schedule gate | Yapıldı |
 | Kalori unpaid gate + copy | Yapıldı |
 | Landing CTA 48s | Yapıldı (stats aynı) |
+| P1-3 public stats floor | **Kilitli 2026-08-13** — 750+ / 20–25; geri alınmaz |
 | Video copy hizası | Yapıldı (runtime aynı) |
 | Faz 4 aktivasyon | Tamamlandı — metrik + GA4 + checklist |
 | Faz 5 Subscription | Tamamlandı — recurring auto-renew + eko pasif |
 | Legal + GSC prep | Tamamlandı — manuel GSC/Stripe Dashboard kaldı |
 | FAQ / SEO copy | Eko paketler + 48s deneme hizası |
 | Mobil handoff | **Duraklatıldı** — genişletme yok |
+
+---
+
+## KİLİTLİ ürün kararı — public istatistik (2026-08-13)
+
+Kaynak: `src/utils/displayPlatformStats.js` · Cursor kuralı: `.cursor/rules/platform-display-stats-locked.mdc`
+
+Bu karar **geri alınmaz**. Kullanıcı açıkça “kaldır” demedikçe floor’u 0 yapma / gerçek sayıya çevirme.
+
+| Metrik | Gerçek değer eşik altı | Eşik ve üzeri |
+|--------|------------------------|---------------|
+| Toplam üye (landing şerit, hero, hakkımızda) | **750+** | Gerçek sayı (`showPlus` yok) |
+| Şu an çevrimiçi (landing şerit) | Oturumda sabit rastgele **20–25** | Gerçek sayı |
+
+Admin / staff panelleri gerçek `onlineNow` / üye sayısını göstermeye devam eder.
