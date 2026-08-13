@@ -74,7 +74,7 @@ export default function TeamListPage({ role: roleProp }) {
   const RoleIcon = config.icon
 
   return (
-    <div className="min-h-screen bg-cream-50/30">
+    <div className={`team-list-page team-list-page--${role}`}>
       <JsonLd data={teamListSchema} />
       <div className="relative overflow-hidden py-14 sm:py-20">
         {/* Anında gradient; görsel gelince üstüne biner — boş flash olmaz */}
@@ -121,20 +121,26 @@ export default function TeamListPage({ role: roleProp }) {
         <span className="sr-only">{hero.alt}</span>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-        {members.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 text-center">
-            <RoleIcon className={`mx-auto h-16 w-16 opacity-20 ${config.accent}`} />
-            <p className="mt-4 text-cream-800/50">Henüz kayıtlı uzman bulunmuyor.</p>
-          </motion.div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {members.map((m, i) => (
-              <StaffMemberCard key={m.id} member={m} config={config} index={i} />
-            ))}
-          </div>
-        )}
-      </div>
+      <section className="team-list-board">
+        <div aria-hidden className="team-list-board__dots" />
+        <div aria-hidden className="team-list-board__blob team-list-board__blob--a" />
+        <div aria-hidden className="team-list-board__blob team-list-board__blob--b" />
+        <div aria-hidden className="team-list-board__ring" />
+        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+          {members.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 text-center">
+              <RoleIcon className={`mx-auto h-16 w-16 opacity-20 ${config.accent}`} />
+              <p className="mt-4 text-cream-800/50">Henüz kayıtlı uzman bulunmuyor.</p>
+            </motion.div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {members.map((m, i) => (
+                <StaffMemberCard key={m.id} member={m} config={config} index={i} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

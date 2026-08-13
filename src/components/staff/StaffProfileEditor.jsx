@@ -71,7 +71,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
 
   const completionHints = [
     !form.photo && 'Profil fotoğrafı',
-    !form.bio && 'Biyografi',
+    !form.bio && 'Hakkında',
   ].filter(Boolean)
 
   const validate = () => {
@@ -81,7 +81,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
     if (!form.gender) return 'Cinsiyet seçin.'
     if (!form.photo) return 'Profil fotoğrafı gerekli.'
     const bioGuard = detectExternalContactInfo(form.bio)
-    if (bioGuard.blocked) return `Biyografide ${bioGuard.reason} paylaşamazsınız. Tüm iletişim uygulama içinden yürütülmelidir.`
+    if (bioGuard.blocked) return `Hakkında metninde ${bioGuard.reason} paylaşamazsınız. Tüm iletişim uygulama içinden yürütülmelidir.`
     return ''
   }
 
@@ -302,7 +302,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                   </label>
                 </div>
                 <label className="block">
-                  <FieldLabel>Biyografi</FieldLabel>
+                  <FieldLabel>Hakkında</FieldLabel>
                   <textarea
                     value={form.bio}
                     onChange={(e) => update({ bio: e.target.value })}
@@ -311,7 +311,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                     className={`${inputCls} resize-y`}
                   />
                   <p className="mt-1.5 text-xs text-cream-800/50">
-                    Bu biyografi herkese açık yayınlanır — kadro sayfalarında ve genel profilinizde görünür.
+                    Halka açık profilde Hakkında kartında görünür. Boş bırakırsanız bu bölüm gizlenir.
                   </p>
                 </label>
                 <div className="rounded-2xl border border-cream-200 bg-cream-50/50 px-4 py-3">

@@ -2,14 +2,32 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ChevronRight, Award, Briefcase } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
-import { normalizeStaffProfile } from '../../data/staffProfile'
+import { normalizeStaffProfile, publicCertificates, formatStaffDisplayName } from '../../data/staffProfile'
 import { staffProfilePath } from '../../config/seo'
+import { tagToneClass } from './staffProfileVisuals'
+
+function labelKey(value) {
+  return String(value || '').trim().toLocaleLowerCase('tr')
+}
 
 export default function StaffMemberCard({ member, config, index = 0 }) {
   const profile = normalizeStaffProfile(member)
   const meta = staffRoleMeta(member.role)
+  const displayName = formatStaffDisplayName(profile.name)
+  const certificateCount = publicCertificates(profile.certificates).length
   const RoleIcon = meta.icon
-  const tags = profile.specialties.slice(0, 3)
+  const title = profile.title?.trim() || ''
+  const specialty = profile.specialty?.trim() || ''
+  const subtitle = title || specialty
+  const tags = (profile.specialties.length ? profile.specialties : specialty ? [specialty] : [])
+    .map((tag) => String(tag).trim())
+    .filter(Boolean)
+    .filter((tag, i, list) => {
+      const key = labelKey(tag)
+      if (subtitle && key === labelKey(subtitle)) return false
+      return list.findIndex((item) => labelKey(item) === key) === i
+    })
+    .slice(0, 4)
 
   return (
     <motion.div
@@ -20,73 +38,70 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
     >
       <Link
         to={staffProfilePath(member)}
-        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-cream-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+        className={`team-member-card team-member-card--${config.key} group`}
       >
-        <div className="relative aspect-[4/5] max-h-72 overflow-hidden sm:max-h-none sm:aspect-auto sm:h-64">
+        <div className="team-member-card__media">
           {profile.photo ? (
-            <img
-              src={profile.photo}
-              alt={profile.name}
-              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-            />
+            <img src={profile.photo} alt="" />
           ) : (
-            <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${config.light}`}>
+            <div className={`team-member-card__fallback flex items-center justify-center bg-gradient-to-br ${config.light}`}>
               <span className={`font-display text-7xl font-bold opacity-30 ${config.accent}`}>
-                {profile.name?.charAt(0)}
+                {displayName.charAt(0)}
               </span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          <span className={`absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm ${config.badge}/90 backdrop-blur`}>
-            <RoleIcon className="h-3 w-3" />
-            {meta.label}
-          </span>
+          <div aria-hidden className="team-member-card__shade" />
+          <div aria-hidden className="team-member-card__orb" />
+
           {profile.experienceYears > 0 && (
-            <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-cream-900 backdrop-blur">
+            <span className="absolute right-4 top-4 z-[1] inline-flex items-center gap-1 rounded-full border border-white/35 bg-white/90 px-2.5 py-1 text-xs font-semibold text-cream-900 shadow-sm backdrop-blur">
               <Briefcase className="h-3 w-3" />
               {profile.experienceYears}+ yıl
             </span>
           )}
+
+          <div className="team-member-card__caption">
+            <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-cream-900 shadow-md">
+              <RoleIcon className={`h-3.5 w-3.5 ${config.accent}`} />
+              {meta.label}
+            </span>
+            <h3 className="font-display text-xl font-bold leading-tight tracking-tight text-white drop-shadow-sm">
+              {displayName}
+            </h3>
+            {subtitle && (
+              <p className="mt-1 text-sm font-medium text-white/85">{subtitle}</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className="font-display text-lg font-bold text-cream-900 transition-colors group-hover:text-brand-600">
-                {profile.name}
-              </h3>
-              {profile.title && (
-                <p className="mt-0.5 text-sm font-medium text-cream-800/70">{profile.title}</p>
-              )}
-              {profile.specialty && (
-                <p className={`mt-1 text-sm font-semibold ${config.accent}`}>{profile.specialty}</p>
-              )}
-            </div>
-          </div>
-
-          {profile.bio && (
-            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-cream-800/65">{profile.bio}</p>
+        <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+          {profile.bio?.trim() && (
+            <p className="line-clamp-2 text-sm leading-relaxed text-cream-800/70">{profile.bio.trim()}</p>
           )}
 
           {tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-cream-800/70">
+            <div className={`${profile.bio?.trim() ? 'mt-3' : ''} flex flex-wrap gap-1.5`}>
+              {tags.map((tag, i) => (
+                <span
+                  key={tag}
+                  className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tagToneClass(i)}`}
+                >
                   {tag}
                 </span>
               ))}
             </div>
           )}
 
-          {profile.certificates?.length > 0 && (
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-cream-800/50">
-              <Award className="h-3.5 w-3.5 shrink-0" />
-              {profile.certificates.length} sertifika
-            </p>
-          )}
-
-          <div className="mt-auto flex items-center justify-end border-t border-cream-50 pt-4">
-            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${config.accent} bg-cream-50 transition-colors group-hover:bg-brand-50`}>
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-cream-100/80 pt-4">
+            {certificateCount > 0 ? (
+              <p className="flex items-center gap-1.5 text-xs text-cream-800/50">
+                <Award className="h-3.5 w-3.5 shrink-0" />
+                {certificateCount} sertifika
+              </p>
+            ) : (
+              <span />
+            )}
+            <span className="team-member-card__cta">
               Profili Gör <ChevronRight className="h-3 w-3" />
             </span>
           </div>

@@ -3,6 +3,7 @@ import { tr } from 'date-fns/locale'
 import { BRAND } from '../config/brand'
 import { staffRoleLabel } from '../utils/staffRoles'
 import { educationLevelLabel, formatEducationEntry, getOfficialCoachingCertLabels } from '../data/staffApplication'
+import { formatAvailabilitySummary } from '../services/availability'
 import { supabase } from '../services/supabaseClient'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
@@ -235,7 +236,10 @@ function educationListHtml(d) {
 }
 
 function buildCoachSections(d) {
+  const hours = formatAvailabilitySummary(d.availability)
   return [
+    d.bio ? section('Hakkında', `<p class="bio">${escapeHtml(d.bio).replace(/\n/g, '<br/>')}</p>`) : '',
+    hours ? section('Çalışma Saatleri', `<p>${escapeHtml(hours)}</p>`) : '',
     section('Uzmanlık', `
       ${tagList(d.specialties)}
       ${d.specialtyOther ? `<p class="note">Diğer: ${escapeHtml(d.specialtyOther)}</p>` : ''}
@@ -268,8 +272,10 @@ function buildCoachSections(d) {
 }
 
 function buildDietitianSections(d) {
+  const hours = formatAvailabilitySummary(d.availability)
   return [
-    d.bio ? section('Tanıtım', `<p class="bio">${escapeHtml(d.bio).replace(/\n/g, '<br/>')}</p>`) : '',
+    d.bio ? section('Hakkında', `<p class="bio">${escapeHtml(d.bio).replace(/\n/g, '<br/>')}</p>`) : '',
+    hours ? section('Çalışma Saatleri', `<p>${escapeHtml(hours)}</p>`) : '',
     section('Mezuniyet & Lisans', `
       ${row('Bölüm', d.graduationDepartment)}
     `),

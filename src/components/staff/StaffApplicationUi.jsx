@@ -5,6 +5,7 @@ import Modal from '../ui/Modal'
 import { toggleInList, OTHER_OPTION, COACHING_FEDERATIONS, COACHING_LICENSE_LEVELS, EMPTY_FEDERATION_CERT, getOfficialCoachingCertLabels, formatEducationEntry } from '../../data/staffApplication'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { TONE_STYLES } from './staffApplicationUiStyles'
+import { formatAvailabilitySummary } from '../../services/availability'
 
 const SERVICE_TONES = ['brand', 'sky', 'emerald', 'amber', 'violet', 'sage', 'rose']
 
@@ -509,6 +510,11 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
           </SummarySection>
         )}
 
+        <SummarySection title="Profil">
+          <SummaryRow label="Hakkında" value={form.bio} />
+          <SummaryRow label="Çalışma saatleri" value={formatAvailabilitySummary(form.availability)} />
+        </SummarySection>
+
         {turnstileSlot}
 
         <button
@@ -559,7 +565,7 @@ function SummaryRow({ label, value }) {
   return (
     <div className="flex gap-2 text-xs">
       <dt className="w-28 shrink-0 text-cream-800/50">{label}</dt>
-      <dd className="font-medium text-cream-900">{value}</dd>
+      <dd className="min-w-0 font-medium whitespace-pre-line break-words text-cream-900">{value}</dd>
     </div>
   )
 }

@@ -45,3 +45,9 @@ export function formatAvailabilityRanges(value = {}) {
       return { value: d.value, label: d.label, short: d.short, ranges }
     })
 }
+
+export function formatAvailabilitySummary(value = {}) {
+  return formatAvailabilityRanges(value)
+    .map((d) => `${d.label} ${d.ranges.join(', ')}`)
+    .join(' · ')
+}

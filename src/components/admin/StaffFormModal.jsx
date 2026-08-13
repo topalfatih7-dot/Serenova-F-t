@@ -97,13 +97,9 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
       setError('Şifre gereksinimleri karşılanmıyor (8+ karakter, büyük/küçük harf, rakam ve özel karakter).')
       return
     }
-    if (form.workDays.length === 0) {
-      setError('Panel erişimi için en az bir çalışma günü seçin.')
-      return
-    }
     const bioGuard = detectExternalContactInfo(form.bio)
     if (bioGuard.blocked) {
-      setError(`Biyografide ${bioGuard.reason} paylaşılamaz. Tüm iletişim uygulama içinden yürütülmelidir.`)
+      setError(`Hakkında metninde ${bioGuard.reason} paylaşılamaz. Tüm iletişim uygulama içinden yürütülmelidir.`)
       return
     }
     setError('')
@@ -199,7 +195,16 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               />
             </label>
 
-            <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} placeholder="Detaylı biyografi (profil sayfasında)" rows={5} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-cream-800/70">Hakkında</span>
+              <textarea
+                value={form.bio}
+                onChange={(e) => update({ bio: e.target.value })}
+                placeholder="Halka açık profilde Hakkında kartında görünür. Boş bırakırsanız bu bölüm gizlenir."
+                rows={5}
+                className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm"
+              />
+            </label>
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-cream-800/70">Konuşulan diller (her satıra bir dil)</span>
@@ -315,6 +320,9 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
                   </button>
                 ))}
               </div>
+              <p className="mt-1.5 text-xs text-cream-800/45">
+                Seçilmezse herkese açık profilde çalışma saati gösterilmez.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

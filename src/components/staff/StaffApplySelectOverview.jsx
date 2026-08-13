@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import {
-  FileText, UserRound, Briefcase, BadgeCheck, CircleDot,
+  FileText, UserRound, Briefcase, BadgeCheck, CircleDot, Clock,
 } from 'lucide-react'
 
 const ease = [0.22, 1, 0.36, 1]
@@ -26,6 +26,11 @@ const REQUIRED = [
     Icon: FileText,
     title: 'e-Devlet mezuniyet belgesi',
     detail: 'PDF veya görsel — her iki rol için zorunlu',
+  },
+  {
+    Icon: Clock,
+    title: 'Hakkında & çalışma saatleri',
+    detail: 'Profil tanıtımı ve randevu müsaitliği',
   },
 ]
 

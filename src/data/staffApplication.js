@@ -1,5 +1,8 @@
 /** Koç / diyetisyen başvuru formu — admin onayı sonrası staff kaydına dönüşür */
 
+import { isMeaningfulProfileText, hasAvailabilitySlots, scheduleFromAvailability } from './staffProfile'
+import { detectExternalContactInfo } from '../utils/contactInfoGuard'
+
 export const GENDERS = [
   { value: 'female', label: 'Kadın' },
   { value: 'male', label: 'Erkek' },
@@ -65,10 +68,28 @@ export const COACH_SPECIALTY_GROUPS = [
 
 export const COACH_SPECIALTIES = COACH_SPECIALTY_GROUPS.flatMap((g) => g.items)
 
-export const DIETITIAN_SPECIALTIES = [
-  'Spor Beslenmesi', 'Klinik Beslenme', 'Kilo Yönetimi', 'Diyabet Beslenmesi',
-  'Hamilelik / Emzirme', 'Çocuk Beslenmesi', 'Plant-Based', 'Intolerans / Alerji',
+export const DIETITIAN_SPECIALTY_GROUPS = [
+  {
+    id: 'clinical',
+    label: 'Klinik Beslenme',
+    tone: 'sage',
+    items: ['Klinik Beslenme', 'Diyabet Beslenmesi', 'Intolerans / Alerji'],
+  },
+  {
+    id: 'lifestyle',
+    label: 'Yaşam & Performans',
+    tone: 'brand',
+    items: ['Spor Beslenmesi', 'Kilo Yönetimi', 'Plant-Based'],
+  },
+  {
+    id: 'lifestage',
+    label: 'Özel Dönemler',
+    tone: 'rose',
+    items: ['Hamilelik / Emzirme', 'Çocuk Beslenmesi'],
+  },
 ]
+
+export const DIETITIAN_SPECIALTIES = DIETITIAN_SPECIALTY_GROUPS.flatMap((g) => g.items)
 
 export const COMPETENT_GROUPS = {
   lifestyle: {
@@ -253,6 +274,7 @@ export const EMPTY_STAFF_APPLICATION = {
   serviceAreas: [],
   serviceAreaOther: '',
   languages: ['Türkçe'],
+  availability: {},
   // Diyetisyen
   graduationDepartment: '',
   education: [{ school: '', level: '' }],
@@ -267,7 +289,7 @@ export const SHARED_APPLICATION_KEYS = [
   'hasGym', 'gymName', 'gymCity', 'gymDistrict',
   'hasOffice', 'officeName', 'officeCity', 'officeDistrict', 'officeAddress',
   'instagram', 'youtube', 'website', 'linkedin',
-  'languages', 'experienceYears', 'bio', 'title',
+  'languages', 'experienceYears', 'bio', 'title', 'availability',
 ]
 
 /** Ortak alanları koruyup rol-özel alanları boş forma döndürür */
@@ -296,7 +318,7 @@ export function hasEducationEntryInfo(edu) {
 }
 
 export function hasCertificateEntryInfo(cert) {
-  return !!(cert?.name?.trim())
+  return isMeaningfulProfileText(cert?.name)
 }
 
 export function formatEducationEntry(edu) {
@@ -356,6 +378,7 @@ export function applicationToStaffPayload(app, tempPassword) {
 
   const bio = d.bio || ''
   const title = d.title || primarySpecialty || ''
+  const schedule = scheduleFromAvailability(d.availability)
 
   return {
     role: app.role,
@@ -380,9 +403,7 @@ export function applicationToStaffPayload(app, tempPassword) {
     experiences: d.experiences || [],
     certificates,
     languages: d.languages || ['Türkçe'],
-    workDays: d.workDays?.length ? d.workDays : [1, 3, 5],
-    workStart: d.workStart || '09:00',
-    workEnd: d.workEnd || '17:00',
+    ...schedule,
   }
 }
 
@@ -469,8 +490,21 @@ function dietitianStep3Errors(form) {
   return errors
 }
 
+export const BIO_MIN_LENGTH = 80
+
 function step4Errors(form) {
   const errors = []
+  const bio = form.bio?.trim() || ''
+  if (bio.length < BIO_MIN_LENGTH) {
+    errors.push(`Hakkında metni en az ${BIO_MIN_LENGTH} karakter olmalı`)
+  }
+  const bioGuard = detectExternalContactInfo(form.bio)
+  if (bioGuard.blocked) {
+    errors.push(`Hakkında metninde ${bioGuard.reason} paylaşılamaz. İletişim uygulama içinden yürütülür.`)
+  }
+  if (!hasAvailabilitySlots(form.availability)) {
+    errors.push('En az bir gün için çalışma saati seçin')
+  }
   if (form.role === 'coach') {
     const hasApproach = (form.workApproaches || []).some((a) => a !== OTHER_OPTION) || ((form.workApproaches || []).includes(OTHER_OPTION) && form.workApproachOther?.trim())
     const hasService = (form.serviceAreas || []).some((a) => a !== OTHER_OPTION) || ((form.serviceAreas || []).includes(OTHER_OPTION) && form.serviceAreaOther?.trim())
@@ -511,6 +545,8 @@ export function buildStaffApplicationPayload(form) {
     specialtyOther: form.specialtyOther || '',
     experienceYears: Number(form.experienceYears) || 0,
     languages: form.languages || ['Türkçe'],
+    bio: form.bio || '',
+    availability: form.availability && typeof form.availability === 'object' ? form.availability : {},
   }
 
   const graduationDocFile = form.graduationDocFile?.url

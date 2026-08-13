@@ -5,11 +5,12 @@ import {
   ArrowLeft, ArrowRight, CheckCircle, Lock,
   Plus, Briefcase, GraduationCap, Award,
   Share2, Video, Link2, Globe, MapPin, Building2, Sparkles,
-  Target, Users, User, Dumbbell, Apple,
+  Target, Users, User, Dumbbell, Apple, Clock, BookOpen,
 } from 'lucide-react'
 import SeoHead from '../components/seo/SeoHead'
 import PhoneField from '../components/ui/PhoneField'
 import PhotoUpload from '../components/ui/PhotoUpload'
+import WeeklyAvailability from '../components/package/WeeklyAvailability'
 import StaffApplicationHero from '../components/staff/StaffApplicationHero'
 import StaffApplySelectOverview from '../components/staff/StaffApplySelectOverview'
 import { useToast } from '../context/ToastContext'
@@ -34,7 +35,7 @@ import {
 import {
   EMPTY_STAFF_APPLICATION,
   COACH_SPECIALTY_GROUPS,
-  DIETITIAN_SPECIALTIES,
+  DIETITIAN_SPECIALTY_GROUPS,
   COMPETENT_GROUPS,
   INTERNATIONAL_CERTIFICATES,
   BRANCH_CERTIFICATES,
@@ -49,6 +50,7 @@ import {
   EMPTY_FEDERATION_CERT,
   hasCertificateEntryInfo,
   resetRoleSpecificFields,
+  BIO_MIN_LENGTH,
 } from '../data/staffApplication'
 import { staffRoleLabel } from '../utils/staffRoles'
 
@@ -62,8 +64,8 @@ const inputCls = 'w-full rounded-xl border border-cream-200 bg-white px-4 py-3 t
 const selectCls = `${inputCls} appearance-none`
 
 const STEP_DEFAULT_SECTION = {
-  coach: { 1: 'basic', 2: 'specialties', 3: 'graduation-doc', 4: 'approaches' },
-  dietitian: { 1: 'basic', 2: 'specialties', 3: 'graduation-doc', 4: 'approaches' },
+  coach: { 1: 'basic', 2: 'specialties', 3: 'graduation-doc', 4: 'bio' },
+  dietitian: { 1: 'basic', 2: 'specialties', 3: 'graduation-doc', 4: 'bio' },
 }
 
 const COMPETENT_GROUP_ACCORDIONS = Object.entries(COMPETENT_GROUPS).map(([key, group], i) => ({
@@ -144,8 +146,7 @@ export default function StaffApplicationPage() {
     if (formSessionToken || !turnstileEnabled) return ''
     return getTokenForSubmit()
   }
-  const dietitianGroups = useMemo(() => [{ id: 'all', label: 'Uzmanlık Alanları', tone: 'sage', items: DIETITIAN_SPECIALTIES }], [])
-  const specialtyGroups = form.role === 'dietitian' ? dietitianGroups : COACH_SPECIALTY_GROUPS
+  const specialtyGroups = form.role === 'dietitian' ? DIETITIAN_SPECIALTY_GROUPS : COACH_SPECIALTY_GROUPS
   const districts = useMemo(() => getDistricts(form.city), [form.city])
   const gymDistricts = useMemo(() => getDistricts(form.gymCity), [form.gymCity])
   const officeDistricts = useMemo(() => getDistricts(form.officeCity), [form.officeCity])
@@ -563,7 +564,6 @@ export default function StaffApplicationPage() {
                       </p>
                       <input type="number" min={0} max={50} value={form.experienceYears} onChange={(e) => update({ experienceYears: e.target.value })} placeholder="Deneyim (yıl) *" className={inputCls} />
                       <input value={form.graduationDepartment} onChange={(e) => update({ graduationDepartment: e.target.value })} placeholder="Mezuniyet bölümü *" className={inputCls} />
-                      <textarea value={form.bio} onChange={(e) => update({ bio: e.target.value })} rows={3} placeholder="Kendinizi tanıtın (opsiyonel)" className={inputCls} />
                     </div>
                   </AccordionSection>
                 </>
@@ -773,6 +773,54 @@ export default function StaffApplicationPage() {
                 </AccordionSection>
               )}
 
+              {step === 4 && (
+                <>
+                  <AccordionSection
+                    id="bio"
+                    title="Hakkında"
+                    subtitle="Halka açık profilinizde yayınlanır"
+                    icon={BookOpen}
+                    tone="brand"
+                    open={openSection === 'bio'}
+                    onToggle={toggleSection}
+                  >
+                    <div className="space-y-2">
+                      <textarea
+                        value={form.bio}
+                        onChange={(e) => update({ bio: e.target.value })}
+                        rows={6}
+                        required
+                        aria-required="true"
+                        placeholder="Yaklaşımınız, deneyiminiz ve danışanlarınıza nasıl destek olduğunuz…"
+                        className={`${inputCls} min-h-[9rem] resize-y`}
+                      />
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-cream-800/50">
+                        <span>En az {BIO_MIN_LENGTH} karakter. Telefon, e-posta veya sosyal medya hesabı yazmayın.</span>
+                        <span className={form.bio.trim().length >= BIO_MIN_LENGTH ? 'font-semibold text-sage-600' : 'font-medium text-cream-800/45'}>
+                          {form.bio.trim().length}/{BIO_MIN_LENGTH}
+                        </span>
+                      </div>
+                    </div>
+                  </AccordionSection>
+                  <AccordionSection
+                    id="hours"
+                    title="Çalışma Saatleri"
+                    subtitle="Randevu takvimi ve profil"
+                    icon={Clock}
+                    tone="amber"
+                    open={openSection === 'hours'}
+                    onToggle={toggleSection}
+                    count={Object.values(form.availability || {}).filter((h) => h?.length).length}
+                  >
+                    <WeeklyAvailability
+                      value={form.availability || {}}
+                      onChange={(availability) => update({ availability })}
+                      variant="staff"
+                    />
+                  </AccordionSection>
+                </>
+              )}
+
               {step === 4 && form.role === 'coach' && (
                 <>
                   <AccordionSection id="approaches" title="Çalışma Yaklaşımlarınız" icon={Sparkles} tone="teal" open={openSection === 'approaches'} onToggle={toggleSection} count={form.workApproaches.length}>
@@ -782,15 +830,6 @@ export default function StaffApplicationPage() {
                     <ServiceAreaGrid items={SERVICE_AREAS} selected={form.serviceAreas} onChange={(serviceAreas) => update({ serviceAreas })} otherValue={form.serviceAreaOther} onOtherChange={(v) => update({ serviceAreaOther: v })} />
                   </AccordionSection>
                 </>
-              )}
-
-              {step === 4 && form.role === 'dietitian' && (
-                <div className="rounded-2xl border border-sage-200/80 bg-gradient-to-br from-sage-50/80 to-white p-6 text-center">
-                  <p className="font-display text-base font-semibold text-cream-900">Hazırsınız</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-cream-800/65">
-                    Diyetisyen başvurunuz tamamlandı. Devam ederek özeti görüntüleyip gönderebilirsiniz.
-                  </p>
-                </div>
               )}
             </motion.div>
           </AnimatePresence>

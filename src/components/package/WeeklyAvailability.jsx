@@ -20,8 +20,14 @@ function rangeToHours(start, end) {
   return out
 }
 
-export default function WeeklyAvailability({ value = {}, onChange }) {
+const HINTS = {
+  member: 'Antrenman yapabileceğiniz gün ve saatleri seçin; koçunuz programı yalnızca bu günlere yazar.',
+  staff: 'Danışanlar yalnızca seçtiğiniz gün ve saatlerden randevu alır. Onay sonrası halka açık profilinizde ve randevu takviminde görünür.',
+}
+
+export default function WeeklyAvailability({ value = {}, onChange, variant = 'member', hint }) {
   const total = countAvailabilitySlots(value)
+  const help = hint || HINTS[variant] || HINTS.member
 
   const toggleDay = (day) => {
     const updated = { ...value }
@@ -53,7 +59,7 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
             ;[1, 2, 3, 4, 5].forEach((d) => { updated[d] = rangeToHours(9, 17) })
             onChange(updated)
           }}
-          className="rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
+          className="min-h-10 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
         >
           Hafta içi 09:00–17:00
         </button>
@@ -64,14 +70,14 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
             ;[1, 2, 3, 4, 5, 6, 0].forEach((d) => { updated[d] = rangeToHours(18, 22) })
             onChange(updated)
           }}
-          className="rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
+          className="min-h-10 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800 transition hover:border-brand-300 hover:bg-brand-50"
         >
           Her gün akşam 18:00–22:00
         </button>
         <button
           type="button"
           onClick={clearAll}
-          className="ml-auto flex items-center gap-1.5 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800/70 transition hover:border-red-200 hover:text-red-500"
+          className="ml-auto flex min-h-10 items-center gap-1.5 rounded-full border border-cream-200 bg-white px-3 py-1.5 text-xs font-medium text-cream-800/70 transition hover:border-red-200 hover:text-red-500"
         >
           <Eraser className="h-3.5 w-3.5" /> Temizle
         </button>
@@ -85,45 +91,51 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
           return (
             <div
               key={d.value}
-              className={`rounded-2xl border p-3 transition ${active ? 'border-brand-200 bg-brand-50/40' : 'border-cream-200 bg-white'}`}
+              className={`rounded-2xl border p-3 transition sm:p-3.5 ${active ? 'border-brand-200 bg-brand-50/40' : 'border-cream-200 bg-white'}`}
             >
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={() => toggleDay(d.value)}
-                  className="flex min-w-[7rem] items-center gap-2 text-sm font-semibold text-cream-900"
+                  className="flex min-h-11 min-w-[8.5rem] items-center gap-2.5 text-left text-sm font-semibold text-cream-900"
                 >
                   <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
                       active ? 'border-brand-500 bg-brand-500 text-white' : 'border-cream-300 text-transparent'
                     }`}
                   >
-                    <Check className="h-3 w-3" strokeWidth={3} />
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                   {d.label}
                 </button>
 
                 {active ? (
-                  <div className="flex flex-1 items-center gap-2">
-                    <select
-                      value={cur.start}
-                      onChange={(e) => setRange(d.value, { start: Number(e.target.value) })}
-                      className="rounded-lg border border-cream-200 bg-white px-2.5 py-1.5 text-sm"
-                    >
-                      {START_OPTIONS.map((h) => (
-                        <option key={h} value={h}>{fmt(h)}</option>
-                      ))}
-                    </select>
-                    <span className="text-cream-800/50">—</span>
-                    <select
-                      value={cur.end}
-                      onChange={(e) => setRange(d.value, { end: Number(e.target.value) })}
-                      className="rounded-lg border border-cream-200 bg-white px-2.5 py-1.5 text-sm"
-                    >
-                      {START_OPTIONS.filter((h) => h >= cur.start).map((h) => h + 1).map((h) => (
-                        <option key={h} value={h}>{fmt(h)}</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-1 sm:items-center sm:gap-2">
+                    <label className="block sm:flex-1">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cream-800/45 sm:sr-only">Başlangıç</span>
+                      <select
+                        value={cur.start}
+                        onChange={(e) => setRange(d.value, { start: Number(e.target.value) })}
+                        className="h-11 w-full rounded-xl border border-cream-200 bg-white px-2.5 text-sm sm:h-auto sm:rounded-lg sm:py-1.5"
+                      >
+                        {START_OPTIONS.map((h) => (
+                          <option key={h} value={h}>{fmt(h)}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <span className="hidden text-cream-800/50 sm:inline">—</span>
+                    <label className="block sm:flex-1">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cream-800/45 sm:sr-only">Bitiş</span>
+                      <select
+                        value={cur.end}
+                        onChange={(e) => setRange(d.value, { end: Number(e.target.value) })}
+                        className="h-11 w-full rounded-xl border border-cream-200 bg-white px-2.5 text-sm sm:h-auto sm:rounded-lg sm:py-1.5"
+                      >
+                        {START_OPTIONS.filter((h) => h >= cur.start).map((h) => h + 1).map((h) => (
+                          <option key={h} value={h}>{fmt(h)}</option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 ) : (
                   <span className="text-xs text-cream-800/40">Bu gün uygun değilim</span>
@@ -134,10 +146,10 @@ export default function WeeklyAvailability({ value = {}, onChange }) {
         })}
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/60">
+      <div className="flex flex-col gap-1 rounded-xl bg-cream-50 p-3 text-xs text-cream-800/60 sm:flex-row sm:items-center sm:gap-2">
         <CalendarRange className="h-4 w-4 shrink-0 text-brand-400" />
-        Antrenman yapabileceğiniz gün ve saatleri seçin; koçunuz programı yalnızca bu günlere yazar.
-        {total > 0 && <span className="ml-auto font-semibold text-brand-600">{total} saat seçildi</span>}
+        <span>{help}</span>
+        {total > 0 && <span className="font-semibold text-brand-600 sm:ml-auto">{total} saat seçildi</span>}
       </div>
     </div>
   )

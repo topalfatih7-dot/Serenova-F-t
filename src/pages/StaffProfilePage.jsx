@@ -13,7 +13,7 @@ import {
   staffPublicSlug,
   buildStaffProfileKeywords,
 } from '../config/seo'
-import { normalizeStaffProfile } from '../data/staffProfile'
+import { normalizeStaffProfile, formatStaffDisplayName } from '../data/staffProfile'
 
 export default function StaffProfilePage() {
   const { id } = useParams()
@@ -25,6 +25,7 @@ export default function StaffProfilePage() {
   }
 
   const profile = normalizeStaffProfile(member)
+  const displayName = formatStaffDisplayName(profile.name)
   const meta = staffRoleMeta(member.role)
   const profilePath = staffProfilePath(member)
   const slug = staffPublicSlug(member)
@@ -39,18 +40,18 @@ export default function StaffProfilePage() {
       <SeoHead
         title={
           member.role === 'dietitian'
-            ? `${profile.name} — Online Diyetisyen`
+            ? `${displayName} — Online Diyetisyen`
             : member.role === 'coach'
-              ? `${profile.name} — Online Fitness Koçu`
-              : `${profile.name} — ${meta.label}`
+              ? `${displayName} — Online Fitness Koçu`
+              : `${displayName} — ${meta.label}`
         }
         description={truncateDescription(
           profile.bio
             || (member.role === 'dietitian'
-              ? `${profile.name}, Yeni Form online diyetisyen kadrosu. Video görüşme ve kişiye özel beslenme programı.`
+              ? `${displayName}, Yeni Form online diyetisyen kadrosu. Video görüşme ve kişiye özel beslenme programı.`
               : member.role === 'coach'
-                ? `${profile.name}, Yeni Form online koçluk kadrosu. Video görüşme ve kişiye özel antrenman programı.`
-                : `${profile.name}, Yeni Form ${meta.label.toLowerCase()} kadrosu.`)
+                ? `${displayName}, Yeni Form online koçluk kadrosu. Video görüşme ve kişiye özel antrenman programı.`
+                : `${displayName}, Yeni Form ${meta.label.toLowerCase()} kadrosu.`)
         )}
         keywords={buildStaffProfileKeywords(profile, meta.label)}
         canonicalPath={profilePath}
@@ -60,7 +61,7 @@ export default function StaffProfilePage() {
           buildBreadcrumbSchema([
             { name: 'Ana Sayfa', path: '/' },
             { name: meta.label, path: teamListPathForRole(member.role) },
-            { name: profile.name, path: profilePath },
+            { name: displayName, path: profilePath },
           ]),
         ]}
       />

@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { downloadStaffApplicationCvPdf } from '../../utils/exportStaffApplicationCv'
 import { getOfficialCoachingCertLabels, educationLevelLabel, formatEducationEntry } from '../../data/staffApplication'
+import { formatAvailabilitySummary } from '../../services/availability'
 
 const SECTIONS = [
   { id: 'staff', label: 'Kadro', icon: UserPlus },
@@ -440,6 +441,17 @@ function StaffApplicationDetail({ app, d }) {
         {d.experienceYears != null && <p className="mt-2 text-cream-800/65">{d.experienceYears} yıl deneyim</p>}
       </DetailBlock>
 
+      {d.bio && (
+        <DetailBlock title="Hakkında">
+          <p className="whitespace-pre-line text-cream-800/75">{d.bio}</p>
+        </DetailBlock>
+      )}
+      {formatAvailabilitySummary(d.availability) && (
+        <DetailBlock title="Çalışma Saatleri">
+          <p className="text-cream-800/75">{formatAvailabilitySummary(d.availability)}</p>
+        </DetailBlock>
+      )}
+
       {isCoach ? (
         <>
           <DetailBlock title="Yetkin Gruplar">
@@ -521,8 +533,6 @@ function StaffApplicationDetail({ app, d }) {
       ) : (
         <>
           {d.graduationDepartment && <DetailBlock title="Mezuniyet"><p>{d.graduationDepartment}</p></DetailBlock>}
-          {d.licenseNumber && <DetailBlock title="Diploma / Oda No"><p>{d.licenseNumber}</p></DetailBlock>}
-          {d.bio && <DetailBlock title="Tanıtım"><p className="text-cream-800/75">{d.bio}</p></DetailBlock>}
           {d.graduationDocFile?.url && (
             <DetailBlock title="e-Devlet Mezuniyet Belgesi">
               <a href={d.graduationDocFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">

@@ -28,10 +28,93 @@ export const EMPTY_STAFF_FORM = {
   experiences: [],
   certificates: [],
   languages: ['Türkçe'],
-  workDays: [1, 3, 5],
-  workStart: '09:00',
-  workEnd: '17:00',
+  workDays: [],
+  workStart: '',
+  workEnd: '',
   availability: {},
+}
+
+const PLACEHOLDER_TEXT_RE = /^[\s.·•…\-–—*]+$/u
+const AUTO_DEFAULT_WORK_DAYS = [1, 3, 5]
+
+/** Boş, tek karakter veya ".." / "…" gibi doldurulmamış alanları ayıklar */
+export function isMeaningfulProfileText(value) {
+  const s = String(value || '').trim()
+  return s.length > 1 && !PLACEHOLDER_TEXT_RE.test(s)
+}
+
+export function publicCertificates(list) {
+  return (Array.isArray(list) ? list : []).filter((c) => isMeaningfulProfileText(c?.name))
+}
+
+export function publicEducation(list) {
+  return (Array.isArray(list) ? list : []).filter(
+    (e) => isMeaningfulProfileText(e?.degree) || isMeaningfulProfileText(e?.school),
+  )
+}
+
+export function publicExperiences(list) {
+  return (Array.isArray(list) ? list : []).filter(
+    (e) => isMeaningfulProfileText(e?.title) || isMeaningfulProfileText(e?.organization),
+  )
+}
+
+export function formatStaffDisplayName(name) {
+  return String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toLocaleUpperCase('tr') + word.slice(1).toLocaleLowerCase('tr'))
+    .join(' ')
+}
+
+function sameDayList(days, expected) {
+  const sorted = [...(days || [])].map(Number).sort((a, b) => a - b)
+  return sorted.length === expected.length && expected.every((d, i) => d === sorted[i])
+}
+
+/** Başvuru/admin formunun eski otomatik Pzt–Çar–Cum 09:00–17:00 şablonu */
+export function isAutoDefaultWorkSchedule(profile = {}) {
+  if (!sameDayList(profile.workDays, AUTO_DEFAULT_WORK_DAYS)) return false
+  const start = profile.workStart || '09:00'
+  const end = profile.workEnd || '17:00'
+  return start === '09:00' && end === '17:00'
+}
+
+export function hasAvailabilitySlots(availability) {
+  if (!availability || typeof availability !== 'object') return false
+  return Object.values(availability).some((hours) => Array.isArray(hours) && hours.length > 0)
+}
+
+export function hasPublicWorkSchedule(profile = {}) {
+  if (hasAvailabilitySlots(profile.availability)) return true
+  if (!profile.workDays?.length) return false
+  return !isAutoDefaultWorkSchedule(profile)
+}
+
+/** Randevu müsaitliğinden workDays / workStart / workEnd türetilir (atama eşlemesi). */
+export function scheduleFromAvailability(availability = {}) {
+  const source = availability && typeof availability === 'object' ? availability : {}
+  const days = Object.entries(source)
+    .filter(([, hours]) => Array.isArray(hours) && hours.length > 0)
+    .map(([day]) => Number(day))
+    .filter((d) => Number.isFinite(d))
+    .sort((a, b) => a - b)
+
+  const hourNums = Object.values(source)
+    .flat()
+    .map((h) => parseInt(String(h), 10))
+    .filter((n) => Number.isFinite(n))
+
+  const minH = hourNums.length ? Math.min(...hourNums) : null
+  const maxH = hourNums.length ? Math.max(...hourNums) : null
+
+  return {
+    availability: source,
+    workDays: days,
+    workStart: minH == null ? '' : `${String(minH).padStart(2, '0')}:00`,
+    workEnd: maxH == null ? '' : `${String(maxH + 1).padStart(2, '0')}:00`,
+  }
 }
 
 export function parseLines(text) {
@@ -75,8 +158,8 @@ export function normalizeStaffProfile(raw = {}) {
     certificates: Array.isArray(raw.certificates) ? raw.certificates : [],
     languages: Array.isArray(raw.languages) && raw.languages.length ? raw.languages : ['Türkçe'],
     workDays: Array.isArray(raw.workDays) ? raw.workDays : [],
-    workStart: raw.workStart || '09:00',
-    workEnd: raw.workEnd || '17:00',
+    workStart: raw.workStart || '',
+    workEnd: raw.workEnd || '',
     availability: raw.availability && typeof raw.availability === 'object' ? raw.availability : {},
   }
 }
@@ -105,8 +188,8 @@ export function staffProfileDataPayload(data) {
     certificates: n.certificates || [],
     languages: n.languages || ['Türkçe'],
     workDays: n.workDays || [],
-    workStart: n.workStart || '09:00',
-    workEnd: n.workEnd || '17:00',
+    workStart: n.workStart || '',
+    workEnd: n.workEnd || '',
     availability: n.availability && typeof n.availability === 'object' ? n.availability : {},
     ...(settings ? { settings } : {}),
   }

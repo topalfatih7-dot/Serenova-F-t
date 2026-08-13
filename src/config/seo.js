@@ -1,5 +1,6 @@
 import { BRAND } from './brand'
 import { blogPostPath } from '../utils/blogSlug'
+import { publicCertificates } from '../data/staffProfile'
 
 const LEGAL_SEO_SLUGS = [
   'kvkk', 'kvkk-acik-riza-metni', 'gizlilik-politikasi', 'cerez-politikasi',
@@ -532,8 +533,7 @@ export function buildArticleSchema(post) {
 export function buildPersonSchema(member, { profilePath } = {}) {
   if (!member) return null
   const profile = typeof member.specialties !== 'undefined' ? member : { ...member }
-  const credentials = (profile.certificates || [])
-    .filter((c) => c?.name)
+  const credentials = publicCertificates(profile.certificates)
     .map((c) => ({
       '@type': 'EducationalOccupationalCredential',
       name: c.name,
