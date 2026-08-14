@@ -332,8 +332,8 @@ body {
 .team-member-card__media {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 3 / 4;
-  min-height: 20rem;
+  aspect-ratio: 4 / 5;
+  max-height: 18rem;
 }
 
 .team-member-card__media img,
@@ -564,7 +564,9 @@ body {
 
 @media (min-width: 640px) {
   .team-member-card__media {
-    min-height: 24rem;
+    aspect-ratio: auto;
+    max-height: none;
+    height: 17.5rem;
   }
 }
 
