@@ -4,6 +4,7 @@ import { tr } from 'date-fns/locale'
 import { Dumbbell, Apple, ClipboardList, Clock, UserCheck } from 'lucide-react'
 import { AVAILABILITY_WEEKDAYS } from '../../services/availability'
 import { mealLabel } from '../../utils/programSchedule'
+import { isLibraryCatalogProgram } from '../../utils/coachProgram'
 
 const dayName = (v) => AVAILABILITY_WEEKDAYS.find((d) => d.value === Number(v))?.label || ''
 
@@ -64,9 +65,13 @@ function ProgramBlock({ program }) {
         </div>
       </div>
       <div className="max-h-64 space-y-3 overflow-y-auto p-3">
-        {groups.length === 0 && (
+        {isLibraryCatalogProgram(program) ? (
+          <p className="text-xs font-medium text-cream-800/70">
+            Özel kütüphanedeki tüm hareketler açık. Kütüphane sayfasından izleyebilirsiniz.
+          </p>
+        ) : groups.length === 0 ? (
           <p className="text-xs text-cream-800/50">Henüz içerik eklenmemiş.</p>
-        )}
+        ) : null}
         {groups.map((g) => (
           <div key={g.key}>
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-cream-800/45">{g.label}</p>

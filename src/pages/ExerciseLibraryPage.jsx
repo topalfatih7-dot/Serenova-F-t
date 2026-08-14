@@ -11,7 +11,7 @@ import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { DIFFICULTY_LABELS, formatExerciseLocations } from '../data/exerciseTurkish'
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary'
 import { useApp } from '../context/AppContext'
-import { collectProgramExerciseIds } from '../utils/coachProgram'
+import { collectProgramExerciseIds, hasFullLibraryAccess } from '../utils/coachProgram'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
@@ -28,12 +28,13 @@ function categoryGradient(category) {
 }
 
 export default function ExerciseLibraryPage({ staffMode = false }) {
-  const { myPrograms, isUnpaidMember } = useApp()
+  const { myPrograms, isUnpaidMember, user } = useApp()
+  const fullLibrary = staffMode || hasFullLibraryAccess(user, myPrograms)
   const programExerciseIds = useMemo(
-    () => (staffMode ? undefined : collectProgramExerciseIds(myPrograms)),
-    [staffMode, myPrograms],
+    () => (fullLibrary ? undefined : collectProgramExerciseIds(myPrograms)),
+    [fullLibrary, myPrograms],
   )
-  const hasProgramExercises = staffMode || (programExerciseIds?.length > 0)
+  const hasProgramExercises = fullLibrary || (programExerciseIds?.length > 0)
 
   const {
     items,
@@ -48,7 +49,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     setRequiresMachine,
     setPage,
   } = useExerciseLibrary({
-    allowedIds: staffMode ? undefined : programExerciseIds,
+    allowedIds: fullLibrary ? undefined : programExerciseIds,
   })
 
   const [searchInput, setSearchInput] = useState('')
@@ -117,8 +118,8 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
     <PanelPageShell>
       <PanelPageHeader
         title="Hareket Kütüphanesi"
-        subtitle={staffMode
-          ? 'Tüm hareket videolarını inceleyin ve programlara ekleyin'
+        subtitle={staffMode || fullLibrary
+          ? 'Tüm hareket videolarını inceleyin'
           : 'Programınızdaki hareket videolarını doğru formla izleyin'}
         icon={Library}
         accent="violet"
@@ -131,7 +132,7 @@ export default function ExerciseLibraryPage({ staffMode = false }) {
         ) : null}
       />
 
-      {!staffMode && hasProgramExercises && (
+      {!staffMode && hasProgramExercises && !fullLibrary && (
         <p className="text-sm text-cream-800/70">
           Yalnızca size atanan antrenman programındaki hareketler listelenir.
         </p>

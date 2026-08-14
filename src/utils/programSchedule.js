@@ -166,6 +166,7 @@ export function entryMatchesDate(entry, date, program = null) {
 export function getProgramEntriesForDate(programs, date, member = null) {
   const result = []
   ;(programs || []).forEach((prog) => {
+    if (prog.source === 'library_catalog' || prog.fullLibraryAccess === true) return
     if (!prog.entries?.length) return
     if (member && !isProgramVisibleOnDate(prog, date, member)) return
     const programType = prog.type || (prog.entries.some((e) => e.mealType) ? 'nutrition' : 'workout')

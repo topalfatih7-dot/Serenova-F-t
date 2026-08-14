@@ -45,6 +45,19 @@ export function collectProgramExerciseIds(programs = []) {
   return [...ids]
 }
 
+export const LIBRARY_CATALOG_SOURCE = 'library_catalog'
+
+export function isLibraryCatalogProgram(program) {
+  if (!program) return false
+  return program.source === LIBRARY_CATALOG_SOURCE || program.fullLibraryAccess === true
+}
+
+/** Üye bayrağı veya kütüphane kataloğu programı — tüm hareket videoları. */
+export function hasFullLibraryAccess(member, programs = []) {
+  if (member?.fullLibraryAccess === true) return true
+  return (programs || []).some(isLibraryCatalogProgram)
+}
+
 export function buildCoachProgramTitle(memberName, startStr, endStr, mode = 'weekly') {
   const startFmt = format(parseISO(`${startStr}T12:00:00`), 'd MMM yyyy', { locale: tr })
   const endFmt = format(parseISO(`${endStr}T12:00:00`), 'd MMM yyyy', { locale: tr })

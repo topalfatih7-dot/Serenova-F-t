@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { ClipboardList, Dumbbell, Apple, UserCheck, Clock, LayoutGrid } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ClipboardList, Dumbbell, Apple, UserCheck, Clock, LayoutGrid, Library } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../components/ui/EmptyState'
@@ -11,6 +12,7 @@ import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { useApp } from '../context/AppContext'
 import { AVAILABILITY_WEEKDAYS } from '../services/availability'
 import { mealLabel, CYCLE_PLAN_LENGTH, dedupeDailyNutritionEntries, usesLegacyCycleDayRotation, isCycle14SameDaily } from '../utils/programSchedule'
+import { isLibraryCatalogProgram } from '../utils/coachProgram'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import {
@@ -189,7 +191,7 @@ export default function ProgramsPage() {
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <h3 className="font-display text-base font-bold leading-tight text-white sm:text-lg">{p.title}</h3>
                         <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm sm:text-xs">
-                          {isWorkout ? 'Antrenman' : 'Beslenme'}
+                          {isLibraryCatalogProgram(p) ? 'Kütüphane' : isWorkout ? 'Antrenman' : 'Beslenme'}
                         </span>
                         {p.scheduleType === 'cycle14' && (
                           <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/95 sm:text-xs">
@@ -231,8 +233,20 @@ export default function ProgramsPage() {
                 <div className="bg-white p-4 sm:p-5">
                 {p.description && <p className="text-sm leading-relaxed text-cream-800/70">{p.description}</p>}
 
-                {/* Kütüphane tabanlı program: gün gün, hareketler tıklanabilir */}
-                {p.entries?.length > 0 ? (
+                {isLibraryCatalogProgram(p) ? (
+                  <div className={`rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3 ${p.description ? 'mt-4' : ''}`}>
+                    <p className="text-sm font-medium text-violet-900">
+                      Özel kütüphanedeki tüm hareket videoları sizin için açık.
+                    </p>
+                    <Link
+                      to="/library"
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"
+                    >
+                      <Library className="h-4 w-4" />
+                      Kütüphaneyi aç
+                    </Link>
+                  </div>
+                ) : p.entries?.length > 0 ? (
                   <div className={`space-y-4 ${p.description ? 'mt-4' : ''}`}>
                     {groupBySchedule(p.entries, p).map((g) => (
                       <div key={g.key}>
