@@ -8,8 +8,11 @@ function socialUrlsFromEnv() {
   ].filter((url) => typeof url === 'string' && url.startsWith('http'))
 }
 
+const FACEBOOK_PROFILE_URL = 'https://www.facebook.com/profile.php?id=61592831393674'
+
 const manualSocialUrls = [
   'https://www.instagram.com/yeniform/',
+  FACEBOOK_PROFILE_URL,
 ]
 
 /** Footer + sosyal bağlantılar — yeni platform eklemek için buraya ekleyin */
@@ -19,6 +22,12 @@ export const BRAND_SOCIAL_LINKS = [
     label: 'Instagram',
     url: 'https://www.instagram.com/yeniform/',
     handle: '@yeniform',
+  },
+  {
+    id: 'facebook',
+    label: 'Facebook',
+    url: FACEBOOK_PROFILE_URL,
+    handle: 'Yeni Form',
   },
 ]
 
@@ -35,7 +44,8 @@ export const BRAND = {
   shortName: 'Yeni Form',
   domain: 'yeniform.com',
   siteUrl: 'https://www.yeniform.com',
-  instagram: BRAND_SOCIAL_LINKS[0]?.url || '',
+  instagram: BRAND_SOCIAL_LINKS.find((item) => item.id === 'instagram')?.url || '',
+  facebook: BRAND_SOCIAL_LINKS.find((item) => item.id === 'facebook')?.url || '',
   socialLinks: BRAND_SOCIAL_LINKS,
   tagline: 'Online koçluk ve online diyetisyen ile sürdürülebilir wellness',
   initials: 'YF',

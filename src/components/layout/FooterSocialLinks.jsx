@@ -11,8 +11,25 @@ function InstagramIcon({ className }) {
   )
 }
 
+function FacebookIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+      />
+    </svg>
+  )
+}
+
 const SOCIAL_ICONS = {
   instagram: InstagramIcon,
+  facebook: FacebookIcon,
+}
+
+const SOCIAL_ICON_WRAP = {
+  instagram: 'bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af]',
+  facebook: 'bg-[#1877F2]',
 }
 
 export default function FooterSocialLinks() {
@@ -35,7 +52,7 @@ export default function FooterSocialLinks() {
               className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 transition hover:border-white/20 hover:bg-white/10"
             >
               {Icon ? (
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white shadow-sm transition group-hover:scale-105">
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition group-hover:scale-105 ${SOCIAL_ICON_WRAP[item.id] || 'bg-white/15'}`}>
                   <Icon className="h-5 w-5" />
                 </span>
               ) : null}
