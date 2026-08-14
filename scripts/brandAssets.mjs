@@ -89,11 +89,40 @@ export function buildOgBackgroundSvg(logoBox) {
 </svg>`
 }
 
+const BRAND_MARK_BLUE = { r: 27, g: 135, b: 201 }
+const BRAND_MARK_GREEN = { r: 85, g: 164, b: 95 }
+const NEIGHBOR8 = [
+  [1, 0], [1, 1], [0, 1], [-1, 1],
+  [-1, 0], [-1, -1], [0, -1], [1, -1],
+]
+
 /**
- * Yatay wordmark PNG'den (ikon + Yeni + Form) Instagram profil karesi üretir.
- * İkon üstte, "Yeni" / "Form" alt alta; harfler kaynaktan kesilir (aynı yazı tipi/renk).
+ * Kaynak wordmark'tan kare ikon üretir: şeffaflık yok, 1080² PWA/OAuth.
+ * Beyaz glif delinmez; köşeler gradient ile doldurulur (daire kırpma için).
  */
-export async function buildInstagramStackedLogo(logoSourceBuffer, { size = 1080 } = {}) {
+export async function buildOpaqueBrandMarkPng(logoSourceBuffer, { size = 1080, safeArea = 0.1 } = {}) {
+  const { width: srcW, height: srcH, paths } = await extractGlyphFromLogo(logoSourceBuffer)
+  const glyphPath = pathsToSvg(paths, srcW, srcH, size, safeArea)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <defs>
+    <linearGradient id="yfMarkBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgb(${BRAND_MARK_BLUE.r},${BRAND_MARK_BLUE.g},${BRAND_MARK_BLUE.b})"/>
+      <stop offset="100%" stop-color="rgb(${BRAND_MARK_GREEN.r},${BRAND_MARK_GREEN.g},${BRAND_MARK_GREEN.b})"/>
+    </linearGradient>
+  </defs>
+  <rect width="${size}" height="${size}" fill="url(#yfMarkBg)"/>
+  ${glyphPath}
+</svg>`
+
+  return sharp(Buffer.from(svg))
+    .png()
+    .flatten({ background: BRAND_MARK_BLUE })
+    .removeAlpha()
+    .png({ compressionLevel: 9, palette: false })
+    .toBuffer()
+}
+
+async function extractGlyphFromLogo(logoSourceBuffer) {
   const trimmed = await sharp(logoSourceBuffer)
     .trim({ threshold: 12 })
     .ensureAlpha()
@@ -101,173 +130,237 @@ export async function buildInstagramStackedLogo(logoSourceBuffer, { size = 1080 
     .toBuffer()
 
   const meta = await sharp(trimmed).metadata()
-  const markSize = Math.min(meta.height, meta.width)
-  // Yuvarlatılmış kare ikon yükseklikten 1–2 px daha geniş olabiliyor; sağ kenarı kesme.
-  const markWidth = Math.min(meta.width, markSize + 12)
-  const markBuf = await sharp(trimmed)
-    .extract({ left: 0, top: 0, width: markWidth, height: markSize })
-    .png()
-    .toBuffer()
-
-  if (meta.width <= markWidth + 8) {
-    throw new Error('Kaynak logoda wordmark (Yeni Form yazısı) bulunamadı.')
-  }
-
-  const wordmarkBuf = await sharp(trimmed)
-    .extract({
-      left: markWidth,
-      top: 0,
-      width: meta.width - markWidth,
-      height: meta.height,
-    })
-    .trim({ threshold: 12 })
-    .png()
-    .toBuffer()
-
-  const { yeniBuf, formBuf } = await splitWordmark(wordmarkBuf)
-
-  const iconPx = Math.round(size * 0.40)
-  const textMaxW = Math.round(iconPx * 0.92)
-  const gapIcon = Math.round(size * 0.032)
-  const gapLines = Math.round(size * 0.012)
-
-  const icon = await sharp(markBuf)
-    .resize(iconPx, iconPx, {
-      fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-    })
-    .png()
-    .toBuffer()
-
-  const yeniMeta = await sharp(yeniBuf).metadata()
-  const formMeta = await sharp(formBuf).metadata()
-  const textScale = textMaxW / Math.max(yeniMeta.width, formMeta.width)
-  const yeniW = Math.round(yeniMeta.width * textScale)
-  const yeniH = Math.round(yeniMeta.height * textScale)
-  const formW = Math.round(formMeta.width * textScale)
-  const formH = Math.round(formMeta.height * textScale)
-
-  const yeni = await sharp(yeniBuf).resize(yeniW, yeniH).png().toBuffer()
-  const form = await sharp(formBuf).resize(formW, formH).png().toBuffer()
-
-  const stackH = iconPx + gapIcon + yeniH + gapLines + formH
-  const top = Math.round((size - stackH) / 2)
-
-  return sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 3,
-      background: { r: 255, g: 255, b: 255 },
-    },
-  })
-    .composite([
-      { input: icon, left: Math.round((size - iconPx) / 2), top },
-      { input: yeni, left: Math.round((size - yeniW) / 2), top: top + iconPx + gapIcon },
-      {
-        input: form,
-        left: Math.round((size - formW) / 2),
-        top: top + iconPx + gapIcon + yeniH + gapLines,
-      },
-    ])
-    .png({ compressionLevel: 9 })
-    .toBuffer()
-}
-
-async function splitWordmark(wordmarkBuf) {
-  const { data, info } = await sharp(wordmarkBuf)
+  const side = Math.min(meta.height, meta.width)
+  const { data, info } = await sharp(trimmed)
+    .extract({ left: 0, top: 0, width: side, height: side })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
 
-  const occupied = Array(info.width).fill(false)
-  for (let x = 0; x < info.width; x++) {
-    for (let y = 0; y < info.height; y++) {
-      const i = (y * info.width + x) * 4
-      if (data[i + 3] < 16) continue
-      if (data[i] < 248 || data[i + 1] < 248 || data[i + 2] < 248) {
-        occupied[x] = true
+  const w = info.width
+  const h = info.height
+  const radius = Math.round(side * 0.224)
+  const inset = 14
+  const innerR = Math.max(8, radius - inset)
+  const mask = new Uint8Array(w * h)
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!inRoundedRect(x, y, w, h, inset, innerR)) continue
+      const i = (y * w + x) * 4
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      const lum = (r + g + b) / 3
+      const sat = Math.max(r, g, b) - Math.min(r, g, b)
+      if (lum > 210 && sat < 45) mask[y * w + x] = 1
+    }
+  }
+
+  morphClose(mask, w, h, 1)
+  const paths = traceAndSmoothContours(mask, w, h)
+  if (!paths.length) {
+    throw new Error('Marka ikonunda beyaz glif bulunamadı.')
+  }
+  return { width: w, height: h, paths }
+}
+
+function inRoundedRect(x, y, w, h, inset, radius) {
+  const x0 = inset
+  const y0 = inset
+  const x1 = w - 1 - inset
+  const y1 = h - 1 - inset
+  if (x < x0 || y < y0 || x > x1 || y > y1) return false
+  const cx = Math.max(x0 + radius, Math.min(x, x1 - radius))
+  const cy = Math.max(y0 + radius, Math.min(y, y1 - radius))
+  if ((x < x0 + radius || x > x1 - radius) && (y < y0 + radius || y > y1 - radius)) {
+    const dx = x - cx
+    const dy = y - cy
+    return dx * dx + dy * dy <= radius * radius
+  }
+  return true
+}
+
+function morphClose(mask, w, h, radius) {
+  const dil = new Uint8Array(mask)
+  for (let pass = 0; pass < radius; pass++) {
+    const src = Uint8Array.from(dil)
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        if (src[y * w + x]) continue
+        for (const [dx, dy] of NEIGHBOR8) {
+          if (src[(y + dy) * w + (x + dx)]) {
+            dil[y * w + x] = 1
+            break
+          }
+        }
+      }
+    }
+  }
+  const out = Uint8Array.from(dil)
+  for (let pass = 0; pass < radius; pass++) {
+    const src = Uint8Array.from(out)
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        if (!src[y * w + x]) continue
+        for (const [dx, dy] of NEIGHBOR8) {
+          if (!src[(y + dy) * w + (x + dx)]) {
+            out[y * w + x] = 0
+            break
+          }
+        }
+      }
+    }
+  }
+  mask.set(out)
+}
+
+function traceAndSmoothContours(mask, w, h) {
+  const visited = new Uint8Array(w * h)
+  const contours = []
+
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x
+      if (!mask[i] || visited[i]) continue
+      if (mask[i - 1]) continue
+      const raw = traceMoore(mask, w, h, x, y)
+      if (raw.length < 24) continue
+      floodVisited(mask, visited, w, h, x, y)
+      const simplified = rdp(raw, 1.35)
+      const smoothed = chaikinPreserveCorners(simplified, 2, 52)
+      contours.push(smoothed)
+    }
+  }
+
+  contours.sort((a, b) => b.length - a.length)
+  return contours.slice(0, 3)
+}
+
+function traceMoore(mask, w, h, startX, startY) {
+  const points = []
+  let x = startX
+  let y = startY
+  let dir = 0
+  const limit = w * h
+
+  for (let n = 0; n < limit; n++) {
+    points.push([x + 0.5, y + 0.5])
+    const startDir = (dir + 6) % 8
+    let found = false
+    for (let i = 0; i < 8; i++) {
+      const nd = (startDir + i) % 8
+      const nx = x + NEIGHBOR8[nd][0]
+      const ny = y + NEIGHBOR8[nd][1]
+      if (nx >= 0 && ny >= 0 && nx < w && ny < h && mask[ny * w + nx]) {
+        x = nx
+        y = ny
+        dir = nd
+        found = true
         break
       }
     }
+    if (!found) break
+    if (x === startX && y === startY) break
   }
-
-  const WORD_GAP_MIN = 40
-  const gaps = []
-  let x = 0
-  while (x < occupied.length && !occupied[x]) x++
-  while (x < occupied.length) {
-    if (!occupied[x]) {
-      const start = x
-      while (x < occupied.length && !occupied[x]) x++
-      if (x < occupied.length) {
-        const len = x - start
-        if (len >= WORD_GAP_MIN) gaps.push({ start, len })
-      }
-    } else {
-      x++
-    }
-  }
-
-  const wordGap = gaps.at(-1)
-  if (!wordGap) {
-    throw new Error('Yeni / Form kelimeleri ayrılamadı.')
-  }
-
-  const yeniLeft = gaps.length >= 2 ? gaps[gaps.length - 2].start + gaps[gaps.length - 2].len : 0
-  const yeniWidth = wordGap.start - yeniLeft
-  const formLeft = wordGap.start + wordGap.len
-  const formWidth = info.width - formLeft
-
-  if (yeniWidth < 8 || formWidth < 8) {
-    throw new Error('Yeni / Form kelimeleri ayrılamadı.')
-  }
-
-  const yeniBox = contentBBox(data, info, yeniLeft, yeniLeft + yeniWidth)
-  const formBox = contentBBox(data, info, formLeft, formLeft + formWidth)
-
-  const yeniBuf = await sharp(wordmarkBuf)
-    .extract(yeniBox)
-    .png()
-    .toBuffer()
-
-  const formBuf = await sharp(wordmarkBuf)
-    .extract(formBox)
-    .png()
-    .toBuffer()
-
-  return { yeniBuf, formBuf }
+  return points
 }
 
-function contentBBox(data, info, x0, x1) {
-  let minX = x1
-  let minY = info.height
-  let maxX = x0
-  let maxY = 0
-  for (let y = 0; y < info.height; y++) {
-    for (let x = x0; x < x1; x++) {
-      const i = (y * info.width + x) * 4
-      if (data[i + 3] < 16) continue
-      if (data[i] < 248 || data[i + 1] < 248 || data[i + 2] < 248) {
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
-      }
+function floodVisited(mask, visited, w, h, sx, sy) {
+  const stack = [[sx, sy]]
+  visited[sy * w + sx] = 1
+  while (stack.length) {
+    const [x, y] = stack.pop()
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx
+      const ny = y + dy
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue
+      const i = ny * w + nx
+      if (visited[i] || !mask[i]) continue
+      visited[i] = 1
+      stack.push([nx, ny])
     }
   }
-  if (maxX < minX || maxY < minY) {
-    throw new Error('Kelime içeriği bulunamadı.')
+}
+
+function rdp(points, epsilon) {
+  if (points.length < 3) return points
+  let maxD = 0
+  let idx = 0
+  const first = points[0]
+  const last = points[points.length - 1]
+  for (let i = 1; i < points.length - 1; i++) {
+    const d = pointLineDistance(points[i], first, last)
+    if (d > maxD) {
+      maxD = d
+      idx = i
+    }
   }
-  const pad = 1
-  const left = Math.max(0, minX - pad)
-  const top = Math.max(0, minY - pad)
-  const right = Math.min(info.width - 1, maxX + pad)
-  const bottom = Math.min(info.height - 1, maxY + pad)
-  return {
-    left,
-    top,
-    width: right - left + 1,
-    height: bottom - top + 1,
+  if (maxD > epsilon) {
+    const left = rdp(points.slice(0, idx + 1), epsilon)
+    const right = rdp(points.slice(idx), epsilon)
+    return left.slice(0, -1).concat(right)
   }
+  return [first, last]
+}
+
+function pointLineDistance(p, a, b) {
+  const dx = b[0] - a[0]
+  const dy = b[1] - a[1]
+  const len2 = dx * dx + dy * dy
+  if (len2 < 1e-9) return Math.hypot(p[0] - a[0], p[1] - a[1])
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2))
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy))
+}
+
+function chaikinPreserveCorners(points, iterations, sharpDeg) {
+  const closed = points
+  const sharpRad = (sharpDeg * Math.PI) / 180
+  let pts = closed
+  for (let n = 0; n < iterations; n++) {
+    const sharp = new Array(pts.length).fill(false)
+    const len = pts.length
+    for (let i = 0; i < len; i++) {
+      const prev = pts[(i + len - 1) % len]
+      const cur = pts[i]
+      const next = pts[(i + 1) % len]
+      const a1 = Math.atan2(cur[1] - prev[1], cur[0] - prev[0])
+      const a2 = Math.atan2(next[1] - cur[1], next[0] - cur[0])
+      let turn = Math.abs(a2 - a1)
+      if (turn > Math.PI) turn = 2 * Math.PI - turn
+      if (turn >= sharpRad) sharp[i] = true
+    }
+    const nextPts = []
+    for (let i = 0; i < len; i++) {
+      const p0 = pts[i]
+      const p1 = pts[(i + 1) % len]
+      if (sharp[i]) nextPts.push(p0)
+      nextPts.push([0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]])
+      nextPts.push([0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]])
+    }
+    pts = nextPts
+  }
+  return pts
+}
+
+function pathsToSvg(paths, srcW, srcH, size, safeArea) {
+  const scaleFit = (1 - 2 * safeArea) / Math.max(
+    ...paths.flat().map((p) => Math.abs(p[0] / srcW - 0.5) * 2),
+    ...paths.flat().map((p) => Math.abs(p[1] / srcH - 0.5) * 2),
+    1e-6,
+  )
+  const scale = Math.min(1, scaleFit) * (size / srcW)
+  const cx = size / 2
+  const cy = size / 2
+  const ox = srcW / 2
+  const oy = srcH / 2
+
+  return paths.map((pts) => {
+    const mapped = pts.map(([x, y]) => [
+      cx + (x - ox) * scale,
+      cy + (y - oy) * scale,
+    ])
+    const d = mapped.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(' ')
+    return `<path d="${d} Z" fill="#ffffff" fill-rule="evenodd"/>`
+  }).join('\n  ')
 }
