@@ -1,0 +1,30 @@
+---
+description: KİLİTLİ — Poyraz tam kütüphane erişimi; başkasına kopyalama, izinsiz geri alma
+alwaysApply: true
+---
+
+# KİLİTLİ — Poyraz tam hareket kütüphanesi (2026-08-14)
+
+Oturumda veya kütüphane/program revizesinde **kısa hatırlat**: `poyrazefetahmaztahmaz@gmail.com` özel tam kütüphane hakkına sahip. Başka üyeye kopyalama. Kullanıcı “geri al / kaldır” demedikçe dokunma.
+
+Detay + geri alma: [`docs/OPS_POYRAZ_LIBRARY.md`](docs/OPS_POYRAZ_LIBRARY.md)
+
+## Kayıt
+
+| | |
+|--|--|
+| Üye | Poyraz Efe Tahmaz |
+| E-posta | `poyrazefetahmaztahmaz@gmail.com` |
+| `members.id` | `b4141933-6cf1-4296-987f-fca5b5790fb9` |
+| Program | `940773c6-29ab-4a68-969a-05951c4702a0` (`source: library_catalog`) |
+| Kod | `38d2142a` |
+
+Üye `data.fullLibraryAccess = true` + katalog program. Takvime 1599 hareket basılmaz. Diğer üyeler program-scoped kalır.
+
+## Yasak
+
+- Bu hakkı başka e-postaya/üyeye verme
+- `fullLibraryAccess` / `library_catalog` kodunu VIP’e veya herkese açma
+- Programı silip “düzelir” diye bırakma (kütüphane tekrar kapanır)
+
+Sorun olursa yalnızca bu üye için [`docs/OPS_POYRAZ_LIBRARY.md`](docs/OPS_POYRAZ_LIBRARY.md) geri alma SQL’ini çalıştır.
