@@ -44,7 +44,7 @@ Cloudflare kullanılıyorsa aynı path’lere rate limit rule ekleyin.
 4. Auth log’larında brute-force spike.
 5. Bundle’da `TELEGRAM_*` / `SERVICE_ROLE` / `TURNSTILE_SECRET` sızıntısı olmadığını doğrula (`VITE_` prefix yok).
 
-## Stripe webhook (manuel Dashboard) — AÇIK OPS
+## Stripe webhook (manuel Dashboard) — KAPANDI (2026-08-14)
 
 > Tam checklist: [`docs/OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 

@@ -1,14 +1,14 @@
 ---
 description: Stripe subscription webhook Dashboard ops — hatırlat açık kalırsa
-alwaysApply: true
+alwaysApply: false
 ---
 
-# Stripe webhook — açık ops hatırlatması
+# Stripe webhook — KAPANDI (2026-08-14)
 
-`docs/OPS_STRIPE_WEBHOOK.md` ve `docs/ROADMAP_DENETIM.md` içindeki **AÇIK OPS — Stripe webhook** maddesi `[ ]` (açık) ise:
+Live production endpoint (`https://www.yeniform.com/api/stripe-webhook`) event’leri doğrulandı:
 
-1. Oturumda veya kod revizesi / commit öncesi kullanıcıya **kısa hatırlat**: Stripe Dashboard’da `invoice.paid` + `customer.subscription.deleted` event’leri production (ve varsa test) webhook endpoint’ine eklendi mi?
-2. Detay linki: [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)
-3. Kullanıcı “hallettim / eklendi” derse: o dosyadaki checkbox’ları ve ROADMAP’teki ilgili `[ ]` maddelerini `[x]` yap; bu kuralın `alwaysApply` ihtiyacı kalmadıysa kuralı `alwaysApply: false` yap veya kuralı sil.
+- `invoice.paid`
+- `customer.subscription.deleted`
+- mevcut `checkout.session.completed` (+ expired / async_payment_failed / payment_intent.payment_failed)
 
-Kod tarafı hazır (`api/stripe-webhook.js`); eksik olan yalnızca Dashboard event seçimi + `STRIPE_WEBHOOK_SECRET` uyumu.
+Checklist: [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md) · ROADMAP maddeleri `[x]`.

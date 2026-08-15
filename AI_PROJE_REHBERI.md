@@ -44,7 +44,7 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık (kritik):** Stripe Dashboard webhook — `invoice.paid` + `customer.subscription.deleted` ([`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
+**Ops açık:** Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). Stripe webhook Live event’leri tamam (2026-08-14, [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Bu repo yalnızca web. Native/Expo kod ve handoff docs kaldırıldı (2026-08-02).
 

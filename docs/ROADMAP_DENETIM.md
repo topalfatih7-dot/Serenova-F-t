@@ -8,7 +8,7 @@
 
 ## AÇIK OPS — kullanıcı (kritik)
 
-- [ ] **Stripe webhook event’leri** — Dashboard’a `invoice.paid` + `customer.subscription.deleted` ekle (kod hazır; eklenmezse abonelik yenilenmez). Adım adım: [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
+- [x] **Stripe webhook event’leri** — Live endpoint’te `invoice.paid` + `customer.subscription.deleted` doğrulandı (2026-08-14). [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)  
 - [x] **Resend e-posta (kod + env)** — API key, domain verified, Vercel env, `staff_decision_notify` production’da. Kalan manuel: Supabase şablon subject/HTML. [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md)  
 - [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 - [ ] **Facebook OAuth** — Meta app (Login) + Supabase Providers; Development smoke → Live. Kod hazır. Adım adım: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
@@ -83,7 +83,7 @@
 
 - [x] Aktivasyon funnel (2026-07-29): Admin Analytics hunisi (program + randevu), GA4 `sign_up` / `begin_checkout` / `purchase` / `health_test_complete`, dashboard `ActivationChecklist`
 - [x] Stripe Subscription otomatik yenileme (2026-07-29): recurring planlar `mode: subscription` + `invoice.paid` yenileme; doktor `payment`; iptal Portal
-- [ ] **Manuel:** Stripe Dashboard webhook event’leri (`invoice.paid`, `customer.subscription.deleted`) — [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
+- [x] **Manuel:** Stripe Dashboard webhook event’leri (`invoice.paid`, `customer.subscription.deleted`) — Live doğrulandı 2026-08-14. [`OPS_STRIPE_WEBHOOK.md`](OPS_STRIPE_WEBHOOK.md)
 - [x] `eko` DB temizliği — 0 üye; plan `is_active/is_sellable=false` (JS legacy okuma saklandı)
 - [x] Expo/mobil handoff bu web reposundan kaldırıldı (2026-08-02)
 - [x] GSC ops — mülk + sitemap Başarılı (2026-07-29); checklist dosyası kaldırıldı (tamamlandı)
@@ -128,7 +128,7 @@ Kararlar: istatistik floor **kilitli (2026-08-13, 750+ / 20–25)**; kütüphane
 - Recurring checkout → Stripe Subscription (`interval_count` = 1/3/6 ay); `invoice.paid` süre uzatır
 - Doktor paketi → `mode: payment` (tek seferlik)
 - Webhook: `customer.subscription.deleted` → `stripeSubscriptionId` temizliği
-- **Ops:** Stripe Dashboard webhook’a `invoice.paid` + `customer.subscription.deleted` ekleyin (mevcut `checkout.session.*` kalsın)
+- **Ops:** Stripe Dashboard webhook’a `invoice.paid` + `customer.subscription.deleted` eklendi (Live, 2026-08-14; mevcut `checkout.session.*` kaldı)
 - `eko` plan pasif / satış kapalı; üye 0
 
 ### Personel ↔ üye akış denetimi (2026-07-31)

@@ -14,7 +14,7 @@
 > **UYARI (2026-08-02):** Bu raporun gövdesi 2026-07-29 tarihli tarama notları içerir. Güncel SoT: freemium (48s deneme YOK), Expo/mobil bu repoda YOK, `fullVideo` entitlement YOK. Aşağıdaki 48s / Expo / fullVideo satırları tarihseldir — uygulama için kullanmayın.
 
 **2026-08-02:** Mobil/Expo docs + Expo Push bu web reposundan kaldırıldı. Freemium (ücretsiz kayıt + soft-lock) SoT.
-**2026-07-29 uygulama sonrası:** Tur 1–5 + legal/GSC hazır; web omurga tamam. Manuel: Stripe webhook event’leri.
+**2026-07-29 uygulama sonrası:** Tur 1–5 + legal/GSC hazır; web omurga tamam. **2026-08-14:** Stripe Live webhook `invoice.paid` + `customer.subscription.deleted` doğrulandı.
 
 | Alan | Durum (güncel) |
 |------|--------|
