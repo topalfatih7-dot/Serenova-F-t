@@ -17,6 +17,25 @@ export function getAdminEmail() {
   return (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
 }
 
+function isPrivateLanHostname(host) {
+  if (host === 'localhost' || host === '127.0.0.1') return true
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  return false
+}
+
+/** Vite / Expo Metro (8081) / LAN IP — credential'sız POST; Turnstile veya mobil key hâlâ zorunlu. */
+function isLocalSpaOrigin(origin) {
+  try {
+    const u = new URL(origin)
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false
+    return isPrivateLanHostname(u.hostname)
+  } catch {
+    return false
+  }
+}
+
 function allowedCorsOrigins() {
   const origins = new Set()
   try {
@@ -29,13 +48,15 @@ function allowedCorsOrigins() {
     const o = part.trim().replace(/\/$/, '')
     if (o) origins.add(o)
   }
-  // Yerel geliştirme: Vite (5173) + Next (3000).
+  // Yerel geliştirme: Vite (5173) + Next (3000) + Expo web (8081).
   // Not: yalnızca Origin yansıtılır; credential'sız POST + Turnstile hâlâ zorunlu.
   for (const origin of [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
   ]) {
     origins.add(origin)
   }
@@ -45,9 +66,10 @@ function allowedCorsOrigins() {
 export function setCorsHeaders(res, methods = 'POST, OPTIONS', extraHeaders = 'Content-Type, Authorization', req = null) {
   const origins = allowedCorsOrigins()
   const requestOrigin = String(req?.headers?.origin || '').trim()
-  const allowOrigin = requestOrigin && origins.has(requestOrigin)
-    ? requestOrigin
-    : [...origins][0] || getAppUrl()
+  const allowOrigin =
+    requestOrigin && (origins.has(requestOrigin) || isLocalSpaOrigin(requestOrigin))
+      ? requestOrigin
+      : [...origins][0] || getAppUrl()
 
   res.setHeader('Access-Control-Allow-Origin', allowOrigin)
   res.setHeader('Vary', 'Origin')
