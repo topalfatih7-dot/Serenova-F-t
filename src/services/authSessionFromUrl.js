@@ -90,8 +90,8 @@ async function exchangeCodeSingleFlight(supabase, code, waitMs) {
 /**
  * URL'deki her türlü Supabase auth parametresinden oturum kurar:
  *   1. token_hash + type  → verifyOtp  (özel şablon / magic-link)
- *   2. code               → exchangeCodeForSession  (PKCE — en yaygın)
- *   3. hash access_token  → setSession  (implicit — fallback)
+ *   2. hash access_token  → setSession  (mobil /plans handoff — stale session’dan önce)
+ *   3. code               → exchangeCodeForSession  (PKCE)
  *   4. Bekle & dene       → localStorage'daki mevcut oturum
  */
 export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = {}) {
@@ -109,21 +109,8 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = 
     if (!error && data?.session) { stripTokenHashFromUrl(); return data.session }
   }
 
-  // 2) PKCE oturumu kurmuş olabilir — kod değişiminden önce kontrol
-  const { data: { session: preExchange } } = await supabase.auth.getSession()
-  if (preExchange?.user) {
-    if (params.get('code')) stripAuthCodeFromUrl()
-    return preExchange
-  }
-
-  // 3) PKCE code — single-flight (StrictMode / remount güvenli)
-  const code = params.get('code')
-  if (code) {
-    const session = await exchangeCodeSingleFlight(supabase, code, waitMs)
-    if (session?.user) return session
-  }
-
-  // 4) Implicit hash tokens (sunucu taraflı recover — PKCE'siz fallback)
+  // 2) Implicit hash tokens FIRST — mobil /plans handoff. Stale localStorage
+  //    oturumu hash JWT’yi yutmasın (eski refresh rotation sonrası boş callback).
   const accessToken  = hashParams.get('access_token')
   const refreshToken = hashParams.get('refresh_token')
   if (accessToken && refreshToken) {
@@ -135,6 +122,20 @@ export async function establishAuthSessionFromUrl(supabase, { waitMs = 2500 } = 
       window.history.replaceState({}, '', window.location.pathname + window.location.search)
       return data.session
     }
+  }
+
+  // 3) PKCE oturumu kurmuş olabilir — kod değişiminden önce kontrol
+  const { data: { session: preExchange } } = await supabase.auth.getSession()
+  if (preExchange?.user) {
+    if (params.get('code')) stripAuthCodeFromUrl()
+    return preExchange
+  }
+
+  // 4) PKCE code — single-flight (StrictMode / remount güvenli)
+  const code = params.get('code')
+  if (code) {
+    const session = await exchangeCodeSingleFlight(supabase, code, waitMs)
+    if (session?.user) return session
   }
 
   // 5) Mevcut oturum (zaten localStorage'da)

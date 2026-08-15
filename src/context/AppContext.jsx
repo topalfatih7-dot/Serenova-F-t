@@ -26,7 +26,7 @@ import { completionKey, mealCompletionKey } from '../utils/programSchedule'
 import { isProgramListedForMember } from '../utils/programPackageScope'
 import { buildProgressPatch } from '../utils/memberProgress'
 import * as authVerification from '../services/authVerification'
-import { registerActiveSession, verifyActiveSessionOrSignOut } from '../services/singleSession'
+import { endMobileCheckoutHandoff, registerActiveSession, verifyActiveSessionOrSignOut } from '../services/singleSession'
 import * as chatDb from '../services/chatDb'
 import * as adminChatDb from '../services/adminChatDb'
 import * as staffCollabChatDb from '../services/staffCollabChatDb'
@@ -121,7 +121,10 @@ export function AppProvider({ children }) {
         void verifyActiveSessionOrSignOut({ forceRemote: true })
       }
       if (!sb.AUTH_EVENTS_REQUIRING_HYDRATE.has(event)) return
-      if (event === 'SIGNED_OUT') sb.invalidateHydrateCache()
+      if (event === 'SIGNED_OUT') {
+        endMobileCheckoutHandoff()
+        sb.invalidateHydrateCache()
+      }
       /* await callback dışında — auth lock / deadlock riskini azaltır */
       void sb.hydrate({
         force: event === 'SIGNED_OUT' || event === 'USER_UPDATED',

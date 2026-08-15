@@ -75,10 +75,7 @@ function userFromSessionOrJwt(session) {
   }
 }
 
-export async function claimAndRefreshSession(admin, session, {
-  supabaseUrl,
-  anonKey,
-} = {}) {
+export async function claimAndRefreshSession(admin, session) {
   if (!session?.access_token || !admin) {
     return { ok: false, session: session || null, sessionId: null }
   }
@@ -99,24 +96,10 @@ export async function claimAndRefreshSession(admin, session, {
   }
 
   /*
-   * Login kritik yolu: refresh_token ile JWT yenilemeyi BEKLEME (~0.5–1s).
-   * İstemci sessionClaimed grace + markSessionClaimedLocally kullanır;
-   * app_metadata bir sonraki doğal refresh’te gelir.
+   * Refresh token’ı sunucuda tüketme. grant_type=refresh_token rotation yapar;
+   * istemciye döndürülen refresh_token geçersiz kalır → setSession/auto-refresh
+   * SIGNED_OUT (giriş “olmuyor”). app_metadata bir sonraki istemci refresh’inde gelir.
    */
-  const refreshToken = session.refresh_token
-  if (refreshToken && supabaseUrl && anonKey) {
-    const base = String(supabaseUrl).replace(/\/$/, '')
-    void fetch(`${base}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    }).catch(() => {})
-  }
-
   return { ok: true, session, sessionId: claimed.sessionId, refreshed: false }
 }
 

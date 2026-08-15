@@ -750,6 +750,8 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
     }
     /* SIGNED_IN → registerActiveSession yarışını önle: claim bayrağı setSession öncesi */
     await markClaimedIfNeeded(loginData.sessionClaimed)
+    /* Eski oturumun in-flight refresh’i yeni setSession’ı SIGNED_OUT ile ezmesin */
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
       access_token: loginData.session.access_token,
       refresh_token: loginData.session.refresh_token,

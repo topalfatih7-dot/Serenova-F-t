@@ -277,10 +277,7 @@ async function finalizeLoginSession(session) {
   if (!session?.access_token) return { session: null, sessionClaimed: false, sessionId: null }
   try {
     const admin = getSupabaseAdmin()
-    const claimed = await claimAndRefreshSession(admin, session, {
-      supabaseUrl: getSupabaseUrl(),
-      anonKey: getAnonKey(),
-    })
+    const claimed = await claimAndRefreshSession(admin, session)
     return {
       session: claimed.session || session,
       sessionClaimed: Boolean(claimed.ok),

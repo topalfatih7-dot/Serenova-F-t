@@ -17,6 +17,24 @@ const CLAIM_GRACE_MS = 15_000
 
 let claimInFlight = null
 let lastClaimOkAt = 0
+/** Mobil /plans handoff: aynı JWT — claim + refreshSession mobil oturumu düşürür. */
+let skipClaimForHandoff = false
+
+export function beginMobileCheckoutHandoff() {
+  skipClaimForHandoff = true
+  lastClaimOkAt = Date.now()
+  /* Aynı refresh token mobil + web’de; auto-refresh rotation mobil oturumu düşürür. */
+  try {
+    supabase?.auth.stopAutoRefresh()
+  } catch {
+    /* ignore */
+  }
+}
+
+export function endMobileCheckoutHandoff() {
+  skipClaimForHandoff = false
+  /* SIGNED_OUT sonrası login syncAutoRefresh çağırır — burada yeniden başlatma. */
+}
 
 /** JWT payload'dan session_id / app_metadata okur (yerel, ağ yok). */
 function parseJwtPayload(token) {
@@ -56,6 +74,10 @@ export function markSessionClaimedLocally() {
 /** Yeni giriş — sunucuda aktif oturumu işaretle, diğerlerini kapat, JWT yenile. */
 export async function registerActiveSession() {
   if (!supabase) return { ok: false }
+  if (skipClaimForHandoff) {
+    lastClaimOkAt = Date.now()
+    return { ok: true, sessionId: null, skipped: true, handoff: true }
+  }
   if (claimInFlight) return claimInFlight
   if (lastClaimOkAt && Date.now() - lastClaimOkAt < CLAIM_GRACE_MS) {
     return { ok: true, sessionId: null, skipped: true }
@@ -117,6 +139,7 @@ export async function registerActiveSession() {
  */
 export async function verifyActiveSession({ forceRemote = false } = {}) {
   if (!supabase) return true
+  if (skipClaimForHandoff) return true
 
   if (claimInFlight) {
     await claimInFlight

@@ -43,3 +43,37 @@ export function isSafeReturnPath(path, role) {
 export function resolvePostLoginPath(returnPath, role) {
   return isSafeReturnPath(returnPath, role) ? returnPath : homePathForRole(role)
 }
+
+const HANDOFF_PLAN_IDS = new Set(['free', 'eko', 'diyet', 'spor', 'doktor', 'vip'])
+
+/**
+ * Mobil ödeme CTA: yalnız /plans (opsiyonel ?plan= id).
+ * Harici URL / // / bozuk next → null (kör navigate yok).
+ */
+export function parseMobileHandoffNext(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  let decoded = raw
+  try {
+    decoded = decodeURIComponent(raw)
+  } catch {
+    decoded = raw
+  }
+  if (!decoded.startsWith('/') || decoded.startsWith('//')) return null
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(decoded)) return null
+  const qIndex = decoded.indexOf('?')
+  const path = qIndex === -1 ? decoded : decoded.slice(0, qIndex)
+  if (path !== '/plans') return null
+  if (qIndex === -1) return '/plans'
+  const params = new URLSearchParams(decoded.slice(qIndex + 1))
+  const plan = params.get('plan')
+  if (plan && HANDOFF_PLAN_IDS.has(plan)) {
+    return `/plans?plan=${encodeURIComponent(plan)}`
+  }
+  return '/plans'
+}
+
+export function isMobileCheckoutHandoff(params) {
+  if (!params || typeof params.get !== 'function') return false
+  if (params.get('src') === 'mobile') return true
+  return Boolean(parseMobileHandoffNext(params.get('next')))
+}

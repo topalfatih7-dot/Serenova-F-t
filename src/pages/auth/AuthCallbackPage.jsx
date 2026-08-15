@@ -14,10 +14,14 @@ import {
   peekOAuthPending,
 } from '../../services/oauthAuth'
 import { useApp } from '../../context/AppContext'
+import { beginMobileCheckoutHandoff } from '../../services/singleSession'
+import { isMobileCheckoutHandoff, parseMobileHandoffNext } from '../../utils/authRedirect'
 
 const AUTO_REDIRECT_SECONDS = 10
 const REFRESH_TIMEOUT_MS = 4000
 const OAUTH_SAFETY_TIMEOUT_MS = 12000
+const HANDOFF_LOGIN_MESSAGE =
+  'Oturum tarayıcıda açılamadı. Giriş yaparak paket sayfasına devam edebilirsiniz.'
 
 /** StrictMode çift finish: OAuth navigate tek kez. */
 let oauthNavigateLock = false
@@ -83,6 +87,7 @@ export default function AuthCallbackPage() {
     searchParams.get('flow') === 'signup' ||
     Boolean(searchParams.get('code')) ||
     Boolean(peekOAuthPending())
+  const isMobileHandoff = isMobileCheckoutHandoff(searchParams)
 
   const completeOAuthSignIn = useCallback(async (session) => {
     if (oauthNavigateLock || navigatingRef.current) return
@@ -111,6 +116,11 @@ export default function AuthCallbackPage() {
     if (!isSupabaseEnabled || !supabase) {
       navigate('/login', { replace: true })
       return undefined
+    }
+
+    const bootParams = readCallbackParams()
+    if (isMobileCheckoutHandoff(bootParams)) {
+      beginMobileCheckoutHandoff()
     }
 
     let active = true
@@ -184,6 +194,29 @@ export default function AuthCallbackPage() {
         return
       }
 
+      const handoffNext = parseMobileHandoffNext(params.get('next'))
+      const handoff = params.get('src') === 'mobile' || Boolean(handoffNext)
+      if (handoff) {
+        if (session?.user) {
+          const dest = handoffNext || '/plans'
+          try {
+            clearOAuthPending()
+            await refreshWithTimeout(refreshRef.current)
+          } catch {
+            /* hydrate fail must not block /plans — session already set */
+          }
+          if (!active) return
+          try {
+            navigate(dest, { replace: true })
+          } catch {
+            if (active) setPhase('error')
+          }
+          return
+        }
+        if (active) setPhase('error')
+        return
+      }
+
       if (session?.user && isOAuthFlow) {
         await completeOAuthSignIn(session)
         return
@@ -229,15 +262,27 @@ export default function AuthCallbackPage() {
     return () => clearTimeout(timer)
   }, [isOAuthCallback, phase, completeOAuthSignIn])
 
+  const goHandoffLogin = useCallback(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    navigate('/login', {
+      replace: true,
+      state: { from: '/plans', message: HANDOFF_LOGIN_MESSAGE },
+    })
+  }, [navigate])
+
   const goPanel = useCallback(async () => {
     if (countdownRef.current) clearInterval(countdownRef.current)
     if (hasSession) {
       const db = dbRef.current || await refreshWithTimeout(refreshRef.current)
-      navigate(getPostLoginPath(db), { replace: true })
+      navigate(isMobileHandoff ? '/plans' : getPostLoginPath(db), { replace: true })
+      return
+    }
+    if (isMobileHandoff) {
+      goHandoffLogin()
       return
     }
     navigate('/login', { replace: true })
-  }, [hasSession, navigate])
+  }, [hasSession, isMobileHandoff, navigate, goHandoffLogin])
 
   useEffect(() => {
     if (phase !== 'success') return undefined
@@ -256,7 +301,10 @@ export default function AuthCallbackPage() {
   }, [phase, goPanel])
 
   const copy = {
-    loading: isOAuthCallback ? {
+    loading: isMobileHandoff ? {
+      title: 'Paket sayfasına yönlendiriliyorsunuz…',
+      description: 'Oturumunuz açılıyor, lütfen bekleyin.',
+    } : isOAuthCallback ? {
       title: 'Giriş tamamlanıyor…',
       description: 'Sosyal hesabınız doğrulandı, oturumunuz açılıyor.',
     } : {
@@ -272,7 +320,10 @@ export default function AuthCallbackPage() {
       description:
         'Oturum bu cihazda açılamadı. Giriş yapıp profilinizden tekrar “Doğrulama Bağlantısı Gönder” ile deneyin.',
     },
-    error: isOAuthCallback ? {
+    error: isMobileHandoff ? {
+      title: 'Oturum tarayıcıda açılamadı',
+      description: HANDOFF_LOGIN_MESSAGE,
+    } : isOAuthCallback ? {
       title: 'Giriş tamamlanamadı',
       description: 'Sosyal oturum kurulamadı. Lütfen tekrar deneyin veya e-posta ile giriş yapın.',
     } : {
@@ -382,7 +433,7 @@ export default function AuthCallbackPage() {
                 )}
                 {phase === 'error' && (
                   <>
-                    {!isOAuthCallback && (
+                    {!isOAuthCallback && !isMobileHandoff && (
                       <Link
                         to="/profile"
                         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-105"
@@ -390,12 +441,22 @@ export default function AuthCallbackPage() {
                         Profilden Yeni Bağlantı İste
                       </Link>
                     )}
-                    <Link
-                      to="/login"
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"
-                    >
-                      <LogIn className="h-4 w-4" /> Giriş Yap
-                    </Link>
+                    {isMobileHandoff ? (
+                      <button
+                        type="button"
+                        onClick={goHandoffLogin}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-sage-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/30 transition hover:brightness-105"
+                      >
+                        <LogIn className="h-4 w-4" /> Giriş Yap
+                      </button>
+                    ) : (
+                      <Link
+                        to="/login"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cream-200 bg-white py-3.5 text-sm font-semibold text-cream-800 transition hover:bg-cream-50"
+                      >
+                        <LogIn className="h-4 w-4" /> Giriş Yap
+                      </Link>
+                    )}
                   </>
                 )}
               </motion.div>
