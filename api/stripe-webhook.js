@@ -1,7 +1,13 @@
 /**
  * POST /api/stripe-webhook
  */
-import { getStripe, isStripeConfigured } from './_stripe.js'
+import {
+  getStripe,
+  isStripeConfigured,
+  stripeObjectId,
+  invoiceSubscriptionId,
+  invoiceSubscriptionMetadata,
+} from './_stripe.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { sendTelegramMessage } from './_telegramSend.js'
 import {
@@ -41,6 +47,58 @@ const TG_TIME = () => new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Ist
 /** Yeni Form checkout metadata imzası — `api/stripe-checkout.js` ile uyumlu. */
 function isYeniFormCheckoutMetadata(meta = {}) {
   return Boolean(meta.memberId && meta.planId)
+}
+
+const MEMBER_LOOKUP_COLUMNS = 'id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, stripe_customer_id, data'
+
+async function findMemberForStripeEvent(admin, { memberId, subscriptionId, customerId }) {
+  if (memberId) {
+    const { data } = await admin.from('members').select(MEMBER_LOOKUP_COLUMNS).eq('id', memberId).maybeSingle()
+    if (data) return data
+  }
+  if (subscriptionId) {
+    const { data } = await admin
+      .from('members')
+      .select(MEMBER_LOOKUP_COLUMNS)
+      .filter('data->>stripeSubscriptionId', 'eq', subscriptionId)
+      .maybeSingle()
+    if (data) return data
+  }
+  if (customerId) {
+    const { data } = await admin
+      .from('members')
+      .select(MEMBER_LOOKUP_COLUMNS)
+      .eq('stripe_customer_id', customerId)
+      .maybeSingle()
+    if (data) return data
+  }
+  return null
+}
+
+function metaFromMemberRow(row) {
+  if (!row) return {}
+  const data = row.data || {}
+  const pkgs = Array.isArray(data.activePackages) ? data.activePackages : []
+  const stripePkg = pkgs.find((p) => (
+    p?.status === 'active'
+    && (p.provider === 'stripe' || !p.provider)
+    && p.planId
+  ))
+  const planId = stripePkg?.planId
+    || (row.membership && row.membership !== 'free' ? row.membership : null)
+  if (!planId) return { memberId: row.id, memberName: row.name || '', email: row.email || '' }
+  return {
+    memberId: row.id,
+    memberName: row.name || '',
+    email: row.email || '',
+    planId,
+    planPrice: stripePkg?.price != null ? String(stripePkg.price) : '',
+    durationMonths: String(
+      stripePkg?.packageConfig?.durationMonths
+      || data.packageConfig?.durationMonths
+      || 1,
+    ),
+  }
 }
 
 function formatTry(amount) {
@@ -169,6 +227,8 @@ async function activateMembership(admin, meta, session) {
   const member = memberFromRow(memberRow)
   const packageConfig = await resolveDefaultPackage(admin, planId, durationMonths || 1)
   const started = today()
+  const subscriptionId = stripeObjectId(session.subscription)
+  const customerId = stripeObjectId(session.customer)
 
   let activePackages = resolvePackagePurchase(
     migrateLegacyToPackages(member),
@@ -183,9 +243,7 @@ async function activateMembership(admin, meta, session) {
     premiumStartedAt: member.premiumStartedAt || started,
     premiumExpiresAt: oneTime ? member.premiumExpiresAt : computeExpiry(started, durationMonths),
     lastActiveAt: started,
-    ...(session.subscription
-      ? { stripeSubscriptionId: String(session.subscription) }
-      : {}),
+    ...(subscriptionId ? { stripeSubscriptionId: subscriptionId } : {}),
   })
 
   draft = sanitizeStaffForPackage(draft.packageConfig, draft)
@@ -199,7 +257,7 @@ async function activateMembership(admin, meta, session) {
       assigned_coach_id: draft.assignedCoachId || null,
       assigned_dietitian_id: draft.assignedDietitianId || null,
       assigned_doctor_id: draft.assignedDoctorId || null,
-      ...(session.customer ? { stripe_customer_id: String(session.customer) } : {}),
+      ...(customerId ? { stripe_customer_id: customerId } : {}),
       data: newData,
       updated_at: nowISO(),
     })
@@ -219,8 +277,8 @@ async function activateMembership(admin, meta, session) {
       status: 'completed',
       provider: 'stripe',
       stripeSessionId: sessionId,
-      stripePaymentIntent: session.payment_intent || null,
-      stripeSubscriptionId: session.subscription ? String(session.subscription) : null,
+      stripePaymentIntent: stripeObjectId(session.payment_intent),
+      stripeSubscriptionId: subscriptionId,
       createdAt: nowISO(),
     },
   })
@@ -298,9 +356,7 @@ async function renewMembership(admin, meta, invoice, subscription) {
   draft = sanitizeStaffForPackage(draft.packageConfig, draft)
   const newData = memberDataPayload(draft, data)
 
-  const customerId = typeof invoice.customer === 'string'
-    ? invoice.customer
-    : (invoice.customer?.id || null)
+  const customerId = stripeObjectId(invoice.customer)
 
   const { error: updErr } = await admin
     .from('members')
@@ -448,43 +504,59 @@ export default async function handler(req, res) {
           && invoice.billing_reason !== 'subscription_update'
         ) break
 
-        const stripeSubId = typeof invoice.subscription === 'string'
-          ? invoice.subscription
-          : invoice.subscription?.id
-        if (!stripeSubId) break
-
-        const subscription = await stripe.subscriptions.retrieve(stripeSubId)
-        const meta = {
-          ...(subscription.metadata || {}),
-          ...(invoice.metadata || {}),
+        const stripeSubId = invoiceSubscriptionId(invoice)
+        if (!stripeSubId) {
+          console.warn('[stripe-webhook] invoice.paid: abonelik id yok', invoice.id)
+          break
         }
-        if (!isYeniFormCheckoutMetadata(meta)) break
+
+        let subscription = null
+        try {
+          subscription = await stripe.subscriptions.retrieve(stripeSubId)
+        } catch (e) {
+          console.warn('[stripe-webhook] invoice.paid: subscription retrieve', stripeSubId, e.message)
+        }
 
         const admin = getSupabaseAdmin()
-        const result = await renewMembership(admin, meta, invoice, subscription)
+        let meta = invoiceSubscriptionMetadata(invoice, subscription)
+        if (!isYeniFormCheckoutMetadata(meta)) {
+          const row = await findMemberForStripeEvent(admin, {
+            memberId: meta.memberId,
+            subscriptionId: stripeSubId,
+            customerId: stripeObjectId(invoice.customer),
+          })
+          meta = { ...metaFromMemberRow(row), ...meta }
+        }
+        if (!isYeniFormCheckoutMetadata(meta)) {
+          if (!subscription) {
+            return res.status(500).json({ ok: false, error: 'Abonelik okunamadı; Stripe yeniden deneyecek.' })
+          }
+          console.warn('[stripe-webhook] invoice.paid: Yeni Form metadata yok', invoice.id)
+          break
+        }
+
+        const result = await renewMembership(admin, meta, invoice, subscription || { id: stripeSubId })
         if (!result.ok) return res.status(500).json({ ok: false, error: result.error })
         if (!result.duplicate && !result.skipped) {
           await notifyPaymentTelegram({
             ok: true,
             meta: { ...meta, durationLabel: `${meta.durationMonths || 1} ay · yenileme` },
             amount: Number(meta.planPrice) || (invoice.amount_paid ? invoice.amount_paid / 100 : 0),
-            email: invoice.customer_email,
+            email: invoice.customer_email || meta.email,
             sessionId: invoice.id,
           })
         }
         break
       }
       case 'customer.subscription.deleted': {
-        // Abonelik silindi → hemen free + atama/randevu temizliği
         const subscription = event.data.object
-        const meta = subscription.metadata || {}
-        if (!isYeniFormCheckoutMetadata(meta)) break
         const admin = getSupabaseAdmin()
-        const { data: row } = await admin
-          .from('members')
-          .select('id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
-          .eq('id', meta.memberId)
-          .maybeSingle()
+        const meta = subscription.metadata || {}
+        const row = await findMemberForStripeEvent(admin, {
+          memberId: meta.memberId,
+          subscriptionId: subscription.id,
+          customerId: stripeObjectId(subscription.customer),
+        })
         if (!row) break
 
         const data = { ...(row.data || {}) }

@@ -81,3 +81,58 @@ export const PAID_PLAN_IDS = Object.keys(PLAN_FALLBACK)
 export const isPaidPlanId = (id) => PAID_PLAN_IDS.includes(id)
 
 export const toMinorUnits = (amountTry) => Math.round(Number(amountTry || 0) * 100)
+
+/**
+ * Stripe id — ham string veya expand edilmiş `{ id }` nesnesi.
+ * Webhook gövdesi endpoint API sürümünde gelir (SDK `apiVersion` pin’i bunu değiştirmez).
+ */
+export function stripeObjectId(value) {
+  if (value == null || value === '') return null
+  if (typeof value === 'string') {
+    const s = value.trim()
+    return s || null
+  }
+  if (typeof value === 'object' && typeof value.id === 'string') {
+    const s = value.id.trim()
+    return s || null
+  }
+  return null
+}
+
+/**
+ * Faturadaki abonelik id’si.
+ * 2025-03-31.basil: `invoice.subscription` kaldırıldı → `parent.subscription_details.subscription`.
+ * https://docs.stripe.com/changelog/basil/2025-03-31/adds-new-parent-field-to-invoicing-objects
+ */
+export function invoiceSubscriptionId(invoice) {
+  if (!invoice || typeof invoice !== 'object') return null
+  const fromParent = stripeObjectId(invoice.parent?.subscription_details?.subscription)
+  if (fromParent) return fromParent
+  const fromLegacy = stripeObjectId(invoice.subscription)
+  if (fromLegacy) return fromLegacy
+  const lines = invoice.lines?.data
+  if (!Array.isArray(lines)) return null
+  for (const line of lines) {
+    const fromItem = stripeObjectId(line?.parent?.subscription_item_details?.subscription)
+    if (fromItem) return fromItem
+    const fromLine = stripeObjectId(line?.subscription)
+    if (fromLine) return fromLine
+  }
+  return null
+}
+
+/** Yenileme metadata: abonelik + fatura anı snapshot + fatura metadata (son yazılan kazanır). */
+export function invoiceSubscriptionMetadata(invoice, subscription = null) {
+  const subMeta = subscription?.metadata && typeof subscription.metadata === 'object'
+    ? subscription.metadata
+    : {}
+  const parentMeta = invoice?.parent?.subscription_details?.metadata
+  const invoiceMeta = invoice?.metadata && typeof invoice.metadata === 'object'
+    ? invoice.metadata
+    : {}
+  return {
+    ...subMeta,
+    ...(parentMeta && typeof parentMeta === 'object' ? parentMeta : {}),
+    ...invoiceMeta,
+  }
+}

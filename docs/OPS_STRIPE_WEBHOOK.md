@@ -2,7 +2,8 @@
 
 > **Durum:** Live production endpoint event’leri doğrulandı.  
 > Kod: `api/stripe-webhook.js` (`invoice.paid` → süre uzatma, `customer.subscription.deleted` → subscription id temizliği).  
-> Checkout: `api/stripe-checkout.js` (recurring → `mode: subscription`; doktor → `payment`).
+> Checkout: `api/stripe-checkout.js` (recurring → `mode: subscription`; doktor → `payment`).  
+> Basil (2025-03-31+): `invoice.subscription` yok; yenileme `parent.subscription_details.subscription` + metadata snapshot okur.
 
 Endpoint: `https://www.yeniform.com/api/stripe-webhook` (Live, enabled)
 
