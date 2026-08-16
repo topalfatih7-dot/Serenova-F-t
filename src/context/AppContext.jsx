@@ -124,10 +124,12 @@ export function AppProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         endMobileCheckoutHandoff()
         sb.invalidateHydrateCache()
+        /* Password login signOut→setSession arası boş hydrate oturumu silmesin */
+        if (sb.shouldSkipSignedOutHydrate()) return
       }
       /* await callback dışında — auth lock / deadlock riskini azaltır */
       void sb.hydrate({
-        force: event === 'SIGNED_OUT' || event === 'USER_UPDATED',
+        force: event === 'SIGNED_OUT' || event === 'USER_UPDATED' || event === 'SIGNED_IN',
       }).then((d) => {
         if (active) setRemoteDb(d)
       })
@@ -835,9 +837,19 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password, remember = false, turnstileToken = '') => {
     const r = await sb.login(email, password, remember, turnstileToken)
     if (!r.success) return { success: false, error: r.error, isAdmin: false }
-    /* SIGNED_IN hydrate ile birleş / kısa cache — rol hydrate session’dan */
-    const d = await reloadRemote({ force: false })
-    const role = d?.session?.type || r.role || 'member'
+    /* force: true — SIGNED_OUT boş hydrate / kısa cache’e katılma */
+    let d = await reloadRemote({ force: true })
+    if (!d?.session) {
+      d = await reloadRemote({ force: true })
+    }
+    if (!d?.session) {
+      return {
+        success: false,
+        error: 'Oturum açılamadı. Lütfen tekrar deneyin.',
+        isAdmin: false,
+      }
+    }
+    const role = d.session.type || r.role || 'member'
     return { success: true, role, isAdmin: role === 'admin' }
   }, [reloadRemote])
 

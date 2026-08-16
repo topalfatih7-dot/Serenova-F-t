@@ -220,6 +220,8 @@ export const AUTH_EVENTS_REQUIRING_HYDRATE = new Set([
 ])
 
 let hydrateInFlight = null
+/** force=true çağrıları uçuştaki tura katılmaz; bitince tek follow-up’ta birleşir. */
+let hydrateForceFollowUp = null
 /** Kısa ömürlü cache — SIGNED_IN hydrate ile login reloadRemote çift turunu önler. */
 let hydrateCache = null
 const HYDRATE_CACHE_TTL_MS = 2500
@@ -227,8 +229,52 @@ const MEMBER_ACTIVITIES_HYDRATE_LIMIT = 50
 const STAFF_ADMIN_ACTIVITIES_HYDRATE_LIMIT = 200
 const STAFF_ADMIN_LIST_HYDRATE_LIMIT = 2000
 
+/**
+ * Password login signOut→setSession arası: SIGNED_OUT hydrate boş session yazmasın.
+ * Cache yine invalidate edilir (eski üye verisi kalmasın).
+ */
+let skipSignedOutHydrate = false
+
+export function beginAuthSessionSwap() {
+  skipSignedOutHydrate = true
+  invalidateHydrateCache()
+}
+
+export function endAuthSessionSwap() {
+  skipSignedOutHydrate = false
+}
+
+export function shouldSkipSignedOutHydrate() {
+  return skipSignedOutHydrate
+}
+
 export function invalidateHydrateCache() {
   hydrateCache = null
+}
+
+function beginHydrateRun(force) {
+  if (force) invalidateHydrateCache()
+  const run = hydrateOnce()
+    .then((data) => {
+      hydrateCache = { data, at: Date.now(), userId: data?.authUser?.id || null }
+      return data
+    })
+    .finally(() => {
+      if (hydrateInFlight === run) hydrateInFlight = null
+    })
+  hydrateInFlight = run
+  return run
+}
+
+/**
+ * Uçuştaki boş hydrate’e katılma — oturum varken stale session:null dönmesin.
+ */
+async function resolvePossiblyStaleHydrate(data) {
+  if (data?.session) return data
+  const session = await getSession()
+  if (!session?.user) return data
+  invalidateHydrateCache()
+  return hydrate({ force: true })
 }
 
 function buildStaffList(staffRes, staffDirectoryRes) {
@@ -432,27 +478,36 @@ async function hydrateOnce() {
 
 /**
  * @param {{ force?: boolean }} [opts]
- * force=true: cache atlanır (mutasyon / logout sonrası).
+ * force=true: cache atlanır; uçuştaki tura katılmaz — bitince yeni tur (ardışık force birleşir).
  * force=false: uçuştaki hydrate’e katılır veya kısa TTL cache döner.
- * Eşzamanlı çağrılar her zaman tek turda birleşir (force bile ikinci tur başlatmaz).
+ * Cache/in-flight session:null iken getSession user varsa stale sayılır → force yenileme.
  */
 export async function hydrate({ force = false } = {}) {
-  if (hydrateInFlight) return hydrateInFlight
-
-  if (!force && hydrateCache && (Date.now() - hydrateCache.at) < HYDRATE_CACHE_TTL_MS) {
-    return hydrateCache.data
+  if (hydrateInFlight) {
+    if (!force) {
+      return hydrateInFlight.then(resolvePossiblyStaleHydrate)
+    }
+    if (!hydrateForceFollowUp) {
+      const prev = hydrateInFlight
+      hydrateForceFollowUp = prev
+        .catch(() => null)
+        .then(() => {
+          hydrateForceFollowUp = null
+          if (hydrateInFlight) return hydrateInFlight
+          return beginHydrateRun(true)
+        })
+    }
+    return hydrateForceFollowUp
   }
 
-  if (force) invalidateHydrateCache()
+  if (!force && hydrateCache && (Date.now() - hydrateCache.at) < HYDRATE_CACHE_TTL_MS) {
+    if (hydrateCache.data?.session) return hydrateCache.data
+    const session = await getSession()
+    if (!session?.user) return hydrateCache.data
+    invalidateHydrateCache()
+  }
 
-  hydrateInFlight = hydrateOnce()
-    .then((data) => {
-      hydrateCache = { data, at: Date.now(), userId: data?.authUser?.id || null }
-      return data
-    })
-    .finally(() => { hydrateInFlight = null })
-
-  return hydrateInFlight
+  return beginHydrateRun(force)
 }
 
 /** Tek üyenin randevu dizileri — admin/staff listede strip edilmişse lazy load için. */
@@ -750,16 +805,28 @@ async function authenticatePasswordUser(cleanEmail, password, turnstileToken) {
     }
     /* SIGNED_IN → registerActiveSession yarışını önle: claim bayrağı setSession öncesi */
     await markClaimedIfNeeded(loginData.sessionClaimed)
-    /* Eski oturumun in-flight refresh’i yeni setSession’ı SIGNED_OUT ile ezmesin */
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-      access_token: loginData.session.access_token,
-      refresh_token: loginData.session.refresh_token,
-    })
-    if (sessionError || !sessionData?.user) {
-      return { ok: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
+    /*
+     * Yerel signOut→setSession: eski oturumun in-flight refresh’i yeni token’ı ezmesin.
+     * Yalnızca gerçek oturum varken signOut — boş signOut SIGNED_OUT hydrate tetiklemesin.
+     * Swap süresince SIGNED_OUT hydrate atlanır (AppContext shouldSkipSignedOutHydrate).
+     */
+    beginAuthSessionSwap()
+    try {
+      const existing = await getSession()
+      if (existing?.user) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+      }
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: loginData.session.access_token,
+        refresh_token: loginData.session.refresh_token,
+      })
+      if (sessionError || !sessionData?.user) {
+        return { ok: false, error: 'Oturum açılamadı. Lütfen tekrar deneyin.' }
+      }
+      return { ok: true, user: sessionData.user }
+    } finally {
+      endAuthSessionSwap()
     }
-    return { ok: true, user: sessionData.user }
   } catch {
     /* API yoksa (yalnızca Vite) klasik girişe düş — production’da /api/auth zorunlu */
     if (import.meta.env.PROD) {
