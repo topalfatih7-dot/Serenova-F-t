@@ -6,7 +6,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
-import { BLOG_CATEGORIES } from '../../data/blogPosts'
+import { BLOG_AUTHOR, BLOG_CATEGORIES } from '../../data/blogPosts'
 import { estimateReadMinutes } from '../../utils/blogContent'
 
 const ACCENTS = [
@@ -17,7 +17,7 @@ const ACCENTS = [
 ]
 
 const EMPTY = {
-  title: '', category: 'Beslenme', author: 'Yeni Form Ekibi',
+  title: '', category: 'Beslenme', author: BLOG_AUTHOR,
   accent: 'brand', excerpt: '', content: '', published: true,
 }
 
@@ -30,7 +30,7 @@ function PostFormModal({ open, onClose, onSubmit, initial, isEdit }) {
     if (!form.title.trim()) { setError('Başlık gerekli.'); return }
     if (!form.content.trim()) { setError('İçerik gerekli.'); return }
     setError('')
-    onSubmit({ ...form, excerpt: form.excerpt.trim() || form.content.slice(0, 140) })
+    onSubmit({ ...form, author: BLOG_AUTHOR, excerpt: form.excerpt.trim() || form.content.slice(0, 140) })
   }
 
   return (
@@ -38,12 +38,9 @@ function PostFormModal({ open, onClose, onSubmit, initial, isEdit }) {
       <div className="space-y-4">
         <input value={form.title} onChange={(e) => update({ title: e.target.value })} placeholder="Başlık" className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm" />
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="rounded-xl border border-cream-200 px-4 py-3 text-sm">
-            {BLOG_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <input value={form.author} onChange={(e) => update({ author: e.target.value })} placeholder="Yazar" className="rounded-xl border border-cream-200 px-4 py-3 text-sm" />
-        </div>
+        <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full rounded-xl border border-cream-200 px-4 py-3 text-sm">
+          {BLOG_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
 
         <div>
           <p className="mb-2 text-sm font-medium text-cream-800/80">Kapak rengi</p>

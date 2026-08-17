@@ -64,6 +64,7 @@ export const FOOD_TEXT_CONFIG = {
 
 // ─── Günlük Blog Makalesi (Cron) ────────────────────────────────────
 export const BLOG_CATEGORIES = ['Beslenme', 'Antrenman', 'Motivasyon', 'Yaşam']
+export const BLOG_AUTHOR = 'Yeni Form Ekibi'
 export const BLOG_ACCENTS = ['brand', 'sage', 'gold', 'cream']
 export const BLOG_MIN_CHARS = 1350
 export const BLOG_TARGET_CHARS = 1800
@@ -102,7 +103,7 @@ SADECE şu JSON şemasında yanıt ver:
   "title": "çekici başlık (max 80 karakter)",
   "category": "${category}",
   "excerpt": "140 karaktere kadar özet",
-  "author": "${category === 'Antrenman' ? 'Pelinay Tohumcu' : 'Şevval Dağlı'}",
+  "author": "${BLOG_AUTHOR}",
   "accent": "brand | sage | gold | cream",
   "content": "tam makale metni (${BLOG_MIN_CHARS}+ karakter, hedef ${BLOG_TARGET_CHARS}+)"
 }`

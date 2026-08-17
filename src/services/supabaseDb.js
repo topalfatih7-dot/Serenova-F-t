@@ -17,6 +17,7 @@ import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } 
 import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
+import { BLOG_AUTHOR } from '../data/blogPosts'
 import { coverForCategory } from '../utils/blogImages.js'
 import { ensureUniqueBlogSlug } from '../utils/blogSlug.js'
 import { getApiAuthHeaders } from './apiAuth'
@@ -1831,7 +1832,7 @@ export async function addPost(data) {
       slug,
       category,
       excerpt: data.excerpt || '',
-      author: data.author || 'Yeni Form Ekibi',
+      author: BLOG_AUTHOR,
       readMinutes,
       accent: data.accent || 'brand',
       content,
@@ -1865,7 +1866,7 @@ export async function editPost(id, patch) {
       slug,
       category,
       excerpt: merged.excerpt,
-      author: merged.author,
+      author: BLOG_AUTHOR,
       readMinutes: merged.readMinutes || estimateReadMinutes(content),
       accent: merged.accent,
       content,

@@ -10,6 +10,7 @@ import SeoHead from '../components/seo/SeoHead'
 import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription, buildBrandKeywords } from '../config/seo'
 import { resolveBlogCover } from '../utils/blogImages'
 import { parseBlogContent } from '../utils/blogContent'
+import { BLOG_AUTHOR } from '../data/blogPosts'
 
 function BlogBodyBlocks({ blocks }) {
   return (
@@ -123,7 +124,7 @@ export default function BlogPostPage() {
       <SeoHead
         title={post.title}
         description={post.excerpt || truncateDescription(post.content)}
-        keywords={buildBrandKeywords([post.category, post.author, 'blog', 'sağlıklı yaşam', 'fitness'])}
+        keywords={buildBrandKeywords([post.category, BLOG_AUTHOR, 'blog', 'sağlıklı yaşam', 'fitness'])}
         canonicalPath={postPath}
         ogType="article"
         ogImage={cover.url}
@@ -191,7 +192,7 @@ export default function BlogPostPage() {
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-cream-200/90 py-4 text-sm text-cream-800/65">
                 <span className="inline-flex items-center gap-1.5 font-medium text-cream-800/80">
                   <User className="h-4 w-4 text-brand-500" />
-                  {post.author}
+                  {BLOG_AUTHOR}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Clock className="h-4 w-4 text-sage-600" />

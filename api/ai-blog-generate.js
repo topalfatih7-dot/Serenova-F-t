@@ -14,6 +14,7 @@ import {
   BLOG_MIN_CHARS,
   BLOG_ACCENTS,
   BLOG_CATEGORIES,
+  BLOG_AUTHOR,
   BLOG_TOPIC_ROTATION,
   buildBlogInstruction,
 } from './_ai-prompts.js'
@@ -79,7 +80,7 @@ function normalizePost(result) {
     slug: slugifyTurkish(title),
     category,
     excerpt: String(result.excerpt || content.slice(0, 140)).slice(0, 200),
-    author: String(result.author || 'Yeni Form Ekibi').slice(0, 60),
+    author: BLOG_AUTHOR,
     accent,
     content,
     coverImage: cover.coverImage,

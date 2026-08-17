@@ -8,7 +8,7 @@
 - `buildFaqSchema` — max 20
 - `buildServiceSchema` — `offers[].price` TRY, `priceCurrency`
 - `buildHowToSchema` — süreç adımları
-- `buildArticleSchema` — `author` gerçek Person adı
+- `buildArticleSchema` — `author` Organization (`Yeni Form Ekibi`; kadro adı yok)
 - `buildPersonSchema` — `image` absolute; profil instagram/linkedin/website `sameAs`
 - `buildBreadcrumbSchema`
 - `buildItemListSchema`

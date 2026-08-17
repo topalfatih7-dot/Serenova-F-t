@@ -10,7 +10,7 @@ import JsonLd from '../components/seo/JsonLd'
 import SeoHead from '../components/seo/SeoHead'
 import { useApp } from '../context/AppContext'
 import { buildItemListSchema } from '../config/seo'
-import { BLOG_CATEGORIES } from '../data/blogPosts'
+import { BLOG_AUTHOR, BLOG_CATEGORIES } from '../data/blogPosts'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
 
@@ -132,7 +132,7 @@ export default function BlogPage() {
                     <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-cream-900 group-hover:text-brand-700">{featured.title}</h2>
                     <p className="mt-2 text-cream-800/70">{featured.excerpt}</p>
                     <div className="mt-4 flex items-center gap-3 text-xs text-cream-800/50">
-                      <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {featured.author}</span>
+                      <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {BLOG_AUTHOR}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {featured.readMinutes} dk</span>
                       <span>{format(new Date(featured.createdAt), 'd MMM yyyy', { locale: tr })}</span>
                     </div>

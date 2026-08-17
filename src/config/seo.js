@@ -1,6 +1,7 @@
 import { BRAND } from './brand'
 import { blogPostPath } from '../utils/blogSlug'
 import { publicCertificates } from '../data/staffProfile'
+import { BLOG_AUTHOR } from '../data/blogPosts'
 
 const LEGAL_SEO_SLUGS = [
   'kvkk', 'kvkk-acik-riza-metni', 'gizlilik-politikasi', 'cerez-politikasi',
@@ -543,7 +544,7 @@ export function buildArticleSchema(post) {
     '@type': 'Article',
     headline: post.title,
     description: post.excerpt || truncateDescription(post.content),
-    author: { '@type': 'Person', name: post.author || BRAND.name },
+    author: { '@type': 'Organization', name: BLOG_AUTHOR },
     datePublished: post.createdAt,
     dateModified: post.updatedAt || post.createdAt,
     inLanguage: SEO.language,

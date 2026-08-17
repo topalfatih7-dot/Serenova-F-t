@@ -223,7 +223,7 @@ async function fetchDynamicShells() {
       const title = post.data?.title || 'Blog yazısı'
       const slug = post.data?.slug || slugifyTurkish(title) || post.id
       const excerpt = post.data?.excerpt || ''
-      const author = post.data?.author || 'Yeni Form'
+      const author = 'Yeni Form Ekibi'
       STATIC_SHELLS[`/blog/${slug}`] = {
         title: `${title} | Yeni Form`,
         description: excerpt.slice(0, 160) || title,
