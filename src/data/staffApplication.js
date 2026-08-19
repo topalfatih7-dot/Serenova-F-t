@@ -356,10 +356,124 @@ export function resolveSpecialtyTags(specialties = [], specialtyOther = '') {
   return resolved
 }
 
+/**
+ * Kart/profil ana uzmanlığı — katalogdaki ilk grup (koçlarda "Kilo Verme" vb.)
+ * herkese aynı göründüğü için atlanır.
+ */
+export function pickPrimarySpecialty(specialties = [], role = 'coach') {
+  const list = (Array.isArray(specialties) ? specialties : [])
+    .map((s) => String(s).trim())
+    .filter((s) => s && s !== OTHER_OPTION)
+  if (!list.length) return ''
+  if (role !== 'coach') return list[0]
+  const generic = new Set(
+    (COACH_SPECIALTY_GROUPS[0]?.items || []).map((item) => item.toLocaleLowerCase('tr')),
+  )
+  return list.find((s) => !generic.has(s.toLocaleLowerCase('tr'))) || list[0]
+}
+
+function certNameKey(name) {
+  return String(name || '').trim().toLocaleLowerCase('tr')
+}
+
+function pushUniqueCert(list, entry) {
+  const name = String(entry?.name || '').trim()
+  if (!isMeaningfulProfileText(name)) return
+  const key = certNameKey(name)
+  if (list.some((c) => certNameKey(c.name) === key)) return
+  list.push({
+    name,
+    issuer: entry.issuer || '',
+    year: entry.year || '',
+  })
+}
+
+function certEntriesFromChipList(chips, issuer, otherNote = '') {
+  const other = String(otherNote || '').trim()
+  const entries = []
+  for (const raw of chips || []) {
+    const chip = String(raw || '').trim()
+    if (!chip || chip === OFFICIAL_COACHING_CERT_NONE) continue
+    if (chip === OTHER_OPTION) {
+      if (isMeaningfulProfileText(other)) entries.push({ name: other, issuer, year: '' })
+      continue
+    }
+    entries.push({ name: chip, issuer, year: '' })
+  }
+  return entries
+}
+
+function humanizeCertFileName(fileName) {
+  const raw = String(fileName || '').replace(/\.[a-z0-9]+$/i, '').trim()
+  if (!raw) return ''
+  if (/^SAVE_\d+/i.test(raw)) return ''
+  if (/^[\d_-]+$/.test(raw)) return ''
+  const stripped = raw.replace(/^\d{6,}[_-]*/, '').replace(/[_-]+/g, ' ').trim()
+  if (!isMeaningfulProfileText(stripped) || stripped.length < 4) return ''
+  if (!/\s/.test(stripped) && /^[a-z0-9]+$/i.test(stripped)) return ''
+  return stripped
+}
+
+function certEntriesFromUploadedFiles(files) {
+  return (Array.isArray(files) ? files : [])
+    .filter((f) => f?.url && (f.kind || 'certificate') === 'certificate')
+    .map((f, i) => {
+      const fromName = humanizeCertFileName(f.name)
+      return {
+        name: fromName || `Sertifika ${i + 1}`,
+        issuer: '',
+        year: '',
+      }
+    })
+}
+
+/** Başvuru JSONB → public kadro sertifika listesi (Diğer notu + yüklenen belgeler dahil) */
+export function certificatesFromApplicationData(d = {}, role = 'coach') {
+  const named = []
+
+  if (role === 'coach') {
+    for (const name of federationCertsToLabels(d.federationCerts)) {
+      pushUniqueCert(named, { name, issuer: 'GSB Federasyon Antrenörlük', year: '' })
+    }
+    for (const entry of certEntriesFromChipList(d.officialCoachingCerts, 'Resmi Antrenörlük')) {
+      pushUniqueCert(named, entry)
+    }
+    for (const entry of certEntriesFromChipList(
+      d.internationalCerts,
+      'Uluslararası',
+      d.certOtherNotes?.international,
+    )) {
+      pushUniqueCert(named, entry)
+    }
+    for (const entry of certEntriesFromChipList(
+      d.branchCerts,
+      'Branş Sertifikası',
+      d.certOtherNotes?.branch,
+    )) {
+      pushUniqueCert(named, entry)
+    }
+  }
+
+  for (const raw of Array.isArray(d.certificates) ? d.certificates : []) {
+    const name = isMeaningfulProfileText(raw?.name)
+      ? String(raw.name).trim()
+      : humanizeCertFileName(raw?.file?.name)
+    if (!name) continue
+    pushUniqueCert(named, {
+      name,
+      issuer: isMeaningfulProfileText(raw?.issuer) ? String(raw.issuer).trim() : '',
+      year: isMeaningfulProfileText(raw?.year) ? String(raw.year).trim() : '',
+    })
+  }
+
+  if (named.length) return named
+  return certEntriesFromUploadedFiles(d.certificateFiles)
+}
+
 export function applicationToStaffPayload(app, tempPassword) {
   const d = app.data || {}
   const specialties = resolveSpecialtyTags(d.specialties, d.specialtyOther)
-  const primarySpecialty = specialties[0] || ''
+  const primarySpecialty = pickPrimarySpecialty(specialties, app.role)
 
   let education = (Array.isArray(d.education) ? d.education : [])
     .filter(hasEducationEntryInfo)
@@ -368,13 +482,7 @@ export function applicationToStaffPayload(app, tempPassword) {
       school: e.school || '',
       year: e.year || '',
     }))
-  let certificates = (Array.isArray(d.certificates) ? d.certificates : [])
-    .filter(hasCertificateEntryInfo)
-    .map((c) => ({
-      name: c.name || '',
-      issuer: c.issuer || '',
-      year: c.year || '',
-    }))
+  const certificates = certificatesFromApplicationData(d, app.role)
 
   if (app.role === 'coach') {
     // Eski başvuru fallback: tekil eğitim alanları
@@ -386,13 +494,6 @@ export function applicationToStaffPayload(app, tempPassword) {
         year: '',
       })
     }
-    certificates = [
-      ...federationCertsToLabels(d.federationCerts).map((name) => ({ name, issuer: 'GSB Federasyon Antrenörlük', year: '' })),
-      ...(d.officialCoachingCerts || []).filter((c) => c && c !== OFFICIAL_COACHING_CERT_NONE).map((name) => ({ name, issuer: 'Resmi Antrenörlük', year: '' })),
-      ...(d.internationalCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Uluslararası', year: '' })),
-      ...(d.branchCerts || []).filter((c) => c && c !== OTHER_OPTION).map((name) => ({ name, issuer: 'Branş Sertifikası', year: '' })),
-      ...certificates,
-    ]
   } else if (d.graduationDepartment && !education.some((e) => e.degree === d.graduationDepartment)) {
     education.unshift({
       degree: d.graduationDepartment,
@@ -402,7 +503,7 @@ export function applicationToStaffPayload(app, tempPassword) {
   }
 
   const bio = d.bio || ''
-  const title = d.title || primarySpecialty || ''
+  const title = String(d.title || '').trim()
   const schedule = scheduleFromAvailability(d.availability)
 
   return {

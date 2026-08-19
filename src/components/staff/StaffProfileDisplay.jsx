@@ -8,6 +8,7 @@ import { staffRoleMeta } from '../../utils/staffRoles'
 import {
   normalizeStaffProfile,
   publicCertificates,
+  publicStaffTitle,
   publicEducation,
   publicExperiences,
   hasPublicWorkSchedule,
@@ -18,6 +19,7 @@ import {
 import { teamListPathForRole } from '../../config/seo'
 import { weekdayLabel } from '../package/supportScheduleConstants'
 import { formatAvailabilityRanges } from '../../services/availability'
+import { pickPrimarySpecialty } from '../../data/staffApplication'
 import { certificateVisual, expertiseIconForRole } from './staffProfileVisuals'
 import StaffSpecialtyShowcase from './StaffSpecialtyShowcase'
 
@@ -57,8 +59,12 @@ export default function StaffProfileDisplay({ member }) {
   const certificates = publicCertificates(profile.certificates)
   const education = publicEducation(profile.education)
   const experiences = publicExperiences(profile.experiences)
+  const displayTitle = publicStaffTitle(profile)
   const bio = profile.bio?.trim() || ''
-  const specialty = profile.specialty || profile.specialties[0] || ''
+  const specialty = pickPrimarySpecialty(
+    profile.specialties.length ? profile.specialties : (profile.specialty ? [profile.specialty] : []),
+    member.role,
+  )
   const tags = profile.specialties.length ? profile.specialties : specialty ? [specialty] : []
   const showHours = hasPublicWorkSchedule(profile)
   const heroClass = {
@@ -117,8 +123,8 @@ export default function StaffProfileDisplay({ member }) {
                   </span>
                   {displayName}
                 </h1>
-                {profile.title && (
-                  <p className="mt-1 text-base font-medium text-white/90 sm:text-lg">{profile.title}</p>
+                {displayTitle && (
+                  <p className="mt-1 text-base font-medium text-white/90 sm:text-lg">{displayTitle}</p>
                 )}
 
                 <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">

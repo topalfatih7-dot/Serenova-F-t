@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Trash2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Check, X, Eye, EyeOff } from 'lucide-react'
 import Modal from '../ui/Modal'
 import PhotoUpload from '../ui/PhotoUpload'
 import PhoneField from '../ui/PhoneField'
@@ -157,6 +157,28 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
               ))}
             </div>
 
+            <button
+              type="button"
+              onClick={() => update({ listedOnTeam: !form.listedOnTeam })}
+              className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                form.listedOnTeam
+                  ? 'border-sage-200 bg-sage-50/70'
+                  : 'border-amber-200 bg-amber-50/70'
+              }`}
+            >
+              <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${form.listedOnTeam ? 'bg-sage-100 text-sage-700' : 'bg-amber-100 text-amber-800'}`}>
+                {form.listedOnTeam ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-cream-900">
+                  {form.listedOnTeam ? 'Kadro sayfasında göster' : 'Kadro listesinde gizli'}
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-cream-800/65">
+                  Kapalıysa /team/coaches, diyetisyen ve doktor kartlarında görünmez. Profil linki, atama ve panel aynı kalır.
+                </span>
+              </span>
+            </button>
+
             <PhotoUpload
               value={form.photo}
               onChange={(photo) => update({ photo })}
@@ -168,7 +190,7 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
             <div className="grid gap-3 sm:grid-cols-2">
               <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
               <PhoneField value={form.phone} onValueChange={(phone) => update({ phone })} label="Telefon *" />
-              <input value={form.title} onChange={(e) => update({ title: e.target.value })} placeholder="Unvan (ör. Uzman Diyetisyen)" className={inputCls} />
+              <input value={form.title} onChange={(e) => update({ title: e.target.value })} placeholder="Unvan (ör. Fitness Koçu) — uzmanlık alanı değil" className={inputCls} />
               <select value={form.gender} onChange={(e) => update({ gender: e.target.value })} className={`${inputCls} ${form.gender ? '' : 'text-cream-800/40'}`}>
                 <option value="">Cinsiyet seçin *</option>
                 {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}

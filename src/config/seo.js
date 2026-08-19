@@ -1,6 +1,6 @@
 import { BRAND } from './brand'
 import { blogPostPath } from '../utils/blogSlug'
-import { publicCertificates } from '../data/staffProfile'
+import { publicCertificates, publicStaffTitle } from '../data/staffProfile'
 import { BLOG_AUTHOR } from '../data/blogPosts'
 
 const LEGAL_SEO_SLUGS = [
@@ -573,7 +573,10 @@ export function buildPersonSchema(member, { profilePath } = {}) {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: profile.name,
-    jobTitle: profile.title || profile.specialty || profile.role,
+    jobTitle: publicStaffTitle(profile)
+      || (profile.role === 'dietitian' ? 'Online Diyetisyen'
+        : profile.role === 'doctor' ? 'Doktor'
+        : 'Online Fitness Koçu'),
     description: profile.bio || profile.description,
     image: profile.photo ? absoluteUrl(profile.photo) : undefined,
     sameAs: [profile.instagram, profile.linkedin, profile.website, profile.youtube]

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Plus, Search, Mail, Phone, Trash2, Edit, Stethoscope, Award, Briefcase } from 'lucide-react'
+import { Plus, Search, Mail, Phone, Trash2, Edit, Stethoscope, Award, Briefcase, Eye, EyeOff } from 'lucide-react'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import StaffFormModal from '../../components/admin/StaffFormModal'
-import { normalizeStaffProfile } from '../../data/staffProfile'
+import { isListedOnTeam, normalizeStaffProfile, publicStaffTitle } from '../../data/staffProfile'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 
@@ -13,9 +13,13 @@ export default function AdminStaffPage() {
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState('all')
+  const [filterListed, setFilterListed] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [togglingId, setTogglingId] = useState(null)
+
+  const hiddenCount = staff.filter((s) => !isListedOnTeam(s)).length
 
   const filtered = staff.filter((s) => {
     const p = normalizeStaffProfile(s)
@@ -26,7 +30,9 @@ export default function AdminStaffPage() {
       p.specialty.toLowerCase().includes(q) ||
       p.specialties.some((t) => t.toLowerCase().includes(q))
     const matchRole = filterRole === 'all' || s.role === filterRole
-    return matchSearch && matchRole
+    const listed = isListedOnTeam(s)
+    const matchListed = filterListed === 'all' || (filterListed === 'listed' ? listed : !listed)
+    return matchSearch && matchRole && matchListed
   })
 
   const handleAdd = async (form) => {
@@ -39,9 +45,26 @@ export default function AdminStaffPage() {
   const handleEdit = async (form) => {
     const patch = { ...form }
     if (!patch.password) delete patch.password
-    await editStaff(editTarget.id, patch)
+    const result = await editStaff(editTarget.id, patch)
+    if (result && !result.success) { toast(result.error, 'error'); return }
     setEditTarget(null)
     toast('Profil güncellendi', 'success')
+  }
+
+  const handleToggleListed = async (s) => {
+    if (togglingId) return
+    const next = !isListedOnTeam(s)
+    setTogglingId(s.id)
+    try {
+      const result = await editStaff(s.id, { listedOnTeam: next })
+      if (result && !result.success) {
+        toast(result.error || 'Güncellenemedi', 'error')
+        return
+      }
+      toast(next ? 'Kadro listesinde gösteriliyor' : 'Kadro listesinden gizlendi', 'success')
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   return (
@@ -50,7 +73,7 @@ export default function AdminStaffPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">Kadromuz · Uzman Ekibi</h1>
           <p className="mt-1 text-sm text-cream-800/60">
-            {staff.length} kayıtlı uzman · eğitim, sertifika ve deneyim bilgileri sitede yayınlanır
+            {staff.length} kayıtlı uzman{hiddenCount > 0 ? ` · ${hiddenCount} kadro listesinde gizli` : ''} · kart görünürlüğü buradan açılıp kapanır
           </p>
         </div>
         <button type="button" onClick={() => setAddOpen(true)} className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
@@ -75,20 +98,31 @@ export default function AdminStaffPage() {
           <option value="dietitian">Diyetisyen</option>
           <option value="doctor">Doktor</option>
         </select>
+        <select value={filterListed} onChange={(e) => setFilterListed(e.target.value)} className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm">
+          <option value="all">Tüm görünürlük</option>
+          <option value="listed">Kadroda</option>
+          <option value="hidden">Gizli</option>
+        </select>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
           icon={Stethoscope}
-          title="Henüz uzman eklenmedi"
-          description="Koç, diyetisyen veya doktor ekleyerek detaylı kadro profillerini yayınlayın."
-          action={<button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Uzman</button>}
+          title={staff.length === 0 ? 'Henüz uzman eklenmedi' : 'Eşleşen uzman yok'}
+          description={
+            staff.length === 0
+              ? 'Koç, diyetisyen veya doktor ekleyerek detaylı kadro profillerini yayınlayın.'
+              : 'Arama veya görünürlük filtresini değiştirin.'
+          }
+          action={staff.length === 0 ? <button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Uzman</button> : null}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((s) => {
             const p = normalizeStaffProfile(s)
             const meta = staffRoleMeta(s.role)
+            const displayTitle = publicStaffTitle(p)
+            const listed = isListedOnTeam(s)
             const RoleIcon = meta.icon
             const roleColors = {
               coach: 'bg-brand-100 text-brand-600',
@@ -96,7 +130,7 @@ export default function AdminStaffPage() {
               doctor: 'bg-cream-200 text-cream-900',
             }
             return (
-              <div key={s.id} className="flex flex-col rounded-2xl border border-cream-200 bg-white p-5 shadow-sm">
+              <div key={s.id} className={`flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${listed ? 'border-cream-200' : 'border-amber-200/80'}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
                     {p.photo ? (
@@ -109,11 +143,15 @@ export default function AdminStaffPage() {
                     <div>
                       <p className="font-semibold text-cream-900">{p.name}</p>
                       <span className="text-xs font-medium text-cream-800/70">
-                        {meta.label}{p.title ? ` · ${p.title}` : ''}
+                        {meta.label}{displayTitle ? ` · ${displayTitle}` : ''}
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex items-start gap-1">
+                    <span className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${listed ? 'bg-sage-50 text-sage-700' : 'bg-amber-50 text-amber-800'}`}>
+                      {listed ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                      {listed ? 'Kadroda' : 'Gizli'}
+                    </span>
                     <button type="button" onClick={() => setEditTarget(s)} className="rounded-lg p-1.5 text-cream-800/50 hover:bg-cream-100" aria-label="Düzenle">
                       <Edit className="h-4 w-4" />
                     </button>
@@ -144,6 +182,19 @@ export default function AdminStaffPage() {
                   <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-cream-800/40" /> {p.email}</p>
                   <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-cream-800/40" /> {p.phone || '—'}</p>
                 </div>
+
+                <button
+                  type="button"
+                  disabled={togglingId === s.id}
+                  onClick={() => handleToggleListed(s)}
+                  className="mt-4 rounded-lg bg-cream-100 py-2 text-xs font-medium text-cream-800 hover:bg-cream-200 disabled:opacity-50"
+                >
+                  {togglingId === s.id
+                    ? 'Kaydediliyor…'
+                    : listed
+                      ? 'Kadroda gizle'
+                      : 'Kadroda göster'}
+                </button>
               </div>
             )
           })}

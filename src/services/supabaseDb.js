@@ -1646,9 +1646,11 @@ export async function updateStaffSelfProfile(id, patch) {
   if (!user?.email) return { success: false, error: 'Oturum gerekli.' }
 
   const merged = normalizeStaffProfile(patch)
+  const payload = staffProfileDataPayload(merged)
+  delete payload.listedOnTeam
   const { data: staffId, error } = await supabase.rpc('staff_update_self_profile', {
     p_name: merged.name?.trim() || '',
-    p_data: staffProfileDataPayload(merged),
+    p_data: payload,
   })
 
   if (error) return { success: false, error: error.message }

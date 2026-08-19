@@ -32,6 +32,7 @@ export const EMPTY_STAFF_FORM = {
   workStart: '',
   workEnd: '',
   availability: {},
+  listedOnTeam: true,
 }
 
 const PLACEHOLDER_TEXT_RE = /^[\s.·•…\-–—*]+$/u
@@ -45,6 +46,29 @@ export function isMeaningfulProfileText(value) {
 
 export function publicCertificates(list) {
   return (Array.isArray(list) ? list : []).filter((c) => isMeaningfulProfileText(c?.name))
+}
+
+function labelKey(value) {
+  return String(value || '').trim().toLocaleLowerCase('tr')
+}
+
+/** Unvan, uzmanlık chip'inin kopyasıysa (ör. tüm koçlarda "Kilo Verme") public'te gösterme */
+export function isSpecialtyClonedTitle(title, profile = {}) {
+  const t = String(title || '').trim()
+  if (!t) return true
+  const key = labelKey(t)
+  const specialty = String(profile.specialty || '').trim()
+  if (specialty && key === labelKey(specialty)) return true
+  const list = Array.isArray(profile.specialties) ? profile.specialties : []
+  return list.some((item) => labelKey(item) === key)
+}
+
+/** Gerçek unvan; başvuru onayında uzmanlıktan kopyalanan sahte title'ı ayıklar */
+export function publicStaffTitle(profile = {}) {
+  const title = String(profile.title || '').trim()
+  if (!isMeaningfulProfileText(title)) return ''
+  if (isSpecialtyClonedTitle(title, profile)) return ''
+  return title
 }
 
 export function publicEducation(list) {
@@ -135,6 +159,11 @@ function isPlaceholderSpecialty(value) {
   return String(value || '').trim() === PLACEHOLDER_SPECIALTY
 }
 
+/** Public kadro kartları (/team/coaches vb.). Yoksa veya true ise listelenir. */
+export function isListedOnTeam(profile = {}) {
+  return profile.listedOnTeam !== false
+}
+
 /** Eski `description` alanını bio'ya taşır; dizileri normalize eder */
 export function normalizeStaffProfile(raw = {}) {
   const specialties = (Array.isArray(raw.specialties)
@@ -175,6 +204,7 @@ export function normalizeStaffProfile(raw = {}) {
     workStart: raw.workStart || '',
     workEnd: raw.workEnd || '',
     availability: raw.availability && typeof raw.availability === 'object' ? raw.availability : {},
+    listedOnTeam: raw.listedOnTeam !== false,
   }
 }
 
@@ -205,6 +235,7 @@ export function staffProfileDataPayload(data) {
     workStart: n.workStart || '',
     workEnd: n.workEnd || '',
     availability: n.availability && typeof n.availability === 'object' ? n.availability : {},
+    listedOnTeam: n.listedOnTeam !== false,
     ...(settings ? { settings } : {}),
   }
 }

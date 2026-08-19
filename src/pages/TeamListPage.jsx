@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext'
 import JsonLd from '../components/seo/JsonLd'
 import StaffMemberCard from '../components/staff/StaffMemberCard'
 import { buildItemListSchema, staffProfilePath } from '../config/seo'
+import { isListedOnTeam } from '../data/staffProfile'
 import { TEAM_HERO_IMAGES } from '../utils/teamHeroImages'
 
 const roleConfig = {
@@ -53,7 +54,7 @@ export default function TeamListPage({ role: roleProp }) {
 
   // Hook'lar koşulsuz çağrılmalı (Rules of Hooks); erken return aşağıda.
   const members = useMemo(
-    () => (staff || []).filter((s) => s.active !== false && s.role === config?.key),
+    () => (staff || []).filter((s) => s.active !== false && isListedOnTeam(s) && s.role === config?.key),
     [staff, config?.key]
   )
 

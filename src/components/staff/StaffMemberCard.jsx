@@ -15,17 +15,11 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
   const displayName = formatStaffDisplayName(profile.name)
   const certificateCount = publicCertificates(profile.certificates).length
   const RoleIcon = meta.icon
-  const title = profile.title?.trim() || ''
   const specialty = profile.specialty?.trim() || ''
-  const subtitle = title || specialty
   const tags = (profile.specialties.length ? profile.specialties : specialty ? [specialty] : [])
     .map((tag) => String(tag).trim())
     .filter(Boolean)
-    .filter((tag, i, list) => {
-      const key = labelKey(tag)
-      if (subtitle && key === labelKey(subtitle)) return false
-      return list.findIndex((item) => labelKey(item) === key) === i
-    })
+    .filter((tag, i, list) => list.findIndex((item) => labelKey(item) === labelKey(tag)) === i)
     .slice(0, 4)
 
   return (
@@ -67,9 +61,6 @@ export default function StaffMemberCard({ member, config, index = 0 }) {
             <h3 className="font-display text-xl font-bold leading-tight tracking-tight text-white drop-shadow-sm">
               {displayName}
             </h3>
-            {subtitle && (
-              <p className="mt-1 text-sm font-medium text-white/85">{subtitle}</p>
-            )}
           </div>
         </div>
 

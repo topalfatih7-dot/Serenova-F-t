@@ -755,7 +755,7 @@ begin
   where id = v_id;
 
   v_merged := coalesce(v_current, '{}'::jsonb)
-    || coalesce(p_data, '{}'::jsonb)
+    || (coalesce(p_data, '{}'::jsonb) - 'listedOnTeam')
     || jsonb_build_object(
       'specialty', v_current->'specialty',
       'specialties', coalesce(v_current->'specialties', '[]'::jsonb),
@@ -763,7 +763,8 @@ begin
       'languages', coalesce(v_current->'languages', '["Türkçe"]'::jsonb),
       'education', coalesce(v_current->'education', '[]'::jsonb),
       'experiences', coalesce(v_current->'experiences', '[]'::jsonb),
-      'certificates', coalesce(v_current->'certificates', '[]'::jsonb)
+      'certificates', coalesce(v_current->'certificates', '[]'::jsonb),
+      'listedOnTeam', coalesce(v_current->'listedOnTeam', 'true'::jsonb)
     )
     - 'headline';
 

@@ -277,7 +277,12 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
                   </div>
                   <label className="block">
                     <FieldLabel>Unvan</FieldLabel>
-                    <input value={form.title} onChange={(e) => update({ title: e.target.value })} className={inputCls} placeholder="Uzman Diyetisyen" />
+                    <input
+                      value={form.title}
+                      onChange={(e) => update({ title: e.target.value })}
+                      className={inputCls}
+                      placeholder={staffUser.role === 'dietitian' ? 'Uzman Diyetisyen' : staffUser.role === 'doctor' ? 'Doktor' : 'Fitness Koçu'}
+                    />
                   </label>
                   <label className="block">
                     <FieldLabel required>Cinsiyet</FieldLabel>

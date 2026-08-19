@@ -1,4 +1,5 @@
 import { packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor, isPaidMembership } from '../data/membershipPlans'
+import { publicStaffTitle } from '../data/staffProfile'
 import { normalizeStaffRole } from './staffRoles'
 import { staffCollabMembersSignature } from '../services/staffCollabChatDb'
 
@@ -22,7 +23,7 @@ export function getMemberChatContacts(member, staffList = []) {
         role: 'coach',
         staffId: coach.id,
         name: coach.name,
-        title: coach.title || 'Koçunuz',
+        title: publicStaffTitle(coach) || 'Koçunuz',
         photo: coach.photo,
       })
     }
@@ -35,7 +36,7 @@ export function getMemberChatContacts(member, staffList = []) {
         role: 'dietitian',
         staffId: dietitian.id,
         name: dietitian.name,
-        title: dietitian.title || 'Diyetisyeniniz',
+        title: publicStaffTitle(dietitian) || 'Diyetisyeniniz',
         photo: dietitian.photo,
       })
     }
@@ -48,7 +49,7 @@ export function getMemberChatContacts(member, staffList = []) {
         role: 'doctor',
         staffId: doctor.id,
         name: doctor.name,
-        title: doctor.title || 'Doktorunuz',
+        title: publicStaffTitle(doctor) || 'Doktorunuz',
         photo: doctor.photo,
       })
     }
