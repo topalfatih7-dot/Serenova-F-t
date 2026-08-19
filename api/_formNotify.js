@@ -45,8 +45,8 @@ export async function notifyContactTelegram(body) {
 }
 
 export async function notifyStaffApplicationTelegram(body) {
-  const chatId = process.env.TELEGRAM_STAFF_APPLICATION_CHAT_ID
-  if (!chatId) return { ok: false, skipped: true, error: 'TELEGRAM_STAFF_APPLICATION_CHAT_ID yok' }
+  const chatId = process.env.TELEGRAM_STAFF_APPLICATION_CHAT_ID || process.env.TELEGRAM_CHAT_ID
+  if (!chatId) return { ok: false, skipped: true, error: 'TELEGRAM_STAFF_APPLICATION_CHAT_ID / TELEGRAM_CHAT_ID yok' }
 
   const text = [
     '👨‍⚕️ <b>Yeni kadro başvurusu</b>',
@@ -63,8 +63,8 @@ export async function notifyStaffApplicationTelegram(body) {
 }
 
 export async function notifyCorporateApplicationTelegram(body) {
-  const chatId = process.env.TELEGRAM_CORPORATE_APPLICATION_CHAT_ID
-  if (!chatId) return { ok: false, skipped: true, error: 'TELEGRAM_CORPORATE_APPLICATION_CHAT_ID yok' }
+  const chatId = process.env.TELEGRAM_CORPORATE_APPLICATION_CHAT_ID || process.env.TELEGRAM_CHAT_ID
+  if (!chatId) return { ok: false, skipped: true, error: 'TELEGRAM_CORPORATE_APPLICATION_CHAT_ID / TELEGRAM_CHAT_ID yok' }
 
   const text = [
     '🏢 <b>Yeni kurumsal başvuru</b>',
