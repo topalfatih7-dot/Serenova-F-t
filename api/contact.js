@@ -44,6 +44,18 @@ function trimStr(v, max = 500) {
   return String(v || '').trim().slice(0, max)
 }
 
+/** Vercel lambda yanıt sonrası fire-and-forget Telegram’ı keser; await zorunlu. */
+async function sendFormTelegram(label, fn, payload) {
+  try {
+    const result = await fn(payload)
+    if (!result?.ok) {
+      console.error(`[telegram] ${label} failed`, result?.error || result)
+    }
+  } catch (e) {
+    console.error(`[telegram] ${label} failed`, e?.message || e)
+  }
+}
+
 /**
  * @returns {{ ok: true, formSessionToken: string } | { ok: false, status: number, error: string }}
  */
@@ -158,7 +170,7 @@ async function handleContact(req, res, body) {
     return res.status(400).json({ ok: false, error: error.message || 'Mesaj kaydedilemedi' })
   }
 
-  notifyContactTelegram({ name, email, phone, subject, message }).catch(() => {})
+  await sendFormTelegram('contact', notifyContactTelegram, { name, email, phone, subject, message })
   return res.status(200).json({ ok: true, id: data })
 }
 
@@ -312,7 +324,13 @@ async function handleStaffApplication(req, res, body) {
     return res.status(400).json({ ok: false, error: error.message || 'Başvuru kaydedilemedi' })
   }
 
-  notifyStaffApplicationTelegram({ name, email, phone, role, roleLabel }).catch(() => {})
+  await sendFormTelegram('staff_application', notifyStaffApplicationTelegram, {
+    name,
+    email,
+    phone,
+    role,
+    roleLabel,
+  })
   return res.status(200).json({ ok: true, id, formSessionToken: guard.formSessionToken })
 }
 
@@ -358,7 +376,12 @@ async function handleCorporateApplication(req, res, body) {
     return res.status(400).json({ ok: false, error: error.message || 'Başvuru kaydedilemedi' })
   }
 
-  notifyCorporateApplicationTelegram({ companyName, contactName, email, phone }).catch(() => {})
+  await sendFormTelegram('corporate_application', notifyCorporateApplicationTelegram, {
+    companyName,
+    contactName,
+    email,
+    phone,
+  })
   return res.status(200).json({ ok: true, id })
 }
 
