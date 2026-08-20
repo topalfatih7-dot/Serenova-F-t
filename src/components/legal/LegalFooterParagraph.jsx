@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 
 function joinLinks(links, linkClassName) {
   return links.map((link, i) => (
-    <Fragment key={link.slug}>
+    <Fragment key={link.slug || link.to}>
       {i > 0 && (i === links.length - 1 ? ' ve ' : ', ')}
       <Link
-        to={`/legal/${link.slug}`}
+        to={link.to || `/legal/${link.slug}`}
         className={linkClassName}
       >
         {link.label}

@@ -44,6 +44,7 @@ export const LEGAL_FOOTER_GROUPS = [
     { slug: 'saglik-verisi-isleme-bilgilendirmesi', label: 'Sağlık Verisi İşleme Bilgilendirmesi' },
     { slug: 'veri-saklama-ve-imha-politikasi', label: 'Veri Saklama ve İmha Politikası' },
     { slug: 'yapay-zeka-kullanim-politikasi', label: 'Yapay Zekâ Kullanım Politikası' },
+    { to: '/hesap-silme', label: 'Hesabını sil' },
   ]},
   { label: 'Platform', links: [
     { slug: 'topluluk-kurallari', label: 'Topluluk Kuralları' },

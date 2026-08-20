@@ -255,6 +255,7 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/corporate', changefreq: 'monthly', priority: '0.7' },
   { path: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
   { path: '/team/apply', changefreq: 'monthly', priority: '0.6' },
+  { path: '/hesap-silme', changefreq: 'yearly', priority: '0.5' },
   ...LEGAL_ROUTE_ENTRIES,
 ]
 
@@ -374,6 +375,12 @@ export const PAGE_SEO = {
     title: 'Kadromuza Katıl — Koç & Diyetisyen Başvurusu',
     description: 'Yeni Form kadrosuna koç veya diyetisyen olarak başvurun. Online wellness platformunda uzman ekibimize katılın.',
     keywords: buildBrandKeywords('koç başvurusu, diyetisyen iş ilanı, online koçluk kariyer'),
+  },
+  '/hesap-silme': {
+    title: 'Hesabını sil',
+    description:
+      'Yeni Form hesabınızı ve kişisel verilerinizi silin. Giriş yapıp onayladıktan sonra hesap kapanır; ücretli paketler iadesiz sona erer.',
+    keywords: 'hesap silme, hesap kapatma, KVKK silme, account deletion',
   },
   '/legal/uyelik-ve-abonelik-sozlesmesi': {
     title: 'Üyelik ve Abonelik Sözleşmesi',

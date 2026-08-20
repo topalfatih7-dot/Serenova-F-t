@@ -46,6 +46,7 @@ const StaffApplicationPage = lazy(() => import('./pages/StaffApplicationPage'))
 const TeamListPage = lazy(() => import('./pages/TeamListPage'))
 const ServiceLandingPage = lazy(() => import('./pages/services/ServiceLandingPage'))
 const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
+const DeleteAccountPage = lazy(() => import('./pages/account/DeleteAccountPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
 const StaffSelfProfilePage = lazy(() => import('./pages/staff/StaffSelfProfilePage'))
@@ -136,6 +137,8 @@ export default function App() {
               <Route path="corporate/apply" element={<CorporateApplicationPage />} />
               <Route path="team/:id" element={<StaffProfilePage />} />
               <Route path="legal/:slug" element={<LegalDocumentPage />} />
+              <Route path="hesap-silme" element={<DeleteAccountPage />} />
+              <Route path="account-deletion" element={<Navigate to="/hesap-silme" replace />} />
               <Route path="kvkk" element={<Navigate to="/legal/kvkk" replace />} />
               <Route path="privacy" element={<Navigate to="/legal/gizlilik-politikasi" replace />} />
               <Route path="terms" element={<Navigate to="/legal/uyelik-ve-abonelik-sozlesmesi" replace />} />

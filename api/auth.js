@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account
  * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -29,6 +29,13 @@ import { reportFormAttack, mapGuardToAttackReason } from './_attackAlert.js'
 import { verifyTurnstile, isLocalDevAuth } from './_turnstile.js'
 import { isDisposableEmail, disposableEmailError } from './_disposableEmail.js'
 import { issueFormSession, verifyFormSession } from './_formSession.js'
+import {
+  cancelStripeSubscriptionsForCustomer,
+  emailsMatch,
+  purgeMemberAccount,
+  userHasPasswordProvider,
+  verifyAccountPassword,
+} from './_deleteAccount.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -978,6 +985,63 @@ async function handleVerifyActiveSession(req, res) {
   return res.status(200).json({ ok: true, valid: isActiveSession(user, token) })
 }
 
+async function handleDeleteAccount(req, res, body) {
+  const { user, error: authErr } = await getUserFromRequest(req)
+  if (authErr || !user) {
+    return res.status(401).json({ ok: false, error: 'Oturum bulunamadı. Lütfen giriş yapın.' })
+  }
+
+  if (body.ack !== true) {
+    return res.status(400).json({ ok: false, error: 'Devam etmek için onay kutusunu işaretleyin.' })
+  }
+
+  const admin = getSupabaseAdmin()
+  const { data: memberRow } = await admin
+    .from('members')
+    .select('id, role, email, stripe_customer_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const role = String(memberRow?.role || user.user_metadata?.role || '').toLowerCase()
+  if (role === 'admin' || role === 'staff') {
+    return res.status(403).json({
+      ok: false,
+      error: 'Personel ve yönetici hesapları bu sayfadan silinemez. Talep için info@yeniform.com adresine yazın.',
+    })
+  }
+
+  const email = memberRow?.email || user.email || ''
+  if (userHasPasswordProvider(user)) {
+    const password = String(body.password || '')
+    if (!password) {
+      return res.status(400).json({ ok: false, error: 'Şifrenizi girin.' })
+    }
+    const check = await verifyAccountPassword(email, password)
+    if (!check.ok || (check.userId && check.userId !== user.id)) {
+      return res.status(401).json({ ok: false, error: check.error || 'Şifre hatalı.' })
+    }
+  } else if (!emailsMatch(body.emailConfirm, email)) {
+    return res.status(400).json({ ok: false, error: 'Hesap e-postanızı yazın.' })
+  }
+
+  try {
+    await cancelStripeSubscriptionsForCustomer(memberRow?.stripe_customer_id || null)
+  } catch (err) {
+    return res.status(502).json({
+      ok: false,
+      error: err.message || 'Abonelik kapatılamadı. Bir süre sonra tekrar deneyin.',
+    })
+  }
+
+  try {
+    await purgeMemberAccount(admin, user.id)
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message || 'Hesap silinemedi.' })
+  }
+
+  return res.status(200).json({ ok: true })
+}
+
 export default async function handler(req, res) {
   const corsHeaders = 'Content-Type, Authorization, X-Yeniform-Mobile-Key'
   if (handleOptions(req, res, 'POST, OPTIONS', corsHeaders)) return
@@ -1028,13 +1092,14 @@ export default async function handler(req, res) {
      * signup rate limit handleSignup içinde (already_registered 3/saat kotasını yakmasın).
      * password-login credential limiti handlePasswordLogin içinde.
      */
-    const sensitiveAuth = new Set(['unlock-signup', 'password-reset', 'email-send'])
+    const sensitiveAuth = new Set(['unlock-signup', 'password-reset', 'email-send', 'delete-account'])
     if (sensitiveAuth.has(action)) {
       const emailKey = String(body.email || '').trim().toLowerCase()
       const limits = {
         'unlock-signup': 5,
         'password-reset': 5,
         'email-send': 10,
+        'delete-account': 5,
       }
       const rl = await enforceRateLimit({
         req,
@@ -1081,6 +1146,7 @@ export default async function handler(req, res) {
     if (action === 'ai-usage-report') return handleAiUsageReport(req, res, body)
     if (action === 'claim-active-session') return handleClaimActiveSession(req, res)
     if (action === 'verify-active-session') return handleVerifyActiveSession(req, res)
+    if (action === 'delete-account') return handleDeleteAccount(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

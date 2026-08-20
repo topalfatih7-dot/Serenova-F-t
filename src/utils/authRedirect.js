@@ -44,10 +44,11 @@ export function resolvePostLoginPath(returnPath, role) {
   return isSafeReturnPath(returnPath, role) ? returnPath : homePathForRole(role)
 }
 
-const HANDOFF_PLAN_IDS = new Set(['free', 'eko', 'diyet', 'spor', 'doktor', 'vip'])
+const HANDOFF_PLAN_IDS = new Set(['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip'])
+const HANDOFF_PATHS = new Set(['/plans', '/hesap-silme'])
 
 /**
- * Mobil ödeme CTA: yalnız /plans (opsiyonel ?plan= id).
+ * Mobil JWT handoff: yalnız izinli relative path.
  * Harici URL / // / bozuk next → null (kör navigate yok).
  */
 export function parseMobileHandoffNext(raw) {
@@ -62,7 +63,8 @@ export function parseMobileHandoffNext(raw) {
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(decoded)) return null
   const qIndex = decoded.indexOf('?')
   const path = qIndex === -1 ? decoded : decoded.slice(0, qIndex)
-  if (path !== '/plans') return null
+  if (!HANDOFF_PATHS.has(path)) return null
+  if (path === '/hesap-silme') return '/hesap-silme'
   if (qIndex === -1) return '/plans'
   const params = new URLSearchParams(decoded.slice(qIndex + 1))
   const plan = params.get('plan')

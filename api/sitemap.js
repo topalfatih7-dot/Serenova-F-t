@@ -48,6 +48,7 @@ const STATIC_ROUTES = [
   { loc: '/legal/saglik-sorumluluk-reddi', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/antrenor-hizmet-standartlari', changefreq: 'yearly', priority: '0.4' },
   { loc: '/legal/diyetisyen-hizmet-standartlari', changefreq: 'yearly', priority: '0.4' },
+  { loc: '/hesap-silme', changefreq: 'yearly', priority: '0.5' },
 ]
 
 function slugifyTurkish(text) {

@@ -17,6 +17,7 @@ export default {
     { heading: '9. Yapay Zekâ Destekli Özellikler', body: 'YeniForm, kullanıcı deneyimini geliştirmek amacıyla yapay zekâ destekli analiz ve öneri araçlarından yararlanabilir.\nBu araçlar tarafından oluşturulan öneriler destekleyici niteliktedir ve sağlık profesyoneli değerlendirmesinin yerine geçmez.' },
     { heading: '10. Kullanıcının Sorumlulukları', body: 'Kullanıcı;\nDoğru bilgi vermekten,\nHesap güvenliğini sağlamaktan,\nKendi cihaz güvenliğini korumaktan,\nGüncel iletişim bilgileri kullanmaktan\nsorumludur.' },
     { heading: '11. Saklama Süreleri', body: 'Bilgiler;\nHizmet süresi boyunca,\nYasal yükümlülüklerin gerektirdiği süre boyunca,\nOlası hukuki süreçler dikkate alınarak gerekli olduğu ölçüde\nsaklanabilir.' },
+    { heading: '11.1 Hesap ve veri silme', body: 'Hesabınızı ve kişisel verilerinizi silmek için https://www.yeniform.com/hesap-silme sayfasını kullanabilirsiniz. Silme, giriş ve onay sonrası hemen uygulanır. Ücretli paketler kapanır; iade yoktur. Ödeme kuruluşundaki yasal fatura kayıtları saklanabilir.' },
     { heading: '12. Politika Güncellemeleri', body: 'YeniForm, mevzuat değişiklikleri veya hizmet modelindeki değişiklikler doğrultusunda bu politikayı güncelleyebilir.\nGüncel sürüm internet sitesi ve mobil uygulamada yayımlandığı tarihte yürürlüğe girer.' },
     { heading: '13. İletişim', body: 'Gizlilik Politikası ile ilgili sorularınız için:\nE-posta: destek@yeniform.com\nAdres: …………………………………………….\nTelefon: …………………………………………….' },
   ],

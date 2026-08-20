@@ -535,6 +535,13 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <Link
+        to="/hesap-silme"
+        className="flex w-full items-center justify-center py-2 text-sm font-medium text-cream-800/55 underline-offset-2 hover:text-red-700 hover:underline"
+      >
+        Hesabımı sil
+      </Link>
+
       <motion.button
         type="button"
         onClick={handleLogout}
