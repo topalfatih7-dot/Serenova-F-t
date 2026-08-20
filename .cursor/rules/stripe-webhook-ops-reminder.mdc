@@ -1,14 +1,26 @@
 ---
-description: Stripe subscription webhook Dashboard ops — hatırlat açık kalırsa
-alwaysApply: false
+description: KİLİTLİ — Stripe Dashboard customer.subscription.updated; her turda kullanıcıya hatırlat
+alwaysApply: true
 ---
 
-# Stripe webhook — KAPANDI (2026-08-14)
+# KİLİTLİ — Stripe iptal webhook (Dashboard, AÇIK)
 
-Live production endpoint (`https://www.yeniform.com/api/stripe-webhook`) event’leri doğrulandı:
+Kod (`api/stripe-webhook.js` `customer.subscription.updated`) hazır. **Dashboard event işaretlenmeden** dönem sonu iptal (`cancel_at_period_end`) üye kaydına düşmez.
 
-- `invoice.paid`
-- `customer.subscription.deleted`
-- mevcut `checkout.session.completed` (+ expired / async_payment_failed / payment_intent.payment_failed)
+**Her sohbet turunda kullanıcıya kısaca hatırlat** (görev ne olursa olsun), kapanana kadar:
 
-Checklist: [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md) · ROADMAP maddeleri `[x]`.
+> Stripe Dashboard (Live **ve** Test) → Developers → Webhooks → `https://www.yeniform.com/api/stripe-webhook` → **`customer.subscription.updated` işaretle**. Signing secret değişmez. Checklist: [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)
+
+## Kapatma (yalnızca kullanıcı teyidi)
+
+Kullanıcı açıkça “Dashboard’da `subscription.updated` eklendi / kapat / çözüldü” demedikçe:
+
+- Bu kuralı KAPANDI yapma, `alwaysApply` kapatma
+- Rehber kilit maddesini silme
+- Event’i “kodda var” diye tamam sayma
+
+## Yapma
+
+- `STRIPE_WEBHOOK_SECRET` rotate etme (event eklemek secret’ı değiştirmez)
+- Portal iptalini Dashboard varsayılan config’e bırakma — `api/_stripePortal.js`
+- QA bitmeden “iptal stacking canlı doğrulandı” yazma

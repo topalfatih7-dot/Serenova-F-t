@@ -46,6 +46,7 @@ export default function MemberPlansPage() {
         plans={allPlans}
         membership={membership}
         userEmail={user?.email}
+        member={user}
         selectedPlanId={selectedPlanId}
         onSelectedPlanChange={setSelectedPlanId}
       />

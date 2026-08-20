@@ -36,8 +36,9 @@ Admin may create additional plan IDs with custom entitlements.
 - `src/pages/admin/AdminPlansPage.jsx` — full plan CRUD
 - `src/services/supabaseDb.js` — `rowToPlan`, `upsertPlan`, `deletePlan`, hydrate
 - `api/_planEntitlements.js` — server plan load + packageConfig
-- `api/stripe-checkout.js` — DB `is_sellable` validation
-- `api/stripe-webhook.js` — entitlements snapshot on payment
+- `api/stripe-checkout.js` — DB `is_sellable` + Portal (`api/_stripePortal.js`)
+- `api/stripe-webhook.js` — entitlements snapshot; `subscription.updated` / `deleted` paket başına
+- `src/components/membership/MembershipCancelDialog.jsx` · `MemberSubscriptionPackages.jsx`
 - `api/_memberEntitlements.js` — calorie API guards
 - `src/components/membership/UnpaidMemberGate.jsx` — paketsiz üye paneli kilidi (HT hariç)
 - Ücretsiz kayıt: `OnboardingPage` → `register(..., 'free')`; AI analiz: `useHealthAnalysisSync` + `api/ai-health-analysis` unpaid 403

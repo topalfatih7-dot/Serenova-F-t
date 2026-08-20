@@ -1,7 +1,8 @@
 /**
  * POST /api/stripe-checkout
  * Body (checkout): { planId, durationMonths?: 1|3|6, flow?: 'register'|'change' }
- * Body (portal):   { action: 'create-portal-session' }
+ * Body (portal):   { action: 'create-portal-session', intent?: 'manage'|'cancel', mode?: 'at_period_end'|'immediately', subscriptionId?: string }
+ * Body (resume):   { action: 'resume-subscription', subscriptionId }
  */
 import {
   getStripe,
@@ -22,6 +23,8 @@ import {
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { normalizeEmailAddress } from './_email.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
+import { createBillingPortalSession, assertSubscriptionBelongsToCustomer } from './_stripePortal.js'
+import { applyStripeSubscriptionState } from './_memberPackages.js'
 
 function getOrigin(req) {
   return (
@@ -90,7 +93,50 @@ async function ensureStripeCustomer(stripe, admin, user, checkoutEmail, memberNa
   return customerId
 }
 
-async function handlePortalSession(req, res, admin) {
+async function memberDraftFromRow(row) {
+  const data = row.data || {}
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    membership: row.membership,
+    membershipStatus: row.membership_status,
+    assignedCoachId: row.assigned_coach_id ?? null,
+    assignedDietitianId: row.assigned_dietitian_id ?? null,
+    assignedDoctorId: row.assigned_doctor_id ?? null,
+    ...data,
+  }
+}
+
+async function persistPortalMember(admin, row, draft) {
+  const {
+    id: _id,
+    name: _name,
+    email: _email,
+    membership,
+    membershipStatus,
+    assignedCoachId,
+    assignedDietitianId,
+    assignedDoctorId,
+    ...rest
+  } = draft
+  const newData = { ...(row.data || {}), ...rest }
+  if (!newData.stripeSubscriptionId) delete newData.stripeSubscriptionId
+  return admin
+    .from('members')
+    .update({
+      membership: membership || 'free',
+      membership_status: membershipStatus || 'active',
+      assigned_coach_id: assignedCoachId || null,
+      assigned_dietitian_id: assignedDietitianId || null,
+      assigned_doctor_id: assignedDoctorId || null,
+      data: newData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id)
+}
+
+async function handlePortalSession(req, res, admin, body = {}) {
   const auth = await resolveAuthUser(admin, req)
   if (auth.error) return res.status(auth.status).json({ ok: false, error: auth.error })
 
@@ -126,12 +172,70 @@ async function handlePortalSession(req, res, admin) {
   }
 
   const origin = getOrigin(req)
-  const portal = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${origin}/profile/payments`,
-  })
+  const intent = String(body.intent || 'manage')
+  const mode = body.mode === 'immediately' ? 'immediately' : 'at_period_end'
+  const subscriptionId = String(body.subscriptionId || '').trim() || null
 
-  return res.status(200).json({ ok: true, url: portal.url })
+  try {
+    const portal = await createBillingPortalSession(stripe, {
+      customerId,
+      returnUrl: `${origin}/profile/payments`,
+      intent,
+      mode,
+      subscriptionId,
+    })
+    return res.status(200).json({ ok: true, url: portal.url })
+  } catch (e) {
+    const status = Number(e?.status) || 500
+    return res.status(status).json({
+      ok: false,
+      error: status >= 500 ? mapStripeCheckoutError(e) : (e.message || 'Portal açılamadı.'),
+    })
+  }
+}
+
+async function handleResumeSubscription(req, res, admin, body = {}) {
+  const auth = await resolveAuthUser(admin, req)
+  if (auth.error) return res.status(auth.status).json({ ok: false, error: auth.error })
+
+  const subscriptionId = String(body.subscriptionId || '').trim()
+  if (!subscriptionId) {
+    return res.status(400).json({ ok: false, error: 'Abonelik seçilmedi.' })
+  }
+
+  const stripe = getStripe()
+  const { data: memberRow } = await admin
+    .from('members')
+    .select('id, email, name, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, stripe_customer_id, data')
+    .eq('id', auth.user.id)
+    .maybeSingle()
+
+  if (!memberRow) {
+    return res.status(404).json({ ok: false, error: 'Üye kaydı bulunamadı.' })
+  }
+
+  let customerId = memberRow.stripe_customer_id
+  if (!customerId) {
+    return res.status(400).json({ ok: false, error: 'Stripe müşteri kaydı bulunamadı.' })
+  }
+
+  const owned = await assertSubscriptionBelongsToCustomer(stripe, subscriptionId, customerId)
+  if (!owned.ok) {
+    return res.status(owned.status || 400).json({ ok: false, error: owned.error })
+  }
+
+  let updated
+  try {
+    updated = await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: false })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: mapStripeCheckoutError(e) })
+  }
+
+  const draft = applyStripeSubscriptionState(memberDraftFromRow(memberRow), updated)
+  const { error } = await persistPortalMember(admin, memberRow, draft)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+
+  return res.status(200).json({ ok: true, resumed: true })
 }
 
 export default async function handler(req, res) {
@@ -165,7 +269,10 @@ export default async function handler(req, res) {
     }
 
     if (body.action === 'create-portal-session') {
-      return await handlePortalSession(req, res, admin)
+      return await handlePortalSession(req, res, admin, body)
+    }
+    if (body.action === 'resume-subscription') {
+      return await handleResumeSubscription(req, res, admin, body)
     }
 
     const planId = String(body.planId || '')

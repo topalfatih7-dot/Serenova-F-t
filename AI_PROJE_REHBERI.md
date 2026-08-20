@@ -2,7 +2,7 @@
 
 > **Amaç:** Az token ile doğru bağlam. Detay için kod / `.cursor/skills/yeniform-*` / `docs/*`.  
 > **Canlı:** https://www.yeniform.com · Vercel `serenova-f-t` · Supabase `rvzksmyhsgxgrxgeabmi`  
-> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-13
+> **Marka:** `src/config/brand.js` · **Güncelleme:** 2026-08-20
 
 **AI okuma sırası:** §0 kurallar → §2 durum → ilgili skill → kod. Tam dosya envanteri / eski changelog **yok** (git history).
 
@@ -21,6 +21,7 @@
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 10. **Paketsiz üye (freemium):** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Dashboard + profil + `/membership` + `/health-test` açık. Süresi bitmiş ücretli → `free` fallback. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 11. **KİLİTLİ — public üye/çevrimiçi sayıları** (`displayPlatformStats.js`): üye <750 → **750+**; ≥750 → gerçek. Çevrimiçi <20 → oturumda **20–25** rastgele; ≥20 → gerçek. Floor’u kaldırma / gerçek sayıya çevirme. Admin paneli gerçek sayıyı gösterir.
+12. **KİLİTLİ — Stripe Dashboard (AÇIK):** Live **ve** Test webhook’a `customer.subscription.updated` ekle. Kod hazır; event yoksa dönem sonu iptal DB’ye düşmez. Secret değişmez. Kullanıcı “çözüldü” demeden kapatma. [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md) · `.cursor/rules/stripe-webhook-ops-reminder.mdc`
 
 ---
 
@@ -38,13 +39,13 @@
 
 ---
 
-## 2. Durum (2026-07-29)
+## 2. Durum (2026-08-20)
 
 **Canlı / tamam:** Stripe Checkout+webhook · Google + Facebook OAuth · HT hub `/health-test` · kalori AI · **sağlık skoru (üye dashboard) + staff brief (GPT-5.4)** · blog + günlük tüyo cron · SEO `/online-diyetisyen` `/online-kocluk` · private video + 15dk imza · RLS + üyelik güvenlik Faz1 · personel program builder (koç: haftalık gün şablonu + gün bazlı seans saati; diyetisyen: tam sayfa liste builder).
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık:** Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). Stripe webhook Live event’leri tamam (2026-08-14, [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
+**Ops açık:** **Stripe Dashboard `customer.subscription.updated` (kilitli hatırlat)** — [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md). Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Bu repo yalnızca web. Native/Expo kod ve handoff docs kaldırıldı (2026-08-02).
 
@@ -72,8 +73,8 @@ Browser → Supabase Auth
 | `diyet` | evet | diyetisyen (2/ay) | |
 | `eko_spor` | evet | koç (1/ay) | Spor’un ekonomik versiyonu; kan tahlili yok |
 | `spor` | evet | koç (2/ay) | Kan tahlili yok |
-| `doktor` | evet | tek sefer doktor | |
-| `vip` | evet | koç+diyet | |
+| `doktor` | evet | tek sefer doktor | Add-on; VIP iptalinde kalır; 2 alım = 2 seans; tüketince 1:1 chat açık, yeni randevu kapalı |
+| `vip` | evet | koç+diyet | Doktor hakkı yok |
 
 Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket panelden / `?plan=` sonrası PlanChangeView → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
 
@@ -113,7 +114,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 
 - `auth` — signup/login/reset · book-session · session-attendance · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
 - `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry
-- `stripe-checkout` — Checkout session (recurring → Subscription; doktor → payment) · `action: create-portal-session`
+- `stripe-checkout` — Checkout (recurring → Subscription; doktor → payment) · Portal: `create-portal-session` (`intent: manage|cancel`, `mode: at_period_end|immediately`) · `api/_stripePortal.js`
 
 ---
 
@@ -182,6 +183,12 @@ Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret
 - Kalori GPT-4o · blog/tip Gemini ayrı kaldı.
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
 - Faz 2–3: `UnpaidMemberGate` (`membership === 'free'`), Stripe Portal (`stripe_customer_id`), video attendance → `staff_earnings`, `aiAnalysis` orphan silindi.
+
+## 11d. Delta (2026-08-20)
+
+- **Doktor add-on:** FIFO tüketim (2 alım = 2 seans); Stripe abonelik iptali one-time doktoru düşürmez; tüketince atama+1:1 chat kalır, book API kota 0 reddeder; `rescheduled` video join.
+- **Stripe iptal stacking (kod):** paket başına dönem sonu / hemen kapat; Portal config kodda; admin pause paneli kaldırıldı. **Dashboard’da `customer.subscription.updated` hâlâ açık (kilitli hatırlat).**
+- Kadro başvurusu: profil fotoğrafı RPC’de zorunlu.
 
 ## 11c. Delta (2026-08-13)
 

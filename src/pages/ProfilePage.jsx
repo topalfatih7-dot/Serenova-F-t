@@ -468,8 +468,8 @@ export default function ProfilePage() {
                   {(selectedExpiringSoon || (selectedRemainingDays != null && selectedRemainingDays <= 0)) && (
                     <p className="mt-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 text-xs font-semibold text-orange-700">
                       {selectedRemainingDays != null && selectedRemainingDays <= 0
-                        ? 'Bu paketin süresi doldu — yenilemek için destek ile iletişime geçin.'
-                        : 'Bu paketin süresi yakında doluyor — yenilemek için destek ile iletişime geçin.'}
+                        ? 'Bu paketin süresi doldu — yenilemek için Planlar sayfasını kullanın.'
+                        : 'Bu paketin süresi yakında doluyor — kesintisiz devam için Planlar’dan yenileyin. İptal için Ödeme Yönetimi.'}
                     </p>
                   )}
                 </div>
@@ -481,12 +481,20 @@ export default function ProfilePage() {
                 <Link to="/plans" className="font-semibold text-brand-600 hover:text-brand-700">Premium özellikler için plan yükseltin</Link>
               </p>
             )}
-            <Link
-              to="/plans"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 transition hover:bg-violet-100"
-            >
-              Planları karşılaştır / değiştir
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/profile/payments"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 transition hover:bg-brand-100"
+              >
+                Ödeme Yönetimi
+              </Link>
+              <Link
+                to="/plans"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 transition hover:bg-violet-100"
+              >
+                Planları karşılaştır / paket ekle
+              </Link>
+            </div>
           </ProfileSectionCard>
 
           <ProfileSectionCard

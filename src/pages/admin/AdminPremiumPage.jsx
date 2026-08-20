@@ -8,7 +8,6 @@ import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
-import AdminMembershipStatusPanel from '../../components/admin/AdminMembershipStatusPanel'
 import {
   isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor,
   memberNeedsStaffAssignment, getAdminAssignablePlanIds, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
@@ -210,7 +209,7 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
 }
 
 function EditPremiumModal({
-  member, plans, staff, members, onClose, onSave, onRemovePackage, onStatusChange, busy,
+  member, plans, staff, members, onClose, onSave, onRemovePackage, busy,
 }) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
@@ -364,14 +363,6 @@ function EditPremiumModal({
             </div>
           )}
         </div>
-
-        <AdminMembershipStatusPanel
-          key={`${member.id}-${member.membershipStatus}-${member.membershipStatusChangedAt || ''}`}
-          member={member}
-          busy={busy}
-          compact
-          onSubmit={onStatusChange}
-        />
 
         <section className="rounded-2xl border border-cream-200 bg-cream-50/50 p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream-900">
@@ -612,7 +603,7 @@ function EditPremiumModal({
 }
 
 export default function AdminPremiumPage() {
-  const { platform, plans, adminUpdatePremium, adminSetMembershipStatus } = useApp()
+  const { platform, plans, adminUpdatePremium } = useApp()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -638,9 +629,7 @@ export default function AdminPremiumPage() {
           const r = getRemainingDays(m.premiumExpiresAt)
           return r != null && r > 0 && r <= 7
         }
-        if (filter === 'active') return m.membershipStatus === 'active'
-        if (filter === 'paused') return m.membershipStatus === 'paused'
-        if (filter === 'cancelled') return m.membershipStatus === 'cancelled'
+        if (filter === 'active') return m.membershipStatus === 'active' || m.membershipStatus === 'expiring'
         if (filter === 'premium') return isPaidMembership(m.membership)
         return true
       })
@@ -701,23 +690,6 @@ export default function AdminPremiumPage() {
     }
   }
 
-  const handleStatusChange = async ({ status, note, pauseUntil }) => {
-    if (!selected) return
-    setBusy(true)
-    try {
-      const r = await adminSetMembershipStatus(selected.id, { status, note, pauseUntil })
-      if (!r?.success) {
-        toast(r?.error || 'Durum güncellenemedi', 'error')
-        return
-      }
-      const labels = { active: 'Aktifleştirildi', paused: 'Donduruldu', cancelled: 'İptal edildi' }
-      toast(labels[status] || 'Durum güncellendi', 'success')
-      if (r.member) setSelected(r.member)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="rounded-3xl bg-gradient-to-br from-cream-900 via-cream-800 to-brand-900 p-5 text-white sm:p-6">
@@ -765,8 +737,6 @@ export default function AdminPremiumPage() {
           <option value="premium">Premium (ücretli)</option>
           <option value="free">Ücretsiz (Basic)</option>
           <option value="active">Aktif</option>
-          <option value="paused">Donduruldu</option>
-          <option value="cancelled">İptal</option>
           <option value="unassigned">Atama eksik</option>
           <option value="expiring">7 gün içinde biten</option>
         </select>
@@ -800,7 +770,6 @@ export default function AdminPremiumPage() {
         onClose={() => setSelected(null)}
         onSave={handleSave}
         onRemovePackage={handleRemovePackage}
-        onStatusChange={handleStatusChange}
         busy={busy}
       />
     </div>

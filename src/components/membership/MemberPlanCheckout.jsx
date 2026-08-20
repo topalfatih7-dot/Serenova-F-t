@@ -9,12 +9,13 @@ import {
   RECOMMENDED_PLAN,
   sortPlansForDisplay,
 } from '../../data/membershipPlans'
-import { isOneTimePlan } from '../../utils/memberPackages'
+import { isOneTimePlan, memberHasActiveRecurringPackages } from '../../utils/memberPackages'
 import { isStripeEnabled, STRIPE_REQUIRED_MESSAGE } from '../../config/stripe'
 import { startStripeCheckout } from '../../services/stripePayment'
 import { useToast } from '../../context/ToastContext'
 import MembershipPlanCard from './MembershipPlanCard'
 import MembershipDurationPicker from './MembershipDurationPicker'
+import MembershipCancelDialog from './MembershipCancelDialog'
 
 function defaultDurationMonths(planId) {
   if (planId === RECOMMENDED_PLAN) return RECOMMENDED_DURATION_MONTHS
@@ -29,6 +30,7 @@ export default function MemberPlanCheckout({
   plans: plansProp,
   membership,
   userEmail,
+  member = null,
   initialPlanId = null,
   selectedPlanId: controlledSelected,
   onSelectedPlanChange,
@@ -54,6 +56,7 @@ export default function MemberPlanCheckout({
 
   const [durationMonths, setDurationMonths] = useState(() => defaultDurationMonths(fallbackPlan))
   const [saving, setSaving] = useState(false)
+  const [stackOpen, setStackOpen] = useState(false)
   const checkoutRef = useRef(null)
   const didCancelToast = useRef(false)
   const skipScrollOnce = useRef(true)
@@ -99,7 +102,7 @@ export default function MemberPlanCheckout({
     setSelected(planId)
   }
 
-  const handlePay = async () => {
+  const startCheckout = async () => {
     if (!selected || !isPaid) return
     if (selectedPrice <= 0) {
       toast('Geçersiz plan fiyatı. Lütfen geçerli bir paket seçin.', 'error')
@@ -111,6 +114,19 @@ export default function MemberPlanCheckout({
       setSaving(false)
       toast(r.error || (isStripeEnabled() ? 'Ödeme başlatılamadı' : STRIPE_REQUIRED_MESSAGE), 'error')
     }
+  }
+
+  const handlePay = async () => {
+    if (!selected || !isPaid) return
+    if (selectedPrice <= 0) {
+      toast('Geçersiz plan fiyatı. Lütfen geçerli bir paket seçin.', 'error')
+      return
+    }
+    if (memberHasActiveRecurringPackages(member) && !isOneTime) {
+      setStackOpen(true)
+      return
+    }
+    await startCheckout()
   }
 
   if (!plans.length) {
@@ -173,6 +189,19 @@ export default function MemberPlanCheckout({
           </button>
         </div>
       </div>
+
+      <MembershipCancelDialog
+        open={stackOpen}
+        onClose={() => { if (!saving) setStackOpen(false) }}
+        variant="stack"
+        planLabel={selectedPlan?.name}
+        dateLabel=""
+        busy={saving}
+        onConfirm={() => {
+          setStackOpen(false)
+          void startCheckout()
+        }}
+      />
     </div>
   )
 }

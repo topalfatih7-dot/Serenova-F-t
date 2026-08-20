@@ -38,24 +38,53 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
   return { success: true }
 }
 
-/** Stripe Customer Portal — kart / fatura yönetimi */
-export async function startStripePortal() {
+/** Stripe Customer Portal — kart / fatura / iptal (intent=cancel) */
+export async function startStripePortal({
+  intent = 'manage',
+  mode,
+  subscriptionId,
+} = {}) {
   const headers = await getApiAuthHeaders()
   if (!headers.Authorization) {
     return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
   }
 
   try {
+    const payload = { action: 'create-portal-session', intent }
+    if (mode) payload.mode = mode
+    if (subscriptionId) payload.subscriptionId = subscriptionId
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ action: 'create-portal-session' }),
+      body: JSON.stringify(payload),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok || !json?.url) {
       return { success: false, error: json?.error || 'Portal açılamadı.' }
     }
     window.location.href = json.url
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: String(e?.message || e) }
+  }
+}
+
+/** Dönem sonu iptalini geri al — Stripe API, Portal yok */
+export async function resumeStripeSubscription(subscriptionId) {
+  const headers = await getApiAuthHeaders()
+  if (!headers.Authorization) {
+    return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
+  }
+  try {
+    const res = await fetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'resume-subscription', subscriptionId }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || !json?.ok) {
+      return { success: false, error: json?.error || 'Yenileme açılamadı.' }
+    }
     return { success: true }
   } catch (e) {
     return { success: false, error: String(e?.message || e) }

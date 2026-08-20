@@ -4,7 +4,6 @@ import { Search, Crown, Dumbbell, Apple, Target, Circle, Trash2, HeartPulse } fr
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
-import AdminMembershipStatusPanel from '../../components/admin/AdminMembershipStatusPanel'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
@@ -37,7 +36,7 @@ function InfoRow({ label, value }) {
 }
 
 export default function AdminMembersPage() {
-  const { platform, activeUsers, removeMember, adminSetMembershipStatus } = useApp()
+  const { platform, activeUsers, removeMember } = useApp()
   const toast = useToast()
   const members = platform.members
   const staff = platform.staff || []
@@ -47,7 +46,6 @@ export default function AdminMembersPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const [statusBusy, setStatusBusy] = useState(false)
 
   const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
@@ -90,8 +88,6 @@ export default function AdminMembersPage() {
           <option value="all">Tüm durumlar</option>
           <option value="active">Aktif</option>
           <option value="expiring">Sona Eriyor</option>
-          <option value="paused">Donduruldu</option>
-          <option value="cancelled">İptal</option>
         </select>
       </div>
 
@@ -174,26 +170,6 @@ export default function AdminMembersPage() {
                 {STATUS_LABELS[selected.membershipStatus] || selected.membershipStatus}
               </span>
             </div>
-
-            <AdminMembershipStatusPanel
-              key={`${selected.id}-${selected.membershipStatus}-${selected.membershipStatusChangedAt || ''}`}
-              member={selected}
-              busy={statusBusy}
-              onSubmit={async ({ status, note, pauseUntil }) => {
-                setStatusBusy(true)
-                try {
-                  const r = await adminSetMembershipStatus(selected.id, { status, note, pauseUntil })
-                  if (!r?.success) {
-                    toast(r?.error || 'Durum güncellenemedi', 'error')
-                    return
-                  }
-                  const labels = { active: 'Aktifleştirildi', paused: 'Donduruldu', cancelled: 'İptal edildi' }
-                  toast(labels[status] || 'Durum güncellendi', 'success')
-                } finally {
-                  setStatusBusy(false)
-                }
-              }}
-            />
 
             <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
               <InfoRow label="E-posta" value={selected.email} />

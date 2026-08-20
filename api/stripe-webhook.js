@@ -16,7 +16,11 @@ import {
   migrateLegacyToPackages,
   sanitizeStaffForPackage,
   syncMemberPackages,
-  expirePackagesByProvider,
+  expirePackageBySubscriptionId,
+  applyStripeSubscriptionState,
+  extendPackageForSubscription,
+  findPackageBySubscriptionId,
+  unixSecondsToIsoDate,
 } from './_memberPackages.js'
 import { createMemberFromPendingRegistration } from './_createMemberFromPending.js'
 import {
@@ -75,15 +79,18 @@ async function findMemberForStripeEvent(admin, { memberId, subscriptionId, custo
   return null
 }
 
-function metaFromMemberRow(row) {
+function metaFromMemberRow(row, subscriptionId = null) {
   if (!row) return {}
   const data = row.data || {}
   const pkgs = Array.isArray(data.activePackages) ? data.activePackages : []
-  const stripePkg = pkgs.find((p) => (
-    p?.status === 'active'
-    && (p.provider === 'stripe' || !p.provider)
-    && p.planId
-  ))
+  const stripePkg = (subscriptionId
+    ? pkgs.find((p) => String(p?.stripeSubscriptionId || '') === String(subscriptionId))
+    : null)
+    || pkgs.find((p) => (
+      p?.status === 'active'
+      && (p.provider === 'stripe' || !p.provider)
+      && p.planId
+    ))
   const planId = stripePkg?.planId
     || (row.membership && row.membership !== 'free' ? row.membership : null)
   if (!planId) return { memberId: row.id, memberName: row.name || '', email: row.email || '' }
@@ -187,7 +194,27 @@ function memberDataPayload(member, data) {
     assignedDoctorId: _doc,
     ...rest
   } = member
-  return { ...data, ...rest }
+  const newData = { ...data, ...rest }
+  if (!newData.stripeSubscriptionId) delete newData.stripeSubscriptionId
+  return newData
+}
+
+async function persistMemberDraft(admin, row, draft, { stripeCustomerId = null } = {}) {
+  const newData = memberDataPayload(draft, { ...(row.data || {}) })
+  const { error } = await admin
+    .from('members')
+    .update({
+      membership: draft.membership || 'free',
+      membership_status: draft.membershipStatus || 'active',
+      assigned_coach_id: draft.assignedCoachId || null,
+      assigned_dietitian_id: draft.assignedDietitianId || null,
+      assigned_doctor_id: draft.assignedDoctorId || null,
+      data: newData,
+      updated_at: nowISO(),
+      ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
+    })
+    .eq('id', row.id)
+  return error
 }
 
 async function activateMembership(admin, meta, session) {
@@ -234,7 +261,12 @@ async function activateMembership(admin, meta, session) {
     migrateLegacyToPackages(member),
     planId,
     packageConfig,
-    { price: amount, startedAt: started, provider: 'stripe' },
+    {
+      price: amount,
+      startedAt: started,
+      provider: 'stripe',
+      ...(subscriptionId ? { stripeSubscriptionId: subscriptionId } : {}),
+    },
   )
 
   let draft = syncMemberPackages({
@@ -325,52 +357,35 @@ async function renewMembership(admin, meta, invoice, subscription) {
   if (oneTime) return { ok: true, skipped: true }
 
   const durationMonths = Number(meta.durationMonths) || 1
-  const data = row.data || {}
   const member = memberFromRow(row)
   const packageConfig = await resolveDefaultPackage(admin, planId, durationMonths)
   const started = today()
-  const baseExpiry = member.premiumExpiresAt && member.premiumExpiresAt > started
-    ? member.premiumExpiresAt
+  const subscriptionId = subscription?.id || null
+  const packages = migrateLegacyToPackages(member)
+  const target = subscriptionId
+    ? findPackageBySubscriptionId(packages, subscriptionId, member)
+    : null
+  const baseExpiry = target?.expiresAt && target.expiresAt > started
+    ? target.expiresAt
     : started
-  const newExpiry = computeExpiry(baseExpiry, durationMonths)
+  const stripePeriodEnd = unixSecondsToIsoDate(subscription?.current_period_end)
+  const newExpiry = stripePeriodEnd || computeExpiry(baseExpiry, durationMonths)
 
-  let activePackages = resolvePackagePurchase(
-    migrateLegacyToPackages(member),
+  let draft = extendPackageForSubscription(member, subscriptionId, {
+    expiresAt: newExpiry,
+    price: amount,
     planId,
     packageConfig,
-    { price: amount, startedAt: started, expiresAt: newExpiry, provider: 'stripe' },
-  )
-
-  let draft = syncMemberPackages({
-    ...member,
-    activePackages,
-    premiumStartedAt: member.premiumStartedAt || started,
-    premiumExpiresAt: newExpiry,
-    lastActiveAt: started,
-    stripeSubscriptionId: subscription?.id
-      || member.stripeSubscriptionId
-      || data.stripeSubscriptionId
-      || null,
+    startedAt: started,
   })
 
-  draft = sanitizeStaffForPackage(draft.packageConfig, draft)
-  const newData = memberDataPayload(draft, data)
-
+  draft = sanitizeStaffForPackage(draft.packageConfig, {
+    ...draft,
+    premiumStartedAt: member.premiumStartedAt || started,
+    lastActiveAt: started,
+  })
   const customerId = stripeObjectId(invoice.customer)
-
-  const { error: updErr } = await admin
-    .from('members')
-    .update({
-      membership: draft.membership,
-      membership_status: draft.membershipStatus || 'active',
-      assigned_coach_id: draft.assignedCoachId || null,
-      assigned_dietitian_id: draft.assignedDietitianId || null,
-      assigned_doctor_id: draft.assignedDoctorId || null,
-      ...(customerId ? { stripe_customer_id: customerId } : {}),
-      data: newData,
-      updated_at: nowISO(),
-    })
-    .eq('id', memberId)
+  const updErr = await persistMemberDraft(admin, row, draft, { stripeCustomerId: customerId })
   if (updErr) return { ok: false, error: updErr.message }
 
   await admin.from('payments').insert({
@@ -525,7 +540,7 @@ export default async function handler(req, res) {
             subscriptionId: stripeSubId,
             customerId: stripeObjectId(invoice.customer),
           })
-          meta = { ...metaFromMemberRow(row), ...meta }
+          meta = { ...metaFromMemberRow(row, stripeSubId), ...meta }
         }
         if (!isYeniFormCheckoutMetadata(meta)) {
           if (!subscription) {
@@ -548,6 +563,7 @@ export default async function handler(req, res) {
         }
         break
       }
+      case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
         const admin = getSupabaseAdmin()
@@ -560,8 +576,6 @@ export default async function handler(req, res) {
         if (!row) break
 
         const data = { ...(row.data || {}) }
-        const clearedThisSub = data.stripeSubscriptionId === subscription.id
-        // Legacy paket eşlemesi için expire öncesi id’yi koru
         const before = {
           id: row.id,
           name: row.name,
@@ -574,33 +588,11 @@ export default async function handler(req, res) {
           ...data,
           stripeSubscriptionId: data.stripeSubscriptionId || subscription.id,
         }
-        // Yalnız Stripe paketlerini expire et — aktif RC varsa üye free olmaz
-        const after = expirePackagesByProvider(before, 'stripe')
-        const {
-          id: _id,
-          name: _name,
-          email: _email,
-          membership: _m,
-          membershipStatus: _ms,
-          assignedCoachId: _c,
-          assignedDietitianId: _d,
-          assignedDoctorId: _doc,
-          ...rest
-        } = after
-        const newData = { ...data, ...rest }
-        if (clearedThisSub) delete newData.stripeSubscriptionId
-        await admin
-          .from('members')
-          .update({
-            membership: after.membership || 'free',
-            membership_status: after.membershipStatus || 'active',
-            assigned_coach_id: after.assignedCoachId || null,
-            assigned_dietitian_id: after.assignedDietitianId || null,
-            assigned_doctor_id: after.assignedDoctorId || null,
-            data: newData,
-            updated_at: nowISO(),
-          })
-          .eq('id', row.id)
+        const after = event.type === 'customer.subscription.deleted'
+          ? expirePackageBySubscriptionId(before, subscription.id)
+          : applyStripeSubscriptionState(before, subscription)
+        const updErr = await persistMemberDraft(admin, row, after)
+        if (updErr) return res.status(500).json({ ok: false, error: updErr.message })
         break
       }
       default:

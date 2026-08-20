@@ -1,24 +1,39 @@
-# Stripe webhook — KAPANDI (2026-08-14)
+# Stripe webhook — iptal stacking (2026-08-20)
 
-> **Durum:** Live production endpoint event’leri doğrulandı.  
-> Kod: `api/stripe-webhook.js` (`invoice.paid` → süre uzatma, `customer.subscription.deleted` → subscription id temizliği).  
-> Checkout: `api/stripe-checkout.js` (recurring → `mode: subscription`; doktor → `payment`).  
+> Kod: `api/stripe-webhook.js`  
+> Checkout: `api/stripe-checkout.js`  
+> Portal config: `api/_stripePortal.js`  
 > Basil (2025-03-31+): `invoice.subscription` yok; yenileme `parent.subscription_details.subscription` + metadata snapshot okur.
 
 Endpoint: `https://www.yeniform.com/api/stripe-webhook` (Live, enabled)
 
 ---
 
-## Yapılacaklar (Stripe Dashboard)
+## Events (Live **ve** Test ayrı)
 
-Live ve Test mode’u **ayrı ayrı** kontrol et (ikisinde de webhook varsa ikisine de ekle).
+- [x] `checkout.session.completed`
+- [x] `invoice.paid` (yenileme — eşleşen `stripeSubscriptionId`)
+- [x] `customer.subscription.deleted` (yalnız o abonelik expire; kardeş paketler durur)
+- [ ] **`customer.subscription.updated`** ← **zorunlu** (`cancel_at_period_end`, dönem sonu)
 
-- [x] [Stripe Dashboard](https://dashboard.stripe.com) → **Developers** → **Webhooks**
-- [x] Production endpoint’i aç (ör. `https://www.yeniform.com/api/stripe-webhook`)
-- [x] **Events to send** / Add events — emin ol:
-  - [x] `checkout.session.completed` (zaten olmalı)
-  - [ ] `checkout.session.async_payment_succeeded` (opsiyonel; kart ödemesinde şart değil — eklenmedi)
-  - [x] **`invoice.paid`** ← zorunlu (yenileme)
-  - [x] **`customer.subscription.deleted`** ← zorunlu (iptal temizliği)
-- [x] Signing secret (`whsec_…`) = Vercel **`STRIPE_WEBHOOK_SECRET`** (Production). Mevcut endpoint’e event eklendi; secret değişmedi.
-- [ ] (İsteğe bağlı) Test mode: subscription al → fatura paid → `expiresAt` uzadı mı; Portal iptal → subscription id temizlendi mi
+Signing secret (`whsec_…`) = Vercel **`STRIPE_WEBHOOK_SECRET`**. Event eklemek secret’ı değiştirmez.
+
+## Portal (kod find-or-create)
+
+İsteğe bağlı env (yoksa metadata `yeniform_portal`):
+
+- `STRIPE_PORTAL_CONFIG_MANAGE` — iptal **kapalı**
+- `STRIPE_PORTAL_CONFIG_PERIOD_END` — `at_period_end`, `proration_behavior: none`
+- `STRIPE_PORTAL_CONFIG_IMMEDIATE` — `immediately`, `proration_behavior: none`
+
+İlk iptal/kart isteği config yoksa Stripe’da oluşturur (secret key yetkisi gerekir).
+
+## Stripe müşteri e-postaları
+
+Dashboard → Settings → Customer emails: iptal / dönem sonu şablonları açık tutulabilir. Metin Stripe’ın; ürün kuralları bizim uyarı ekranımızda.
+
+## QA
+
+- [ ] İki abonelik: birini dönem sonunda kapat → diğeri `invoice.paid` ile uzar
+- [ ] Hemen kapat → o paket expire; iade yok
+- [ ] Resume → `cancelAtPeriodEnd` kalkar

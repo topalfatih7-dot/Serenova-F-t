@@ -32,6 +32,8 @@ import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import { getHealthTestLockState } from '../services/healthScoreAnalysis'
 import { buildWeeklyAdherence } from '../utils/memberProgress'
 import { getRemainingDays } from '../services/premiumMembership'
+import { listCancelAtPeriodEndPackages } from '../utils/memberPackages'
+import { MEMBERSHIP_CANCEL_COPY } from '../data/membershipCancelCopy'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -98,6 +100,10 @@ export default function DashboardPage() {
   const showExpiringBanner = Boolean(
     isPaidMembership(membership)
     && (membershipStatus === 'expiring' || (premiumRemainingDays != null && premiumRemainingDays > 0 && premiumRemainingDays <= 7)),
+  )
+  const cancelPendingPackages = useMemo(
+    () => listCancelAtPeriodEndPackages(user),
+    [user],
   )
 
   const showAssignmentPendingBanner = Boolean(
@@ -231,6 +237,35 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-sage-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-sage-800"
           >
             Profil <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {cancelPendingPackages.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3.5">
+          <Clock className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-amber-950">Yenileme kapalı</p>
+            <p className="mt-0.5 text-xs text-amber-900/70">
+              {cancelPendingPackages.map((pkg) => (
+                MEMBERSHIP_CANCEL_COPY.renewalOffBanner(
+                  pkg.currentPeriodEnd || pkg.expiresAt
+                    ? new Date(pkg.currentPeriodEnd || pkg.expiresAt).toLocaleDateString('tr-TR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                    : 'dönem sonu',
+                  getPlanLabel(pkg.planId),
+                )
+              )).join(' ')}
+            </p>
+          </div>
+          <Link
+            to="/profile/payments"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-amber-700"
+          >
+            Ödeme Yönetimi <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       )}

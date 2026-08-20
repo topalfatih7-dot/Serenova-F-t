@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format, startOfMonth } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
-  CreditCard, History, Wallet, TrendingUp, Users,
-  Clock, ArrowDownLeft, Building2, Crown, Loader2, ExternalLink,
+  History, Wallet, TrendingUp, Users,
+  Clock, ArrowDownLeft, Building2, Crown, Loader2,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../../context/AppContext'
@@ -16,7 +16,7 @@ import {
   formatStaffPayoutPeriodLabel,
 } from '../../data/staffPayouts'
 import { getPlanLabel, isPaidMembership } from '../../data/membershipPlans'
-import { startStripePortal } from '../../services/stripePayment'
+import MemberSubscriptionPackages from '../../components/membership/MemberSubscriptionPackages'
 import { supabase } from '../../services/supabaseClient'
 
 function formatTry(amount) {
@@ -68,9 +68,8 @@ function nextFridayLabel() {
 }
 
 function MemberPayments() {
-  const { user, platform } = useApp()
+  const { user, platform, refresh } = useApp()
   const { toast } = useToast()
-  const [portalLoading, setPortalLoading] = useState(false)
 
   const payments = useMemo(() => (
     (platform?.payments || [])
@@ -78,37 +77,9 @@ function MemberPayments() {
       .sort((a, b) => new Date(paymentDate(b) || 0) - new Date(paymentDate(a) || 0))
   ), [platform?.payments, user?.id])
 
-  const openPortal = async () => {
-    setPortalLoading(true)
-    try {
-      const result = await startStripePortal()
-      if (!result.success) toast(result.error || 'Portal açılamadı.', 'error')
-    } finally {
-      setPortalLoading(false)
-    }
-  }
-
   return (
     <div className="space-y-8">
-      <section>
-        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
-          <CreditCard className="h-5 w-5 text-brand-500" /> Ödeme Yöntemi
-        </h2>
-        <div className="rounded-2xl border border-cream-200 bg-white p-6">
-          <p className="text-sm text-cream-800/70">
-            Kart ve fatura bilgilerinizi Stripe Customer Portal üzerinden güvenle yönetebilirsiniz.
-          </p>
-          <button
-            type="button"
-            onClick={openPortal}
-            disabled={portalLoading}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
-          >
-            {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-            Aboneliği / kartı yönet
-          </button>
-        </div>
-      </section>
+      <MemberSubscriptionPackages user={user} onRefresh={refresh} toast={toast} />
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">

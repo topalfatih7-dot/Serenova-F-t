@@ -259,7 +259,7 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
   const provider = KNOWN_PROVIDERS.has(String(meta.provider || '').trim())
     ? String(meta.provider).trim()
     : 'legacy'
-  return {
+  const entry = {
     id: meta.id || `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     planId,
     packageConfig,
@@ -272,6 +272,12 @@ export function createPackageEntry(planId, packageConfig, meta = {}) {
     price: meta.price || 0,
     provider,
   }
+  const sid = String(meta.stripeSubscriptionId || '').trim()
+  if (sid) entry.stripeSubscriptionId = sid
+  if (meta.cancelAtPeriodEnd != null) entry.cancelAtPeriodEnd = Boolean(meta.cancelAtPeriodEnd)
+  const periodEnd = String(meta.currentPeriodEnd || '').trim()
+  if (periodEnd) entry.currentPeriodEnd = periodEnd
+  return entry
 }
 
 export function addMemberPackage(activePackages = [], planId, packageConfig, meta = {}) {
@@ -362,15 +368,154 @@ export function memberHasActivePaidPackages(member) {
   return packages.some((p) => isPackageEntryActive(p))
 }
 
+export function unixSecondsToIsoDate(unix) {
+  const n = Number(unix)
+  if (!Number.isFinite(n) || n <= 0) return null
+  const ms = n > 1e12 ? n : n * 1000
+  const d = new Date(ms)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString().split('T')[0]
+}
+
+export function packageStripeSubscriptionId(pkg) {
+  const sid = String(pkg?.stripeSubscriptionId || '').trim()
+  return sid || null
+}
+
+export function findPackageBySubscriptionId(packages, subscriptionId, member = null) {
+  const sid = String(subscriptionId || '').trim()
+  if (!sid) return null
+  const pkgs = packages || []
+  const exact = pkgs.find((p) => packageStripeSubscriptionId(p) === sid)
+  if (exact) return exact
+  const memberSid = String(member?.stripeSubscriptionId || '').trim()
+  if (memberSid !== sid) return null
+  const unlabeled = pkgs.filter((p) => (
+    isPackageEntryActive(p)
+    && !isOneTimePackage(p)
+    && !packageStripeSubscriptionId(p)
+    && (normalizePackageProvider(p) === 'stripe' || normalizePackageProvider(p) === 'legacy')
+  ))
+  if (unlabeled.length === 1) return unlabeled[0]
+  const stripeRecurring = pkgs.filter((p) => (
+    isPackageEntryActive(p)
+    && !isOneTimePackage(p)
+    && (normalizePackageProvider(p) === 'stripe' || normalizePackageProvider(p) === 'legacy')
+  ))
+  if (stripeRecurring.length === 1) return stripeRecurring[0]
+  return null
+}
+
+export function packageBillingSubscriptionId(pkg, member) {
+  const sid = packageStripeSubscriptionId(pkg)
+  if (sid) return sid
+  if (isOneTimePackage(pkg)) return null
+  const memberSid = String(member?.stripeSubscriptionId || '').trim()
+  if (!memberSid) return null
+  const match = findPackageBySubscriptionId(migrateLegacyToPackages(member), memberSid, member)
+  return match?.id === pkg?.id ? memberSid : null
+}
+
+function clearMemberLevelSubIfMatch(member, subscriptionId) {
+  if (String(member?.stripeSubscriptionId || '').trim() !== String(subscriptionId || '').trim()) {
+    return member
+  }
+  return { ...member, stripeSubscriptionId: null }
+}
+
+export function expirePackageBySubscriptionId(member, subscriptionId) {
+  if (!member) return member
+  const sid = String(subscriptionId || '').trim()
+  if (!sid) return member
+  const packages = migrateLegacyToPackages(member)
+  const target = findPackageBySubscriptionId(packages, sid, member)
+  if (!target) return member
+  const next = packages.map((pkg) => {
+    if (pkg.id !== target.id && packageStripeSubscriptionId(pkg) !== sid) return pkg
+    return { ...pkg, status: 'expired', cancelAtPeriodEnd: false }
+  })
+  return syncMemberPackages(clearMemberLevelSubIfMatch({
+    ...member,
+    activePackages: next,
+  }, sid))
+}
+
+export function applyStripeSubscriptionState(member, subscription = {}) {
+  if (!member) return member
+  const sid = String(subscription.id || '').trim()
+  if (!sid) return member
+  const status = String(subscription.status || '')
+  if (status === 'canceled' || status === 'incomplete_expired') {
+    return expirePackageBySubscriptionId(member, sid)
+  }
+  const packages = migrateLegacyToPackages(member)
+  const target = findPackageBySubscriptionId(packages, sid, member)
+  if (!target) return member
+  const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end)
+  const currentPeriodEnd = unixSecondsToIsoDate(subscription.current_period_end)
+  const next = packages.map((pkg) => {
+    if (pkg.id !== target.id && packageStripeSubscriptionId(pkg) !== sid) return pkg
+    const updated = {
+      ...pkg,
+      stripeSubscriptionId: sid,
+      provider: pkg.provider === 'admin' ? pkg.provider : 'stripe',
+      cancelAtPeriodEnd,
+      status: pkg.status === 'expired' ? 'active' : (pkg.status || 'active'),
+    }
+    if (currentPeriodEnd) {
+      updated.currentPeriodEnd = currentPeriodEnd
+      if (!updated.expiresAt || cancelAtPeriodEnd || currentPeriodEnd > updated.expiresAt) {
+        updated.expiresAt = currentPeriodEnd
+      }
+    }
+    return updated
+  })
+  return syncMemberPackages({
+    ...member,
+    activePackages: next,
+    stripeSubscriptionId: member.stripeSubscriptionId || sid,
+  })
+}
+
+export function listCancelAtPeriodEndPackages(member) {
+  return migrateLegacyToPackages(member).filter((p) => (
+    isPackageEntryActive(p)
+    && !isOneTimePackage(p)
+    && Boolean(p.cancelAtPeriodEnd)
+  ))
+}
+
+export function memberHasActiveRecurringPackages(member) {
+  return migrateLegacyToPackages(member).some((p) => isPackageEntryActive(p) && !isOneTimePackage(p))
+}
+
 export function shouldStackNewPackage(member, planId) {
   if (planId === 'free') return false
   return memberHasActivePaidPackages(member)
 }
 
+function upsertByStripeSubscriptionId(packages, planId, packageConfig, meta, provider) {
+  const sid = String(meta.stripeSubscriptionId || '').trim()
+  if (sid) {
+    const idx = (packages || []).findIndex((p) => String(p?.stripeSubscriptionId || '').trim() === sid)
+    if (idx >= 0) {
+      const next = [...packages]
+      next[idx] = createPackageEntry(planId, packageConfig, {
+        ...meta,
+        provider,
+        id: packages[idx].id,
+      })
+      return next
+    }
+  }
+  return addMemberPackage(packages, planId, packageConfig, { ...meta, provider })
+}
+
 /**
- * Ücretli plan satın alma / değiştirme:
- * - Tek seferlik (doktor) veya addPackage → mevcut paketlere ekler
- * - Abonelik: yalnız aynı provider; diğer provider + one-time korunur
+ * Ücretli plan satın alma:
+ * - Tek seferlik, Stripe veya addPackage → ekler (bağımsız fatura)
+ * - Aynı stripeSubscriptionId → o satır güncellenir
+ * - Admin / RevenueCat: aynı provider aboneliğini değiştirir
  */
 export function resolvePackagePurchase(activePackages = [], planId, packageConfig, meta = {}, options = {}) {
   const { addPackage = false } = options
@@ -379,15 +524,14 @@ export function resolvePackagePurchase(activePackages = [], planId, packageConfi
     ? String(meta.provider).trim()
     : 'legacy'
 
-  if (addPackage || isOneTimePlan(planId) || packageConfig?.billingType === 'one_time') {
-    return addMemberPackage(packages, planId, packageConfig, { ...meta, provider })
+  if (addPackage || isOneTimePlan(planId) || packageConfig?.billingType === 'one_time' || provider === 'stripe') {
+    return upsertByStripeSubscriptionId(packages, planId, packageConfig, meta, provider)
   }
 
   const keep = packages.filter((p) => {
     if (!isPackageEntryActive(p)) return false
     if (isOneTimePackage(p)) return true
     const pProv = normalizePackageProvider(p)
-    if (provider === 'stripe') return pProv !== 'stripe' && pProv !== 'legacy'
     if (provider === 'revenuecat') return pProv !== 'revenuecat'
     return pProv !== provider
   })
