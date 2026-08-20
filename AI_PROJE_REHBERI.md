@@ -21,7 +21,6 @@
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 10. **Paketsiz üye (freemium):** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Dashboard + profil + `/membership` + `/health-test` açık. Süresi bitmiş ücretli → `free` fallback. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 11. **KİLİTLİ — public üye/çevrimiçi sayıları** (`displayPlatformStats.js`): üye <750 → **750+**; ≥750 → gerçek. Çevrimiçi <20 → oturumda **20–25** rastgele; ≥20 → gerçek. Floor’u kaldırma / gerçek sayıya çevirme. Admin paneli gerçek sayıyı gösterir.
-12. **KİLİTLİ — Stripe Dashboard (AÇIK):** Live **ve** Test webhook’a `customer.subscription.updated` ekle. Kod hazır; event yoksa dönem sonu iptal DB’ye düşmez. Secret değişmez. Kullanıcı “çözüldü” demeden kapatma. [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md) · `.cursor/rules/stripe-webhook-ops-reminder.mdc`
 
 ---
 
@@ -45,7 +44,7 @@
 
 **Kaldırıldı (2026-07-28):** AI Basic/Eko program+diyet üretimi · Coaching Engine · `ai-nutrition-tips` fn · Basic/Eko yeni satış. (Staff sağlık analizi 2026-07-29 geri eklendi — program üretimi yok. Ücretsiz kayıt 2026-07-29 yeniden açıldı.)
 
-**Ops açık:** **Stripe Dashboard `customer.subscription.updated` (kilitli hatırlat)** — [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md). Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
+**Ops açık:** Facebook Login: Meta + Supabase Providers ([`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md)). Stripe webhook Live event’leri tamam (2026-08-20, `customer.subscription.updated` dahil — [`docs/OPS_STRIPE_WEBHOOK.md`](docs/OPS_STRIPE_WEBHOOK.md)). GSC tamam. **Web-only** (mobil/Expo bu repoda yok). Denetim → `docs/ROADMAP_DENETIM.md`.
 
 **Mobil:** Bu repo yalnızca web. Native/Expo kod ve handoff docs kaldırıldı (2026-08-02).
 
@@ -187,7 +186,7 @@ Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret
 ## 11d. Delta (2026-08-20)
 
 - **Doktor add-on:** FIFO tüketim (2 alım = 2 seans); Stripe abonelik iptali one-time doktoru düşürmez; tüketince atama+1:1 chat kalır, book API kota 0 reddeder; `rescheduled` video join.
-- **Stripe iptal stacking (kod):** paket başına dönem sonu / hemen kapat; Portal config kodda; admin pause paneli kaldırıldı. **Dashboard’da `customer.subscription.updated` hâlâ açık (kilitli hatırlat).**
+- **Stripe iptal stacking:** paket başına dönem sonu / hemen kapat; Portal config kodda; admin pause paneli kaldırıldı. Dashboard `customer.subscription.updated` **tamam** (2026-08-20).
 - Kadro başvurusu: profil fotoğrafı RPC’de zorunlu.
 
 ## 11c. Delta (2026-08-13)

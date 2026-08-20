@@ -10,7 +10,7 @@ description: >-
 
 ## Locked model
 
-- **Web:** Stripe Checkout — recurring planlar **Subscription** (`mode: subscription`, 1/3/6 ay `interval_count`); `doktor` one-shot `payment`. Webhook: `checkout.session.completed` + `invoice.paid` (yenileme) + `customer.subscription.updated` (dönem sonu iptal) + `customer.subscription.deleted` (hemen kapat / bitiş). Portal: `action: 'create-portal-session'` (`intent` manage/cancel). **Dashboard’da `customer.subscription.updated` işaretlenene kadar kilitli hatırlat** — `.cursor/rules/stripe-webhook-ops-reminder.mdc`.
+- **Web:** Stripe Checkout — recurring planlar **Subscription** (`mode: subscription`, 1/3/6 ay `interval_count`); `doktor` one-shot `payment`. Webhook: `checkout.session.completed` + `invoice.paid` (yenileme) + `customer.subscription.updated` (dönem sonu iptal) + `customer.subscription.deleted` (hemen kapat / bitiş). Portal: `action: 'create-portal-session'` (`intent` manage/cancel).
 - **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, `data.stripeSubscriptionId`, package/expiry in `members.data`.
 - **Plan catalog (DB):** `public.plans` — marketing + `is_sellable` + `billing_type` + `entitlements` jsonb + `emoji`/`icon`/`color`. Admin CRUD: `/admin/plans`.
 - **Freemium:** Ücretsiz kayıt + site gezintisi. `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Profil + `/membership` + `/health-test` açık. Süre bitmiş ücretli → `free` fallback.

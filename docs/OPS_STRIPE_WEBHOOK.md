@@ -14,7 +14,7 @@ Endpoint: `https://www.yeniform.com/api/stripe-webhook` (Live, enabled)
 - [x] `checkout.session.completed`
 - [x] `invoice.paid` (yenileme — eşleşen `stripeSubscriptionId`)
 - [x] `customer.subscription.deleted` (yalnız o abonelik expire; kardeş paketler durur)
-- [ ] **`customer.subscription.updated`** ← **zorunlu** (`cancel_at_period_end`, dönem sonu)
+- [x] **`customer.subscription.updated`** (`cancel_at_period_end`, dönem sonu) — Dashboard 2026-08-20
 
 Signing secret (`whsec_…`) = Vercel **`STRIPE_WEBHOOK_SECRET`**. Event eklemek secret’ı değiştirmez.
 
