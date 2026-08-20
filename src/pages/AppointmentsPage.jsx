@@ -10,7 +10,7 @@ import {
   packageIncludesDietitian,
   packageIncludesDoctor,
 } from '../data/membershipPlans'
-import { doctorLimitIsOneTime } from '../utils/memberPackages'
+import { doctorBookingLimit, doctorLimitIsOneTime } from '../utils/memberPackages'
 
 const TABS = [
   {
@@ -48,6 +48,7 @@ const TABS = [
 export default function AppointmentsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const {
+    user,
     coachSessions,
     dietitianSessions,
     doctorSessions,
@@ -59,6 +60,9 @@ export default function AppointmentsPage() {
   const doctorLimit = doctorIsOneTime
     ? (Number(packageConfig?.doctorSessionsTotal) || 0)
     : (Number(packageConfig?.doctorMeetingsPerMonth) || 0)
+  const doctorCanBook = packageIncludesDoctor(packageConfig) && doctorBookingLimit(packageConfig, user) > 0
+
+  const leftoverDoctor = Boolean(user?.assignedDoctorId) || (doctorSessions || []).length > 0
 
   const activeTab = useMemo(() => {
     const tab = searchParams.get('tab')
@@ -69,7 +73,7 @@ export default function AppointmentsPage() {
     setSearchParams({ tab: id }, { replace: true })
   }
 
-  if (isUnpaidMember) {
+  if (isUnpaidMember && !leftoverDoctor) {
     return (
       <div className="space-y-5">
         <UnpaidMemberGate
@@ -151,7 +155,7 @@ export default function AppointmentsPage() {
           icon={Stethoscope}
           accent="teal"
           sessions={doctorSessions}
-          canBook={packageIncludesDoctor(packageConfig)}
+          canBook={doctorCanBook}
           monthlyLimit={doctorLimit}
           limitScope={doctorIsOneTime ? 'all' : 'month'}
           lockedTitle="Doktor randevuları paketinizde yok"

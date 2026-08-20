@@ -302,6 +302,11 @@ async function handleStaffApplication(req, res, body) {
     return res.status(400).json({ ok: false, error: 'Geçersiz başvuru verisi' })
   }
 
+  const photo = typeof data.photo === 'string' ? data.photo.trim() : ''
+  if (!photo || photo.startsWith('data:') || !/^https?:\/\//i.test(photo)) {
+    return res.status(400).json({ ok: false, error: 'Profil fotoğrafı gerekli' })
+  }
+
   const guard = await guardBotAndRate(req, {
     prefix: 'form-staff',
     limit: 3,

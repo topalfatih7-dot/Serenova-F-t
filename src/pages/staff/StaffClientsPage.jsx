@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, Users, Activity, Target, CalendarClock,
@@ -9,24 +9,27 @@ import Modal from '../../components/ui/Modal'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
 import { getPlanLabel } from '../../data/membershipPlans'
 import { getStaffClients } from '../../utils/chatAccess'
-import { getStaffAppointments } from './staffAppointments'
+import { getStaffAppointments, getStaffPendingAppointments, isPendingApprovalExpired } from './staffAppointments'
 import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import {
   isCoachRole,
   isDietitianRole,
+  isDoctorRole,
   sessionTypeForRole,
   staffRoleMeta,
 } from '../../utils/staffRoles'
 
-function ClientInfo({ member, role }) {
+function ClientInfo({ member, role, respondingId, onRespond }) {
   const isCoach = isCoachRole(role)
   const sessionType = sessionTypeForRole(role)
   const bmi = calculateBMI(member.weight, member.height)
   const cat = bmiCategory(bmi)
   const appts = getStaffAppointments([member], role)
+  const pending = getStaffPendingAppointments([member], role)
 
   return (
     <div className="space-y-5">
@@ -77,7 +80,7 @@ function ClientInfo({ member, role }) {
         showLocation
         compact
         showHealthAnalysis={false}
-        showStaffBrief={isCoachRole(role) || isDietitianRole(role)}
+        showStaffBrief
       />
 
       <Link
@@ -91,6 +94,36 @@ function ClientInfo({ member, role }) {
         <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><CalendarRange className="h-4 w-4 text-brand-500" /> Antrenman Müsaitliği</p>
         <AvailabilityView value={member.availability} emptyText="Danışan henüz antrenman günü belirtmemiş." />
       </div>
+
+      {pending.length > 0 && (
+        <div>
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><CalendarClock className="h-4 w-4 text-amber-600" /> Onay bekleyen talepler</p>
+          <div className="space-y-2.5">
+            {pending.map((a) => {
+              const overdue = isPendingApprovalExpired(a, sessionType)
+              return (
+                <StaffAppointmentRow
+                  key={`pending-${a.id}`}
+                  memberName={member.name}
+                  subtitle={overdue
+                    ? `${a.title || 'Randevu talebi'} · süresi geçti`
+                    : `${a.title || 'Randevu talebi'} · onay bekliyor`}
+                  dateISO={a.date}
+                  session={a}
+                  sessionType={sessionType}
+                  isCoach={isCoach}
+                  accentRole={role}
+                  pending
+                  overdue={overdue}
+                  responding={respondingId === a.id}
+                  onApprove={overdue ? undefined : (s) => onRespond?.(s, 'approve')}
+                  onReject={(s) => onRespond?.(s, 'reject')}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-cream-800/80"><CalendarClock className="h-4 w-4 text-brand-500" /> Yaklaşan Randevular</p>
@@ -132,13 +165,17 @@ function Chips({ values, map }) {
 
 export default function StaffClientsPage() {
   const navigate = useNavigate()
-  const { staffUser, platform } = useApp()
+  const { staffUser, platform, respondSession } = useApp()
+  const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [infoClient, setInfoClient] = useState(null)
+  const [respondingId, setRespondingId] = useState(null)
   const role = staffUser.role
   const isCoach = isCoachRole(role)
   const isDietitian = isDietitianRole(role)
+  const isDoctor = isDoctorRole(role)
   const RoleIcon = staffRoleMeta(role).icon
+  const sessionType = sessionTypeForRole(role)
 
   const clients = useMemo(() => getStaffClients(platform.members, staffUser.role, staffUser.id), [platform.members, staffUser.role, staffUser.id])
   const filtered = clients.filter((m) =>
@@ -155,11 +192,31 @@ export default function StaffClientsPage() {
     }
   }
 
+  const handleRespond = useCallback(async (session, decision) => {
+    if (!session?.id || !session.memberId) return
+    setRespondingId(session.id)
+    try {
+      const r = await respondSession({
+        memberId: session.memberId,
+        sessionId: session.id,
+        sessionType,
+        decision,
+      })
+      if (r?.success === false) {
+        toast(r.error || 'İşlem başarısız.', 'error')
+        return
+      }
+      toast(decision === 'approve' ? 'Randevu onaylandı' : 'Talep reddedildi', decision === 'approve' ? 'success' : 'info')
+    } finally {
+      setRespondingId(null)
+    }
+  }, [respondSession, sessionType, toast])
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Danışanlarım</h1>
-        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · bilgileri görüntüleyin veya program oluşturun</p>
+        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · {isDoctor ? 'bilgileri ve randevu taleplerini görüntüleyin' : 'bilgileri görüntüleyin veya program oluşturun'}</p>
       </div>
 
       <div className="relative">
@@ -226,18 +283,15 @@ export default function StaffClientsPage() {
                   >
                     <HeartPulse className="h-3.5 w-3.5" /> Sağlık Profili
                   </Link>
+                  {(isCoach || isDietitian) && (
                   <button
                     type="button"
                     onClick={() => openProgramFlow(m)}
-                    disabled={!isCoach && !isDietitian}
-                    className={`col-span-2 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition ${
-                      isCoach || isDietitian
-                        ? 'bg-brand-500 text-white hover:bg-brand-600'
-                        : 'cursor-not-allowed border border-cream-200 bg-cream-50 text-cream-800/40'
-                    }`}
+                    className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl bg-brand-500 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                   >
-                    <FileText className="h-3.5 w-3.5" /> {isCoach ? 'Program Oluştur' : isDietitian ? 'Liste Oluştur' : 'Randevu'}
+                    <FileText className="h-3.5 w-3.5" /> {isCoach ? 'Program Oluştur' : 'Liste Oluştur'}
                   </button>
+                  )}
                 </div>
               </div>
             )
@@ -246,7 +300,14 @@ export default function StaffClientsPage() {
       )}
 
       <Modal open={!!infoClient} onClose={() => setInfoClient(null)} title={infoClient?.name} size="lg">
-        {infoClient && <ClientInfo member={infoClient} role={role} />}
+        {infoClient && (
+          <ClientInfo
+            member={clients.find((c) => c.id === infoClient.id) || infoClient}
+            role={role}
+            respondingId={respondingId}
+            onRespond={handleRespond}
+          />
+        )}
       </Modal>
     </div>
   )

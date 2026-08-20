@@ -6,6 +6,7 @@ import {
   normalizeStaffRole,
   sessionsKeyForRole,
 } from '../utils/staffRoles'
+import { VIDEO_ACTIVE_STATUSES } from '../utils/sessionCancelRules'
 
 export function getSessionTiming(session, now = new Date(), sessionType = 'coach') {
   const type = normalizeSessionType(sessionType)
@@ -42,7 +43,7 @@ export function getSessionTiming(session, now = new Date(), sessionType = 'coach
 /** Görüşme odası sayfasına erişilebilir mi? (planlı / iptal onayı bekleyen) */
 export function canAccessCallRoom(session, now = new Date(), sessionType = 'coach') {
   const st = session?.status || 'scheduled'
-  if (!session || !['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(st)) {
+  if (!session || !VIDEO_ACTIVE_STATUSES.includes(st)) {
     return { ok: false, reason: 'Bu randevu aktif değil veya iptal edilmiş.' }
   }
   const start = new Date(session.date)

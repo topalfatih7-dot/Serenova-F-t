@@ -2,6 +2,8 @@
  * Personel randevu talebi onay / red.
  * POST /api/auth { action: 'respond-session', memberId, sessionId, sessionType, decision: 'approve'|'reject' }
  */
+import { getSessionJoinTiming } from './_videoJoinWindows.js'
+
 const TZ = 'Europe/Istanbul'
 const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
 
@@ -65,6 +67,13 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
   const session = sessions[idx]
   if ((session.status || 'scheduled') !== 'pending') {
     return { ok: false, error: 'Bu randevu onay bekleyen durumda değil.' }
+  }
+
+  if (dec === 'approve') {
+    const timing = getSessionJoinTiming(session, type)
+    if (timing.isExpired) {
+      return { ok: false, error: 'Görüşme saati geçti. Talebi reddedip üyenin yeniden randevu almasını sağlayın.' }
+    }
   }
 
   const nextStatus = dec === 'approve' ? 'scheduled' : 'rejected'

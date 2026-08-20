@@ -453,11 +453,13 @@ export function ApplicationSummaryModal({ open, onClose, form, submitting, onSub
         </p>
 
         <SummarySection title="Kişisel">
-          {form.photo && (
-            <div className="mb-3 flex justify-center">
+          <div className="mb-3 flex justify-center">
+            {form.photo ? (
               <img src={form.photo} alt={form.name} className="h-24 w-24 rounded-2xl object-cover ring-2 ring-brand-100" />
-            </div>
-          )}
+            ) : (
+              <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">Profil fotoğrafı eksik</p>
+            )}
+          </div>
           <SummaryRow label="Rol" value={staffRoleLabel(form.role)} />
           <SummaryRow label="Ad Soyad" value={form.name} />
           <SummaryRow label="E-posta" value={form.email} />

@@ -3,6 +3,7 @@ import StaffAppointmentRow from './StaffAppointmentRow'
 import { isVideoCallConfigured } from '../../config/videoCall'
 import { getSessionTiming, canJoinSession } from '../../services/videoCallSession'
 import { isCoachRole, sessionTypeForRole, sessionsKeyForRole } from '../../utils/staffRoles'
+import { VIDEO_ACTIVE_STATUSES } from '../../utils/sessionCancelRules'
 
 /**
  * Koç / diyetisyen / doktor paneli için "Görüntülü Görüşme" alanı.
@@ -17,7 +18,7 @@ export default function StaffVideoPanel({ clients, role }) {
   const sessions = []
   ;(clients || []).forEach((m) => {
     ;(m[key] || []).forEach((s) => {
-      if (s.status !== 'scheduled') return
+      if (!VIDEO_ACTIVE_STATUSES.includes(s.status || 'scheduled')) return
       const timing = getSessionTiming(s, now, sessionType)
       if (timing.isExpired) return
       const join = canJoinSession(s, now, sessionType)

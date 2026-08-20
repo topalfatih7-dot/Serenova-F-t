@@ -12,6 +12,7 @@ import {
   getSessionJoinTiming,
   normalizeVideoSessionType,
 } from './_videoJoinWindows.js'
+import { VIDEO_ACTIVE_STATUSES } from '../src/utils/sessionCancelRules.js'
 
 const DAILY_API = 'https://api.daily.co/v1'
 
@@ -196,7 +197,7 @@ export default async function handler(req, res) {
     }
 
     const joinStatus = found.session?.status || 'scheduled'
-    if (!['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(joinStatus)) {
+    if (!VIDEO_ACTIVE_STATUSES.includes(joinStatus)) {
       return res.status(403).json({
         ok: false,
         error: 'Bu randevu aktif değil veya iptal edilmiş.',

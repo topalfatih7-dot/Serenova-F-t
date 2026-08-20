@@ -120,6 +120,7 @@ export default function SessionBooker({
       return (existingSessions || []).filter((x) => (
         SLOT_ACTIVE_STATUSES.includes(x.status || 'scheduled')
         || x.status === 'completed'
+        || x.status === 'no_show'
       )).length
     }
     if (!selectedDay) return 0
@@ -227,7 +228,9 @@ export default function SessionBooker({
 
           {limitReached ? (
             <p className="rounded-xl bg-amber-50 px-3 py-3 text-center text-sm font-medium text-amber-700">
-              Bu ay için randevu hakkınız doldu. Sonraki ay için bir gün seçebilirsiniz.
+              {limitScope === 'all'
+                ? 'Görüşme hakkınız kullanıldı. Yeni randevu için Doktor Paketi alabilirsiniz.'
+                : 'Bu ay için randevu hakkınız doldu. Sonraki ay için bir gün seçebilirsiniz.'}
             </p>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">

@@ -31,7 +31,7 @@ export default function StaffNotificationsPage() {
   const handleNotificationOpen = (n) => {
     markNotificationRead(n.id)
     if (n.type === 'appointment' && n.memberId) {
-      navigate('/staff/clients')
+      navigate('/staff')
       return
     }
     if (n.type === 'chat' && n.memberId) {

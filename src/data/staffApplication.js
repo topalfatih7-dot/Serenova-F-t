@@ -533,8 +533,17 @@ export function applicationToStaffPayload(app, tempPassword) {
   }
 }
 
+/** Storage’a kaydedilmiş profil görseli (data URL kabul edilmez) */
+export function isStoredStaffPhoto(photo) {
+  if (typeof photo !== 'string') return false
+  const value = photo.trim()
+  if (!value || value.startsWith('data:')) return false
+  return /^https?:\/\//i.test(value) || value.startsWith('/')
+}
+
 function baseErrors(form) {
   const errors = []
+  if (!isStoredStaffPhoto(form.photo)) errors.push('Profil fotoğrafı gerekli')
   if (!form.name?.trim()) errors.push('Ad soyad gerekli')
   if (!form.email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.push('Geçerli e-posta gerekli')
   if (!form.phone?.trim()) errors.push('Telefon gerekli')
@@ -662,9 +671,7 @@ export function validateStaffApplication(form) {
 export function buildStaffApplicationPayload(form) {
   const common = {
     // Base64 data URL gönderme — storage URL beklenir (yükleme submit / PhotoUpload persistUpload ile yapılır)
-    photo: (typeof form.photo === 'string' && form.photo && !form.photo.startsWith('data:'))
-      ? form.photo
-      : null,
+    photo: isStoredStaffPhoto(form.photo) ? form.photo.trim() : null,
     city: form.city || '',
     district: form.district || '',
     gender: form.gender || '',

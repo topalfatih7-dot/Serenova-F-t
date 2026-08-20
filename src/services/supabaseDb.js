@@ -2349,6 +2349,9 @@ export async function submitStaffApplication(form, { turnstileToken = '', formSe
   if (!photoResolved.ok) {
     return { success: false, error: photoResolved.error }
   }
+  if (!photoResolved.photo) {
+    return { success: false, error: 'Profil fotoğrafı gerekli' }
+  }
   const session = photoResolved.formSessionToken || formSessionToken
   const payload = buildStaffApplicationPayload({ ...form, photo: photoResolved.photo })
 

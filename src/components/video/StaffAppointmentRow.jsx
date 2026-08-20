@@ -26,6 +26,7 @@ export default function StaffAppointmentRow({
   showJoin = true,
   pending = false,
   cancelPending = false,
+  overdue = false,
   onApprove,
   onReject,
   onCancel,
@@ -47,7 +48,9 @@ export default function StaffAppointmentRow({
       className={`rounded-xl border px-3 py-3 sm:px-4 ${
         live
           ? 'border-red-200 bg-white shadow-sm ring-1 ring-red-100'
-          : cancelPending
+          : overdue
+            ? 'border-red-200 bg-red-50/40'
+            : cancelPending
             ? 'border-orange-200 bg-orange-50/40'
             : 'border-cream-200 bg-white/90'
       }`}
@@ -85,14 +88,16 @@ export default function StaffAppointmentRow({
 
       {(pending || cancelPending) && (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={responding}
-            onClick={() => onApprove?.(session)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sage-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sage-700 disabled:opacity-60"
-          >
-            <Check className="h-3.5 w-3.5" /> Onayla
-          </button>
+          {pending && overdue ? null : (
+            <button
+              type="button"
+              disabled={responding}
+              onClick={() => onApprove?.(session)}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sage-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sage-700 disabled:opacity-60"
+            >
+              <Check className="h-3.5 w-3.5" /> Onayla
+            </button>
+          )}
           <button
             type="button"
             disabled={responding}

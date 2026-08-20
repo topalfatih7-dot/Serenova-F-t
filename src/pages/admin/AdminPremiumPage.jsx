@@ -42,6 +42,12 @@ function activePackagesOf(member) {
   return migrateLegacyToPackages(member).filter((p) => isPackageEntryActive(p))
 }
 
+function memberShowsDoctorStaff(member) {
+  return packageIncludesDoctor(member?.packageConfig)
+    || Boolean(member?.assignedDoctorId)
+    || migrateLegacyToPackages(member).some((p) => isOneTimePlan(p.planId))
+}
+
 function PlanChip({ planId, expiresAt, oneTime, onRemove, removable, themePlan }) {
   const theme = getPlanTheme(themePlan || planId)
   return (
@@ -71,7 +77,7 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
   const isFree = !isPaidMembership(member.membership)
   const showCoach = packageIncludesCoach(member.packageConfig)
   const showDiet = packageIncludesDietitian(member.packageConfig)
-  const showDoctor = packageIncludesDoctor(member.packageConfig)
+  const showDoctor = memberShowsDoctorStaff(member)
   const missingCoach = showCoach && !member.assignedCoachId
   const missingDiet = showDiet && !member.assignedDietitianId
   const missingDoctor = showDoctor && !member.assignedDoctorId
@@ -263,7 +269,10 @@ function EditPremiumModal({
   const selectedOneTime = selectedPlan?.billingType === 'one_time' || membership === 'doktor'
   const showCoach = packageIncludesCoach(previewPackage)
   const showDiet = packageIncludesDietitian(previewPackage)
-  const showDoctor = packageIncludesDoctor(previewPackage) || selectedOneTime
+  const showDoctor = packageIncludesDoctor(previewPackage) || selectedOneTime || memberShowsDoctorStaff(member)
+  const editorPackage = showDoctor && !packageIncludesDoctor(previewPackage)
+    ? { ...previewPackage, doctorSessionsTotal: Number(member.packageConfig?.doctorSessionsTotal) || 1 }
+    : previewPackage
   const assignmentTitle = [showCoach && 'Koç', showDiet && 'Diyetisyen', showDoctor && 'Doktor'].filter(Boolean).join(' & ') || null
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
@@ -289,10 +298,10 @@ function EditPremiumModal({
     const payload = {
       assignedCoachId: showCoach ? (coachId || null) : null,
       assignedDietitianId: showDiet ? (dietitianId || null) : null,
-      assignedDoctorId: showDoctor ? (doctorId || null) : null,
+      assignedDoctorId: showDoctor ? (doctorId || null) : (member.assignedDoctorId ?? null),
       coachSessions: showCoach ? coachSessions.map((s) => ({ ...s, coach: coachName || s.coach })) : [],
       dietitianSessions: showDiet ? dietitianSessions.map((s) => ({ ...s, coach: dietitianName || s.coach })) : [],
-      doctorSessions: showDoctor ? doctorSessions : [],
+      doctorSessions,
     }
 
     if (targetPackageId) payload.targetPackageId = targetPackageId
@@ -576,7 +585,7 @@ function EditPremiumModal({
           <p className="text-sm text-cream-800/50">Randevular yükleniyor…</p>
         ) : (
           <ManualSessionEditor
-            member={{ ...member, membership, packageConfig: previewPackage }}
+            member={{ ...member, membership, packageConfig: editorPackage }}
             coachName={coachName}
             dietitianName={dietitianName}
             doctorName={doctorName}

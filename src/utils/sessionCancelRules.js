@@ -14,6 +14,7 @@ export const SLOT_ACTIVE_STATUSES = Object.freeze([
 /** Video join açık (henüz kesin iptal değil) */
 export const VIDEO_ACTIVE_STATUSES = Object.freeze([
   'scheduled',
+  'rescheduled',
   'cancel_pending',
   'admin_cancel_pending',
 ])

@@ -299,13 +299,13 @@ export function AppProvider({ children }) {
 
   const staffCollabUnreadCount = useMemo(() => {
     const role = normalizeStaffRole(currentStaff?.role)
-    if (role !== 'coach' && role !== 'dietitian') return 0
+    if (role !== 'coach' && role !== 'dietitian' && role !== 'doctor') return 0
     return staffCollabThreads.reduce((sum, t) => sum + staffCollabThreadUnreadCount(t, role), 0)
   }, [staffCollabThreads, currentStaff?.role])
 
   const sortedStaffCollabThreads = useMemo(() => {
     const role = normalizeStaffRole(currentStaff?.role)
-    return sortStaffCollabThreads(staffCollabThreads, role === 'dietitian' ? 'dietitian' : 'coach')
+    return sortStaffCollabThreads(staffCollabThreads, role)
   }, [staffCollabThreads, currentStaff?.role])
 
   const pendingApplicationsCount = useMemo(() => {

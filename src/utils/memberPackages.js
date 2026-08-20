@@ -21,9 +21,14 @@ export function isOneTimePlan(planId) {
   return plan?.billingType === 'one_time' || plan?.period === 'Tek Seferlik'
 }
 
+export function isOneTimePackage(pkg) {
+  if (!pkg) return false
+  return isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time'
+}
+
 export function isPackageEntryActive(pkg, now = today()) {
   if (!pkg || pkg.status !== 'active') return false
-  if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') return true
+  if (isOneTimePackage(pkg)) return true
   if (!pkg.expiresAt) return true
   return pkg.expiresAt >= now
 }
@@ -48,10 +53,126 @@ export function migrateLegacyToPackages(member) {
   }]
 }
 
+/** videoCall.js / _videoJoinWindows.js DEFAULTS.doctor.after ile aynı */
+const DOCTOR_JOIN_AFTER_MINUTES = 30
+
+const DOCTOR_QUOTA_STATUSES = new Set([
+  'pending', 'scheduled', 'rescheduled', 'cancel_pending', 'admin_cancel_pending', 'completed', 'no_show',
+])
+const DOCTOR_CONSUME_STATUSES = new Set(['completed', 'no_show'])
+
+function doctorSessionWindowEnd(session) {
+  const start = new Date(session?.date || session?.start || 0)
+  if (Number.isNaN(start.getTime())) return null
+  const durationMin = Number(session?.duration) || 30
+  return new Date(start.getTime() + (durationMin + DOCTOR_JOIN_AFTER_MINUTES) * 60_000)
+}
+
+/** Onaylı görüşme: katılma penceresi kapandı, completed değil. pending asla no_show olmaz. */
+export function isDoctorApprovedNoShow(session, now = new Date()) {
+  const status = session?.status || 'scheduled'
+  if (status !== 'scheduled' && status !== 'rescheduled') return false
+  const windowEnd = doctorSessionWindowEnd(session)
+  return Boolean(windowEnd && now > windowEnd)
+}
+
+/** Onaysız talep: katılma penceresi kapandı → red (kota iade, paket tüketilmez). */
+export function isDoctorExpiredPending(session, now = new Date()) {
+  const status = session?.status || 'scheduled'
+  if (status !== 'pending') return false
+  const windowEnd = doctorSessionWindowEnd(session)
+  return Boolean(windowEnd && now > windowEnd)
+}
+
+export function applyDoctorSessionNoShows(sessions = [], now = new Date()) {
+  return (Array.isArray(sessions) ? sessions : []).map((s) => {
+    if (!s || typeof s !== 'object') return s
+    if (!isDoctorApprovedNoShow(s, now)) return s
+    if (s.status === 'no_show') return s
+    return {
+      ...s,
+      status: 'no_show',
+      noShowAt: s.noShowAt || now.toISOString(),
+    }
+  })
+}
+
+export function applyDoctorExpiredPendings(sessions = [], now = new Date()) {
+  return (Array.isArray(sessions) ? sessions : []).map((s) => {
+    if (!s || typeof s !== 'object') return s
+    if (!isDoctorExpiredPending(s, now)) return s
+    if (s.status === 'rejected') return s
+    return {
+      ...s,
+      status: 'rejected',
+      rejectedAt: s.rejectedAt || now.toISOString(),
+      rejectedReason: s.rejectedReason || 'expired_pending',
+    }
+  })
+}
+
+function syncDoctorSessionStatuses(sessions = [], now = new Date()) {
+  return applyDoctorExpiredPendings(applyDoctorSessionNoShows(sessions, now), now)
+}
+
+function packagePurchaseSortKey(pkg) {
+  return String(pkg?.purchasedAt || pkg?.startedAt || '')
+}
+
+/** Satın alma sırasına göre one-time doktor paketlerini tüket (2 alım = 2 seans). */
+export function applyFifoOneTimeDoctorConsume(packages, consumedDoctor) {
+  const next = (packages || []).map((pkg) => ({ ...pkg }))
+  const fifo = next
+    .map((pkg, index) => ({ pkg, index }))
+    .filter(({ pkg }) => pkg.status !== 'expired' && isOneTimePackage(pkg))
+    .sort((a, b) => {
+      const ka = packagePurchaseSortKey(a.pkg)
+      const kb = packagePurchaseSortKey(b.pkg)
+      if (ka !== kb) return ka < kb ? -1 : 1
+      return a.index - b.index
+    })
+
+  let remaining = Math.max(0, Number(consumedDoctor) || 0)
+  for (const { pkg, index } of fifo) {
+    const total = Number(pkg.packageConfig?.doctorSessionsTotal) || 1
+    if (remaining >= total) {
+      next[index] = { ...pkg, status: 'consumed' }
+      remaining -= total
+    } else {
+      next[index] = { ...pkg, status: 'active' }
+    }
+  }
+  return next
+}
+
+function consumedOneTimeDoctorTotals(packages = []) {
+  return (packages || []).reduce((sum, pkg) => {
+    if (pkg?.status !== 'consumed' || !isOneTimePackage(pkg)) return sum
+    return sum + (Number(pkg.packageConfig?.doctorSessionsTotal) || 1)
+  }, 0)
+}
+
+function usedDoctorTowardActiveQuota(member, packages = []) {
+  const used = countUsedDoctorSessions(member)
+  return Math.max(0, used - consumedOneTimeDoctorTotals(packages))
+}
+
+/** Yeni randevu kotası — pending dahil yer tutar; red/iptal sayılmaz */
 export function countUsedDoctorSessions(member) {
-  return (member?.doctorSessions || []).filter((s) =>
-    ['pending', 'scheduled', 'rescheduled', 'completed'].includes(s?.status || 'scheduled')
-  ).length
+  return (member?.doctorSessions || []).filter((s) => {
+    const status = s?.status || 'scheduled'
+    if (DOCTOR_QUOTA_STATUSES.has(status)) return true
+    return isDoctorApprovedNoShow(s)
+  }).length
+}
+
+/** Tek seferlik paket tüketimi — yalnız completed + no_show */
+export function countConsumedDoctorSessions(member) {
+  return (member?.doctorSessions || []).filter((s) => {
+    const status = s?.status || 'scheduled'
+    if (DOCTOR_CONSUME_STATUSES.has(status)) return true
+    return isDoctorApprovedNoShow(s)
+  }).length
 }
 
 export function mergePackageConfigs(packages = [], member = null) {
@@ -78,11 +199,15 @@ export function mergePackageConfigs(packages = [], member = null) {
     )
     merged.doctorSessionsTotal = (Number(merged.doctorSessionsTotal) || 0)
       + (Number(c.doctorSessionsTotal) || 0)
-    if (c.billingType === 'one_time') merged.billingType = 'one_time'
     merged.durationMonths = Math.max(merged.durationMonths || 0, getDurationMonths(c))
   })
 
-  const usedDoctor = member ? countUsedDoctorSessions(member) : 0
+  const hasSubscription = active.some((p) => !isOneTimePackage(p))
+  if (!hasSubscription && active.some(isOneTimePackage)) {
+    merged.billingType = 'one_time'
+  }
+
+  const usedDoctor = member ? usedDoctorTowardActiveQuota(member, packages) : 0
   if (merged.doctorSessionsTotal > 0) {
     merged.doctorSessionsRemaining = Math.max(0, merged.doctorSessionsTotal - usedDoctor)
   }
@@ -111,7 +236,7 @@ export function resolvePrimaryMembership(activePackages = [], fallback = 'free')
   const active = activePackages.filter((p) => isPackageEntryActive(p))
   if (!active.length) return fallback === 'free' ? 'free' : fallback
 
-  const subs = active.filter((p) => !isOneTimePlan(p.planId))
+  const subs = active.filter((p) => !isOneTimePackage(p))
   const pool = subs.length ? subs : active
   return pool.reduce((best, p) => {
     const rank = planRank(p.planId)
@@ -163,7 +288,7 @@ export function removeMemberPackage(activePackages = [], packageId) {
 
 /** Abonelik paketleri arasında hedef (veya birincil) entry id */
 export function resolveTargetSubscriptionPackageId(activePackages = [], targetPackageId = null) {
-  const active = (activePackages || []).filter((p) => isPackageEntryActive(p) && !isOneTimePlan(p.planId))
+  const active = (activePackages || []).filter((p) => isPackageEntryActive(p) && !isOneTimePackage(p))
   if (!active.length) return null
   if (targetPackageId && active.some((p) => p.id === targetPackageId)) return targetPackageId
   const primaryId = resolvePrimaryMembership(active, active[0].planId)
@@ -175,7 +300,7 @@ export function resolveTargetSubscriptionPackageId(activePackages = [], targetPa
 export function updatePackageDuration(activePackages = [], packageId, durationMonths) {
   const months = Number(durationMonths) || 1
   return (activePackages || []).map((p) => {
-    if (p.id !== packageId || isOneTimePlan(p.planId)) return p
+    if (p.id !== packageId || isOneTimePackage(p)) return p
     const packageConfig = {
       ...(p.packageConfig || {}),
       durationMonths: months,
@@ -202,7 +327,7 @@ export function patchPackageExpiry(activePackages = [], {
   if (extendDays != null && Number(extendDays) !== 0) {
     const days = Number(extendDays)
     return (activePackages || []).map((p) => {
-      if (isOneTimePlan(p.planId) || !isPackageEntryActive(p)) return p
+      if (isOneTimePackage(p) || !isPackageEntryActive(p)) return p
       if (!extendAll && p.id !== targetId) return p
       const base = p.expiresAt && p.expiresAt >= today()
         ? new Date(p.expiresAt)
@@ -254,13 +379,13 @@ export function resolvePackagePurchase(activePackages = [], planId, packageConfi
     ? String(meta.provider).trim()
     : 'legacy'
 
-  if (addPackage || isOneTimePlan(planId)) {
+  if (addPackage || isOneTimePlan(planId) || packageConfig?.billingType === 'one_time') {
     return addMemberPackage(packages, planId, packageConfig, { ...meta, provider })
   }
 
   const keep = packages.filter((p) => {
     if (!isPackageEntryActive(p)) return false
-    if (isOneTimePlan(p.planId) || p.packageConfig?.billingType === 'one_time') return true
+    if (isOneTimePackage(p)) return true
     const pProv = normalizePackageProvider(p)
     if (provider === 'stripe') return pProv !== 'stripe' && pProv !== 'legacy'
     if (provider === 'revenuecat') return pProv !== 'revenuecat'
@@ -273,29 +398,31 @@ export function resolvePackagePurchase(activePackages = [], planId, packageConfi
 export function syncMemberPackages(member) {
   if (!member) return member
 
-  let packages = migrateLegacyToPackages(member)
+  const syncedMember = {
+    ...member,
+    doctorSessions: syncDoctorSessionStatuses(member.doctorSessions),
+  }
+
+  let packages = migrateLegacyToPackages(syncedMember)
   const now = today()
-  const usedDoctor = countUsedDoctorSessions(member)
+  const consumedDoctor = countConsumedDoctorSessions(syncedMember)
 
   packages = packages.map((pkg) => {
-    // Provider expire / admin iptal: açık expired|consumed korunur (süre gelecekte olsa bile)
+    // Provider expire / admin iptal: açık expired korunur
     if (pkg.status === 'expired') return { ...pkg, status: 'expired' }
+    if (isOneTimePackage(pkg)) return pkg
     if (pkg.status === 'consumed') return { ...pkg, status: 'consumed' }
-    if (isOneTimePlan(pkg.planId) || pkg.packageConfig?.billingType === 'one_time') {
-      const total = Number(pkg.packageConfig?.doctorSessionsTotal) || 1
-      if (usedDoctor >= total) return { ...pkg, status: 'consumed' }
-      return { ...pkg, status: 'active' }
-    }
     if (pkg.expiresAt && pkg.expiresAt < now) return { ...pkg, status: 'expired' }
     return { ...pkg, status: 'active' }
   })
+  packages = applyFifoOneTimeDoctorConsume(packages, consumedDoctor)
 
   const active = packages.filter((p) => isPackageEntryActive(p))
-  const merged = mergePackageConfigs(active, member)
+  const merged = mergePackageConfigs(packages, syncedMember)
   const primary = resolvePrimaryMembership(active, member.membership)
 
   const subExpiries = active
-    .filter((p) => !isOneTimePlan(p.planId) && p.expiresAt)
+    .filter((p) => !isOneTimePackage(p) && p.expiresAt)
     .map((p) => p.expiresAt)
     .sort()
   const latestExpiry = subExpiries.length ? subExpiries[subExpiries.length - 1] : null
@@ -324,7 +451,7 @@ export function syncMemberPackages(member) {
   // Ücretsiz: deneme alanı kullanılmaz; ücretli düşüşte premium tarihleri temizlenir
   const goingFree = membership === 'free' && !active.length
   const synced = {
-    ...member,
+    ...syncedMember,
     activePackages: packages,
     packageConfig: goingFree ? { ...DEFAULT_PACKAGE } : merged,
     membership,
@@ -341,7 +468,7 @@ export function forceMemberToFree(member) {
   if (!member) return member
   const packages = migrateLegacyToPackages(member).map((pkg) => ({
     ...pkg,
-    status: isOneTimePlan(pkg.planId) ? 'consumed' : 'expired',
+    status: 'expired',
   }))
   return syncMemberPackages({
     ...member,
@@ -365,6 +492,7 @@ export function memberExpirySyncNeedsPersist(before, after) {
   if ((before.freeTrialExpiresAt || null) !== (after.freeTrialExpiresAt || null)) return true
   if ((before.premiumExpiresAt || null) !== (after.premiumExpiresAt || null)) return true
   if ((before.premiumStartedAt || null) !== (after.premiumStartedAt || null)) return true
+  if (JSON.stringify(before.activePackages || []) !== JSON.stringify(after.activePackages || [])) return true
   // Gelecek seans iptalleri (paket bitişi) de yazılsın
   for (const key of ['coachSessions', 'dietitianSessions', 'doctorSessions']) {
     if (JSON.stringify(before[key] || []) !== JSON.stringify(after[key] || [])) return true
@@ -375,8 +503,17 @@ export function memberExpirySyncNeedsPersist(before, after) {
 /** Doktor randevu limiti: tek seferlik kalan hak veya aylık limit */
 export function doctorBookingLimit(packageConfig = {}, member = null) {
   const total = Number(packageConfig.doctorSessionsTotal) || 0
-  if (total > 0 && member) {
-    return Math.max(0, total - countUsedDoctorSessions(member))
+  if (total > 0) {
+    if (packageConfig.doctorSessionsRemaining != null) {
+      return Math.max(0, Number(packageConfig.doctorSessionsRemaining) || 0)
+    }
+    if (member) {
+      const packages = Array.isArray(member.activePackages)
+        ? member.activePackages
+        : migrateLegacyToPackages(member)
+      return Math.max(0, total - usedDoctorTowardActiveQuota(member, packages))
+    }
+    return total
   }
   return Number(packageConfig.doctorMeetingsPerMonth) || 0
 }
@@ -393,7 +530,7 @@ export function resolveMemberEntitlements(member) {
   const activePackages = migrateLegacyToPackages(member)
   const active = activePackages.filter((p) => isPackageEntryActive(p))
   const packageConfig = active.length
-    ? mergePackageConfigs(active, member)
+    ? mergePackageConfigs(activePackages, member)
     : (member.packageConfig || { ...DEFAULT_PACKAGE })
   const membership = resolvePrimaryMembership(active, member.membership || 'free')
   return { membership, packageConfig, activePackages: active }

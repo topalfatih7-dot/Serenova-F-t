@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import {
-  FileText, UserRound, Briefcase, BadgeCheck, CircleDot, Clock,
+  FileText, UserRound, Briefcase, BadgeCheck, CircleDot, Clock, Camera,
 } from 'lucide-react'
 
 const ease = [0.22, 1, 0.36, 1]
@@ -12,6 +12,11 @@ const STEPS = [
 ]
 
 const REQUIRED = [
+  {
+    Icon: Camera,
+    title: 'Profil fotoğrafı',
+    detail: 'Net portre görseli — kadro kartlarında görünür',
+  },
   {
     Icon: UserRound,
     title: 'İletişim bilgileri',
@@ -42,8 +47,8 @@ const OPTIONAL = [
   },
   {
     Icon: CircleDot,
-    title: 'Profil & sosyal',
-    detail: 'Fotoğraf, LinkedIn, Instagram, web sitesi',
+    title: 'Sosyal medya',
+    detail: 'LinkedIn, Instagram, web sitesi',
   },
 ]
 

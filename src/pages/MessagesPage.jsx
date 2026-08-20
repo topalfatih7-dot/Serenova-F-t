@@ -59,6 +59,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false)
 
   const contacts = useMemo(() => getMemberChatContacts(user, staff), [user, staff])
+  const doctorFollowUpChat = Boolean(user?.assignedDoctorId)
   const sortedThreads = useMemo(() => sortThreadsForInbox(chatThreads, 'member'), [chatThreads])
   const peerIds = useMemo(() => contacts.map((c) => c.staffId).filter(Boolean), [contacts])
   const { isOnline, lastSeenAt } = useChatPresence(peerIds)
@@ -92,7 +93,7 @@ export default function MessagesPage() {
     navigate(`/messages/${role}`)
   }, [navigate, sortedThreads])
 
-  if (isUnpaidMember) {
+  if (isUnpaidMember && !doctorFollowUpChat) {
     return (
       <PanelPageShell>
         <PanelPageHeader title="Mesajlar" subtitle="Uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" image={PANEL_IMAGES.messages} />

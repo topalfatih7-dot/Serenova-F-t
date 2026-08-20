@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
+import { normalizeStaffRole } from '../../utils/staffRoles'
 
 export default function StaffProgramsPage() {
   const { staffUser, programs } = useApp()
@@ -15,8 +16,12 @@ export default function StaffProgramsPage() {
     [programs, staffUser.id]
   )
 
-  if (staffUser?.role === 'dietitian') {
+  const role = normalizeStaffRole(staffUser?.role)
+  if (role === 'dietitian') {
     return <Navigate to="/staff/lists" replace />
+  }
+  if (role === 'doctor') {
+    return <Navigate to="/staff" replace />
   }
 
   return (

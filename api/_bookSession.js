@@ -2,7 +2,7 @@
  * Self-servis randevu — book_staff_session RPC ile aynı kurallar + doktor tek seferlik limiti.
  * HTTP handler: POST /api/auth { action: 'book-session', ... }
  */
-import { countUsedDoctorSessions, syncMemberPackages } from './_memberPackages.js'
+import { countUsedDoctorSessions, syncMemberPackages, doctorBookingLimit } from './_memberPackages.js'
 
 const TZ = 'Europe/Istanbul'
 const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
@@ -146,22 +146,30 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
   const { limit, oneTime } = bookingLimit(sessionType, pkg)
   const mySessions = memberRow.data?.[key] || []
 
-  if (limit > 0) {
-    if (oneTime) {
+  if (limit <= 0) {
+    return {
+      ok: false,
+      error: sessionType === 'doctor'
+        ? 'Doktor görüşme hakkınız bulunmuyor.'
+        : 'Bu randevu türü paketinizde yok.',
+    }
+  }
+
+  if (oneTime) {
+    const remaining = doctorBookingLimit(pkg, member)
+    if (remaining <= 0) {
       const used = countUsedDoctorSessions(member)
-      if (used >= limit) {
-        return { ok: false, error: `Doktor görüşme hakkınız kullanıldı (${used}/${limit}).` }
-      }
-    } else {
-      const targetMonth = monthKey(startsAt)
-      const used = mySessions.filter((s) => {
-        if (!activeStatuses().has(s?.status || 'scheduled')) return false
-        const d = parseSessionDate(s)
-        return d && monthKey(d) === targetMonth
-      }).length
-      if (used >= limit) {
-        return { ok: false, error: `Bu ay için randevu hakkınız doldu (${used}/${limit}).` }
-      }
+      return { ok: false, error: `Doktor görüşme hakkınız kullanıldı (${used}/${limit}).` }
+    }
+  } else {
+    const targetMonth = monthKey(startsAt)
+    const used = mySessions.filter((s) => {
+      if (!activeStatuses().has(s?.status || 'scheduled')) return false
+      const d = parseSessionDate(s)
+      return d && monthKey(d) === targetMonth
+    }).length
+    if (used >= limit) {
+      return { ok: false, error: `Bu ay için randevu hakkınız doldu (${used}/${limit}).` }
     }
   }
 

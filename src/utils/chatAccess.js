@@ -1,4 +1,4 @@
-import { packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor, isPaidMembership } from '../data/membershipPlans'
+import { packageIncludesCoach, packageIncludesDietitian, isPaidMembership } from '../data/membershipPlans'
 import { publicStaffTitle } from '../data/staffProfile'
 import { normalizeStaffRole } from './staffRoles'
 import { staffCollabMembersSignature } from '../services/staffCollabChatDb'
@@ -42,7 +42,7 @@ export function getMemberChatContacts(member, staffList = []) {
     }
   }
 
-  if (packageIncludesDoctor(pkg) && member.assignedDoctorId) {
+  if (member.assignedDoctorId) {
     const doctor = staffList.find((s) => String(s.id) === String(member.assignedDoctorId))
     if (doctor) {
       contacts.push({
@@ -69,15 +69,13 @@ export function getStaffClients(members, role, staffId) {
       : 'assignedDietitianId'
 
   return (members || []).filter((m) => {
-    if (!isPaidMembership(m.membership)) return false
     const status = m.membershipStatus || 'active'
     if (status !== 'active' && status !== 'expiring') return false
     if (String(m[assignmentKey] || '') !== sid) return false
+    if (normalizedRole === 'doctor') return true
+    if (!isPaidMembership(m.membership)) return false
     if (normalizedRole === 'coach') {
       return packageIncludesCoach(m.packageConfig) || Boolean(m.assignedCoachId)
-    }
-    if (normalizedRole === 'doctor') {
-      return packageIncludesDoctor(m.packageConfig) || Boolean(m.assignedDoctorId)
     }
     return packageIncludesDietitian(m.packageConfig) || Boolean(m.assignedDietitianId)
   })
@@ -128,7 +126,7 @@ export function memberChatHydrationSignature(member) {
   if (packageIncludesDietitian(pkg) && member.assignedDietitianId) {
     parts.push(`diet:${member.assignedDietitianId}`)
   }
-  if (packageIncludesDoctor(pkg) && member.assignedDoctorId) {
+  if (member.assignedDoctorId) {
     parts.push(`doctor:${member.assignedDoctorId}`)
   }
   return parts.join('|')
@@ -167,7 +165,7 @@ export function memberHasChatAccess(member) {
   return Boolean(
     (packageIncludesCoach(pkg) && member?.assignedCoachId)
     || (packageIncludesDietitian(pkg) && member?.assignedDietitianId)
-    || (packageIncludesDoctor(pkg) && member?.assignedDoctorId),
+    || Boolean(member?.assignedDoctorId),
   )
 }
 

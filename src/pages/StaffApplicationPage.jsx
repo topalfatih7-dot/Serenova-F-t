@@ -428,7 +428,7 @@ export default function StaffApplicationPage() {
                 >
               {step === 1 && (
                 <>
-                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
+                  <AccordionSection id="basic" title="Temel Bilgiler" subtitle="Fotoğraf, ad, iletişim ve cinsiyet" icon={User} tone="brand" open={openSection === 'basic'} onToggle={toggleSection}>
                     <div className="space-y-3">
                       {turnstileEnabled && !formSessionToken && (
                         <TurnstileWidget ref={widgetRef} onToken={setTurnstileToken} />
@@ -436,11 +436,10 @@ export default function StaffApplicationPage() {
                       <PhotoUpload
                         value={form.photo}
                         onChange={(photo) => update({ photo })}
-                        label="Profil Fotoğrafı (isteğe bağlı)"
+                        label="Profil Fotoğrafı *"
                         variant="portrait"
-                        optional
                         persistUpload={persistApplicationPhoto}
-                        hint="Fotoğraf başvurunuza kaydedilir; onay sonrası profilinizde görünür."
+                        hint="Net portre fotoğrafı zorunludur; onay sonrası kadro sayfalarında görünür."
                       />
                       <input value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Ad Soyad *" className={inputCls} />
                       <div>

@@ -57,14 +57,15 @@ export default function MemberScheduleView({
       return UPCOMING_STATUSES.includes(st) && new Date(s.date) >= new Date()
     }
     if (filter === 'past') {
-      return ['completed', 'cancelled', 'rejected'].includes(st) || new Date(s.date) < new Date()
+      return ['completed', 'cancelled', 'rejected', 'no_show'].includes(st) || new Date(s.date) < new Date()
     }
     return true
   })
 
   const handleBook = (dateISO, duration) => bookSession(type, dateISO, duration)
 
-  if (!canBook) {
+  const hasSessions = (sessions || []).length > 0
+  if (!canBook && !hasSessions) {
     return (
       <EmptyState
         icon={Icon}
@@ -125,7 +126,7 @@ export default function MemberScheduleView({
         icon={Icon}
         accent={accent}
         image={type === 'coach' ? PANEL_IMAGES.scheduleCoach : type === 'doctor' ? PANEL_IMAGES.scheduleDoctor : PANEL_IMAGES.scheduleDietitian}
-        actions={(
+        actions={canBook ? (
           <button
             type="button"
             onClick={() => setBookOpen(true)}
@@ -136,7 +137,7 @@ export default function MemberScheduleView({
             <CalendarPlus className="h-4 w-4" />
             Randevu Al
           </button>
-        )}
+        ) : null}
       />
 
       <PanelFilterBar
@@ -150,8 +151,10 @@ export default function MemberScheduleView({
         <EmptyState
           icon={Calendar}
           title="Randevu bulunamadı"
-          description="Uzmanınızın müsait olduğu gün ve saatlerden Randevu Al ile yeni görüşme planlayabilirsiniz."
-          action={(
+          description={canBook
+            ? 'Uzmanınızın müsait olduğu gün ve saatlerden Randevu Al ile yeni görüşme planlayabilirsiniz.'
+            : (lockedDescription || 'Bu pakette yeni randevu hakkı kalmadı.')}
+          action={canBook ? (
             <button
               type="button"
               onClick={() => setBookOpen(true)}
@@ -159,6 +162,10 @@ export default function MemberScheduleView({
             >
               Randevu Al
             </button>
+          ) : (
+            <Link to={upgradeHref} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">
+              Planları İncele
+            </Link>
           )}
         />
       ) : (
@@ -176,7 +183,7 @@ export default function MemberScheduleView({
       )}
 
       <SessionBooker
-        open={bookOpen}
+        open={canBook && bookOpen}
         onClose={() => setBookOpen(false)}
         type={type}
         staff={assignedStaff}

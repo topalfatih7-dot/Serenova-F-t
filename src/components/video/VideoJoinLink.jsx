@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Video, Clock } from 'lucide-react'
 import { memberCallPath, staffCallPath, SESSION_TYPE_META } from '../../config/videoCall'
 import { canAccessCallRoom, canJoinSession } from '../../services/videoCallSession'
+import { VIDEO_ACTIVE_STATUSES } from '../../utils/sessionCancelRules'
 
 /**
  * Randevu kartlarında görüşme odası linki — görüşme aktif olmasa da oda açılır.
@@ -14,7 +15,7 @@ export default function VideoJoinLink({
   size = 'md',
   fullWidth = false,
 }) {
-  const joinOk = ['scheduled', 'cancel_pending', 'admin_cancel_pending'].includes(session?.status || 'scheduled')
+  const joinOk = VIDEO_ACTIVE_STATUSES.includes(session?.status || 'scheduled')
   if (!session || !joinOk) return null
 
   const roomAccess = canAccessCallRoom(session, new Date(), sessionType)

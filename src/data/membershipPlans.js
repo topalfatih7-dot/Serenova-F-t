@@ -646,15 +646,10 @@ export function packageIncludesDietitian(packageConfig = {}) {
   return (Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0
 }
 
-/** Pakette doktor görüşmesi var mı (tek seferlik veya aylık) */
+/** Pakette doktor görüşmesi var mı (tek seferlik veya aylık). Remaining kota için kullanılmaz. */
 export function packageIncludesDoctor(packageConfig = {}) {
-  const total = Number(packageConfig.doctorSessionsTotal) || 0
-  if (total > 0) {
-    const remaining = packageConfig.doctorSessionsRemaining
-    if (remaining != null && !Number.isNaN(Number(remaining))) return Number(remaining) > 0
-    return true
-  }
-  return (Number(packageConfig.doctorMeetingsPerMonth) || 0) > 0
+  return (Number(packageConfig.doctorSessionsTotal) || 0) > 0
+    || (Number(packageConfig.doctorMeetingsPerMonth) || 0) > 0
 }
 
 /** Koç görüşme limitini aylık olarak döndürür */
@@ -671,7 +666,7 @@ export function memberNeedsStaffAssignment(member) {
   return needsCoach || needsDiet || needsDoctor
 }
 
-/** Paket kapsamı dışındaki atamaları temizler; seans geçmişini korur (gelecek randevuları iptal eder). */
+/** Paket kapsamı dışındaki koç/diyet atamalarını temizler. Doktor ataması yalnız admin ile kalkar. */
 export function sanitizeStaffForPackage(packageConfig, data = {}) {
   const includeCoach = packageIncludesCoach(packageConfig)
   const includeDiet = packageIncludesDietitian(packageConfig)
@@ -680,21 +675,24 @@ export function sanitizeStaffForPackage(packageConfig, data = {}) {
     ...data,
     assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
     assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
-    assignedDoctorId: includeDoctor ? (data.assignedDoctorId ?? null) : null,
+    assignedDoctorId: data.assignedDoctorId ?? null,
     coachSessions: sanitizeSessionsForRole(data.coachSessions, includeCoach),
     dietitianSessions: sanitizeSessionsForRole(data.dietitianSessions, includeDiet),
     doctorSessions: sanitizeSessionsForRole(data.doctorSessions, includeDoctor),
   }
 }
 
+const KEEP_SESSION_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'no_show'])
+
 /** Rol kaybında geçmiş seanslar kalır; gelecekteki scheduled/rescheduled iptal edilir. */
-export function sanitizeSessionsForRole(sessions = [], keepRole) {
+export function sanitizeSessionsForRole(sessions = [], keepRole, { keepPending = false } = {}) {
   if (keepRole) return Array.isArray(sessions) ? sessions : []
   const now = Date.now()
   return (Array.isArray(sessions) ? sessions : []).map((s) => {
     if (!s || typeof s !== 'object') return s
     const status = s.status || 'scheduled'
-    if (status === 'completed' || status === 'cancelled') return s
+    if (KEEP_SESSION_STATUSES.has(status)) return s
+    if (keepPending && status === 'pending') return s
     const t = new Date(s.date || s.start || 0).getTime()
     if (!t || Number.isNaN(t) || t < now) return s
     return {

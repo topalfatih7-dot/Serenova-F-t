@@ -13,6 +13,7 @@ import {
   getStaffAppointments,
   getStaffPendingAppointments,
   getStaffCancelPendingAppointments,
+  isPendingApprovalExpired,
 } from './staffAppointments'
 import { resolveFirstName } from '../../utils/displayName'
 import {
@@ -22,6 +23,7 @@ import {
   sessionsKeyForRole,
   staffRoleMeta,
   isCoachRole,
+  isDoctorRole,
 } from '../../utils/staffRoles'
 
 export default function StaffOverviewPage() {
@@ -29,6 +31,7 @@ export default function StaffOverviewPage() {
   const { toast } = useToast()
   const role = staffUser.role
   const isCoach = isCoachRole(role)
+  const isDoctor = isDoctorRole(role)
   const RoleIcon = staffRoleMeta(role).icon
   const sessionType = sessionTypeForRole(role)
   const [respondingId, setRespondingId] = useState(null)
@@ -161,22 +164,28 @@ export default function StaffOverviewPage() {
             </span>
           </div>
           <div className="mt-4 space-y-2.5">
-            {pendingAppointments.slice(0, 8).map((a) => (
+            {pendingAppointments.slice(0, 8).map((a) => {
+              const overdue = isPendingApprovalExpired(a, sessionType)
+              return (
               <StaffAppointmentRow
                 key={a.id}
                 memberName={a.memberName}
-                subtitle={`${a.title || 'Randevu talebi'} · onay bekliyor`}
+                subtitle={overdue
+                  ? `${a.title || 'Randevu talebi'} · süresi geçti — yalnız reddedebilirsiniz`
+                  : `${a.title || 'Randevu talebi'} · onay bekliyor`}
                 dateISO={a.date}
                 session={a}
                 sessionType={sessionType}
                 isCoach={isCoach}
                 accentRole={role}
                 pending
+                overdue={overdue}
                 responding={respondingId === a.id}
-                onApprove={(s) => handleRespond(s, 'approve')}
+                onApprove={overdue ? undefined : (s) => handleRespond(s, 'approve')}
                 onReject={(s) => handleRespond(s, 'reject')}
               />
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -253,7 +262,9 @@ export default function StaffOverviewPage() {
         <EmptyState
           icon={Users}
           title="Henüz danışan yok"
-          description="Premium üyeler kayıt oldukça ve paketlerinde destek seçtikçe burada görünecekler."
+          description={isDoctor
+            ? 'Admin sizi bir üyeye atadıktan sonra danışanlarınız burada görünür.'
+            : 'Premium üyeler kayıt oldukça ve paketlerinde destek seçtikçe burada görünecekler.'}
         />
       )}
     </div>
