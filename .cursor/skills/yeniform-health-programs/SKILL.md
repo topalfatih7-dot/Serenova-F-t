@@ -24,7 +24,7 @@ description: >-
   - Serbest metin "İsteğe bağlı" alanları (`DETAILED_OPTIONAL_TEXT_KEYS`) detaylı tetikleyiciden ve akış sayımından muaf
 - Stored in `members.data.healthTest` JSONB; analiz `members.data.healthAnalysis`
 - AI erişim: çekirdek + detaylı analiz **herkese açık**; `force` yeniden analiz yalnızca ücretli
-- **14 günlük kilit (plan fark etmez):** kilit **tüm opsiyonel sorular bitince** başlar (`optionalCompletedAt`; detaylı AI henüz yoksa da). Core analiz tek başına soru kilidi başlatmaz. `fullLock` süresince tüm sorular kapalı; skorlar görünür. Süre dolunca “Testi Yeniden Çöz” → `healthTest: { retakeAt }` (cevaplar + `optionalCompletedAt` sıfırlanır) → baştan çöz → yeni analiz. Personel `force` muaf. API: `423` yalnızca `fullLock` + `stage=detailed` (`api/ai-health-analysis.js`).
+- **14 günlük kilit (plan fark etmez):** kilit **tüm opsiyonel sorular bitince** başlar (`optionalCompletedAt`; detaylı AI henüz yoksa da). Core analiz tek başına soru kilidi başlatmaz. `fullLock` süresince tüm sorular kapalı; skorlar görünür. Süre dolunca “Testi Yeniden Çöz” → `healthTest: { retakeAt }` + `healthAnalysis.analysisStage = 'core'` (cevaplar + `optionalCompletedAt` sıfırlanır; eski detailed stage kilitte kalmaz) → baştan çöz → yeni analiz. `retakeAt` kilit başlangıcından sonraysa UI/API kilit açık sayılır. Personel `force` muaf. API: `423` yalnızca `fullLock` + `stage=detailed` (`api/ai-health-analysis.js`).
 - Çıktı: 8 skor + `staffBrief` (şema aynı)
 - Üye dashboard: `HealthScoreCard` (skorlar; `staffBrief` yok)
 - Personel: skorlar + `staffBrief` (ücretli üyelikte)

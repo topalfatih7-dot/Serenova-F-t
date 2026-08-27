@@ -92,6 +92,7 @@ export default function HealthTestHub({
     healthAnalysis: analysis,
     detailedComplete,
     optionalCompletedAt: healthTest?.optionalCompletedAt || null,
+    retakeAt: healthTest?.retakeAt || null,
   })
   /** Süre dolmuş ama henüz sıfırlanmamış cevaplar → retake butonu */
   const awaitingRetake = Boolean(lockState.canRetake && coreComplete && analysisReady)

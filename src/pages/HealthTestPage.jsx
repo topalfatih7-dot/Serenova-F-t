@@ -45,6 +45,7 @@ export default function HealthTestPage() {
     healthAnalysis: analysis,
     detailedComplete,
     optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
+    retakeAt: user?.healthTest?.retakeAt || null,
   })
   const handleStartCoreAnalysis = useCallback(async () => {
     try {
@@ -66,16 +67,19 @@ export default function HealthTestPage() {
     }
     setRetakeSaving(true)
     try {
-      await updateProfile({
-        healthTest: { retakeAt: new Date().toISOString() },
-      })
+      const retakeAt = new Date().toISOString()
+      const patch = { healthTest: { retakeAt } }
+      if (analysis && !needsInitialHealthAnalysis(analysis)) {
+        patch.healthAnalysis = { ...analysis, analysisStage: 'core' }
+      }
+      await updateProfile(patch)
       toast('Cevaplar sıfırlandı. Genel Sağlık Testini baştan çözebilirsiniz.', 'success')
     } catch (err) {
       toast(err?.message || 'Test sıfırlanamadı.', 'error')
     } finally {
       setRetakeSaving(false)
     }
-  }, [lockState.canRetake, updateProfile, toast])
+  }, [lockState.canRetake, updateProfile, toast, analysis])
 
   const handleConsentSave = useCallback(async ({ healthAck, disclaimer }) => {
     setConsentSaving(true)

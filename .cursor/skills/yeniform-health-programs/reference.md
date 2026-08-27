@@ -11,7 +11,8 @@
 - `src/components/onboarding/HealthTestHub.jsx`, `HealthTestFlow.jsx` (`mode: core|remaining`)
 - `src/pages/CalendarPage.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`
 - `src/utils/programSchedule.js`, `programPackageScope.js`, `healthProfile.js`
-- `src/services/healthScoreAnalysis.js` — skor meta, fingerprint (`stripHealthTestMeta`), `getHealthTestLockState` (kilit = opsiyoneller bitince), AI fetch, fallback
+- `src/services/healthScoreAnalysis.js` — skor meta, fingerprint (`stripHealthTestMeta`), AI fetch, fallback
+- `src/utils/healthTestLock.js` — 14 gün kilit, `getHealthTestLockState`, `retakeAt` yeni döngü
 - `src/hooks/useHealthAnalysisSync.js` — core + detailed iki aşamalı tetik; `optionalCompletedAt` persist
 - `src/hooks/useStaffHealthAnalysisRerun.js` — personel rerun (yalnızca stale / ilk eksik)
 - `src/components/dashboard/HealthScoreCard.jsx` — üye panel genel /100 + 8 boyut
@@ -23,7 +24,7 @@
 
 - Core analiz sonrası opsiyonel kategoriler açık (started / partial kilit yok)
 - `isDetailedHealthTestComplete` → `healthTest.optionalCompletedAt` + 14 gün `fullLock` (+ detailed AI)
-- Retake: `healthTest: { retakeAt }` — meta dahil sıfırlanır
+- Retake: `healthTest: { retakeAt }` + `analysisStage: 'core'` — meta dahil sıfırlanır; `retakeAt` eski detailed kilitini kapatır
 
 ## Visibility
 

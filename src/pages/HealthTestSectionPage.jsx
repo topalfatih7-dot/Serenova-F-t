@@ -52,6 +52,7 @@ export default function HealthTestSectionPage() {
     healthAnalysis: analysis,
     detailedComplete,
     optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
+    retakeAt: user?.healthTest?.retakeAt || null,
   })
   const coreComplete = Boolean(
     user?.gender && isCoreHealthTestComplete(user.healthTest, user.gender),

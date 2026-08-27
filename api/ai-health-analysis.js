@@ -180,9 +180,11 @@ export default async function handler(req, res) {
     // 14 gün fullLock + zaten detailed → yeniden analiz engeli (force muaf; core→detailed serbest)
     if (!force && isCompleteHealthAnalysis(existingAnalysis)) {
       const optionalCompletedAt = dbProfile.healthTest?.optionalCompletedAt || null
+      const retakeAt = dbProfile.healthTest?.retakeAt || null
       const lock = getHealthTestLockState(existingAnalysis, {
         detailedComplete: existingAnalysis.analysisStage === 'detailed' || Boolean(optionalCompletedAt),
         optionalCompletedAt,
+        retakeAt,
       })
       if (lock.fullLock && existingAnalysis.analysisStage === 'detailed') {
         return res.status(423).json({

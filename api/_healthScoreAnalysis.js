@@ -2,6 +2,13 @@
  * Staff sağlık skoru — sunucu tarafı normalize / fingerprint.
  */
 
+import {
+  HEALTH_TEST_RETAKE_DAYS,
+  getHealthTestLockState as getClientHealthTestLockState,
+} from '../src/utils/healthTestLock.js'
+
+export { HEALTH_TEST_RETAKE_DAYS }
+
 export const SCORE_KEYS = [
   'general',
   'nutrition',
@@ -17,35 +24,8 @@ export const STAFF_BRIEF_KEYS = ['general', 'nutrition', 'movement', 'risks', 'a
 
 export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
 
-/** Analiz sonrası sağlık testi yeniden çözme aralığı (gün). Client ile aynı. */
-export const HEALTH_TEST_RETAKE_DAYS = 14
-
 /** healthTest meta — cevap fingerprint'ine dahil edilmez. Client ile aynı. */
 export const HEALTH_TEST_META_KEYS = new Set(['retakeAt', 'optionalCompletedAt'])
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000
-
-/** Analiz zaman damgası (aiAttemptedAt → generatedAt). */
-export function getAnalysisTimestamp(analysis) {
-  const raw = analysis?.aiAttemptedAt || analysis?.generatedAt || null
-  if (!raw) return null
-  const t = new Date(raw).getTime()
-  return Number.isFinite(t) ? t : null
-}
-
-function parseTimestamp(raw) {
-  if (!raw) return null
-  const t = new Date(raw).getTime()
-  return Number.isFinite(t) ? t : null
-}
-
-export function getHealthTestLockTimestamp({ optionalCompletedAt = null, healthAnalysis = null } = {}) {
-  return (
-    parseTimestamp(optionalCompletedAt)
-    || parseTimestamp(healthAnalysis?.questionsLockedAt)
-    || getAnalysisTimestamp(healthAnalysis)
-  )
-}
 
 export function stripHealthTestMeta(healthTest) {
   if (!healthTest || typeof healthTest !== 'object') return {}
@@ -61,51 +41,15 @@ export function stripHealthTestMeta(healthTest) {
  * 14 günlük kilit — yalnızca opsiyoneller bitince / stage=detailed.
  * force / core→detailed yükseltmesi handler tarafında muaf.
  * @param {object|null} analysis
- * @param {{ detailedComplete?: boolean, optionalCompletedAt?: string|null }} [opts]
+ * @param {{ detailedComplete?: boolean, optionalCompletedAt?: string|null, retakeAt?: string|null }} [opts]
  */
 export function getHealthTestLockState(analysis, opts = {}) {
-  const detailedComplete = opts.detailedComplete === true
-  const optionalCompletedAt = opts.optionalCompletedAt || null
-  const stage = analysis?.analysisStage
-  const questionsDone = detailedComplete || stage === 'detailed' || Boolean(optionalCompletedAt)
-
-  if (!questionsDone) {
-    return {
-      locked: false,
-      lockedUntil: null,
-      daysLeft: 0,
-      canRetake: false,
-      fullLock: false,
-    }
-  }
-
-  const ts = getHealthTestLockTimestamp({ optionalCompletedAt, healthAnalysis: analysis })
-  if (!ts) {
-    const lockedUntilMs = Date.now() + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
-    return {
-      locked: true,
-      lockedUntil: new Date(lockedUntilMs),
-      daysLeft: HEALTH_TEST_RETAKE_DAYS,
-      canRetake: false,
-      fullLock: true,
-    }
-  }
-
-  const lockedUntilMs = ts + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
-  const lockedUntil = new Date(lockedUntilMs)
-  const now = Date.now()
-  const locked = now < lockedUntilMs
-  const daysLeft = locked
-    ? Math.max(1, Math.ceil((lockedUntilMs - now) / MS_PER_DAY))
-    : 0
-
-  return {
-    locked,
-    lockedUntil,
-    daysLeft,
-    canRetake: !locked,
-    fullLock: locked,
-  }
+  return getClientHealthTestLockState({
+    healthAnalysis: analysis,
+    detailedComplete: opts.detailedComplete === true,
+    optionalCompletedAt: opts.optionalCompletedAt || null,
+    retakeAt: opts.retakeAt || null,
+  })
 }
 
 export function clampScore(n, fallback = null) {

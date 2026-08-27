@@ -72,8 +72,9 @@ export default function DashboardPage() {
       healthAnalysis,
       detailedComplete: healthDetailedComplete,
       optionalCompletedAt: user?.healthTest?.optionalCompletedAt || null,
+      retakeAt: user?.healthTest?.retakeAt || null,
     }),
-    [healthAnalysis, healthDetailedComplete, user?.healthTest?.optionalCompletedAt],
+    [healthAnalysis, healthDetailedComplete, user?.healthTest?.optionalCompletedAt, user?.healthTest?.retakeAt],
   )
 
   useStripePaymentReturn(refresh)

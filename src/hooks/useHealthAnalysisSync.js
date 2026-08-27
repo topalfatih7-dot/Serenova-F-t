@@ -13,6 +13,7 @@ import {
   needsInitialHealthAnalysis,
   resolveAnalysisStage,
   resolveHealthScoreAnalysis,
+  resolveOptionalCompletedAtTimestamp,
 } from '../services/healthScoreAnalysis'
 import { trackGa4Event } from '../utils/ga4Loader'
 
@@ -253,11 +254,11 @@ export function useHealthAnalysisSync() {
     const ht = user?.healthTest
     if (!ht || typeof ht !== 'object') return
     if (ht.optionalCompletedAt) return
-    // Legacy detailed: mevcut analiz zamanını koru (süre sıfırlanmasın)
-    const fromAnalysis = analysisStageRaw === 'detailed'
-      ? (analysis?.aiAttemptedAt || analysis?.generatedAt || null)
-      : null
-    const optionalCompletedAt = fromAnalysis || new Date().toISOString()
+    const optionalCompletedAt = resolveOptionalCompletedAtTimestamp({
+      existing: ht.optionalCompletedAt,
+      retakeAt: ht.retakeAt || null,
+      healthAnalysis: analysis,
+    })
     updateProfile({
       healthTest: { ...ht, optionalCompletedAt },
     }).catch(() => {})
@@ -265,9 +266,7 @@ export function useHealthAnalysisSync() {
     userId,
     detailedComplete,
     user?.healthTest,
-    analysisStageRaw,
-    analysis?.aiAttemptedAt,
-    analysis?.generatedAt,
+    analysis,
     updateProfile,
   ])
 

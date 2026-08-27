@@ -2,6 +2,15 @@ import { describeHealthTest } from '../data/healthTest'
 import { getApiAuthHeaders } from './apiAuth.js'
 import { formatAiError } from '../utils/aiErrors.js'
 
+export {
+  HEALTH_TEST_RETAKE_DAYS,
+  getAnalysisTimestamp,
+  getHealthTestLockTimestamp,
+  isRetakeAfterLockStart,
+  resolveOptionalCompletedAtTimestamp,
+  getHealthTestLockState,
+} from '../utils/healthTestLock.js'
+
 const AI_FETCH_TIMEOUT_MS = 45_000
 
 /** Staff sağlık analizi şema sürümü (fingerprint ile birlikte). */
@@ -43,41 +52,10 @@ export const MEMBER_BRIEF_KEYS = ['strengths', 'focus', 'planPitch']
 
 export const HEALTH_SCORE_HISTORY_MAX = 24
 
-/** Analiz sonrası sağlık testi yeniden çözme aralığı (gün). */
-export const HEALTH_TEST_RETAKE_DAYS = 14
-
 /** healthTest içindeki meta alanlar — cevap fingerprint'ine dahil edilmez. */
 export const HEALTH_TEST_META_KEYS = new Set(['retakeAt', 'optionalCompletedAt'])
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000
-
-/** Analiz zaman damgası (aiAttemptedAt → generatedAt). */
-export function getAnalysisTimestamp(analysis) {
-  const raw = analysis?.aiAttemptedAt || analysis?.generatedAt || null
-  if (!raw) return null
-  const t = new Date(raw).getTime()
-  return Number.isFinite(t) ? t : null
-}
-
-function parseTimestamp(raw) {
-  if (!raw) return null
-  const t = new Date(raw).getTime()
-  return Number.isFinite(t) ? t : null
-}
-
-/** Kilit sayacı: opsiyonel bitiş → legacy analiz zamanı. */
-export function getHealthTestLockTimestamp({ optionalCompletedAt = null, healthAnalysis = null } = {}) {
-  return (
-    parseTimestamp(optionalCompletedAt)
-    || parseTimestamp(healthAnalysis?.questionsLockedAt)
-    || getAnalysisTimestamp(healthAnalysis)
-  )
-}
-
-/**
- * Cevap fingerprint'i için healthTest meta alanlarını ayıklar.
- * api/_healthScoreAnalysis.js ile aynı.
- */
+/** Cevap fingerprint'i için healthTest meta alanlarını ayıklar. api/_healthScoreAnalysis.js ile aynı. */
 export function stripHealthTestMeta(healthTest) {
   if (!healthTest || typeof healthTest !== 'object') return {}
   const out = {}
@@ -86,61 +64,6 @@ export function stripHealthTestMeta(healthTest) {
     out[key] = value
   }
   return out
-}
-
-/**
- * 14 günlük kilit durumu.
- * - Kilit yalnızca tüm opsiyoneller bitince (detailedComplete) veya stage=detailed iken başlar
- * - fullLock: kilitliyken tüm sorular kapalı
- * - canRetake: süre dolmuş → sıfırdan yeniden çözülebilir
- */
-export function getHealthTestLockState({
-  healthAnalysis,
-  detailedComplete = false,
-  optionalCompletedAt = null,
-} = {}) {
-  const stage = healthAnalysis?.analysisStage
-  const questionsDone = detailedComplete === true || stage === 'detailed'
-
-  if (!questionsDone) {
-    return {
-      locked: false,
-      lockedUntil: null,
-      daysLeft: 0,
-      canRetake: false,
-      fullLock: false,
-    }
-  }
-
-  const ts = getHealthTestLockTimestamp({ optionalCompletedAt, healthAnalysis })
-  if (!ts) {
-    // Persist henüz yazılmadıysa şimdiden kilitle (UI); sync optionalCompletedAt yazar
-    const lockedUntilMs = Date.now() + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
-    return {
-      locked: true,
-      lockedUntil: new Date(lockedUntilMs),
-      daysLeft: HEALTH_TEST_RETAKE_DAYS,
-      canRetake: false,
-      fullLock: true,
-    }
-  }
-
-  const lockedUntilMs = ts + (HEALTH_TEST_RETAKE_DAYS * MS_PER_DAY)
-  const lockedUntil = new Date(lockedUntilMs)
-  const now = Date.now()
-  const locked = now < lockedUntilMs
-  const daysLeft = locked
-    ? Math.max(1, Math.ceil((lockedUntilMs - now) / MS_PER_DAY))
-    : 0
-  const canRetake = !locked
-
-  return {
-    locked,
-    lockedUntil,
-    daysLeft,
-    canRetake,
-    fullLock: locked,
-  }
 }
 
 /** Deterministik fingerprint — api/_healthScoreAnalysis.js ile aynı (djb2). */
