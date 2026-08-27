@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Send, Dumbbell, Apple, Radio, Stethoscope } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import useStickChatToBottom from '../../hooks/useStickChatToBottom'
 
 const SENDER_META = {
   coach: {
@@ -39,15 +40,11 @@ export default function StaffCollabChatView({
   doctorName = '',
 }) {
   const [text, setText] = useState('')
-  const scrollRef = useRef(null)
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length])
+  const { scrollRef, onScroll } = useStickChatToBottom(messages)
 
   const send = () => {
     const value = text.trim()
-    if (!value) return
+    if (!value || disabled) return
     onSend?.(value)
     setText('')
   }
@@ -68,7 +65,7 @@ export default function StaffCollabChatView({
         </div>
       )}
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3">
+      <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3">
         {messages.length === 0 && (
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-cream-200 bg-cream-50/40 p-4 text-center">
             <Dumbbell className="h-10 w-10 text-cream-300" />
@@ -90,7 +87,7 @@ export default function StaffCollabChatView({
           return (
             <motion.div
               key={m.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
             >
@@ -109,7 +106,7 @@ export default function StaffCollabChatView({
         })}
       </div>
 
-      {!readOnly && !disabled && (
+      {!readOnly && (
         <div className="relative z-10 mt-2 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-2 sm:mt-3 sm:pt-3">
           <textarea
             value={text}
@@ -123,7 +120,7 @@ export default function StaffCollabChatView({
             type="button"
             whileTap={{ scale: 0.94 }}
             onClick={send}
-            disabled={!text.trim()}
+            disabled={disabled || !text.trim()}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-sage-600 text-white shadow-md disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl"
             aria-label="Gönder"
           >

@@ -11,6 +11,7 @@ import {
   requestNotificationPermission,
   showBrowserNotification,
 } from '../utils/browserNotifications'
+import { chatAlertDedupeKey, isViewingChatNotification } from '../utils/notificationRead'
 
 const TOAST_BY_TYPE = {
   program: 'success',
@@ -27,6 +28,8 @@ const TOAST_BY_TYPE = {
 const seenByUser = new Map()
 const bootstrappedUsers = new Set()
 const SEEN_ID_CAP = 1000
+const CHAT_ALERT_DEDUPE_MS = 4000
+const recentChatAlertAt = new Map()
 
 function getSeenSet(userId) {
   if (!userId) return new Set()
@@ -46,17 +49,30 @@ function addSeen(set, id) {
 export function clearNotificationAlertState() {
   seenByUser.clear()
   bootstrappedUsers.clear()
+  recentChatAlertAt.clear()
 }
 
 function notificationBody(n) {
   return n.message || n.text || ''
 }
 
-function isViewingChatNotification(n, pathname) {
-  if (n.type !== 'chat') return false
-  if (n.staffRole && pathname === `/messages/${n.staffRole}`) return true
-  if (n.threadId && pathname.startsWith('/messages/')) return true
-  return false
+function takeChatAlertSlot(n) {
+  const key = chatAlertDedupeKey(n)
+  if (!key) return true
+  const now = Date.now()
+  const last = recentChatAlertAt.get(key) || 0
+  if (now - last < CHAT_ALERT_DEDUPE_MS) return false
+  recentChatAlertAt.set(key, now)
+  if (recentChatAlertAt.size <= 200) return true
+  const oldest = recentChatAlertAt.keys().next().value
+  recentChatAlertAt.delete(oldest)
+  return true
+}
+
+function toastText(n) {
+  if (n.type === 'chat') return n.title || 'Yeni mesaj'
+  const body = notificationBody(n)
+  return body ? `${n.title}: ${body}` : n.title
 }
 
 /**
@@ -70,13 +86,15 @@ function isViewingChatNotification(n, pathname) {
  * - Hatırlatıcılar `reminderNotifs` kapalıysa tamamen sessiz.
  */
 export default function useNotificationAlerts({ enabled = true } = {}) {
-  const { notifications, isAuthenticated, settings, user, loading } = useApp()
+  const { notifications, isAuthenticated, settings, user, staffUser, isStaff, loading } = useApp()
   const { toast } = useToast()
   const location = useLocation()
   const permissionRequestedRef = useRef(false)
-  const userId = user?.id
+  const userId = isStaff ? staffUser?.id : user?.id
   // Auth stub {id,name,email} — notifications yok. Üye/personel satırı gelince Array.isArray true.
-  const profileReady = Array.isArray(user?.notifications)
+  const profileReady = isStaff
+    ? Array.isArray(staffUser?.notifications)
+    : Array.isArray(user?.notifications)
 
   const pushEnabled = isPushNotificationEnabled(settings)
   const soundEnabled = isNotificationSoundEnabled(settings)
@@ -121,10 +139,10 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
 
       // Kullanıcı o sohbeti zaten açık görüntülüyorsa uyarıya gerek yok.
       if (isViewingChatNotification(n, location.pathname)) return
+      if (n.type === 'chat' && !takeChatAlertSlot(n)) return
 
-      const body = notificationBody(n)
       const variant = TOAST_BY_TYPE[n.type] || 'info'
-      toast(body ? `${n.title}: ${body}` : n.title, variant, 5000)
+      toast(toastText(n), variant, 5000)
 
       // Chat sesi sohbet hook'unda; burada yalnızca program / randevu vb.
       if (soundEnabled && n.type !== 'chat') {
@@ -132,7 +150,10 @@ export default function useNotificationAlerts({ enabled = true } = {}) {
       }
 
       if (pushEnabled) {
-        showBrowserNotification(n.title, { body, tag: `yf-${n.type}-${n.id}` })
+        const tag = n.type === 'chat' && (n.threadId || n.memberId)
+          ? `yf-chat-${n.threadId || n.memberId}`
+          : `yf-${n.type}-${n.id}`
+        showBrowserNotification(n.title, { body: notificationBody(n), tag })
       }
     })
   }, [

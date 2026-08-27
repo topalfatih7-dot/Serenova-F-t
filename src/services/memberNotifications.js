@@ -55,6 +55,16 @@ export async function pushMemberNotification(memberId, notification, outboundExt
   return { success: true }
 }
 
+/** Atomik okundu — tüm members.data blob'unu ezmez. p_ids yoksa hepsi. */
+export async function markMemberNotificationsRead(ids = null) {
+  if (!supabase) return { success: false, error: 'Supabase yok' }
+  const { data, error } = await supabase.rpc('mark_member_notifications_read', {
+    p_ids: Array.isArray(ids) ? ids.filter(Boolean) : null,
+  })
+  if (error) return { success: false, error: error.message, notifications: null }
+  return { success: true, notifications: Array.isArray(data) ? data : [] }
+}
+
 export async function notifyMemberProgram({ memberId, staffName, title, programType, programId }) {
   const typeLabel = programType === 'nutrition' ? 'Beslenme' : 'Antrenman'
   return pushMemberNotification(memberId, buildMemberNotification({

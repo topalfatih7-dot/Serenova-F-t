@@ -20,6 +20,7 @@ import {
   threadUnreadCount,
   CHAT_CONSENT_KEY,
 } from '../utils/chatAccess'
+import { relatedChatNotificationIds } from '../utils/notificationRead'
 import { staffRoleMeta } from '../utils/staffRoles'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
@@ -49,8 +50,8 @@ export default function MessagesPage() {
   const { toast } = useToast()
   const isWide = useMediaQuery('(min-width: 768px)')
   const {
-    user, myPrograms, staff, chatThreads, chatMessages,
-    loadChatMessages, sendChatMessage, markChatThreadRead, acceptChatConsent,
+    user, myPrograms, staff, chatThreads, chatMessages, notifications,
+    loadChatMessages, sendChatMessage, markChatThreadRead, markNotificationRead, acceptChatConsent,
     isUnpaidMember,
   } = useApp()
 
@@ -72,15 +73,28 @@ export default function MessagesPage() {
 
   const messages = activeThread ? (chatMessages[activeThread.id] || []) : []
   const showThread = Boolean(activeRole && activeContact && (roleParam || isWide))
+  const threadUnread = threadUnreadCount(activeThread, 'member')
 
   useEffect(() => {
     if (!activeThread?.id) return undefined
     loadChatMessages(activeThread.id)
-    markChatThreadRead(activeThread.id, 'member')
-    // Realtime yedeği: açık sohbette mesajları periyodik tazele.
     const poll = setInterval(() => loadChatMessages(activeThread.id), 8000)
     return () => clearInterval(poll)
-  }, [activeThread?.id, loadChatMessages, markChatThreadRead])
+  }, [activeThread?.id, loadChatMessages])
+
+  useEffect(() => {
+    if (!activeThread?.id || threadUnread <= 0) return
+    markChatThreadRead(activeThread.id, 'member')
+  }, [activeThread?.id, threadUnread, markChatThreadRead])
+
+  useEffect(() => {
+    if (!activeThread?.id) return
+    const ids = relatedChatNotificationIds(notifications, {
+      threadId: activeThread.id,
+      staffRole: activeThread.staffRole || activeRole,
+    })
+    ids.forEach((id) => markNotificationRead(id))
+  }, [activeThread?.id, activeThread?.staffRole, activeRole, notifications, markNotificationRead])
 
   const openThread = useCallback((role) => {
     const hasConsent = localStorage.getItem(CHAT_CONSENT_KEY) === '1'
@@ -214,6 +228,7 @@ export default function MessagesPage() {
       </div>
       <ChatThreadBody>
         <ChatThreadView
+          key={activeRole}
           messages={messages}
           perspective="member"
           staffRole={activeRole}

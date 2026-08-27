@@ -35,7 +35,9 @@ import { normalizeStaffRole } from '../utils/staffRoles'
 import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
 import { markIntentionalLogout } from '../utils/authRedirect'
-import { setStaffNotifications as persistStaffNotifications } from '../services/staffNotifications'
+import { markMemberNotificationsRead } from '../services/memberNotifications'
+import { markStaffNotificationsRead } from '../services/staffNotifications'
+import { mergeNotificationLists, markNotificationsReadInList } from '../utils/notificationRead'
 import { HEALTH_TEST_META_KEYS } from '../services/healthScoreAnalysis'
 
 const AuthContext = createContext(null)
@@ -189,6 +191,8 @@ export function AppProvider({ children }) {
   const notificationsDirtyRef = useRef(false)
   const notificationFlushTimerRef = useRef(null)
   const notificationFlushInFlightRef = useRef(null)
+  const pendingNotificationReadIdsRef = useRef(new Set())
+  const pendingNotificationReadAllRef = useRef(false)
 
   useEffect(() => {
     remoteDbRef.current = remoteDb
@@ -590,13 +594,21 @@ export function AppProvider({ children }) {
             prev.members,
           )
           const idx = prev.members.findIndex((m) => m.id === compacted.id)
+          const prevMember = idx >= 0 ? prev.members[idx] : null
+          const nextMember = {
+            ...compacted,
+            notifications: mergeNotificationLists(compacted.notifications, prevMember?.notifications),
+          }
+          if (memberRef.current?.id === nextMember.id) {
+            memberRef.current = { ...memberRef.current, ...nextMember }
+          }
           if (idx >= 0) {
             return {
               ...prev,
-              members: prev.members.map((m, i) => (i === idx ? compacted : m)),
+              members: prev.members.map((m, i) => (i === idx ? nextMember : m)),
             }
           }
-          return { ...prev, members: [compacted, ...prev.members] }
+          return { ...prev, members: [nextMember, ...prev.members] }
         })
       },
       onStaffChange: (staffRow) => {
@@ -604,9 +616,15 @@ export function AppProvider({ children }) {
           if (!prev) return prev
           const idx = prev.staff.findIndex((s) => s.id === staffRow.id)
           if (idx < 0) return { ...prev, staff: [...prev.staff, staffRow] }
+          const prevStaff = prev.staff[idx]
+          const merged = {
+            ...prevStaff,
+            ...staffRow,
+            notifications: mergeNotificationLists(staffRow.notifications, prevStaff?.notifications),
+          }
           return {
             ...prev,
-            staff: prev.staff.map((s, i) => (i === idx ? { ...s, ...staffRow } : s)),
+            staff: prev.staff.map((s, i) => (i === idx ? merged : s)),
           }
         })
       },
@@ -733,10 +751,12 @@ export function AppProvider({ children }) {
       setRemoteDb((prev) => {
         const memberId = memberRef.current?.id
         if (!prev || !memberId) return prev
-        return {
+        const next = {
           ...prev,
           members: prev.members.map((m) => (m.id === memberId ? { ...m, notifications } : m)),
         }
+        remoteDbRef.current = next
+        return next
       })
       return
     }
@@ -761,41 +781,42 @@ export function AppProvider({ children }) {
     }
     if (!notificationsDirtyRef.current) return
 
-    const member = memberRef.current
-    if (member) {
-      const latest = remoteDbRef.current?.members?.find((m) => m.id === member.id)
-      const notifications = latest?.notifications ?? member.notifications ?? []
+    const markAll = pendingNotificationReadAllRef.current
+    const ids = [...pendingNotificationReadIdsRef.current]
+    if (!markAll && ids.length === 0) {
       notificationsDirtyRef.current = false
-
-      const persist = sb.saveMemberPatch(member, { notifications }).catch(() => {
-        notificationsDirtyRef.current = true
-      })
-
-      if (notificationFlushInFlightRef.current) {
-        await notificationFlushInFlightRef.current.catch(() => {})
-      }
-      notificationFlushInFlightRef.current = persist
-      try {
-        await persist
-      } finally {
-        if (notificationFlushInFlightRef.current === persist) {
-          notificationFlushInFlightRef.current = null
-        }
-      }
       return
     }
 
-    const staffUser = getCurrentStaff(remoteDbRef.current || EMPTY_DB)
-    if (!staffUser?.id) return
-    const latest = remoteDbRef.current?.staff?.find((s) => s.id === staffUser.id)
-    const notifications = latest?.notifications ?? staffUser.notifications ?? []
+    pendingNotificationReadAllRef.current = false
+    pendingNotificationReadIdsRef.current = new Set()
     notificationsDirtyRef.current = false
 
-    const persist = persistStaffNotifications(notifications).then((r) => {
-      if (!r.success) notificationsDirtyRef.current = true
-    }).catch(() => {
+    const restorePending = () => {
       notificationsDirtyRef.current = true
-    })
+      if (markAll) pendingNotificationReadAllRef.current = true
+      ids.forEach((id) => pendingNotificationReadIdsRef.current.add(id))
+    }
+
+    const member = memberRef.current
+    const persist = member
+      ? markMemberNotificationsRead(markAll ? null : ids).then(async (r) => {
+        if (r.success) return
+        const m = memberRef.current
+        if (!m) {
+          restorePending()
+          return
+        }
+        try {
+          await sb.saveMemberPatch(m, { notifications: m.notifications || [] })
+        } catch {
+          restorePending()
+        }
+      }).catch(restorePending)
+      : markStaffNotificationsRead(markAll ? null : ids).then(async (r) => {
+        if (r.success) return
+        restorePending()
+      }).catch(restorePending)
 
     if (notificationFlushInFlightRef.current) {
       await notificationFlushInFlightRef.current.catch(() => {})
@@ -1397,12 +1418,13 @@ export function AppProvider({ children }) {
   }, [])
 
   const markNotificationRead = useCallback((id) => {
+    if (!id) return
     const member = memberRef.current
     if (member) {
       const prev = member.notifications || []
       if (prev.find((n) => n.id === id)?.read) return
-      const notifications = prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      applyNotificationsOptimistic(notifications)
+      pendingNotificationReadIdsRef.current.add(id)
+      applyNotificationsOptimistic(markNotificationsReadInList(prev, { ids: [id] }))
       scheduleNotificationFlush()
       return
     }
@@ -1410,8 +1432,8 @@ export function AppProvider({ children }) {
     if (!staffUser?.id) return
     const prev = staffUser.notifications || []
     if (prev.find((n) => n.id === id)?.read) return
-    const notifications = prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    applyNotificationsOptimistic(notifications)
+    pendingNotificationReadIdsRef.current.add(id)
+    applyNotificationsOptimistic(markNotificationsReadInList(prev, { ids: [id] }))
     scheduleNotificationFlush()
   }, [applyNotificationsOptimistic, scheduleNotificationFlush])
 
@@ -1420,8 +1442,8 @@ export function AppProvider({ children }) {
     if (member) {
       const prev = member.notifications || []
       if (prev.length > 0 && prev.every((n) => n.read)) return
-      const notifications = prev.map((n) => ({ ...n, read: true }))
-      applyNotificationsOptimistic(notifications)
+      pendingNotificationReadAllRef.current = true
+      applyNotificationsOptimistic(markNotificationsReadInList(prev, { all: true }))
       flushNotificationReads()
       return
     }
@@ -1429,8 +1451,8 @@ export function AppProvider({ children }) {
     if (!staffUser?.id) return
     const prev = staffUser.notifications || []
     if (prev.length > 0 && prev.every((n) => n.read)) return
-    const notifications = prev.map((n) => ({ ...n, read: true }))
-    applyNotificationsOptimistic(notifications)
+    pendingNotificationReadAllRef.current = true
+    applyNotificationsOptimistic(markNotificationsReadInList(prev, { all: true }))
     flushNotificationReads()
   }, [applyNotificationsOptimistic, flushNotificationReads])
 

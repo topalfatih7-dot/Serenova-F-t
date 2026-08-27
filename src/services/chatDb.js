@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { notifyMemberChatMessage, notifyWhatsAppEvent } from './memberNotifications'
+import { notifyStaffChatMessage } from './staffNotifications'
 import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
 const nowISO = () => new Date().toISOString()
@@ -144,18 +145,6 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
   }
 
   const preview = value.length > 120 ? `${value.slice(0, 119)}…` : value
-  const data = { ...(thread.data || {}) }
-  data.lastPreview = preview
-  if (senderType === 'member') {
-    data.staffUnread = Number(data.staffUnread || 0) + 1
-  } else if (senderType === 'staff') {
-    data.memberUnread = Number(data.memberUnread || 0) + 1
-  }
-
-  await supabase.from('chat_threads').update({
-    last_message_at: nowISO(),
-    data,
-  }).eq('id', thread.id)
 
   if (senderType === 'staff') {
     await notifyMemberChatMessage({
@@ -165,6 +154,15 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
       staffRole: thread.staffRole,
     })
   } else if (senderType === 'member') {
+    if (thread.staffId) {
+      await notifyStaffChatMessage({
+        staffId: thread.staffId,
+        memberId: thread.memberId,
+        memberName: thread.memberName,
+        preview,
+        threadId: thread.id,
+      })
+    }
     void notifyWhatsAppEvent('new_chat_message', {
       threadId: thread.id,
       senderType: 'member',
@@ -174,28 +172,47 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
     })
   }
 
-  return {
-    success: true,
-    message: rowToChatMessage(msgRow),
-    thread: rowToChatThread({
+  const { data: threadRow } = await supabase.from('chat_threads').select('*').eq('id', thread.id).maybeSingle()
+  const mappedThread = threadRow
+    ? rowToChatThread(threadRow)
+    : rowToChatThread({
       ...thread,
       member_id: thread.memberId,
       staff_id: thread.staffId,
       staff_role: thread.staffRole,
       last_message_at: nowISO(),
-      data,
-    }),
+      data: {
+        ...(thread.data || {}),
+        lastPreview: preview,
+      },
+    })
+
+  return {
+    success: true,
+    message: rowToChatMessage(msgRow),
+    thread: mappedThread,
   }
 }
 
 export async function markChatThreadRead(threadId, readerType) {
-  const { data: row } = await supabase.from('chat_threads').select('*').eq('id', threadId).maybeSingle()
-  if (!row) return null
-  const data = { ...(row.data || {}) }
-  if (readerType === 'member') data.memberUnread = 0
-  if (readerType === 'staff') data.staffUnread = 0
-  await supabase.from('chat_threads').update({ data }).eq('id', threadId)
-  return rowToChatThread({ ...row, data })
+  if (!threadId || (readerType !== 'member' && readerType !== 'staff')) return null
+
+  const { data, error } = await supabase.rpc('mark_chat_thread_read', {
+    p_thread_id: threadId,
+    p_reader: readerType,
+  })
+  if (!error && data) {
+    const row = typeof data === 'object' && data.id ? data : null
+    if (row) return rowToChatThread(row)
+  }
+
+  const { data: fallback } = await supabase.from('chat_threads').select('*').eq('id', threadId).maybeSingle()
+  if (!fallback) return null
+  const patch = { ...(fallback.data || {}) }
+  if (readerType === 'member') patch.memberUnread = 0
+  if (readerType === 'staff') patch.staffUnread = 0
+  await supabase.from('chat_threads').update({ data: patch }).eq('id', threadId)
+  return rowToChatThread({ ...fallback, data: patch })
 }
 
 export async function ensureStaffChatThreads(staff, clients = []) {

@@ -17,6 +17,7 @@ import {
   sortStaffInboxItems,
   threadUnreadCount,
 } from '../../utils/chatAccess'
+import { relatedChatNotificationIds } from '../../utils/notificationRead'
 import { staffRoleMeta, normalizeStaffRole } from '../../utils/staffRoles'
 import { getPlanLabel } from '../../data/membershipPlans'
 import PresenceIndicator, { AvatarWithPresence } from '../../components/ui/PresenceIndicator'
@@ -27,8 +28,8 @@ export default function StaffMessagesPage() {
   const { toast } = useToast()
   const isWide = useMediaQuery('(min-width: 768px)')
   const {
-    staffUser, platform, chatThreads, chatMessages,
-    loadChatMessages, sendChatMessage, markChatThreadRead,
+    staffUser, platform, chatThreads, chatMessages, notifications,
+    loadChatMessages, sendChatMessage, markChatThreadRead, markNotificationRead,
     refreshStaffChatThreads, ensureStaffChatThread,
   } = useApp()
 
@@ -61,6 +62,7 @@ export default function StaffMessagesPage() {
   const effectiveThreadId = active?.member?.id ? activeThreadId : null
   const messages = effectiveThreadId ? (chatMessages[effectiveThreadId] || []) : []
   const showThread = Boolean(active?.member && (memberIdParam || isWide))
+  const threadUnread = threadUnreadCount(active?.thread, 'staff')
 
   const memberPrograms = useMemo(
     () => (platform?.programs || []).filter((p) => p.memberId === activeMemberId),
@@ -77,16 +79,16 @@ export default function StaffMessagesPage() {
       return undefined
     }
 
+    const member = active.member
     let cancelled = false
     let poll = null
 
     ;(async () => {
-      const thread = active.thread || await ensureStaffChatThread(active.member)
+      const thread = active.thread || await ensureStaffChatThread(member)
       if (cancelled || !thread?.id) return
       activeThreadRef.current = thread
       setActiveThreadId(thread.id)
       loadChatMessages(thread.id)
-      markChatThreadRead(thread.id, 'staff')
       poll = setInterval(() => loadChatMessages(thread.id), 8000)
     })()
 
@@ -94,7 +96,22 @@ export default function StaffMessagesPage() {
       cancelled = true
       if (poll) clearInterval(poll)
     }
-  }, [active?.member?.id, active?.thread?.id, active?.member, active?.thread, ensureStaffChatThread, loadChatMessages, markChatThreadRead])
+  }, [active?.member?.id, active?.thread?.id, ensureStaffChatThread, loadChatMessages])
+
+  useEffect(() => {
+    const thread = activeThreadRef.current || active?.thread
+    if (!thread?.id) return
+    if (threadUnreadCount(thread, 'staff') > 0) markChatThreadRead(thread.id, 'staff')
+  }, [active?.thread?.id, threadUnread, markChatThreadRead])
+
+  useEffect(() => {
+    if (!active?.member?.id) return
+    const ids = relatedChatNotificationIds(notifications, {
+      threadId: active.thread?.id || activeThreadId,
+      memberId: active.member.id,
+    })
+    ids.forEach((id) => markNotificationRead(id))
+  }, [active?.member?.id, active?.thread?.id, activeThreadId, notifications, markNotificationRead])
 
   const handleSend = async (text) => {
     if (!active?.member) return
@@ -188,6 +205,7 @@ export default function StaffMessagesPage() {
       </div>
       <ChatThreadBody>
         <ChatThreadView
+          key={activeMemberId}
           messages={messages}
           perspective="staff"
           staffRole={staffUser.role}

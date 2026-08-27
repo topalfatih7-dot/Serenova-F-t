@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { unlockNotificationAudio } from '../../utils/browserNotifications'
 import { motion } from 'framer-motion'
+import useStickChatToBottom from '../../hooks/useStickChatToBottom'
 import { Send, Dumbbell, Apple, UserRound, Info, Radio, Stethoscope } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -37,17 +38,13 @@ export default function ChatThreadView({
   remoteName = '',
 }) {
   const [text, setText] = useState('')
-  const scrollRef = useRef(null)
+  const { scrollRef, onScroll } = useStickChatToBottom(messages)
   const meta = ROLE_META[staffRole] || ROLE_META.coach
   const StaffIcon = meta.icon
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length])
-
   const send = () => {
     const value = text.trim()
-    if (!value) return
+    if (!value || disabled) return
     unlockNotificationAudio().catch(() => {})
     onSend?.(value)
     setText('')
@@ -55,8 +52,11 @@ export default function ChatThreadView({
 
   const labelFor = (m) => {
     if (m.senderType === 'system') return 'Sistem'
+    const own = (perspective === 'member' && m.senderType === 'member')
+      || (perspective === 'staff' && m.senderType === 'staff')
+    if (own) return 'Siz'
     if (m.senderType === 'staff') return meta.staffLabel
-    return 'Siz'
+    return remoteName || 'Danışan'
   }
 
   return (
@@ -68,7 +68,11 @@ export default function ChatThreadView({
         </div>
       )}
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-0.5 sm:space-y-3"
+      >
         {messages.length === 0 && (
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-cream-200 bg-cream-50/40 p-4 text-center">
             <StaffIcon className="h-10 w-10 text-cream-300" />
@@ -93,8 +97,7 @@ export default function ChatThreadView({
           return (
             <motion.div
               key={m.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={false}
               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-[min(100%,20rem)] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[88%] sm:px-4 sm:py-2.5 ${bubbleCls}`}>
@@ -112,7 +115,7 @@ export default function ChatThreadView({
         })}
       </div>
 
-      {!readOnly && !disabled && (
+      {!readOnly && (
         <div className="relative z-10 mt-2 flex shrink-0 items-end gap-2 border-t border-cream-100 bg-white pt-2 sm:mt-3 sm:pt-3">
           <textarea
             value={text}
@@ -126,7 +129,7 @@ export default function ChatThreadView({
             type="button"
             whileTap={{ scale: 0.94 }}
             onClick={send}
-            disabled={!text.trim()}
+            disabled={disabled || !text.trim()}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-md shadow-brand-200/50 disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-lg"
             aria-label="Gönder"
           >

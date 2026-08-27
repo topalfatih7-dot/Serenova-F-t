@@ -330,13 +330,8 @@ export async function notifyNewChatMessage(admin, {
     const member = await loadMember(admin, mid)
     if (!staff) return { ok: false, error: 'staff_not_found' }
 
-    await appendStaffNotification(admin, staff.id, buildNotif(
-      'chat',
-      'Yeni danışan mesajı',
-      `${member?.name || data.memberName || 'Danışan'} size mesaj gönderdi.`,
-      { threadId, memberId: mid },
-    ))
-
+    // In-app staff chat notify is owned by sendChatMessage (notifyStaffChatMessage).
+    // Appending here doubled toasts/sounds: "Ahmet yeni mesaj gönderdi" + "Yeni danışan mesajı".
     result = await sendWhatsAppTemplate(admin, {
       templateKey: 'new_chat_message',
       toPhone: staffPhoneFromData(staff.data),

@@ -66,3 +66,31 @@ export async function setStaffNotifications(notifications) {
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
+
+/** Atomik okundu — tüm staff.data blob'unu ezmez. p_ids yoksa hepsi. */
+export async function markStaffNotificationsRead(ids = null) {
+  if (!supabase) return { success: false, error: 'Supabase yok' }
+  const { data, error } = await supabase.rpc('mark_staff_notifications_read', {
+    p_ids: Array.isArray(ids) ? ids.filter(Boolean) : null,
+  })
+  if (error) return { success: false, error: error.message, notifications: null }
+  return { success: true, notifications: Array.isArray(data) ? data : [] }
+}
+
+export async function notifyStaffChatMessage({
+  staffId,
+  memberId,
+  memberName,
+  preview,
+  threadId,
+}) {
+  const name = memberName || 'Danışan'
+  return pushStaffNotification(staffId, buildStaffNotification({
+    type: 'chat',
+    title: `${name} yeni mesaj gönderdi`,
+    message: preview || 'Yeni bir mesajınız var.',
+    threadId: threadId || null,
+    memberId: memberId || null,
+    audience: 'staff',
+  }))
+}
