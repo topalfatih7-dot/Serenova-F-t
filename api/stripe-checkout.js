@@ -3,13 +3,12 @@
  * Body (checkout): { planId, durationMonths?: 1|3|6, flow?: 'register'|'change' }
  * Body (portal):   { action: 'create-portal-session', intent?: 'manage'|'cancel', mode?: 'at_period_end'|'immediately', subscriptionId?: string }
  * Body (resume):   { action: 'resume-subscription', subscriptionId }
+ * Body (catalog):  { action: 'sync-plan-catalog', planId }
  */
 import {
   getStripe,
   isStripeConfigured,
-  CURRENCY,
   PLAN_FALLBACK,
-  toMinorUnits,
   getTierPrice,
   assertStripeMinAmountTry,
   mapStripeCheckoutError,
@@ -25,6 +24,9 @@ import { normalizeEmailAddress } from './_email.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { createBillingPortalSession, assertSubscriptionBelongsToCustomer } from './_stripePortal.js'
 import { applyStripeSubscriptionState } from './_memberPackages.js'
+import { requireAdmin } from './_guards.js'
+import { ensureCatalogPrice } from './_stripeCatalog.js'
+import { syncPlanCatalogToSubscriptions, loadPlanRow } from './_stripePriceSync.js'
 
 function getOrigin(req) {
   return (
@@ -238,6 +240,29 @@ async function handleResumeSubscription(req, res, admin, body = {}) {
   return res.status(200).json({ ok: true, resumed: true })
 }
 
+async function handleSyncPlanCatalog(req, res, admin, body = {}) {
+  const gate = await requireAdmin(req)
+  if (!gate.ok) return res.status(gate.status).json({ ok: false, error: gate.error })
+
+  const planId = String(body.planId || '').trim()
+  if (!planId) {
+    return res.status(400).json({ ok: false, error: 'Plan seçilmedi.' })
+  }
+
+  const planRow = await loadPlanRow(admin, planId)
+  if (!planRow) {
+    return res.status(404).json({ ok: false, error: 'Plan bulunamadı.' })
+  }
+
+  const stripe = getStripe()
+  try {
+    const result = await syncPlanCatalogToSubscriptions(stripe, admin, { plan: planRow, notify: true })
+    return res.status(200).json({ ok: true, ...result })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: mapStripeCheckoutError(e) })
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -273,6 +298,9 @@ export default async function handler(req, res) {
     }
     if (body.action === 'resume-subscription') {
       return await handleResumeSubscription(req, res, admin, body)
+    }
+    if (body.action === 'sync-plan-catalog') {
+      return await handleSyncPlanCatalog(req, res, admin, body)
     }
 
     const planId = String(body.planId || '')
@@ -388,34 +416,21 @@ export default async function handler(req, res) {
     }
     if (checkoutEmail) metadata.email = checkoutEmail
 
-    // recurring plan → Stripe Subscription (otomatik yenileme); doktor → tek seferlik payment
     const useSubscription = !oneTime
-    const productName = oneTime ? planName : `${planName} (${durationLabel})`
-    const productDescription = oneTime
-      ? `${planName} — 1 online doktor görüşmesi`
-      : `${planName} — ${durationLabel} üyelik · süre sonunda otomatik yenilenir`
-
-    const priceData = {
-      currency: CURRENCY,
-      unit_amount: toMinorUnits(planPrice),
-      product_data: {
-        name: productName,
-        description: productDescription,
-      },
-    }
-    if (useSubscription) {
-      priceData.recurring = {
-        interval: 'month',
-        interval_count: durationMonths,
-      }
-    }
+    const catalogPrice = await ensureCatalogPrice(stripe, {
+      planId,
+      planName,
+      months: durationMonths,
+      amountTry: planPrice,
+      oneTime,
+    })
 
     const sessionParams = {
       mode: useSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],
       client_reference_id: user.id,
       customer: customerId,
-      line_items: [{ quantity: 1, price_data: priceData }],
+      line_items: [{ quantity: 1, price: catalogPrice.id }],
       metadata,
       success_url: `${origin}${successPath}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${cancelPath}?payment=cancelled`,

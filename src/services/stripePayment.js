@@ -90,3 +90,25 @@ export async function resumeStripeSubscription(subscriptionId) {
     return { success: false, error: String(e?.message || e) }
   }
 }
+
+/** Admin: plan katalog Price’larını üretir ve mevcut Stripe aboneliklerini hizalar. */
+export async function syncStripePlanCatalog(planId) {
+  const headers = await getApiAuthHeaders()
+  if (!headers.Authorization) {
+    return { ok: false, error: 'Oturum bulunamadı.' }
+  }
+  try {
+    const res = await fetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'sync-plan-catalog', planId }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return { ok: false, error: json?.error || 'Stripe katalog senkronu başarısız.' }
+    }
+    return { ok: true, ...json }
+  } catch (e) {
+    return { ok: false, error: String(e?.message || e) }
+  }
+}

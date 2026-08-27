@@ -50,6 +50,10 @@ export default function NotificationsPage() {
       navigate('/profile')
       return
     }
+    if (n.type === 'billing' || n.action === 'payments' || n.type === 'renewal') {
+      navigate('/profile/payments')
+      return
+    }
     if (n.type === 'appointment') {
       navigate('/schedule')
     }

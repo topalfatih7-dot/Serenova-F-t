@@ -957,6 +957,14 @@ export function AppProvider({ children }) {
         : [...(prev.plans || []), saved]
       return { ...prev, plans }
     })
+    let catalogSync = { ok: true, skipped: true }
+    try {
+      const { syncStripePlanCatalog } = await import('../services/stripePayment')
+      catalogSync = await syncStripePlanCatalog(saved.id)
+    } catch (e) {
+      catalogSync = { ok: false, error: e?.message || 'Stripe katalog senkronu başarısız.' }
+    }
+    return { plan: saved, catalogSync }
   }, [])
 
   const createPlan = useCallback(async (plan) => {
@@ -969,6 +977,14 @@ export function AppProvider({ children }) {
         : [...(prev.plans || []), saved]
       return { ...prev, plans }
     })
+    let catalogSync = { ok: true, skipped: true }
+    try {
+      const { syncStripePlanCatalog } = await import('../services/stripePayment')
+      catalogSync = await syncStripePlanCatalog(saved.id)
+    } catch (e) {
+      catalogSync = { ok: false, error: e?.message || 'Stripe katalog senkronu başarısız.' }
+    }
+    return { plan: saved, catalogSync }
   }, [])
 
   const deletePlan = useCallback(async (planId, opts = {}) => {

@@ -20,6 +20,7 @@ const TOAST_BY_TYPE = {
   reminder: 'info',
   availability: 'info',
   appointment: 'info',
+  billing: 'info',
 }
 
 /** Oturum boyunca görülen bildirim id'leri — Strict Mode çift mount'ta tekrar ses çıkmaz. */

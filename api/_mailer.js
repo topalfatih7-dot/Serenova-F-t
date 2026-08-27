@@ -176,3 +176,100 @@ export function staffRejectedEmail({ name, note }) {
     text,
   }
 }
+
+/**
+ * Katalog fiyat değişimi — sonraki çekim (dönem içi ek tahsilat yok).
+ */
+export function catalogPriceChangeEmail({
+  name,
+  planName,
+  amountLabel,
+  dateLabel,
+  paymentsUrl,
+  cancelAtPeriodEnd = false,
+  daysUntil = null,
+}) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const safePlan = escapeHtml(planName || 'Paketiniz')
+  const safeAmount = escapeHtml(amountLabel)
+  const safeDate = escapeHtml(dateLabel)
+  const url = paymentsUrl || `${getAppUrl()}/profile/payments`
+  const soon = Number.isFinite(Number(daysUntil)) && Number(daysUntil) <= 7 && Number(daysUntil) >= 0
+  const title = 'Abonelik ücretiniz güncellendi'
+  const chargeLine = cancelAtPeriodEnd
+    ? `Yenilemeniz kapalı; ${safeDate} tarihinde çekim yapılmaz. Yenilemeyi açarsanız sonraki dönem ${safeAmount} olarak faturalanır.`
+    : soon
+      ? `${safePlan} için sonraki çekim ${safeDate} (${Number(daysUntil)} gün içinde) · ${safeAmount}. Dönem içinde ek tahsilat yoktur.`
+      : `${safePlan} için sonraki çekim ${safeDate} tarihinde ${safeAmount} olacaktır. Dönem içinde ek tahsilat yoktur.`
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, paket fiyatımız güncellendi.
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      ${chargeLine}
+    </p>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      Devam etmek istemiyorsanız Ödeme Yönetimi’nden otomatik yenilemeyi kapatabilirsiniz. Mevcut dönem sonuna kadar erişiminiz sürer.
+    </p>
+    <p style="margin:0 0 8px;text-align:center;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
+        Ödeme Yönetimi
+      </a>
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    cancelAtPeriodEnd
+      ? `${planName}: yenileme kapalı. Açarsanız sonraki dönem ${amountLabel}.`
+      : `${planName}: sonraki çekim ${dateLabel} · ${amountLabel}. Dönem içinde ek tahsilat yok.`,
+    '',
+    `Yönetim: ${url}`,
+  ].join('\n')
+
+  return {
+    subject: `Yeni Form — ${planName || 'Paket'} ücreti güncellendi`,
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}
+
+/** Çekimden 7 gün önce hatırlatma. */
+export function catalogPriceReminderEmail({
+  name,
+  planName,
+  amountLabel,
+  dateLabel,
+  paymentsUrl,
+}) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const safePlan = escapeHtml(planName || 'Paketiniz')
+  const safeAmount = escapeHtml(amountLabel)
+  const safeDate = escapeHtml(dateLabel)
+  const url = paymentsUrl || `${getAppUrl()}/profile/payments`
+  const title = 'Yaklaşan üyelik yenilemesi'
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, ${safePlan} aboneliğiniz ${safeDate} tarihinde ${safeAmount} olarak yenilenecek.
+    </p>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      İstemiyorsanız Ödeme Yönetimi’nden yenilemeyi kapatın; dönem sonuna kadar erişiminiz açık kalır.
+    </p>
+    <p style="margin:0 0 8px;text-align:center;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
+        Ödeme Yönetimi
+      </a>
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    `${planName} aboneliğiniz ${dateLabel} tarihinde ${amountLabel} olarak yenilenecek.`,
+    '',
+    `Yönetim: ${url}`,
+  ].join('\n')
+
+  return {
+    subject: `Yeni Form — ${planName || 'Paket'} yenileme hatırlatması`,
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}

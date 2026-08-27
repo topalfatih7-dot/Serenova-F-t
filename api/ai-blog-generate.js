@@ -4,7 +4,7 @@
  * ?task=blog (varsayılan) — günlük blog makalesi (CRON_SECRET, cron 05:00)
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
- * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger (CRON_SECRET, cron 03:00)
+ * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger + katalog fiyat hizalama / T-7 (CRON_SECRET, cron 03:00)
  * ?task=session-reminders — randevu T-24s / T-1s WhatsApp + in-app (CRON_SECRET, saatlik)
  */
 
@@ -187,7 +187,25 @@ async function handleMembershipExpiry(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
     const expiryLimit = Math.min(200, Math.max(1, Number(body.expiryLimit || req.query?.expiryLimit) || 100))
     const expiry = await runMembershipExpiryBatch(admin, { limit: expiryLimit })
-    return res.status(200).json({ ok: true, expiry })
+
+    let catalog = { skipped: true }
+    try {
+      const { isStripeConfigured, getStripe } = await import('./_stripe.js')
+      if (isStripeConfigured()) {
+        const { alignAllPlanCatalogs } = await import('./_stripePriceSync.js')
+        const { runCatalogPriceReminders } = await import('./_stripePriceReminders.js')
+        const stripe = getStripe()
+        catalog = {
+          align: await alignAllPlanCatalogs(stripe, admin),
+          reminders: await runCatalogPriceReminders(stripe, admin),
+        }
+      }
+    } catch (catalogErr) {
+      console.warn('[membership-expiry] catalog', catalogErr)
+      catalog = { ok: false, error: catalogErr.message }
+    }
+
+    return res.status(200).json({ ok: true, expiry, catalog })
   } catch (e) {
     console.error('[membership-expiry]', e)
     return res.status(500).json({ ok: false, error: e.message || 'Üyelik süre dolumu hatası' })

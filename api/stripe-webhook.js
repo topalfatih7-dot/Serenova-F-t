@@ -349,8 +349,9 @@ async function renewMembership(admin, meta, invoice, subscription) {
   if (fetchErr) return { ok: false, error: fetchErr.message }
   if (!row) return { ok: false, error: 'Üye bulunamadı' }
 
-  const amount = Number(meta.planPrice)
-    || (invoice.amount_paid ? invoice.amount_paid / 100 : 0)
+  const amount = invoice.amount_paid
+    ? invoice.amount_paid / 100
+    : (Number(meta.planPrice) || 0)
   const plansById = await loadPlansById(admin)
   const plan = plansById.get(planId) || null
   const oneTime = isOneTimePlanId(planId, plan) || isOneTimePlan(planId)
@@ -556,7 +557,9 @@ export default async function handler(req, res) {
           await notifyPaymentTelegram({
             ok: true,
             meta: { ...meta, durationLabel: `${meta.durationMonths || 1} ay · yenileme` },
-            amount: Number(meta.planPrice) || (invoice.amount_paid ? invoice.amount_paid / 100 : 0),
+            amount: invoice.amount_paid
+              ? invoice.amount_paid / 100
+              : (Number(meta.planPrice) || 0),
             email: invoice.customer_email || meta.email,
             sessionId: invoice.id,
           })

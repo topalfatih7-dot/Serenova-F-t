@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { getPlanLabel } from '../../data/membershipPlans'
+import { getPlanLabel, getTierPrice } from '../../data/membershipPlans'
 import { MEMBERSHIP_CANCEL_COPY, MEMBERSHIP_CANCEL_SUPPORT_EMAIL } from '../../data/membershipCancelCopy'
 import {
   isOneTimePackage,
@@ -10,6 +10,7 @@ import {
   migrateLegacyToPackages,
   packageBillingSubscriptionId,
 } from '../../utils/memberPackages'
+import { formatTryAmount } from '../../utils/stripeCatalog'
 import { resumeStripeSubscription, startStripePortal } from '../../services/stripePayment'
 import MembershipCancelDialog from './MembershipCancelDialog'
 
@@ -89,6 +90,10 @@ export default function MemberSubscriptionPackages({ user, onRefresh, toast }) {
             const access = pkg.currentPeriodEnd || pkg.expiresAt
             const key = pkg.id || pkg.planId
             const label = getPlanLabel(pkg.planId)
+            const durationMonths = Number(pkg.packageConfig?.durationMonths) || 1
+            const nextCharge = (!oneTime && !pkg.cancelAtPeriodEnd)
+              ? getTierPrice(pkg.planId, durationMonths)
+              : 0
             return (
               <article key={key} className="rounded-2xl border border-cream-200 bg-white p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -105,6 +110,10 @@ export default function MemberSubscriptionPackages({ user, onRefresh, toast }) {
                       <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
                         {copy.renewalOffBadge}
                       </span>
+                    ) : nextCharge > 0 ? (
+                      <p className="mt-2 text-sm font-medium text-cream-900">
+                        {copy.nextChargeLabel}: {dateLabel(access)} · {formatTryAmount(nextCharge)}
+                      </p>
                     ) : null}
                   </div>
                 </div>

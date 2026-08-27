@@ -114,8 +114,17 @@ export default function AdminPlansPage() {
     }
     setSaving(true)
     try {
-      await savePlan(draft)
-      toast('Plan başarıyla güncellendi.', 'success')
+      const result = await savePlan(draft)
+      const sync = result?.catalogSync
+      if (sync?.ok === false) {
+        toast(sync.error || 'Plan kaydedildi; Stripe senkronu başarısız. Cron hizalar.', 'error')
+      } else if (Number(sync?.updated) > 0) {
+        toast(`Plan güncellendi. ${sync.updated} abonelik sonraki çekimde yeni fiyata hizalandı.`, 'success')
+      } else if (Number(sync?.remaining) > 0) {
+        toast('Plan güncellendi. Kalan abonelikler gece cron’unda hizalanır.', 'success')
+      } else {
+        toast('Plan başarıyla güncellendi.', 'success')
+      }
       setEditingId(null)
       setDraft(null)
     } catch (e) {

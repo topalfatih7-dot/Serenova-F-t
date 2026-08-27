@@ -57,5 +57,6 @@ export const MEMBERSHIP_CANCEL_COPY = {
   noSession: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.',
   needAck: 'Devam etmek için onay kutusunu işaretleyin.',
   durationHint:
-    'Kartınızdan seçtiğiniz dönem tutarı tahsil edilir. İptal: Ödeme Yönetimi’nde uyarıları okuyun, ardından Stripe Portalı’nda onaylayın.',
+    'Kartınızdan seçtiğiniz dönem tutarı tahsil edilir. İptal etmezseniz süre sonunda güncel paket fiyatı çekilir. İptal: Ödeme Yönetimi’nde uyarıları okuyun, ardından Stripe Portalı’nda onaylayın.',
+  nextChargeLabel: 'Sonraki çekim',
 }
