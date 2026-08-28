@@ -65,8 +65,12 @@ const CORE_KEYWORDS = [
   'online koçluk',
   'online diyetisyen',
   'online spor koçu',
+  'online spor koçluğu',
+  'online spor',
   'online fitness koçu',
   'online diyet',
+  'online wellness',
+  'online zayıflama',
   'fitness koçu',
   'wellness platformu',
   'beslenme programı',
@@ -78,6 +82,7 @@ const CORE_KEYWORDS = [
   'sağlıklı yaşam',
   'evde antrenman',
   'spor salonu programı',
+  'dijital sağlık',
 ]
 
 /** Marka keşfi için statik SSS — admin SSS boş olsa bile JSON-LD ve landing'de görünür */
@@ -245,6 +250,9 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/online-diyetisyen/fiyat', changefreq: 'weekly', priority: '0.9' },
   { path: '/online-kocluk/ev-antrenman', changefreq: 'weekly', priority: '0.85' },
   { path: '/beslenme/sporcu-beslenmesi', changefreq: 'weekly', priority: '0.85' },
+  { path: '/beslenme/pcos', changefreq: 'weekly', priority: '0.85' },
+  { path: '/beslenme/insulin-direnci', changefreq: 'weekly', priority: '0.85' },
+  { path: '/online-wellness', changefreq: 'weekly', priority: '0.9' },
   { path: '/membership', changefreq: 'weekly', priority: '0.9' },
   { path: '/onboarding', changefreq: 'monthly', priority: '0.9' },
   { path: '/stories', changefreq: 'weekly', priority: '0.8' },
@@ -279,16 +287,16 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat'),
   },
   '/online-kocluk': {
-    title: 'Online Koçluk — Video Görüşmeli Fitness Koçu',
+    title: 'Online Koçluk — Online Spor Koçluğu ve Video Görüşme',
     description:
-      'Online koçluk ve online spor koçu desteği ile kişiye özel antrenman, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
-    keywords: buildBrandKeywords('online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi'),
+      'Online koçluk ve online spor koçluğu: kişiye özel antrenman programı, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda online antrenman yapın.',
+    keywords: buildBrandKeywords('online koçluk, online spor koçluğu, online spor koçu, online spor, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi'),
   },
   '/kilo-verme': {
-    title: 'Kilo Verme Diyetisyeni — Online Program ve Takip',
+    title: 'Kilo Verme ve Online Zayıflama — Diyetisyen Destekli Program',
     description:
-      'Kilo verme diyetisyeni ile video görüşme, kişiye özel beslenme programı ve panel takibi. Yeni Form Diyet ve VIP paketleriyle sürdürülebilir kilo yönetimi.',
-    keywords: buildBrandKeywords('kilo verme diyetisyen, kilo vermek için diyetisyen, online kilo verme, kilo verme programı'),
+      'Online zayıflama ve kilo verme diyetisyeni: video görüşme, kişiye özel beslenme programı ve takip. Yeni Form ile sürdürülebilir kilo yönetimi ve online diyet.',
+    keywords: buildBrandKeywords('kilo verme diyetisyen, online zayıflama, zayıflama programı, kilo vermek için diyetisyen, online kilo verme, online diyet ve zayıflama, kilo verme programı'),
   },
   '/online-diyetisyen/fiyat': {
     title: 'Online Diyetisyen Fiyatları 2026 — Paket ve Seans',
@@ -306,7 +314,25 @@ export const PAGE_SEO = {
     title: 'Sporcu Beslenmesi — Antrenman Öncesi ve Sonrası',
     description:
       'Sporcu beslenmesi: antrenman öncesi/sonrası öğün, protein ve performans. Online diyetisyen + koçluk ile kişiye özel plan. Yeni Form.',
-    keywords: buildBrandKeywords('sporcu beslenmesi, sporcu diyeti, antrenman beslenmesi, sporcu diyetisyen'),
+    keywords: buildBrandKeywords('sporcu beslenmesi, sporcu diyeti, antrenman beslenmesi, sporcu diyetisyen, online sporcu beslenmesi'),
+  },
+  '/beslenme/pcos': {
+    title: 'PCOS Diyeti — Polikistik Over Beslenmesi ve Programı',
+    description:
+      'PCOS diyeti ve polikistik over beslenmesi: insülin direnci, kilo yönetimi, hormonal denge. Online diyetisyen ile kişiye özel PCOS beslenme programı.',
+    keywords: buildBrandKeywords('PCOS diyeti, polikistik over beslenmesi, PCOS beslenme programı, PCOS için diyetisyen, polikistik yumurtalık diyeti, PCOS kilo verme'),
+  },
+  '/beslenme/insulin-direnci': {
+    title: 'İnsülin Direnci Diyeti — Kişiye Özel Beslenme Programı',
+    description:
+      'İnsülin direnci diyeti ve beslenme programı: glisemik indeks, öğün zamanlaması ve kilo yönetimi. Online diyetisyen ile kişiye özel insülin direnci planı.',
+    keywords: buildBrandKeywords('insülin direnci diyeti, insülin direnci beslenmesi, insülin direncinde ne yenir, insülin direnci beslenme programı, insülin direnci kilo verme'),
+  },
+  '/online-wellness': {
+    title: 'Online Wellness — Dijital Sağlık ve Yaşam Koçluğu Platformu',
+    description:
+      'Online wellness platformu: online diyetisyen, online spor koçluğu, sağlık analizi ve kişisel program. Türkiye\'de dijital wellness için Yeni Form.',
+    keywords: buildBrandKeywords('online wellness, wellness platformu, dijital wellness, online sağlık koçluğu, online sağlıklı yaşam, wellness Türkiye, online wellness programı'),
   },
   '/membership': {
     title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları',

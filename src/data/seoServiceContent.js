@@ -107,7 +107,7 @@ export const ONLINE_KOCLUK = {
   description:
     'Online koçluk ve online spor koçu desteği ile kişiye özel antrenman programı, video görüşme ve takip. Yeni Form Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
   keywords:
-    'online koçluk, online spor koçu, online fitness koçu, uzaktan antrenman, video koçluk, spor paketi, online antrenör',
+    'online koçluk, online spor koçluğu, online spor koçu, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi, online antrenör, online spor',
   h1: 'Online Koçluk ile Size Özel Antrenman Programı',
   lead:
     'Yeni Form’da online koçluk; PDF program satışı değil — **video görüşme**, kişiye özel antrenman planı, programınızdaki egzersiz videoları ve panel takibi bir arada. Hedefinize uygun **Spor veya VIP** paketle başlayın.',
@@ -208,7 +208,7 @@ export const KILO_VERME = {
   description:
     'Kilo verme diyetisyeni ile video görüşme, kişiye özel beslenme programı ve panel takibi. Yeni Form Diyet ve VIP paketleriyle sürdürülebilir kilo yönetimi.',
   keywords:
-    'kilo verme diyetisyen, kilo vermek için diyetisyen, online kilo verme, kilo verme programı',
+    'kilo verme diyetisyen, kilo vermek için diyetisyen, online kilo verme, online zayıflama, zayıflama programı, kilo verme programı, online diyet ve zayıflama',
   h1: 'Kilo verme diyetisyeni ile sürdürülebilir program',
   lead:
     'Kilo vermek için diyetisyen desteği; yasak listesi değil, **video görüşme**, kişiye özel program ve takip demektir. Yeni Form’da Diyet paketi **ayda 2 diyetisyen seansı** (1.299–2.499 TL/ay aralığı) sunar. Bu içerik tıbbi teşhis veya tedavi yerine geçmez.',
@@ -324,7 +324,7 @@ export const EV_ANTRENMAN = {
   description:
     'Evde antrenman programı: ekipmansız veya ev aletleriyle kişiye özel plan, video koçluk ve hareket videoları. Spor ve VIP paketleriyle başlayın.',
   keywords:
-    'evde antrenman programı, ekipmansız antrenman, evde egzersiz, online spor koçu ev',
+    'evde antrenman programı, ekipmansız antrenman, evde egzersiz, online spor koçluğu ev, online spor koçu ev, online antrenman programı',
   h1: 'Evde antrenman programı — online koç ile',
   lead:
     '**Evde antrenman programı**, salon üyeliği olmadan kişiye özel plan demektir. Yeni Form’da koçunuz ekipmanınıza göre program yazar; **Spor paketinde ayda 2 video seans** vardır. Ağır sakatlıkta önce hekime danışın.',
@@ -430,6 +430,201 @@ export const SPORCU_BESLENMESI = {
   ],
 }
 
+export const PCOS_BESLENMESI = {
+  path: '/beslenme/pcos',
+  theme: 'dietitian',
+  heroFallback: '/online-diyetisyen',
+  pillarPath: '/online-diyetisyen',
+  pillarName: 'Online Diyetisyen',
+  title: 'PCOS Diyeti — Polikistik Over Beslenmesi ve Programı',
+  description:
+    'PCOS diyeti ve polikistik over beslenmesi: insülin direnci, kilo yönetimi, hormonal denge. Online diyetisyen ile kişiye özel PCOS beslenme programı. Yeni Form.',
+  keywords:
+    'PCOS diyeti, polikistik over beslenmesi, PCOS beslenme programı, PCOS için diyetisyen, polikistik yumurtalık diyeti, PCOS kilo verme',
+  h1: 'PCOS diyeti — polikistik over için beslenme programı',
+  lead:
+    '**PCOS (polikistik over sendromu)** beslenmeyle doğrudan ilişkilidir: insülin hassasiyeti, kilo yönetimi ve hormonal denge öğün planına yansıtılır. Yeni Form\'da **online diyetisyen** PCOS özelinde program hazırlar. Bu içerik tıbbi teşhis veya tedavi yerine geçmez.',
+  primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyetisyen Desteği Al' },
+  secondaryCta: { to: '/online-diyetisyen', label: 'Online diyetisyen nasıl çalışır?' },
+  teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
+  relatedService: { to: '/beslenme/insulin-direnci', label: 'İnsülin direnci beslenmesi' },
+  serviceName: 'PCOS Beslenme Danışmanlığı',
+  serviceType: 'NutritionCounseling',
+  offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
+  sections: [
+    {
+      h2: 'PCOS\'de beslenme neden bu kadar önemlidir?',
+      paragraphs: [
+        'Polikistik over sendromu olan kadınların büyük çoğunluğunda **insülin direnci** tabloya eşlik eder. Doğru beslenme planı glisemik yükü dengeler, kilo yönetimine destek olur ve hormonal döngüyü olumlu etkiler.',
+        'PCOS diyetinde tek bir şablon yoktur: öğün sıklığı, karbonhidrat tipi, protein dağılımı ve yağ kalitesi kişiye göre farklılaşır. **Online diyetisyen** bu değişkenleri sağlık profiliniz ve hedeflerinize göre özelleştirir.',
+      ],
+    },
+    {
+      h2: 'Süreç nasıl işler?',
+      steps: [
+        { title: 'Sağlık profili', text: 'Kayıt sonrası sağlık analizi; PCOS tanısı, ilaç durumu ve beslenme alışkanlıkları netleşir.' },
+        { title: 'Diyetisyen eşleşmesi', text: 'Diyet paketinde ayda 2 video görüşme vardır. VIP pakette online koçluk da eklenir.' },
+        { title: 'PCOS odaklı program', text: 'Glisemik indeks kontrolü, anti-inflamatuvar öğünler ve pratik menü örnekleri panele düşer.' },
+        { title: 'Takip ve revize', text: 'Döngü değişimleri, enerji düzeyi ve ağırlık trendi seanslarda gözden geçirilir; program güncellenir.' },
+      ],
+    },
+    {
+      h2: 'PCOS diyetinde nelere dikkat edilir?',
+      paragraphs: [
+        'Rafine şeker ve beyaz un ürünleri insülin yanıtını hızlandırır; düşük glisemik karbonhidratlar ve yeterli protein öğün dengesini korur. **Anti-inflamatuvar** besinler (zeytin yağı, yeşil yapraklılar, omega-3 kaynakları) hormonal süreci destekler.',
+        'Kilo kaybı zorunluluk değildir; vücut ağırlığının %5–10\'u oranında azalma hormonal dengeye katkı sağlayabilir. Diyetisyeniniz hedefinizi ve sürecinizi birlikte değerlendirir.',
+      ],
+    },
+    {
+      h2: 'Kimler için uygun?',
+      paragraphs: [
+        'PCOS tanısı almış, kilo yönetimine veya insülin dengesine destek arayan kadınlar için **online diyetisyen** desteği uygundur.',
+        'Bu sayfa tıbbi teşhis değildir. Tedavi planı için jinekolog veya endokrinoloji uzmanınızla çalışın; beslenme desteği tıbbi süreci tamamlar, yerine geçmez.',
+      ],
+    },
+  ],
+  faqs: [
+    { q: 'PCOS diyeti nasıl olmalıdır?', a: 'Düşük glisemik indeksli karbonhidratlar, yeterli protein ve omega-3 açısından zengin bir plan PCOS\'u destekler. Ancak kişiye özel düzenleme için diyetisyen gereklidir.' },
+    { q: 'PCOS\'ta insülin direnci ne anlama gelir?', a: 'İnsülin direnci hücrelerin insülini etkili kullanamamasıdır. Bu durum kilo almayı kolaylaştırır ve semptomları ağırlaştırabilir. Beslenme ve yaşam tarzı insülin hassasiyetini iyileştirebilir.' },
+    { q: 'PCOS için online diyetisyen yeterli mi?', a: 'Beslenme yönetimi için evet. Tıbbi tedavi (ilaç, hormonal destek) için jinekolog veya endokrinologunuzu takip etmeye devam edin.' },
+    { q: 'Hangi paket PCOS için uygundur?', a: 'Diyet paketi (ayda 2 diyetisyen seansı) PCOS beslenme takibi için uygundur. Antrenman desteği istiyorsanız VIP değerlendirin.' },
+    { q: 'PCOS\'ta hangi besinlerden kaçınılmalı?', a: 'Rafine şeker, beyaz un ürünleri ve işlenmiş gıdalar insülin yanıtını olumsuz etkiler. Diyetisyeniniz kişisel listeyi görüşmede belirler.' },
+    { q: 'Kilo vermeden PCOS semptomları düzelir mi?', a: 'Hafif kilo kaybı (vücut ağırlığının %5–10\'u) hormonal dengeyi olumlu etkileyebilir; ancak bu genel bir bilgidir ve kişiye göre değişir.' },
+    { q: 'Online görüşme nasıl yapılır?', a: 'Yeni Form\'da diyetisyen seansları platform içi görüntülü görüşme ile yapılır; ek uygulama indirmeniz gerekmez.' },
+    { q: 'Bu sayfa tıbbi tavsiye midir?', a: 'Hayır. Genel beslenme bilgisi ve hizmet tanımıdır; tıbbi teşhis veya tedavi yerine geçmez.' },
+  ],
+}
+
+export const INSULIN_DIRENCI = {
+  path: '/beslenme/insulin-direnci',
+  theme: 'dietitian',
+  heroFallback: '/online-diyetisyen',
+  pillarPath: '/online-diyetisyen',
+  pillarName: 'Online Diyetisyen',
+  title: 'İnsülin Direnci Diyeti — Kişiye Özel Beslenme Programı',
+  description:
+    'İnsülin direnci diyeti ve beslenme programı: glisemik indeks, öğün zamanlaması ve kilo yönetimi. Online diyetisyen ile kişiye özel insülin direnci planı. Yeni Form.',
+  keywords:
+    'insülin direnci diyeti, insülin direnci beslenmesi, insülin direncinde ne yenir, insülin direnci beslenme programı, insülin direnci kilo verme',
+  h1: 'İnsülin direnci diyeti — kişiye özel beslenme programı',
+  lead:
+    '**İnsülin direnci** olan kişilerde standart diyet listeleri yetersiz kalabilir: glisemik yük, öğün zamanlaması ve makro dağılımı kişiselleştirilmelidir. Yeni Form\'da **online diyetisyen** insülin direncine özel beslenme programı hazırlar. Bu sayfa tıbbi teşhis veya tedavi yerine geçmez.',
+  primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyetisyen Desteği Al' },
+  secondaryCta: { to: '/online-diyetisyen', label: 'Online diyetisyen nasıl çalışır?' },
+  teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
+  relatedService: { to: '/beslenme/pcos', label: 'PCOS beslenmesi' },
+  serviceName: 'İnsülin Direnci Beslenme Danışmanlığı',
+  serviceType: 'NutritionCounseling',
+  offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
+  sections: [
+    {
+      h2: 'İnsülin direnci nedir ve beslenme nasıl etkiler?',
+      paragraphs: [
+        '**İnsülin direnci**, hücrelerin insülin hormonuna yeterince yanıt vermemesidir. Pankreas bunu telafi etmek için daha fazla insülin üretir; bu döngü kilo almayı kolaylaştırır, yorgunluk ve şeker krizlerine yol açabilir.',
+        'Doğru beslenme planıyla glisemik yanıt kontrol altına alınabilir. Düşük glisemik karbonhidratlar, yeterli protein, sağlıklı yağlar ve öğün sıklığının ayarlanması **insülin hassasiyetini** artırabilir.',
+      ],
+    },
+    {
+      h2: 'Süreç nasıl işler?',
+      steps: [
+        { title: 'Profil ve analiz', text: 'Kayıt sonrası sağlık analizi; insülin direnci durumu, hedef ve beslenme alışkanlıkları netleşir.' },
+        { title: 'Diyetisyen eşleşmesi', text: 'Diyet paketinde ayda 2 video görüşme vardır; PCOS veya diyabet eşliği varsa bu da programa yansır.' },
+        { title: 'Kişiye özel plan', text: 'Glisemik yükü düşük öğünler, protein dağılımı ve öğün zamanlaması panele yazılır.' },
+        { title: 'Takip ve revize', text: 'Enerji, açlık döngüsü ve tartı trendi seanslarda gözden geçirilir; program güncellenir.' },
+      ],
+    },
+    {
+      h2: 'İnsülin direncinde neler yenir?',
+      paragraphs: [
+        'Yulaf ezmesi, tam tahıl, baklagiller, yeşil yapraklı sebzeler ve meyve (porsiyon kontrolüyle) glisemik yükü dengeler. **Protein** (yumurta, kurubaklagil, tavuk, balık) tokluk hissini uzatır ve insülin tepkisini yavaşlatır.',
+        'Rafine karbonhidrat, şekerli içecekler, hazır meyve suyu ve beyaz ekmek insülin artışını hızlandırır. **Diyetisyeniniz**, bireysel tolerans ve hedef göz önünde bulundurarak kapsamlı listeyi görüşmede hazırlar.',
+      ],
+    },
+    {
+      h2: 'Kimler için uygun?',
+      paragraphs: [
+        'İnsülin direnci tanısı almış ya da semptom yaşayan (yorgunluk, şeker krizi, kilo verme güçlüğü), beslenme desteği arayan kişiler için **online diyetisyen** uygundur.',
+        'Bu sayfa tıbbi teşhis değildir. Diyabet başlangıcı ya da metabolik sendrom şüphesi varsa önce endokrinolog veya dahiliye uzmanınıza başvurun.',
+      ],
+    },
+  ],
+  faqs: [
+    { q: 'İnsülin direnci diyetinde hangi besinler tercih edilmeli?', a: 'Tam tahıl, baklagil, yeşil sebze, yeterli protein ve sağlıklı yağ içeren öğünler önerilir. Kişiye özel liste diyetisyeninizle belirlenir.' },
+    { q: 'İnsülin direnci olan biri kilo verebilir mi?', a: 'Evet. Glisemik kontrol ve kalori yönetimiyle kilo kaybı mümkündür; sürdürülebilir program için diyetisyen desteği önemlidir.' },
+    { q: 'İnsülin direncinde spor şart mı?', a: 'Düzenli hareket insülin hassasiyetini artırır; ancak beslenme tek başına da etkilidir. İkisini birlikte yönetmek için VIP veya ayrı Spor paketi değerlendirilebilir.' },
+    { q: 'Online diyetisyen insülin direncine yardımcı olur mu?', a: 'Beslenme yönetimi açısından evet. Tıbbi tedavi (ilaç, sağlık takibi) için doktorunuzla devam edin.' },
+    { q: 'Hangi paket insülin direnci için uygundur?', a: 'Diyet paketi (ayda 2 diyetisyen seansı) öncelikli seçenektir. Hareketi de dahil etmek için VIP değerlendirin.' },
+    { q: 'İnsülin direnci PCOS ile ilişkili midir?', a: 'PCOS\'lu kadınların büyük çoğunluğunda insülin direnci eşlik eder. İki durumu birlikte ele alan beslenme programları için PCOS sayfamıza göz atın.' },
+    { q: 'Öğün sıklığı insülin direncinde önemli mi?', a: 'Evet. Çok uzun açlık aralıkları veya sık sık atıştırma insülin döngüsünü bozabilir. Diyetisyeniniz kişisel ritminize göre öğün planlar.' },
+    { q: 'Bu sayfa tıbbi tavsiye midir?', a: 'Hayır. Genel beslenme bilgisi ve hizmet tanımıdır; tıbbi teşhis veya tedavi yerine geçmez.' },
+  ],
+}
+
+export const ONLINE_WELLNESS = {
+  path: '/online-wellness',
+  theme: 'coach',
+  heroFallback: '/online-kocluk',
+  pillarPath: '/',
+  pillarName: 'Yeni Form',
+  title: 'Online Wellness — Dijital Sağlık ve Yaşam Koçluğu Platformu',
+  description:
+    'Online wellness platformu: online diyetisyen, online spor koçluğu, sağlık analizi ve kişisel program. Türkiye\'de dijital wellness için Yeni Form\'u keşfedin.',
+  keywords:
+    'online wellness, wellness platformu, dijital wellness, online sağlık koçluğu, online sağlıklı yaşam, wellness Türkiye, online wellness programı',
+  h1: 'Online wellness — sağlıklı yaşamı dijitalde yönet',
+  lead:
+    '**Online wellness**, beslenme, hareket ve sağlık analizini tek platformda bir araya getirir. Yeni Form\'da **online diyetisyen**, **online spor koçluğu** ve AI destekli **kişisel sağlık analizi** video görüşmelerle yürütülür; kliniğe gitmenize gerek yok.',
+  primaryCta: { to: '/membership', label: 'Planları Karşılaştır' },
+  secondaryCta: { to: '/onboarding', label: 'Hemen Başla' },
+  teamLink: { to: '/team/coaches', label: 'Koç ve diyetisyen kadrosu' },
+  relatedService: { to: '/online-diyetisyen', label: 'Online diyetisyen hizmeti' },
+  serviceName: 'Online Wellness Platformu',
+  serviceType: 'WellnessProgram',
+  offerPlanIds: ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'vip'],
+  sections: [
+    {
+      h2: 'Online wellness nedir?',
+      paragraphs: [
+        '**Online wellness**, fiziksel ve zihinsel sağlığı destekleyen hizmetlerin internet ve video görüşme aracılığıyla sunulmasıdır. Beslenme danışmanlığı, spor koçluğu, sağlık analizi ve takip aynı dijital platformda yürütülür.',
+        'Türkiye\'de wellness platformlarına olan ilgi hızla artıyor. Kliniğe vakit ayıramayanlar, şehir dışında yaşayanlar ve **bütünsel sağlık yönetimi** arayanlar için online wellness, birebir fiziksel hizmetle karşılaştırılabilir sonuçlar sağlıyor.',
+      ],
+    },
+    {
+      h2: 'Yeni Form\'da online wellness nasıl çalışır?',
+      steps: [
+        { title: 'Sağlık analizi', text: 'Kayıtta sekiz boyutlu kişisel sağlık analizi tamamlanır; koç ve diyetisyen eşleşmesi bu veriye dayanır.' },
+        { title: 'Uzman seçimi', text: 'Diyetisyen, koç veya her ikisi (VIP) paket tercihine göre atanır.' },
+        { title: 'Video görüşme ve program', text: 'Platform içi görüntülü seanslarda program hazırlanır; antrenman videoları ve beslenme takibi panelde yürütülür.' },
+        { title: 'İlerleme takibi', text: 'Kalori, su, antrenman ve sağlık skoru panelde görünür; bir sonraki seans için koç/diyetisyen verileri önceden inceler.' },
+      ],
+    },
+    {
+      h2: 'Online wellness\'ın geleneksel kliniğe farkı ne?',
+      paragraphs: [
+        'Geleneksel klinik; belirli şehir, belirli saat ve ulaşım gereksinimiyle sınırlıdır. **Online wellness** platformu: istediğiniz yerden, randevu saatinde bilgisayar veya telefonunuzdan katılım imkânı sunar.',
+        'Yeni Form\'un rakipsiz unsurları: **video görüşme** (WhatsApp değil, platform içi), **AI sağlık skoru** analizi, **egzersiz video kütüphanesi** ve **kalori AI** aynı hesapta entegre çalışır.',
+      ],
+    },
+    {
+      h2: 'Hangi hizmetler dahildir?',
+      paragraphs: [
+        'Platform içinde **online diyetisyenlik**, **online spor koçluğu**, kişisel sağlık analizi, kalori takibi ve video görüşme yer alır. Paket kapsamına göre birini veya ikisini birden kullanabilirsiniz.',
+        'Doktor paketi; tek seferlik sağlık danışmanlığı görüşmesidir. VIP paket ise koç ve diyetisyeni bir arada sunar — Türkiye\'de bu entegrasyonu online sunan az sayıda platformdan biriyiz.',
+      ],
+    },
+  ],
+  faqs: [
+    { q: 'Online wellness nedir?', a: 'Online wellness; beslenme, hareket ve sağlık danışmanlığını internet üzerinden, video görüşme ve kişisel program aracılığıyla sunan dijital sağlık hizmetleridir.' },
+    { q: 'Online wellness platformu güvenilir mi?', a: 'Yeni Form\'da tüm koç ve diyetisyenler lisanslı uzmanlar; görüşmeler platform içi şifreli video, veriler KVKK uyumlu işlenir.' },
+    { q: 'Online wellness ile kilo verilir mi?', a: 'Online diyetisyen ve spor koçluğuyla kilo yönetimi mümkündür. Sonuçlar kişiden kişiye değişir; sürdürülebilir hedefler için koç/diyetisyeninizle birlikte plan yaparsınız.' },
+    { q: 'Yeni Form\'da online wellness kapsamı ne?', a: 'Online diyetisyen (diyet, PCOS, sporcu beslenmesi vb.), online spor koçluğu, AI sağlık analizi, kalori takibi ve video görüşme tek platformda sunulur.' },
+    { q: 'Online wellness fiyatları nasıl?', a: 'Eko Diyet 1.299 TL/ay\'dan başlar; VIP (koç + diyetisyen) 4.999 TL/ay\'dır. Güncel tablo üyelik sayfasındadır.' },
+    { q: 'Hangi wellness hizmetini seçmeliyim?', a: 'Yalnızca beslenme → Diyet paketi; yalnızca spor → Spor paketi; ikisi birlikte → VIP. Paket karşılaştırma sayfamıza bakın.' },
+    { q: 'Online wellness programı ne kadar sürer?', a: 'Hedefe bağlı değişir. Çoğu üye 3–6 ay düzenli takipte alışkanlık değişimi sağlar; paket süresi boyunca uzman desteği devam eder.' },
+    { q: 'Şehir dışında yaşıyorum, online wellness işe yarar mı?', a: 'Evet. Platform tüm Türkiye\'ye hizmet verir; randevu saatinde internet bağlantısı yeterlidir.' },
+  ],
+}
+
 export const SERVICE_PAGES = {
   [ONLINE_DIYETISYEN.path]: { ...ONLINE_DIYETISYEN, theme: 'dietitian' },
   [ONLINE_KOCLUK.path]: { ...ONLINE_KOCLUK, theme: 'coach' },
@@ -437,6 +632,9 @@ export const SERVICE_PAGES = {
   [ONLINE_DIYETISYEN_FIYAT.path]: ONLINE_DIYETISYEN_FIYAT,
   [EV_ANTRENMAN.path]: EV_ANTRENMAN,
   [SPORCU_BESLENMESI.path]: SPORCU_BESLENMESI,
+  [PCOS_BESLENMESI.path]: PCOS_BESLENMESI,
+  [INSULIN_DIRENCI.path]: INSULIN_DIRENCI,
+  [ONLINE_WELLNESS.path]: ONLINE_WELLNESS,
 }
 
 /** **kalın** işaretlerini <strong> ile HTML’e çevirir */

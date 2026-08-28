@@ -1,7 +1,7 @@
 # Yeni Form — SEO Anahtar Kelime Haritası
 
-> **Güncelleme:** 2026-08-13 · Kaynak: GSC hedefleri + rakip analizi + sektör arama hacmi verileri  
-> Ticari küme URL’ler: `/kilo-verme`, `/online-diyetisyen/fiyat`, `/online-kocluk/ev-antrenman`, `/beslenme/sporcu-beslenmesi`
+> **Güncelleme:** 2026-08-28 · Kaynak: GSC hedefleri + rakip analizi + sektör arama hacmi verileri  
+> Ticari küme URL’ler: `/kilo-verme`, `/online-diyetisyen/fiyat`, `/online-kocluk/ev-antrenman`, `/beslenme/sporcu-beslenmesi`, `/beslenme/pcos`, `/beslenme/insulin-direnci`, `/online-wellness`
 
 ---
 
@@ -15,8 +15,12 @@
 | 4 | online beslenme danışmanlığı | ~4.000 | Orta | /online-diyetisyen | Bilinmiyor |
 | 5 | online spor koçu | ~5.000 | Orta | /online-kocluk | Bilinmiyor |
 | 6 | online fitness koçu | ~3.000 | Orta | /online-kocluk | Bilinmiyor |
-| 7 | yeni form | ~1.000 | Düşük | / | Bilinmiyor |
-| 8 | yeniform | ~500 | Düşük | / | Bilinmiyor |
+| 7 | online spor koçluğu | ~5.000 | Orta | /online-kocluk | Bilinmiyor |
+| 8 | online spor | ~8.000 | Yüksek | /online-kocluk | Bilinmiyor |
+| 9 | online zayıflama | ~6.000 | Orta | /kilo-verme | Bilinmiyor |
+| 10 | online wellness | ~3.000 | Orta | /online-wellness | Bilinmiyor |
+| 11 | yeni form | ~1.000 | Düşük | / | Bilinmiyor |
+| 12 | yeniform | ~500 | Düşük | / | Bilinmiyor |
 
 ---
 
@@ -54,10 +58,10 @@
 
 | Anahtar Kelime | Aylık Arama | Niyet | Hedef Sayfa | Durum |
 |----------------|-------------|-------|-------------|-------|
-| PCOS diyeti | ~3.000 | Bilgi/Satın | /beslenme/pcos | **EKSİK** |
-| polikistik over beslenmesi | ~2.000 | Bilgi | /beslenme/pcos | **EKSİK** |
-| insülin direnci diyeti | ~4.000 | Bilgi/Satın | /beslenme/insulin-direnci | **EKSİK** |
-| insülin direnci beslenme | ~3.500 | Bilgi | /beslenme/insulin-direnci | **EKSİK** |
+| PCOS diyeti | ~3.000 | Bilgi/Satın | /beslenme/pcos | Canlı küme ✅ |
+| polikistik over beslenmesi | ~2.000 | Bilgi | /beslenme/pcos | Canlı küme ✅ |
+| insülin direnci diyeti | ~4.000 | Bilgi/Satın | /beslenme/insulin-direnci | Canlı küme ✅ |
+| insülin direnci beslenme | ~3.500 | Bilgi | /beslenme/insulin-direnci | Canlı küme ✅ |
 | hamilelikte beslenme | ~6.000 | Bilgi | /beslenme/hamilelik | **EKSİK** |
 | gebelikte diyet | ~3.000 | Bilgi | /beslenme/hamilelik | **EKSİK** |
 | tiroid diyeti | ~4.000 | Bilgi | Blog yazısı | **EKSİK** |

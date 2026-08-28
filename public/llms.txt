@@ -1,6 +1,6 @@
 # Yeni Form
 
-> Türkiye online koçluk ve online diyetisyen platformu. Video görüşme, kişiye özel program, üye paneli.
+> Türkiye online koçluk, online diyetisyen ve online wellness platformu. Online spor koçluğu, online zayıflama, PCOS ve insülin direnci beslenme programları. Video görüşme, kişiye özel program, üye paneli.
 
 - Site: https://www.yeniform.com
 - İletişim: info@yeniform.com
@@ -9,10 +9,13 @@
 
 - Online diyetisyen: https://www.yeniform.com/online-diyetisyen
 - Online diyetisyen fiyat 2026: https://www.yeniform.com/online-diyetisyen/fiyat
-- Kilo verme diyetisyeni: https://www.yeniform.com/kilo-verme
-- Online koçluk: https://www.yeniform.com/online-kocluk
+- Online zayıflama / kilo verme diyetisyeni: https://www.yeniform.com/kilo-verme
+- Online koçluk / online spor koçluğu: https://www.yeniform.com/online-kocluk
 - Evde antrenman programı: https://www.yeniform.com/online-kocluk/ev-antrenman
 - Sporcu beslenmesi: https://www.yeniform.com/beslenme/sporcu-beslenmesi
+- PCOS diyeti / polikistik over beslenmesi: https://www.yeniform.com/beslenme/pcos
+- İnsülin direnci diyeti: https://www.yeniform.com/beslenme/insulin-direnci
+- Online wellness platformu: https://www.yeniform.com/online-wellness
 - Üyelik paketleri: https://www.yeniform.com/membership
 
 ## Liste fiyat (aylık, TRY)
@@ -23,6 +26,14 @@
 - Spor: 2499 (ayda 2 koç seansı)
 - VIP: 4999 (ayda 2 koç + 2 diyetisyen)
 - Doktor: 1500 tek seferlik
+
+## Kategoriler
+
+- Online spor koçluğu ve online antrenman: /online-kocluk, /online-kocluk/ev-antrenman
+- Online diyetisyenlik ve beslenme danışmanlığı: /online-diyetisyen, /online-diyetisyen/fiyat
+- Online wellness ve dijital sağlık: /online-wellness
+- Online zayıflama ve kilo yönetimi: /kilo-verme
+- Niche beslenme: PCOS (/beslenme/pcos), insülin direnci (/beslenme/insulin-direnci), sporcu beslenmesi (/beslenme/sporcu-beslenmesi)
 
 ## Not
 

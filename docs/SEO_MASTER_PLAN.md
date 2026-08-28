@@ -473,14 +473,19 @@ Mevcut şemaları güçlendir:
 - [ ] 10 blog yazısı: kilo yönetimi temalı
 
 ### Sprint 3 (20 Ağustos – 2 Eylül)
-- [ ] /beslenme/sporcu-beslenmesi sayfası
-- [ ] /online-kocluk/ev-antrenman sayfası
+- [x] /beslenme/sporcu-beslenmesi sayfası ✅
+- [x] /online-kocluk/ev-antrenman sayfası ✅
 - [ ] Video sitemap / image sitemap ekle
 - [ ] Backlink outreach başlat (5 TR sağlık bloğu)
 - [ ] GSC coverage raporu → hata sayfaları düzelt
 
-### Sprint 4 (Eylül)
-- [ ] /beslenme/pcos + /beslenme/insulin-direnci sayfaları
+### Sprint 4 (28 Ağustos – Eylül) — TAMAMLANDI
+- [x] /beslenme/pcos sayfası ✅ (2026-08-28)
+- [x] /beslenme/insulin-direnci sayfası ✅ (2026-08-28)
+- [x] /online-wellness sayfası ✅ (2026-08-28)
+- [x] Mevcut sayfalar güçlendirildi: "online spor koçluğu", "online zayıflama", "online antrenman" keywords ✅
+- [x] llms.txt güncellendi (GEO / AI crawler) ✅
+- [x] Sitemap genişletildi (9 → 12 cluster URL) ✅
 - [ ] Blog kalite denetimi: AI yazılar → staff onayı workflow
 - [ ] Medya outreach başlat
 - [ ] İlk aylık SEO raporu

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
 import PublicLayout from './components/layout/PublicLayout'
 import RequireAuth from './components/auth/RequireAuth'
@@ -99,6 +100,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
+        <ThemeProvider>
         <ToastProvider>
           <NotificationAudioUnlock />
           <NotificationToastBridge />
@@ -123,6 +125,9 @@ export default function App() {
               <Route path="online-kocluk/ev-antrenman" element={<ServiceLandingPage path="/online-kocluk/ev-antrenman" />} />
               <Route path="kilo-verme" element={<ServiceLandingPage path="/kilo-verme" />} />
               <Route path="beslenme/sporcu-beslenmesi" element={<ServiceLandingPage path="/beslenme/sporcu-beslenmesi" />} />
+              <Route path="beslenme/pcos" element={<ServiceLandingPage path="/beslenme/pcos" />} />
+              <Route path="beslenme/insulin-direnci" element={<ServiceLandingPage path="/beslenme/insulin-direnci" />} />
+              <Route path="online-wellness" element={<ServiceLandingPage path="/online-wellness" />} />
               <Route path="hakkimizda" element={<AboutPage />} />
               <Route path="about" element={<Navigate to="/hakkimizda" replace />} />
               <Route path="builder" element={<Navigate to="/membership" replace />} />
@@ -228,6 +233,7 @@ export default function App() {
           </Routes>
           </Suspense>
         </ToastProvider>
+        </ThemeProvider>
       </AppProvider>
     </BrowserRouter>
   )
