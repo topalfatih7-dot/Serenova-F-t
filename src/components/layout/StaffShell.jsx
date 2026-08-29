@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react'
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import '../../styles/panel.css'
 import { useApp } from '../../context/AppContext'
@@ -14,10 +14,14 @@ import { resolveFirstName } from '../../utils/displayName'
 import { buildStaffNavItems } from '../../config/staffNav'
 import StaffForcePasswordChange from '../auth/StaffForcePasswordChange'
 import { supabase } from '../../services/supabaseClient'
+import { isPanelChatPath, isPanelChatThreadPath } from '../../utils/chatLayout'
 
 const STAFF_EMOJIS = ['📋', '💪', '🥗', '📊', '🧘', '⭐', '🎯', '💚', '🏅', '🤝']
 
 export default function StaffShell() {
+  const location = useLocation()
+  const chatPage = isPanelChatPath(location.pathname)
+  const chatThread = isPanelChatThreadPath(location.pathname)
   const {
     staffUser, logout, loggingOut, chatUnreadCount, staffAdminUnreadCount,
     staffCollabUnreadCount, notificationUnreadCount, refresh,
@@ -122,12 +126,21 @@ export default function StaffShell() {
           />
         </div>
 
-        <main data-panel-scroll className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
+        <main
+          data-panel-scroll
+          className={`flex min-h-0 flex-1 flex-col overscroll-contain ${
+            chatPage ? 'overflow-hidden' : 'overflow-y-auto'
+          } ${
+            chatThread
+              ? 'px-0 py-0 md:px-10 md:py-6 lg:px-12'
+              : 'px-8 py-4 sm:px-10 sm:py-6 lg:px-12'
+          }`}
+        >
           <div className="flex min-h-0 flex-1 flex-col">
             <Outlet />
           </div>
         </main>
-        <footer className="shrink-0 border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm">
+        <footer className="hidden shrink-0 border-t border-cream-200 bg-white/80 px-6 py-3 text-center text-[10px] text-cream-800/40 backdrop-blur-sm md:block">
           {BRAND.name} · {roleLabel} Paneli
         </footer>
       </div>

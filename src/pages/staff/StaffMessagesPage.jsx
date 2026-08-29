@@ -222,14 +222,15 @@ export default function StaffMessagesPage() {
 
   return (
     <PanelPageShell maxWidth="max-w-6xl" spacing="" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
-      <PanelPageHeader
-        className="shrink-0"
-        title="Mesajlar"
-        subtitle={showThread && !isWide ? undefined : 'Tüm danışanlarınız — okunmamış sohbetler üstte'}
-        icon={MessageCircle}
-        accent="brand"
-        compact={showThread && !isWide}
-      />
+      {!(showThread && !isWide) && (
+        <PanelPageHeader
+          className="shrink-0"
+          title="Mesajlar"
+          subtitle="Tüm danışanlarınız — okunmamış sohbetler üstte"
+          icon={MessageCircle}
+          accent="brand"
+        />
+      )}
 
       {(!showThread || isWide) && (
         <div className="shrink-0 flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -250,6 +251,7 @@ export default function StaffMessagesPage() {
             backLabel="Danışanlar"
             inbox={inbox}
             thread={thread}
+            flushMobile={showThread && !isWide}
           />
         </ChatPageFrame>
       )}

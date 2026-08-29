@@ -87,7 +87,7 @@ export default function ChatThreadView({
             return (
               <div key={m.id} className="mx-auto flex max-w-[92%] items-start gap-2 rounded-2xl bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-100">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-pre-line">{m.text}</span>
+                <span className="min-w-0 break-words whitespace-pre-line">{m.text}</span>
               </div>
             )
           }
@@ -100,12 +100,12 @@ export default function ChatThreadView({
               initial={false}
               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[min(100%,20rem)] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[88%] sm:px-4 sm:py-2.5 ${bubbleCls}`}>
+              <div className={`max-w-[min(85%,24rem)] break-words rounded-2xl px-3.5 py-2 text-sm sm:px-4 sm:py-2.5 ${bubbleCls}`}>
                 <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${isOwn ? 'text-white/75' : 'text-cream-800/45'}`}>
                   {m.senderType === 'staff' ? <StaffIcon className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
                   {labelFor(m)}
                 </div>
-                <p className="whitespace-pre-line leading-relaxed">{m.text}</p>
+                <p className="whitespace-pre-line break-words leading-relaxed">{m.text}</p>
                 <p className={`mt-1.5 text-[10px] ${isOwn ? 'text-white/60' : 'text-cream-800/40'}`}>
                   {formatDistanceToNow(new Date(m.createdAt), { addSuffix: true, locale: tr })}
                 </p>

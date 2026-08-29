@@ -243,15 +243,16 @@ export default function MessagesPage() {
 
   return (
     <PanelPageShell maxWidth="max-w-6xl" spacing="" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
-      <PanelPageHeader
-        className="shrink-0"
-        title="Mesajlar"
-        subtitle={showThread && !isWide ? undefined : 'Yalnızca size atanmış uzmanlarınızla — mesajlar kayıt altındadır'}
-        icon={MessageCircle}
-        accent="brand"
-        compact={showThread && !isWide}
-        image={showThread && !isWide ? null : PANEL_IMAGES.messages}
-      />
+      {!(showThread && !isWide) && (
+        <PanelPageHeader
+          className="shrink-0"
+          title="Mesajlar"
+          subtitle="Yalnızca size atanmış uzmanlarınızla — mesajlar kayıt altındadır"
+          icon={MessageCircle}
+          accent="brand"
+          image={PANEL_IMAGES.messages}
+        />
+      )}
 
       {(!showThread || isWide) && (
         <div className="shrink-0 flex items-start gap-2 rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50/80 to-orange-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -269,6 +270,7 @@ export default function MessagesPage() {
           backLabel="Sohbetler"
           inbox={inbox}
           thread={thread}
+          flushMobile={showThread && !isWide}
         />
       </ChatPageFrame>
 

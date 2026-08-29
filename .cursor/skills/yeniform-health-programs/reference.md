@@ -10,6 +10,9 @@
 - `src/components/onboarding/HealthProfileGateForm.jsx` — boy/kilo/yaş gate
 - `src/components/onboarding/HealthTestHub.jsx`, `HealthTestFlow.jsx` (`mode: core|remaining`)
 - `src/pages/CalendarPage.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`
+- `src/components/water/WaterCarafeCard.jsx`, `MemberWaterTracker.jsx`, `StaffWaterProgress.jsx`
+- `src/utils/waterTracking.js`, `src/services/waterLogs.js`, `src/hooks/useWaterLogs.js`
+- `docs/WATER_TRACKING.md`
 - `src/utils/programSchedule.js`, `programPackageScope.js`, `healthProfile.js`
 - `src/services/healthScoreAnalysis.js` — skor meta, fingerprint (`stripHealthTestMeta`), AI fetch, fallback
 - `src/utils/healthTestLock.js` — 14 gün kilit, `getHealthTestLockState`, `retakeAt` yeni döngü
@@ -24,10 +27,11 @@
 
 - Core analiz sonrası opsiyonel kategoriler açık (started / partial kilit yok)
 - `isDetailedHealthTestComplete` → `healthTest.optionalCompletedAt` + 14 gün `fullLock` (+ detailed AI)
-- Retake: `healthTest: { retakeAt }` + `analysisStage: 'core'` — meta dahil sıfırlanır; `retakeAt` eski detailed kilitini kapatır
+- Retake: `healthTest: { retakeAt }` + analiz sıfırlanır (`buildRetakeHealthAnalysisReset`); eski skor leftover ise `needsCoreAnalysisAfterRetake` core’u yeniden üretir
 
 ## Visibility
 
 - Üye dashboard: skorlar (`HealthScoreCard`); `staffBrief` yok.
 - Personel sağlık profili: cevaplar + klinik notlar + `StaffHealthBrief` (skor + brief).
+- Kan tahlili: `healthTest.bloodWorkFiles` → `HealthLabFilesPanel` (üye profil + personel/admin sağlık profili; 14 gün kilit yüklemeyi engellemez).
 - Env: `OPENAI_HEALTH_MODEL=gpt-5.4` (varsayılan).

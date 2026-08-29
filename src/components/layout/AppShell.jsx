@@ -1,4 +1,4 @@
-import { Outlet, Navigate, Link } from 'react-router-dom'
+import { Outlet, Navigate, Link, useLocation } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import '../../styles/panel.css'
 import Sidebar from './Sidebar'
@@ -14,10 +14,14 @@ import { getPlanLabel } from '../../data/membershipPlans'
 import { isHealthTestComplete } from '../../data/healthTest'
 import { buildMemberNavItems } from '../../config/memberNav'
 import { BRAND } from '../../config/brand'
+import { isPanelChatPath, isPanelChatThreadPath } from '../../utils/chatLayout'
 
 const MEMBER_EMOJIS = ['🏃‍♀️', '🥗', '💪', '🧘‍♀️', '🍎', '💧', '🔥', '❤️', '⚡', '🥑', '🏋️', '🌱']
 
 export default function AppShell() {
+  const location = useLocation()
+  const chatPage = isPanelChatPath(location.pathname)
+  const chatThread = isPanelChatThreadPath(location.pathname)
   const {
     isAdmin, isStaff, membership, notifications, user, logout, loggingOut, settings, updateSettings,
     chatUnreadCount, notificationUnreadCount, openSupportTicketsCount, packageConfig,
@@ -79,9 +83,15 @@ export default function AppShell() {
         </div>
         <main
           data-panel-scroll
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+          className={`relative flex min-h-0 flex-1 flex-col overscroll-contain ${
+            chatPage ? 'overflow-hidden' : 'overflow-y-auto'
+          }`}
         >
-          <div className="relative flex min-h-0 flex-1 flex-col px-8 py-4 sm:px-10 sm:py-6 lg:px-12">
+          <div className={`relative flex min-h-0 flex-1 flex-col ${
+            chatThread
+              ? 'px-0 py-0 md:px-10 md:py-6 lg:px-12'
+              : 'px-8 py-4 sm:px-10 sm:py-6 lg:px-12'
+          }`}>
             <Outlet />
           </div>
         </main>

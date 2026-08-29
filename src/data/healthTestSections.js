@@ -1,4 +1,4 @@
-import { DIETITIAN_HEALTH_SECTIONS } from './healthTestDietitianSections'
+import { DIETITIAN_HEALTH_SECTIONS } from './healthTestDietitianSections.js'
 
 export const HEALTH_SECTIONS = [
   {

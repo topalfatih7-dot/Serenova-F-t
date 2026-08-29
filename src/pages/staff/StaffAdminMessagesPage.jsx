@@ -6,10 +6,12 @@ import { ChatPageFrame, ChatThreadBody, ChatThreadHeader, ChatThreadPanel, CHAT_
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { useChatPresence } from '../../hooks/useChatPresence'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 import PresenceIndicator from '../../components/ui/PresenceIndicator'
 
 export default function StaffAdminMessagesPage() {
   const { toast } = useToast()
+  const isWide = useMediaQuery('(min-width: 768px)')
   const { anyAdminOnline } = useChatPresence([], { includeAdmins: true })
   const {
     staffUser, adminStaffThreads, adminStaffMessages,
@@ -46,23 +48,27 @@ export default function StaffAdminMessagesPage() {
 
   return (
     <PanelPageShell maxWidth="max-w-3xl" spacing="" className={`w-full max-w-none md:max-w-4xl ${CHAT_PAGE_SHELL_CLASS}`}>
-      <PanelPageHeader
-        className="shrink-0"
-        title="Admin Mesajları"
-        subtitle="Yönetim ekibi ile doğrudan iletişim"
-        icon={MessageCircle}
-        accent="brand"
-      />
+      {isWide && (
+        <PanelPageHeader
+          className="shrink-0"
+          title="Admin Mesajları"
+          subtitle="Yönetim ekibi ile doğrudan iletişim"
+          icon={MessageCircle}
+          accent="brand"
+        />
+      )}
 
-      <div className="shrink-0 flex items-start gap-2 rounded-xl border border-cream-200 bg-cream-50/80 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
-        <Shield className="mt-0.5 h-4 w-4 shrink-0 text-cream-700" />
-        <p className="text-[11px] leading-relaxed text-cream-800/75 sm:text-xs">
-          Admin ile yaptığınız tüm mesajlaşmalar kayıt altına alınır.
-        </p>
-      </div>
+      {isWide && (
+        <div className="shrink-0 flex items-start gap-2 rounded-xl border border-cream-200 bg-cream-50/80 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-cream-700" />
+          <p className="text-[11px] leading-relaxed text-cream-800/75 sm:text-xs">
+            Admin ile yaptığınız tüm mesajlaşmalar kayıt altına alınır.
+          </p>
+        </div>
+      )}
 
       <ChatPageFrame>
-        <ChatThreadPanel className="overflow-hidden rounded-xl border border-cream-200 bg-white shadow-sm md:rounded-2xl">
+        <ChatThreadPanel className={`overflow-hidden border border-cream-200 bg-white shadow-sm ${isWide ? 'rounded-xl md:rounded-2xl' : 'rounded-none md:rounded-2xl'}`}>
           <ChatThreadHeader
             title="Admin"
             subtitle="Yönetim ekibi"

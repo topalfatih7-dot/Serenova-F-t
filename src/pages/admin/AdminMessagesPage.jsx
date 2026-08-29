@@ -499,20 +499,23 @@ export default function AdminMessagesPage() {
 
   return (
     <PanelPageShell maxWidth="max-w-6xl" spacing="" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
-      <PanelPageHeader
-        className="shrink-0"
-        title="Mesajlar"
-        subtitle={showThread && !isWide ? undefined : 'Personel ile iletişim ve danışan sohbet denetimi'}
-        icon={MessageCircle}
-        accent="brand"
-        compact={showThread && !isWide}
-      />
+      {!(showThread && !isWide) && (
+        <PanelPageHeader
+          className="shrink-0"
+          title="Mesajlar"
+          subtitle="Personel ile iletişim ve danışan sohbet denetimi"
+          icon={MessageCircle}
+          accent="brand"
+        />
+      )}
 
-      <div className="flex shrink-0 flex-wrap gap-2">
-        <TabLink to="/admin/messages" active={!isAudit && !isCollab}>Personel Sohbetleri</TabLink>
-        <TabLink to="/admin/messages/audit" active={isAudit}>Danışan Denetimi</TabLink>
-        <TabLink to="/admin/messages/collab" active={isCollab}>Koç–Diyetisyen</TabLink>
-      </div>
+      {!(showThread && !isWide) && (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <TabLink to="/admin/messages" active={!isAudit && !isCollab}>Personel Sohbetleri</TabLink>
+          <TabLink to="/admin/messages/audit" active={isAudit}>Danışan Denetimi</TabLink>
+          <TabLink to="/admin/messages/collab" active={isCollab}>Koç–Diyetisyen</TabLink>
+        </div>
+      )}
 
       {(!showThread || isWide) && (
         <div className="flex items-start gap-2 rounded-xl border border-cream-200 bg-cream-50/80 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -541,6 +544,7 @@ export default function AdminMessagesPage() {
             backLabel={backLabel}
             inbox={inbox}
             thread={threadPanel}
+            flushMobile={showThread && !isWide}
           />
         </ChatPageFrame>
       )}

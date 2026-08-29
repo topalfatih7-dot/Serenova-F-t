@@ -35,6 +35,13 @@ import { stripEmbeddedInstructionBlock } from '../data/exerciseTurkish'
 import { getSiteUrl } from '../config/seo'
 import { memberIdSet, filterByMemberIds, filterProgramsForMembers } from '../utils/memberScopedData'
 import { shouldSkipExpiryPersistDuringPayment } from '../utils/stripePaymentGrace'
+import {
+  HEALTH_LAB_ALLOWED_EXT,
+  HEALTH_LAB_BUCKET,
+  HEALTH_LAB_MAX_BYTES,
+  HEALTH_LAB_SIGNED_TTL_SEC,
+  isHealthLabStoragePath,
+} from '../utils/healthLabFiles'
 import { displayNameFromAuthUser, memberNeedsProfileCompletion, isSocialAuthUser, hasRegisteredMember } from '../utils/memberProfile'
 import {
   syncMemberPackages,
@@ -1476,6 +1483,10 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 // E-posta / telefon / cinsiyet kayıt sonrası istemciden değiştirilemez.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
+  // Su hedefi yalnız set_member_water_goal RPC (diyetisyen/admin)
+  if (Object.prototype.hasOwnProperty.call(patch, 'waterTracking')) {
+    updated.waterTracking = member.waterTracking
+  }
 
   // Kimlik alanları kilitli (personel görünümünde iletişim gizli — boş yazma)
   if (member._contactHidden) {
@@ -2213,17 +2224,36 @@ export async function uploadHealthLabResult(file, userId) {
   if (!userId) return { success: false, error: 'Oturum gerekli' }
   if (!supabase) return { success: false, error: 'Depolama kullanılamıyor' }
   const ext = (file.name?.split('.').pop() || 'bin').toLowerCase()
-  const allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
-  if (!allowed.includes(ext)) return { success: false, error: 'Yalnızca PDF veya görsel yükleyebilirsiniz' }
-  if (file.size > 8 * 1024 * 1024) return { success: false, error: 'Dosya en fazla 8 MB olabilir' }
+  if (!HEALTH_LAB_ALLOWED_EXT.includes(ext)) return { success: false, error: 'Yalnızca PDF veya görsel yükleyebilirsiniz' }
+  if (file.size > HEALTH_LAB_MAX_BYTES) return { success: false, error: 'Dosya en fazla 8 MB olabilir' }
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-  const { error } = await supabase.storage.from('health-lab-results').upload(path, file, {
+  const { error } = await supabase.storage.from(HEALTH_LAB_BUCKET).upload(path, file, {
     cacheControl: '3600',
     upsert: false,
     contentType: file.type || 'application/octet-stream',
   })
   if (error) return { success: false, error: error.message }
   return { success: true, path }
+}
+
+export async function getHealthLabResultUrl(path, memberId) {
+  if (!isHealthLabStoragePath(path, memberId)) return { success: false, error: 'Geçersiz dosya' }
+  if (!supabase) return { success: false, error: 'Depolama kullanılamıyor' }
+  const { data, error } = await supabase.storage
+    .from(HEALTH_LAB_BUCKET)
+    .createSignedUrl(path, HEALTH_LAB_SIGNED_TTL_SEC)
+  if (error || !data?.signedUrl) {
+    return { success: false, error: error?.message || 'Bağlantı oluşturulamadı' }
+  }
+  return { success: true, url: data.signedUrl }
+}
+
+export async function removeHealthLabResult(path, userId) {
+  if (!isHealthLabStoragePath(path, userId)) return { success: false, error: 'Geçersiz dosya' }
+  if (!supabase) return { success: false, error: 'Depolama kullanılamıyor' }
+  const { error } = await supabase.storage.from(HEALTH_LAB_BUCKET).remove([path])
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function uploadStaffApplicationDoc(file, { turnstileToken = '', formSessionToken = '' } = {}) {

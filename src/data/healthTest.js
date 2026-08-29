@@ -1,7 +1,7 @@
 // Detaylı sağlık testi — tüm bölümler herkese; yalnızca genderOnly (women/men) filtrelenir.
 // audience: bölüm kategorisi etiketi (paket kilidi değil) — 'shared' | 'coach' | 'dietitian'
 
-import { HEALTH_SECTIONS } from './healthTestSections'
+import { HEALTH_SECTIONS } from './healthTestSections.js'
 
 export { HEALTH_SECTIONS }
 
@@ -539,6 +539,23 @@ function formatAnswerDisplay(q, v, healthTest) {
   return q.options?.find((o) => o.value === v)?.label || String(v)
 }
 
+function appendDescribedQuestion(items, q, healthTest) {
+  const v = healthTest?.[q.key]
+  if (q.type !== 'file') {
+    const display = formatAnswerDisplay(q, v, healthTest)
+    if (display != null) {
+      items.push({ label: q.label, value: display })
+    }
+  }
+  if (q.detail && isDetailVisible(q.detail, v) && healthTest[q.detail.key]) {
+    items.push({ label: 'Açıklama', value: healthTest[q.detail.key] })
+  }
+  ;(q.followUps || []).forEach((fu) => {
+    if (!isFollowUpVisible(fu, v)) return
+    appendDescribedQuestion(items, fu, healthTest)
+  })
+}
+
 // Admin/panel görünümü — cevaplanmış sorular (cinsiyet filtresi + dolu yanıtlar).
 export function describeHealthTest(healthTest, gender, _packageConfig = null) {
   if (!healthTest) return []
@@ -553,24 +570,7 @@ export function describeHealthTest(healthTest, gender, _packageConfig = null) {
   return sections
     .map((section) => {
       const items = []
-      section.questions.forEach((q) => {
-        const v = healthTest[q.key]
-        const display = formatAnswerDisplay(q, v, healthTest)
-        if (display == null) return
-        items.push({ label: q.label, value: display })
-        if (q.detail && isDetailVisible(q.detail, v) && healthTest[q.detail.key]) {
-          items.push({ label: 'Açıklama', value: healthTest[q.detail.key] })
-        }
-        ;(q.followUps || []).forEach((fu) => {
-          if (!isFollowUpVisible(fu, v)) return
-          const fuDisplay = formatAnswerDisplay(fu, healthTest[fu.key], healthTest)
-          if (fuDisplay == null) return
-          items.push({ label: fu.label, value: fuDisplay })
-          if (fu.detail && isDetailVisible(fu.detail, healthTest[fu.key]) && healthTest[fu.detail.key]) {
-            items.push({ label: 'Açıklama', value: healthTest[fu.detail.key] })
-          }
-        })
-      })
+      section.questions.forEach((q) => appendDescribedQuestion(items, q, healthTest))
       return { id: section.id, title: section.title, audience: section.audience || 'shared', items }
     })
     .filter((s) => s.items.length > 0)

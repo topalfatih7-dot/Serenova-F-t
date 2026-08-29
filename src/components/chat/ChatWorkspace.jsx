@@ -5,9 +5,8 @@ export const CHAT_PAGE_SHELL_CLASS = 'flex h-0 min-h-0 flex-1 flex-col gap-3 ove
 
 /**
  * ChatWorkspace sarmalayıcısı — kalan yüksekliği mesaj listesine bırakır.
- * max-h tavanı: üst zincirde bir kısıt kırılsa bile sohbet asla viewport'u aşamaz.
  */
-export const CHAT_PAGE_FRAME_CLASS = 'flex h-0 min-h-0 max-h-[calc(100dvh-8rem)] flex-1 flex-col overflow-hidden'
+export const CHAT_PAGE_FRAME_CLASS = 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden'
 
 /** Sohbet sütunu — başlık + programlar sabit, mesaj gövdesi kalan yüksekliği alır. */
 export function ChatThreadPanel({ children, className = '' }) {
@@ -21,13 +20,15 @@ export function ChatThreadPanel({ children, className = '' }) {
 /**
  * Mobil: liste VEYA sohbet (tam ekran). md+ (768px): yan yana split.
  * showThread — mobilde sohbet paneli açık mı
+ * flushMobile — kenar boşluğu yok, köşeler düz (kabuk padding'i sıfırken)
  */
-export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = 'Sohbetler' }) {
+export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = 'Sohbetler', flushMobile = false }) {
+  const round = flushMobile ? 'rounded-none md:rounded-2xl' : 'rounded-xl md:rounded-2xl'
   return (
     <div className="flex h-0 min-h-0 flex-1 flex-col overflow-hidden">
       <div className="grid h-full min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden md:grid-cols-[minmax(160px,200px)_1fr] md:gap-3 lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-4 xl:grid-cols-[minmax(260px,300px)_1fr]">
         <aside
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-brand-100/80 bg-gradient-to-b from-white via-brand-50/20 to-sage-50/30 shadow-sm backdrop-blur-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden border border-brand-100/80 bg-gradient-to-b from-white via-brand-50/20 to-sage-50/30 shadow-sm backdrop-blur-sm ${round} ${
             showThread ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -35,7 +36,7 @@ export function ChatWorkspace({ showThread, onBack, inbox, thread, backLabel = '
         </aside>
 
         <section
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-brand-100/70 bg-white shadow-sm md:rounded-2xl ${
+          className={`flex min-h-0 flex-col overflow-hidden border border-brand-100/70 bg-white shadow-sm ${round} ${
             showThread ? 'flex' : 'hidden md:flex'
           }`}
         >

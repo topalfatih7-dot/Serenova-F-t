@@ -197,14 +197,15 @@ export default function StaffCollabMessagesPage() {
 
   return (
     <PanelPageShell maxWidth="max-w-6xl" spacing="" className={`w-full max-w-none md:max-w-6xl ${CHAT_PAGE_SHELL_CLASS}`}>
-      <PanelPageHeader
-        className="shrink-0"
-        title="Ekip Mesajları"
-        subtitle={showThread && !isWide ? undefined : 'Ortak danışanlarınız için koç–diyetisyen–doktor koordinasyonu'}
-        icon={MessageCircle}
-        accent="sage"
-        compact={showThread && !isWide}
-      />
+      {!(showThread && !isWide) && (
+        <PanelPageHeader
+          className="shrink-0"
+          title="Ekip Mesajları"
+          subtitle="Ortak danışanlarınız için koç–diyetisyen–doktor koordinasyonu"
+          icon={MessageCircle}
+          accent="sage"
+        />
+      )}
 
       {(!showThread || isWide) && (
         <div className="flex items-start gap-2 rounded-xl border border-sage-100 bg-sage-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -229,6 +230,7 @@ export default function StaffCollabMessagesPage() {
             backLabel="Ekip mesajları"
             inbox={inbox}
             thread={thread}
+            flushMobile={showThread && !isWide}
           />
         </ChatPageFrame>
       )}

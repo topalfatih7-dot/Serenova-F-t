@@ -7,9 +7,12 @@ import {
   isHealthTestComplete,
   hasHealthTestProgress,
 } from '../../data/healthTest'
+import { collectHealthLabFiles } from '../../utils/healthLabFiles'
+import HealthLabFilesPanel from './HealthLabFilesPanel'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
 import StaffHealthBrief from '../staff/StaffHealthBrief'
+import StaffWaterProgress from '../water/StaffWaterProgress'
 import { isPaidMembership } from '../../data/membershipPlans'
 import { normalizeStaffRole } from '../../utils/staffRoles'
 
@@ -187,6 +190,8 @@ export default function MemberHealthProfilePanel({
         </div>
       </div>
 
+      <StaffWaterProgress member={member} viewerRole={viewerRole} />
+
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-cream-200 bg-white p-4">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
@@ -221,6 +226,11 @@ export default function MemberHealthProfilePanel({
           rerunError={analysisRerunError}
         />
       )}
+
+      <HealthLabFilesPanel
+        memberId={member.id}
+        files={collectHealthLabFiles(member.healthTest, member.id)}
+      />
 
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">

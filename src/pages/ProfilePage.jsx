@@ -12,12 +12,14 @@ import { requestNotificationPermission, unlockNotificationAudio } from '../utils
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle,
+  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle, Palette,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import HealthSummarySection from '../components/profile/HealthSummarySection'
+import HealthLabFilesPanel from '../components/member/HealthLabFilesPanel'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
+import ThemeToggle from '../components/ui/ThemeToggle'
 
 import {
   getPlanLabel,
@@ -25,6 +27,7 @@ import {
   packageIncludesDietitian,
 } from '../data/membershipPlans'
 import { isHealthTestComplete } from '../data/healthTest'
+import { collectHealthLabFiles, patchHealthTestLabFiles } from '../utils/healthLabFiles'
 import {
   countUsedDoctorSessions,
   isOneTimePlan,
@@ -44,7 +47,7 @@ export default function ProfilePage() {
   const {
     user, membership, membershipStatus, settings, myPrograms, staff,
     updateProfile, updateSettings, logout, loggingOut,
-    refresh, packageConfig,
+    refresh, packageConfig, saveHealthTestProgress,
     verificationStatus, sendEmailVerification, confirmEmailVerification,
     sendPhoneVerification, confirmPhoneVerification, refreshVerification,
   } = useApp()
@@ -77,6 +80,10 @@ export default function ProfilePage() {
   const dismissWelcome = useCallback(() => {
     setWelcomeOpen(false)
   }, [])
+
+  const handleLabFilesChange = useCallback(async (nextFiles) => {
+    await saveHealthTestProgress(patchHealthTestLabFiles(user?.healthTest, nextFiles))
+  }, [saveHealthTestProgress, user?.healthTest])
 
   const [editOpen, setEditOpen] = useState(false)
   const [form, setForm] = useState({
@@ -344,6 +351,13 @@ export default function ProfilePage() {
 
       <HealthSummarySection user={user} />
 
+      <HealthLabFilesPanel
+        memberId={user.id}
+        files={collectHealthLabFiles(user.healthTest, user.id)}
+        canEdit
+        onFilesChange={handleLabFilesChange}
+      />
+
       <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
         {/* Sol: hızlı erişim + kişisel */}
         <div className="space-y-5 lg:col-span-3">
@@ -495,6 +509,19 @@ export default function ProfilePage() {
                 Planları karşılaştır / paket ekle
               </Link>
             </div>
+          </ProfileSectionCard>
+
+          <ProfileSectionCard
+            icon={Palette}
+            title="Görünüm"
+            subtitle="Aydınlık, karanlık veya sistem tercihi"
+            accent="brand"
+            delay={0.15}
+          >
+            <ThemeToggle variant="segmented" />
+            <p className="mt-2 text-xs text-cream-800/50">
+              Sistem, cihazınızın açık/koyu ayarını takip eder. Tercih bu cihazda saklanır.
+            </p>
           </ProfileSectionCard>
 
           <ProfileSectionCard

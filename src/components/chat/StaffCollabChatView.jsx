@@ -91,12 +91,12 @@ export default function StaffCollabChatView({
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[min(100%,20rem)] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[88%] sm:px-4 sm:py-2.5 ${bubbleCls}`}>
+              <div className={`max-w-[min(85%,24rem)] break-words rounded-2xl px-3.5 py-2 text-sm sm:px-4 sm:py-2.5 ${bubbleCls}`}>
                 <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${isOwn ? 'text-white/75' : 'text-cream-800/45'}`}>
                   <Icon className="h-3 w-3" />
                   {labelFor(m)}
                 </div>
-                <p className="whitespace-pre-line leading-relaxed">{m.text}</p>
+                <p className="whitespace-pre-line break-words leading-relaxed">{m.text}</p>
                 <p className={`mt-1.5 text-[10px] ${isOwn ? 'text-white/60' : 'text-cream-800/40'}`}>
                   {formatDistanceToNow(new Date(m.createdAt), { addSuffix: true, locale: tr })}
                 </p>
