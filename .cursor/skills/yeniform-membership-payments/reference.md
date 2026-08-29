@@ -49,6 +49,7 @@ Admin may create additional plan IDs with custom entitlements.
 - `api/_membershipExpiry.js` — cron membership-expiry
 - `src/services/supabaseDb.js` → `changeMemberPlan`, `adminUpdatePremiumMembership`
 - `src/data/staffPayouts.js`, `src/services/sessionAttendance.js`, `staff_earnings` table
+- Personel hakediş: Cuma 00:00–Perşembe 23:59 (Europe/Istanbul, görüşme **başlangıcı**); ödeme sonraki Cuma. Cuma günü başlayan seans o günkü EFT’ye girmez.
 
 ## DB columns (`public.plans`)
 

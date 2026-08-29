@@ -3,7 +3,7 @@ import { format, startOfMonth } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import {
   History, Wallet, TrendingUp, Users,
-  Clock, ArrowDownLeft, Building2, Crown, Loader2,
+  Clock, ArrowDownLeft, Crown, Loader2,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../../context/AppContext'
@@ -13,12 +13,17 @@ import EmptyState from '../../components/ui/EmptyState'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import {
   STAFF_SESSION_RATE_TRY,
+  STAFF_MIN_OVERLAP_MINUTES,
   STAFF_EARNING_STATUS,
+  earningMeetingMeta,
+  formatIstanbulDateTime,
   formatStaffPayoutPeriodLabel,
+  nextStaffPayoutPeriodKey,
 } from '../../data/staffPayouts'
 import { getPlanLabel, isPaidMembership } from '../../data/membershipPlans'
 import MemberSubscriptionPackages from '../../components/membership/MemberSubscriptionPackages'
 import StaffPayoutAccountCard from '../../components/payments/StaffPayoutAccountCard'
+import StaffEarningsHistory from '../../components/payments/StaffEarningsHistory'
 import AdminStaffPayoutDirectory, { StaffPayoutInline } from '../../components/payments/AdminStaffPayoutDirectory'
 import useStaffPayoutAccounts from '../../hooks/useStaffPayoutAccounts'
 import { isPayoutAccountComplete } from '../../utils/iban'
@@ -62,14 +67,6 @@ function StatusBadge({ status }) {
       {labels[status] || status}
     </span>
   )
-}
-
-function nextFridayLabel() {
-  const d = new Date()
-  const day = d.getDay()
-  const add = day <= 5 ? (5 - day) : 6
-  d.setDate(d.getDate() + add)
-  return format(d, 'd MMM', { locale: tr })
 }
 
 function MemberPayments() {
@@ -169,15 +166,14 @@ function useStaffEarnings({ staffId = null, all = false } = {}) {
 }
 
 function StaffPayments() {
-  const { staffUser } = useApp()
+  const { staffUser, platform } = useApp()
   const { rows, loading } = useStaffEarnings({ staffId: staffUser?.id })
   const { account, loading: payoutLoading, reload: reloadPayout } = useStaffPayoutAccounts({ staffId: staffUser?.id })
 
   const summary = useMemo(() => {
     const monthStart = startOfMonth(new Date())
-    const pendingAmount = rows
-      .filter((r) => r.status === 'pending' || r.status === 'approved')
-      .reduce((s, r) => s + Number(r.amount_try || 0), 0)
+    const pendingRows = rows.filter((r) => r.status === 'pending' || r.status === 'approved')
+    const pendingAmount = pendingRows.reduce((s, r) => s + Number(r.amount_try || 0), 0)
     const sessionsThisMonth = rows.filter((r) => {
       const created = new Date(r.created_at)
       return created >= monthStart && r.status !== 'rejected' && r.status !== 'reversed'
@@ -185,22 +181,13 @@ function StaffPayments() {
     const totalEarned = rows
       .filter((r) => r.status === 'paid' || r.status === 'approved' || r.status === 'pending')
       .reduce((s, r) => s + Number(r.amount_try || 0), 0)
-
-    const byPeriod = {}
-    for (const r of rows) {
-      const key = r.period_key || '—'
-      if (!byPeriod[key]) byPeriod[key] = { id: key, period: formatStaffPayoutPeriodLabel(key), sessions: 0, amount: 0, status: r.status }
-      byPeriod[key].sessions += 1
-      byPeriod[key].amount += Number(r.amount_try || 0)
-      if (r.status === 'pending') byPeriod[key].status = 'pending'
-      else if (r.status === 'paid' && byPeriod[key].status !== 'pending') byPeriod[key].status = 'paid'
-    }
+    const payoutKey = nextStaffPayoutPeriodKey(new Date(), pendingRows.map((r) => r.period_key))
 
     return {
       pendingAmount,
       sessionsThisMonth,
       totalEarned,
-      history: Object.values(byPeriod).sort((a, b) => String(b.id).localeCompare(String(a.id))),
+      payoutLabel: formatStaffPayoutPeriodLabel(payoutKey),
     }
   }, [rows])
 
@@ -213,7 +200,13 @@ function StaffPayments() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <p className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-cream-900">
+        <span className="font-semibold">Görüşme başı {formatTry(STAFF_SESSION_RATE_TRY)}</span>
+        {' · Cuma EFT/FAST · iki taraf videoda, en az '}
+        {STAFF_MIN_OVERLAP_MINUTES}
+        {' dk. Program ve liste yok. Perşembe 23:59’a kadar (başlangıç saati) o Cuma’ya; Cuma 00:00’dan sonrakiler sonraki Cuma’ya yazılır.'}
+      </p>
       {payoutLoading ? (
         <div className="flex items-center justify-center rounded-3xl border border-cream-200 bg-white py-12 text-cream-800/50">
           <Loader2 className="h-6 w-6 animate-spin" />
@@ -221,19 +214,12 @@ function StaffPayments() {
       ) : (
         <StaffPayoutAccountCard staffUser={staffUser} account={account} onSaved={reloadPayout} />
       )}
-      <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/40 px-4 py-3">
-        <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-        <p className="text-sm text-brand-900/80">
-          Faturalandırılabilir görüşme başına {formatTry(STAFF_SESSION_RATE_TRY)}
-          {' '}· her iki tarafın videoya katılımı ve en az 15 dk eşzamanlı süre gerekir. Program/listeler dahil değildir.
-        </p>
-      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
           <p className="text-xs font-medium text-amber-800/70">Bekleyen Hakediş</p>
           <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(summary.pendingAmount)}</p>
           <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
-            <Clock className="h-3 w-3" /> Ödeme: {nextFridayLabel()}
+            <Clock className="h-3 w-3" /> Ödeme: {summary.payoutLabel}
           </p>
         </div>
         <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
@@ -254,30 +240,7 @@ function StaffPayments() {
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <Wallet className="h-5 w-5 text-brand-500" /> Hakediş Geçmişi
         </h2>
-        {summary.history.length === 0 ? (
-          <EmptyState
-            icon={Wallet}
-            title="Henüz hakediş yok"
-            description="Faturalandırılabilir video görüşmeler tamamlandıkça burada görünür."
-          />
-        ) : (
-          <div className="space-y-3">
-            {summary.history.map((row) => (
-              <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream-200 bg-white p-4">
-                <div>
-                  <p className="font-semibold text-cream-900">{row.period}</p>
-                  <p className="text-xs text-cream-800/55">
-                    {row.sessions} faturalandırılabilir görüşme
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-bold text-cream-900">{formatTry(row.amount)}</p>
-                  <StatusBadge status={row.status} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <StaffEarningsHistory rows={rows} members={platform?.members || []} />
       </section>
     </div>
   )
@@ -337,12 +300,22 @@ function AdminStaffEarnings({ accountsByStaffId = {} }) {
 
   return (
     <div className="space-y-2">
-      {rows.slice(0, 40).map((r) => (
+      {rows.slice(0, 40).map((r) => {
+        const meeting = earningMeetingMeta(r, platform?.members || [])
+        return (
         <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-200 bg-white px-4 py-3">
           <div className="min-w-0 space-y-1.5">
             <p className="font-medium text-cream-900">{staffName(r.staff_id)}</p>
             <p className="text-xs text-cream-800/50">
-              {formatStaffPayoutPeriodLabel(r.period_key)} · {r.session_type} · {r.overlap_minutes} dk
+              {meeting.memberName}
+              {' · '}
+              {formatIstanbulDateTime(meeting.startedAt)}
+              {' · '}
+              {meeting.sessionTypeLabel}
+              {' · '}
+              {r.overlap_minutes} dk
+              {' · ödeme '}
+              {formatStaffPayoutPeriodLabel(r.period_key)}
             </p>
             <StaffPayoutInline account={accountsByStaffId[r.staff_id]} />
           </div>
@@ -371,7 +344,8 @@ function AdminStaffEarnings({ accountsByStaffId = {} }) {
             )}
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -533,7 +507,7 @@ export default function PaymentManagementPage({ audience = 'member' }) {
 
   const subtitle = useMemo(() => {
     if (audience === 'admin') return 'Gelir, üye ödemeleri, personel IBAN’ları ve hakediş onayları'
-    if (audience === 'staff') return 'IBAN / banka hesabı ve video görüşme hakedişi — Cuma ödeme döngüsü'
+    if (audience === 'staff') return 'IBAN ve Cuma hakediş ödemesi'
     return 'Ödeme geçmişiniz ve Stripe kart yönetimi'
   }, [audience])
 

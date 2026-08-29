@@ -2,6 +2,7 @@
  * Video görüşme katılımı → seans attendance + staff_earnings.
  * HTTP: POST /api/auth { action: 'session-attendance', sessionId, sessionType, event: 'join'|'leave' }
  */
+import { STAFF_SESSION_RATE_TRY, staffPayoutPeriodKey } from '../src/data/staffPayouts.js'
 
 const SESSION_KEYS = {
   coach: 'coachSessions',
@@ -22,7 +23,6 @@ const ASSIGN_COL = {
 }
 
 const STAFF_MIN_OVERLAP_MINUTES = 15
-const STAFF_SESSION_RATE_TRY = 500
 const BILLABLE_TYPES = new Set(['coach_session', 'dietitian_session'])
 
 function toMs(iso) {
@@ -94,15 +94,6 @@ function buildSessionAttendancePatch(session, attendance) {
   }
 }
 
-function isoWeekPeriodKey(d = new Date()) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const dayNum = date.getUTCDay() || 7
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
-  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7)
-  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
-}
-
 export async function resolveCaller(admin, user) {
   const email = String(user.email || '').toLowerCase()
   if (email) {
@@ -126,7 +117,7 @@ export async function findSessionContext(admin, sessionId, sessionTypeHint, call
   if (caller.kind === 'member') {
     const { data: row, error } = await admin
       .from('members')
-      .select('id, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
       .eq('id', caller.memberId)
       .maybeSingle()
     if (error || !row) return { ok: false, error: 'Üye bulunamadı.' }
@@ -157,7 +148,7 @@ export async function findSessionContext(admin, sessionId, sessionTypeHint, call
     const assignCol = ASSIGN_COL[type]
     const { data: members, error } = await admin
       .from('members')
-      .select('id, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
       .eq(assignCol, caller.staffId)
       .limit(300)
     if (error) return { ok: false, error: error.message }
@@ -221,12 +212,15 @@ export async function recordSessionAttendance(admin, user, {
 
   let earning = null
   if (evaluation.billable && BILLABLE_TYPES.has(earningType) && found.staffId) {
-    const periodKey = isoWeekPeriodKey(new Date(updatedSession.date || Date.now()))
+    const startedAt = updatedSession.date || new Date().toISOString()
+    const periodKey = staffPayoutPeriodKey(startedAt)
     const row = {
       staff_id: found.staffId,
       member_id: found.memberId,
+      member_name: found.memberRow?.name || null,
       session_id: sessionId,
       session_type: earningType,
+      session_started_at: startedAt,
       amount_try: STAFF_SESSION_RATE_TRY,
       overlap_minutes: evaluation.overlapMinutes || 0,
       period_key: periodKey,

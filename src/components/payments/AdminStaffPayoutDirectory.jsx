@@ -23,11 +23,17 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
 
   const byStaff = useMemo(() => {
     const map = new Map(accounts.map((a) => [a.staffId, a]))
-    return (staff || []).map((s) => ({
-      staff: s,
-      account: map.get(s.id) || null,
-      complete: isPayoutAccountComplete(map.get(s.id)),
-    }))
+    return (staff || []).map((s) => {
+      const account = map.get(s.id) || null
+      return {
+        staff: s,
+        account,
+        complete: isPayoutAccountComplete({
+          ...(account || {}),
+          accountHolderName: String(s.name || '').trim() || account?.accountHolderName,
+        }),
+      }
+    })
   }, [staff, accounts])
 
   const counts = useMemo(() => ({
@@ -157,9 +163,7 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
                       {bank && <BankMark bank={bank} size="sm" />}
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-cream-900">{account.bankShort}</p>
-                        <p className="text-[11px] text-cream-800/45">
-                          EFT {account.bankCode} · {account.accountType === 'business' ? 'Ticari' : 'Bireysel'}
-                        </p>
+                        <p className="text-[11px] text-cream-800/45">EFT {account.bankCode}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 px-3 py-2.5">
@@ -175,7 +179,7 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
                       </button>
                     </div>
                     <p className="text-xs text-cream-800/55">
-                      Hesap sahibi: <span className="font-medium text-cream-900">{account.accountHolderName}</span>
+                      Hesap sahibi: <span className="font-medium text-cream-900">{s.name}</span>
                       {account.updatedAt ? (
                         <> · {format(new Date(account.updatedAt), 'd MMM yyyy', { locale: tr })}</>
                       ) : null}
