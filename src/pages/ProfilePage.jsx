@@ -27,7 +27,7 @@ import {
   packageIncludesDietitian,
 } from '../data/membershipPlans'
 import { isHealthTestComplete } from '../data/healthTest'
-import { collectHealthLabFiles, patchHealthTestLabFiles } from '../utils/healthLabFiles'
+import { collectHealthLabFiles, memberOptedInToHealthLab, patchHealthTestLabFiles } from '../utils/healthLabFiles'
 import {
   countUsedDoctorSessions,
   isOneTimePlan,
@@ -351,12 +351,14 @@ export default function ProfilePage() {
 
       <HealthSummarySection user={user} />
 
-      <HealthLabFilesPanel
-        memberId={user.id}
-        files={collectHealthLabFiles(user.healthTest, user.id)}
-        canEdit
-        onFilesChange={handleLabFilesChange}
-      />
+      {memberOptedInToHealthLab(user.healthTest) && (
+        <HealthLabFilesPanel
+          memberId={user.id}
+          files={collectHealthLabFiles(user.healthTest, user.id)}
+          canEdit
+          onFilesChange={handleLabFilesChange}
+        />
+      )}
 
       <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
         {/* Sol: hızlı erişim + kişisel */}

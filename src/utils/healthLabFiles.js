@@ -41,6 +41,11 @@ export function collectHealthLabFiles(healthTest, memberId) {
     .filter((file) => file && isHealthLabStoragePath(file.path, memberId))
 }
 
+/** Profilde tahlil alanı: testte “Evet” diyen üyeler (hayır / daha sonra / sormadı → kapalı). */
+export function memberOptedInToHealthLab(healthTest) {
+  return String(healthTest?.[HEALTH_LAB_INTENT_KEY] || '') === 'yes'
+}
+
 export function isHealthLabImage(file) {
   const ct = String(file?.contentType || '').toLowerCase()
   if (ct.startsWith('image/')) return true

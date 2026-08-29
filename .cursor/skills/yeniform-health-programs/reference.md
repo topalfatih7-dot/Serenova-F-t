@@ -33,5 +33,5 @@
 
 - Üye dashboard: skorlar (`HealthScoreCard`); `staffBrief` yok.
 - Personel sağlık profili: cevaplar + klinik notlar + `StaffHealthBrief` (skor + brief).
-- Kan tahlili: `healthTest.bloodWorkFiles` → `HealthLabFilesPanel` (üye profil + personel/admin sağlık profili; 14 gün kilit yüklemeyi engellemez).
+- Kan tahlili: `bloodWorkUploadIntent === 'yes'` ise üye profilde yönetilir (`HealthLabFilesPanel`); `no` / `later` / yoksa profil alanı açılmaz. Personel yalnızca dosya varsa görür. 14 gün kilit yüklemeyi engellemez.
 - Env: `OPENAI_HEALTH_MODEL=gpt-5.4` (varsayılan).

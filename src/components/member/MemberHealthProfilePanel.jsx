@@ -165,6 +165,7 @@ export default function MemberHealthProfilePanel({
   const sections = describeHealthTest(member.healthTest, member.gender, member.packageConfig)
     .filter((sec) => sectionVisibleForRole(sec.audience, viewerRole))
   const briefKeys = briefKeysForRole(viewerRole)
+  const labFiles = collectHealthLabFiles(member.healthTest, member.id)
 
   return (
     <div className="space-y-6">
@@ -227,10 +228,12 @@ export default function MemberHealthProfilePanel({
         />
       )}
 
-      <HealthLabFilesPanel
-        memberId={member.id}
-        files={collectHealthLabFiles(member.healthTest, member.id)}
-      />
+      {labFiles.length > 0 && (
+        <HealthLabFilesPanel
+          memberId={member.id}
+          files={labFiles}
+        />
+      )}
 
       <div className="space-y-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-cream-900">

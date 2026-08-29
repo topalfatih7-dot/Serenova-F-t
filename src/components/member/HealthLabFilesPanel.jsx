@@ -94,7 +94,7 @@ export default function HealthLabFilesPanel({
           <h3 className="font-display text-base font-bold text-cream-900">Kan tahlilleri</h3>
           <p className="text-xs leading-relaxed text-cream-800/55">
             {canEdit
-              ? 'PDF veya fotoğraf yükleyin. Uzmanlarınız sağlık profilinizde görür.'
+              ? 'Yüklediklerinizi silebilir veya yenisini ekleyebilirsiniz. Uzmanlarınız sağlık profilinizde görür.'
               : 'Üyenin yüklediği laboratuvar sonuçları'}
           </p>
         </div>

@@ -4,6 +4,7 @@ import {
   collectHealthLabFiles,
   isHealthLabImage,
   isHealthLabStoragePath,
+  memberOptedInToHealthLab,
   patchHealthTestLabFiles,
 } from '../src/utils/healthLabFiles.js'
 import { describeHealthTest } from '../src/data/healthTest.js'
@@ -32,6 +33,13 @@ describe('healthLabFiles', () => {
     assert.equal(files[0].name, 'tahlil.png')
     assert.equal(isHealthLabImage(files[0]), true)
     assert.equal(isHealthLabImage(files[1]), false)
+  })
+
+  it('shows profile lab panel only after an explicit yes', () => {
+    assert.equal(memberOptedInToHealthLab({ bloodWorkUploadIntent: 'yes' }), true)
+    assert.equal(memberOptedInToHealthLab({ bloodWorkUploadIntent: 'no' }), false)
+    assert.equal(memberOptedInToHealthLab({ bloodWorkUploadIntent: 'later' }), false)
+    assert.equal(memberOptedInToHealthLab({}), false)
   })
 
   it('marks upload intent when files are added', () => {
