@@ -117,6 +117,14 @@ export default function VideoCallPage({ audience = 'member' }) {
   })
 
   const joinedReported = useRef(false)
+  const attendanceMeta = useRef({ sessionId: '', sessionType: '' })
+  useEffect(() => {
+    attendanceMeta.current = {
+      sessionId: sessionId || '',
+      sessionType: context.sessionType || normalizedType,
+    }
+  }, [sessionId, context.sessionType, normalizedType])
+
   useEffect(() => {
     if (!call.isJoined || joinedReported.current || !sessionId) return
     joinedReported.current = true
@@ -127,13 +135,14 @@ export default function VideoCallPage({ audience = 'member' }) {
     })
   }, [call.isJoined, sessionId, context.sessionType, normalizedType])
 
-  const reportLeave = () => {
+  const reportLeave = (opts = {}) => {
     if (!joinedReported.current || !sessionId) return
     joinedReported.current = false
     reportSessionAttendance({
       sessionId,
       sessionType: context.sessionType || normalizedType,
       event: 'leave',
+      keepalive: Boolean(opts.keepalive),
     })
   }
 
@@ -143,18 +152,39 @@ export default function VideoCallPage({ audience = 'member' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- leave when Daily drops JOINED
   }, [call.isJoined])
 
+  useEffect(() => {
+    const onPageHide = () => {
+      if (!joinedReported.current) return
+      const { sessionId: id, sessionType: type } = attendanceMeta.current
+      joinedReported.current = false
+      if (!id) return
+      reportSessionAttendance({
+        sessionId: id,
+        sessionType: type,
+        event: 'leave',
+        keepalive: true,
+      })
+    }
+    window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('beforeunload', onPageHide)
+    return () => {
+      window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('beforeunload', onPageHide)
+    }
+  }, [])
+
   const backPath = audience === 'staff'
     ? '/staff'
     : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : sessionType === 'doctor' ? '/schedule?tab=doctor' : '/schedule?tab=coach'
 
   const handleExit = () => {
-    reportLeave()
+    reportLeave({ keepalive: true })
     call.destroy()
     navigate(backPath)
   }
 
   const handleLeaveMeeting = async () => {
-    reportLeave()
+    reportLeave({ keepalive: true })
     await call.leaveMeeting()
   }
 

@@ -6,6 +6,7 @@
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
  * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger + katalog fiyat hizalama / T-7 (CRON_SECRET, cron 03:00)
  * ?task=session-reminders — randevu T-24s / T-1s WhatsApp + in-app (CRON_SECRET, saatlik)
+ * ?task=session-attendance — açık görüşme attendance finalize + şişmiş hakediş denetimi (CRON_SECRET, saatlik)
  */
 
 import {
@@ -136,7 +137,41 @@ export default async function handler(req, res) {
   ) {
     return handleSessionReminders(req, res)
   }
+  if (
+    task === 'session-attendance'
+    || task === 'session_attendance'
+    || task === 'attendance-finalize'
+  ) {
+    return handleSessionAttendanceFinalize(req, res)
+  }
   return handleBlogGenerate(req, res)
+}
+
+async function handleSessionAttendanceFinalize(req, res) {
+  setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
+  if (handleOptions(req, res)) return
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Yalnızca GET/POST desteklenir' })
+  }
+
+  const cronGuard = requireCronSecret(req)
+  if (!cronGuard.ok) {
+    return res.status(cronGuard.status).json({ ok: false, error: cronGuard.error })
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
+  }
+
+  try {
+    const { finalizeExpiredSessionAttendances, auditInflatedStaffEarnings } = await import('./_sessionAttendance.js')
+    const admin = getSupabaseAdmin()
+    const finalized = await finalizeExpiredSessionAttendances(admin)
+    const audit = await auditInflatedStaffEarnings(admin)
+    return res.status(200).json({ ok: true, finalized, audit })
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err?.message || 'Attendance finalize hatası' })
+  }
 }
 
 async function handleSessionReminders(req, res) {

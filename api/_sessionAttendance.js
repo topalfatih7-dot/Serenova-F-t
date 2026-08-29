@@ -1,8 +1,19 @@
 /**
  * Video görüşme katılımı → seans attendance + staff_earnings.
  * HTTP: POST /api/auth { action: 'session-attendance', sessionId, sessionType, event: 'join'|'leave' }
+ * Daily webhook: POST /api/daily-room (imzalı)
  */
 import { STAFF_SESSION_RATE_TRY, staffPayoutPeriodKey } from '../src/data/staffPayouts.js'
+import {
+  applyAttendanceEvent,
+  buildSessionAttendancePatch,
+  closeOpenAttendanceSegments,
+  computeBillableOverlapMinutes,
+  evaluateSessionBillable,
+  isMeetingAttendanceClosed,
+} from '../src/services/sessionAttendance.js'
+import { getJoinWindowMinutes, getSessionJoinTiming } from './_videoJoinWindows.js'
+import { buildDailyRoomName, deleteDailyRoom, isDailyWebhookConfigured } from './_daily.js'
 
 const SESSION_KEYS = {
   coach: 'coachSessions',
@@ -22,77 +33,10 @@ const ASSIGN_COL = {
   doctor: 'assigned_doctor_id',
 }
 
-const STAFF_MIN_OVERLAP_MINUTES = 15
 const BILLABLE_TYPES = new Set(['coach_session', 'dietitian_session'])
+const MEMBER_SCAN_PAGE = 200
 
-function toMs(iso) {
-  const t = new Date(iso).getTime()
-  return Number.isNaN(t) ? null : t
-}
-
-function computeOverlapMinutes(memberSeg, staffSeg) {
-  if (!memberSeg?.joinedAt || !staffSeg?.joinedAt) return 0
-  const mStart = toMs(memberSeg.joinedAt)
-  const mEnd = toMs(memberSeg.leftAt || new Date().toISOString())
-  const sStart = toMs(staffSeg.joinedAt)
-  const sEnd = toMs(staffSeg.leftAt || new Date().toISOString())
-  if (mStart == null || mEnd == null || sStart == null || sEnd == null) return 0
-  const overlapStart = Math.max(mStart, sStart)
-  const overlapEnd = Math.min(mEnd, sEnd)
-  if (overlapEnd <= overlapStart) return 0
-  return Math.floor((overlapEnd - overlapStart) / 60_000)
-}
-
-function evaluateSessionBillable(session, attendance) {
-  if (!session || session.status === 'cancelled') {
-    return { billable: false, reason: 'Randevu iptal edilmiş.', overlapMinutes: 0 }
-  }
-  const memberSeg = attendance?.member
-  const staffSeg = attendance?.staff
-  if (!memberSeg?.joinedAt) return { billable: false, reason: 'Üye videoya katılmadı.', overlapMinutes: 0 }
-  if (!staffSeg?.joinedAt) return { billable: false, reason: 'Personel videoya katılmadı.', overlapMinutes: 0 }
-  const overlapMinutes = computeOverlapMinutes(memberSeg, staffSeg)
-  if (overlapMinutes < STAFF_MIN_OVERLAP_MINUTES) {
-    return {
-      billable: false,
-      reason: `Eşzamanlı görüşme süresi yetersiz (${overlapMinutes}/${STAFF_MIN_OVERLAP_MINUTES} dk).`,
-      overlapMinutes,
-    }
-  }
-  return { billable: true, overlapMinutes, reason: null }
-}
-
-function applyAttendanceEvent(attendance = {}, role, event, at = new Date().toISOString()) {
-  const side = role === 'staff' ? 'staff' : 'member'
-  const current = attendance[side] || {}
-  if (event === 'join') {
-    return {
-      ...attendance,
-      [side]: current.joinedAt ? current : { role: side, joinedAt: at },
-    }
-  }
-  if (event === 'leave' && current.joinedAt) {
-    return {
-      ...attendance,
-      [side]: { ...current, leftAt: at },
-    }
-  }
-  return attendance
-}
-
-function buildSessionAttendancePatch(session, attendance) {
-  const evaluation = evaluateSessionBillable(session, attendance)
-  return {
-    attendance: {
-      ...attendance,
-      overlapMinutes: evaluation.overlapMinutes ?? attendance?.overlapMinutes ?? 0,
-      billable: evaluation.billable,
-      evaluatedAt: new Date().toISOString(),
-      rejectReason: evaluation.billable ? null : evaluation.reason,
-    },
-    status: evaluation.billable ? 'completed' : session.status,
-  }
-}
+export { SESSION_KEYS, EARNING_TYPE, ASSIGN_COL }
 
 export async function resolveCaller(admin, user) {
   const email = String(user.email || '').toLowerCase()
@@ -109,6 +53,52 @@ export async function resolveCaller(admin, user) {
   return { kind: 'member', memberId: user.id, userId: user.id }
 }
 
+function sessionMatchesId(session, sessionId) {
+  const want = String(sessionId || '').toLowerCase()
+  return String(session?.id || '').toLowerCase() === want
+}
+
+function foundPayload(row, type, idx, list, staffId) {
+  return {
+    ok: true,
+    memberId: row.id,
+    sessionType: type,
+    sessionKey: SESSION_KEYS[type],
+    sessionIndex: idx,
+    session: list[idx],
+    sessions: list,
+    memberRow: row,
+    staffId: staffId || row[ASSIGN_COL[type]] || null,
+  }
+}
+
+export async function findSessionById(admin, sessionId, sessionTypeHint) {
+  const types = sessionTypeHint && SESSION_KEYS[sessionTypeHint]
+    ? [sessionTypeHint]
+    : ['coach', 'dietitian', 'doctor']
+
+  let from = 0
+  for (;;) {
+    const { data: members, error } = await admin
+      .from('members')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .range(from, from + MEMBER_SCAN_PAGE - 1)
+    if (error) return { ok: false, error: error.message }
+    if (!members?.length) break
+
+    for (const row of members) {
+      for (const type of types) {
+        const list = row.data?.[SESSION_KEYS[type]] || []
+        const idx = list.findIndex((s) => sessionMatchesId(s, sessionId))
+        if (idx >= 0) return foundPayload(row, type, idx, list)
+      }
+    }
+    if (members.length < MEMBER_SCAN_PAGE) break
+    from += MEMBER_SCAN_PAGE
+  }
+  return { ok: false, error: 'Randevu bulunamadı.' }
+}
+
 export async function findSessionContext(admin, sessionId, sessionTypeHint, caller) {
   const types = sessionTypeHint && SESSION_KEYS[sessionTypeHint]
     ? [sessionTypeHint]
@@ -123,28 +113,14 @@ export async function findSessionContext(admin, sessionId, sessionTypeHint, call
     if (error || !row) return { ok: false, error: 'Üye bulunamadı.' }
 
     for (const type of types) {
-      const key = SESSION_KEYS[type]
-      const list = row.data?.[key] || []
-      const idx = list.findIndex((s) => s?.id === sessionId)
-      if (idx >= 0) {
-        return {
-          ok: true,
-          memberId: row.id,
-          sessionType: type,
-          sessionKey: key,
-          sessionIndex: idx,
-          session: list[idx],
-          sessions: list,
-          memberRow: row,
-          staffId: row[ASSIGN_COL[type]] || null,
-        }
-      }
+      const list = row.data?.[SESSION_KEYS[type]] || []
+      const idx = list.findIndex((s) => sessionMatchesId(s, sessionId))
+      if (idx >= 0) return foundPayload(row, type, idx, list)
     }
     return { ok: false, error: 'Randevu bulunamadı.' }
   }
 
-  const searchTypes = types
-  for (const type of searchTypes) {
+  for (const type of types) {
     const assignCol = ASSIGN_COL[type]
     const { data: members, error } = await admin
       .from('members')
@@ -154,44 +130,88 @@ export async function findSessionContext(admin, sessionId, sessionTypeHint, call
     if (error) return { ok: false, error: error.message }
 
     for (const row of members || []) {
-      const key = SESSION_KEYS[type]
-      const list = row.data?.[key] || []
-      const idx = list.findIndex((s) => s?.id === sessionId)
-      if (idx >= 0) {
-        return {
-          ok: true,
-          memberId: row.id,
-          sessionType: type,
-          sessionKey: key,
-          sessionIndex: idx,
-          session: list[idx],
-          sessions: list,
-          memberRow: row,
-          staffId: caller.staffId,
-        }
-      }
+      const list = row.data?.[SESSION_KEYS[type]] || []
+      const idx = list.findIndex((s) => sessionMatchesId(s, sessionId))
+      if (idx >= 0) return foundPayload(row, type, idx, list, caller.staffId)
     }
   }
   return { ok: false, error: 'Randevu bulunamadı veya bu görüşmeye erişiminiz yok.' }
 }
 
-export async function recordSessionAttendance(admin, user, {
-  sessionId,
-  sessionType,
-  event,
-} = {}) {
-  if (!sessionId || !['join', 'leave'].includes(event)) {
-    return { ok: false, error: 'Geçersiz katılım isteği.' }
+function joinWindowFor(sessionType) {
+  return getJoinWindowMinutes(sessionType)
+}
+
+function shouldFinalizeNow({ event, attendance, forceFinalize }) {
+  if (forceFinalize) return true
+  if (event === 'end' || event === 'finalize') return true
+  if (!isMeetingAttendanceClosed(attendance)) return false
+  if (isDailyWebhookConfigured() && event !== 'end' && event !== 'finalize') return false
+  return true
+}
+
+async function upsertEarning(admin, found, updatedSession, evaluation) {
+  const earningType = EARNING_TYPE[found.sessionType] || 'coach_session'
+  if (!BILLABLE_TYPES.has(earningType) || !found.staffId) return null
+
+  const { data: existing } = await admin
+    .from('staff_earnings')
+    .select('id, status, overlap_minutes')
+    .eq('staff_id', found.staffId)
+    .eq('session_id', found.session.id)
+    .maybeSingle()
+
+  if (existing?.status === 'paid') return existing
+
+  if (!evaluation.billable) {
+    if (existing && (existing.status === 'pending' || existing.status === 'approved')) {
+      const { data } = await admin
+        .from('staff_earnings')
+        .update({
+          status: 'rejected',
+          reject_reason: evaluation.reason || 'Eşzamanlı süre yetersiz.',
+          overlap_minutes: evaluation.overlapMinutes || 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select('*')
+        .maybeSingle()
+      return data || existing
+    }
+    return null
   }
 
-  const caller = await resolveCaller(admin, user)
-  const found = await findSessionContext(admin, sessionId, sessionType, caller)
-  if (!found.ok) return found
+  const startedAt = updatedSession.date || new Date().toISOString()
+  const row = {
+    staff_id: found.staffId,
+    member_id: found.memberId,
+    member_name: found.memberRow?.name || null,
+    session_id: found.session.id,
+    session_type: earningType,
+    session_started_at: startedAt,
+    amount_try: STAFF_SESSION_RATE_TRY,
+    overlap_minutes: evaluation.overlapMinutes || 0,
+    period_key: staffPayoutPeriodKey(startedAt),
+    status: existing?.status === 'approved' ? 'approved' : 'pending',
+    reject_reason: null,
+    updated_at: new Date().toISOString(),
+  }
+  const { data: upserted, error: earnErr } = await admin
+    .from('staff_earnings')
+    .upsert(row, { onConflict: 'staff_id,session_id' })
+    .select('*')
+    .maybeSingle()
+  if (earnErr) throw earnErr
+  return upserted
+}
 
-  const role = caller.kind === 'staff' ? 'staff' : 'member'
-  const prevAttendance = found.session.attendance || {}
-  const nextAttendance = applyAttendanceEvent(prevAttendance, role, event)
-  const patch = buildSessionAttendancePatch(found.session, nextAttendance)
+async function persistFoundSession(admin, found, nextAttendance, { finalize = false, at } = {}) {
+  let attendance = nextAttendance
+  if (finalize) {
+    attendance = closeOpenAttendanceSegments(attendance, at || new Date().toISOString())
+  }
+  const evalOpts = { joinWindow: joinWindowFor(found.sessionType), finalized: finalize }
+  const patch = buildSessionAttendancePatch(found.session, attendance, evalOpts)
   const updatedSession = { ...found.session, ...patch }
 
   const nextSessions = [...found.sessions]
@@ -207,40 +227,199 @@ export async function recordSessionAttendance(admin, user, {
     .eq('id', found.memberId)
   if (updErr) return { ok: false, error: updErr.message }
 
-  const evaluation = evaluateSessionBillable(updatedSession, updatedSession.attendance)
-  const earningType = EARNING_TYPE[found.sessionType] || 'coach_session'
-
   let earning = null
-  if (evaluation.billable && BILLABLE_TYPES.has(earningType) && found.staffId) {
-    const startedAt = updatedSession.date || new Date().toISOString()
-    const periodKey = staffPayoutPeriodKey(startedAt)
-    const row = {
-      staff_id: found.staffId,
-      member_id: found.memberId,
-      member_name: found.memberRow?.name || null,
-      session_id: sessionId,
-      session_type: earningType,
-      session_started_at: startedAt,
-      amount_try: STAFF_SESSION_RATE_TRY,
-      overlap_minutes: evaluation.overlapMinutes || 0,
-      period_key: periodKey,
-      status: 'pending',
-      reject_reason: null,
-      updated_at: new Date().toISOString(),
+  if (patch.evaluation?.ready) {
+    try {
+      earning = await upsertEarning(admin, found, updatedSession, patch.evaluation)
+    } catch (e) {
+      return { ok: false, error: e?.message || 'Hakediş yazılamadı.' }
     }
-    const { data: upserted, error: earnErr } = await admin
-      .from('staff_earnings')
-      .upsert(row, { onConflict: 'staff_id,session_id' })
-      .select('*')
-      .maybeSingle()
-    if (earnErr) return { ok: false, error: earnErr.message }
-    earning = upserted
   }
 
   return {
     ok: true,
     attendance: updatedSession.attendance,
-    billable: evaluation.billable,
+    billable: patch.evaluation?.billable || false,
+    ready: patch.evaluation?.ready || false,
     earning,
+    sessionType: found.sessionType,
+    sessionId: found.session.id,
+    nextData,
+    session: updatedSession,
   }
 }
+
+export async function recordSessionAttendance(admin, user, {
+  sessionId,
+  sessionType,
+  event,
+  at,
+  dailySessionId,
+  source = 'client',
+  forceFinalize = false,
+} = {}) {
+  if (!sessionId || !['join', 'leave'].includes(event)) {
+    return { ok: false, error: 'Geçersiz katılım isteği.' }
+  }
+
+  const caller = await resolveCaller(admin, user)
+  const found = await findSessionContext(admin, sessionId, sessionType, caller)
+  if (!found.ok) return found
+
+  const role = caller.kind === 'staff' ? 'staff' : 'member'
+  const when = at || new Date().toISOString()
+  const prevAttendance = found.session.attendance || {}
+  const nextAttendance = applyAttendanceEvent(prevAttendance, role, event, when, {
+    dailySessionId,
+    source,
+  })
+  const finalize = shouldFinalizeNow({ event, attendance: nextAttendance, forceFinalize })
+  return persistFoundSession(admin, found, nextAttendance, { finalize, at: when })
+}
+
+export async function recordDailyPresenceEvent(admin, {
+  sessionId,
+  sessionType,
+  role,
+  event,
+  at,
+  dailySessionId,
+  endRoom = false,
+} = {}) {
+  if (!sessionId || !['join', 'leave', 'end'].includes(event)) {
+    return { ok: false, error: 'Geçersiz Daily olayı.' }
+  }
+  if (event !== 'end' && !role) {
+    return { ok: true, skipped: true, reason: 'unmapped-participant' }
+  }
+
+  const found = await findSessionById(admin, sessionId, sessionType)
+  if (!found.ok) return found
+
+  const when = at || new Date().toISOString()
+  let nextAttendance = found.session.attendance || {}
+  if (event === 'end') {
+    nextAttendance = applyAttendanceEvent(nextAttendance, 'member', 'end', when)
+  } else {
+    nextAttendance = applyAttendanceEvent(nextAttendance, role, event, when, {
+      dailySessionId,
+      source: 'daily',
+    })
+  }
+  const finalize = event === 'end' || isMeetingAttendanceClosed(nextAttendance)
+  const saved = await persistFoundSession(admin, found, nextAttendance, {
+    finalize,
+    at: when,
+  })
+  if (saved.ok && (endRoom || event === 'end' || (finalize && isMeetingAttendanceClosed(saved.attendance)))) {
+    await deleteDailyRoom(buildDailyRoomName(found.sessionType, found.session.id))
+  }
+  return saved
+}
+
+export async function finalizeExpiredSessionAttendances(admin, now = new Date()) {
+  const weekAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+  let from = 0
+  let scanned = 0
+  let finalized = 0
+  const errors = []
+
+  for (;;) {
+    const { data: members, error } = await admin
+      .from('members')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .range(from, from + MEMBER_SCAN_PAGE - 1)
+    if (error) return { ok: false, error: error.message }
+    if (!members?.length) break
+
+    for (const row of members) {
+      scanned += 1
+      for (const type of ['coach', 'dietitian', 'doctor']) {
+        const list = row.data?.[SESSION_KEYS[type]] || []
+        for (let idx = 0; idx < list.length; idx += 1) {
+          const session = list[idx]
+          if (!session?.attendance) continue
+          if (session.attendance.finalizedAt && isMeetingAttendanceClosed(session.attendance)) continue
+          const start = new Date(session.date || 0)
+          if (Number.isNaN(start.getTime()) || start < weekAgo) continue
+          const timing = getSessionJoinTiming(session, type, now)
+          const closed = isMeetingAttendanceClosed(session.attendance)
+          if (!timing.isExpired && !closed) continue
+          const closeAt = timing.isExpired
+            ? timing.windowEnd.toISOString()
+            : now.toISOString()
+          const found = foundPayload(row, type, idx, list)
+          const saved = await persistFoundSession(admin, found, session.attendance, {
+            finalize: true,
+            at: closeAt,
+          })
+          if (!saved.ok) errors.push(saved.error)
+          else {
+            finalized += 1
+            if (saved.nextData) row.data = saved.nextData
+            if (timing.isExpired) {
+              await deleteDailyRoom(buildDailyRoomName(type, session.id))
+            }
+          }
+        }
+      }
+    }
+    if (members.length < MEMBER_SCAN_PAGE) break
+    from += MEMBER_SCAN_PAGE
+  }
+
+  return { ok: true, scanned, finalized, errors: errors.slice(0, 8) }
+}
+
+export async function auditInflatedStaffEarnings(admin) {
+  const { data: rows, error } = await admin
+    .from('staff_earnings')
+    .select('id, staff_id, member_id, session_id, session_type, overlap_minutes, status, reject_reason')
+    .in('status', ['pending', 'approved'])
+  if (error) return { ok: false, error: error.message }
+
+  let updated = 0
+  let rejected = 0
+  for (const row of rows || []) {
+    const typeHint = String(row.session_type || '').replace(/_session$/, '')
+    const found = await findSessionById(admin, row.session_id, SESSION_KEYS[typeHint] ? typeHint : null)
+    if (!found.ok) continue
+    const joinWindow = joinWindowFor(found.sessionType)
+    const overlapMinutes = computeBillableOverlapMinutes(found.session.attendance || {}, found.session, joinWindow)
+    const evaluation = evaluateSessionBillable(found.session, found.session.attendance || {}, {
+      joinWindow,
+      finalized: true,
+    })
+    if (evaluation.billable && overlapMinutes === Number(row.overlap_minutes || 0)) continue
+
+    if (!evaluation.billable) {
+      await admin
+        .from('staff_earnings')
+        .update({
+          overlap_minutes: overlapMinutes,
+          status: 'rejected',
+          reject_reason: evaluation.reason || 'Eşzamanlı süre yeniden hesaplandı.',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', row.id)
+      rejected += 1
+      continue
+    }
+
+    if (overlapMinutes !== Number(row.overlap_minutes || 0)) {
+      await admin
+        .from('staff_earnings')
+        .update({
+          overlap_minutes: overlapMinutes,
+          reject_reason: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', row.id)
+      updated += 1
+    }
+  }
+
+  return { ok: true, checked: (rows || []).length, updated, rejected }
+}
+
+export { computeBillableOverlapMinutes, evaluateSessionBillable }

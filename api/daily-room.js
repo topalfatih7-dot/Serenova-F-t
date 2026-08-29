@@ -1,20 +1,34 @@
 /**
- * Vercel Serverless — Daily.co oda + katılım tokeni.
+ * Vercel Serverless — Daily.co oda + katılım tokeni + (imzalı) webhook.
  * Yetki: ilgili üye, atanmış personel veya admin.
  * Join penceresi sektör bazlı (api/_videoJoinWindows.js).
+ * Webhook: X-Webhook-Signature varsa participant.joined/left ve meeting.ended.
  */
 
 import { setCorsHeaders, handleOptions, requireAuth, getAdminEmail } from './_guards.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
-import { findSessionContext, resolveCaller } from './_sessionAttendance.js'
+import { findSessionContext, resolveCaller, recordDailyPresenceEvent } from './_sessionAttendance.js'
 import {
   getSessionJoinTiming,
   normalizeVideoSessionType,
 } from './_videoJoinWindows.js'
 import { VIDEO_ACTIVE_STATUSES } from '../src/utils/sessionCancelRules.js'
+import {
+  buildDailyRoomName,
+  dailyApi,
+  decodeDailyUserId,
+  encodeDailyUserId,
+  ensureDailyRoom,
+  getDailyDomain,
+  isDailyWebhookConfigured,
+  parseDailyRoomName,
+  readRawBody,
+  unixToIso,
+  verifyDailyWebhookSignature,
+} from './_daily.js'
 
-const DAILY_API = 'https://api.daily.co/v1'
+export const config = { api: { bodyParser: false } }
 
 const SESSION_KEYS = {
   coach: 'coachSessions',
@@ -22,62 +36,23 @@ const SESSION_KEYS = {
   doctor: 'doctorSessions',
 }
 
-function getDomain() {
-  return (process.env.VITE_DAILY_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
-}
-
-function getRoomPrefix() {
-  return process.env.VITE_DAILY_ROOM_PREFIX || 'donusum'
-}
-
-function buildRoomName(sessionType, sessionId) {
-  const safeId = String(sessionId || '').replace(/[^a-zA-Z0-9-_]/g, '')
-  return `${getRoomPrefix()}-${sessionType}-${safeId}`.toLowerCase()
-}
-
-async function dailyFetch(path, body) {
-  const key = process.env.DAILY_API_KEY
-  if (!key) throw new Error('DAILY_API_KEY yok')
-  const res = await fetch(`${DAILY_API}${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  })
-  if (!res.ok) {
-    const err = await res.text().catch(() => '')
-    throw new Error(`Daily API ${res.status}: ${err.slice(0, 200)}`)
-  }
-  return res.json()
-}
-
-async function ensureRoom(roomName) {
-  try {
-    return await dailyFetch(`/rooms/${roomName}`)
-  } catch (e) {
-    if (!String(e).includes('404')) throw e
-  }
-  return dailyFetch('/rooms', {
-    name: roomName,
-    privacy: 'private',
-    properties: {
-      exp: Math.floor(Date.now() / 1000) + 7200,
-      max_participants: 4,
-      enable_screenshare: true,
-      enable_chat: true,
-      start_video_off: false,
-      start_audio_off: false,
-    },
-  })
-}
-
-async function createToken(roomName, userName, isOwner) {
-  return dailyFetch('/meeting-tokens', {
-    properties: {
-      room_name: roomName,
-      user_name: userName || 'Katılımcı',
-      is_owner: Boolean(isOwner),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-      nbf: Math.floor(Date.now() / 1000) - 60,
+async function createToken(roomName, { userName, isOwner, userId, expUnix }) {
+  const tokenExp = Math.min(
+    Math.floor(Date.now() / 1000) + 3600,
+    Number(expUnix) || Math.floor(Date.now() / 1000) + 3600,
+  )
+  return dailyApi('/meeting-tokens', {
+    method: 'POST',
+    body: {
+      properties: {
+        room_name: roomName,
+        user_name: userName || 'Katılımcı',
+        is_owner: Boolean(isOwner),
+        user_id: userId || undefined,
+        exp: tokenExp,
+        nbf: Math.floor(Date.now() / 1000) - 60,
+        eject_at_token_exp: true,
+      },
     },
   })
 }
@@ -105,7 +80,7 @@ async function findSessionAsAdmin(admin, sessionId, sessionType) {
 
   for (const row of members || []) {
     const list = row.data?.[key] || []
-    const idx = list.findIndex((s) => s?.id === sessionId)
+    const idx = list.findIndex((s) => String(s?.id || '').toLowerCase() === String(sessionId || '').toLowerCase())
     if (idx >= 0) {
       return {
         ok: true,
@@ -124,10 +99,116 @@ function normalizeStaffRole(role) {
   return 'coach'
 }
 
+function header(req, name) {
+  const direct = req.headers[name]
+  if (direct) return Array.isArray(direct) ? direct[0] : direct
+  const lower = req.headers[name.toLowerCase()]
+  return Array.isArray(lower) ? lower[0] : lower
+}
+
+function parseJsonBuffer(raw) {
+  try {
+    return JSON.parse(raw.toString('utf8') || '{}')
+  } catch {
+    return null
+  }
+}
+
+async function handleDailyWebhook(req, res, raw) {
+  const payload = parseJsonBuffer(raw)
+  if (payload?.test) {
+    return res.status(200).json({ ok: true, test: true })
+  }
+
+  if (!isDailyWebhookConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Daily webhook gizli anahtarı yok.', code: 'config' })
+  }
+
+  const okSig = verifyDailyWebhookSignature({
+    rawBody: raw,
+    signature: header(req, 'x-webhook-signature'),
+    timestamp: header(req, 'x-webhook-timestamp'),
+    secret: process.env.DAILY_WEBHOOK_SECRET,
+  })
+  if (!okSig) {
+    return res.status(401).json({ ok: false, error: 'Geçersiz Daily imzası.', code: 'bad_signature' })
+  }
+
+  const type = String(payload?.type || '')
+  const data = payload?.payload || {}
+  const parsed = parseDailyRoomName(data.room)
+  if (!parsed) {
+    return res.status(200).json({ ok: true, skipped: true, reason: 'unknown-room' })
+  }
+
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return res.status(503).json({ ok: false, error: 'Veritabanı yapılandırması eksik.', code: 'config' })
+  }
+
+  if (type === 'meeting.ended') {
+    const result = await recordDailyPresenceEvent(admin, {
+      sessionId: parsed.sessionId,
+      sessionType: parsed.sessionType,
+      event: 'end',
+      at: unixToIso(data.end_ts || payload.event_ts),
+      endRoom: true,
+    })
+    return res.status(result.ok ? 200 : 400).json(result)
+  }
+
+  if (type !== 'participant.joined' && type !== 'participant.left') {
+    return res.status(200).json({ ok: true, skipped: true, type })
+  }
+
+  const decoded = decodeDailyUserId(data.user_id)
+  if (decoded?.kind === 'admin') {
+    return res.status(200).json({ ok: true, skipped: true, reason: 'admin' })
+  }
+  let role = decoded?.kind === 'staff' ? 'staff' : decoded?.kind === 'member' ? 'member' : null
+  if (!role) role = data.owner ? 'staff' : 'member'
+
+  const event = type === 'participant.joined' ? 'join' : 'leave'
+  const at = event === 'join'
+    ? unixToIso(data.joined_at || payload.event_ts)
+    : unixToIso(
+      (Number(data.joined_at) > 0 && Number(data.duration) > 0)
+        ? Number(data.joined_at) + Number(data.duration)
+        : (payload.event_ts || Date.now() / 1000),
+    )
+
+  const result = await recordDailyPresenceEvent(admin, {
+    sessionId: parsed.sessionId,
+    sessionType: parsed.sessionType,
+    role,
+    event,
+    at,
+    dailySessionId: data.session_id || null,
+    endRoom: false,
+  })
+  return res.status(result.ok ? 200 : 400).json(result)
+}
+
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return
-  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization, X-Webhook-Signature, X-Webhook-Timestamp', req)
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST bekleniyor' })
+
+  let raw
+  try {
+    raw = await readRawBody(req)
+  } catch {
+    return res.status(400).json({ ok: false, error: 'Gövde okunamadı.', code: 'bad_request' })
+  }
+
+  if (header(req, 'x-webhook-signature') || header(req, 'x-webhook-timestamp')) {
+    return handleDailyWebhook(req, res, raw)
+  }
+
+  const parsedBody = parseJsonBuffer(raw)
+  if (parsedBody?.test) {
+    return res.status(200).json({ ok: true, test: true })
+  }
 
   const auth = await requireAuth(req)
   if (!auth.ok) {
@@ -156,7 +237,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    const body = parsedBody || {}
     const sessionType = normalizeVideoSessionType(body?.sessionType)
     const sessionId = String(body?.sessionId || '').trim()
     const userName = String(body?.userName || '').trim() || 'Katılımcı'
@@ -168,10 +249,12 @@ export default async function handler(req, res) {
     const adminUser = await isAdminUser(admin, auth.user)
     let found
     let isOwner = false
+    let dailyUserId = ''
 
     if (adminUser) {
       found = await findSessionAsAdmin(admin, sessionId, sessionType)
       isOwner = true
+      dailyUserId = encodeDailyUserId('admin', auth.user.id)
     } else {
       const caller = await resolveCaller(admin, auth.user)
       if (caller.kind === 'staff') {
@@ -183,6 +266,9 @@ export default async function handler(req, res) {
             code: 'forbidden',
           })
         }
+        dailyUserId = encodeDailyUserId('staff', caller.staffId)
+      } else {
+        dailyUserId = encodeDailyUserId('member', caller.memberId)
       }
       found = await findSessionContext(admin, sessionId, sessionType, caller)
       isOwner = caller.kind === 'staff'
@@ -221,10 +307,19 @@ export default async function handler(req, res) {
       })
     }
 
-    const roomName = buildRoomName(sessionType, sessionId)
-    await ensureRoom(roomName)
-    const tokenData = await createToken(roomName, userName, isOwner)
-    const domain = getDomain()
+    const roomName = buildDailyRoomName(sessionType, sessionId)
+    const expUnix = Math.max(
+      Math.floor(timing.windowEnd.getTime() / 1000),
+      Math.floor(Date.now() / 1000) + 60,
+    )
+    await ensureDailyRoom(roomName, expUnix)
+    const tokenData = await createToken(roomName, {
+      userName,
+      isOwner,
+      userId: dailyUserId,
+      expUnix,
+    })
+    const domain = getDailyDomain()
 
     return res.status(200).json({
       ok: true,

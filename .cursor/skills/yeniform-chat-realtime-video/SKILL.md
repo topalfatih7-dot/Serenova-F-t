@@ -20,7 +20,9 @@ RLS: member own threads; `staff_manages_member`; admin. Realtime via `useRealtim
 ## Daily video
 
 - Route: `/call/:sessionType/:sessionId` (member) or `/staff/call/...`
-- API: `POST /api/daily-room` `{ sessionType, sessionId, userName }` — üye/atanmış staff/admin; join penceresi sektör bazlı; `is_owner` yalnız staff/admin
+- API: `POST /api/daily-room` `{ sessionType, sessionId, userName }` — üye/atanmış staff/admin; join penceresi sektör bazlı; `is_owner` yalnız staff/admin; token `user_id` = `member|staff|admin:{id}`; oda `exp` = join penceresi sonu
+- Daily webhook (aynı route, `X-Webhook-Signature`): `participant.joined` / `participant.left` / `meeting.ended` → attendance segmentleri + hakediş finalize
+- İstemci yedek: `session-attendance` join/leave (`pagehide` keepalive). Overlap = kapalı segment kesişimi, randevu penceresine kırpılır, `duration` tavanı; `now` fallback yok
 
 ## Notifications (web)
 
