@@ -10,9 +10,6 @@
 - `src/components/onboarding/HealthProfileGateForm.jsx` — boy/kilo/yaş gate
 - `src/components/onboarding/HealthTestHub.jsx`, `HealthTestFlow.jsx` (`mode: core|remaining`)
 - `src/pages/CalendarPage.jsx`, `ProgramsPage.jsx`, `CalorieCalculatorPage.jsx`
-- `src/components/water/WaterCarafeCard.jsx`, `MemberWaterTracker.jsx`, `StaffWaterProgress.jsx`
-- `src/utils/waterTracking.js`, `src/services/waterLogs.js`, `src/hooks/useWaterLogs.js`
-- `docs/WATER_TRACKING.md`
 - `src/utils/programSchedule.js`, `programPackageScope.js`, `healthProfile.js`
 - `src/services/healthScoreAnalysis.js` — skor meta, fingerprint (`stripHealthTestMeta`), AI fetch, fallback
 - `src/utils/healthTestLock.js` — 14 gün kilit, `getHealthTestLockState`, `retakeAt` yeni döngü

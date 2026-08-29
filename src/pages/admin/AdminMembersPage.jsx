@@ -11,7 +11,6 @@ import { getPlanLabel, packageIncludesCoach, packageIncludesDietitian } from '..
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
-import StaffWaterProgress from '../../components/water/StaffWaterProgress'
 import { ADMIN_EMAIL } from '../../config/brand'
 
 const STATUS_LABELS = {
@@ -235,8 +234,6 @@ export default function AdminMembersPage() {
                 <AvailabilityView value={selected.availability} emptyText="—" />
               </div>
             )}
-
-            <StaffWaterProgress member={selected} viewerRole="admin" />
 
             <MemberHealthInsights member={selected} showLocation={false} />
 

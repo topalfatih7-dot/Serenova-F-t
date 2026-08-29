@@ -54,10 +54,6 @@ export default function NotificationsPage() {
       navigate('/profile/payments')
       return
     }
-    if (n.action === 'water_goal_updated') {
-      navigate('/dashboard')
-      return
-    }
     if (n.type === 'appointment') {
       navigate('/schedule')
     }

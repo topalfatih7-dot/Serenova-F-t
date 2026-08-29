@@ -22,7 +22,6 @@ import { useToast } from '../context/ToastContext'
 import { fetchExerciseById } from '../services/exerciseLibrary'
 import { prefetchExerciseVideo } from '../utils/exerciseVideoPrefetch'
 import { PANEL_IMAGES } from '../utils/panelImages'
-import MemberWaterTracker from '../components/water/MemberWaterTracker'
 import {
   getProgramEntriesForDate,
   completionKey,
@@ -483,7 +482,6 @@ export default function CalendarPage() {
             onClose={() => setSelectedDate(null)}
             saving={saving}
             canComplete
-            member={user}
           />
         )}
       </AnimatePresence>
@@ -492,7 +490,7 @@ export default function CalendarPage() {
 }
 
 // ── Gün Detay Paneli (tam ekran modal) ──────────────────────────────
-function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, onClose, saving, canComplete, member }) {
+function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggle, onToggleMeal, onClose, saving, canComplete }) {
   const { workout: workoutEntries, nutrition: nutritionEntries } = splitEntriesByType(entries)
   const mealGroups = groupEntriesByMeal(nutritionEntries)
   const [detailExercise, setDetailExercise] = useState(null)
@@ -583,15 +581,6 @@ function DayDetailPanel({ date, entries, completion, isDone, isMealDone, onToggl
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {member?.id && (
-            <div className="border-b border-cream-100 px-4 py-3">
-              <MemberWaterTracker
-                member={member}
-                dateStr={format(date, 'yyyy-MM-dd')}
-                size="compact"
-              />
-            </div>
-          )}
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Calendar className="h-10 w-10 text-cream-300" />
