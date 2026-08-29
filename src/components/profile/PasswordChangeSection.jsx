@@ -1,21 +1,25 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Check, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Lock, Shield,
+  Check, CheckCircle2, Eye, EyeOff, Loader2, Lock,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { changeAccountPassword } from '../../services/accountPassword'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
 import { isSocialAuthUser } from '../../utils/memberProfile'
-import ProfileSectionCard from './ProfileSectionCard'
 
 const SOCIAL_LABELS = {
   google: 'Google',
   facebook: 'Facebook',
   apple: 'Apple',
 }
+
+const inputCls = (error) => `w-full rounded-xl border bg-white py-2.5 pl-10 pr-11 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/40 focus:ring-2 ${
+  error
+    ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+    : 'border-cream-200 focus:border-brand-500 focus:ring-brand-100'
+}`
 
 function PasswordField({
   id,
@@ -27,15 +31,14 @@ function PasswordField({
   show,
   onToggleShow,
   error,
-  hint,
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cream-800/70">
+      <label htmlFor={id} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-cream-800/70">
         {label}
       </label>
       <div className="relative">
-        <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700/55" />
+        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-700/55" />
         <input
           id={id}
           type={show ? 'text' : 'password'}
@@ -44,81 +47,21 @@ function PasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
-          className={`w-full rounded-2xl border bg-white py-3.5 pl-11 pr-12 text-sm text-cream-900 outline-none transition placeholder:text-cream-800/40 focus:ring-4 ${
-            error
-              ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
-              : 'border-cream-200 focus:border-brand-500 focus:ring-brand-100'
-          }`}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={inputCls(error)}
         />
         <button
           type="button"
           onClick={onToggleShow}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-cream-800/40 transition hover:bg-cream-100 hover:text-brand-600"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-cream-800/40 transition hover:bg-cream-100 hover:text-brand-600"
           aria-label={show ? 'Şifreyi gizle' : 'Şifreyi göster'}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
       {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-xs font-medium text-red-500">{error}</p>
-      ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-xs text-cream-800/50">{hint}</p>
+        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-red-500">{error}</p>
       ) : null}
-    </div>
-  )
-}
-
-function PasswordStrength({ password }) {
-  const passed = PASSWORD_RULES.filter((r) => r.test(password)).length
-  const total = PASSWORD_RULES.length
-  const pct = total ? (passed / total) * 100 : 0
-  const bar = pct === 0
-    ? 'bg-cream-200'
-    : pct <= 40
-      ? 'bg-red-400'
-      : pct <= 70
-        ? 'bg-amber-400'
-        : pct < 100
-          ? 'bg-brand-400'
-          : 'bg-sage-500'
-  const label = pct === 0
-    ? ''
-    : pct <= 40
-      ? 'Çok zayıf'
-      : pct <= 70
-        ? 'Orta'
-        : pct < 100
-          ? 'İyi'
-          : 'Güçlü'
-
-  return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-cream-100">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${bar}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {label ? <span className="text-[11px] font-semibold text-cream-800/55">{label}</span> : null}
-      </div>
-      <ul className="grid gap-1.5 sm:grid-cols-2">
-        {PASSWORD_RULES.map((rule) => {
-          const ok = rule.test(password)
-          return (
-            <li
-              key={rule.label}
-              className={`flex items-center gap-1.5 text-xs transition-colors ${
-                ok ? 'font-medium text-sage-700' : 'text-cream-800/45'
-              }`}
-            >
-              <Check className={`h-3.5 w-3.5 shrink-0 ${ok ? '' : 'opacity-25'}`} strokeWidth={3} />
-              {rule.label}
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }
@@ -193,52 +136,31 @@ export default function PasswordChangeSection() {
 
   if (socialOnly) {
     return (
-      <ProfileSectionCard
-        icon={Shield}
-        title="Şifre"
-        subtitle="Bu hesap sosyal giriş kullanıyor"
-        accent="sage"
-        delay={0.18}
-      >
-        <div className="rounded-2xl border border-sage-100 bg-white/80 px-4 py-4">
-          <p className="text-sm leading-relaxed text-cream-800/75">
-            Girişiniz {socialLabel} ile. Bu hesapta e-posta şifresi yok.
-            İsterseniz e-postanıza sıfırlama bağlantısı göndererek bir şifre belirleyebilirsiniz.
-          </p>
-          <Link
-            to="/forgot-password"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800"
-          >
-            Şifre belirleme bağlantısı gönder
-          </Link>
-        </div>
-      </ProfileSectionCard>
+      <div className="rounded-xl border border-cream-100 bg-cream-50/80 px-3.5 py-3">
+        <p className="text-sm font-semibold text-cream-900">Şifre</p>
+        <p className="mt-1 text-xs leading-relaxed text-cream-800/70">
+          Girişiniz {socialLabel} ile; bu hesapta e-posta şifresi yok.
+        </p>
+        <Link
+          to="/forgot-password"
+          className="mt-2 inline-block text-xs font-semibold text-brand-700 hover:text-brand-800"
+        >
+          Şifre belirleme bağlantısı gönder
+        </Link>
+      </div>
     )
   }
 
   return (
-    <ProfileSectionCard
-      icon={KeyRound}
-      title="Şifre Değiştir"
-      subtitle="Mevcut şifrenizi doğrulayın, yenisini iki kez girin"
-      accent="sage"
-      delay={0.18}
-    >
-      <AnimatePresence>
-        {done && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-4 flex items-center gap-2 rounded-2xl border border-sage-200 bg-sage-50 px-3.5 py-2.5 text-sm font-medium text-sage-800"
-          >
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            Şifreniz güncellendi.
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="rounded-xl border border-cream-100 bg-cream-50/50 px-3.5 py-3.5">
+      <p className="text-sm font-semibold text-cream-900">Şifre değiştir</p>
+      {done && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-sage-700">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          Şifreniz güncellendi.
+        </p>
+      )}
+      <form onSubmit={handleSubmit} className="mt-3 space-y-3">
         <PasswordField
           id="profile-current-password"
           label="Mevcut şifre"
@@ -249,14 +171,6 @@ export default function PasswordChangeSection() {
           show={showCurrent}
           onToggleShow={() => setShowCurrent((v) => !v)}
         />
-
-        <div className="rounded-2xl border border-cream-100 bg-cream-50/70 px-4 py-3.5">
-          <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-cream-800/55">
-            Yeni şifre gereksinimleri
-          </p>
-          <PasswordStrength password={newPassword} />
-        </div>
-
         <PasswordField
           id="profile-new-password"
           label="Yeni şifre"
@@ -267,7 +181,22 @@ export default function PasswordChangeSection() {
           show={showNew}
           onToggleShow={() => setShowNew((v) => !v)}
         />
-
+        {newPassword ? (
+          <ul className="grid grid-cols-2 gap-x-2 gap-y-1">
+            {PASSWORD_RULES.map((rule) => {
+              const ok = rule.test(newPassword)
+              return (
+                <li
+                  key={rule.label}
+                  className={`flex items-center gap-1 text-[11px] ${ok ? 'text-sage-700' : 'text-cream-800/45'}`}
+                >
+                  <Check className={`h-3 w-3 shrink-0 ${ok ? '' : 'opacity-25'}`} strokeWidth={3} />
+                  {rule.label}
+                </li>
+              )
+            })}
+          </ul>
+        ) : null}
         <PasswordField
           id="profile-confirm-password"
           label="Yeni şifre (tekrar)"
@@ -279,23 +208,21 @@ export default function PasswordChangeSection() {
           onToggleShow={() => setShowConfirm((v) => !v)}
           error={mismatch ? 'Şifreler eşleşmiyor.' : ''}
         />
-
         <button
           type="submit"
           disabled={!canSubmit}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sage-600 to-brand-600 py-3.5 text-sm font-bold text-white shadow-md shadow-sage-500/20 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-sage-700 py-2.5 text-sm font-semibold text-white hover:bg-sage-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
           {saving ? 'Güncelleniyor…' : 'Şifreyi güncelle'}
         </button>
-
-        <p className="text-center text-xs text-cream-800/50">
-          Mevcut şifrenizi hatırlamıyor musunuz?{' '}
+        <p className="text-center text-[11px] text-cream-800/50">
+          Şifrenizi hatırlamıyor musunuz?{' '}
           <Link to="/forgot-password" className="font-semibold text-brand-700 hover:text-brand-800">
             Sıfırlama bağlantısı alın
           </Link>
         </p>
       </form>
-    </ProfileSectionCard>
+    </div>
   )
 }

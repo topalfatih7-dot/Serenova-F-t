@@ -9,6 +9,19 @@
     <meta name="application-name" content="Yeni Form" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2d6a4f" />
+    <script>
+      (function () {
+        try {
+          localStorage.removeItem('yeniform-theme')
+          var r = document.documentElement
+          r.classList.remove('dark')
+          r.style.colorScheme = 'light'
+          r.setAttribute('data-theme', 'light')
+          var m = document.querySelector('meta[name="theme-color"]')
+          if (m) m.setAttribute('content', '#2d6a4f')
+        } catch (e) {}
+      })()
+    </script>
     <meta name="google" content="notranslate" />
 
     <meta property="og:type" content="website" />

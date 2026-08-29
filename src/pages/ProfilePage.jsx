@@ -12,7 +12,7 @@ import { requestNotificationPermission, unlockNotificationAudio } from '../utils
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle, Palette,
+  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import HealthSummarySection from '../components/profile/HealthSummarySection'
@@ -20,7 +20,6 @@ import HealthLabFilesPanel from '../components/member/HealthLabFilesPanel'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
 import PasswordChangeSection from '../components/profile/PasswordChangeSection'
-import ThemeToggle from '../components/ui/ThemeToggle'
 
 import {
   getPlanLabel,
@@ -513,21 +512,6 @@ export default function ProfilePage() {
           </ProfileSectionCard>
 
           <ProfileSectionCard
-            icon={Palette}
-            title="Görünüm"
-            subtitle="Aydınlık, karanlık veya sistem tercihi"
-            accent="brand"
-            delay={0.15}
-          >
-            <ThemeToggle variant="segmented" />
-            <p className="mt-2 text-xs text-cream-800/50">
-              Sistem, cihazınızın açık/koyu ayarını takip eder. Tercih bu cihazda saklanır.
-            </p>
-          </ProfileSectionCard>
-
-          <PasswordChangeSection />
-
-          <ProfileSectionCard
             icon={Bell}
             title="Bildirimler"
             subtitle="Tercihlerinizi yönetin"
@@ -584,7 +568,7 @@ export default function ProfilePage() {
         {loggingOut ? 'Çıkış yapılıyor…' : 'Çıkış Yap'}
       </motion.button>
 
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profil Fotoğrafı & İletişim">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Profili Düzenle" size="lg">
         <div className="space-y-4">
           <PhotoUpload
             label=""
@@ -640,6 +624,7 @@ export default function ProfilePage() {
               <option key={d} value={d}>{d}</option>
             ))}
           </FormField>
+          <PasswordChangeSection />
           <button type="button" onClick={handleSave} className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600">Kaydet</button>
         </div>
       </Modal>

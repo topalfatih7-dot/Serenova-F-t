@@ -51,6 +51,14 @@ export function writeStoredTheme(pref) {
   }
 }
 
+export function clearStoredTheme() {
+  try {
+    window.localStorage.removeItem(THEME_KEY)
+  } catch {
+    /* private mode */
+  }
+}
+
 export function applyThemeToDocument(pref, systemDark = getSystemDark()) {
   if (typeof document === 'undefined') return false
   const isDark = resolveIsDark(pref, systemDark)
