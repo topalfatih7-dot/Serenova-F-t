@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import {
   Check, X, UserPlus, Dumbbell, Apple, ChevronDown, ChevronUp, Copy,
-  Building2, Mail, MessageSquare, ExternalLink, MapPin, FileDown, Loader2,
+  Building2, Mail, ExternalLink, MapPin, FileDown, Loader2,
 } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
+import ContactInquiryInbox from '../../components/admin/ContactInquiryInbox'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
@@ -31,16 +32,11 @@ const CORP_STATUS = {
   rejected: { label: 'Reddedildi', style: 'bg-red-50 text-red-600' },
 }
 
-const CONTACT_STATUS = {
-  new: { label: 'Yeni', style: 'bg-amber-50 text-amber-700' },
-  read: { label: 'Okundu', style: 'bg-brand-50 text-brand-700' },
-  resolved: { label: 'Çözüldü', style: 'bg-sage-50 text-sage-700' },
-}
-
 export default function AdminApplicationsPage() {
   const {
     staffApplications, corporateApplications, contactInquiries,
     resolveStaffApplication, resolveCorporateApplication, updateContactInquiryStatus,
+    replyContactInquiry,
   } = useApp()
   const { toast } = useToast()
   const [section, setSection] = useState('staff')
@@ -64,14 +60,8 @@ export default function AdminApplicationsPage() {
     () => (corporateApplications || []).filter((a) => filter === 'all' || a.status === filter),
     [corporateApplications, filter],
   )
-  const contactFiltered = useMemo(
-    () => (contactInquiries || []).filter((a) => filter === 'all' || a.status === filter),
-    [contactInquiries, filter],
-  )
 
-  const filterOptions = section === 'contact'
-    ? [['new', 'Yeni'], ['read', 'Okundu'], ['resolved', 'Çözüldü'], ['all', 'Tümü']]
-    : [['pending', 'Bekleyen'], ['approved', section === 'corporate' ? 'Onaylanan' : 'Onaylanan'], ['rejected', 'Reddedilen'], ['all', 'Tümü']]
+  const filterOptions = [['pending', 'Bekleyen'], ['approved', 'Onaylanan'], ['rejected', 'Reddedilen'], ['all', 'Tümü']]
 
   const approveStaff = async (app) => {
     setBusy(app.id)
@@ -126,12 +116,29 @@ export default function AdminApplicationsPage() {
     } finally { setBusy(null) }
   }
 
-  const setContactStatus = async (inq, status) => {
+  const setContactStatus = async (inq, status, { silent = false } = {}) => {
     setBusy(inq.id)
     try {
       const r = await updateContactInquiryStatus(inq, status)
       if (!r.success) toast(r.error, 'error')
-      else toast('Durum güncellendi', 'success')
+      else if (!silent) toast('Durum güncellendi', 'success')
+    } finally { setBusy(null) }
+  }
+
+  const sendContactReply = async (inq, { reply, markResolved }) => {
+    setBusy(inq.id)
+    try {
+      const r = await replyContactInquiry(inq, { reply, markResolved })
+      if (!r.success) {
+        toast(r.error || 'Yanıt gönderilemedi', 'error')
+        return r
+      }
+      if (r.persisted === false) {
+        toast('E-posta gönderildi ancak kayıt güncellenemedi', 'error')
+      } else {
+        toast('Yanıt e-postası gönderildi', 'success')
+      }
+      return r
     } finally { setBusy(null) }
   }
 
@@ -167,7 +174,7 @@ export default function AdminApplicationsPage() {
           const Icon = s.icon
           const badge = s.id === 'staff' ? pendingStaff : s.id === 'corporate' ? pendingCorp : newContact
           return (
-            <button key={s.id} type="button" onClick={() => { setSection(s.id); setFilter(s.id === 'contact' ? 'new' : 'pending'); setExpanded(null) }}
+            <button key={s.id} type="button" onClick={() => { setSection(s.id); setFilter('pending'); setExpanded(null) }}
               className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${section === s.id ? 'bg-cream-900 text-white' : 'bg-cream-100 text-cream-800 hover:bg-cream-200'}`}>
               <Icon className="h-4 w-4" /> {s.label}
               {badge > 0 && <span className={`rounded-full px-1.5 text-xs ${section === s.id ? 'bg-white/20' : 'bg-amber-200 text-amber-800'}`}>{badge}</span>}
@@ -176,6 +183,7 @@ export default function AdminApplicationsPage() {
         })}
       </div>
 
+      {section !== 'contact' && (
       <div className="flex flex-wrap gap-2">
         {filterOptions.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setFilter(id)}
@@ -184,6 +192,7 @@ export default function AdminApplicationsPage() {
           </button>
         ))}
       </div>
+      )}
 
       {section === 'staff' && (
         staffFiltered.length === 0 ? (
@@ -290,34 +299,12 @@ export default function AdminApplicationsPage() {
       )}
 
       {section === 'contact' && (
-        contactFiltered.length === 0 ? (
-          <EmptyState icon={MessageSquare} title="İletişim mesajı yok" description="Ana sayfa Bize Ulaşın formu" />
-        ) : (
-          <div className="space-y-3">
-            {contactFiltered.map((inq) => {
-              const st = CONTACT_STATUS[inq.status] || CONTACT_STATUS.new
-              return (
-                <div key={inq.id} className="rounded-2xl border border-cream-200 bg-white p-4 shadow-sm">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-cream-900">{inq.name}</p>
-                      <p className="text-xs text-cream-800/55">{inq.email} · {inq.phone || '—'} · {inq.subject}</p>
-                      <p className="mt-2 text-sm text-cream-800/70">{inq.message}</p>
-                      <p className="mt-1 text-xs text-cream-800/40">{new Date(inq.createdAt).toLocaleString('tr-TR')}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${st.style}`}>{st.label}</span>
-                      <div className="flex gap-1">
-                        {inq.status === 'new' && <button type="button" disabled={busy === inq.id} onClick={() => setContactStatus(inq, 'read')} className="rounded-lg bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">Okundu</button>}
-                        {inq.status !== 'resolved' && <button type="button" disabled={busy === inq.id} onClick={() => setContactStatus(inq, 'resolved')} className="rounded-lg bg-sage-500 px-2 py-1 text-xs font-semibold text-white">Çözüldü</button>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )
+        <ContactInquiryInbox
+          inquiries={contactInquiries || []}
+          onStatusChange={setContactStatus}
+          onReply={sendContactReply}
+          busyId={busy}
+        />
       )}
 
       <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title="Başvuruyu Reddet">

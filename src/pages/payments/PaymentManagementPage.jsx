@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../../context/AppContext'
+import { useChartColors } from '../../context/ThemeContext'
 import { useToast } from '../../context/ToastContext'
 import EmptyState from '../../components/ui/EmptyState'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
@@ -17,6 +18,10 @@ import {
 } from '../../data/staffPayouts'
 import { getPlanLabel, isPaidMembership } from '../../data/membershipPlans'
 import MemberSubscriptionPackages from '../../components/membership/MemberSubscriptionPackages'
+import StaffPayoutAccountCard from '../../components/payments/StaffPayoutAccountCard'
+import AdminStaffPayoutDirectory, { StaffPayoutInline } from '../../components/payments/AdminStaffPayoutDirectory'
+import useStaffPayoutAccounts from '../../hooks/useStaffPayoutAccounts'
+import { isPayoutAccountComplete } from '../../utils/iban'
 import { supabase } from '../../services/supabaseClient'
 
 function formatTry(amount) {
@@ -166,6 +171,7 @@ function useStaffEarnings({ staffId = null, all = false } = {}) {
 function StaffPayments() {
   const { staffUser } = useApp()
   const { rows, loading } = useStaffEarnings({ staffId: staffUser?.id })
+  const { account, loading: payoutLoading, reload: reloadPayout } = useStaffPayoutAccounts({ staffId: staffUser?.id })
 
   const summary = useMemo(() => {
     const monthStart = startOfMonth(new Date())
@@ -208,6 +214,13 @@ function StaffPayments() {
 
   return (
     <div className="space-y-8">
+      {payoutLoading ? (
+        <div className="flex items-center justify-center rounded-3xl border border-cream-200 bg-white py-12 text-cream-800/50">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : (
+        <StaffPayoutAccountCard staffUser={staffUser} account={account} onSaved={reloadPayout} />
+      )}
       <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/40 px-4 py-3">
         <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
         <p className="text-sm text-brand-900/80">
@@ -270,7 +283,7 @@ function StaffPayments() {
   )
 }
 
-function AdminStaffEarnings() {
+function AdminStaffEarnings({ accountsByStaffId = {} }) {
   const { toast } = useToast()
   const { platform } = useApp()
   const { rows, loading, reload } = useStaffEarnings({ all: true })
@@ -281,15 +294,21 @@ function AdminStaffEarnings() {
     return s?.name || 'Personel'
   }, [platform?.staff])
 
-  const setStatus = async (id, status) => {
-    setBusyId(id)
+  const setStatus = async (row, status) => {
+    setBusyId(row.id)
     try {
+      const missingIban = status === 'paid' && !isPayoutAccountComplete(accountsByStaffId[row.staff_id])
       const { error } = await supabase
         .from('staff_earnings')
         .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id)
+        .eq('id', row.id)
       if (error) throw error
-      toast(status === 'paid' ? 'Ödendi olarak işaretlendi.' : 'Durum güncellendi.', 'success')
+      toast(
+        missingIban
+          ? 'Ödendi işaretlendi — IBAN kayıtlı değil, transferi elle doğrulayın.'
+          : status === 'paid' ? 'Ödendi olarak işaretlendi.' : 'Durum güncellendi.',
+        missingIban ? 'info' : 'success',
+      )
       await reload()
     } catch (e) {
       toast(e?.message || 'Güncellenemedi.', 'error')
@@ -320,11 +339,12 @@ function AdminStaffEarnings() {
     <div className="space-y-2">
       {rows.slice(0, 40).map((r) => (
         <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-200 bg-white px-4 py-3">
-          <div>
+          <div className="min-w-0 space-y-1.5">
             <p className="font-medium text-cream-900">{staffName(r.staff_id)}</p>
             <p className="text-xs text-cream-800/50">
               {formatStaffPayoutPeriodLabel(r.period_key)} · {r.session_type} · {r.overlap_minutes} dk
             </p>
+            <StaffPayoutInline account={accountsByStaffId[r.staff_id]} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">{formatTry(r.amount_try)}</span>
@@ -333,7 +353,7 @@ function AdminStaffEarnings() {
               <button
                 type="button"
                 disabled={busyId === r.id}
-                onClick={() => setStatus(r.id, 'approved')}
+                onClick={() => setStatus(r, 'approved')}
                 className="rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
               >
                 Onayla
@@ -343,7 +363,7 @@ function AdminStaffEarnings() {
               <button
                 type="button"
                 disabled={busyId === r.id}
-                onClick={() => setStatus(r.id, 'paid')}
+                onClick={() => setStatus(r, 'paid')}
                 className="rounded-lg bg-sage-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sage-700 disabled:opacity-50"
               >
                 Ödendi
@@ -358,6 +378,13 @@ function AdminStaffEarnings() {
 
 function AdminPayments() {
   const { platform, adminStats, monthlyGrowth } = useApp()
+  const colors = useChartColors()
+  const { accounts, loading: payoutLoading } = useStaffPayoutAccounts({ all: true })
+  const accountsByStaffId = useMemo(() => {
+    const map = {}
+    for (const row of accounts) map[row.staffId] = row
+    return map
+  }, [accounts])
 
   const recent = useMemo(() => (
     [...(platform?.payments || [])]
@@ -398,6 +425,19 @@ function AdminPayments() {
         </div>
       </div>
 
+      <AdminStaffPayoutDirectory
+        staff={platform?.staff || []}
+        accounts={accounts}
+        loading={payoutLoading}
+      />
+
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+          <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
+        </h2>
+        <AdminStaffEarnings accountsByStaffId={accountsByStaffId} />
+      </section>
+
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <ArrowDownLeft className="h-5 w-5 text-brand-500" /> Son Üye Ödemeleri
@@ -435,11 +475,17 @@ function AdminPayments() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
-                  <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v / 1000}K`} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                  <XAxis dataKey="month" tick={{ fill: colors.tick }} />
+                  <YAxis yAxisId="left" tick={{ fill: colors.tick }} />
+                  <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v / 1000}K`} tick={{ fill: colors.tick }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: colors.tooltipBg,
+                      border: `1px solid ${colors.tooltipBorder}`,
+                      color: colors.tooltipColor,
+                    }}
+                  />
                   <Legend />
                   <Bar yAxisId="left" dataKey="premium" name="Premium" fill="#4a8aad" radius={[4, 4, 0, 0]} />
                   <Bar yAxisId="right" dataKey="gelir" name="Gelir (₺)" fill="#b8924f" radius={[4, 4, 0, 0]} />
@@ -474,13 +520,6 @@ function AdminPayments() {
           </div>
         )}
       </section>
-
-      <section>
-        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
-          <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
-        </h2>
-        <AdminStaffEarnings />
-      </section>
     </div>
   )
 }
@@ -493,8 +532,8 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   }, [audience])
 
   const subtitle = useMemo(() => {
-    if (audience === 'admin') return 'Gelir, ödeme geçmişi, büyüme ve personel hakediş onayları'
-    if (audience === 'staff') return 'Video görüşme hakedişi — Cuma ödeme döngüsü'
+    if (audience === 'admin') return 'Gelir, üye ödemeleri, personel IBAN’ları ve hakediş onayları'
+    if (audience === 'staff') return 'IBAN / banka hesabı ve video görüşme hakedişi — Cuma ödeme döngüsü'
     return 'Ödeme geçmişiniz ve Stripe kart yönetimi'
   }, [audience])
 

@@ -1,9 +1,10 @@
 /**
  * Public form kapısı — Turnstile + rate limit + service-role DB yazımı + Telegram.
- * action: contact | staff_application | staff_email_precheck | corporate_application | staff_doc_upload | staff_decision_notify
+ * action: contact | staff_application | staff_email_precheck | corporate_application | staff_doc_upload | staff_decision_notify | contact_reply
  *
  * Client asla notify secret göndermez; Telegram yalnızca bu route içinden tetiklenir.
  * staff_decision_notify: admin bearer + Resend mail (onay/red).
+ * contact_reply: admin bearer + Resend mail (Bize Ulaşın yanıtı).
  */
 
 import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
@@ -22,10 +23,12 @@ import {
   sendMail,
   staffApprovedEmail,
   staffRejectedEmail,
+  contactReplyEmail,
   isMailConfigured,
 } from './_mailer.js'
 
 const MAX_MESSAGE = 2000
+const MAX_REPLY = 4000
 const MAX_NAME = 120
 const MAX_DOC_BYTES = 8 * 1024 * 1024
 const ALLOWED_DOC_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp'])
@@ -535,6 +538,134 @@ async function handleStaffDecisionNotify(req, res, body) {
   return res.status(200).json({ ok: true, emailSent: true, id: sent.id || null })
 }
 
+/**
+ * Admin: Bize Ulaşın mesajına e-posta yanıtı.
+ * Alıcı e-posta sunucuda contact_inquiries satırından okunur.
+ */
+async function handleContactReply(req, res, body) {
+  const auth = await requireAdmin(req)
+  if (!auth.ok) {
+    return res.status(auth.status).json({ ok: false, error: auth.error })
+  }
+
+  const inquiryId = trimStr(body.inquiryId, 80)
+  const replyBody = trimStr(body.reply || body.message || body.body, MAX_REPLY)
+  const markResolved = body.markResolved !== false
+
+  if (!inquiryId) {
+    return res.status(400).json({ ok: false, error: 'inquiryId gerekli' })
+  }
+  if (replyBody.length < 5) {
+    return res.status(400).json({ ok: false, error: 'Yanıt en az 5 karakter olmalı' })
+  }
+
+  const rl = await enforceRateLimit({
+    req,
+    prefix: 'admin-contact-reply',
+    limit: 30,
+    extraKey: String(auth.user?.email || '').toLowerCase(),
+  })
+  if (!rl.ok) {
+    applyRateLimitHeaders(res, rl.headers)
+    return res.status(rl.status).json({ ok: false, error: rl.error || 'Çok fazla deneme' })
+  }
+  applyRateLimitHeaders(res, rl.headers)
+
+  const admin = getSupabaseAdmin()
+  const { data: row, error } = await admin
+    .from('contact_inquiries')
+    .select('id, status, name, email, phone, subject, message, source, replies, last_replied_at, created_at')
+    .eq('id', inquiryId)
+    .maybeSingle()
+
+  if (error) {
+    return res.status(500).json({ ok: false, error: error.message || 'Mesaj okunamadı' })
+  }
+  if (!row) {
+    return res.status(404).json({ ok: false, error: 'İletişim mesajı bulunamadı' })
+  }
+
+  const to = String(row.email || '').trim().toLowerCase()
+  if (!to.includes('@')) {
+    return res.status(400).json({ ok: false, emailSent: false, error: 'Mesajda geçerli e-posta yok' })
+  }
+
+  if (!isMailConfigured()) {
+    return res.status(200).json({
+      ok: true,
+      emailSent: false,
+      error: 'RESEND_API_KEY tanımlı değil — mail atlandı.',
+    })
+  }
+
+  const originalDateLabel = row.created_at
+    ? new Date(row.created_at).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })
+    : ''
+
+  const template = contactReplyEmail({
+    name: row.name,
+    replyBody,
+    originalMessage: row.message,
+    originalSubject: row.subject,
+    originalDateLabel,
+  })
+
+  const sent = await sendMail({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+  })
+
+  if (!sent.ok) {
+    return res.status(200).json({
+      ok: true,
+      emailSent: false,
+      error: sent.error || 'E-posta gönderilemedi',
+    })
+  }
+
+  const existingReplies = Array.isArray(row.replies) ? row.replies : []
+  const nowIso = new Date().toISOString()
+  const nextReply = {
+    id: crypto.randomUUID(),
+    body: replyBody,
+    sentAt: nowIso,
+    sentByName: trimStr(auth.user?.user_metadata?.name || auth.user?.email || 'Admin', 80) || 'Admin',
+    sentByEmail: String(auth.user?.email || '').trim().toLowerCase(),
+    mailId: sent.id || null,
+  }
+  const nextStatus = markResolved ? 'resolved' : (row.status === 'new' ? 'read' : row.status)
+
+  const { data: updated, error: updateError } = await admin
+    .from('contact_inquiries')
+    .update({
+      replies: [...existingReplies, nextReply],
+      last_replied_at: nowIso,
+      status: nextStatus,
+    })
+    .eq('id', inquiryId)
+    .select('id, status, name, email, phone, subject, message, source, replies, last_replied_at, created_at')
+    .single()
+
+  if (updateError) {
+    return res.status(200).json({
+      ok: true,
+      emailSent: true,
+      persisted: false,
+      error: updateError.message || 'E-posta gitti, kayıt güncellenemedi',
+      row,
+    })
+  }
+
+  return res.status(200).json({
+    ok: true,
+    emailSent: true,
+    persisted: true,
+    row: updated,
+  })
+}
+
 export default async function handler(req, res) {
   if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type, Authorization')) return
   setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
@@ -559,6 +690,7 @@ export default async function handler(req, res) {
     if (action === 'corporate_application') return handleCorporateApplication(req, res, body)
     if (action === 'staff_doc_upload') return handleStaffDocUpload(req, res, body)
     if (action === 'staff_decision_notify') return handleStaffDecisionNotify(req, res, body)
+    if (action === 'contact_reply') return handleContactReply(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz form türü' })
   } catch (e) {

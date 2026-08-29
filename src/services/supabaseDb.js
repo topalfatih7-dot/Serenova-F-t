@@ -29,6 +29,7 @@ import {
 } from './exerciseVideoUrlCache'
 import { estimateReadMinutes } from '../utils/blogContent'
 import { buildStaffApplicationPayload, applicationToStaffPayload } from '../data/staffApplication'
+import { parseContactReplies } from '../utils/contactInquiry'
 import { normalizeE164 } from '../data/countryCodes'
 import { ageFromBirthDate } from '../utils/birthDate'
 import { stripEmbeddedInstructionBlock } from '../data/exerciseTurkish'
@@ -618,6 +619,8 @@ function rowToContactInquiry(row) {
     subject: row.subject,
     message: row.message,
     source: row.source,
+    replies: parseContactReplies(row.replies),
+    lastRepliedAt: row.last_replied_at || null,
     createdAt: row.created_at,
   }
 }
@@ -2593,6 +2596,63 @@ export async function updateContactInquiryStatus(inquiry, status) {
   const { error } = await supabase.from('contact_inquiries').update({ status }).eq('id', inquiry.id)
   if (error) return { success: false, error: error.message }
   return { success: true, inquiry: { ...inquiry, status } }
+}
+
+export async function replyContactInquiry(inquiry, { reply, markResolved = true } = {}) {
+  const body = String(reply || '').trim()
+  if (!inquiry?.id) return { success: false, error: 'Mesaj bulunamadı' }
+  if (body.length < 5) return { success: false, error: 'Yanıt en az 5 karakter olmalı' }
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+    if (!token) {
+      return { success: false, emailSent: false, error: 'Oturum bulunamadı — e-posta gönderilemedi' }
+    }
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: 'contact_reply',
+        inquiryId: inquiry.id,
+        reply: body,
+        markResolved: markResolved !== false,
+      }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return { success: false, emailSent: false, error: json?.error || `E-posta API hatası (${res.status})` }
+    }
+    if (!json.emailSent) {
+      return { success: false, emailSent: false, error: json.error || 'E-posta gönderilemedi' }
+    }
+    const next = json.row && json.persisted !== false
+      ? rowToContactInquiry(json.row)
+      : {
+          ...inquiry,
+          replies: [...(inquiry.replies || []), {
+            id: `local-${Date.now()}`,
+            body,
+            sentAt: new Date().toISOString(),
+            sentByName: 'Yeni Form',
+          }],
+          lastRepliedAt: new Date().toISOString(),
+          status: markResolved !== false ? 'resolved' : (inquiry.status === 'new' ? 'read' : inquiry.status),
+        }
+    void addActivity('contact_reply', `${inquiry.name} iletişim mesajına yanıt gönderildi`)
+    return {
+      success: true,
+      emailSent: true,
+      persisted: json.persisted !== false,
+      error: json.error || null,
+      inquiry: next,
+    }
+  } catch (e) {
+    return { success: false, emailSent: false, error: e?.message || 'E-posta gönderilemedi' }
+  }
 }
 
 // --------------------------- programs (staff/admin) ---------------------------

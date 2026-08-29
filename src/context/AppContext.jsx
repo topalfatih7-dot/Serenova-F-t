@@ -1318,6 +1318,22 @@ export function AppProvider({ children }) {
     return r
   }, [])
 
+  const replyContactInquiry = useCallback(async (inquiry, opts) => {
+    const r = await sb.replyContactInquiry(inquiry, opts)
+    if (r.success && r.inquiry) {
+      setRemoteDb((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          contactInquiries: (prev.contactInquiries || []).map((a) => (
+            a.id === inquiry.id ? r.inquiry : a
+          )),
+        }
+      })
+    }
+    return r
+  }, [])
+
   const addContent = useCallback(async (kind, data) => {
     const r = await sb.addContent(kind, data)
     if (r.success && r.item) {
@@ -1977,6 +1993,7 @@ export function AppProvider({ children }) {
     resolveStaffApplication,
     resolveCorporateApplication,
     updateContactInquiryStatus,
+    replyContactInquiry,
     addContent,
     editContent,
     removeContent,
@@ -2062,6 +2079,7 @@ export function AppProvider({ children }) {
     resolveStaffApplication,
     resolveCorporateApplication,
     updateContactInquiryStatus,
+    replyContactInquiry,
     addContent,
     editContent,
     removeContent,

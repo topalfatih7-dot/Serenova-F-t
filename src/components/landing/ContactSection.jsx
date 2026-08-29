@@ -3,17 +3,9 @@ import { motion } from 'framer-motion'
 import { Mail, Phone, User, MessageSquare, Send, Loader2, CheckCircle2 } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { submitContactForm } from '../../services/contactForm'
+import { CONTACT_SUBJECTS } from '../../utils/contactInquiry'
 import TurnstileWidget from '../security/TurnstileWidget'
 import { useTurnstile } from '../../hooks/useTurnstile'
-
-const SUBJECTS = [
-  { value: 'general', label: 'Genel bilgi' },
-  { value: 'membership', label: 'Üyelik & kayıt' },
-  { value: 'premium', label: 'Premium paket' },
-  { value: 'support', label: 'Teknik destek' },
-  { value: 'partnership', label: 'İş birliği' },
-  { value: 'other', label: 'Diğer' },
-]
 
 const EMPTY = { name: '', email: '', phone: '', subject: 'general', message: '', consent: false, website: '' }
 
@@ -204,7 +196,7 @@ export default function ContactSection() {
                       onChange={(e) => update({ subject: e.target.value })}
                       className={inputClass('subject')}
                     >
-                      {SUBJECTS.map((s) => (
+                      {CONTACT_SUBJECTS.map((s) => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>

@@ -15,11 +15,22 @@ export function getMailFrom() {
   return String(process.env.MAIL_FROM || DEFAULT_FROM).trim() || DEFAULT_FROM
 }
 
+function extractEmailAddress(from) {
+  const raw = String(from || '').trim()
+  const angled = raw.match(/<([^>]+)>/)
+  const email = (angled ? angled[1] : raw).trim().toLowerCase()
+  return email.includes('@') ? email : ''
+}
+
+export function getMailReplyTo() {
+  return extractEmailAddress(getMailFrom()) || 'info@yeniform.com'
+}
+
 /**
- * @param {{ to: string|string[], subject: string, html: string, text?: string }} opts
+ * @param {{ to: string|string[], subject: string, html: string, text?: string, replyTo?: string }} opts
  * @returns {Promise<{ ok: true, id?: string } | { ok: false, error: string, skipped?: boolean }>}
  */
-export async function sendMail({ to, subject, html, text }) {
+export async function sendMail({ to, subject, html, text, replyTo }) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim()
   if (!apiKey) {
     return { ok: false, skipped: true, error: 'RESEND_API_KEY tanımlı değil.' }
@@ -40,6 +51,7 @@ export async function sendMail({ to, subject, html, text }) {
     to: recipients,
     subject: String(subject).slice(0, 200),
     html,
+    reply_to: extractEmailAddress(replyTo) || getMailReplyTo(),
   }
   if (text) body.text = String(text)
 
@@ -69,6 +81,10 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function nl2br(escaped) {
+  return String(escaped || '').replace(/\r\n|\r|\n/g, '<br />')
 }
 
 function wrapBrandEmail({ title, bodyHtml, footerNote }) {
@@ -270,6 +286,70 @@ export function catalogPriceReminderEmail({
   return {
     subject: `Yeni Form — ${planName || 'Paket'} yenileme hatırlatması`,
     html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}
+
+const CONTACT_SUBJECT_LABELS = {
+  general: 'Genel bilgi',
+  membership: 'Üyelik & kayıt',
+  premium: 'Premium paket',
+  support: 'Teknik destek',
+  partnership: 'İş birliği',
+  other: 'Diğer',
+}
+
+/**
+ * Bize Ulaşın formuna admin yanıtı — alıcı, formdaki e-posta.
+ */
+export function contactReplyEmail({
+  name,
+  replyBody,
+  originalMessage,
+  originalSubject,
+  originalDateLabel,
+}) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const subjectLabel = CONTACT_SUBJECT_LABELS[originalSubject] || originalSubject || 'Genel bilgi'
+  const title = 'Talebinize yanıt'
+  const quote = originalMessage
+    ? `<p style="margin:20px 0 8px;font-size:12px;font-weight:600;color:#888;letter-spacing:0.03em;text-transform:uppercase;">Orijinal mesajınız</p>
+       <div style="margin:0;padding:14px 16px;background:#f6faf7;border-radius:12px;border:1px solid #d8ebe0;font-size:13px;line-height:1.65;color:#5a6b62;">
+         <p style="margin:0 0 6px;font-size:12px;color:#7a8c82;">${escapeHtml(subjectLabel)}${originalDateLabel ? ` · ${escapeHtml(originalDateLabel)}` : ''}</p>
+         ${nl2br(escapeHtml(String(originalMessage).slice(0, 1500)))}
+       </div>`
+    : ''
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, iletişim formunuz üzerinden bize ulaştığınız için teşekkürler. Yanıtımız aşağıdadır.
+    </p>
+    <div style="margin:0 0 8px;padding:16px 18px;background:#faf8f4;border-radius:12px;border:1px solid #ebe3d6;font-size:15px;line-height:1.7;color:#1b4332;">
+      ${nl2br(escapeHtml(replyBody))}
+    </div>
+    ${quote}
+    <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6b6b6b;">
+      Bu e-postayı yanıtlayarak bize yazmaya devam edebilirsiniz.
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    'İletişim formunuz üzerinden bize ulaştığınız için teşekkürler. Yanıtımız:',
+    '',
+    String(replyBody || ''),
+    '',
+    originalMessage ? '--- Orijinal mesajınız ---' : '',
+    originalMessage ? String(originalMessage).slice(0, 1500) : '',
+    '',
+    'Bu e-postayı yanıtlayarak bize yazmaya devam edebilirsiniz.',
+  ].filter((line, i, arr) => line !== '' || arr[i - 1] !== '').join('\n')
+
+  return {
+    subject: `Yeni Form — ${subjectLabel} talebinize yanıt`,
+    html: wrapBrandEmail({
+      title,
+      bodyHtml,
+      footerNote: 'Yeni Form · yeniform.com · info@yeniform.com',
+    }),
     text,
   }
 }
