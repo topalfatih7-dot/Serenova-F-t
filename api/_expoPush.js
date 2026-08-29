@@ -139,13 +139,27 @@ export async function sendExpoPushToUser(admin, userId, notification, opts = {})
     && String(senderId) === String(userId)
     && CHAT_ECHO_TYPES.has(String(notification.type || ''))
   ) {
+    console.log('[expoPush] skip', {
+      userId,
+      type: notification.type || '',
+      reason: 'self_sender',
+      senderId,
+    })
     return { ok: true, skipped: true, reason: 'self_sender' }
   }
 
   const audience = opts.audience || notification.audience || 'member'
   const prefs = await pushPrefsEnabled(admin, userId, audience)
   if (!prefs.ok) return prefs
-  if (prefs.skipped) return prefs
+  if (prefs.skipped) {
+    console.log('[expoPush] skip', {
+      userId,
+      audience,
+      type: notification.type || '',
+      reason: prefs.reason || 'push_prefs_off',
+    })
+    return prefs
+  }
 
   const { data: tokenRows, error: tokErr } = await admin
     .from('device_push_tokens')
@@ -153,6 +167,12 @@ export async function sendExpoPushToUser(admin, userId, notification, opts = {})
     .eq('user_id', userId)
   if (tokErr) return { ok: false, error: tokErr.message }
   if (!tokenRows?.length) {
+    console.log('[expoPush] skip', {
+      userId,
+      audience,
+      type: notification.type || '',
+      reason: 'no_token',
+    })
     return { ok: true, skipped: true, reason: 'no_token' }
   }
 

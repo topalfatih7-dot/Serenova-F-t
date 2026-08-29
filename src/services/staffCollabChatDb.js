@@ -228,26 +228,35 @@ export async function sendStaffCollabMessage({ thread, senderType, senderId, tex
     data,
   }).eq('id', thread.id)
 
+  const { data: live } = await supabase
+    .from('staff_collab_threads')
+    .select('coach_id, dietitian_id, doctor_id, member_id, data')
+    .eq('id', thread.id)
+    .maybeSingle()
+  const coachId = String(live?.coach_id || thread.coachId || thread.coach_id || '')
+  const dietitianId = String(live?.dietitian_id || thread.dietitianId || thread.dietitian_id || '')
+  const doctorId = String(live?.doctor_id || thread.doctorId || thread.doctor_id || '')
+  const memberId = String(live?.member_id || thread.memberId || '')
+  const memberName = String(live?.data?.memberName || thread.memberName || '')
+  const selfId = senderId ? String(senderId) : ''
+
   const peerIds = new Set()
-  if (senderType !== 'coach' && thread.coachId) {
-    peerIds.add(String(thread.coachId))
-  }
-  if (senderType !== 'dietitian' && thread.dietitianId) {
-    peerIds.add(String(thread.dietitianId))
-  }
-  if (senderType !== 'doctor' && thread.doctorId) {
-    peerIds.add(String(thread.doctorId))
-  }
-  for (const peerId of peerIds) {
-    void notifyStaffCollabMessage({
-      staffId: peerId,
-      preview,
-      threadId: thread.id,
-      memberId: thread.memberId,
-      memberName: thread.memberName,
-      senderRole: senderType,
-    })
-  }
+  if (senderType !== 'coach' && coachId) peerIds.add(coachId)
+  if (senderType !== 'dietitian' && dietitianId) peerIds.add(dietitianId)
+  if (senderType !== 'doctor' && doctorId) peerIds.add(doctorId)
+  await Promise.all(
+    [...peerIds]
+      .filter((peerId) => peerId && peerId !== selfId)
+      .map((peerId) => notifyStaffCollabMessage({
+        staffId: peerId,
+        preview,
+        threadId: thread.id,
+        memberId,
+        memberName,
+        senderRole: senderType,
+        senderId: selfId || null,
+      })),
+  )
 
   return {
     success: true,

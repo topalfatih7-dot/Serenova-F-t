@@ -88,7 +88,7 @@ export async function pushStaffNotification(staffId, notification, outboundExtra
   if (error) {
     console.warn('[staffNotifications] append_staff_notification', error.message)
   }
-  void dispatchStaffOutbound(staffId, notification, outboundExtra)
+  await dispatchStaffOutbound(staffId, notification, outboundExtra)
   return error ? { success: false, error: error.message } : { success: true }
 }
 
@@ -150,6 +150,10 @@ export async function notifyStaffAdminMessage({ staffId, preview, threadId }) {
   )
 }
 
+export function collabNotificationTitle(senderRole) {
+  return COLLAB_SENDER_TITLE[String(senderRole || '')] || 'Ekip mesajı'
+}
+
 export async function notifyStaffCollabMessage({
   staffId,
   preview,
@@ -157,9 +161,10 @@ export async function notifyStaffCollabMessage({
   memberId,
   memberName,
   senderRole,
+  senderId,
 }) {
   if (!staffId) return { success: false, error: 'Personel yok.' }
-  const title = COLLAB_SENDER_TITLE[String(senderRole || '')] || 'Ekip mesajı'
+  const title = collabNotificationTitle(senderRole)
   return pushStaffNotification(
     staffId,
     buildStaffNotification({
@@ -168,6 +173,7 @@ export async function notifyStaffCollabMessage({
       message: memberName ? `${memberName}: ${preview}` : (preview || 'Yeni bir mesajınız var.'),
       threadId: threadId || null,
       memberId: memberId || null,
+      senderId: senderId || null,
       audience: 'staff',
     }),
     { threadId: threadId || null },

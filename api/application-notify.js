@@ -72,6 +72,23 @@ async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
   if (authUser.id === staffId) return true
   if (await isAdminUser(admin, authUser)) return true
 
+  const threadId = hint.threadId || null
+  if (threadId) {
+    const { data: collab } = await admin
+      .from('staff_collab_threads')
+      .select('coach_id, dietitian_id, doctor_id')
+      .eq('id', threadId)
+      .maybeSingle()
+    if (collab) {
+      const party = [collab.coach_id, collab.dietitian_id, collab.doctor_id]
+        .filter(Boolean)
+        .map((id) => String(id))
+      if (party.includes(String(authUser.id)) && party.includes(String(staffId))) {
+        return true
+      }
+    }
+  }
+
   const { data: member } = await admin
     .from('members')
     .select('assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
@@ -85,7 +102,6 @@ async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
     ) {
       return true
     }
-    const threadId = hint.threadId || null
     if (threadId) {
       const { data: thread } = await admin
         .from('chat_threads')
@@ -204,12 +220,22 @@ async function handleStaffOutbound(admin, body, auth, res) {
   }
 
   const actorId = auth.user?.id || null
+  /**
+   * Receiver-side fallback (staff app sees unread bump, notifies itself).
+   * Echo-guard must use the *message author*, not the JWT actor — otherwise
+   * collab/admin-chat self-notify is skipped as self_sender and the phone
+   * never gets Expo (admin web sender hid this; collab has no web-admin path).
+   */
+  const isSelfNotify = Boolean(actorId && String(actorId) === String(staffId))
+  const echoSenderId = isSelfNotify
+    ? (notification.senderId || body.senderId || null)
+    : actorId
   let expoPush = null
   if (body.expoPush !== false) {
     expoPush = await sendExpoPushToStaff(admin, staffId, {
       ...notification,
       audience: 'staff',
-    }, { senderId: actorId })
+    }, { senderId: echoSenderId })
   }
 
   return res.status(200).json({ ok: true, expoPush })
