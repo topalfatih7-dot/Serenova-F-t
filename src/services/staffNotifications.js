@@ -3,6 +3,12 @@ import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
 
+const COLLAB_SENDER_TITLE = {
+  coach: 'Koçtan ekip mesajı',
+  dietitian: 'Diyetisyenden ekip mesajı',
+  doctor: 'Doktordan ekip mesajı',
+}
+
 /**
  * Expo push + WhatsApp fan-out: staff outbound.
  * `memberId` top-level ASLA Expo hedefi değildir —
@@ -79,9 +85,11 @@ export async function pushStaffNotification(staffId, notification, outboundExtra
     p_staff_id: staffId,
     p_notification: notification,
   })
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    console.warn('[staffNotifications] append_staff_notification', error.message)
+  }
   void dispatchStaffOutbound(staffId, notification, outboundExtra)
-  return { success: true }
+  return error ? { success: false, error: error.message } : { success: true }
 }
 
 /** Okundu / tüm liste yazma — personelin kendi satırı. */
@@ -121,6 +129,45 @@ export async function notifyStaffChatMessage({
       threadId: threadId || null,
       memberId: memberId || null,
       senderId: memberId || null,
+      audience: 'staff',
+    }),
+    { threadId: threadId || null },
+  )
+}
+
+export async function notifyStaffAdminMessage({ staffId, preview, threadId }) {
+  if (!staffId) return { success: false, error: 'Personel yok.' }
+  return pushStaffNotification(
+    staffId,
+    buildStaffNotification({
+      type: 'admin-chat',
+      title: 'Yönetimden yeni mesaj',
+      message: preview || 'Yeni bir mesajınız var.',
+      threadId: threadId || null,
+      audience: 'staff',
+    }),
+    { threadId: threadId || null },
+  )
+}
+
+export async function notifyStaffCollabMessage({
+  staffId,
+  preview,
+  threadId,
+  memberId,
+  memberName,
+  senderRole,
+}) {
+  if (!staffId) return { success: false, error: 'Personel yok.' }
+  const title = COLLAB_SENDER_TITLE[String(senderRole || '')] || 'Ekip mesajı'
+  return pushStaffNotification(
+    staffId,
+    buildStaffNotification({
+      type: 'collab',
+      title,
+      message: memberName ? `${memberName}: ${preview}` : (preview || 'Yeni bir mesajınız var.'),
+      threadId: threadId || null,
+      memberId: memberId || null,
       audience: 'staff',
     }),
     { threadId: threadId || null },

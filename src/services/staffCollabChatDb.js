@@ -7,6 +7,7 @@ import {
 } from '../data/membershipPlans'
 import { normalizeStaffRole } from '../utils/staffRoles'
 import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
+import { notifyStaffCollabMessage } from './staffNotifications'
 
 const nowISO = () => new Date().toISOString()
 
@@ -226,6 +227,27 @@ export async function sendStaffCollabMessage({ thread, senderType, senderId, tex
     last_message_at: nowISO(),
     data,
   }).eq('id', thread.id)
+
+  const peerIds = new Set()
+  if (senderType !== 'coach' && thread.coachId) {
+    peerIds.add(String(thread.coachId))
+  }
+  if (senderType !== 'dietitian' && thread.dietitianId) {
+    peerIds.add(String(thread.dietitianId))
+  }
+  if (senderType !== 'doctor' && thread.doctorId) {
+    peerIds.add(String(thread.doctorId))
+  }
+  for (const peerId of peerIds) {
+    void notifyStaffCollabMessage({
+      staffId: peerId,
+      preview,
+      threadId: thread.id,
+      memberId: thread.memberId,
+      memberName: thread.memberName,
+      senderRole: senderType,
+    })
+  }
 
   return {
     success: true,

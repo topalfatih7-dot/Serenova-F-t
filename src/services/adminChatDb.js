@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { notifyStaffAdminMessage } from './staffNotifications'
 
 const nowISO = () => new Date().toISOString()
 
@@ -123,6 +124,14 @@ export async function sendAdminStaffMessage({ thread, senderType, senderId, text
     last_message_at: nowISO(),
     data,
   }).eq('id', thread.id)
+
+  if (senderType === 'admin' && thread.staffId) {
+    void notifyStaffAdminMessage({
+      staffId: thread.staffId,
+      preview,
+      threadId: thread.id,
+    })
+  }
 
   return {
     success: true,
