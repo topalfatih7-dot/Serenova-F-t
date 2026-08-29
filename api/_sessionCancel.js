@@ -4,6 +4,8 @@
  * - respond-cancel-session (personel → cancel_pending)
  * - respond-admin-cancel (admin → admin_cancel_pending)
  */
+import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
+
 const TZ = 'Europe/Istanbul'
 const CANCEL_NOTICE_MS = 24 * 60 * 60 * 1000
 const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
@@ -64,7 +66,16 @@ function pushMemberNotification(data, notification) {
   data.notifications = [notification, ...prev].slice(0, 100)
 }
 
-async function pushStaffNotification(admin, staffId, notification) {
+async function expoPushMember(admin, memberId, notification, senderId) {
+  if (!memberId || !notification?.title) return
+  try {
+    await sendExpoPushToMember(admin, memberId, notification, { senderId: senderId || null })
+  } catch {
+    /* in-app kaydı asıl */
+  }
+}
+
+async function pushStaffNotification(admin, staffId, notification, senderId) {
   if (!staffId) return
   const { data: staffRow } = await admin.from('staff').select('data').eq('id', staffId).maybeSingle()
   if (!staffRow) return
@@ -72,6 +83,14 @@ async function pushStaffNotification(admin, staffId, notification) {
   const prev = Array.isArray(staffData.notifications) ? staffData.notifications : []
   staffData.notifications = [notification, ...prev].slice(0, 100)
   await admin.from('staff').update({ data: staffData }).eq('id', staffId)
+  try {
+    await sendExpoPushToStaff(admin, staffId, {
+      ...notification,
+      audience: 'staff',
+    }, { senderId: senderId || null })
+  } catch {
+    /* in-app kaydı asıl */
+  }
 }
 
 function finalizeCancelled(session, reason, actorId) {
@@ -159,7 +178,7 @@ export async function requestCancelSession(admin, authUser, {
       return { ok: false, error: 'Bu randevu iptal edilemez.' }
     }
     sessions[idx] = finalizeCancelled(session, 'admin_cancel', authUser.id)
-    pushMemberNotification(data, {
+    const adminCancelNotif = {
       id: `n-cancel-admin-${Date.now().toString(36)}`,
       type: 'appointment',
       title: 'Randevunuz iptal edildi',
@@ -169,9 +188,11 @@ export async function requestCancelSession(admin, authUser, {
       sessionId: session.id,
       sessionType: type,
       startsAt: session.date,
-    })
+    }
+    pushMemberNotification(data, adminCancelNotif)
     const saved = await saveSessions(admin, memberRow.id, data, key, sessions)
     if (!saved.ok) return saved
+    await expoPushMember(admin, memberRow.id, adminCancelNotif, authUser.id)
     return { ok: true, session: sessions[idx], outcome: 'cancelled', actor: 'admin' }
   }
 
@@ -197,7 +218,7 @@ export async function requestCancelSession(admin, authUser, {
         return { ok: true, session: sessions[idx], outcome: 'admin_cancel_pending', actor: 'staff' }
       }
       sessions[idx] = finalizeCancelled(session, 'staff_cancel', staffRow.id)
-      pushMemberNotification(data, {
+      const staffCancelNotif = {
         id: `n-cancel-staff-${Date.now().toString(36)}`,
         type: 'appointment',
         title: 'Randevunuz iptal edildi',
@@ -207,14 +228,16 @@ export async function requestCancelSession(admin, authUser, {
         sessionId: session.id,
         sessionType: type,
         startsAt: session.date,
-      })
+      }
+      pushMemberNotification(data, staffCancelNotif)
       const saved = await saveSessions(admin, memberRow.id, data, key, sessions)
       if (!saved.ok) return saved
+      await expoPushMember(admin, memberRow.id, staffCancelNotif, staffRow.id)
       return { ok: true, session: sessions[idx], outcome: 'cancelled', actor: 'staff' }
     }
     if (adminUser) {
       sessions[idx] = finalizeCancelled(session, 'admin_cancel', authUser.id)
-      pushMemberNotification(data, {
+      const adminForceNotif = {
         id: `n-cancel-admin-${Date.now().toString(36)}`,
         type: 'appointment',
         title: 'Randevunuz iptal edildi',
@@ -224,9 +247,11 @@ export async function requestCancelSession(admin, authUser, {
         sessionId: session.id,
         sessionType: type,
         startsAt: session.date,
-      })
+      }
+      pushMemberNotification(data, adminForceNotif)
       const saved = await saveSessions(admin, memberRow.id, data, key, sessions)
       if (!saved.ok) return saved
+      await expoPushMember(admin, memberRow.id, adminForceNotif, authUser.id)
       return { ok: true, session: sessions[idx], outcome: 'cancelled', actor: 'admin' }
     }
     return { ok: false, error: 'Bu danışan için yetkiniz yok.' }
@@ -270,7 +295,7 @@ export async function requestCancelSession(admin, authUser, {
       sessionId: session.id,
       sessionType: type,
       startsAt: session.date,
-    })
+    }, actorId)
   } catch {
     /* opsiyonel */
   }
@@ -306,9 +331,10 @@ export async function respondCancelSession(admin, authUser, {
 
   const when = formatWhen(session.date)
 
+  let memberNotif = null
   if (dec === 'approve') {
     sessions[idx] = finalizeCancelled(session, 'member_cancel', staffRow.id)
-    pushMemberNotification(data, {
+    memberNotif = {
       id: `n-cancel-ok-${Date.now().toString(36)}`,
       type: 'appointment',
       title: 'İptal talebiniz onaylandı',
@@ -318,13 +344,14 @@ export async function respondCancelSession(admin, authUser, {
       sessionId: session.id,
       sessionType: type,
       startsAt: session.date,
-    })
+    }
+    pushMemberNotification(data, memberNotif)
   } else {
     sessions[idx] = {
       ...restoreFromCancelRequest(session),
       cancelRespondedBy: staffRow.id,
     }
-    pushMemberNotification(data, {
+    memberNotif = {
       id: `n-cancel-no-${Date.now().toString(36)}`,
       type: 'appointment',
       title: 'İptal talebiniz reddedildi',
@@ -334,11 +361,13 @@ export async function respondCancelSession(admin, authUser, {
       sessionId: session.id,
       sessionType: type,
       startsAt: session.date,
-    })
+    }
+    pushMemberNotification(data, memberNotif)
   }
 
   const saved = await saveSessions(admin, memberRow.id, data, key, sessions)
   if (!saved.ok) return saved
+  await expoPushMember(admin, memberRow.id, memberNotif, staffRow.id)
   return {
     ok: true,
     session: sessions[idx],
@@ -371,9 +400,10 @@ export async function respondAdminCancel(admin, authUser, {
 
   const when = formatWhen(session.date)
 
+  let memberNotif = null
   if (dec === 'approve') {
     sessions[idx] = finalizeCancelled(session, 'staff_cancel', authUser.id)
-    pushMemberNotification(data, {
+    memberNotif = {
       id: `n-admin-cancel-ok-${Date.now().toString(36)}`,
       type: 'appointment',
       title: 'Randevunuz iptal edildi',
@@ -383,7 +413,8 @@ export async function respondAdminCancel(admin, authUser, {
       sessionId: session.id,
       sessionType: type,
       startsAt: session.date,
-    })
+    }
+    pushMemberNotification(data, memberNotif)
   } else {
     sessions[idx] = {
       ...restoreFromCancelRequest(session),
@@ -393,6 +424,7 @@ export async function respondAdminCancel(admin, authUser, {
 
   const saved = await saveSessions(admin, memberRow.id, data, key, sessions)
   if (!saved.ok) return saved
+  if (memberNotif) await expoPushMember(admin, memberRow.id, memberNotif, authUser.id)
   return {
     ok: true,
     session: sessions[idx],

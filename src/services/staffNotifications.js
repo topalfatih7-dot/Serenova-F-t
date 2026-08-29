@@ -1,6 +1,32 @@
 import { supabase } from './supabaseClient'
+import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
+
+/**
+ * Expo push + WhatsApp fan-out: staff outbound.
+ * `memberId` top-level ASLA Expo hedefi değildir —
+ * buraya danışan id'si yazılırsa gönderen kendi push'unu alır.
+ * Bkz. application-notify.js handleStaffOutbound.
+ */
+async function dispatchStaffOutbound(staffId, notification, extra = {}) {
+  try {
+    const headers = await getApiAuthHeaders()
+    await fetch('/api/application-notify', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        audience: 'staff',
+        staffId,
+        notification,
+        threadId: extra.threadId ?? notification.threadId ?? null,
+        sessionId: extra.sessionId ?? notification.sessionId ?? null,
+      }),
+    })
+  } catch {
+    /* ignore — in-app notification must not fail */
+  }
+}
 
 export function buildStaffNotification({ type, title, message, ...extra }) {
   return {
@@ -42,8 +68,8 @@ export function buildAppointmentStaffNotification({
   })
 }
 
-/** staff.data.notifications — RPC ile atomik ekleme. */
-export async function pushStaffNotification(staffId, notification) {
+/** staff.data.notifications — RPC ile atomik ekleme + Expo push. */
+export async function pushStaffNotification(staffId, notification, outboundExtra = {}) {
   if (!staffId || !notification?.title) {
     return { success: false, error: 'Eksik bildirim bilgisi' }
   }
@@ -54,6 +80,7 @@ export async function pushStaffNotification(staffId, notification) {
     p_notification: notification,
   })
   if (error) return { success: false, error: error.message }
+  void dispatchStaffOutbound(staffId, notification, outboundExtra)
   return { success: true }
 }
 
@@ -85,12 +112,17 @@ export async function notifyStaffChatMessage({
   threadId,
 }) {
   const name = memberName || 'Danışan'
-  return pushStaffNotification(staffId, buildStaffNotification({
-    type: 'chat',
-    title: `${name} yeni mesaj gönderdi`,
-    message: preview || 'Yeni bir mesajınız var.',
-    threadId: threadId || null,
-    memberId: memberId || null,
-    audience: 'staff',
-  }))
+  return pushStaffNotification(
+    staffId,
+    buildStaffNotification({
+      type: 'chat',
+      title: `${name} yeni mesaj gönderdi`,
+      message: preview || 'Yeni bir mesajınız var.',
+      threadId: threadId || null,
+      memberId: memberId || null,
+      senderId: memberId || null,
+      audience: 'staff',
+    }),
+    { threadId: threadId || null },
+  )
 }

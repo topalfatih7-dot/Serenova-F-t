@@ -80,11 +80,17 @@ export async function notifyMemberProgram({ memberId, staffName, title, programT
   })
 }
 
+const STAFF_ROLE_FROM_LABELS = {
+  coach: 'Koçunuzdan',
+  dietitian: 'Diyetisyeninizden',
+  doctor: 'Doktorunuzdan',
+}
+
 export async function notifyMemberChatMessage({ memberId, preview, threadId, staffRole }) {
-  const roleLabel = staffRoleNotificationLabel(staffRole)
+  const fromLabel = STAFF_ROLE_FROM_LABELS[String(staffRole || '')] || 'Uzmanınızdan'
   return pushMemberNotification(memberId, buildMemberNotification({
     type: 'chat',
-    title: `${roleLabel}den yeni mesaj`,
+    title: `${fromLabel} yeni mesaj`,
     message: preview,
     threadId: threadId || null,
     staffRole: staffRole || null,

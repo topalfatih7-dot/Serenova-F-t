@@ -3,6 +3,7 @@
  * HTTP handler: POST /api/auth { action: 'book-session', ... }
  */
 import { countUsedDoctorSessions, syncMemberPackages, doctorBookingLimit } from './_memberPackages.js'
+import { sendExpoPushToStaff } from './_expoPush.js'
 
 const TZ = 'Europe/Istanbul'
 const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
@@ -223,6 +224,10 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
       .from('staff')
       .update({ data: staffData })
       .eq('id', staffId)
+    await sendExpoPushToStaff(admin, staffId, {
+      ...notification,
+      audience: 'staff',
+    }, { senderId: userId })
     /* WhatsApp “confirmed” onay sonrası; talep aşamasında gönderilmez */
   } catch {
     /* talep oluştu; bildirim opsiyonel */

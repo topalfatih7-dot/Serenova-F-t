@@ -3,6 +3,7 @@
  * POST /api/auth { action: 'respond-session', memberId, sessionId, sessionType, decision: 'approve'|'reject' }
  */
 import { getSessionJoinTiming } from './_videoJoinWindows.js'
+import { sendExpoPushToMember } from './_expoPush.js'
 
 const TZ = 'Europe/Istanbul'
 const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
@@ -116,6 +117,14 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
     .update({ data, updated_at: new Date().toISOString() })
     .eq('id', memberId)
   if (updErr) return { ok: false, error: updErr.message }
+
+  try {
+    await sendExpoPushToMember(admin, memberId, notification, {
+      senderId: staffRow.id,
+    })
+  } catch {
+    /* randevu kaydı asıl; push opsiyonel */
+  }
 
   return { ok: true, session: sessions[idx] }
 }

@@ -6,7 +6,9 @@
  * - GET  → Meta webhook verify
  * - POST Meta (X-Hub-Signature-256) → delivery status
  * - POST { action: 'whatsapp-event', ... } → auth’lu olay fan-out
- * - POST { memberId, notification } → WhatsApp (program/chat tipleri)
+ * - POST { audience: 'staff', staffId, notification } → Expo to staff device
+ * - POST { memberId, notification } → WhatsApp (program/chat) + Expo to member
+ * Chat Expo never targets the authenticated sender (self-echo).
  */
 
 import { setCorsHeaders, handleOptions, requireAuth, requireCronSecret, getAdminEmail } from './_guards.js'
@@ -23,7 +25,7 @@ import {
   notifyProgramReady,
   notifyNewChatMessage,
 } from './_whatsappEvents.js'
-import { sendExpoPushToMember } from './_expoPush.js'
+import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -63,6 +65,49 @@ async function isAdminUser(admin, user) {
   if (email && email === getAdminEmail()) return true
   const { data } = await admin.from('members').select('role').eq('id', user.id).maybeSingle()
   return data?.role === 'admin'
+}
+
+async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
+  if (!staffId || !authUser?.id) return false
+  if (authUser.id === staffId) return true
+  if (await isAdminUser(admin, authUser)) return true
+
+  const { data: member } = await admin
+    .from('members')
+    .select('assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .eq('id', authUser.id)
+    .maybeSingle()
+  if (member) {
+    if (
+      member.assigned_coach_id === staffId
+      || member.assigned_dietitian_id === staffId
+      || member.assigned_doctor_id === staffId
+    ) {
+      return true
+    }
+    const threadId = hint.threadId || null
+    if (threadId) {
+      const { data: thread } = await admin
+        .from('chat_threads')
+        .select('member_id, staff_id')
+        .eq('id', threadId)
+        .maybeSingle()
+      if (thread?.member_id === authUser.id && thread?.staff_id === staffId) return true
+    }
+  }
+
+  const { data: callerStaff } = await admin
+    .from('staff')
+    .select('id')
+    .eq('id', authUser.id)
+    .maybeSingle()
+  if (!callerStaff) return false
+  const { data: target } = await admin
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .maybeSingle()
+  return Boolean(target)
 }
 
 async function canNotifyMember(admin, authUser, memberId, hint = {}) {
@@ -137,6 +182,39 @@ async function assertStaffActor(admin, auth, memberId) {
   return { ok: true }
 }
 
+/**
+ * Personel telefon bildirimi. Top-level memberId asla Expo hedefi değildir
+ * (danışan id’si oraya yazılırsa gönderen kendi mesajının push’unu alır).
+ */
+async function handleStaffOutbound(admin, body, auth, res) {
+  const staffId = body.staffId
+  const notification = body.notification
+  if (!staffId || !notification?.title) {
+    return res.status(400).json({ ok: false, error: 'staffId + notification.title gerekli' })
+  }
+
+  if (auth.role !== 'cron') {
+    const allowed = await canNotifyStaff(admin, auth.user, staffId, {
+      threadId: notification.threadId || body.threadId || null,
+      memberId: notification.memberId || null,
+    })
+    if (!allowed) {
+      return res.status(403).json({ ok: false, error: 'Yetkisiz' })
+    }
+  }
+
+  const actorId = auth.user?.id || null
+  let expoPush = null
+  if (body.expoPush !== false) {
+    expoPush = await sendExpoPushToStaff(admin, staffId, {
+      ...notification,
+      audience: 'staff',
+    }, { senderId: actorId })
+  }
+
+  return res.status(200).json({ ok: true, expoPush })
+}
+
 /** In-app bildirim sonrası WhatsApp fan-out (program / chat). */
 async function handleMemberOutbound(admin, body, auth, res) {
   const memberId = body.memberId
@@ -155,8 +233,15 @@ async function handleMemberOutbound(admin, body, auth, res) {
     }
   }
 
+  const actorId = auth.user?.id || null
+  const isSelfChat =
+    String(notification.type || '') === 'chat'
+    && auth.role !== 'cron'
+    && actorId
+    && String(actorId) === String(memberId)
+
   let waResult = null
-  if (body.whatsapp !== false) {
+  if (!isSelfChat && body.whatsapp !== false) {
     const type = notification.type
     if (type === 'program') {
       waResult = await notifyProgramReady(admin, {
@@ -177,8 +262,12 @@ async function handleMemberOutbound(admin, body, auth, res) {
 
   /* Expo push — chat / program / support / availability (prefs + token) */
   let expoPush = null
-  if (body.expoPush !== false) {
-    expoPush = await sendExpoPushToMember(admin, memberId, notification)
+  if (isSelfChat) {
+    expoPush = { ok: true, skipped: true, reason: 'self_chat' }
+  } else if (body.expoPush !== false) {
+    expoPush = await sendExpoPushToMember(admin, memberId, notification, {
+      senderId: actorId,
+    })
   }
 
   return res.status(200).json({ ok: true, whatsapp: waResult, expoPush })
@@ -350,7 +439,8 @@ export default async function handler(req, res) {
     return handleWhatsAppEvent(admin, body, auth, res)
   }
 
-  if (!body.memberId || !body.notification) {
+  const isStaffOutbound = body.audience === 'staff' && body.staffId && body.notification
+  if (!isStaffOutbound && (!body.memberId || !body.notification)) {
     return res.status(410).json({
       ok: false,
       error: 'Formlar /api/contact; bildirim için memberId + notification; WA için action=whatsapp-event.',
@@ -375,6 +465,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (isStaffOutbound) {
+      return await handleStaffOutbound(admin, body, auth, res)
+    }
     return await handleMemberOutbound(admin, body, auth, res)
   } catch (err) {
     return res.status(500).json({ ok: false, error: err?.message || 'Notify hatası' })
