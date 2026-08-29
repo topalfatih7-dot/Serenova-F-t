@@ -116,6 +116,18 @@ export default function StaffPayoutAccountCard({ staffUser, account, onSaved, cl
 
       <form onSubmit={save} className="flex flex-1 justify-center p-5 sm:p-6 lg:p-5 xl:p-6">
         <div className="grid w-full max-w-xl gap-4 lg:max-w-none">
+          <div className="rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 to-orange-50/60 px-4 py-3.5 shadow-sm">
+            <p className="flex items-start gap-2.5 text-sm leading-relaxed text-amber-950">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+              <span>
+                <span className="font-semibold">Önemli:</span>{' '}
+                Girdiğiniz IBAN, paneldeki adınıza kayıtlı bir bireysel banka hesabına ait olmalıdır.
+                Üçüncü kişi veya şirket hesaplarına yapılan ödemeler banka tarafından reddedilebilir;
+                hakedişinizin sorunsuz ulaşması için hesap sahibi bilgisini kontrol edin.
+              </span>
+            </p>
+          </div>
+
           <div className="rounded-xl border border-cream-200 bg-cream-50/80 px-4 py-3">
             <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/50">
               <Lock className="h-3.5 w-3.5" /> Hesap sahibi

@@ -279,7 +279,7 @@ function StaffPayments() {
           <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
             <p className="text-xs font-medium text-brand-800/70">Bu Ay Seans</p>
             <p className="mt-1 font-display text-2xl font-bold text-brand-900">{summary.sessionsThisMonth}</p>
-            <p className="mt-1 text-xs text-brand-700">Görüşme başı {formatTry(STAFF_SESSION_RATE_TRY)}</p>
+            <p className="mt-1 text-xs text-brand-700">Seans başı {formatTry(STAFF_SESSION_RATE_TRY)}</p>
           </div>
           <div className="flex-1 rounded-2xl border border-cream-200 bg-white p-5">
             <p className="text-xs font-medium text-cream-800/60">Toplam Kazanç</p>
