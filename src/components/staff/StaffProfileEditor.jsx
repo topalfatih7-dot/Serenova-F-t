@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Globe, Clock, Lock, Check, X,
-  ExternalLink, AlertCircle, Loader2, Eye, Info, Bell,
+  ExternalLink, AlertCircle, Loader2, Eye, Info, Bell, Palette,
 } from 'lucide-react'
 import PhotoUpload from '../ui/PhotoUpload'
 import PhoneField from '../ui/PhoneField'
@@ -15,9 +15,11 @@ import { normalizeStaffProfile } from '../../data/staffProfile'
 import { staffRoleMeta } from '../../utils/staffRoles'
 import { staffProfilePath } from '../../config/seo'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
-import { supabase } from '../../services/supabaseClient'
+import { changeAccountPassword } from '../../services/accountPassword'
 import { useToast } from '../../context/ToastContext'
 import { detectExternalContactInfo } from '../../utils/contactInfoGuard'
+import ThemeToggle from '../ui/ThemeToggle'
+import { useTheme } from '../../context/ThemeContext'
 
 const TABS = [
   { id: 'profile', label: 'Profil', icon: User, hint: 'Fotoğraf, iletişim ve tanıtım' },
@@ -53,6 +55,7 @@ function lockedProfileFields(staffUser) {
 
 export default function StaffProfileEditor({ staffUser, onSave }) {
   const { toast } = useToast()
+  const { preference } = useTheme()
   const [tab, setTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(() => normalizeStaffProfile(staffUser))
@@ -111,6 +114,7 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
         settings: {
           ...(staffUser?.settings || {}),
           whatsappNotifs,
+          theme: preference,
         },
       }
       const result = await onSave(payload)
@@ -143,16 +147,11 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
     }
     setPasswordSaving(true)
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: staffUser.email,
-        password: currentPassword,
+      await changeAccountPassword({
+        currentPassword,
+        newPassword: password,
+        confirmPassword: passwordConfirm,
       })
-      if (signInError) {
-        toast('Mevcut şifre hatalı.', 'error')
-        return
-      }
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) throw error
       toast('Şifreniz güncellendi', 'success')
       setCurrentPassword('')
       setPassword('')
@@ -350,6 +349,12 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
 
           {tab === 'security' && (
             <div className="space-y-5">
+              <ProfileSectionCard icon={Palette} title="Görünüm" subtitle="Aydınlık, karanlık veya sistem" accent="brand">
+                <ThemeToggle variant="segmented" />
+                <p className="mt-2 text-xs text-cream-800/50">
+                  Değişiklik hemen uygulanır ve hesabınıza kaydedilir.
+                </p>
+              </ProfileSectionCard>
               <ProfileSectionCard icon={Bell} title="Bildirimler" subtitle="Randevu ve mesaj uyarıları" accent="sage">
                 <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-cream-200 bg-teal-50/60 px-4 py-3">
                   <span className="text-sm font-medium text-cream-800">WhatsApp bildirimleri</span>

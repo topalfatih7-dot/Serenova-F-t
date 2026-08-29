@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Lock, Eye, EyeOff, Loader2, Shield, Mail } from 'lucide-react'
-import { supabase } from '../../services/supabaseClient'
+import { Lock, Eye, EyeOff, Loader2, Shield, Mail, Palette } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { PASSWORD_RULES, isPasswordValid } from '../../services/password'
+import { changeAccountPassword } from '../../services/accountPassword'
 import { ADMIN_EMAIL } from '../../config/brand'
 import PanelPageHeader, { PanelPageShell } from '../../components/layout/PanelPageHeader'
 import { PANEL_IMAGES } from '../../utils/panelImages'
+import ThemeToggle from '../../components/ui/ThemeToggle'
 
 export default function AdminAccountPage() {
   const { user } = useApp()
@@ -41,16 +42,11 @@ export default function AdminAccountPage() {
 
     setSaving(true)
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPassword,
+      await changeAccountPassword({
+        currentPassword,
+        newPassword: password,
+        confirmPassword: passwordConfirm,
       })
-      if (signInError) {
-        toast('Mevcut şifre hatalı.', 'error')
-        return
-      }
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) throw error
       toast('Şifreniz güncellendi.', 'success')
       setCurrentPassword('')
       setPassword('')
@@ -73,6 +69,18 @@ export default function AdminAccountPage() {
       />
 
       <div className="mx-auto w-full max-w-xl space-y-6">
+        <section className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+            <Palette className="h-5 w-5 text-brand-500" /> Görünüm
+          </h2>
+          <p className="mt-2 text-sm text-cream-800/65">
+            Aydınlık, karanlık veya cihazın sistem tercihi. Bu cihazda saklanır.
+          </p>
+          <div className="mt-4">
+            <ThemeToggle variant="segmented" />
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-cream-200 bg-white p-5 sm:p-6">
           <h2 className="flex items-center gap-2 font-display text-lg font-bold text-cream-900">
             <Mail className="h-5 w-5 text-brand-500" /> Giriş e-postası

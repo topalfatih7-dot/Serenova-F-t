@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | password-change | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account
  * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -36,6 +36,7 @@ import {
   userHasPasswordProvider,
   verifyAccountPassword,
 } from './_deleteAccount.js'
+import { handlePasswordChange } from './_changePassword.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -1133,6 +1134,7 @@ export default async function handler(req, res) {
     if (action === 'email-send') return handleEmailSend(req, res)
     if (action === 'email-confirm') return handleEmailConfirm(req, res, body)
     if (action === 'password-reset') return handlePasswordReset(req, res, body)
+    if (action === 'password-change') return handlePasswordChange(req, res, body)
     if (action === 'book-session') return handleBookSession(req, res, body)
     if (action === 'respond-session') return handleRespondSession(req, res, body)
     if (action === 'request-cancel-session') return handleRequestCancelSession(req, res, body)

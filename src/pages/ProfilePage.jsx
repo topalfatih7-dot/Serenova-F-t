@@ -19,6 +19,7 @@ import HealthSummarySection from '../components/profile/HealthSummarySection'
 import HealthLabFilesPanel from '../components/member/HealthLabFilesPanel'
 import VerificationSection from '../components/profile/VerificationSection'
 import ProfileSectionCard from '../components/profile/ProfileSectionCard'
+import PasswordChangeSection from '../components/profile/PasswordChangeSection'
 import ThemeToggle from '../components/ui/ThemeToggle'
 
 import {
@@ -523,6 +524,8 @@ export default function ProfilePage() {
               Sistem, cihazınızın açık/koyu ayarını takip eder. Tercih bu cihazda saklanır.
             </p>
           </ProfileSectionCard>
+
+          <PasswordChangeSection />
 
           <ProfileSectionCard
             icon={Bell}
