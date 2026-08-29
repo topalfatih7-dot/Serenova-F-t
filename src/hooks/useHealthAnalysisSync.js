@@ -9,6 +9,7 @@ import {
   appendHealthScoreHistory,
   buildHealthAnalysisFingerprint,
   isHealthAnalysisStale,
+  needsCoreAnalysisAfterRetake,
   needsDetailedHealthAnalysis,
   needsInitialHealthAnalysis,
   resolveAnalysisStage,
@@ -103,8 +104,13 @@ export function useHealthAnalysisSync() {
         ? 'detailed'
         : (stale && detailedComplete ? 'detailed' : 'core'))
 
-    // Skorlar varken core yeniden koşma yok — 2. analiz yalnızca detailedComplete + auto-kick
-    if (targetStage === 'core' && !force && !needsInitialHealthAnalysis(analysis)) {
+    // Skorlar varken core yeniden koşma yok — retake sonrası eski skor leftover ise yeniden üret
+    if (
+      targetStage === 'core'
+      && !force
+      && !needsInitialHealthAnalysis(analysis)
+      && !needsCoreAnalysisAfterRetake(analysis, { retakeAt: user?.healthTest?.retakeAt })
+    ) {
       return analysis
     }
     if (
@@ -117,6 +123,9 @@ export function useHealthAnalysisSync() {
     }
     if (targetStage === 'detailed' && !detailedComplete) return analysis
 
+    const retakeNeedsCore = needsCoreAnalysisAfterRetake(analysis, {
+      retakeAt: user?.healthTest?.retakeAt,
+    })
     const currentFp = profileFingerprint || analysisFingerprint || 'none'
     if (!force && lockedFingerprintRef.current && lockedFingerprintRef.current === currentFp) {
       return analysis
@@ -126,6 +135,7 @@ export function useHealthAnalysisSync() {
     if (
       !force
       && !stale
+      && !retakeNeedsCore
       && lastKeyRef.current === key
       && analysisOverall != null
       && (targetStage !== 'detailed' || analysisStageRaw === 'detailed')

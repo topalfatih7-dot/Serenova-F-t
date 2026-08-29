@@ -5,6 +5,7 @@ import { getCoreHealthTestKeySet } from '../data/coreHealthTest'
 import {
   appendHealthScoreHistory,
   isHealthAnalysisStale,
+  needsCoreAnalysisAfterRetake,
   needsInitialHealthAnalysis,
   resolveHealthScoreAnalysis,
 } from '../services/healthScoreAnalysis'
@@ -37,7 +38,9 @@ export function useStaffHealthAnalysisRerun({
 
     const analysis = member.healthAnalysis
     const canRerun =
-      needsInitialHealthAnalysis(analysis) || isHealthAnalysisStale(analysis, member)
+      needsInitialHealthAnalysis(analysis)
+      || isHealthAnalysisStale(analysis, member)
+      || needsCoreAnalysisAfterRetake(analysis, { retakeAt: member.healthTest?.retakeAt })
     if (!canRerun) {
       setError(UNCHANGED_MSG)
       return { ok: false, error: UNCHANGED_MSG }

@@ -4,6 +4,7 @@ import { tr } from 'date-fns/locale'
 import {
   History, Wallet, TrendingUp, Users,
   Clock, ArrowDownLeft, Crown, Loader2,
+  CheckCircle2, XCircle, Video,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../../context/AppContext'
@@ -200,40 +201,101 @@ function StaffPayments() {
   }
 
   return (
-    <div className="space-y-6">
-      <p className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-cream-900">
-        <span className="font-semibold">Görüşme başı {formatTry(STAFF_SESSION_RATE_TRY)}</span>
-        {' · Cuma EFT/FAST · iki taraf videoda, en az '}
-        {STAFF_MIN_OVERLAP_MINUTES}
-        {' dk. Program ve liste yok. Perşembe 23:59’a kadar (başlangıç saati) o Cuma’ya; Cuma 00:00’dan sonrakiler sonraki Cuma’ya yazılır.'}
-      </p>
-      {payoutLoading ? (
-        <div className="flex items-center justify-center rounded-3xl border border-cream-200 bg-white py-12 text-cream-800/50">
-          <Loader2 className="h-6 w-6 animate-spin" />
+    <div className="space-y-8">
+      <section className="overflow-hidden rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-brand-50 shadow-sm">
+        <div className="flex flex-col lg:flex-row">
+          <div className="flex flex-col justify-center gap-2 bg-amber-500 px-6 py-6 text-white sm:px-8 lg:w-[280px] lg:shrink-0">
+            <p className="text-sm font-semibold uppercase tracking-wider text-white/90">Görüşme başı net hakediş</p>
+            <p className="font-display text-5xl font-bold leading-none tracking-tight sm:text-6xl">
+              {formatTry(STAFF_SESSION_RATE_TRY)}
+            </p>
+            <p className="text-base font-medium text-white/90">
+              Ödeme her Cuma, kayıtlı IBAN’ınıza EFT / FAST ile yatırılır.
+            </p>
+          </div>
+          <div className="min-w-0 flex-1 space-y-4 p-5 sm:p-7">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <Video className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-xl font-bold text-cream-900 sm:text-2xl">Hakediş nasıl oluşur?</h2>
+                <p className="mt-1 text-sm leading-relaxed text-cream-800/70 sm:text-base">
+                  Yalnızca platformdaki video görüşmesi sayılır. Tutar sabittir; süre {STAFF_MIN_OVERLAP_MINUTES} dakikayı geçse de ek ücret yazılmaz.
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-cream-800/65">
+                  Cuma 00:00 – Perşembe 23:59 (görüşme başlangıç saati, Türkiye). Bu aralık hemen sonraki Cuma ödenir; Cuma günü başlayan görüşme o günkü EFT’ye girmez.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-sage-200 bg-sage-50/70 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-sage-800">Sayılır</p>
+                <ul className="mt-2 space-y-2 text-sm leading-relaxed text-cream-900 sm:text-[15px]">
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
+                    Koç veya diyetisyen video seansı
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
+                    Siz ve danışan aynı anda en az {STAFF_MIN_OVERLAP_MINUTES} dakika bağlı kalır
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
+                    Görüşme tamamlanır; sistem otomatik hakediş satırı açar
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-red-200 bg-red-50/60 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-red-800">Sayılmaz</p>
+                <ul className="mt-2 space-y-2 text-sm leading-relaxed text-cream-900 sm:text-[15px]">
+                  <li className="flex gap-2">
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    Antrenman programı veya program revizyonu
+                  </li>
+                  <li className="flex gap-2">
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    Beslenme listesi hazırlamak
+                  </li>
+                  <li className="flex gap-2">
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    Tek tarafın bağlanması veya {STAFF_MIN_OVERLAP_MINUTES} dakikanın altı
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <StaffPayoutAccountCard staffUser={staffUser} account={account} onSaved={reloadPayout} />
-      )}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
-          <p className="text-xs font-medium text-amber-800/70">Bekleyen Hakediş</p>
-          <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(summary.pendingAmount)}</p>
-          <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
-            <Clock className="h-3 w-3" /> Ödeme: {summary.payoutLabel}
-          </p>
+      </section>
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
+            <p className="text-xs font-medium text-amber-800/70">Bekleyen Hakediş</p>
+            <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(summary.pendingAmount)}</p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
+              <Clock className="h-3 w-3" /> Ödeme: {summary.payoutLabel}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
+            <p className="text-xs font-medium text-brand-800/70">Bu Ay Seans</p>
+            <p className="mt-1 font-display text-2xl font-bold text-brand-900">{summary.sessionsThisMonth}</p>
+            <p className="mt-1 text-xs text-brand-700">Görüşme başı {formatTry(STAFF_SESSION_RATE_TRY)}</p>
+          </div>
+          <div className="flex-1 rounded-2xl border border-cream-200 bg-white p-5">
+            <p className="text-xs font-medium text-cream-800/60">Toplam Kazanç</p>
+            <p className="mt-1 font-display text-2xl font-bold text-cream-900">{formatTry(summary.totalEarned)}</p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-sage-600">
+              <TrendingUp className="h-3 w-3" /> Bekleyen + onaylı + ödenen
+            </p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
-          <p className="text-xs font-medium text-brand-800/70">Bu Ay Seans</p>
-          <p className="mt-1 font-display text-2xl font-bold text-brand-900">{summary.sessionsThisMonth}</p>
-          <p className="mt-1 text-xs text-brand-700">Görüşme başı {formatTry(STAFF_SESSION_RATE_TRY)}</p>
-        </div>
-        <div className="rounded-2xl border border-cream-200 bg-white p-5">
-          <p className="text-xs font-medium text-cream-800/60">Toplam Kazanç</p>
-          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{formatTry(summary.totalEarned)}</p>
-          <p className="mt-1 flex items-center gap-1 text-xs text-sage-600">
-            <TrendingUp className="h-3 w-3" /> Bekleyen + onaylı + ödenen
-          </p>
-        </div>
+        {payoutLoading ? (
+          <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-cream-200 bg-white text-cream-800/50">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : (
+          <StaffPayoutAccountCard staffUser={staffUser} account={account} onSaved={reloadPayout} />
+        )}
       </div>
 
       <section>

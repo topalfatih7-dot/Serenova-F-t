@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useCallback, useImperativeHandle, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { TURNSTILE_SITE_KEY } from '../../config/turnstile'
+import { useTheme } from '../../context/ThemeContext'
 
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const RESET_DEBOUNCE_MS = 400
@@ -20,6 +21,7 @@ function resolveTurnstileSize() {
  * Imperative: reset(), execute()/waitForToken(), getResponse()
  */
 const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className = '' }, ref) {
+  const { isDark } = useTheme()
   const hostRef = useRef(null)
   const widgetIdRef = useRef(null)
   const onTokenRef = useRef(onToken)
@@ -108,7 +110,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
       appearance: 'always',
       'refresh-expired': 'auto',
       retry: 'auto',
-      theme: 'light',
+      theme: isDark ? 'dark' : 'light',
       // flexible min ~300px; dar ekranda compact (150px)
       size,
       callback: (token) => {
@@ -147,7 +149,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onToken, className
         }, 2500)
       },
     })
-  }, [clearWaiters, settleWait, softReset])
+  }, [clearWaiters, isDark, settleWait, softReset])
 
   const waitForToken = useCallback(() => {
     if (!TURNSTILE_SITE_KEY) return Promise.resolve('')

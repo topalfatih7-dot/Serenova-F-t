@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { HeartPulse, Loader2, Sparkles, ArrowRight, Clock3 } from 'lucide-react'
+import { HeartPulse, Loader2, Clock3 } from 'lucide-react'
 import {
   HEALTH_SCORE_KEYS,
   HEALTH_SCORE_META,
 } from '../../services/healthScoreAnalysis'
 import { HealthScoreSimpleTrend } from './HealthScoreTrendChart'
+import { useTheme } from '../../context/ThemeContext'
 
 function formatRetakeDate(date) {
   if (!date) return ''
@@ -20,7 +20,7 @@ function formatRetakeDate(date) {
   }
 }
 
-function scoreTone(score) {
+function scoreTone(score, isDark = false) {
   if (score >= 75) {
     return {
       bar: 'bg-sage-500',
@@ -28,7 +28,7 @@ function scoreTone(score) {
       text: 'text-sage-700',
       glow: 'from-sage-400 to-emerald-500',
       stroke: '#5a9e6f',
-      track: '#e8f2eb',
+      track: isDark ? '#1a3324' : '#e8f2eb',
       label: 'Güçlü',
       chip: 'bg-sage-100 text-sage-800',
     }
@@ -40,7 +40,7 @@ function scoreTone(score) {
       text: 'text-brand-700',
       glow: 'from-brand-400 to-brand-600',
       stroke: '#d44d8a',
-      track: '#fce8f0',
+      track: isDark ? '#3a2030' : '#fce8f0',
       label: 'İyi',
       chip: 'bg-brand-100 text-brand-800',
     }
@@ -52,7 +52,7 @@ function scoreTone(score) {
       text: 'text-amber-700',
       glow: 'from-amber-400 to-orange-500',
       stroke: '#d97706',
-      track: '#fef3c7',
+      track: isDark ? '#3a2e18' : '#fef3c7',
       label: 'Orta',
       chip: 'bg-amber-100 text-amber-800',
     }
@@ -63,7 +63,7 @@ function scoreTone(score) {
     text: 'text-rose-700',
     glow: 'from-rose-400 to-rose-600',
     stroke: '#e11d48',
-    track: '#ffe4e6',
+    track: isDark ? '#3a1c22' : '#ffe4e6',
     label: 'Gelişim alanı',
     chip: 'bg-rose-100 text-rose-800',
   }
@@ -122,9 +122,9 @@ function OverallGauge({ score, loading, tone }) {
   )
 }
 
-function DimensionCard({ scoreKey, score }) {
+function DimensionCard({ scoreKey, score, isDark }) {
   const meta = HEALTH_SCORE_META[scoreKey]
-  const tone = scoreTone(score ?? 0)
+  const tone = scoreTone(score ?? 0, isDark)
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border border-cream-100 bg-white/90 p-2.5 shadow-sm sm:p-3">
       <div className="flex min-w-0 items-start justify-between gap-1.5">
@@ -157,32 +157,12 @@ export default function HealthScoreCard({
   /** 14 günlük kilit durumu — güncellenebilir tarih rozeti */
   lockState = null,
 }) {
-  if (!complete) {
-    return (
-      <div className="overflow-hidden rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-sage-50/40 p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-              <Sparkles className="h-3.5 w-3.5" /> YeniForm Sağlık Skoru
-            </p>
-            <h3 className="mt-1 font-display text-xl font-bold text-cream-900 sm:text-2xl">
-              Kişisel sağlık analizinizi tamamlayın
-            </h3>
-          </div>
-          <Link
-            to="/health-test"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-brand-600"
-          >
-            Analize git <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    )
-  }
+  const { isDark } = useTheme()
+  if (!complete) return null
 
   const scores = analysis?.scores || {}
   const overall = analysis?.overallScore
-  const tone = scoreTone(overall ?? 0)
+  const tone = scoreTone(overall ?? 0, isDark)
   const showSkeleton = loading && overall == null
 
   return (
@@ -231,7 +211,7 @@ export default function HealthScoreCard({
 
       <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {HEALTH_SCORE_KEYS.map((key) => (
-          <DimensionCard key={key} scoreKey={key} score={scores[key]} />
+          <DimensionCard key={key} scoreKey={key} score={scores[key]} isDark={isDark} />
         ))}
       </div>
 

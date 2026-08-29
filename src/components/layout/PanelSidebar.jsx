@@ -112,7 +112,7 @@ function PanelSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onFocusCapture={handleFocusCapture}
-        className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-brand-200/30 bg-gradient-to-b from-white/95 via-white/90 to-brand-50/40 shadow-xl shadow-brand-500/[0.06] backdrop-blur-xl transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:from-[var(--yf-elevated)]/95 dark:via-[var(--yf-elevated)]/90 dark:to-brand-50/30 ${
           expanded
             ? 'w-64 shadow-2xl shadow-brand-500/10'
             : 'w-[4.5rem]'

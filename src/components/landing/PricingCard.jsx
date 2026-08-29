@@ -76,17 +76,17 @@ export default function PricingCard({ plan, featured = false, ctaTo, ctaLabel })
       </div>
 
       <div className="mt-3 text-center">
-        <p className="font-display text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+        <p className="font-display text-xl font-bold tracking-tight text-cream-900 sm:text-2xl">
           {formatCardPrice(plan)}
         </p>
-        <p className="mt-2 line-clamp-2 text-[11px] leading-snug text-slate-500 sm:text-xs">
+        <p className="mt-2 line-clamp-2 text-[11px] leading-snug text-cream-800/70 sm:text-xs">
           {description}
         </p>
       </div>
 
       <ul className="mt-4 space-y-2">
         {includedFeatures.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-left text-[11px] leading-snug text-slate-700 sm:text-xs">
+          <li key={i} className="flex items-start gap-2 text-left text-[11px] leading-snug text-cream-800 sm:text-xs">
             <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${theme.label}`} strokeWidth={2.75} />
             <span>{f.text}</span>
           </li>

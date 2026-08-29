@@ -20,7 +20,7 @@ import { hasCompleteAnalysisProfile } from '../utils/healthProfile'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import {
   getHealthTestLockState,
-  needsInitialHealthAnalysis,
+  isHealthAnalysisReady,
 } from '../services/healthScoreAnalysis'
 
 export default function HealthTestSectionPage() {
@@ -38,7 +38,9 @@ export default function HealthTestSectionPage() {
     : null
 
   const analysis = user?.healthAnalysis || null
-  const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
+  const analysisReady = isHealthAnalysisReady(analysis, {
+    retakeAt: user?.healthTest?.retakeAt || null,
+  })
   const detailedComplete = Boolean(
     user?.gender
     && isDetailedHealthTestComplete(

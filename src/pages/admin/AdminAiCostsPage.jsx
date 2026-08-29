@@ -6,6 +6,7 @@ import {
   Bot, Loader2, AlertCircle, DollarSign, Hash, Zap, RefreshCw,
 } from 'lucide-react'
 import { fetchAiUsageReport } from '../../services/aiUsageReport'
+import { useChartColors } from '../../context/ThemeContext'
 
 const DAY_OPTIONS = [7, 30, 90]
 
@@ -62,6 +63,7 @@ function StatCard({ icon: Icon, label, value, sub }) {
 export default function AdminAiCostsPage() {
   const [days, setDays] = useState(30)
   const [state, setState] = useState({ loading: true, data: null, error: null })
+  const colors = useChartColors()
 
   const load = (d = days) => {
     setState((s) => ({ ...s, loading: true, error: null }))
@@ -202,9 +204,9 @@ export default function AdminAiCostsPage() {
                 <div className="mt-4 h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={daySeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} width={56} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: colors.tick }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 11, fill: colors.tick }} tickFormatter={(v) => `$${v}`} width={56} />
                       <Tooltip
                         formatter={(v) => [formatUsd(v), 'Maliyet']}
                         labelFormatter={(l) => l}
@@ -225,9 +227,9 @@ export default function AdminAiCostsPage() {
                 <div className="mt-4 h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={daySeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e8e0d4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} width={48} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: colors.tick }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 11, fill: colors.tick }} width={48} />
                       <Tooltip formatter={(v) => [formatTokens(v), 'Token']} />
                       <Bar dataKey="totalTokens" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>

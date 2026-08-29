@@ -18,7 +18,9 @@ import {
 import {
   buildHealthAnalysisFingerprint,
   getHealthTestLockState,
+  getAnalysisTimestamp,
   isCompleteHealthAnalysis,
+  isRetakeAfterLockStart,
   normalizeHealthScores,
   normalizeStaffBrief,
 } from './_healthScoreAnalysis.js'
@@ -203,13 +205,17 @@ export default async function handler(req, res) {
       && existingAnalysis.sourceFingerprint
       && existingAnalysis.sourceFingerprint === fingerprint
     ) {
-      return res.status(409).json({
-        ok: false,
-        error: 'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz',
-        unchanged: true,
-        sourceFingerprint: fingerprint,
-        force,
-      })
+      const retakeAt = dbProfile.healthTest?.retakeAt || null
+      const analysisTs = getAnalysisTimestamp(existingAnalysis)
+      if (!isRetakeAfterLockStart(retakeAt, analysisTs)) {
+        return res.status(409).json({
+          ok: false,
+          error: 'Sağlık testi veya profil bilgileri değişmedi; yeniden analiz yapılamaz',
+          unchanged: true,
+          sourceFingerprint: fingerprint,
+          force,
+        })
+      }
     }
 
     const {

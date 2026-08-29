@@ -9,7 +9,8 @@ import { PANEL_IMAGES } from '../utils/panelImages'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
 import {
   getHealthTestLockState,
-  needsInitialHealthAnalysis,
+  buildRetakeHealthAnalysisReset,
+  isHealthAnalysisReady,
 } from '../services/healthScoreAnalysis'
 import {
   getCoreHealthTestKeySet,
@@ -25,7 +26,9 @@ export default function HealthTestPage() {
   const [profileGateSaving, setProfileGateSaving] = useState(false)
   const [retakeSaving, setRetakeSaving] = useState(false)
   const { analysis, history: analysisHistory, loading: analysisLoading, runSync } = useHealthAnalysisSync()
-  const analysisReady = Boolean(analysis && !needsInitialHealthAnalysis(analysis))
+  const analysisReady = isHealthAnalysisReady(analysis, {
+    retakeAt: user?.healthTest?.retakeAt || null,
+  })
 
   const coreComplete = Boolean(
     user?.gender && isCoreHealthTestComplete(user.healthTest, user.gender),
@@ -68,18 +71,17 @@ export default function HealthTestPage() {
     setRetakeSaving(true)
     try {
       const retakeAt = new Date().toISOString()
-      const patch = { healthTest: { retakeAt } }
-      if (analysis && !needsInitialHealthAnalysis(analysis)) {
-        patch.healthAnalysis = { ...analysis, analysisStage: 'core' }
-      }
-      await updateProfile(patch)
+      await updateProfile({
+        healthTest: { retakeAt },
+        healthAnalysis: buildRetakeHealthAnalysisReset(retakeAt),
+      })
       toast('Cevaplar sıfırlandı. Genel Sağlık Testini baştan çözebilirsiniz.', 'success')
     } catch (err) {
       toast(err?.message || 'Test sıfırlanamadı.', 'error')
     } finally {
       setRetakeSaving(false)
     }
-  }, [lockState.canRetake, updateProfile, toast, analysis])
+  }, [lockState.canRetake, updateProfile, toast])
 
   const handleConsentSave = useCallback(async ({ healthAck, disclaimer }) => {
     setConsentSaving(true)

@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { useChartColors } from '../../context/ThemeContext'
 
 function dayLabel(iso) {
   const s = String(iso || '').slice(0, 10)
@@ -26,6 +27,7 @@ function toChartRows(history = [], limit = 12) {
 /** Üye dashboard — yalnızca overall trend. */
 export const HealthScoreSimpleTrend = memo(function HealthScoreSimpleTrend({ history = [] }) {
   const data = useMemo(() => toChartRows(history, 12), [history])
+  const colors = useChartColors()
   if (data.length < 2) return null
 
   return (
@@ -35,10 +37,16 @@ export const HealthScoreSimpleTrend = memo(function HealthScoreSimpleTrend({ his
         {/* Sabit yükseklik: gizli/0 boyutlu kapsayıcıda width/height -1 uyarısını önler */}
         <ResponsiveContainer width="100%" height={160} minWidth={0}>
           <LineChart data={data} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: colors.tick }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: colors.tick }} width={36} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: colors.tooltipBg,
+                border: `1px solid ${colors.tooltipBorder}`,
+                color: colors.tooltipColor,
+              }}
+            />
             <Line
               type="monotone"
               dataKey="overall"

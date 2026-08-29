@@ -94,6 +94,24 @@
     linear-gradient(165deg, var(--color-cream-50) 0%, color-mix(in srgb, var(--color-brand-50) 75%, white) 100%);
 }
 
+html.dark .member-panel-bg {
+  background-color: var(--yf-page);
+  background-image:
+    radial-gradient(ellipse 85% 55% at 100% 0%, color-mix(in srgb, var(--color-brand-700) 32%, transparent), transparent 52%),
+    radial-gradient(ellipse 70% 45% at 0% 15%, color-mix(in srgb, #5b4a8a 18%, transparent), transparent 48%),
+    radial-gradient(ellipse 65% 50% at 50% 100%, color-mix(in srgb, var(--color-sage-700) 22%, transparent), transparent 50%),
+    linear-gradient(165deg, var(--yf-page) 0%, var(--color-brand-50) 55%, var(--color-sage-50) 100%);
+}
+
+html.dark .admin-panel-bg,
+html.dark .staff-panel-bg {
+  background-color: var(--yf-page);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--color-brand-800) 40%, transparent), transparent 50%),
+    radial-gradient(ellipse 55% 40% at 0% 100%, color-mix(in srgb, var(--color-sage-800, #2d6242) 28%, transparent), transparent 48%),
+    linear-gradient(170deg, var(--yf-page) 0%, var(--color-cream-100) 100%);
+}
+
 /* === panel-page-ui === */
 /* ── Üye paneli sayfa başlığı ── */
 .panel-page-header {

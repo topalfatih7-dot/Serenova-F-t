@@ -8,6 +8,7 @@ import {
 import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
+import { useChartColors } from '../../context/ThemeContext'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 
@@ -16,6 +17,7 @@ const ACTIVITY_COLORS = { upgrade: 'text-brand-600', signup: 'text-sage-600', pa
 export default function AdminOverviewPage() {
   useRelativeTimeTick()
   const { adminStats, monthlyGrowth, membershipBreakdown, platform, sessionStats } = useApp()
+  const colors = useChartColors()
   const { activities, tickets } = platform
   const hasMembers = adminStats.totalMembers > 0
   const pct = adminStats.totalMembers ? Math.round((adminStats.premium / adminStats.totalMembers) * 100) : 0
@@ -62,10 +64,16 @@ export default function AdminOverviewPage() {
             <div className="mt-4 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: colors.tick }} />
+                  <YAxis tick={{ fontSize: 12, fill: colors.tick }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: colors.tooltipBg,
+                      border: `1px solid ${colors.tooltipBorder}`,
+                      color: colors.tooltipColor,
+                    }}
+                  />
                   <Legend />
                   <Area type="monotone" dataKey="uye" name="Toplam Üye" stroke="#5f9270" fill="#e6efe8" />
                   <Area type="monotone" dataKey="premium" name="Premium" stroke="#4a8aad" fill="#e8f0f5" />

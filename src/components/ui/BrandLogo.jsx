@@ -42,7 +42,7 @@ export default function BrandLogo({
           <img
             src={BRAND.assets.logo}
             alt={`${BRAND.name} — ${BRAND.domain}`}
-            className={`${HEIGHT[size]} w-auto max-w-[min(100vw-8rem,240px)] bg-transparent object-contain object-left ${imgClassName}`.trim()}
+            className={`${HEIGHT[size]} w-auto max-w-[min(100vw-8rem,240px)] bg-transparent object-contain object-left dark:brightness-125 ${imgClassName}`.trim()}
             width={240}
             height={63}
             decoding="async"

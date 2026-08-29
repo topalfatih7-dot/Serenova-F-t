@@ -37,6 +37,24 @@ export function isRetakeAfterLockStart(retakeAt, lockTs) {
 }
 
 /**
+ * Retake, son analiz damgasından sonra ise çekirdek skorlar yeniden üretilmeli.
+ * Eski skorlar duruyor olsa bile (Şenol tipi leftover) true döner.
+ */
+export function needsCoreAnalysisAfterRetake(healthAnalysis, { retakeAt = null } = {}) {
+  if (!retakeAt) return false
+  return isRetakeAfterLockStart(retakeAt, getAnalysisTimestamp(healthAnalysis))
+}
+
+/** Retake sonrası canlı skorları düşürür; healthScoreHistory korunur. */
+export function buildRetakeHealthAnalysisReset(retakeAt) {
+  return {
+    analysisStage: 'core',
+    retakePending: true,
+    resetAt: retakeAt || new Date().toISOString(),
+  }
+}
+
+/**
  * Opsiyoneller bitince yazılacak kilit zamanı.
  * Retake sonrası eski detailed analiz damgası kullanılmaz.
  */

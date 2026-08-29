@@ -1,12 +1,15 @@
 import { describeHealthTest } from '../data/healthTest'
 import { getApiAuthHeaders } from './apiAuth.js'
 import { formatAiError } from '../utils/aiErrors.js'
+import { needsCoreAnalysisAfterRetake } from '../utils/healthTestLock.js'
 
 export {
   HEALTH_TEST_RETAKE_DAYS,
   getAnalysisTimestamp,
   getHealthTestLockTimestamp,
   isRetakeAfterLockStart,
+  needsCoreAnalysisAfterRetake,
+  buildRetakeHealthAnalysisReset,
   resolveOptionalCompletedAtTimestamp,
   getHealthTestLockState,
 } from '../utils/healthTestLock.js'
@@ -96,6 +99,12 @@ export function needsInitialHealthAnalysis(analysis) {
   if (!normalizeStaffBrief(analysis.staffBrief)) return true
   if (analysis.radarScores && !analysis.scores) return true
   return false
+}
+
+/** Üye UI'sinde skor kartı / Analizi Başlat: tam skor var ve retake bekleyen eski kayıt değil. */
+export function isHealthAnalysisReady(analysis, { retakeAt = null } = {}) {
+  if (needsInitialHealthAnalysis(analysis)) return false
+  return !needsCoreAnalysisAfterRetake(analysis, { retakeAt })
 }
 
 /**

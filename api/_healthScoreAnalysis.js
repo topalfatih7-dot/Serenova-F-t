@@ -5,9 +5,11 @@
 import {
   HEALTH_TEST_RETAKE_DAYS,
   getHealthTestLockState as getClientHealthTestLockState,
+  getAnalysisTimestamp,
+  isRetakeAfterLockStart,
 } from '../src/utils/healthTestLock.js'
 
-export { HEALTH_TEST_RETAKE_DAYS }
+export { HEALTH_TEST_RETAKE_DAYS, getAnalysisTimestamp, isRetakeAfterLockStart }
 
 export const SCORE_KEYS = [
   'general',

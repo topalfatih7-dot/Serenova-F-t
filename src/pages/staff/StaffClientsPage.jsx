@@ -8,6 +8,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import AvailabilityView from '../../components/package/AvailabilityView'
 import MemberHealthInsights from '../../components/member/MemberHealthInsights'
+import StaffWaterProgress from '../../components/water/StaffWaterProgress'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { calculateBMI, bmiCategory, GOAL_LABELS, FITNESS_LABELS } from '../../services/health'
@@ -74,6 +75,8 @@ function ClientInfo({ member, role, respondingId, onRespond }) {
           <Chips values={member.goals} map={GOAL_LABELS} />
         </div>
       </div>
+
+      <StaffWaterProgress member={member} viewerRole={role} />
 
       <MemberHealthInsights
         member={member}

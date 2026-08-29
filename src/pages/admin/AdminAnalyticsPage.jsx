@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { BarChart3, Loader2, AlertCircle, ExternalLink } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { useChartColors } from '../../context/ThemeContext'
 import { fetchGa4Report } from '../../services/ga4Report'
 
 export default function AdminAnalyticsPage() {
   const { adminStats, monthlyGrowth, platform, onboardingFunnel } = useApp()
+  const colors = useChartColors()
   const conversionRate = adminStats.totalMembers ? Math.round((adminStats.premium / adminStats.totalMembers) * 100) : 0
 
   const [ga4, setGa4] = useState({ loading: true, data: null, error: null })
@@ -172,10 +174,16 @@ export default function AdminAnalyticsPage() {
             <div className="mt-4 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                  <XAxis dataKey="month" tick={{ fill: colors.tick }} />
+                  <YAxis tick={{ fill: colors.tick }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: colors.tooltipBg,
+                      border: `1px solid ${colors.tooltipBorder}`,
+                      color: colors.tooltipColor,
+                    }}
+                  />
                   <Legend />
                   <Line type="monotone" dataKey="uye" name="Toplam" stroke="#5f9270" strokeWidth={2} />
                   <Line type="monotone" dataKey="premium" name="Premium" stroke="#4a8aad" strokeWidth={2} />
@@ -189,10 +197,16 @@ export default function AdminAnalyticsPage() {
             <div className="mt-4 h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={membershipData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#efe8de" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                  <XAxis dataKey="name" tick={{ fill: colors.tick }} />
+                  <YAxis tick={{ fill: colors.tick }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: colors.tooltipBg,
+                      border: `1px solid ${colors.tooltipBorder}`,
+                      color: colors.tooltipColor,
+                    }}
+                  />
                   <Bar dataKey="value" name="Üye" fill="#4a8aad" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

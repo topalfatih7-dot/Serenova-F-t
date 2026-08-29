@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import {
   getHealthTestLockState,
   resolveOptionalCompletedAtTimestamp,
+  needsCoreAnalysisAfterRetake,
+  buildRetakeHealthAnalysisReset,
 } from '../src/utils/healthTestLock.js'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
@@ -87,6 +89,55 @@ describe('getHealthTestLockState', () => {
     })
     assert.equal(state.fullLock, true)
     assert.equal(state.canRetake, false)
+  })
+})
+
+describe('needsCoreAnalysisAfterRetake', () => {
+  it('is true when retake is after last analysis (Şenol leftover scores)', () => {
+    const pending = needsCoreAnalysisAfterRetake(
+      {
+        analysisStage: 'core',
+        aiAttemptedAt: '2026-08-22T12:31:18.626Z',
+        overallScore: 51,
+      },
+      { retakeAt: '2026-08-26T17:00:55.168Z' },
+    )
+    assert.equal(pending, true)
+  })
+
+  it('is false after a new analysis timestamp later than retake', () => {
+    const pending = needsCoreAnalysisAfterRetake(
+      {
+        analysisStage: 'core',
+        aiAttemptedAt: '2026-08-27T15:00:00.000Z',
+        overallScore: 56,
+      },
+      { retakeAt: '2026-08-26T17:00:55.168Z' },
+    )
+    assert.equal(pending, false)
+  })
+
+  it('is false without retakeAt', () => {
+    const pending = needsCoreAnalysisAfterRetake(
+      { analysisStage: 'core', aiAttemptedAt: daysAgo(1), overallScore: 51 },
+      { retakeAt: null },
+    )
+    assert.equal(pending, false)
+  })
+})
+
+describe('buildRetakeHealthAnalysisReset', () => {
+  it('drops live scores so a new core analysis is required', () => {
+    const reset = buildRetakeHealthAnalysisReset('2026-08-26T17:00:55.168Z')
+    assert.equal(reset.analysisStage, 'core')
+    assert.equal(reset.retakePending, true)
+    assert.equal(reset.resetAt, '2026-08-26T17:00:55.168Z')
+    assert.equal(reset.overallScore, undefined)
+    assert.equal(reset.scores, undefined)
+    assert.equal(
+      needsCoreAnalysisAfterRetake(reset, { retakeAt: '2026-08-26T17:00:55.168Z' }),
+      true,
+    )
   })
 })
 
