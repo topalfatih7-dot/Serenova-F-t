@@ -28,7 +28,7 @@
     },
     {
       "path": "/api/ai-blog-generate?task=session-attendance",
-      "schedule": "20 * * * *"
+      "schedule": "20 2 * * *"
     }
   ],
   "rewrites": [
