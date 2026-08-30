@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Dumbbell, Apple, Flame, Crown, MessageCircle, LineChart,
-  ClipboardList, Star, CalendarDays, Play, BookOpen,
+  ClipboardList, Star, CalendarDays, Play, BookOpen, Sparkles,
   ArrowRight, Clock, HeartPulse, UserCheck, Stethoscope,
 } from 'lucide-react'
 import StatsCard from '../components/ui/StatsCard'
@@ -27,11 +27,11 @@ import useStripePaymentReturn from '../hooks/useStripePaymentReturn'
 import { PANEL_IMAGES } from '../utils/panelImages'
 import { resolveBlogCover } from '../utils/blogImages'
 import { blogPostPath } from '../utils/blogSlug'
+import { useDailyTip } from '../hooks/useDailyTip'
 import { useHealthAnalysisSync } from '../hooks/useHealthAnalysisSync'
-import { getHealthTestLockState, isHealthAnalysisReady } from '../services/healthScoreAnalysis'
+import { getHealthTestLockState } from '../services/healthScoreAnalysis'
 import { buildWeeklyAdherence } from '../utils/memberProgress'
 import { getRemainingDays } from '../services/premiumMembership'
-import MemberWaterTracker from '../components/water/MemberWaterTracker'
 import { listCancelAtPeriodEndPackages } from '../utils/memberPackages'
 import { MEMBERSHIP_CANCEL_COPY } from '../data/membershipCancelCopy'
 import { format } from 'date-fns'
@@ -58,6 +58,7 @@ export default function DashboardPage() {
   } = useApp()
   const [storyOpen, setStoryOpen] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(() => Boolean(location.state?.welcome))
+  const { tip: dailyTip, loading: dailyTipLoading } = useDailyTip()
   const {
     analysis: healthAnalysis,
     history: healthScoreHistory,
@@ -66,9 +67,6 @@ export default function DashboardPage() {
     complete: healthAnalysisComplete,
     detailedComplete: healthDetailedComplete,
   } = useHealthAnalysisSync()
-  const healthScoresReady = isHealthAnalysisReady(healthAnalysis, {
-    retakeAt: user?.healthTest?.retakeAt || null,
-  })
   const healthLockState = useMemo(
     () => getHealthTestLockState({
       healthAnalysis,
@@ -204,22 +202,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {user?.id && healthAnalysisComplete && healthScoresReady ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
-          <MemberWaterTracker member={user} size="full" />
-          <HealthScoreCard
-            analysis={healthAnalysis}
-            history={healthScoreHistory}
-            loading={healthScoreLoading}
-            complete={healthAnalysisComplete}
-            error={healthScoreError}
-            scoresOnly={isUnpaidMember}
-            lockState={healthLockState}
-          />
+      <HealthScoreCard
+        analysis={healthAnalysis}
+        history={healthScoreHistory}
+        loading={healthScoreLoading}
+        complete={healthAnalysisComplete}
+        error={healthScoreError}
+        scoresOnly={isUnpaidMember}
+        lockState={healthLockState}
+      />
+
+      <div className="flex items-start gap-3 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-50 via-amber-50/60 to-white px-4 py-3.5 shadow-sm">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-amber-500 text-white shadow ${dailyTipLoading ? 'animate-pulse' : ''}`}>
+          <Sparkles className="h-4.5 w-4.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-700/70">Günün ipucu</p>
+          <p className={`mt-0.5 text-sm leading-relaxed text-cream-900 transition-opacity ${dailyTipLoading ? 'opacity-60' : 'opacity-100'}`}>
+            {dailyTip}
+          </p>
         </div>
-      ) : user?.id ? (
-        <MemberWaterTracker member={user} size="full" />
-      ) : null}
+      </div>
 
       {showAssignmentPendingBanner && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-sage-300 bg-sage-50 px-4 py-3.5">

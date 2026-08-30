@@ -186,23 +186,15 @@ export async function sendExpoPushToUser(admin, userId, notification, opts = {})
     .map((t) => String(t.expo_push_token || '').trim())
     .filter((token) => /^ExponentPushToken\[.+\]$/.test(token))
 
-  const messages = validTokenStrings.map((token) => {
-    const threadId = String(notification.threadId || '').trim()
-    const collapseId =
-      CHAT_ECHO_TYPES.has(String(notification.type || '')) && threadId
-        ? `${notification.type}-${threadId}`.slice(0, 64)
-        : undefined
-    return {
-      to: token,
-      title: String(notification.title),
-      body: String(notification.message || ''),
-      data,
-      sound: 'default',
-      channelId: ANDROID_CHANNEL_ID,
-      priority: 'high',
-      ...(collapseId ? { collapseId } : {}),
-    }
-  })
+  const messages = validTokenStrings.map((token) => ({
+    to: token,
+    title: String(notification.title),
+    body: String(notification.message || ''),
+    data,
+    sound: 'default',
+    channelId: ANDROID_CHANNEL_ID,
+    priority: 'high',
+  }))
 
   console.log('[expoPush] send', {
     userId,
