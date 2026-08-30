@@ -12,6 +12,7 @@ import HealthLabFilesPanel from './HealthLabFilesPanel'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import HealthStaffNotesPanel from './HealthStaffNotesPanel'
 import StaffHealthBrief from '../staff/StaffHealthBrief'
+import StaffWaterProgress from '../water/StaffWaterProgress'
 import { isPaidMembership } from '../../data/membershipPlans'
 import { normalizeStaffRole } from '../../utils/staffRoles'
 
@@ -189,6 +190,8 @@ export default function MemberHealthProfilePanel({
           </p>
         </div>
       </div>
+
+      <StaffWaterProgress member={member} viewerRole={viewerRole} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-cream-200 bg-white p-4">

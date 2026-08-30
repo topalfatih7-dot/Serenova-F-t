@@ -2,9 +2,9 @@
 name: yeniform-health-programs
 description: >-
   Handles Yeni Form health tests, calendar meal/workout completion, member
-  programs, and calorie AI. Use when working on sağlık testi,
+  programs, calorie AI, and water tracking. Use when working on sağlık testi,
   health-test, takvim, programlarım, öğün, antrenman tamamlama, kalori,
-  ai-food-text, or ai-food-vision.
+  ai-food-text, ai-food-vision, su takibi, water tracking, or hydration.
 ---
 
 # Yeni Form Health, Programs & Calendar
@@ -45,6 +45,14 @@ description: >-
 - Text: `POST /api/ai-food-text` — gated by `hasManualCalorieAccess`
 - Vision: `POST /api/ai-food-vision` — gated by `hasPhotoCalorieAccess`
 - Quotas / usage logs — respect API guards
+
+## Water tracking
+
+- Spec: [`docs/WATER_TRACKING.md`](../../../docs/WATER_TRACKING.md)
+- Default goal 2000 ml; dietitian/admin RPC `set_member_water_goal`; member logs `member_water_logs` (ml only)
+- UI: `WaterCarafeCard` (şişe dolumu) / `MemberWaterTracker` / `StaffWaterProgress` — no glass counter, no `/water` route
+- Dashboard: karşılama banner’ının altı, sağlık skoru ile yan yana (grafik grid’de değil)
+- Do not copy `calorieHistory` JSONB pattern
 
 ## Related
 

@@ -1486,6 +1486,10 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
 // E-posta / telefon / cinsiyet kayıt sonrası istemciden değiştirilemez.
 export async function saveMemberPatch(member, patch) {
   let updated = { ...member, ...patch, lastActiveAt: today() }
+  // Su hedefi yalnız set_member_water_goal RPC (diyetisyen/admin)
+  if (Object.prototype.hasOwnProperty.call(patch, 'waterTracking')) {
+    updated.waterTracking = member.waterTracking
+  }
 
   // Kimlik alanları kilitli (personel görünümünde iletişim gizli — boş yazma)
   if (member._contactHidden) {
