@@ -228,7 +228,7 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
       ...notification,
       audience: 'staff',
     }, { senderId: userId })
-    /* WhatsApp “confirmed” onay sonrası; talep aşamasında gönderilmez */
+    /* Onay sonrası Expo _respondSession.js */
   } catch {
     /* talep oluştu; bildirim opsiyonel */
   }

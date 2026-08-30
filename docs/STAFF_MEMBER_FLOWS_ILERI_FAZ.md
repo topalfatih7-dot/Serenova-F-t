@@ -68,7 +68,6 @@
 4. **Admin manuel seans** → doğrudan `scheduled` (onay atlanır); admin her zaman anında iptal edebilir (`forceAdmin`).
 5. **Doktor hakediş** → sonraya (`BILLABLE_TYPES` değişmez).
 6. **24s iptal/yeniden planla** — üye ≥24s: iptal = `cancel_pending` (personel onay); &lt;24s: iptal/yeniden planla yok. Pending talep anında çekilir. Personel ≥24s anında iptal; &lt;24s → `admin_cancel_pending`. Booker’da kural onayı zorunlu.
-7. **WhatsApp** — yalnız kesin `cancelled` outcome’ta `appt_cancelled`.
 
 ### Personel UI (uygulama)
 - Pending book kuyruğu + **iptal talepleri** kuyruğu (overview) + Onayla / Reddet.
@@ -76,7 +75,7 @@
 - Admin (yalnız web): `admin_cancel_pending` kuyruğu.
 
 ### Ana dosyalar
-`api/_bookSession.js`, `api/_sessionCancel.js`, `api/_sessionReschedule.js`, staff approve/reject API, `SessionCard.jsx`, `staffAppointments.js`, `StaffOverviewPage.jsx`, `StaffAppointmentRow.jsx`, `AdminSessionsPage.jsx`, `staff_booked_slots` / limit sayımı, `AppointmentsPage.jsx`, bildirimler + WhatsApp
+`api/_bookSession.js`, `api/_sessionCancel.js`, `api/_sessionReschedule.js`, staff approve/reject API, `SessionCard.jsx`, `staffAppointments.js`, `StaffOverviewPage.jsx`, `StaffAppointmentRow.jsx`, `AdminSessionsPage.jsx`, `staff_booked_slots` / limit sayımı, `AppointmentsPage.jsx`, bildirimler
 
 ---
 

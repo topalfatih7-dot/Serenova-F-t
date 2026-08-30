@@ -84,7 +84,7 @@
 | Wellness uygulamaları | Uluslararası (İngilizce), genel | Türkçe, video görüşme, sağlık skoru |
 
 **Yeni Form'un Rakipsiz Unsurları:**
-1. ✅ Platform içi **video görüşme** (Daily.co) — WhatsApp bazlı rakiplere karşı büyük avantaj
+1. ✅ Platform içi **video görüşme** (Daily.co) — mesaj listesi tabanlı rakiplere karşı büyük avantaj
 2. ✅ **GPT-5.4 sağlık skoru** — 8 boyutlu AI sağlık analizi, rakiplerde yok
 3. ✅ **Koç + Diyetisyen bir arada** (VIP) — benzeri platforma göre fark yaratan
 4. ✅ **Egzersiz video kütüphanesi** — programa entegre, rakiplerde yok

@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getMemberChatContacts, getStaffClients } from '../utils/chatAccess'
 import { normalizeStaffRole } from '../utils/staffRoles'
-import { notifyMemberChatMessage, notifyWhatsAppEvent } from './memberNotifications'
+import { notifyMemberChatMessage } from './memberNotifications'
 import { notifyStaffChatMessage } from './staffNotifications'
 import { detectExternalContactInfo, CONTACT_INFO_BLOCK_MESSAGE } from '../utils/contactInfoGuard'
 
@@ -163,13 +163,6 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
         threadId: thread.id,
       })
     }
-    void notifyWhatsAppEvent('new_chat_message', {
-      threadId: thread.id,
-      senderType: 'member',
-      memberId: thread.memberId,
-      staffId: thread.staffId,
-      staffRole: thread.staffRole,
-    })
   }
 
   const { data: threadRow } = await supabase.from('chat_threads').select('*').eq('id', thread.id).maybeSingle()

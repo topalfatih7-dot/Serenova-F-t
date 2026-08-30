@@ -13,7 +13,7 @@ export const ONLINE_DIYETISYEN = {
     'online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat, diyet paketi',
   h1: 'Online Diyetisyen ile Size Özel Beslenme Programı',
   lead:
-    'Yeni Form’da online diyetisyen desteği; WhatsApp listesi değil, **video görüşme**, kişisel program ve panel üzerinden takip demektir. Hedefinize uygun **Diyet veya VIP** paketle başlayın.',
+    'Yeni Form’da online diyetisyen desteği; mesaj listesi değil, **video görüşme**, kişisel program ve panel üzerinden takip demektir. Hedefinize uygun **Diyet veya VIP** paketle başlayın.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadromuzu inceleyin' },
@@ -282,7 +282,7 @@ export const ONLINE_DIYETISYEN_FIYAT = {
       h2: 'Online diyetisyen ne kadar tutar?',
       paragraphs: [
         '2026’da bireysel klinikler aylık **2.000–6.000 TL** bandında teklif verebilir. Yeni Form’da fiyat şeffaftır: Eko Diyet **1.299 TL**, Diyet **2.499 TL**, koç birleşik VIP **4.999 TL** (aylık liste fiyatı).',
-        'Fark: WhatsApp-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Tüm paketleri `/membership` üzerinde karşılaştırın.',
+        'Fark: yalnızca mesajla takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Tüm paketleri `/membership` üzerinde karşılaştırın.',
       ],
     },
     {
@@ -298,7 +298,7 @@ export const ONLINE_DIYETISYEN_FIYAT = {
       h2: 'Neden fiyat sayfası ayrı?',
       paragraphs: [
         '“Online diyetisyen fiyat 2026” arayanlar tüm wellness paketlerini değil, **diyetisyen ücretini** ister. Bu sayfa yalnızca diyet odaklıdır; Spor/Doktor satırları üyelik tablosundadır.',
-        'Rakip klinikler fiyatı WhatsApp’ta gizleyebilir. Biz liste fiyatını burada ve üyelik sayfasında açık yazarız.',
+        'Rakip klinikler fiyatı özel mesajda gizleyebilir. Biz liste fiyatını burada ve üyelik sayfasında açık yazarız.',
       ],
     },
   ],
@@ -602,7 +602,7 @@ export const ONLINE_WELLNESS = {
       h2: 'Online wellness\'ın geleneksel kliniğe farkı ne?',
       paragraphs: [
         'Geleneksel klinik; belirli şehir, belirli saat ve ulaşım gereksinimiyle sınırlıdır. **Online wellness** platformu: istediğiniz yerden, randevu saatinde bilgisayar veya telefonunuzdan katılım imkânı sunar.',
-        'Yeni Form\'un rakipsiz unsurları: **video görüşme** (WhatsApp değil, platform içi), **AI sağlık skoru** analizi, **egzersiz video kütüphanesi** ve **kalori AI** aynı hesapta entegre çalışır.',
+        'Yeni Form\'un rakipsiz unsurları: **video görüşme** (platform içi), **AI sağlık skoru** analizi, **egzersiz video kütüphanesi** ve **kalori AI** aynı hesapta entegre çalışır.',
       ],
     },
     {

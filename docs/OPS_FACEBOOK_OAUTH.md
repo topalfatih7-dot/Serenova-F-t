@@ -9,7 +9,7 @@ Site: `https://www.yeniform.com`
 Supabase callback: `https://rvzksmyhsgxgrxgeabmi.supabase.co/auth/v1/callback`  
 (Custom Domain aktifse ekle: `https://auth.yeniform.com/auth/v1/callback`)
 
-**WhatsApp Meta app’inden ayrı tut.** Login için yeni Consumer / Facebook Login odaklı app; WhatsApp Cloud API app’ine Login ekleme ([`OPS_WHATSAPP.md`](OPS_WHATSAPP.md)).
+**Login için ayrı Consumer / Facebook Login odaklı app kullan.** Aynı Meta hesabındaki diğer Business ürünleriyle karıştırma.
 
 Client ID / Secret **yalnızca** Supabase Dashboard → Providers. `.env` / Vercel’e Facebook secret koyma.
 
@@ -19,7 +19,7 @@ Client ID / Secret **yalnızca** Supabase Dashboard → Providers. `.env` / Verc
 
 1. [developers.facebook.com](https://developers.facebook.com) → giriş
 2. **My Apps → Create App**
-3. Kullanım: **Authenticate and request data from users with Facebook Login** (Consumer / Login odaklı). WhatsApp ürünü ekleme.
+3. Kullanım: **Authenticate and request data from users with Facebook Login** (Consumer / Login odaklı). Login dışında ürün ekleme.
 4. App adı: **Yeni Form** · Contact email: `info@yeniform.com` (veya resmi mail)
 
 ---

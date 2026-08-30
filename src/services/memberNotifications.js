@@ -3,7 +3,7 @@ import { getApiAuthHeaders } from './apiAuth'
 
 const nowISO = () => new Date().toISOString()
 
-/** Fire-and-forget WhatsApp outbound (Meta Cloud API). */
+/** Fire-and-forget Expo outbound. */
 async function dispatchOutbound(memberId, notification, extra = {}) {
   try {
     const headers = await getApiAuthHeaders()
@@ -98,18 +98,4 @@ export async function notifyMemberChatMessage({ memberId, preview, threadId, sta
     threadId: threadId || null,
     staffRole: staffRole || null,
   })
-}
-
-/** Cancel / reschedule → WhatsApp + staff in-app (server). */
-export async function notifyWhatsAppEvent(event, payload = {}) {
-  try {
-    const headers = await getApiAuthHeaders()
-    await fetch('/api/application-notify', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ action: 'whatsapp-event', event, ...payload }),
-    })
-  } catch {
-    /* ignore */
-  }
 }

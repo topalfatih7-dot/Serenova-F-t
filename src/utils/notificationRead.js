@@ -47,7 +47,7 @@ export function isViewingChatNotification(n, pathname) {
   return Boolean(n.memberId && String(n.memberId) === String(openMemberId))
 }
 
-/** Aynı sohbet için peş peşe gelen çift kaydı (istemci + WhatsApp fan-out) tek uyarıya indirir. */
+/** Aynı sohbet için peş peşe gelen çift kaydı (istemci + Expo) tek uyarıya indirir. */
 export function chatAlertDedupeKey(n) {
   if (!n || n.type !== 'chat') return n?.id || ''
   return String(n.threadId || n.memberId || n.id || '')

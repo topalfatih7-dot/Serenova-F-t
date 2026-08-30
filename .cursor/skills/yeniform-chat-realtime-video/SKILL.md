@@ -2,7 +2,7 @@
 name: yeniform-chat-realtime-video
 description: >-
   Handles Yeni Form chat systems, Supabase realtime, Daily.co video calls, and
-  in-app / browser / WhatsApp notifications. Use when working on mesajlar, chat,
+  in-app / browser notifications. Use when working on mesajlar, chat,
   realtime, Daily, video görüşme, unread badge, collab messages, admin staff chat,
   or push (browser).
 ---
@@ -28,7 +28,7 @@ RLS: member own threads; `staff_manages_member`; admin. Realtime via `useRealtim
 
 - In-app: `members.data.notifications` via `append_member_notification`
 - Browser: `pushNotifs` + Notification API (`browserNotifications.js`)
-- WhatsApp: `/api/application-notify` (`whatsapp-event` + member outbound fan-out)
+- Expo: `/api/application-notify` (member / staff outbound)
 
 ## Checklist
 

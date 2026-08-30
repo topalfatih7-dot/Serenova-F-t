@@ -12,7 +12,7 @@
 - [x] **Resend e-posta (kod + env)** — API key, domain verified, Vercel env, `staff_decision_notify` production’da. Kalan manuel: Supabase şablon subject/HTML. [`OPS_RESEND_MAIL.md`](OPS_RESEND_MAIL.md)  
 - [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 - [ ] **Facebook OAuth** — Meta app (Login) + Supabase Providers; Development smoke → Live. Kod hazır. Adım adım: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
-- [ ] **WhatsApp Cloud API** — Meta şablon onayı + env + webhook. Kod hazır. Adım adım: [`OPS_WHATSAPP.md`](OPS_WHATSAPP.md)  
+- [x] **WhatsApp Cloud API** — kaldırıldı (2026-08-30). Expo + in-app kaldı.  
 - [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)
 
 ---

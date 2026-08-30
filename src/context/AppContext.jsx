@@ -1486,17 +1486,6 @@ export function AppProvider({ children }) {
     if (r.success && r.session) {
       const sessions = (currentMember[key] || []).map((s) => (s.id === id ? { ...s, ...r.session } : s))
       patchMemberInDb({ ...currentMember, [key]: sessions })
-      if (r.oldStartsAt && r.newStartsAt) {
-        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-        void notifyWhatsAppEvent('appt_rescheduled', {
-          memberId: currentMember.id,
-          sessionId: id,
-          sessionType: type,
-          oldStartsAt: r.oldStartsAt,
-          newStartsAt: r.newStartsAt,
-          actor: 'member',
-        })
-      }
     }
     return r
   }, [currentMember, patchMemberInDb])
@@ -1528,17 +1517,6 @@ export function AppProvider({ children }) {
           }
         })
       }
-      // WhatsApp yalnızca kesin iptalde
-      if (r.outcome === 'cancelled') {
-        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-        void notifyWhatsAppEvent('appt_cancelled', {
-          memberId: targetId,
-          sessionId: id,
-          sessionType: type,
-          startsAt: r.session.date,
-          actor: r.actor || 'member',
-        })
-      }
     }
     return r
   }, [currentMember, patchMemberInDb])
@@ -1558,16 +1536,6 @@ export function AppProvider({ children }) {
           }),
         }
       })
-      if (r.outcome === 'cancelled') {
-        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-        void notifyWhatsAppEvent('appt_cancelled', {
-          memberId,
-          sessionId,
-          sessionType,
-          startsAt: r.session.date,
-          actor: 'staff',
-        })
-      }
     } else if (r.success) {
       void reloadRemote({ force: false })
     }
@@ -1589,16 +1557,6 @@ export function AppProvider({ children }) {
           }),
         }
       })
-      if (r.outcome === 'cancelled') {
-        const { notifyWhatsAppEvent } = await import('../services/memberNotifications')
-        void notifyWhatsAppEvent('appt_cancelled', {
-          memberId,
-          sessionId,
-          sessionType,
-          startsAt: r.session.date,
-          actor: 'admin',
-        })
-      }
     } else if (r.success) {
       void reloadRemote({ force: false })
     }

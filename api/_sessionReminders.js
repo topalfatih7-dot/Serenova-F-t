@@ -1,17 +1,106 @@
 /**
  * Saatlik randevu hatırlatmaları — T-24s ve T-1s (±30 dk pencere).
- * Idempotency: session.waReminders.{ t24, t1 }
+ * In-app liste (üye + personel). Idempotency: session.waReminders.{ t24, t1 }
+ * (alan adı tarihî; yeniden adlandırma aynı pencereyi tekrar tetikler).
  */
 
-import {
-  notifySessionReminder,
-  SESSION_KEYS,
-} from './_whatsappEvents.js'
+const SESSION_KEYS = {
+  coach: 'coachSessions',
+  dietitian: 'dietitianSessions',
+  doctor: 'doctorSessions',
+}
 
 const ACTIVE = new Set(['scheduled', 'rescheduled'])
 const WINDOW_MS = 30 * 60 * 1000
 const T24_MS = 24 * 60 * 60 * 1000
 const T1_MS = 60 * 60 * 1000
+
+const ROLE_LABELS = {
+  coach: 'Koç',
+  dietitian: 'Diyetisyen',
+  doctor: 'Doktor',
+}
+
+function sessionTypeLabel(type) {
+  return ROLE_LABELS[String(type || '').toLowerCase()] || 'Uzman'
+}
+
+function formatWhenTr(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
+  return new Intl.DateTimeFormat('tr-TR', {
+    timeZone: 'Europe/Istanbul',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
+}
+
+function buildNotif(type, title, message, extra = {}) {
+  return {
+    id: `n-${type}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    type,
+    title,
+    message,
+    read: false,
+    createdAt: new Date().toISOString(),
+    ...extra,
+  }
+}
+
+function appendNote(data, notification) {
+  if (!data || !notification?.title) return
+  const prev = Array.isArray(data.notifications) ? data.notifications : []
+  data.notifications = [notification, ...prev].slice(0, 100)
+}
+
+async function appendStaffNotification(admin, staffId, notification) {
+  if (!admin || !staffId || !notification?.title) return
+  const { data: row } = await admin.from('staff').select('data').eq('id', staffId).maybeSingle()
+  if (!row) return
+  const data = { ...(row.data || {}) }
+  const prev = Array.isArray(data.notifications) ? data.notifications : []
+  data.notifications = [notification, ...prev].slice(0, 100)
+  await admin.from('staff').update({ data }).eq('id', staffId)
+}
+
+async function notifySessionReminder(admin, {
+  memberId,
+  staffId,
+  sessionType,
+  startsAt,
+  sessionId,
+  windowKey,
+  memberName,
+  memberData,
+} = {}) {
+  const when = formatWhenTr(startsAt)
+  const roleLabel = sessionTypeLabel(sessionType)
+
+  if (memberId && memberData) {
+    const title = windowKey === 't1' ? 'Randevunuz 1 saat sonra' : 'Randevunuz yarın'
+    appendNote(memberData, buildNotif(
+      'appointment',
+      title,
+      `${roleLabel} görüşmesi — ${when}`,
+      { sessionId, sessionType, startsAt, reminder: windowKey },
+    ))
+  }
+
+  if (staffId) {
+    await appendStaffNotification(admin, staffId, buildNotif(
+      'appointment',
+      windowKey === 't1' ? 'Görüşme 1 saat sonra' : 'Görüşme yarın',
+      `${memberName || 'Danışan'} — ${when}`,
+      { memberId, sessionId, sessionType, startsAt, reminder: windowKey },
+    ))
+  }
+
+  return { ok: true }
+}
 
 function parseSessionDate(s) {
   const raw = s?.date
@@ -72,18 +161,20 @@ export async function runSessionRemindersBatch(admin, { now = new Date() } = {})
           if (waReminders[windowKey]) continue
           if (!inWindow(startsAt, offsetMs, nowMs)) continue
           try {
-            const result = await notifySessionReminder(admin, {
+            await notifySessionReminder(admin, {
               memberId: row.id,
               staffId: resolveStaffId(row, sessionType),
               sessionType,
               startsAt: startsAt.toISOString(),
               sessionId: session.id,
               windowKey,
+              memberName: row.name,
+              memberData: data,
             })
             waReminders[windowKey] = new Date().toISOString()
             sessionDirty = true
             marked += 1
-            sent += (result.results || []).filter((r) => r?.ok && !r.skipped).length
+            sent += 1
           } catch (err) {
             errors.push(`${row.id}/${session.id}/${windowKey}: ${err?.message || err}`)
           }

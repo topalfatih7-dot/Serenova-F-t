@@ -87,7 +87,7 @@ export async function createMemberFromPendingRegistration(admin, userId) {
       { id: `t2-${Date.now()}`, type: 'workout', title: 'Program takviminden bugünkü hareketi tamamla', done: false, due: 'Bugün' },
     ],
     progress: { weight: [], workouts: [], mood: [] },
-    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true, whatsappNotifs: true },
+    settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
     profileComplete: true,
     streak: 0,
   }

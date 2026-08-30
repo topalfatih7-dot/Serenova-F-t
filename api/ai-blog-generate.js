@@ -5,7 +5,7 @@
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
  * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger + katalog fiyat hizalama / T-7 (CRON_SECRET, cron 03:00)
- * ?task=session-reminders — randevu T-24s / T-1s WhatsApp + in-app (CRON_SECRET, saatlik)
+ * ?task=session-reminders — randevu T-24s / T-1s in-app (CRON_SECRET, saatlik)
  * ?task=session-attendance — açık görüşme attendance finalize + şişmiş hakediş denetimi (CRON_SECRET, cron 02:20; Hobby günlük)
  */
 

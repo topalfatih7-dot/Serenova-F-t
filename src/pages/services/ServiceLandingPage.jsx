@@ -447,7 +447,7 @@ export default function ServiceLandingPage({ path }) {
                 </>
               ) : (
                 <>
-                  WhatsApp listesi veya tek seferlik PDF değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, panel ve program tek sistemde.
+                  Mesaj listesi veya tek seferlik PDF değil — <strong className="font-semibold text-cream-950">video görüşme</strong>, panel ve program tek sistemde.
                 </>
               )}
             </p>

@@ -10,7 +10,7 @@ const COLLAB_SENDER_TITLE = {
 }
 
 /**
- * Expo push + WhatsApp fan-out: staff outbound.
+ * Expo push: staff outbound.
  * `memberId` top-level ASLA Expo hedefi değildir —
  * buraya danışan id'si yazılırsa gönderen kendi push'unu alır.
  * Bkz. application-notify.js handleStaffOutbound.

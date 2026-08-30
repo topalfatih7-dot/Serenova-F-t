@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Globe, Clock, Lock, Check, X,
-  ExternalLink, AlertCircle, Loader2, Eye, Info, Bell,
+  ExternalLink, AlertCircle, Loader2, Eye, Info,
 } from 'lucide-react'
 import PhotoUpload from '../ui/PhotoUpload'
 import PhoneField from '../ui/PhoneField'
@@ -56,9 +56,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
   const [tab, setTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(() => normalizeStaffProfile(staffUser))
-  const [whatsappNotifs, setWhatsappNotifs] = useState(
-    () => staffUser?.settings?.whatsappNotifs !== false,
-  )
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -110,7 +107,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
         website: form.website,
         settings: {
           ...(staffUser?.settings || {}),
-          whatsappNotifs,
         },
       }
       const result = await onSave(payload)
@@ -345,20 +341,6 @@ export default function StaffProfileEditor({ staffUser, onSave }) {
 
           {tab === 'security' && (
             <div className="space-y-5">
-              <ProfileSectionCard icon={Bell} title="Bildirimler" subtitle="Randevu ve mesaj uyarıları" accent="sage">
-                <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-cream-200 bg-teal-50/60 px-4 py-3">
-                  <span className="text-sm font-medium text-cream-800">WhatsApp bildirimleri</span>
-                  <input
-                    type="checkbox"
-                    checked={whatsappNotifs}
-                    onChange={(e) => setWhatsappNotifs(e.target.checked)}
-                    className="h-5 w-5 accent-brand-500"
-                  />
-                </label>
-                <p className="mt-2 text-xs text-cream-800/50">
-                  Kapalıysa randevu ve danışan mesajı WhatsApp bildirimleri gönderilmez. Kaydet’e basmayı unutmayın.
-                </p>
-              </ProfileSectionCard>
               <ProfileSectionCard icon={Lock} title="Şifre Değiştir" subtitle="Güvenlik için önce mevcut şifrenizi doğrulayın" accent="brand">
               <div className="space-y-4">
                 <label className="block sm:max-w-md">
