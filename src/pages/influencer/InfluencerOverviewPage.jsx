@@ -83,7 +83,7 @@ export default function InfluencerOverviewPage() {
         <StatsCard
           label="Toplam müşteri"
           value={loading ? '…' : String(summary.uniqueCustomers)}
-          sub="Kodunuzla ilk ödeme yapanlar"
+          sub="Kodunuzla ödeme yapanlar"
           icon={Users}
           accent="brand"
         />
@@ -100,8 +100,7 @@ export default function InfluencerOverviewPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-700/70">Paylaşım kodu</p>
         <p className="mt-2 font-display text-3xl font-bold tracking-wide text-cream-900">{code || '—'}</p>
         <p className="mt-2 max-w-prose text-sm text-cream-800/60">
-          Üyeler ilk Checkout ödemesinde bu kodu kullanarak %10 indirim alır. Sizin hakedişiniz ödenen tutarın %20’sidir.
-          Yenilemeler tam fiyattır ve hakediş yazılmaz.
+          Üyeler bu kodu Checkout’ta kullanarak %10 indirim alır. Aynı abonelik yenilendikçe indirim ve hakediş (ödenen tutarın %20’si) devam eder. Üye paketi iptal edince biter; yeni pakette kodu yeniden girmesi gerekir.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button

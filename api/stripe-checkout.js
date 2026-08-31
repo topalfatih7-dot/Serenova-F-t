@@ -449,10 +449,6 @@ export default async function handler(req, res) {
       oneTime,
     })
 
-    const subscriptionMeta = { ...metadata }
-    delete subscriptionMeta.influencerId
-    delete subscriptionMeta.influencerCode
-
     const sessionParams = {
       mode: useSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],
@@ -470,7 +466,7 @@ export default async function handler(req, res) {
     }
 
     if (useSubscription) {
-      sessionParams.subscription_data = { metadata: subscriptionMeta }
+      sessionParams.subscription_data = { metadata }
     } else {
       sessionParams.payment_intent_data = { metadata }
     }

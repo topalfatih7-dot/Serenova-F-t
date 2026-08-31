@@ -121,6 +121,21 @@ export function invoiceSubscriptionId(invoice) {
   return null
 }
 
+/** Faturadaki payment_intent — 2024 invoice.payment_intent; basil’de payments listesi. */
+export function invoicePaymentIntent(invoice) {
+  if (!invoice || typeof invoice !== 'object') return null
+  const fromInvoice = stripeObjectId(invoice.payment_intent)
+  if (fromInvoice) return fromInvoice
+  const payments = invoice.payments?.data
+  if (Array.isArray(payments)) {
+    for (const p of payments) {
+      const id = stripeObjectId(p?.payment?.payment_intent || p?.payment_intent)
+      if (id) return id
+    }
+  }
+  return null
+}
+
 /** Yenileme metadata: abonelik + fatura anı snapshot + fatura metadata (son yazılan kazanır). */
 export function invoiceSubscriptionMetadata(invoice, subscription = null) {
   const subMeta = subscription?.metadata && typeof subscription.metadata === 'object'

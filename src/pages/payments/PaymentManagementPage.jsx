@@ -462,7 +462,7 @@ function AdminInfluencerEarnings({ accountsByInfluencerId = {} }) {
       <EmptyState
         icon={Users}
         title="Influencer hakedişi yok"
-        description="Kodlu ilk Checkout tamamlandığında satırlar burada oluşur. Yenilemeler hakediş yazmaz."
+        description="Kodlu Checkout ve o aboneliğin yenilemelerinde satırlar oluşur. Paket iptal edilince durur."
       />
     )
   }
@@ -598,7 +598,7 @@ function AdminPayments() {
           <Users className="h-5 w-5 text-fuchsia-500" /> Influencer hakedişleri
         </h2>
         <p className="mb-4 text-sm text-cream-800/55">
-          Cuma–Perşembe tahakkuk, ödeme sonraki Cuma. Yalnızca ilk Checkout; yenileme satırı oluşmaz.
+          Cuma–Perşembe tahakkuk, ödeme sonraki Cuma. Kodlu abonelik yenilendikçe hakediş yazılır; iptalde durur.
         </p>
         <AdminInfluencerEarnings accountsByInfluencerId={accountsByInfluencerId} />
       </section>

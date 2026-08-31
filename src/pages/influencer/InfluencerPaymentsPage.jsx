@@ -84,7 +84,7 @@ export default function InfluencerPaymentsPage() {
             </p>
             <p className="mt-0.5 font-display text-xl font-bold tracking-wide text-cream-900">{code || '—'}</p>
             <p className="mt-0.5 text-xs text-cream-800/55">
-              İlk ödemede %10 · hakediş %20 · sonraki Cuma: {summary.payoutLabel}
+              İlk ödemede %10 · yenilemede de %10 + %20 hakediş · sonraki Cuma: {summary.payoutLabel}
             </p>
           </div>
           <button
@@ -145,7 +145,7 @@ export default function InfluencerPaymentsPage() {
           <EmptyState
             icon={Wallet}
             title="Henüz alışveriş yok"
-            description="Kodunuzla ilk Checkout tamamlandığında müşteri, paket ve hakediş burada görünür."
+            description="Kodunuzla ödeme veya yenileme tamamlandığında müşteri, paket ve hakediş burada görünür."
           />
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-cream-200 bg-white">

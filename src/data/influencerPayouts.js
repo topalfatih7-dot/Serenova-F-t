@@ -4,11 +4,13 @@ import {
   formatStaffPayoutWindowLabel,
   nextStaffPayoutPeriodKey,
   staffPayoutPeriodKey,
-} from './staffPayouts'
+} from './staffPayouts.js'
 
 export const INFLUENCER_DISCOUNT_PERCENT = 10
 export const INFLUENCER_COMMISSION_RATE = 0.20
-export const STRIPE_INFLUENCER_COUPON_ID = 'yeniform_influencer_10'
+/** Stripe kupon süresi immutable; once olan eski `yeniform_influencer_10` kullanılmaz. */
+export const STRIPE_INFLUENCER_COUPON_ID = 'yeniform_influencer_10_sub'
+export const STRIPE_INFLUENCER_COUPON_DURATION = 'forever'
 
 export const INFLUENCER_EARNING_STATUS = STAFF_EARNING_STATUS
 

@@ -37,7 +37,6 @@ import {
   verifyAccountPassword,
 } from './_deleteAccount.js'
 import { handlePasswordChange } from './_changePassword.js'
-import { handleInfluencerRequest } from './_influencer.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -1151,6 +1150,8 @@ export default async function handler(req, res) {
     if (action === 'verify-active-session') return handleVerifyActiveSession(req, res)
     if (action === 'delete-account') return handleDeleteAccount(req, res, body)
     if (action.startsWith('influencer-')) {
+      /* Dinamik import: influencer grafı login/signup’ı düşürmesin */
+      const { handleInfluencerRequest } = await import('./_influencer.js')
       return handleInfluencerRequest(req, res, {
         ...body,
         action: action.slice('influencer-'.length),

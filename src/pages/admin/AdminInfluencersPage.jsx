@@ -328,7 +328,7 @@ export default function AdminInfluencersPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">Influencer yönetimi</h1>
           <p className="mt-1 text-sm text-cream-800/60">
-            {influencers.length} kayıt · tek kod, ilk Checkout’ta %10 indirim, ödenen tutarın %20’si hakediş
+            {influencers.length} kayıt · tek kod, abonelik süresince %10 indirim, ödenen tutarın %20’si hakediş
           </p>
         </div>
         <button

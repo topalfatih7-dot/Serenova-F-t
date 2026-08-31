@@ -341,7 +341,7 @@ export default function MemberPlanCheckout({
           {codeStatus === 'valid' && (
             <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-sage-700">
               <Check className="h-4 w-4" />
-              İlk ödemede %{INFLUENCER_DISCOUNT_PERCENT} indirim uygulandı. Yenilemeler tam fiyattır.
+              Bu abonelik yenilendikçe %{INFLUENCER_DISCOUNT_PERCENT} indirim uygulanır. Paketi iptal edince biter; yeni pakette kodu tekrar girin.
             </p>
           )}
           {codeStatus === 'invalid' && (
