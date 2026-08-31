@@ -164,7 +164,11 @@ export function subscribeRealtimeSync({
         const thread = rowToStaffCollabThread(payload.new)
         if (session.type === 'staff') {
           const sid = String(staffId)
-          if (String(thread.coachId) !== sid && String(thread.dietitianId) !== sid) return
+          if (
+            String(thread.coachId) !== sid
+            && String(thread.dietitianId) !== sid
+            && String(thread.doctorId) !== sid
+          ) return
         }
         onStaffCollabThreadChange?.(thread)
       }
@@ -184,6 +188,15 @@ export function subscribeRealtimeSync({
   channels.push(staffCollabMessageChannel)
 
   if (session.type === 'admin') {
+    const adminMembersChannel = supabase
+      .channel('members-admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, (payload) => {
+        if (payload.eventType === 'DELETE') return
+        if (payload.new) onMemberChange?.(rowToMember(payload.new))
+      })
+      .subscribe()
+    channels.push(adminMembersChannel)
+
     const applicationConverters = {
       staff_applications: rowToStaffApplication,
       corporate_applications: rowToCorporateApplication,

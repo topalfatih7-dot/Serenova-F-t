@@ -37,8 +37,63 @@ import {
   verifyAccountPassword,
 } from './_deleteAccount.js'
 import { handlePasswordChange } from './_changePassword.js'
+import { notifyMemberSignupTelegram } from './_formNotify.js'
 
 const nowISO = () => new Date().toISOString()
+
+/** Mobil kayıt telegram-notify çağırmaz; ops sinyali burada. Web istemci yolu opsNotified ile çiftlemez. */
+async function recordNewMemberSignupOps(admin, { userId, name, email, phone }) {
+  const display = String(name || '').trim() || 'Üye'
+  const today = nowISO().slice(0, 10)
+  if (userId) {
+    const { error: memErr } = await admin.from('members').upsert(
+      {
+        id: userId,
+        email,
+        name: display,
+        phone: phone || null,
+        role: 'member',
+        membership: 'free',
+        membership_status: 'active',
+        data: {
+          joinedAt: today,
+          profileComplete: true,
+          fitnessLevel: 'beginner',
+          goals: [],
+          nutritionPrefs: [],
+          settings: {
+            theme: 'light',
+            language: 'tr',
+            emailNotifs: true,
+            pushNotifs: true,
+            soundNotifs: true,
+            reminderNotifs: true,
+          },
+        },
+      },
+      { onConflict: 'id' },
+    )
+    if (memErr) {
+      console.warn('[signup] member row', memErr.message)
+    } else {
+      const { error: actErr } = await admin.from('activities').insert({
+        member_id: userId,
+        data: {
+          type: 'signup',
+          text: `${display} yeni kayıt (Ücretsiz)`,
+          createdAt: nowISO(),
+        },
+      })
+      if (actErr) console.warn('[signup] activity', actErr.message)
+    }
+  }
+  try {
+    const tg = await notifyMemberSignupTelegram({ name: display, email, membership: 'free' })
+    if (!tg.ok && !tg.skipped) console.warn('[signup] telegram', tg.error)
+  } catch (err) {
+    console.warn('[signup] telegram', err?.message || err)
+  }
+}
 
 function getAnonKey() {
   return process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
@@ -432,6 +487,7 @@ async function handleSignup(req, res, body) {
 
   /* Yeni kayıt: e-posta onayı + session aynı turda — istemci unlock/login turlarını atlar */
   const userId = payload.user_id
+  const opsP = recordNewMemberSignupOps(admin, { userId, name, email, phone })
   if (userId) {
     try {
       await admin.auth.admin.updateUserById(userId, { email_confirm: true })
@@ -441,6 +497,7 @@ async function handleSignup(req, res, body) {
   }
 
   const grant = await passwordGrant(email, password, '', { localBypass: true })
+  await opsP
   const authSessionToken = issueFormSession({ ip: getClientIp(req), kind: 'auth-signup' })
   if (grant.ok && grant.session) {
     const finalized = await finalizeLoginSession(grant.session)

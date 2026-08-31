@@ -143,6 +143,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 | Env şablon | `.env.example` |
 | Sosyal OAuth | `src/services/oauthAuth.js` · UI `SocialAuthButtons` |
 | OAuth ops | [`docs/OPS_GOOGLE_OAUTH.md`](docs/OPS_GOOGLE_OAUTH.md) · [`docs/OPS_FACEBOOK_OAUTH.md`](docs/OPS_FACEBOOK_OAUTH.md) |
+| Bildirim / cron | [`docs/OPS_NOTIFICATIONS.md`](docs/OPS_NOTIFICATIONS.md) · [`docs/SECURITY_OPS.md`](docs/SECURITY_OPS.md) |
 
 Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret Dashboard Providers’da (env’de yok). Yeni üye → `/onboarding?oauth=1` → `completeOAuthMember`.
 

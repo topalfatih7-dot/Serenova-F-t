@@ -178,14 +178,12 @@ async function handleStaffOutbound(admin, body, auth, res) {
     return res.status(400).json({ ok: false, error: 'staffId + notification.title gerekli' })
   }
 
-  if (auth.role !== 'cron') {
-    const allowed = await canNotifyStaff(admin, auth.user, staffId, {
-      threadId: notification.threadId || body.threadId || null,
-      memberId: notification.memberId || null,
-    })
-    if (!allowed) {
-      return res.status(403).json({ ok: false, error: 'Yetkisiz' })
-    }
+  const allowed = await canNotifyStaff(admin, auth.user, staffId, {
+    threadId: notification.threadId || body.threadId || null,
+    memberId: notification.memberId || null,
+  })
+  if (!allowed) {
+    return res.status(403).json({ ok: false, error: 'Yetkisiz' })
   }
 
   const actorId = auth.user?.id || null
@@ -218,20 +216,17 @@ async function handleMemberOutbound(admin, body, auth, res) {
     return res.status(400).json({ ok: false, error: 'notification.title gerekli' })
   }
 
-  if (auth.role !== 'cron') {
-    const hint = {
-      threadId: notification.threadId || body.threadId || null,
-    }
-    const allowed = await canNotifyMember(admin, auth.user, memberId, hint)
-    if (!allowed) {
-      return res.status(403).json({ ok: false, error: 'Yetkisiz' })
-    }
+  const hint = {
+    threadId: notification.threadId || body.threadId || null,
+  }
+  const allowed = await canNotifyMember(admin, auth.user, memberId, hint)
+  if (!allowed) {
+    return res.status(403).json({ ok: false, error: 'Yetkisiz' })
   }
 
   const actorId = auth.user?.id || null
   const isSelfChat =
     String(notification.type || '') === 'chat'
-    && auth.role !== 'cron'
     && actorId
     && String(actorId) === String(memberId)
 

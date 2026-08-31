@@ -13,6 +13,7 @@
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 const ANDROID_CHANNEL_ID = 'yeniform-alerts-v3'
+const ANDROID_CHANNEL_SILENT = 'yeniform-alerts-v3-silent'
 
 /** Vercel ortam değişkeni varsa authenticated push (daha yüksek rate limit). */
 function expoAuthHeaders() {
@@ -31,6 +32,11 @@ export function staffPushEnabled(staffData) {
   const settings = staffData?.settings || {}
   if (settings.pushNotifs === false) return false
   return true
+}
+
+function soundNotifsEnabled(rowData) {
+  const settings = rowData?.settings || {}
+  return settings.soundNotifs !== false
 }
 
 /** Navigate map fields for Expo `data` */
@@ -66,7 +72,7 @@ async function pushPrefsEnabled(admin, userId, audience) {
     if (!staffPushEnabled(row?.data || {})) {
       return { ok: true, skipped: true, reason: 'push_prefs_off' }
     }
-    return { ok: true }
+    return { ok: true, sound: soundNotifsEnabled(row?.data || {}) }
   }
 
   const { data: row, error } = await admin
@@ -78,7 +84,7 @@ async function pushPrefsEnabled(admin, userId, audience) {
   if (!memberPushEnabled(row?.data || {})) {
     return { ok: true, skipped: true, reason: 'push_prefs_off' }
   }
-  return { ok: true }
+  return { ok: true, sound: soundNotifsEnabled(row?.data || {}) }
 }
 
 /**
@@ -161,6 +167,9 @@ export async function sendExpoPushToUser(admin, userId, notification, opts = {})
     return prefs
   }
 
+  const soundOn = prefs.sound !== false
+  const channelId = soundOn ? ANDROID_CHANNEL_ID : ANDROID_CHANNEL_SILENT
+
   const { data: tokenRows, error: tokErr } = await admin
     .from('device_push_tokens')
     .select('expo_push_token, platform')
@@ -191,8 +200,8 @@ export async function sendExpoPushToUser(admin, userId, notification, opts = {})
     title: String(notification.title),
     body: String(notification.message || ''),
     data,
-    sound: 'default',
-    channelId: ANDROID_CHANNEL_ID,
+    sound: soundOn ? 'default' : null,
+    channelId,
     priority: 'high',
   }))
 

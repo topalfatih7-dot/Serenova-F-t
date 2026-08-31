@@ -1,0 +1,46 @@
+# Saatlik randevu hatırlatmaları (T-24s / T-1s) → Vercel API → in-app + Expo
+# Vercel Hobby yalnızca günlük cron’a izin verdiği için tetikleyici burada.
+# Custom domain zorunlu: *.vercel.app SSO korumalı, cron 401 alır.
+#
+# Gerekli GitHub Secrets:
+#   CRON_SECRET          — Vercel’deki CRON_SECRET ile aynı
+#   HEALTH_CHECK_URL     — opsiyonel; varsayılan https://www.yeniform.com
+
+name: Session reminders
+
+on:
+  schedule:
+    - cron: '15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run session reminders
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "CRON_SECRET secret eksik"
+            exit 1
+          fi
+          BASE="${HEALTH_CHECK_URL:-https://www.yeniform.com}"
+          BASE="${BASE%/}"
+          URL="${BASE}/api/ai-blog-generate?task=session-reminders"
+          echo "GET $URL"
+          curl -fsS -X GET "$URL" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json" \
+            -o /tmp/reminders.json
+          python3 - <<'PY'
+          import json, sys
+          with open("/tmp/reminders.json") as f:
+              data = json.load(f)
+          print(json.dumps(data, indent=2, ensure_ascii=False)[:2000])
+          if not data.get("ok"):
+              sys.exit(1)
+          PY

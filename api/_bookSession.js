@@ -217,13 +217,12 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
       sessionType,
       startsAt: session.date,
     }
-    const staffData = { ...(staffRow.data || {}) }
-    const prev = Array.isArray(staffData.notifications) ? staffData.notifications : []
-    staffData.notifications = [notification, ...prev].slice(0, 100)
-    await admin
-      .from('staff')
-      .update({ data: staffData })
-      .eq('id', staffId)
+    const { error: noteErr } = await admin.rpc('append_outbound_notification', {
+      p_audience: 'staff',
+      p_user_id: staffId,
+      p_notification: notification,
+    })
+    if (noteErr) console.warn('[book-session] staff notify', noteErr.message)
     await sendExpoPushToStaff(admin, staffId, {
       ...notification,
       audience: 'staff',

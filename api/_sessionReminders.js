@@ -1,8 +1,13 @@
 /**
  * Saatlik randevu hatırlatmaları — T-24s ve T-1s (±30 dk pencere).
- * In-app liste (üye + personel). Idempotency: session.waReminders.{ t24, t1 }
+ * In-app liste (üye + personel) + Expo. Idempotency: session.waReminders.{ t24, t1 }
  * (alan adı tarihî; yeniden adlandırma aynı pencereyi tekrar tetikler).
+ *
+ * Tetikleyici: GitHub Actions saatlik (Hobby Vercel cron günde 1 kez; T-1s yakalanmaz).
+ * Endpoint: GET /api/ai-blog-generate?task=session-reminders  (CRON_SECRET)
  */
+
+import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
 
 const SESSION_KEYS = {
   coach: 'coachSessions',
@@ -57,17 +62,18 @@ function appendNote(data, notification) {
   data.notifications = [notification, ...prev].slice(0, 100)
 }
 
-async function appendStaffNotification(admin, staffId, notification) {
+/** Service-role atomik yazım — JWT is_admin() burada false. */
+async function appendStaffNotificationAtomic(admin, staffId, notification) {
   if (!admin || !staffId || !notification?.title) return
-  const { data: row } = await admin.from('staff').select('data').eq('id', staffId).maybeSingle()
-  if (!row) return
-  const data = { ...(row.data || {}) }
-  const prev = Array.isArray(data.notifications) ? data.notifications : []
-  data.notifications = [notification, ...prev].slice(0, 100)
-  await admin.from('staff').update({ data }).eq('id', staffId)
+  const { error } = await admin.rpc('append_outbound_notification', {
+    p_audience: 'staff',
+    p_user_id: staffId,
+    p_notification: notification,
+  })
+  if (error) throw error
 }
 
-async function notifySessionReminder(admin, {
+function queueReminder(admin, {
   memberId,
   staffId,
   sessionType,
@@ -79,27 +85,43 @@ async function notifySessionReminder(admin, {
 } = {}) {
   const when = formatWhenTr(startsAt)
   const roleLabel = sessionTypeLabel(sessionType)
+  const pending = []
 
   if (memberId && memberData) {
     const title = windowKey === 't1' ? 'Randevunuz 1 saat sonra' : 'Randevunuz yarın'
-    appendNote(memberData, buildNotif(
+    const memberNotif = buildNotif(
       'appointment',
       title,
       `${roleLabel} görüşmesi — ${when}`,
       { sessionId, sessionType, startsAt, reminder: windowKey },
-    ))
+    )
+    appendNote(memberData, memberNotif)
+    pending.push({ kind: 'member', id: memberId, notification: memberNotif })
   }
 
   if (staffId) {
-    await appendStaffNotification(admin, staffId, buildNotif(
+    const staffNotif = buildNotif(
       'appointment',
       windowKey === 't1' ? 'Görüşme 1 saat sonra' : 'Görüşme yarın',
       `${memberName || 'Danışan'} — ${when}`,
       { memberId, sessionId, sessionType, startsAt, reminder: windowKey },
-    ))
+    )
+    pending.push({ kind: 'staff', id: staffId, notification: staffNotif })
   }
 
-  return { ok: true }
+  return pending
+}
+
+async function fanoutReminder(admin, item) {
+  if (item.kind === 'staff') {
+    await appendStaffNotificationAtomic(admin, item.id, item.notification)
+    await sendExpoPushToStaff(admin, item.id, {
+      ...item.notification,
+      audience: 'staff',
+    })
+    return
+  }
+  await sendExpoPushToMember(admin, item.id, item.notification)
 }
 
 function parseSessionDate(s) {
@@ -142,6 +164,7 @@ export async function runSessionRemindersBatch(admin, { now = new Date() } = {})
   for (const row of members || []) {
     const data = { ...(row.data || {}) }
     let dirty = false
+    const pendingFanout = []
 
     for (const [sessionType, key] of Object.entries(SESSION_KEYS)) {
       const sessions = Array.isArray(data[key]) ? [...data[key]] : []
@@ -161,7 +184,7 @@ export async function runSessionRemindersBatch(admin, { now = new Date() } = {})
           if (waReminders[windowKey]) continue
           if (!inWindow(startsAt, offsetMs, nowMs)) continue
           try {
-            await notifySessionReminder(admin, {
+            const queued = queueReminder(admin, {
               memberId: row.id,
               staffId: resolveStaffId(row, sessionType),
               sessionType,
@@ -171,6 +194,7 @@ export async function runSessionRemindersBatch(admin, { now = new Date() } = {})
               memberName: row.name,
               memberData: data,
             })
+            pendingFanout.push(...queued)
             waReminders[windowKey] = new Date().toISOString()
             sessionDirty = true
             marked += 1
@@ -197,7 +221,18 @@ export async function runSessionRemindersBatch(admin, { now = new Date() } = {})
         .from('members')
         .update({ data, updated_at: new Date().toISOString() })
         .eq('id', row.id)
-      if (updErr) errors.push(`${row.id}: ${updErr.message}`)
+      if (updErr) {
+        errors.push(`${row.id}: ${updErr.message}`)
+        continue
+      }
+    }
+
+    for (const item of pendingFanout) {
+      try {
+        await fanoutReminder(admin, item)
+      } catch (err) {
+        errors.push(`${row.id}/expo/${item.kind}: ${err?.message || err}`)
+      }
     }
   }
 

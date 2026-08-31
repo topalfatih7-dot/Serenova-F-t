@@ -109,9 +109,6 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
     sessionType: type,
     startsAt: session.date,
   }
-  const prevNotes = Array.isArray(data.notifications) ? data.notifications : []
-  data.notifications = [notification, ...prevNotes].slice(0, 100)
-
   const { error: updErr } = await admin
     .from('members')
     .update({ data, updated_at: new Date().toISOString() })
@@ -119,6 +116,12 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
   if (updErr) return { ok: false, error: updErr.message }
 
   try {
+    const { error: noteErr } = await admin.rpc('append_outbound_notification', {
+      p_audience: 'member',
+      p_user_id: memberId,
+      p_notification: notification,
+    })
+    if (noteErr) console.warn('[respond-session] member notify', noteErr.message)
     await sendExpoPushToMember(admin, memberId, notification, {
       senderId: staffRow.id,
     })

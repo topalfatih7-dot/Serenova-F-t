@@ -64,3 +64,22 @@ Vercel `STRIPE_WEBHOOK_SECRET` = endpoint signing secret.
 - `phone_in_use` → `anon`: kayıt/telefon doğrulama.
 - `get_online_stats` → `anon`: landing canlı sayaç.
 - `admin_*` / `append_*` / `book_staff_session` vb. → `authenticated` EXECUTE: fonksiyon gövdesinde `is_admin()` / staff check vardır; revoke etme.
+- `tg_chat_message_touch_thread()` → **REVOKE** (2026-08-31): trigger olarak çalışır; REST RPC yüzeyi kapatıldı.
+
+## Leaked Password Protection (Dashboard — 2026-08-31)
+
+Supabase linter WARN: HaveIBeenPwned kapalı. Kod ile açılamaz.
+
+Dashboard → Authentication → Attack Protection → **Leaked password protection** = on.  
+https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+Signup HIBP'yi service-role RPC ile bilinçli atlıyoruz (`register_email_user`); bu ayar doğrudan GoTrue `signUp` / şifre değişimini korur.
+
+## Saatlik cron (Hobby)
+
+Vercel Hobby günde 1 cron. Saatlik işler GitHub Actions + **www.yeniform.com** (SSO'suz custom domain):
+
+- [`.github/workflows/supabase-health.yml`](../.github/workflows/supabase-health.yml)
+- [`.github/workflows/session-reminders.yml`](../.github/workflows/session-reminders.yml) — randevu T-24s/T-1s
+
+Ayrıntı: [`docs/OPS_NOTIFICATIONS.md`](OPS_NOTIFICATIONS.md)

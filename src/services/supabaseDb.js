@@ -1069,13 +1069,15 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
 
   await upsertMember(member)
   const planLabel = membership === 'free' ? 'Ücretsiz' : getPlanLabel(membership)
-  /* Yan etkiler UI dönüşünü bloklamaz */
-  void addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
-  notifyTelegram('member_signup', {
-    name: member.name,
-    email: member.email,
-    membership,
-  })
+  /* Şifreli kayıt: telegram + activity /api/auth signup içinde (mobil aynı yolu kullanır). */
+  if (!opts.opsNotified) {
+    void addActivity('signup', `${member.name} yeni kayıt (${planLabel})`, member.id)
+    notifyTelegram('member_signup', {
+      name: member.name,
+      email: member.email,
+      membership,
+    })
+  }
 
   if (opts.payment) {
     void supabase.from('payments').insert({
@@ -1373,7 +1375,7 @@ async function clearPendingRegistrationMetadata() {
 export async function register(profile, membership = 'free', packageConfig = null) {
   const auth = await ensureAuthForRegistration(profile)
   if (!auth.success) return auth
-  return buildAndPersistMember(profile, membership, packageConfig)
+  return buildAndPersistMember(profile, membership, packageConfig, { opsNotified: true })
 }
 
 /** OAuth ile oturum açıkken eksik profil alanlarını tamamlar (telefon, plan vb.). */
@@ -1514,7 +1516,7 @@ export async function registerWithPlan(profile, planId, planPrice, durationMonth
   if (!auth.success) return auth
   const months = Number(durationMonths) || 1
   const packageConfig = getDefaultPackageForPlan(planId, months)
-  const res = await buildAndPersistMember(profile, planId, packageConfig, { payment: planPrice })
+  const res = await buildAndPersistMember(profile, planId, packageConfig, { payment: planPrice, opsNotified: true })
   return res.success ? { success: true, member: res.member, amount: planPrice } : res
 }
 

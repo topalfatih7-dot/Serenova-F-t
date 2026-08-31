@@ -42,6 +42,8 @@ describe('WhatsApp removal contracts', () => {
     assert.equal(src.includes('sendWhatsAppTemplate'), false)
     assert.equal(src.includes('_whatsapp'), false)
     assert.ok(src.includes('runSessionRemindersBatch'))
+    assert.ok(src.includes('sendExpoPushToMember'))
+    assert.ok(src.includes('sendExpoPushToStaff'))
     assert.ok(src.includes("title = windowKey === 't1' ? 'Randevunuz 1 saat sonra' : 'Randevunuz yarın'"))
   })
 

@@ -7,6 +7,18 @@ import { runSessionRemindersBatch } from '../api/_sessionReminders.js'
 
 function createAdminMock(store) {
   return {
+    rpc: async (name, params) => {
+      if (name === 'append_outbound_notification' && params?.p_audience === 'staff' && store.staffRow) {
+        const prev = Array.isArray(store.staffRow.data?.notifications)
+          ? store.staffRow.data.notifications
+          : []
+        store.staffRow.data = {
+          ...(store.staffRow.data || {}),
+          notifications: [params.p_notification, ...prev],
+        }
+      }
+      return { data: null, error: null }
+    },
     from(table) {
       const ctx = { table, payload: null }
       const builder = {

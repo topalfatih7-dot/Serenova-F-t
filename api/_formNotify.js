@@ -79,3 +79,20 @@ export async function notifyCorporateApplicationTelegram(body) {
 
   return sendTelegramMessage({ chatId, text })
 }
+
+/** Şifreli kayıt (web + mobil) — /api/auth signup, istemci telegram-notify’a güvenmez. */
+export async function notifyMemberSignupTelegram({ name, email, membership = 'free' }) {
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!chatId) return { ok: false, skipped: true, error: 'TELEGRAM_CHAT_ID yok' }
+
+  const plan = membership === 'premium' ? 'Premium' : 'Ücretsiz'
+  const text = [
+    '🆕 <b>Yeni üye kaydı</b>',
+    `👤 ${escapeHtml(name || '—')}`,
+    `📧 ${escapeHtml(email || '—')}`,
+    `💳 ${plan}`,
+    `🕐 ${formatTime()}`,
+  ].join('\n')
+
+  return sendTelegramMessage({ chatId, text })
+}

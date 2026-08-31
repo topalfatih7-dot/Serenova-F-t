@@ -71,5 +71,6 @@
   "20260731_restore_lab_analysis_copy.sql",
   "20260731_session_pending_and_lab_staff_read.sql",
   "20260731_staff_collab_doctor.sql",
-  "20260801_perf_rls_fixes.sql"
+  "20260801_perf_rls_fixes.sql",
+  "20260904_auth_notify_hardening.sql"
 ]
