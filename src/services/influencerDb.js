@@ -93,10 +93,10 @@ export async function validateInfluencerCodeApi(code) {
     return { ok: false, valid: false, error: 'Oturum bulunamadı.' }
   }
   try {
-    const res = await fetch('/api/influencer', {
+    const res = await fetch('/api/auth', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ action: 'validate-code', code: normalizeInfluencerCode(code) }),
+      body: JSON.stringify({ action: 'influencer-validate-code', code: normalizeInfluencerCode(code) }),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) return { ok: false, valid: false, error: json.error || 'Kod doğrulanamadı.' }
@@ -112,10 +112,10 @@ export async function adminUpsertInfluencer(payload) {
     return { success: false, error: 'Oturum bulunamadı.' }
   }
   try {
-    const res = await fetch('/api/influencer', {
+    const res = await fetch('/api/auth', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ action: 'admin-upsert', ...payload }),
+      body: JSON.stringify({ action: 'influencer-admin-upsert', ...payload }),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok || json.ok === false) {
@@ -133,10 +133,10 @@ export async function adminDeleteInfluencer(id) {
     return { success: false, error: 'Oturum bulunamadı.' }
   }
   try {
-    const res = await fetch('/api/influencer', {
+    const res = await fetch('/api/auth', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ action: 'admin-delete', id }),
+      body: JSON.stringify({ action: 'influencer-admin-delete', id }),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok || json.ok === false) {

@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | password-change | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | password-change | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account | influencer-validate-code | influencer-admin-upsert | influencer-admin-delete
  * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -37,6 +37,7 @@ import {
   verifyAccountPassword,
 } from './_deleteAccount.js'
 import { handlePasswordChange } from './_changePassword.js'
+import { handleInfluencerRequest } from './_influencer.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -1149,6 +1150,12 @@ export default async function handler(req, res) {
     if (action === 'claim-active-session') return handleClaimActiveSession(req, res)
     if (action === 'verify-active-session') return handleVerifyActiveSession(req, res)
     if (action === 'delete-account') return handleDeleteAccount(req, res, body)
+    if (action.startsWith('influencer-')) {
+      return handleInfluencerRequest(req, res, {
+        ...body,
+        action: action.slice('influencer-'.length),
+      })
+    }
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })
   } catch (err) {

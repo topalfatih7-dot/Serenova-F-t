@@ -1,5 +1,9 @@
-import { getAdminEmail, requireAdmin, requireAuth, setCorsHeaders, handleOptions } from './_guards.js'
-import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+/**
+ * Influencer API — /api/auth üzerinden (Hobby 12 fonksiyon limiti).
+ * action: validate-code | admin-upsert | admin-delete
+ */
+import { getAdminEmail, requireAdmin, requireAuth } from './_guards.js'
+import { getSupabaseAdmin } from './_supabaseAdmin.js'
 import { sendMail, influencerInviteEmail } from './_mailer.js'
 import { getAppUrl } from './_appUrl.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
@@ -215,16 +219,7 @@ async function handleAdminDelete(req, res, admin, body) {
   return res.status(200).json({ ok: true })
 }
 
-export default async function handler(req, res) {
-  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
-  if (handleOptions(req, res)) return
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
-
-  if (!isSupabaseAdminConfigured()) {
-    return res.status(503).json({ ok: false, error: 'Sunucu yapılandırması eksik.' })
-  }
-
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+export async function handleInfluencerRequest(req, res, body) {
   const admin = getSupabaseAdmin()
   const action = String(body.action || '')
 
@@ -234,17 +229,13 @@ export default async function handler(req, res) {
     limit: action === 'validate-code' ? 60 : 40,
     windowMs: 60 * 60 * 1000,
   })
-  applyRateLimitHeaders(res, rl)
+  applyRateLimitHeaders(res, rl.headers)
   if (!rl.ok) {
-    return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
+    return res.status(rl.status || 429).json({ ok: false, error: rl.error || 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
   }
 
-  try {
-    if (action === 'validate-code') return await handleValidateCode(req, res, admin, body)
-    if (action === 'admin-upsert') return await handleAdminUpsert(req, res, admin, body)
-    if (action === 'admin-delete') return await handleAdminDelete(req, res, admin, body)
-    return res.status(400).json({ ok: false, error: 'Geçersiz işlem.' })
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e?.message || e) })
-  }
+  if (action === 'validate-code') return handleValidateCode(req, res, admin, body)
+  if (action === 'admin-upsert') return handleAdminUpsert(req, res, admin, body)
+  if (action === 'admin-delete') return handleAdminDelete(req, res, admin, body)
+  return res.status(400).json({ ok: false, error: 'Geçersiz işlem.' })
 }
