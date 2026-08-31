@@ -2,7 +2,7 @@
  * POST /api/auth
  * Birleşik auth API (Vercel Hobby 12 fonksiyon limiti).
  *
- * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | password-change | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account | influencer-validate-code | influencer-admin-upsert | influencer-admin-delete
+ * action: signup | unlock-signup | password-login | email-send | email-confirm | password-reset | password-change | book-session | session-attendance | exercise-video-url | exercise-video-urls | ga4-report | ai-usage-report | claim-active-session | verify-active-session | delete-account | influencer-validate-code | influencer-admin-upsert | influencer-admin-delete | admin-broadcast
  * Geriye dönük: { evt } → email-confirm
  */
 import crypto from 'node:crypto'
@@ -1156,6 +1156,10 @@ export default async function handler(req, res) {
         ...body,
         action: action.slice('influencer-'.length),
       })
+    }
+    if (action === 'admin-broadcast') {
+      const { handleAdminBroadcastRequest } = await import('./_adminBroadcast.js')
+      return handleAdminBroadcastRequest(req, res, body)
     }
 
     return res.status(400).json({ ok: false, error: 'Geçersiz istek.' })

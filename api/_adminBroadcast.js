@@ -1,34 +1,19 @@
 /**
- * Admin sepet göndericisi — telefon bildirimi XOR e-posta.
- * GET: token listesi + geçmiş
- * POST: { channel, title, message, recipients: [{ audience, id }] }
+ * Admin sepet göndericisi — /api/auth üzerinden (Hobby 12 fonksiyon limiti).
+ * action: admin-broadcast
+ *   op: 'meta'  → token listesi + geçmiş
+ *   op: 'send'  → { channel, title, message, recipients }
  */
-
-import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
+import { requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
 import { sendMail, adminBroadcastEmail, isMailConfigured } from './_mailer.js'
 
-export const config = { maxDuration: 60 }
-
-const CORS_METHODS = 'GET, POST, OPTIONS'
 const MAX_RECIPIENTS = 50
 const MAX_TITLE = 80
 const MAX_BODY = 1500
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function parseBody(req) {
-  if (req.body == null || req.body === '') return {}
-  if (typeof req.body === 'string') {
-    try {
-      return JSON.parse(req.body)
-    } catch {
-      return {}
-    }
-  }
-  return req.body
-}
 
 function trimStr(v, max) {
   return String(v || '').trim().slice(0, max)
@@ -58,7 +43,7 @@ function mapHistoryRow(row) {
   }
 }
 
-async function handleGet(admin, res) {
+async function handleMeta(admin, res) {
   const [{ data: tokens, error: tokErr }, { data: messages, error: histErr }] = await Promise.all([
     admin.from('device_push_tokens').select('user_id'),
     admin
@@ -268,7 +253,7 @@ async function sendEmailOne(recipient, title, message) {
   }
 }
 
-async function handlePost(admin, req, res, auth) {
+async function handleSend(admin, req, res, auth, body) {
   const rl = await enforceRateLimit({
     req,
     prefix: 'admin-broadcast',
@@ -276,12 +261,11 @@ async function handlePost(admin, req, res, auth) {
     windowMs: 60 * 60 * 1000,
     extraKey: auth.user.id,
   })
-  applyRateLimitHeaders(res, rl)
+  applyRateLimitHeaders(res, rl.headers)
   if (!rl.ok) {
     return res.status(429).json({ ok: false, error: rl.error || 'Çok fazla gönderim. Biraz bekleyin.' })
   }
 
-  const body = parseBody(req)
   const channel = body.channel === 'email' ? 'email' : body.channel === 'push' ? 'push' : null
   if (!channel) {
     return res.status(400).json({ ok: false, error: 'Kanal seçin: telefon bildirimi veya e-posta.' })
@@ -359,14 +343,7 @@ async function handlePost(admin, req, res, auth) {
   })
 }
 
-export default async function handler(req, res) {
-  if (handleOptions(req, res, CORS_METHODS)) return
-  setCorsHeaders(res, CORS_METHODS, 'Content-Type, Authorization', req)
-
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' })
-  }
-
+export async function handleAdminBroadcastRequest(req, res, body = {}) {
   const auth = await requireAdmin(req)
   if (!auth.ok) {
     return res.status(auth.status).json({ ok: false, error: auth.error })
@@ -377,9 +354,10 @@ export default async function handler(req, res) {
   }
 
   const admin = getSupabaseAdmin()
+  const op = String(body.op || 'meta').trim()
   try {
-    if (req.method === 'GET') return await handleGet(admin, res)
-    return await handlePost(admin, req, res, auth)
+    if (op === 'send') return await handleSend(admin, req, res, auth, body)
+    return await handleMeta(admin, res)
   } catch (err) {
     console.error('[admin-broadcast]', err?.message || err)
     return res.status(500).json({ ok: false, error: err?.message || 'Gönderim hatası' })

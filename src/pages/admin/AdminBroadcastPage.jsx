@@ -66,7 +66,11 @@ export default function AdminBroadcastPage() {
   const loadMeta = useCallback(async () => {
     try {
       const headers = await getApiAuthHeaders()
-      const res = await fetch('/api/admin-broadcast', { headers })
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'admin-broadcast', op: 'meta' }),
+      })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json.ok) {
         toast(json.error || 'Gönderici bilgisi alınamadı', 'error')
@@ -168,10 +172,12 @@ export default function AdminBroadcastPage() {
     setConfirmOpen(false)
     try {
       const headers = await getApiAuthHeaders()
-      const res = await fetch('/api/admin-broadcast', {
+      const res = await fetch('/api/auth', {
         method: 'POST',
         headers,
         body: JSON.stringify({
+          action: 'admin-broadcast',
+          op: 'send',
           channel,
           title: title.trim(),
           message: message.trim(),
