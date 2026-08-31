@@ -2,7 +2,7 @@ import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 import {
   Bell, Heart, AlertTriangle, TrendingUp, Crown, Activity, MessageCircle, ClipboardList, UserCheck, CalendarRange,
-  Wallet,
+  Wallet, Megaphone,
 } from 'lucide-react'
 
 const TYPE_CONFIG = {
@@ -21,6 +21,7 @@ const TYPE_CONFIG = {
   'support-reply': { icon: MessageCircle, color: 'text-brand-600 bg-brand-50' },
   appointment: { icon: Activity, color: 'text-teal-600 bg-teal-50' },
   billing: { icon: Wallet, color: 'text-emerald-600 bg-emerald-50' },
+  announcement: { icon: Megaphone, color: 'text-amber-600 bg-amber-50' },
 }
 
 export default function NotificationItem({ notification, onRead }) {

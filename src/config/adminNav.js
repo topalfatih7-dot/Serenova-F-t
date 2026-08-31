@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle,
+  LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle, Bell,
   BarChart3, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Shield, Bot, Dumbbell, Megaphone,
 } from 'lucide-react'
 
@@ -18,6 +18,7 @@ export const ADMIN_NAV = [
   { to: '/admin/payments', icon: Wallet, label: 'Finans & Ödemeler', iconTone: 'text-emerald-500', labelTone: 'text-emerald-700/80' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar', iconTone: 'text-teal-600', labelTone: 'text-teal-700/80' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true, iconTone: 'text-sky-500', labelTone: 'text-sky-700/80' },
+  { to: '/admin/broadcast', icon: Bell, label: 'Bildirim & E-posta', iconTone: 'text-amber-500', labelTone: 'text-amber-700/80' },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri', supportBadge: true, iconTone: 'text-sage-600', labelTone: 'text-sage-800/80' },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog', iconTone: 'text-amber-500', labelTone: 'text-amber-700/80' },
   { to: '/admin/content', icon: Sparkles, label: 'İçerik', iconTone: 'text-orange-500', labelTone: 'text-orange-700/80' },

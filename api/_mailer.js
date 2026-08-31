@@ -404,3 +404,30 @@ export function contactReplyEmail({
     text,
   }
 }
+
+/** Admin sepet göndericisi — kişi başı tek alıcı (To’da başkası görünmez). */
+export function adminBroadcastEmail({ name, title, body }) {
+  const heading = String(title || '').slice(0, 80)
+  const rawBody = String(body || '').slice(0, 1500)
+  const safeName = escapeHtml(name || 'Merhaba')
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName},
+    </p>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#4a4a4a;">
+      ${nl2br(escapeHtml(rawBody))}
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    rawBody,
+    '',
+    'Yeni Form · yeniform.com',
+  ].join('\n')
+
+  return {
+    subject: `Yeni Form — ${heading}`.slice(0, 200),
+    html: wrapBrandEmail({ title: heading, bodyHtml }),
+    text,
+  }
+}

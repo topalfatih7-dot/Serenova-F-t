@@ -82,6 +82,7 @@ const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage')
 const AdminAiCostsPage = lazy(() => import('./pages/admin/AdminAiCostsPage'))
 const AdminMessagesPage = lazy(() => import('./pages/admin/AdminMessagesPage'))
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'))
+const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage'))
 const AdminLibraryPage = lazy(() => import('./pages/admin/AdminLibraryPage'))
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'))
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'))
@@ -236,6 +237,7 @@ export default function App() {
                 <Route path="admin/payments" element={<PaymentManagementPage audience="admin" />} />
                 <Route path="admin/sessions" element={<AdminSessionsPage />} />
                 <Route path="admin/support" element={<AdminSupportPage />} />
+                <Route path="admin/broadcast" element={<AdminBroadcastPage />} />
                 <Route path="admin/messages" element={<AdminMessagesPage />} />
                 <Route path="admin/messages/staff/:staffId" element={<AdminMessagesPage />} />
                 <Route path="admin/messages/audit" element={<AdminMessagesPage />} />
