@@ -157,6 +157,7 @@ export function chatHydrationKey(session, member, staffUser, members = [], staff
       `staff:${staffKey}`,
     ].join('|')
   }
+  if (type === 'influencer') return ''
   return `${type}|${sessionId}`
 }
 

@@ -27,6 +27,13 @@ import StaffPayoutAccountCard from '../../components/payments/StaffPayoutAccount
 import StaffEarningsHistory from '../../components/payments/StaffEarningsHistory'
 import AdminStaffPayoutDirectory, { StaffPayoutInline } from '../../components/payments/AdminStaffPayoutDirectory'
 import useStaffPayoutAccounts from '../../hooks/useStaffPayoutAccounts'
+import useInfluencerPayoutAccounts from '../../hooks/useInfluencerPayoutAccounts'
+import useInfluencerEarnings from '../../hooks/useInfluencerEarnings'
+import { updateInfluencerEarningStatus } from '../../services/influencerDb'
+import {
+  formatInfluencerPayoutPeriodLabel,
+  formatInfluencerTry,
+} from '../../data/influencerPayouts'
 import { isPayoutAccountComplete } from '../../utils/iban'
 import { supabase } from '../../services/supabaseClient'
 
@@ -267,7 +274,7 @@ function StaffPayments() {
           </div>
         </div>
       </section>
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+      <div className="grid gap-6 md:grid-cols-2 md:items-start">
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
             <p className="text-xs font-medium text-amber-800/70">Bekleyen Hakediş</p>
@@ -412,15 +419,117 @@ function AdminStaffEarnings({ accountsByStaffId = {} }) {
   )
 }
 
+function AdminInfluencerEarnings({ accountsByInfluencerId = {} }) {
+  const { toast } = useToast()
+  const { platform } = useApp()
+  const { rows, loading, reload } = useInfluencerEarnings({ all: true })
+  const [busyId, setBusyId] = useState(null)
+
+  const influencerName = useCallback((influencerId) => {
+    const s = (platform?.influencers || []).find((x) => x.id === influencerId)
+    return s?.name || 'Influencer'
+  }, [platform?.influencers])
+
+  const setStatus = async (row, status) => {
+    setBusyId(row.id)
+    try {
+      const missingIban = status === 'paid' && !isPayoutAccountComplete(accountsByInfluencerId[row.influencer_id])
+      await updateInfluencerEarningStatus(row.id, status)
+      toast(
+        missingIban
+          ? 'Ödendi işaretlendi — IBAN kayıtlı değil, transferi elle doğrulayın.'
+          : status === 'paid' ? 'Ödendi olarak işaretlendi.' : 'Durum güncellendi.',
+        missingIban ? 'info' : 'success',
+      )
+      await reload()
+    } catch (e) {
+      toast(e?.message || 'Güncellenemedi.', 'error')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8 text-cream-800/50">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    )
+  }
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        icon={Users}
+        title="Influencer hakedişi yok"
+        description="Kodlu ilk Checkout tamamlandığında satırlar burada oluşur. Yenilemeler hakediş yazmaz."
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {rows.slice(0, 40).map((r) => (
+        <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-200 bg-white px-4 py-3">
+          <div className="min-w-0 space-y-1.5">
+            <p className="font-medium text-cream-900">{influencerName(r.influencer_id)}</p>
+            <p className="text-xs text-cream-800/50">
+              {r.member_display_name || 'Üye'}
+              {' · '}
+              {getPlanLabel(r.plan_id)}
+              {r.duration_months ? ` · ${r.duration_months} ay` : ''}
+              {' · ödenen '}
+              {formatInfluencerTry(r.amount_paid_try)}
+              {' · ödeme '}
+              {formatInfluencerPayoutPeriodLabel(r.period_key)}
+            </p>
+            <StaffPayoutInline account={accountsByInfluencerId[r.influencer_id]} />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">{formatInfluencerTry(r.commission_try)}</span>
+            <StatusBadge status={r.status} />
+            {r.status === 'pending' && (
+              <button
+                type="button"
+                disabled={busyId === r.id}
+                onClick={() => setStatus(r, 'approved')}
+                className="rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              >
+                Onayla
+              </button>
+            )}
+            {(r.status === 'pending' || r.status === 'approved') && (
+              <button
+                type="button"
+                disabled={busyId === r.id}
+                onClick={() => setStatus(r, 'paid')}
+                className="rounded-lg bg-sage-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sage-700 disabled:opacity-50"
+              >
+                Ödendi
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AdminPayments() {
   const { platform, adminStats, monthlyGrowth } = useApp()
   const colors = useChartColors()
   const { accounts, loading: payoutLoading } = useStaffPayoutAccounts({ all: true })
+  const { accounts: influencerAccounts, loading: influencerPayoutLoading } = useInfluencerPayoutAccounts({ all: true })
   const accountsByStaffId = useMemo(() => {
     const map = {}
     for (const row of accounts) map[row.staffId] = row
     return map
   }, [accounts])
+  const accountsByInfluencerId = useMemo(() => {
+    const map = {}
+    for (const row of influencerAccounts) map[row.influencerId] = row
+    return map
+  }, [influencerAccounts])
 
   const recent = useMemo(() => (
     [...(platform?.payments || [])]
@@ -467,11 +576,31 @@ function AdminPayments() {
         loading={payoutLoading}
       />
 
+      <AdminStaffPayoutDirectory
+        staff={platform?.influencers || []}
+        accounts={influencerAccounts}
+        loading={influencerPayoutLoading}
+        title="Influencer Banka Hesapları"
+        roleFallback="Influencer"
+        emptyDescription="Henüz influencer kaydı yok."
+        missingHint="Influencer henüz Ödeme Yönetimi’nden IBAN girmedi. Ödeme işaretlemeden önce hesabı tamamlamasını isteyin."
+      />
+
       <section>
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
           <Users className="h-5 w-5 text-brand-500" /> Personel Hakedişleri
         </h2>
         <AdminStaffEarnings accountsByStaffId={accountsByStaffId} />
+      </section>
+
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-cream-900">
+          <Users className="h-5 w-5 text-fuchsia-500" /> Influencer hakedişleri
+        </h2>
+        <p className="mb-4 text-sm text-cream-800/55">
+          Cuma–Perşembe tahakkuk, ödeme sonraki Cuma. Yalnızca ilk Checkout; yenileme satırı oluşmaz.
+        </p>
+        <AdminInfluencerEarnings accountsByInfluencerId={accountsByInfluencerId} />
       </section>
 
       <section>
@@ -568,7 +697,7 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   }, [audience])
 
   const subtitle = useMemo(() => {
-    if (audience === 'admin') return 'Gelir, üye ödemeleri, personel IBAN’ları ve hakediş onayları'
+    if (audience === 'admin') return 'Gelir, üye ödemeleri, personel ve influencer IBAN’ları ile hakediş onayları'
     if (audience === 'staff') return 'IBAN ve Cuma hakediş ödemesi'
     return 'Ödeme geçmişiniz ve Stripe kart yönetimi'
   }, [audience])

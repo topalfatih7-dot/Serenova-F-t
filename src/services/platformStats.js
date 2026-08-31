@@ -29,10 +29,29 @@ export function getCurrentStaff(db) {
   return null
 }
 
+export function getCurrentInfluencer(db) {
+  if (db.session?.type !== 'influencer') return null
+  const list = db.influencers || []
+  if (db.session.influencerId) {
+    const byId = list.find((s) => s.id === db.session.influencerId)
+    if (byId) return byId
+  }
+  const email = (db.session.email || db.authUser?.email || '').toLowerCase()
+  if (email) {
+    const byEmail = list.find((s) => (s.email || '').toLowerCase() === email)
+    if (byEmail) return byEmail
+  }
+  if (db.authUser?.id) {
+    return list.find((s) => s.id === db.authUser.id) || null
+  }
+  return list[0] || null
+}
+
 export function getPostLoginPath(db) {
   const type = db?.session?.type
   if (type === 'admin') return '/admin'
   if (type === 'staff') return '/staff'
+  if (type === 'influencer') return '/influencer'
   return '/profile'
 }
 

@@ -3,7 +3,7 @@
  */
 import { getApiAuthHeaders } from './apiAuth'
 
-export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null) {
+export async function startStripeCheckout(planId, flow = 'register', durationMonths = 1, email = null, discountCode = null) {
   const headers = await getApiAuthHeaders()
   if (!headers.Authorization) {
     return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }
@@ -14,7 +14,13 @@ export async function startStripeCheckout(planId, flow = 'register', durationMon
     const res = await fetch('/api/stripe-checkout', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ planId, flow, durationMonths, email: email || undefined }),
+      body: JSON.stringify({
+        planId,
+        flow,
+        durationMonths,
+        email: email || undefined,
+        discountCode: discountCode || undefined,
+      }),
     })
     json = await res.json().catch(() => ({}))
     if (!res.ok || !json?.url) {

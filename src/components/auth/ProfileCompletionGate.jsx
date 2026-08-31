@@ -5,11 +5,11 @@ import LoadingScreen from '../ui/LoadingScreen'
 
 /** Kayıt tamamlanmamış üyeleri onboarding'e yönlendirir. */
 export default function ProfileCompletionGate() {
-  const { isAdmin, isStaff, user, authUser, loading } = useApp()
+  const { isAdmin, isStaff, isInfluencer, user, authUser, loading } = useApp()
   const location = useLocation()
 
   if (loading) return <LoadingScreen />
-  if (isAdmin || isStaff) return <Outlet />
+  if (isAdmin || isStaff || isInfluencer) return <Outlet />
 
   const onOnboarding = location.pathname === '/onboarding'
   const needsRegistration = !hasRegisteredMember(user)

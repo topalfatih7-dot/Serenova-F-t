@@ -14,6 +14,8 @@ function TopBar({
   messagesTo = '/messages',
   notificationsTo = '/notifications',
   showMembershipBadge = true,
+  showMessages = true,
+  showNotifications = true,
   messagesCount = null,
   notificationsCount = null,
   /** Admin: bildirim yerine destek linki */
@@ -46,6 +48,7 @@ function TopBar({
         )}
       </div>
       <div className="flex items-center gap-2">
+        {showMessages && (
         <Link to={messagesTo} className="relative rounded-xl p-2 transition hover:bg-brand-50/80" aria-label="Mesajlar">
           <MessageCircle className="h-5 w-5 text-brand-600" />
           {msgCount > 0 && (
@@ -54,7 +57,8 @@ function TopBar({
             </span>
           )}
         </Link>
-        {supportTo ? (
+        )}
+        {showNotifications && (supportTo ? (
           <Link to={supportTo} className="relative rounded-xl p-2 transition hover:bg-brand-50/80" aria-label="Destek">
             <MessageSquare className="h-5 w-5 text-brand-600" />
             {supportCount > 0 && (
@@ -70,7 +74,7 @@ function TopBar({
               <span className="absolute right-1 top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-gradient-to-r from-rose-500 to-orange-400 ring-2 ring-white" />
             )}
           </Link>
-        )}
+        ))}
         {showMembershipBadge && (
           <Link to="/profile" className="hidden sm:block">
             <MembershipBadge tier={membership} />

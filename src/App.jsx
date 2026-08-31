@@ -11,10 +11,12 @@ import NotificationAudioUnlock from './components/notifications/NotificationAudi
 import GoogleAnalytics from './components/analytics/GoogleAnalytics'
 
 import AuthRedirectHandler from './components/auth/AuthRedirectHandler'
+import InfluencerRefCapture from './components/layout/InfluencerRefCapture'
 
 const AppShell = lazy(() => import('./components/layout/AppShell'))
 const AdminShell = lazy(() => import('./components/layout/AdminShell'))
 const StaffShell = lazy(() => import('./components/layout/StaffShell'))
+const InfluencerShell = lazy(() => import('./components/layout/InfluencerShell'))
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
@@ -51,6 +53,9 @@ const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
 const DeleteAccountPage = lazy(() => import('./pages/account/DeleteAccountPage'))
 
 const StaffOverviewPage = lazy(() => import('./pages/staff/StaffOverviewPage'))
+const InfluencerOverviewPage = lazy(() => import('./pages/influencer/InfluencerOverviewPage'))
+const InfluencerPaymentsPage = lazy(() => import('./pages/influencer/InfluencerPaymentsPage'))
+const InfluencerProfilePage = lazy(() => import('./pages/influencer/InfluencerProfilePage'))
 const StaffSelfProfilePage = lazy(() => import('./pages/staff/StaffSelfProfilePage'))
 const StaffClientsPage = lazy(() => import('./pages/staff/StaffClientsPage'))
 const StaffClientProgramPage = lazy(() => import('./pages/staff/StaffClientProgramPage'))
@@ -69,6 +74,7 @@ const PaymentManagementPage = lazy(() => import('./pages/payments/PaymentManagem
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'))
 const AdminMembersPage = lazy(() => import('./pages/admin/AdminMembersPage'))
 const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage'))
+const AdminInfluencersPage = lazy(() => import('./pages/admin/AdminInfluencersPage'))
 const AdminBlogPage = lazy(() => import('./pages/admin/AdminBlogPage'))
 const AdminSessionsPage = lazy(() => import('./pages/admin/AdminSessionsPage'))
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'))
@@ -107,6 +113,7 @@ export default function App() {
           <NotificationToastBridge />
           <GoogleAnalytics />
           <AuthRedirectHandler />
+          <InfluencerRefCapture />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Navbar/footer olmadan tam ekran auth akışları */}
@@ -203,6 +210,14 @@ export default function App() {
               </Route>
             </Route>
 
+            <Route element={<RequireAuth role="influencer" />}>
+              <Route element={<InfluencerShell />}>
+                <Route path="influencer" element={<InfluencerOverviewPage />} />
+                <Route path="influencer/payments" element={<InfluencerPaymentsPage />} />
+                <Route path="influencer/profile" element={<InfluencerProfilePage />} />
+              </Route>
+            </Route>
+
             <Route element={<RequireAuth role="admin" />}>
               <Route element={<AdminShell />}>
                 <Route path="admin" element={<AdminOverviewPage />} />
@@ -215,6 +230,7 @@ export default function App() {
                 <Route path="admin/applications" element={<AdminApplicationsPage />} />
                 <Route path="admin/library" element={<AdminLibraryPage />} />
                 <Route path="admin/staff" element={<AdminStaffPage />} />
+                <Route path="admin/influencers" element={<AdminInfluencersPage />} />
                 <Route path="admin/blog" element={<AdminBlogPage />} />
                 <Route path="admin/content" element={<AdminContentPage />} />
                 <Route path="admin/payments" element={<PaymentManagementPage audience="admin" />} />

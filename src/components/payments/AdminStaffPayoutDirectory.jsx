@@ -16,13 +16,22 @@ async function copyText(text) {
   await navigator.clipboard.writeText(text)
 }
 
-export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], loading = false }) {
+export default function AdminStaffPayoutDirectory({
+  staff = [],
+  accounts = [],
+  loading = false,
+  title = 'Personel Banka Hesapları',
+  description,
+  roleFallback = null,
+  missingHint = 'Personel henüz Ödeme Yönetimi’nden IBAN ve banka bilgisi girmedi. Ödeme işaretlemeden önce hesabı tamamlamasını isteyin.',
+  emptyDescription,
+}) {
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
 
   const byStaff = useMemo(() => {
-    const map = new Map(accounts.map((a) => [a.staffId, a]))
+    const map = new Map(accounts.map((a) => [a.staffId || a.influencerId, a]))
     return (staff || []).map((s) => {
       const account = map.get(s.id) || null
       return {
@@ -51,14 +60,15 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
       const hay = [
         row.staff.name,
         row.staff.email,
-        staffRoleLabel(row.staff.role),
+        row.staff.code,
+        roleFallback || staffRoleLabel(row.staff.role),
         row.account?.bankShort,
         row.account?.iban,
         row.account?.accountHolderName,
       ].join(' ').toLocaleLowerCase('tr')
       return hay.includes(q)
     })
-  }, [byStaff, filter, search])
+  }, [byStaff, filter, search, roleFallback])
 
   const copyIban = async (iban) => {
     try {
@@ -74,10 +84,10 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="flex items-center gap-2 font-display text-lg font-bold text-cream-900">
-            <Landmark className="h-5 w-5 text-sage-600" /> Personel Banka Hesapları
+            <Landmark className="h-5 w-5 text-sage-600" /> {title}
           </h2>
           <p className="mt-1 text-sm text-cream-800/55">
-            {counts.ready} tanımlı · {counts.missing} eksik · Cuma EFT/FAST için IBAN buradan kopyalanır
+            {description || `${counts.ready} tanımlı · ${counts.missing} eksik · Cuma EFT/FAST için IBAN buradan kopyalanır`}
           </p>
         </div>
       </div>
@@ -127,7 +137,7 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
         <EmptyState
           icon={Building2}
           title="Kayıt yok"
-          description={byStaff.length === 0 ? 'Henüz personel kaydı yok.' : 'Filtreye uyan hesap bulunamadı.'}
+          description={byStaff.length === 0 ? (emptyDescription || 'Henüz personel kaydı yok.') : 'Filtreye uyan hesap bulunamadı.'}
         />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -146,7 +156,8 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-cream-900">{s.name}</p>
                     <p className="truncate text-xs text-cream-800/50">
-                      {staffRoleLabel(s.role)}
+                      {roleFallback || staffRoleLabel(s.role)}
+                      {s.code ? ` · ${s.code}` : ''}
                       {s.email ? ` · ${s.email}` : ''}
                     </p>
                   </div>
@@ -187,7 +198,7 @@ export default function AdminStaffPayoutDirectory({ staff = [], accounts = [], l
                   </div>
                 ) : (
                   <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900/80">
-                    Personel henüz Ödeme Yönetimi’nden IBAN ve banka bilgisi girmedi. Ödeme işaretlemeden önce hesabı tamamlamasını isteyin.
+                    {missingHint}
                   </p>
                 )}
               </article>

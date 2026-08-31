@@ -17,6 +17,7 @@ import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } 
 import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
 import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
+import { rowToInfluencer } from '../utils/influencerAccount'
 import { BLOG_AUTHOR } from '../data/blogPosts'
 import { coverForCategory } from '../utils/blogImages.js'
 import { ensureUniqueBlogSlug } from '../utils/blogSlug.js'
@@ -176,11 +177,20 @@ function findStaffMatch(user, staffList) {
     || null
 }
 
-function roleForUser(user, staffList) {
+function findInfluencerMatch(user, influencerRow) {
+  if (!user || !influencerRow) return null
+  if (influencerRow.id === user.id) return influencerRow
+  const email = (user.email || '').toLowerCase()
+  if (email && (influencerRow.email || '').toLowerCase() === email) return influencerRow
+  return null
+}
+
+function roleForUser(user, staffList, influencerRow = null) {
   if (!user) return 'member'
   const e = (user.email || '').toLowerCase()
   if (e === ADMIN_EMAIL) return 'admin'
   if (findStaffMatch(user, staffList)) return 'staff'
+  if (findInfluencerMatch(user, influencerRow)) return 'influencer'
   return 'member'
 }
 
@@ -318,15 +328,18 @@ async function fetchStaffAdminBundle(role) {
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
   let contactInqRes = { data: [] }
+  let influencers = []
   if (role === 'admin') {
-    const [sa, ca, ci] = await Promise.all([
+    const [sa, ca, ci, inf] = await Promise.all([
       supabase.from('staff_applications').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('corporate_applications').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('contact_inquiries').select('*').order('created_at', { ascending: false }).limit(300),
+      supabase.from('influencers').select('*').order('created_at', { ascending: false }).limit(500),
     ])
     staffAppsRes = sa
     corporateAppsRes = ca
     contactInqRes = ci
+    influencers = (inf.data || []).map(rowToInfluencer)
   }
   const members = (membersRes.data || []).map((row) => rowToMember(row, { contactHidden: role === 'staff' }))
   const memberIds = memberIdSet(members)
@@ -339,6 +352,7 @@ async function fetchStaffAdminBundle(role) {
     staffAppsRes,
     corporateAppsRes,
     contactInqRes,
+    influencers,
   }
 }
 
@@ -364,6 +378,7 @@ async function hydrateOnce() {
     ticketsRes,
     activitiesRes,
     paymentsRes,
+    influencerRes,
   ] = await Promise.all([
     supabase.from('staff').select('*').order('created_at', { ascending: true }),
     supabase.from('staff_directory').select('*').order('created_at', { ascending: true }),
@@ -386,6 +401,9 @@ async function hydrateOnce() {
     memberId && !isAdminEmail
       ? supabase.from('payments').select('*').eq('member_id', memberId).order('created_at', { ascending: false })
       : Promise.resolve({ data: [] }),
+    memberId
+      ? supabase.from('influencers').select('*').eq('id', memberId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   const staff = buildStaffList(staffRes, staffDirectoryRes)
@@ -411,8 +429,10 @@ async function hydrateOnce() {
     app_metadata: user.app_metadata || {},
   }
 
-  const role = roleForUser(user, staff)
+  const influencerRow = influencerRes?.error ? null : (influencerRes?.data || null)
+  const role = roleForUser(user, staff, influencerRow)
   const staffMatch = findStaffMatch(user, staff)
+  const influencerMatch = findInfluencerMatch(user, influencerRow)
 
   let members
   let programs
@@ -422,6 +442,7 @@ async function hydrateOnce() {
   let staffAppsRes = { data: [] }
   let corporateAppsRes = { data: [] }
   let contactInqRes = { data: [] }
+  let influencers = []
 
   if (role === 'member') {
     members = membersRes.data ? [rowToMember(membersRes.data)] : []
@@ -429,6 +450,13 @@ async function hydrateOnce() {
     tickets = (ticketsRes.data || []).map(rowToTicket)
     activities = (activitiesRes.data || []).map(rowToActivity)
     payments = (paymentsRes.data || []).map(rowToPayment)
+  } else if (role === 'influencer') {
+    members = []
+    programs = []
+    tickets = []
+    activities = []
+    payments = []
+    influencers = influencerMatch ? [rowToInfluencer(influencerRow)] : []
   } else {
     const bundle = await fetchStaffAdminBundle(role)
     members = bundle.members
@@ -439,6 +467,7 @@ async function hydrateOnce() {
     staffAppsRes = bundle.staffAppsRes
     corporateAppsRes = bundle.corporateAppsRes
     contactInqRes = bundle.contactInqRes
+    influencers = bundle.influencers || []
   }
 
   members = compactMembersForRole(members, role, staffMatch)
@@ -447,6 +476,8 @@ async function hydrateOnce() {
   if (role === 'admin') session = { type: 'admin', memberId: null, email: authUser.email }
   else if (role === 'staff') {
     session = { type: 'staff', staffId: staffMatch?.id || null, email: authUser.email }
+  } else if (role === 'influencer') {
+    session = { type: 'influencer', influencerId: influencerMatch?.id || user.id, email: authUser.email }
   } else {
     session = { type: 'member', memberId: user.id, email: authUser.email }
     const meIdx = members.findIndex((m) => m.id === user.id)
@@ -468,6 +499,7 @@ async function hydrateOnce() {
     version: 2,
     members,
     staff,
+    influencers,
     programs,
     posts,
     tickets,
@@ -550,7 +582,7 @@ export async function fetchAdminSessionSummaries() {
 }
 
 const EMPTY_DB = {
-  version: 2, members: [], staff: [], programs: [], posts: [],
+  version: 2, members: [], staff: [], influencers: [], programs: [], posts: [],
   tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, staffApplications: [], corporateApplications: [], contactInquiries: [], session: null,
   content: { testimonials: [], faqs: [], successStories: [], exerciseTaxonomy: null },
 }
@@ -1397,6 +1429,9 @@ export async function completeOAuthMember(profile, membership = 'free', packageC
 export async function resolveQuickPostLoginPath(session, { plan = 'free' } = {}) {
   if (!session?.user) return '/login'
   const user = session.user
+  const { data: infEarly } = await supabase.from('influencers').select('id').eq('id', user.id).maybeSingle()
+  if (infEarly?.id) return '/influencer'
+
   const { data: memberRow } = await supabase.from('members').select('*').eq('id', user.id).maybeSingle()
   const member = memberRow ? rowToMember(memberRow) : null
   const authUser = {
@@ -1417,9 +1452,11 @@ export async function resolveQuickPostLoginPath(session, { plan = 'free' } = {})
   }
   const { data: staffRows } = await supabase.from('staff').select('*')
   const staff = (staffRows || []).map(rowToStaff)
-  const role = roleForUser(user, staff)
+  const { data: infRow } = await supabase.from('influencers').select('*').eq('id', user.id).maybeSingle()
+  const role = roleForUser(user, staff, infRow)
   if (role === 'admin') return '/admin'
   if (role === 'staff') return '/staff'
+  if (role === 'influencer') return '/influencer'
   return '/profile'
 }
 

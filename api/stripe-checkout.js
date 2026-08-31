@@ -27,6 +27,9 @@ import { applyStripeSubscriptionState } from './_memberPackages.js'
 import { requireAdmin } from './_guards.js'
 import { ensureCatalogPrice } from './_stripeCatalog.js'
 import { syncPlanCatalogToSubscriptions, loadPlanRow } from './_stripePriceSync.js'
+import { ensureInfluencerCoupon } from './_influencerCoupon.js'
+import { lookupActiveInfluencerByCode, isSelfInfluencerUse } from './_influencerCode.js'
+import { discountedListPriceTry } from '../src/data/influencerPayouts.js'
 
 function getOrigin(req) {
   return (
@@ -389,7 +392,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Plan fiyatı bulunamadı.' })
     }
 
-    const minCheck = assertStripeMinAmountTry(planPrice)
+    let influencerRow = null
+    const discountCode = String(body.discountCode || body.influencerCode || '').trim()
+    if (discountCode) {
+      try {
+        influencerRow = await lookupActiveInfluencerByCode(admin, discountCode)
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: 'İndirim kodu doğrulanamadı.' })
+      }
+      if (!influencerRow) {
+        return res.status(400).json({ ok: false, error: 'Geçersiz kod.' })
+      }
+      if (isSelfInfluencerUse(user, influencerRow)) {
+        return res.status(400).json({ ok: false, error: 'Kendi kodunuzu kullanamazsınız.' })
+      }
+    }
+
+    const chargedPrice = influencerRow ? discountedListPriceTry(planPrice) : planPrice
+    const minCheck = assertStripeMinAmountTry(chargedPrice)
     if (!minCheck.ok) {
       return res.status(400).json({ ok: false, error: minCheck.error })
     }
@@ -415,6 +435,10 @@ export default async function handler(req, res) {
       flow,
     }
     if (checkoutEmail) metadata.email = checkoutEmail
+    if (influencerRow) {
+      metadata.influencerId = influencerRow.id
+      metadata.influencerCode = influencerRow.code
+    }
 
     const useSubscription = !oneTime
     const catalogPrice = await ensureCatalogPrice(stripe, {
@@ -424,6 +448,10 @@ export default async function handler(req, res) {
       amountTry: planPrice,
       oneTime,
     })
+
+    const subscriptionMeta = { ...metadata }
+    delete subscriptionMeta.influencerId
+    delete subscriptionMeta.influencerCode
 
     const sessionParams = {
       mode: useSubscription ? 'subscription' : 'payment',
@@ -436,8 +464,13 @@ export default async function handler(req, res) {
       cancel_url: `${origin}${cancelPath}?payment=cancelled`,
     }
 
+    if (influencerRow) {
+      const coupon = await ensureInfluencerCoupon(stripe)
+      sessionParams.discounts = [{ coupon: coupon.id }]
+    }
+
     if (useSubscription) {
-      sessionParams.subscription_data = { metadata }
+      sessionParams.subscription_data = { metadata: subscriptionMeta }
     } else {
       sessionParams.payment_intent_data = { metadata }
     }

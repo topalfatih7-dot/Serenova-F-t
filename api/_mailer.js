@@ -159,6 +159,57 @@ export function staffApprovedEmail({ name, email, tempPassword, loginUrl }) {
 }
 
 /**
+ * Influencer hesabı oluşturuldu — geçici şifre ve kod.
+ */
+export function influencerInviteEmail({ name, email, tempPassword, code, loginUrl }) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const safeEmail = escapeHtml(email)
+  const safePwd = escapeHtml(tempPassword || '')
+  const safeCode = escapeHtml(code || '')
+  const url = loginUrl || `${getAppUrl()}/login`
+  const title = 'Influencer paneliniz hazır'
+  const pwdBlock = tempPassword
+    ? `<strong>Geçici şifre:</strong> <code style="font-size:15px;background:#fff;padding:2px 8px;border-radius:6px;border:1px solid #cfe3d6;">${safePwd}</code><br />`
+    : ''
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, Yeni Form influencer paneliniz oluşturuldu. İndirim kodunuz ve giriş bilgileriniz aşağıdadır.
+    </p>
+    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin:0 0 20px;background:#f6faf7;border-radius:12px;border:1px solid #d8ebe0;">
+      <tr><td style="padding:16px 18px;font-size:14px;line-height:1.7;color:#1b4332;">
+        <strong>E-posta:</strong> ${safeEmail}<br />
+        ${pwdBlock}
+        <strong>İndirim kodunuz:</strong> <code style="font-size:15px;background:#fff;padding:2px 8px;border-radius:6px;border:1px solid #cfe3d6;">${safeCode}</code>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      Kodunuzla paket alan müşteriler yüzde 10 indirim alır. İlk girişte şifrenizi değiştirmeniz istenecektir.
+    </p>
+    <p style="margin:0 0 8px;text-align:center;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
+        Panele Giriş
+      </a>
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    'Yeni Form influencer paneliniz hazır.',
+    `E-posta: ${email}`,
+    tempPassword ? `Geçici şifre: ${tempPassword}` : '',
+    `İndirim kodu: ${code}`,
+    '',
+    'İlk girişte şifrenizi değiştirmeniz istenecektir.',
+    `Giriş: ${url}`,
+  ].filter((line, i, arr) => line !== '' || arr[i - 1] !== '').join('\n')
+
+  return {
+    subject: 'Yeni Form — Influencer paneliniz',
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}
+
+/**
  * Personel başvurusu reddedildi.
  */
 export function staffRejectedEmail({ name, note }) {

@@ -35,7 +35,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [errorModal, setErrorModal] = useState({ open: false, message: '' })
   const { enabled: turnstileEnabled, widgetRef, setToken: setTurnstileToken, getTokenForSubmit, reset: resetTurnstile } = useTurnstile()
-  const { login, isAuthenticated, isAdmin, isStaff } = useApp()
+  const { login, isAuthenticated, isAdmin, isStaff, isInfluencer } = useApp()
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -66,9 +66,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return
-    const role = isAdmin ? 'admin' : isStaff ? 'staff' : 'member'
+    const role = isAdmin ? 'admin' : isStaff ? 'staff' : isInfluencer ? 'influencer' : 'member'
     navigate(resolvePostLoginPath(redirectTo, role), { replace: true })
-  }, [isAuthenticated, isAdmin, isStaff, redirectTo, navigate])
+  }, [isAuthenticated, isAdmin, isStaff, isInfluencer, redirectTo, navigate])
 
   const showFormError = (message) => {
     setErrorModal({ open: true, message })

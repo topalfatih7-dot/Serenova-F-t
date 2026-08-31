@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle,
-  BarChart3, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Shield, Bot, Dumbbell,
+  BarChart3, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Shield, Bot, Dumbbell, Megaphone,
 } from 'lucide-react'
 
 /** Admin paneli sidebar / mobil menü — tek kaynak.
@@ -14,6 +14,7 @@ export const ADMIN_NAV = [
   { to: '/admin/applications', icon: UserPlus, label: 'Başvurular', applicationsBadge: true, iconTone: 'text-teal-600', labelTone: 'text-teal-700/80' },
   { to: '/admin/library', icon: Library, label: 'Kütüphane', iconTone: 'text-stone-500', labelTone: 'text-stone-600' },
   { to: '/admin/staff', icon: Stethoscope, label: 'Kadromuz', iconTone: 'text-rose-500', labelTone: 'text-rose-700/80' },
+  { to: '/admin/influencers', icon: Megaphone, label: 'Influencer yönetimi', iconTone: 'text-fuchsia-500', labelTone: 'text-fuchsia-700/80' },
   { to: '/admin/payments', icon: Wallet, label: 'Finans & Ödemeler', iconTone: 'text-emerald-500', labelTone: 'text-emerald-700/80' },
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar', iconTone: 'text-teal-600', labelTone: 'text-teal-700/80' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true, iconTone: 'text-sky-500', labelTone: 'text-sky-700/80' },

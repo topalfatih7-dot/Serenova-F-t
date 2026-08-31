@@ -17,6 +17,7 @@ import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock'
 import { LEGAL_FOOTER_PARAGRAPHS } from '../../data/legalDocuments'
 import { LegalFooterParagraph } from '../legal/LegalFooterParagraph'
 import { preloadTeamHero } from '../../utils/teamHeroImages'
+import { captureInfluencerRefFromSearch } from '../../utils/influencerCode'
 
 const guestLinks = [
   { to: '/', label: 'Ana Sayfa', icon: Home },
@@ -138,8 +139,8 @@ export default function PublicLayout() {
     }
   }, [menuOpen])
 
-  const { isAuthenticated, isAdmin, isStaff, user, staffUser } = useApp()
-  const { pathname } = useLocation()
+  const { isAuthenticated, isAdmin, isStaff, isInfluencer, user, staffUser } = useApp()
+  const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const [prevPathname, setPrevPathname] = useState(pathname)
   if (pathname !== prevPathname) {
@@ -148,6 +149,9 @@ export default function PublicLayout() {
     setMenuOpen(false)
   }
 
+  useEffect(() => {
+    captureInfluencerRefFromSearch(search)
+  }, [search])
   useEffect(() => {
     if (!menuOpen) return
     const discoverActive = discoverSubLinks.some(
@@ -162,9 +166,9 @@ export default function PublicLayout() {
   // oluşmadan bir auth oturumu açılıyor (bkz. ensureAuthForRegistration). Header bu ara
   // durumda "Profil · İsim" göstermemeli — ödeme tamamlanıp üyelik oluşana kadar misafir
   // gibi davranmalı. Admin/staff bu duruma girmez (onlar members tablosunu kullanmaz).
-  const isFullyRegistered = isAuthenticated && (isAdmin || isStaff || hasRegisteredMember(user))
+  const isFullyRegistered = isAuthenticated && (isAdmin || isStaff || isInfluencer || hasRegisteredMember(user))
 
-  const publicLinks = isFullyRegistered && !isAdmin && !isStaff
+  const publicLinks = isFullyRegistered && !isAdmin && !isStaff && !isInfluencer
     ? [...guestLinks.slice(0, 2), ...memberExtraLinks, ...guestLinks.slice(2)]
     : guestLinks
 
@@ -273,6 +277,11 @@ export default function PublicLayout() {
                 <Link to="/staff" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
                   <LayoutDashboard className="h-4 w-4" />
                   {firstName ? `Panelim · ${firstName}` : 'Panelim'}
+                </Link>
+              ) : isInfluencer ? (
+                <Link to="/influencer" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {firstName ? `Panelim · ${firstName}` : 'Influencer'}
                 </Link>
               ) : (
                 <Link to="/profile" onClick={closeDropdown} className="flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 hover:shadow-md">
@@ -488,6 +497,11 @@ export default function PublicLayout() {
                         <LayoutDashboard className="h-4 w-4" />
                         {firstName ? `Panelim · ${firstName}` : 'Panelim'}
                       </Link>
+                    ) : isInfluencer ? (
+                      <Link to="/influencer" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-full bg-brand-500 py-3 text-center text-sm font-semibold text-white">
+                        <LayoutDashboard className="h-4 w-4" />
+                        {firstName ? `Panelim · ${firstName}` : 'Influencer'}
+                      </Link>
                     ) : (
                       <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-full bg-brand-500 py-3 text-center text-sm font-semibold text-white">
                         <UserRound className="h-4 w-4" />
@@ -553,7 +567,7 @@ export default function PublicLayout() {
                 <button type="button" onClick={() => goToContact()} className="block text-left hover:text-white">
                   Bize Ulaşın
                 </button>
-                {isFullyRegistered && !isAdmin && !isStaff && (
+                {isFullyRegistered && !isAdmin && !isStaff && !isInfluencer && (
                   <Link to="/support" className="block hover:text-white">Destek</Link>
                 )}
               </div>

@@ -28,11 +28,105 @@ import {
   defaultPackageForPlan as packageFromPlanEntitlements,
   isOneTimePlanId,
 } from './_planEntitlements.js'
+import {
+  INFLUENCER_COMMISSION_RATE,
+  influencerPayoutPeriodKey,
+} from '../src/data/influencerPayouts.js'
 
 export const config = { api: { bodyParser: false } }
 
 const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
+
+function paidAmountFromSession(session, meta = {}) {
+  if (session?.amount_total != null) return session.amount_total / 100
+  return Number(meta.planPrice) || 0
+}
+
+async function recordInfluencerEarning(admin, {
+  meta,
+  session,
+  memberRow,
+  paymentId,
+  amountPaid,
+  listPrice,
+}) {
+  const influencerId = String(meta?.influencerId || '').trim()
+  const code = String(meta?.influencerCode || '').trim().toUpperCase()
+  if (!influencerId || !code) return { ok: true, skipped: true }
+
+  const sessionId = session?.id || ''
+  const amountMinor = session?.amount_total != null
+    ? Number(session.amount_total)
+    : Math.round(Number(amountPaid || 0) * 100)
+  const commissionTry = Math.round(amountMinor * INFLUENCER_COMMISSION_RATE) / 100
+  const periodKey = influencerPayoutPeriodKey(new Date())
+
+  const row = {
+    influencer_id: influencerId,
+    member_id: memberRow?.id || meta.memberId || null,
+    payment_id: paymentId || null,
+    stripe_session_id: sessionId || null,
+    stripe_payment_intent: stripeObjectId(session?.payment_intent) || null,
+    code,
+    plan_id: String(meta.planId || ''),
+    duration_months: Number(meta.durationMonths) || 1,
+    list_price_try: Number(listPrice) || 0,
+    amount_paid_try: Number(amountPaid) || 0,
+    commission_rate: INFLUENCER_COMMISSION_RATE,
+    commission_try: commissionTry,
+    period_key: periodKey,
+    status: 'pending',
+    member_display_name: String(memberRow?.name || meta.memberName || '').trim(),
+  }
+
+  if (sessionId) {
+    const { data: existingE } = await admin
+      .from('influencer_earnings')
+      .select('id')
+      .eq('stripe_session_id', sessionId)
+      .maybeSingle()
+    if (existingE) return { ok: true, duplicate: true }
+  }
+
+  const { error } = await admin.from('influencer_earnings').insert(row)
+  if (error) {
+    console.warn('[stripe-webhook] influencer earning', error.message)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+async function reverseInfluencerEarningsForCharge(admin, charge) {
+  const pi = stripeObjectId(charge?.payment_intent)
+  const chargeId = stripeObjectId(charge?.id)
+  if (!pi && !chargeId) return
+  const amount = Number(charge?.amount || 0)
+  const refunded = Number(charge?.amount_refunded || 0)
+  if (amount > 0 && refunded < amount) return
+
+  let q = admin.from('influencer_earnings').select('id, status, stripe_payment_intent, stripe_session_id')
+  if (pi) q = q.eq('stripe_payment_intent', pi)
+  else return
+
+  const { data: rows, error } = await q
+  if (error) {
+    console.warn('[stripe-webhook] influencer refund lookup', error.message)
+    return
+  }
+  for (const row of rows || []) {
+    if (row.status === 'reversed' || row.status === 'rejected') continue
+    const { error: updErr } = await admin
+      .from('influencer_earnings')
+      .update({
+        status: 'reversed',
+        reject_reason: row.status === 'paid' ? 'İade — ödenmiş hakediş geri alınmalı' : 'İade',
+        updated_at: nowISO(),
+      })
+      .eq('id', row.id)
+    if (updErr) console.warn('[stripe-webhook] influencer reverse', updErr.message)
+  }
+}
 
 function computeExpiry(startDate, durationMonths) {
   const d = new Date(startDate || today())
@@ -222,7 +316,10 @@ async function activateMembership(admin, meta, session) {
   const planId = meta.planId
   if (!memberId || !planId) return { ok: false, error: 'Eksik metadata' }
 
-  const amount = Number(meta.planPrice) || (session.amount_total ? session.amount_total / 100 : 0)
+  const listPrice = Number(meta.planPrice) || 0
+  const amount = session.amount_total != null
+    ? session.amount_total / 100
+    : listPrice
   const plansById = await loadPlansById(admin)
   const plan = plansById.get(planId) || null
   const oneTime = isOneTimePlanId(planId, plan) || isOneTimePlan(planId)
@@ -235,7 +332,18 @@ async function activateMembership(admin, meta, session) {
     .eq('member_id', memberId)
     .filter('data->>stripeSessionId', 'eq', sessionId)
     .maybeSingle()
-  if (existing) return { ok: true, duplicate: true }
+  if (existing) {
+    const { data: memberHint } = await admin.from('members').select('id, name').eq('id', memberId).maybeSingle()
+    await recordInfluencerEarning(admin, {
+      meta,
+      session,
+      memberRow: memberHint || { id: memberId, name: meta.memberName },
+      paymentId: existing.id,
+      amountPaid: paidAmountFromSession(session, meta),
+      listPrice: Number(meta.planPrice) || paidAmountFromSession(session, meta),
+    })
+    return { ok: true, duplicate: true }
+  }
 
   const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
   if (fetchErr) return { ok: false, error: fetchErr.message }
@@ -298,11 +406,14 @@ async function activateMembership(admin, meta, session) {
 
   const durationLabel = oneTime ? 'tek seferlik' : `${durationMonths} ay`
 
-  await admin.from('payments').insert({
+  const { data: payRow } = await admin.from('payments').insert({
     member_id: memberId,
     data: {
       memberName: memberRow.name || '',
       amount,
+      listPrice: listPrice || amount,
+      influencerCode: meta.influencerCode || '',
+      influencerId: meta.influencerId || '',
       packageConfig,
       planId,
       durationMonths,
@@ -313,6 +424,15 @@ async function activateMembership(admin, meta, session) {
       stripeSubscriptionId: subscriptionId,
       createdAt: nowISO(),
     },
+  }).select('id').maybeSingle()
+
+  await recordInfluencerEarning(admin, {
+    meta,
+    session,
+    memberRow,
+    paymentId: payRow?.id || null,
+    amountPaid: amount,
+    listPrice: listPrice || amount,
   })
 
   await admin.from('activities').insert({
@@ -462,7 +582,7 @@ export default async function handler(req, res) {
             await notifyPaymentTelegram({
               ok: true,
               meta,
-              amount: Number(meta.planPrice) || (session.amount_total ? session.amount_total / 100 : 0),
+              amount: paidAmountFromSession(session, meta),
               email: session.customer_details?.email || session.customer_email,
               sessionId: session.id,
             })
@@ -596,6 +716,13 @@ export default async function handler(req, res) {
           : applyStripeSubscriptionState(before, subscription)
         const updErr = await persistMemberDraft(admin, row, after)
         if (updErr) return res.status(500).json({ ok: false, error: updErr.message })
+        break
+      }
+      case 'charge.refunded':
+      case 'charge.refund.updated': {
+        const charge = event.data.object
+        const admin = getSupabaseAdmin()
+        await reverseInfluencerEarningsForCharge(admin, charge)
         break
       }
       default:

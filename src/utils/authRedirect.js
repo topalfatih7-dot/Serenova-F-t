@@ -17,6 +17,7 @@ export function clearIntentionalLogout() {
 export function homePathForRole(role) {
   if (role === 'admin') return '/admin'
   if (role === 'staff') return '/staff'
+  if (role === 'influencer') return '/influencer'
   return '/profile'
 }
 
@@ -36,6 +37,9 @@ export function isSafeReturnPath(path, role) {
   }
   if (path === '/staff' || path.startsWith('/staff/')) {
     return role === 'staff' || role === 'admin'
+  }
+  if (path === '/influencer' || path.startsWith('/influencer/')) {
+    return role === 'influencer' || role === 'admin'
   }
   return true
 }

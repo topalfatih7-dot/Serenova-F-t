@@ -7,6 +7,7 @@ import * as sb from '../services/supabaseDb'
 import {
   getCurrentMember,
   getCurrentStaff,
+  getCurrentInfluencer,
   computeAdminStats,
   computeMembershipBreakdown,
   computeOnboardingFunnel,
@@ -36,7 +37,7 @@ import { applySessionCompactionToMember } from '../utils/memberSessions'
 import { isHydratePassThrough } from '../utils/authPaths'
 import { markIntentionalLogout } from '../utils/authRedirect'
 import { markMemberNotificationsRead } from '../services/memberNotifications'
-import { markStaffNotificationsRead } from '../services/staffNotifications'
+import { updateInfluencerSelfProfile } from '../services/influencerDb'
 import { mergeNotificationLists, markNotificationsReadInList } from '../utils/notificationRead'
 import { HEALTH_TEST_META_KEYS } from '../services/healthScoreAnalysis'
 
@@ -45,7 +46,7 @@ const DataContext = createContext(null)
 const ActionsContext = createContext(null)
 
 const EMPTY_DB = {
-  version: 2, members: [], staff: [], programs: [], posts: [],
+  version: 2, members: [], staff: [], influencers: [], programs: [], posts: [],
   tickets: [], activities: [], payments: [], exercises: [], exerciseCount: 0, plans: ALL_PLANS, session: null,
   content: { testimonials: [], faqs: [], successStories: [] },
 }
@@ -146,13 +147,18 @@ export function AppProvider({ children }) {
   }, [db.plans])
   const currentMember = useMemo(() => getCurrentMember(db), [db])
   const currentStaff = useMemo(() => getCurrentStaff(db), [db])
+  const currentInfluencer = useMemo(() => getCurrentInfluencer(db), [db])
   const authUser = db.authUser || null
   const isAdmin = db.session?.type === 'admin'
   const isStaff = db.session?.type === 'staff'
+  const isInfluencer = db.session?.type === 'influencer'
 
   const user = useMemo(() => {
     if (isStaff) {
       return currentStaff || (authUser ? { ...authUser, role: 'staff' } : {})
+    }
+    if (isInfluencer) {
+      return currentInfluencer || (authUser ? { ...authUser, role: 'influencer' } : {})
     }
     if (isAdmin) {
       return { name: authUser?.name || 'Admin', email: authUser?.email }
@@ -160,7 +166,7 @@ export function AppProvider({ children }) {
     if (currentMember) return currentMember
     if (authUser) return { id: authUser.id, name: authUser.name, email: authUser.email }
     return {}
-  }, [isStaff, isAdmin, currentStaff, currentMember, authUser])
+  }, [isStaff, isInfluencer, isAdmin, currentStaff, currentInfluencer, currentMember, authUser])
   const isAuthenticated = !!db.session
 
   useEffect(() => {
@@ -898,6 +904,7 @@ export function AppProvider({ children }) {
           staffApplications: [],
           corporateApplications: [],
           contactInquiries: [],
+          influencers: [],
         }
       })
     } finally {
@@ -1100,6 +1107,14 @@ export function AppProvider({ children }) {
     if (r.success && r.staff) patchStaffInDb(r.staff)
     return r
   }, [patchStaffInDb])
+
+  const updateInfluencerProfile = useCallback(async (patch) => {
+    const r = await updateInfluencerSelfProfile(patch)
+    if (r.success) {
+      await reloadRemote({ force: true })
+    }
+    return r
+  }, [reloadRemote])
 
   const removeStaff = useCallback(async (id) => {
     await sb.removeStaff(id)
@@ -1743,11 +1758,12 @@ export function AppProvider({ children }) {
   const platform = useMemo(() => ({
     members: db.members,
     staff: db.staff || [],
+    influencers: db.influencers || [],
     programs: db.programs || [],
     tickets: db.tickets,
     activities: db.activities,
     payments: db.payments,
-  }), [db.members, db.staff, db.programs, db.tickets, db.activities, db.payments])
+  }), [db.members, db.staff, db.influencers, db.programs, db.tickets, db.activities, db.payments])
 
   // Paketsiz üye — soft-lock (sayfa gezinilir, ücretli aksiyonlar kilitli).
   const isUnpaidMember = useMemo(
@@ -1763,7 +1779,9 @@ export function AppProvider({ children }) {
     isAuthenticated,
     isAdmin,
     isStaff,
+    isInfluencer,
     staffUser: currentStaff || {},
+    influencerUser: currentInfluencer || {},
     user,
     authUser,
     membership: currentMember?.membership || 'free',
@@ -1785,7 +1803,9 @@ export function AppProvider({ children }) {
     isAuthenticated,
     isAdmin,
     isStaff,
+    isInfluencer,
     currentStaff,
+    currentInfluencer,
     user,
     authUser,
     currentMember?.membership,
@@ -1805,6 +1825,7 @@ export function AppProvider({ children }) {
 
   const dataValue = useMemo(() => ({
     staff: db.staff || [],
+    influencers: db.influencers || [],
     programs: db.programs || [],
     posts: db.posts || [],
     myPrograms,
@@ -1851,6 +1872,7 @@ export function AppProvider({ children }) {
     activeUsers,
   }), [
     db.staff,
+    db.influencers,
     db.programs,
     db.posts,
     db.plans,
@@ -1927,6 +1949,7 @@ export function AppProvider({ children }) {
     addStaff,
     editStaff,
     updateStaffProfile,
+    updateInfluencerProfile,
     removeStaff,
     removeMember,
     adminPatchMember,
@@ -2013,6 +2036,7 @@ export function AppProvider({ children }) {
     addStaff,
     editStaff,
     updateStaffProfile,
+    updateInfluencerProfile,
     removeStaff,
     removeMember,
     adminPatchMember,
