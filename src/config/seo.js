@@ -252,6 +252,8 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/beslenme/sporcu-beslenmesi', changefreq: 'weekly', priority: '0.85' },
   { path: '/beslenme/pcos', changefreq: 'weekly', priority: '0.85' },
   { path: '/beslenme/insulin-direnci', changefreq: 'weekly', priority: '0.85' },
+  { path: '/beslenme/hamilelik', changefreq: 'weekly', priority: '0.85' },
+  { path: '/kalori-hesaplama', changefreq: 'weekly', priority: '0.9' },
   { path: '/online-wellness', changefreq: 'weekly', priority: '0.9' },
   { path: '/membership', changefreq: 'weekly', priority: '0.9' },
   { path: '/onboarding', changefreq: 'monthly', priority: '0.9' },
@@ -281,16 +283,16 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('hakkımızda, yeni form kimdir, wellness platformu, online koçluk şirketi, misyon, vizyon, güvenilir diyetisyen platformu'),
   },
   '/online-diyetisyen': {
-    title: 'Online Diyetisyen — Video Görüşmeli Beslenme Danışmanlığı',
+    title: 'Online Diyetisyen — Video Görüşmeli Program',
     description:
-      'Online diyetisyen ile kişiye özel beslenme programı, video görüşme ve ilerleme takibi. Yeni Form Diyet ve VIP paketleriyle evinizden uzman desteği alın.',
-    keywords: buildBrandKeywords('online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat'),
+      'Online diyetisyen ve online diyet: platform içi video görüşme, kişiye özel beslenme programı ve panel takibi. Diyet veya VIP ile evinizden başlayın.',
+    keywords: buildBrandKeywords('online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen platformu, online diyet danışmanlığı'),
   },
   '/online-kocluk': {
-    title: 'Online Koçluk — Online Spor Koçluğu ve Video Görüşme',
+    title: 'Online Koçluk — Fitness Koçu ile Video Antrenman',
     description:
-      'Online koçluk ve online spor koçluğu: kişiye özel antrenman programı, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda online antrenman yapın.',
-    keywords: buildBrandKeywords('online koçluk, online spor koçluğu, online spor koçu, online spor, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi'),
+      'Online koçluk ve online fitness koçu: kişiye özel antrenman programı, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
+    keywords: buildBrandKeywords('online koçluk, online coaching, online spor koçluğu, online spor koçu, online spor, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi'),
   },
   '/kilo-verme': {
     title: 'Kilo Verme ve Online Zayıflama — Diyetisyen Destekli Program',
@@ -299,10 +301,10 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('kilo verme diyetisyen, online zayıflama, zayıflama programı, kilo vermek için diyetisyen, online kilo verme, online diyet ve zayıflama, kilo verme programı'),
   },
   '/online-diyetisyen/fiyat': {
-    title: 'Online Diyetisyen Fiyatları 2026 — Paket ve Seans',
+    title: 'Online Diyetisyen Fiyatları 2026 — 1.299 TL\'den',
     description:
-      '2026 online diyetisyen fiyatları: Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay. Video görüşme seans hakları ve paket karşılaştırması.',
-    keywords: buildBrandKeywords('online diyetisyen fiyat, online diyetisyen fiyat 2026, diyet paketi fiyat, online diyet ücreti'),
+      'Online diyetisyen fiyatları 2026: Eko Diyet 1.299 TL, Diyet 2.499 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
+    keywords: buildBrandKeywords('online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları, diyetisyen seans ücretleri'),
   },
   '/online-kocluk/ev-antrenman': {
     title: 'Evde Antrenman Programı — Online Koç ile Ekipmansız',
@@ -328,6 +330,18 @@ export const PAGE_SEO = {
       'İnsülin direnci diyeti ve beslenme programı: glisemik indeks, öğün zamanlaması ve kilo yönetimi. Online diyetisyen ile kişiye özel insülin direnci planı.',
     keywords: buildBrandKeywords('insülin direnci diyeti, insülin direnci beslenmesi, insülin direncinde ne yenir, insülin direnci beslenme programı, insülin direnci kilo verme'),
   },
+  '/beslenme/hamilelik': {
+    title: 'Hamilelikte Beslenme — Trimester Rehberi ve Diyetisyen',
+    description:
+      'Hamilelikte beslenme ve gebelikte diyet: trimester ihtiyaçları, güvenli öğün düzeni. Online diyetisyen hekim planınızı tamamlar; tıbbi tedavi yerine geçmez.',
+    keywords: buildBrandKeywords('hamilelikte beslenme, gebelikte diyet, hamilelikte beslenme rehberi, gebelikte beslenme, hamile diyetisyen, online hamilelik beslenmesi'),
+  },
+  '/kalori-hesaplama': {
+    title: 'Kalori Hesaplama — BMR ve Günlük İhtiyaç',
+    description:
+      'Kalori hesaplama: Mifflin–St Jeor ile BMR ve günlük kalori ihtiyacı (TDEE). Ücretsiz; tıbbi tanı değildir. Kişiye özel plan için online diyetisyen.',
+    keywords: buildBrandKeywords('kalori hesaplama, günlük kalori ihtiyacı, BMR hesaplama, TDEE, kalori açığı, bazal metabolizma hızı'),
+  },
   '/online-wellness': {
     title: 'Online Wellness — Dijital Sağlık ve Yaşam Koçluğu Platformu',
     description:
@@ -335,10 +349,10 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('online wellness, wellness platformu, dijital wellness, online sağlık koçluğu, online sağlıklı yaşam, wellness Türkiye, online wellness programı'),
   },
   '/membership': {
-    title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları',
+    title: 'Üyelik Paketleri — Diyet, Spor, Doktor ve VIP',
     description:
-      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
-    keywords: buildBrandKeywords('üyelik planları, online diyetisyen fiyat, online koçluk fiyat, diyet paketi, spor paketi, vip paket'),
+      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
+    keywords: buildBrandKeywords('üyelik paketleri, yeni form üyelik, diyet paketi, spor paketi, vip paket, doktor paketi, paket karşılaştırma'),
   },
   '/onboarding': {
     title: 'Kayıt Ol — Paket Seç ve Başla',
@@ -375,10 +389,10 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('online fitness koçu, online koçluk, online spor koçu, antrenör, kişisel antrenman'),
   },
   '/team/dietitians': {
-    title: 'Online Diyetisyenlerimiz — Uzman Beslenme Kadrosu',
+    title: 'Diyetisyen Kadromuz — Lisanslı Beslenme Uzmanları',
     description:
-      'Online diyetisyen kadromuzla sağlıklı ve sürdürülebilir beslenme alışkanlıkları kazanın. Video görüşme ve kişiye özel program.',
-    keywords: buildBrandKeywords('online diyetisyen, online diyet, beslenme danışmanı, diyet programı'),
+      'Yeni Form diyetisyen kadrosu: lisanslı beslenme uzmanları, video görüşme ve kişiye özel program. Hizmet akışı online diyetisyen sayfasında.',
+    keywords: buildBrandKeywords('diyetisyen kadrosu, lisanslı diyetisyen, beslenme uzmanı ekibi, yeni form diyetisyen'),
   },
   '/team/doctors': {
     title: 'Doktorlarımız — Sağlık Sürecinizde Yanınızda',

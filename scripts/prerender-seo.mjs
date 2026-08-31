@@ -33,6 +33,9 @@ loadEnvFile(join(root, '.env'))
 const { SERVICE_PAGES, servicePagePlainHtml } = await import(
   pathToFileURL(join(root, 'src/data/seoServiceContent.js')).href
 )
+const { KALORI_HESAPLAMA, caloriePagePlainHtml } = await import(
+  pathToFileURL(join(root, 'src/data/seoCalorieCalculator.js')).href
+)
 
 const STATIC_SHELLS = {
   '/': {
@@ -41,15 +44,15 @@ const STATIC_SHELLS = {
       'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor, Doktor veya VIP paketini seçin.',
     h1: 'Online koçluk ve diyetisyen ile size özel program',
     body: `<p>Online diyetisyen ve online spor koçunuz hedefinize göre programınızı hazırlar, video görüşmelerle yanınızda olur.</p>
-<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/membership">Üyelik paketleri</a></p>`,
+<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-diyetisyen/fiyat">Diyetisyen fiyatları</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a> · <a href="/kalori-hesaplama">Kalori hesaplama</a> · <a href="/beslenme/hamilelik">Hamilelikte beslenme</a> · <a href="/membership">Üyelik paketleri</a></p>`,
   },
   '/membership': {
-    title: 'Üyelik Planları — Online Diyetisyen & Online Koçluk Fiyatları | Yeni Form',
+    title: 'Üyelik Paketleri — Diyet, Spor, Doktor ve VIP | Yeni Form',
     description:
-      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Online diyetisyen ve online koç görüşmeleri, kalori hesaplama ve kişisel programlar.',
-    h1: 'Online diyetisyen ve online koçluk paketleri',
-    body: `<p>Video görüşmeli diyetisyen ve koç paketlerini karşılaştırın.</p>
-<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a></p>`,
+      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
+    h1: 'Üyelik paketleri: Diyet, Spor, Doktor ve VIP',
+    body: `<p>Video görüşmeli diyetisyen ve koç paketlerini karşılaştırın. Online diyetisyen fiyat listesi ayrı sayfadadır.</p>
+<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-diyetisyen/fiyat">Diyetisyen fiyatları 2026</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a></p>`,
   },
   '/hakkimizda': {
     title: 'Hakkımızda — Misyonumuz, Değerlerimiz ve Uzman Kadromuz | Yeni Form',
@@ -60,12 +63,12 @@ const STATIC_SHELLS = {
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a></p>`,
   },
   '/team/dietitians': {
-    title: 'Online Diyetisyenlerimiz — Uzman Beslenme Kadrosu | Yeni Form',
+    title: 'Diyetisyen Kadromuz — Lisanslı Beslenme Uzmanları | Yeni Form',
     description:
-      'Online diyetisyen kadromuzla sağlıklı beslenme alışkanlıkları kazanın. Video görüşme ve kişiye özel program.',
-    h1: 'Online Diyetisyenlerimiz',
-    body: `<p>Online diyetisyen desteğiyle sürdürülebilir beslenme. Süreç ve paketler için hizmet sayfamızı inceleyin.</p>
-<p><a href="/online-diyetisyen">Online diyetisyen nasıl çalışır?</a> · <a href="/membership">Üyelik paketleri</a></p>`,
+      'Yeni Form diyetisyen kadrosu: lisanslı beslenme uzmanları, video görüşme ve kişiye özel program. Hizmet akışı online diyetisyen sayfasında.',
+    h1: 'Diyetisyen kadromuz',
+    body: `<p>Lisanslı diyetisyen kadromuzla tanışın. Süreç ve paketler hizmet sayfasında; ücretler fiyat sayfasındadır.</p>
+<p><a href="/online-diyetisyen">Online diyetisyen nasıl çalışır?</a> · <a href="/online-diyetisyen/fiyat">Fiyatlar</a> · <a href="/membership">Üyelik paketleri</a></p>`,
   },
   '/team/coaches': {
     title: 'Online Fitness Koçlarımız — Uzman Kadro | Yeni Form',
@@ -112,6 +115,13 @@ for (const [path, page] of Object.entries(SERVICE_PAGES)) {
     h1: page.h1,
     body: servicePagePlainHtml(page),
   }
+}
+
+STATIC_SHELLS[KALORI_HESAPLAMA.path] = {
+  title: `${KALORI_HESAPLAMA.title} | Yeni Form`,
+  description: KALORI_HESAPLAMA.description,
+  h1: KALORI_HESAPLAMA.h1,
+  body: caloriePagePlainHtml(),
 }
 
 function escapeAttr(str) {

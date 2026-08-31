@@ -312,6 +312,15 @@ export default function ServiceLandingPage({ path }) {
           <Link to={page.relatedService.to} className="font-medium text-cream-800/70 underline-offset-2 hover:text-brand-700 hover:underline">
             {page.relatedService.label}
           </Link>
+          {(page.relatedLinks || []).map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="font-medium text-cream-800/70 underline-offset-2 hover:text-brand-700 hover:underline"
+            >
+              {link.label}
+            </Link>
+          ))}
           <Link to="/membership" className="font-medium text-cream-800/70 underline-offset-2 hover:text-brand-700 hover:underline">
             Üyelik paketleri
           </Link>

@@ -1,24 +1,48 @@
 {
-  "capturedAt": "2026-08-13T12:00:00Z",
+  "capturedAt": "2026-08-31T10:00:00Z",
   "site": "https://www.yeniform.com",
-  "method": "code + MCP audit; GSC screenshots kullanıcıdan bekleniyor",
+  "method": "GSC xlsx yeniform.com-Performance-on-Search-2026-08-31.xlsx (Web, son 3 ay)",
+  "period": "2026-06-21/2026-08-29",
+  "totals": {
+    "clicks": 194,
+    "impressions": 1026,
+    "brandClicksApprox": 96,
+    "note": "Neredeyse tüm tıklama marka; ticari CTR ~1%"
+  },
   "gscQueriesToTrack": [
     "online diyetisyen",
-    "online koçluk",
     "online diyet",
+    "online diyetisyen fiyatları",
+    "diyetisyen fiyatları",
+    "diyetisyen paket fiyatları",
+    "online koçluk",
+    "online coaching ne demek",
+    "online fitness koçu",
     "online spor koçu",
-    "yeni form",
-    "online diyetisyen fiyat",
     "kilo verme diyetisyen",
-    "evde antrenman programı",
-    "sporcu beslenmesi"
+    "pcos diyeti",
+    "kalori hesaplama",
+    "hamilelikte beslenme",
+    "yeniform",
+    "yeni form"
+  ],
+  "priorityFixes": [
+    "cannibalization membership vs /online-diyetisyen/fiyat",
+    "pillar invisible for online diyetisyen (pos 81)",
+    "/kilo-verme zero page impressions",
+    "fiyat page 404 impressions CTR 1% pos 26"
   ],
   "findings": {
     "clusterPages": [
       "/kilo-verme",
       "/online-diyetisyen/fiyat",
       "/online-kocluk/ev-antrenman",
-      "/beslenme/sporcu-beslenmesi"
+      "/beslenme/sporcu-beslenmesi",
+      "/beslenme/pcos",
+      "/beslenme/insulin-direnci",
+      "/beslenme/hamilelik",
+      "/kalori-hesaplama",
+      "/online-wellness"
     ],
     "aggregateRating": "yalnızca gerçek testimonial n>=5",
     "llmsTxt": true

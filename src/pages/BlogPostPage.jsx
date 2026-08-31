@@ -11,6 +11,30 @@ import { buildArticleSchema, buildBreadcrumbSchema, truncateDescription, buildBr
 import { resolveBlogCover } from '../utils/blogImages'
 import { parseBlogContent } from '../utils/blogContent'
 import { BLOG_AUTHOR } from '../data/blogPosts'
+import { blogServiceCta } from '../utils/blogServiceCta'
+
+function ServiceCtaBox({ cta, className = '' }) {
+  return (
+    <div className={`rounded-2xl border border-brand-100 bg-brand-50/70 p-5 ${className}`}>
+      <p className="font-display text-base font-bold text-cream-900">{cta.title}</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-cream-800/80">{cta.text}</p>
+      <div className="mt-4 flex flex-wrap gap-2.5">
+        <Link
+          to={cta.primary.to}
+          className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+        >
+          {cta.primary.label}
+        </Link>
+        <Link
+          to={cta.secondary.to}
+          className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50"
+        >
+          {cta.secondary.label}
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 function BlogBodyBlocks({ blocks }) {
   return (
@@ -100,7 +124,7 @@ function BlogBodyBlocks({ blocks }) {
 
 export default function BlogPostPage() {
   const { id } = useParams()
-  const { posts } = useApp()
+  const { posts, loading } = useApp()
 
   const post = findBlogPost(posts, id)
   const related = useMemo(
@@ -112,12 +136,18 @@ export default function BlogPostPage() {
     [post?.content]
   )
 
+  if (loading && !post) return null
   if (!post || !post.published) {
     return <Navigate to="/blog" replace />
   }
 
   const cover = resolveBlogCover(post)
   const postPath = blogPostPath(post)
+  const serviceCta = blogServiceCta(post)
+  const looksLikeId = id === post.id || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  if (looksLikeId && postPath !== `/blog/${id}`) {
+    return <Navigate to={postPath} replace />
+  }
 
   return (
     <>
@@ -205,6 +235,8 @@ export default function BlogPostPage() {
             </div>
           </motion.header>
 
+          <ServiceCtaBox cta={serviceCta} className="mt-8" />
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -213,20 +245,7 @@ export default function BlogPostPage() {
             <BlogBodyBlocks blocks={blocks} />
           </motion.div>
 
-          <div className="mt-12 flex flex-wrap gap-3 rounded-2xl border border-brand-100 bg-brand-50/60 p-5">
-            <Link to="/online-diyetisyen" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
-              Online diyetisyen
-            </Link>
-            <Link to="/online-kocluk" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
-              Online koçluk
-            </Link>
-            <Link to="/kilo-verme" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50">
-              Kilo verme
-            </Link>
-            <Link to="/membership" className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-              Paketleri incele
-            </Link>
-          </div>
+          <ServiceCtaBox cta={serviceCta} className="mt-12" />
 
           {related.length > 0 && (
             <aside className="mt-14 border-t border-cream-200 pt-10 sm:mt-16">

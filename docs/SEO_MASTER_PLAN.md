@@ -100,7 +100,8 @@
 /                    → "yeni form", "yeniform", "online koçluk platformu"
 /online-diyetisyen   → "online diyetisyen", "online diyet", "online beslenme danışmanlığı"
 /online-kocluk       → "online koçluk", "online spor koçu", "online fitness koçu"
-/membership          → "online diyetisyen fiyat", "online koçluk fiyat", "diyet paketi"
+/online-diyetisyen/fiyat → "online diyetisyen fiyatları", "diyetisyen fiyat"
+/membership          → paket karşılaştırma (title'da `fiyatları` yok)
 ```
 
 ### 2.2 İkincil Hedef Kümesi (Yeni Sayfalar)
@@ -111,6 +112,7 @@
 /beslenme/pcos                → "PCOS diyeti", "polikistik yumurtalık beslenme"
 /beslenme/insulin-direnci     → "insülin direnci diyeti", "insülin direnci beslenme"
 /beslenme/hamilelik           → "hamilelikte beslenme", "gebelikte diyet"
+/kalori-hesaplama             → "kalori hesaplama", "BMR", "TDEE", "kalori açığı"
 /online-kocluk/ev-antrenman   → "evde antrenman programı", "ekipmansız antrenman"
 ```
 
@@ -478,6 +480,17 @@ Mevcut şemaları güçlendir:
 - [ ] Video sitemap / image sitemap ekle
 - [ ] Backlink outreach başlat (5 TR sağlık bloğu)
 - [ ] GSC coverage raporu → hata sayfaları düzelt
+
+### Sprint 5 (31 Ağustos 2026) — GSC xlsx sonrası
+- [x] Cannibalization: `/membership` title’dan `online diyetisyen fiyatları` çıkarıldı
+- [x] Fiyat title/H1: `1.299 TL'den` + GSC FAQ birebir
+- [x] Pillar `online diyet` / platform FAQ; fiyat keywords pillar’dan alındı
+- [x] `/online-kocluk` FAQ: “Online coaching ne demek?”
+- [x] `/beslenme/hamilelik` küme sayfası
+- [x] Footer + homepage iç link; UUID blog → slug; `/index.asp` 301
+- [x] Public kalori hesaplama (`/kalori-hesaplama`) — `/calorie` üye/Disallow kaldı
+- [x] Fiyat blog: canonical yok; güçlü CTA → `/online-diyetisyen/fiyat` (silo)
+- [ ] Deploy sonrası GSC URL Inspection: `/`, `/online-diyetisyen`, `/online-diyetisyen/fiyat`, `/online-kocluk`, `/kilo-verme`, `/beslenme/hamilelik`, `/kalori-hesaplama`
 
 ### Sprint 4 (28 Ağustos – Eylül) — TAMAMLANDI
 - [x] /beslenme/pcos sayfası ✅ (2026-08-28)

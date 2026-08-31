@@ -16,7 +16,7 @@ import {
   BLOG_ACCENTS,
   BLOG_CATEGORIES,
   BLOG_AUTHOR,
-  BLOG_TOPIC_ROTATION,
+  pickBlogTopic,
   buildBlogInstruction,
 } from './_ai-prompts.js'
 import { coverForCategory } from './_blog-images.js'
@@ -57,19 +57,6 @@ function estimateReadMinutes(content) {
   return Math.max(1, Math.round(words / 200))
 }
 
-function pickTopicForToday() {
-  const now = new Date()
-  const dayOfYear = Math.floor(
-    (now - new Date(now.getFullYear(), 0, 0)) / 86400000,
-  )
-  const rotation = BLOG_TOPIC_ROTATION[dayOfYear % BLOG_TOPIC_ROTATION.length]
-  const topicIndex = Math.floor(dayOfYear / BLOG_TOPIC_ROTATION.length) % rotation.topics.length
-  return {
-    category: rotation.category,
-    topicHint: rotation.topics[topicIndex],
-  }
-}
-
 function normalizePost(result) {
   const content = String(result.content || '').trim()
   const category = BLOG_CATEGORIES.includes(result.category) ? result.category : 'Yaşam'
@@ -97,7 +84,7 @@ async function getRecentTitles(admin) {
     .from('posts')
     .select('data')
     .order('created_at', { ascending: false })
-    .limit(12)
+    .limit(40)
   return (data || []).map((r) => r.data?.title).filter(Boolean)
 }
 
@@ -282,8 +269,8 @@ async function handleBlogGenerate(req, res) {
       })
     }
 
-    const { category, topicHint } = pickTopicForToday()
     const recentTitles = await getRecentTitles(admin)
+    const { category, topicHint } = pickBlogTopic(recentTitles)
     const instruction = buildBlogInstruction({ category, topicHint, recentTitles })
 
     const raw = await callGemini([{ text: instruction }], BLOG_SYSTEM, BLOG_CONFIG)

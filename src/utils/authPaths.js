@@ -26,6 +26,10 @@ export const PUBLIC_HYDRATE_PASS_THROUGH = [
   '/terms',
   '/online-diyetisyen',
   '/online-kocluk',
+  '/kilo-verme',
+  '/beslenme',
+  '/kalori-hesaplama',
+  '/online-wellness',
 ]
 
 export function isAuthFastPath(pathname = '') {

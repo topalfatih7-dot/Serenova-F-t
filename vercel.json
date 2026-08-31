@@ -13,6 +13,10 @@
       ]
     }
   ],
+  "redirects": [
+    { "source": "/index.asp", "destination": "/", "permanent": true },
+    { "source": "/Index.asp", "destination": "/", "permanent": true }
+  ],
   "crons": [
     {
       "path": "/api/ai-blog-generate?task=membership-expiry",

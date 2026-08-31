@@ -33,7 +33,7 @@ const comparisonRows = [
 const MEMBERSHIP_FAQ = [
   { q: 'Hangi paketlerle başlayabilirim?', a: 'Tamamen ücretsiz başlayın, paneli keşfedin. Hedefinize uygun paketi — Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP — seçerek yolculuğunuza devam edin. Programlarınız koç ve diyetisyen tarafından hazırlanır; ödemeler Stripe ile güvenle alınır.' },
   { q: 'Eko paketler ne fark eder?', a: 'Eko Diyet ve Eko Spor, ana paketlerle aynı özellikleri sunar; fark yalnızca ayda 1 görüşme hakkıdır (Diyet/Spor’da 2).' },
-  { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç özeti için online diyetisyen sayfamıza bakabilirsiniz.' },
+  { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç online diyetisyen sayfasında; 2026 liste fiyatı online diyetisyen fiyat sayfasındadır.' },
   { q: 'Online koçluk hangi pakette?', a: 'Ayda 1 görüşme Eko Spor’da, ayda 2 Spor ve VIP’tedir. Ayrıntılar online koçluk hizmet sayfasında.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç ve diyetisyen desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
   { q: 'Doktor görüşmesi hangi pakette?', a: 'Online doktor görüşmesi yalnızca Doktor Paketi ile sunulur; abonelik planlarına dahil değildir. Mevcut üyeliğinize ek paket olarak satın alabilirsiniz.' },
@@ -60,11 +60,11 @@ export default function MembershipComparisonPage() {
       <div aria-hidden className="membership-page-dots" />
       <JsonLd data={buildFaqSchema(MEMBERSHIP_FAQ)} />
       <MembershipHero
-        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Online diyetisyen ve online koçluk paketleri'}
+        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Üyelik paketleri: Diyet, Spor, Doktor ve VIP'}
         subtitle={
           isMember
             ? 'Planı seçin, süreyi belirleyin ve ödemeye geçin. Yeni kayıt gerekmez.'
-            : 'Video görüşmeli diyetisyen / koç paketlerinden birini seçin. Gizli ücret yok, süre seçimi sizde.'
+            : 'Paketleri karşılaştırın. Diyetisyen liste fiyatı ayrı sayfadadır; burada Diyet, Spor, Doktor ve VIP yan yana durur.'
         }
       />
 

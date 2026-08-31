@@ -26,6 +26,8 @@ const STATIC_ROUTES = [
   { loc: '/beslenme/sporcu-beslenmesi', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
   { loc: '/beslenme/pcos', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
   { loc: '/beslenme/insulin-direnci', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
+  { loc: '/beslenme/hamilelik', changefreq: 'weekly', priority: '0.85', lastmod: DEPLOY },
+  { loc: '/kalori-hesaplama', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
   { loc: '/online-wellness', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
   { loc: '/membership', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
   { loc: '/onboarding', changefreq: 'monthly', priority: '0.9', lastmod: DEPLOY },

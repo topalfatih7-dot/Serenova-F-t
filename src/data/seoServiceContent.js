@@ -6,18 +6,25 @@
 
 export const ONLINE_DIYETISYEN = {
   path: '/online-diyetisyen',
-  title: 'Online Diyetisyen — Video Görüşmeli Beslenme Danışmanlığı',
+  title: 'Online Diyetisyen — Video Görüşmeli Program',
   description:
-    'Online diyetisyen ile kişiye özel beslenme programı, video görüşme ve ilerleme takibi. Yeni Form Diyet ve VIP paketleriyle evinizden uzman desteği alın.',
+    'Online diyetisyen ve online diyet: platform içi video görüşme, kişiye özel beslenme programı ve panel takibi. Diyet veya VIP ile evinizden başlayın.',
   keywords:
-    'online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen fiyat, diyet paketi',
-  h1: 'Online Diyetisyen ile Size Özel Beslenme Programı',
+    'online diyetisyen, online diyet, online beslenme danışmanlığı, video görüşmeli diyetisyen, online diyetisyen platformu, online diyet danışmanlığı',
+  h1: 'Online diyetisyen ile size özel beslenme programı',
   lead:
-    'Yeni Form’da online diyetisyen desteği; mesaj listesi değil, **video görüşme**, kişisel program ve panel üzerinden takip demektir. Hedefinize uygun **Diyet veya VIP** paketle başlayın.',
+    '**Online diyetisyen**, yüz yüze kliniğe gitmeden lisanslı bir beslenme uzmanıyla **video görüşme** ve kişiye özel program almaktır. Yeni Form bir **online diyetisyen platformudur**: seans, program ve takip aynı hesapta yürür. Fiyat listesi bu sayfada değil; **Diyet veya VIP** ile başlayın.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet Paketi ile Başla' },
-  secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
+  secondaryCta: { to: '/online-diyetisyen/fiyat', label: '2026 Fiyatlarını Gör' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadromuzu inceleyin' },
   relatedService: { to: '/online-kocluk', label: 'Online koçluk hizmetimiz' },
+  relatedLinks: [
+    { to: '/online-diyetisyen/fiyat', label: 'Online diyetisyen fiyatları' },
+    { to: '/kilo-verme', label: 'Kilo verme' },
+    { to: '/beslenme/pcos', label: 'PCOS diyeti' },
+    { to: '/beslenme/hamilelik', label: 'Hamilelikte beslenme' },
+    { to: '/kalori-hesaplama', label: 'Kalori hesaplama' },
+  ],
   serviceName: 'Online Diyetisyen Danışmanlığı',
   serviceType: 'NutritionCounseling',
   offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
@@ -58,10 +65,17 @@ export const ONLINE_DIYETISYEN = {
       ],
     },
     {
-      h2: 'Paketler ve fiyat yönü',
+      h2: 'Paketler — fiyat listesi ayrı sayfada',
       paragraphs: [
-        'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Güncel aylık ve çok aylık fiyatlar için üyelik karşılaştırma sayfasını inceleyin.',
+        'Online diyetisyen görüşmeleri **Diyet paketinde (ayda 2 seans)** ve **VIP pakette (ayda 2 diyetisyen + 2 koç)** sunulur. Liste fiyatı ve seans ücreti karşılaştırması için **online diyetisyen fiyat** sayfasına bakın; bu sayfa hizmetin nasıl işlediğini anlatır.',
         'Tek diyetisyen kliniklerinden farkımız: aynı hesapta **antrenman programı**, programınızdaki hareket videoları ve isteğe bağlı online koçluk bir arada yönetilir.',
+      ],
+    },
+    {
+      h2: 'Hangi hedef, hangi rehber?',
+      paragraphs: [
+        'Kilo yönetimi için kilo verme diyetisyeni rehberimiz, hormonal tablo için PCOS ve insülin direnci sayfaları, gebelik için hamilelikte beslenme sayfası vardır. Hepsi bu pillar’a bağlanır; tıbbi teşhis yerine geçmez.',
+        'Sporcu öğünleri için sporcu beslenmesi kümesini, koçluk için online koçluk pillar’ını kullanın. Böylece her arama niyeti tek bir URL’de toplanır.',
       ],
     },
   ],
@@ -72,7 +86,7 @@ export const ONLINE_DIYETISYEN = {
     },
     {
       q: 'Online diyetisyen paketi ne kadar?',
-      a: 'Diyet paketi aylık ve 3–6 aylık seçeneklerle sunulur. Güncel fiyatları üyelik sayfasından görebilirsiniz.',
+      a: 'Liste fiyatı online diyetisyen fiyat sayfasındadır: Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay (2026). Bu sayfa hizmet sürecini anlatır.',
     },
     {
       q: 'Sadece diyetisyen mi, yoksa koç da var mı?',
@@ -98,23 +112,39 @@ export const ONLINE_DIYETISYEN = {
       q: 'Online diyetisyen ile yüz yüze diyetisyen arasındaki fark nedir?',
       a: 'Yüz yüze kliniğe gitme zorunluluğu yoktur; randevu saatinde bilgisayar ya da telefonunuzdan katılırsınız. Yeni Form\'da tüm program, ilerleme ve mesajlaşma aynı platformda yürütüldüğü için takip daha sistematiktir.',
     },
+    {
+      q: 'Online diyet nedir?',
+      a: 'Online diyet, yüz yüze gitmeden uzmanla planlı beslenme programı almaktır. Yeni Form’da bu; video görüşmeli online diyetisyen ve paneldeki kişiye özel programdır — tek seferlik PDF liste değildir.',
+    },
+    {
+      q: 'Online diyetisyen platformu nedir?',
+      a: 'Randevu, video seans, beslenme programı ve mesajlaşmanın aynı hesapta yürüdüğü sistemdir. Yeni Form (yeniform.com) Türkiye’de online diyetisyen ve online koçluğu bir arada sunan bir platformdur.',
+    },
+    {
+      q: 'Online diyet danışmanlığı yüz yüze kadar işe yarar mı?',
+      a: 'Düzenli video seans ve ölçülebilir takip ile çoğu danışan yüz yüze sürece yakın ilerleme görür. Klinik muayene veya tetkik yerine geçmez; gerekirse hekiminize yönlendirilirsiniz.',
+    },
   ],
 }
 
 export const ONLINE_KOCLUK = {
   path: '/online-kocluk',
-  title: 'Online Koçluk — Video Görüşmeli Fitness Koçu',
+  title: 'Online Koçluk — Fitness Koçu ile Video Antrenman',
   description:
-    'Online koçluk ve online spor koçu desteği ile kişiye özel antrenman programı, video görüşme ve takip. Yeni Form Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
+    'Online koçluk ve online fitness koçu: kişiye özel antrenman programı, video görüşme ve takip. Spor ve VIP paketleriyle evde veya salonda ilerleyin.',
   keywords:
-    'online koçluk, online spor koçluğu, online spor koçu, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi, online antrenör, online spor',
-  h1: 'Online Koçluk ile Size Özel Antrenman Programı',
+    'online koçluk, online coaching, online spor koçluğu, online spor koçu, online fitness koçu, uzaktan antrenman, online antrenman, video koçluk, spor paketi, online antrenör, online spor',
+  h1: 'Online koçluk ile size özel antrenman programı',
   lead:
-    'Yeni Form’da online koçluk; PDF program satışı değil — **video görüşme**, kişiye özel antrenman planı, programınızdaki egzersiz videoları ve panel takibi bir arada. Hedefinize uygun **Spor veya VIP** paketle başlayın.',
+    '**Online koçluk** (online coaching); PDF program satışı değil — **online fitness koçu** ile **video görüşme**, kişiye özel antrenman planı ve panel takibidir. Yeni Form’da **Spor veya VIP** paketle evde veya salonda ilerleyin.',
   primaryCta: { to: '/onboarding?plan=spor', label: 'Spor Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/coaches', label: 'Koç kadromuzu inceleyin' },
   relatedService: { to: '/online-diyetisyen', label: 'Online diyetisyen hizmetimiz' },
+  relatedLinks: [
+    { to: '/online-kocluk/ev-antrenman', label: 'Evde antrenman programı' },
+    { to: '/beslenme/sporcu-beslenmesi', label: 'Sporcu beslenmesi' },
+  ],
   serviceName: 'Online Fitness Koçluğu',
   serviceType: 'ExerciseProgram',
   offerPlanIds: ['eko_spor', 'spor', 'vip'],
@@ -195,6 +225,18 @@ export const ONLINE_KOCLUK = {
       q: 'Online koçluk programım nasıl takip edilir?',
       a: 'Kişisel panelinizdeki takvimde her gün ve egzersiz görünür. Tamamladığınız seansları işaretler, koçunuz ilerlemenizi gerçek zamanlı görerek programı günceller.',
     },
+    {
+      q: 'Online coaching ne demek?',
+      a: 'Online coaching, antrenörünüzle internet üzerinden planlı çalışmaktır. Yeni Form’da karşılığı online koçluk: video görüşme, kişiye özel program ve panel takibi. Spor paketinde ayda 2 koç seansı vardır.',
+    },
+    {
+      q: 'Online fitness koçu ile spor koçu aynı mı?',
+      a: 'Pratikte evet: online fitness koçu ve online spor koçu aynı hizmet ailesidir. Yeni Form’da koçunuz hedefe göre ev, salon veya hibrit program yazar.',
+    },
+    {
+      q: 'Evde spor için online koç olur mu?',
+      a: 'Evet. Ekipmansız veya sınırlı ev aletiyle program yazılır. Evde antrenman küme sayfasında süreç ayrıntılıdır.',
+    },
   ],
 }
 
@@ -204,7 +246,7 @@ export const KILO_VERME = {
   heroFallback: '/online-diyetisyen',
   pillarPath: '/online-diyetisyen',
   pillarName: 'Online Diyetisyen',
-  title: 'Kilo Verme Diyetisyeni — Online Program ve Takip',
+  title: 'Kilo Verme ve Online Zayıflama — Diyetisyen Destekli Program',
   description:
     'Kilo verme diyetisyeni ile video görüşme, kişiye özel beslenme programı ve panel takibi. Yeni Form Diyet ve VIP paketleriyle sürdürülebilir kilo yönetimi.',
   keywords:
@@ -216,6 +258,11 @@ export const KILO_VERME = {
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadromuzu inceleyin' },
   relatedService: { to: '/online-diyetisyen', label: 'Online diyetisyen nasıl çalışır?' },
+  relatedLinks: [
+    { to: '/online-diyetisyen/fiyat', label: 'Diyetisyen fiyatları' },
+    { to: '/beslenme/insulin-direnci', label: 'İnsülin direnci' },
+    { to: '/kalori-hesaplama', label: 'Kalori hesaplama' },
+  ],
   serviceName: 'Kilo Verme Diyetisyen Desteği',
   serviceType: 'WeightManagement',
   offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
@@ -247,8 +294,8 @@ export const KILO_VERME = {
   faqs: [
     { q: 'Kilo verme diyetisyeni online olur mu?', a: 'Evet. Yeni Form’da görüşmeler platform içi videodur; program panelde kalır.' },
     { q: 'Ne kadar sürede sonuç alınır?', a: 'Kişiye göre değişir. Çoğu üye 8–12 haftalık düzenli takipte alışkanlık ve ölçü değişimini görür. Mucize süre vaadi yoktur.' },
-    { q: 'Hangi paket kilo verme için uygun?', a: 'Beslenme odaklı Diyet veya Eko Diyet; antrenmanı da istiyorsanız VIP. Fiyatlar üyelik sayfasındadır.' },
-    { q: 'Kalori açığı nedir?', a: 'Harcanan enerjinin alınan enerjiden fazla olmasıdır. Diyetisyeniniz bunu aç kalmadan, protein ve öğün düzeniyle planlar.' },
+    { q: 'Hangi paket kilo verme için uygun?', a: 'Beslenme odaklı Diyet veya Eko Diyet; antrenmanı da istiyorsanız VIP. Liste fiyatı online diyetisyen fiyat sayfasındadır.' },
+    { q: 'Kalori açığı nedir?', a: 'Harcanan enerjinin alınan enerjiden fazla olmasıdır. Tahmini BMR ve TDEE herkese açık kalori hesaplama sayfasındadır; kişiye özel açık diyetisyenle planlanır. Üye panelindeki kalori aracı öğün kaydı içindir ve giriş ister.' },
     { q: 'Spor olmadan kilo verilir mi?', a: 'Evet, beslenme temelli açık ile mümkün. Koçluk eklemek yağsız kitle ve enerji için faydalıdır.' },
     { q: 'Online kilo verme güvenilir mi?', a: 'Lisanslı diyetisyen, video seans ve KVKK uyumu ile yürütülür. Teşhis/tedavi iddiası yoktur.' },
     { q: 'Plato olursa ne yapılır?', a: 'Seanslarda öğün, uyku ve aktivite gözden geçirilir; program revize edilir.' },
@@ -262,55 +309,69 @@ export const ONLINE_DIYETISYEN_FIYAT = {
   heroFallback: '/online-diyetisyen',
   pillarPath: '/online-diyetisyen',
   pillarName: 'Online Diyetisyen',
-  title: 'Online Diyetisyen Fiyatları 2026 — Paket ve Seans',
+  title: 'Online Diyetisyen Fiyatları 2026 — 1.299 TL\'den',
   description:
-    '2026 online diyetisyen fiyatları: Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay. Video görüşme seans hakları ve paket karşılaştırması.',
+    'Online diyetisyen fiyatları 2026: Eko Diyet 1.299 TL, Diyet 2.499 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
   keywords:
-    'online diyetisyen fiyat, online diyetisyen fiyat 2026, diyet paketi fiyat, online diyet ücreti',
-  h1: 'Online diyetisyen fiyatları 2026',
+    'online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları',
+  h1: 'Online diyetisyen fiyatları 2026 — 1.299 TL\'den',
   lead:
-    'Yeni Form’da **online diyetisyen** fiyatı pakete göre değişir: **Eko Diyet 1.299 TL/ay** (ayda 1 seans), **Diyet 2.499 TL/ay** (ayda 2 seans), **VIP 4.999 TL/ay** (2 diyetisyen + 2 koç). Tüm plan tablosu üyelik sayfasındadır.',
-  primaryCta: { to: '/membership', label: 'Güncel Fiyatları Gör' },
-  secondaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet ile Başla' },
+    '**Online diyetisyen fiyatları** (2026) Yeni Form’da şeffaftır: **Eko Diyet 1.299 TL/ay** (ayda 1 seans), **Diyet 2.499 TL/ay** (ayda 2 seans), **VIP 4.999 TL/ay** (2 diyetisyen + 2 koç). Hizmetin nasıl işlediği pillar sayfadadır; bu sayfa yalnızca ücrettir.',
+  primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet ile Başla' },
+  secondaryCta: { to: '/membership', label: 'Tüm paketleri karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
   relatedService: { to: '/online-diyetisyen', label: 'Hizmet nasıl işler?' },
+  relatedLinks: [
+    { to: '/membership', label: 'Üyelik paket tablosu' },
+    { to: '/kilo-verme', label: 'Kilo verme programı' },
+  ],
   serviceName: 'Online Diyetisyen Paket Fiyatları',
   serviceType: 'NutritionCounseling',
   offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
   sections: [
     {
-      h2: 'Online diyetisyen ne kadar tutar?',
+      h2: 'Online diyetisyen fiyatları 2026 ne kadar?',
       paragraphs: [
-        '2026’da bireysel klinikler aylık **2.000–6.000 TL** bandında teklif verebilir. Yeni Form’da fiyat şeffaftır: Eko Diyet **1.299 TL**, Diyet **2.499 TL**, koç birleşik VIP **4.999 TL** (aylık liste fiyatı).',
-        'Fark: yalnızca mesajla takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Tüm paketleri `/membership` üzerinde karşılaştırın.',
+        'Yeni Form liste fiyatı: Eko Diyet **1.299 TL**, Diyet **2.499 TL**, VIP **4.999 TL** (aylık). Bireysel klinikler 2026’da çoğu zaman **2.000–6.000 TL/ay** bandında, çoğu zaman seans başı veya gizli teklifle çalışır.',
+        'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor ve Doktor satırları üyelik tablosundadır — bu sayfa diyetisyen ücretine odaklanır.',
       ],
     },
     {
-      h2: 'Seans hakları nasıl işler?',
+      h2: 'Diyetisyen paket fiyatları ve seans hakları',
       steps: [
-        { title: 'Eko Diyet', text: 'Ayda 1 online diyetisyen görüşmesi — giriş seviyesi takip.' },
-        { title: 'Diyet', text: 'Ayda 2 video seans; kilo yönetimi ve alışkanlık değişimi için standart paket.' },
-        { title: 'VIP', text: 'Ayda 2 diyetisyen + 2 koç; beslenme ve antrenman birlikte.' },
-        { title: 'Ödeme', text: 'Stripe ile aylık veya 3–6 aylık seçenekler üyelik sayfasında görünür.' },
+        { title: 'Eko Diyet — 1.299 TL/ay', text: 'Ayda 1 online diyetisyen görüşmesi; giriş seviyesi takip.' },
+        { title: 'Diyet — 2.499 TL/ay', text: 'Ayda 2 video seans; kilo yönetimi ve alışkanlık değişimi için standart paket.' },
+        { title: 'VIP — 4.999 TL/ay', text: 'Ayda 2 diyetisyen + 2 koç; beslenme ve antrenman birlikte.' },
+        { title: 'Ödeme', text: 'Stripe; aylık veya 3–6 aylık katmanlar üyelik sayfasında. Gizli uygulama ücreti yok.' },
       ],
     },
     {
-      h2: 'Neden fiyat sayfası ayrı?',
+      h2: 'Diyetisyen fiyatları: seanslık klinik vs paket',
       paragraphs: [
-        '“Online diyetisyen fiyat 2026” arayanlar tüm wellness paketlerini değil, **diyetisyen ücretini** ister. Bu sayfa yalnızca diyet odaklıdır; Spor/Doktor satırları üyelik tablosundadır.',
-        'Rakip klinikler fiyatı özel mesajda gizleyebilir. Biz liste fiyatını burada ve üyelik sayfasında açık yazarız.',
+        'Klinikte **diyetisyen seans ücretleri** 2026’da çoğu şehirde seans başı 1.000–2.500 TL bandında değişir; aylık takip ayrıca konuşulur. Yeni Form’da seans hakkı pakete dahildir — Eko’da 1, Diyet’te 2/ay — ekstra seans ücreti listelenmez.',
+        '“Online diyet ücretleri” veya “online diyet fiyatları” arayanlar için kural aynıdır: fiyat pakettedir, PDF satışı değildir. Hizmet tanımı online diyetisyen sayfasındadır.',
+      ],
+    },
+    {
+      h2: 'Neden fiyat sayfası üyelikten ayrı?',
+      paragraphs: [
+        'Üyelik sayfası Diyet + Spor + Doktor + VIP karşılaştırmasıdır. “Online diyetisyen fiyatları” niyeti tüm wellness tablosunu değil, **diyetisyen ücretini** ister. Bu URL yalnızca o niyete cevap verir.',
+        'Rakip klinikler fiyatı DM’de gizleyebilir. Liste fiyatını burada açık yazarız; kampanya varsa üyelik tablosunda görünür.',
       ],
     },
   ],
   faqs: [
-    { q: 'Online diyetisyen fiyatı 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay (liste). Kampanya üyelik sayfasında görünür.' },
-    { q: 'Seans başı mı aylık mı?', a: 'Paket aylıktır; seans hakkı pakete dahildir (Eko 1, Diyet 2/ay).' },
-    { q: 'Gizli ücret var mı?', a: 'Liste fiyatı üyelik sayfasındadır. Ödeme Stripe ile alınır; ek uygulama ücreti yoktur.' },
+    { q: 'Online diyetisyen fiyatları 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay (liste). 3–6 aylık katman üyelik sayfasındadır.' },
+    { q: 'Diyetisyen fiyatları neden pakete göre değişir?', a: 'Seans hakkı ve koçluk dahil olup olmamasına göre. Yalnız diyetisyen: 1.299 veya 2.499 TL/ay. Koç + diyetisyen: VIP 4.999 TL/ay.' },
+    { q: 'Diyetisyen paket fiyatları nasıl hesaplanır?', a: 'Aylık listedir; seans hakkı dahildir (Eko 1, Diyet 2). Seans başı ek ücret yoktur. Çok aylık birim fiyat üyelik tablosunda düşer.' },
+    { q: 'Online diyet ücretleri gizli mi?', a: 'Hayır. Bu sayfadaki liste + üyelik tablosu geçerlidir. Ödeme Stripe iledir; ayrı uygulama ücreti yoktur.' },
+    { q: 'Diyetisyen seans ücretleri pakete dahil mi?', a: 'Evet. Paketteki video seans hakkı fiyata dahildir. Platform tek seanslık klinik satışı yapmaz.' },
+    { q: 'Online diyetisyen ücretleri klinikten neden farklı?', a: 'Video altyapısı, panel programı ve ölçek listededir. Klinik teklifi muayene, şehir ve uzmanlıkla kişiye özel kalabilir.' },
+    { q: 'Seans başı mı aylık mı?', a: 'Paket aylıktır; seans hakkı pakete dahildir.' },
     { q: '3 veya 6 aylık indirim var mı?', a: 'Çok aylık katmanlar üyelik sayfasındaki fiyat tablosunda yer alır.' },
-    { q: 'Sadece bir seans alınır mı?', a: 'Platform paket modelidir; tek seanslık klinik satışı yoktur. Doktor paketi ayrı, tek seferliktir.' },
+    { q: 'Sadece bir seans alınır mı?', a: 'Hayır. Paket modelidir. Doktor paketi ayrı ve tek seferliktir; diyetisyen hizmeti değildir.' },
     { q: 'Koçluk fiyata dahil mi?', a: 'Diyet paketinde hayır. VIP’de koç + diyetisyen birliktedir.' },
     { q: 'İptal nasıl olur?', a: 'Stripe Müşteri Portalı ve iptal politikası yasal metinlerde açıklanır.' },
-    { q: 'Fiyat neden klinikten farklı?', a: 'Platform ölçeği, video altyapısı ve program paneli dahildir; bireysel klinik teklifi kişiye özel kalabilir.' },
   ],
 }
 
@@ -625,6 +686,75 @@ export const ONLINE_WELLNESS = {
   ],
 }
 
+export const HAMILELIK_BESLENMESI = {
+  path: '/beslenme/hamilelik',
+  theme: 'dietitian',
+  heroFallback: '/online-diyetisyen',
+  pillarPath: '/online-diyetisyen',
+  pillarName: 'Online Diyetisyen',
+  title: 'Hamilelikte Beslenme — Trimester Rehberi ve Diyetisyen',
+  description:
+    'Hamilelikte beslenme ve gebelikte diyet: trimester ihtiyaçları, güvenli öğün düzeni. Online diyetisyen hekim planınızı tamamlar; tıbbi tedavi yerine geçmez.',
+  keywords:
+    'hamilelikte beslenme, gebelikte diyet, hamilelikte beslenme rehberi, gebelikte beslenme, hamile diyetisyen, online hamilelik beslenmesi',
+  h1: 'Hamilelikte beslenme — trimester trimester güvenli rehber',
+  lead:
+    '**Hamilelikte beslenme**, kalori kesmek değil; protein, folat, demir, iyot ve düzenli öğünle annenin ve bebeğin ihtiyacını karşılamaktır. Yeni Form **online diyetisyeni** kadın doğum uzmanınızın planını tamamlar. Bu sayfa **tıbbi teşhis, tedavi veya kilo verdirme programı değildir**.',
+  primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyetisyen Desteği Al' },
+  secondaryCta: { to: '/online-diyetisyen', label: 'Online diyetisyen nasıl çalışır?' },
+  teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
+  relatedService: { to: '/online-diyetisyen', label: 'Online diyetisyen hizmeti' },
+  relatedLinks: [
+    { to: '/beslenme/insulin-direnci', label: 'İnsülin direnci beslenmesi' },
+    { to: '/online-diyetisyen/fiyat', label: 'Diyetisyen fiyatları' },
+  ],
+  serviceName: 'Hamilelikte Beslenme Danışmanlığı',
+  serviceType: 'NutritionCounseling',
+  offerPlanIds: ['eko_diyet', 'diyet', 'vip'],
+  sections: [
+    {
+      h2: 'Hamilelikte beslenme neden ayrı bir plan ister?',
+      paragraphs: [
+        'Gebelikte enerji ve mikro besin ihtiyacı trimestre göre değişir. **Gebelikte diyet** denince kastedilen yasak listesi değil; öğün düzeni, kusma/bulantıya göre pratik alternatifler ve hekiminizin belirlediği kısıtların menüye yansımasıdır.',
+        'Online diyetisyen kan değeri, ilaç ve risk faktörlerini **yorumlayarak teşhis koymaz**. Laboratuvar ve takip kadın doğum / perinatoloji hekiminizdedir. Beslenme seansı bu takibi kolaylaştırır.',
+      ],
+    },
+    {
+      h2: 'Süreç nasıl işler?',
+      steps: [
+        { title: 'Hekim onayı ve profil', text: 'Kayıt sonrası gebelik haftası, kısıtlar ve hekim notlarınız netleşir. Riskli gebelikte önce doktorunuza danışın.' },
+        { title: 'Diyetisyen eşleşmesi', text: 'Diyet paketinde ayda 2 video görüşme vardır. Mide bulantısı veya reflü gibi şikayetlere göre öğün pratikleştirilir.' },
+        { title: 'Trimester menüsü', text: 'Program panele düşer; takviye kararı hekiminizindir — diyetisyen marka veya doz yazmaz.' },
+        { title: 'Takip', text: 'Kilo alımı hedefi kişiye ve obstetrik plana göredir; hızlı zayıflama vaadi yoktur.' },
+      ],
+    },
+    {
+      h2: 'Trimester trimester nelere dikkat edilir?',
+      paragraphs: [
+        'İlk trimesterde bulantı varsa küçük, sık öğün öne çıkar. İkinci trimesterde protein ve demir kaynakları, üçüncüde mide hacmi küçüldüğü için daha sık öğün pratiktir. Bu genel çerçevedir; kişiselleştirme seanstadır.',
+        'Alkol, çiğ et/süt ürünleri ve hekimin yasakladığı gıdalar menüye girmez. Kafein limiti obstetrik öneriye göre ayarlanır. **Kilo vermek için kalori açığı** gebelikte bu sayfanın konusu değildir.',
+      ],
+    },
+    {
+      h2: 'Kimler için uygun?',
+      paragraphs: [
+        'Düşük-orta riskli gebeliği olan, hekim takibinde olup öğün düzeni isteyen danışanlar için online süreç uygundur. Çoğul gebelik, gestasyonel diyabet, preeklampsi şüphesi veya hastane izlemi varsa **önce hekim** — platform bir klinik değildir.',
+        'Emzirme dönemi ayrı bir plandır; bu URL yalnızca hamilelikte beslenmeye odaklanır.',
+      ],
+    },
+  ],
+  faqs: [
+    { q: 'Hamilelikte beslenme nasıl olmalı?', a: 'Yeterli protein, çeşitlendirilmiş karbonhidrat, sağlıklı yağ ve hekimin önerdiği takviyelerle düzenli öğün. Kalori kesme hedefi yoktur. Kişiye özel plan için diyetisyen ve kadın doğum hekimi birlikte çalışır.' },
+    { q: 'Gebelikte diyet yapılır mı?', a: 'Burada diyet kısıtlama değil, güvenli menü demektir. Gebelikte zayıflama programı sunulmaz. Gerekli kilo alımı obstetrik plana göredir.' },
+    { q: 'Hamilelikte online diyetisyen güvenli mi?', a: 'Beslenme alışkanlığı ve pratik menü için evet; acil obstetrik durum, ultrason ve ilaç için hayır — o kısım hekiminizdedir. Yeni Form teşhis veya tedavi iddiası taşımaz.' },
+    { q: 'Hangi paket gebelik için uygun?', a: 'Diyet paketi (ayda 2 diyetisyen seansı) beslenme takibi için yeterlidir. Ağır antrenman içeren Spor veya VIP’i hekim kısıtı varsa seçmeyin.' },
+    { q: 'Folat ve demir takviyesini diyetisyen mi verir?', a: 'Hayır. Takviye ve doz kadın doğum veya aile hekimi planındadır. Diyetisyen gıda kaynaklarını menüye yerleştirir.' },
+    { q: 'Gestasyonel diyabetim var, bu sayfa yeter mi?', a: 'Hayır. Gestasyonel diyabet tıbbi protokol ister. Endokrin ve obstetrik ekibinizi takip edin; diyetisyen yalnızca hekim planına uyumlu öğün desteği verebilir.' },
+    { q: 'Online görüşme nasıl yapılır?', a: 'Platform içi görüntülü seans; ek uygulama gerekmez. Randevu saatinde sessiz bir ortam yeterlidir.' },
+    { q: 'Bu içerik tıbbi tavsiye midir?', a: 'Hayır. Genel eğitim ve hizmet tanımıdır. Sağlık kararlarınızı hekiminizle alın.' },
+  ],
+}
+
 export const SERVICE_PAGES = {
   [ONLINE_DIYETISYEN.path]: { ...ONLINE_DIYETISYEN, theme: 'dietitian' },
   [ONLINE_KOCLUK.path]: { ...ONLINE_KOCLUK, theme: 'coach' },
@@ -635,6 +765,7 @@ export const SERVICE_PAGES = {
   [PCOS_BESLENMESI.path]: PCOS_BESLENMESI,
   [INSULIN_DIRENCI.path]: INSULIN_DIRENCI,
   [ONLINE_WELLNESS.path]: ONLINE_WELLNESS,
+  [HAMILELIK_BESLENMESI.path]: HAMILELIK_BESLENMESI,
 }
 
 /** **kalın** işaretlerini <strong> ile HTML’e çevirir */
@@ -666,6 +797,15 @@ export function servicePagePlainHtml(page, { includeLead = true } = {}) {
   }
   parts.push(`<p><a href="${page.primaryCta.to}">${escapeHtml(page.primaryCta.label)}</a></p>`)
   parts.push(`<p><a href="${page.teamLink.to}">${escapeHtml(page.teamLink.label)}</a></p>`)
+  if (page.relatedService?.to) {
+    parts.push(`<p><a href="${page.relatedService.to}">${escapeHtml(page.relatedService.label)}</a></p>`)
+  }
+  const extraLinks = page.relatedLinks || []
+  if (extraLinks.length) {
+    parts.push('<p>')
+    parts.push(extraLinks.map((l) => `<a href="${l.to}">${escapeHtml(l.label)}</a>`).join(' · '))
+    parts.push('</p>')
+  }
   return parts.join('\n')
 }
 

@@ -5,6 +5,9 @@ User-agent: *
 Allow: /
 Allow: /online-diyetisyen
 Allow: /online-kocluk
+Allow: /kilo-verme
+Allow: /beslenme/
+Allow: /kalori-hesaplama
 Allow: /membership
 Allow: /onboarding
 Allow: /stories
@@ -26,6 +29,7 @@ Disallow: /staff
 Disallow: /dashboard
 Disallow: /call
 Disallow: /calendar
+# Üye öğün/fotoğraf kalori aracı — public BMR aracı /kalori-hesaplama Allow
 Disallow: /calorie
 Disallow: /schedule
 Disallow: /notifications

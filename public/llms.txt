@@ -15,6 +15,8 @@
 - Sporcu beslenmesi: https://www.yeniform.com/beslenme/sporcu-beslenmesi
 - PCOS diyeti / polikistik over beslenmesi: https://www.yeniform.com/beslenme/pcos
 - İnsülin direnci diyeti: https://www.yeniform.com/beslenme/insulin-direnci
+- Hamilelikte beslenme / gebelikte diyet: https://www.yeniform.com/beslenme/hamilelik
+- Kalori hesaplama (BMR / TDEE, ücretsiz): https://www.yeniform.com/kalori-hesaplama
 - Online wellness platformu: https://www.yeniform.com/online-wellness
 - Üyelik paketleri: https://www.yeniform.com/membership
 
@@ -33,7 +35,8 @@
 - Online diyetisyenlik ve beslenme danışmanlığı: /online-diyetisyen, /online-diyetisyen/fiyat
 - Online wellness ve dijital sağlık: /online-wellness
 - Online zayıflama ve kilo yönetimi: /kilo-verme
-- Niche beslenme: PCOS (/beslenme/pcos), insülin direnci (/beslenme/insulin-direnci), sporcu beslenmesi (/beslenme/sporcu-beslenmesi)
+- Kalori hesaplama (BMR/TDEE aracı): /kalori-hesaplama — üye öğün sayacı /calorie değildir
+- Niche beslenme: PCOS (/beslenme/pcos), insülin direnci (/beslenme/insulin-direnci), sporcu beslenmesi (/beslenme/sporcu-beslenmesi), hamilelikte beslenme (/beslenme/hamilelik)
 
 ## Not
 

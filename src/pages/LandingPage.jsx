@@ -184,8 +184,20 @@ export default function LandingPage() {
               <Link to="/online-diyetisyen" className="underline-offset-2 hover:text-white hover:underline">
                 Online diyetisyen
               </Link>
+              <Link to="/online-diyetisyen/fiyat" className="underline-offset-2 hover:text-white hover:underline">
+                Diyetisyen fiyatları
+              </Link>
               <Link to="/online-kocluk" className="underline-offset-2 hover:text-white hover:underline">
                 Online koçluk
+              </Link>
+              <Link to="/kilo-verme" className="underline-offset-2 hover:text-white hover:underline">
+                Kilo verme
+              </Link>
+              <Link to="/kalori-hesaplama" className="underline-offset-2 hover:text-white hover:underline">
+                Kalori hesaplama
+              </Link>
+              <Link to="/beslenme/hamilelik" className="underline-offset-2 hover:text-white hover:underline">
+                Hamilelikte beslenme
               </Link>
             </motion.p>
 

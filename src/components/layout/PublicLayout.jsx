@@ -148,7 +148,6 @@ export default function PublicLayout() {
     setMenuOpen(false)
   }
 
-  // Menü açılınca aktif rotaya göre ilgili bölümü açık getir
   useEffect(() => {
     if (!menuOpen) return
     const discoverActive = discoverSubLinks.some(
@@ -539,7 +538,12 @@ export default function PublicLayout() {
               <p className="text-sm font-semibold text-white">Platform</p>
               <div className="mt-3 space-y-2 text-sm text-cream-100/60">
                 <Link to="/online-diyetisyen" className="block hover:text-white">Online Diyetisyen</Link>
+                <Link to="/online-diyetisyen/fiyat" className="block hover:text-white">Diyetisyen Fiyatları</Link>
+                <Link to="/kilo-verme" className="block hover:text-white">Kilo Verme</Link>
+                <Link to="/kalori-hesaplama" className="block hover:text-white">Kalori Hesaplama</Link>
                 <Link to="/online-kocluk" className="block hover:text-white">Online Koçluk</Link>
+                <Link to="/beslenme/hamilelik" className="block hover:text-white">Hamilelikte Beslenme</Link>
+                <Link to="/beslenme/pcos" className="block hover:text-white">PCOS Diyeti</Link>
                 <Link to="/hakkimizda" className="block hover:text-white">Hakkımızda</Link>
                 <Link to="/membership" className="block hover:text-white">Üyelikler</Link>
                 <Link to="/blog" className="block hover:text-white">Blog</Link>

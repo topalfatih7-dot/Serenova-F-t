@@ -2,9 +2,10 @@
 name: yeniform-seo
 description: >-
   Yeni Form SEO mühendisliği: PAGE_SEO, prerender, sitemap, schema.org, GSC,
-  küme sayfaları, E-E-A-T ve GEO. Use when working on SEO, meta, canonical,
-  sitemap, robots, JSON-LD, prerender-seo, /online-diyetisyen, /online-kocluk,
-  /kilo-verme, blog, staff public profiles, llms.txt, or adding a public page.
+  küme sayfaları, E-E-A-T, GEO, GSC Excel analizi. Use when working on SEO,
+  meta, canonical, sitemap, robots, JSON-LD, prerender-seo, Search Console,
+  /online-diyetisyen, /online-kocluk, /kilo-verme, /beslenme/hamilelik, blog,
+  staff public profiles, llms.txt, or adding a public page.
 ---
 
 # Yeni Form — SEO
@@ -59,15 +60,17 @@ Builder’lar ve kurallar: [schemas.md](schemas.md).
 
 - Supabase: posts, staff bio, `site_content` testimonial rating
 - Browser: canlı title/H1/canonical
-- GSC/GA4 API yok — kullanıcı CSV/ekran görüntüsü
+- GSC/GA4 API yok — kullanıcı CSV/xlsx; [gsc-playbook.md](gsc-playbook.md)
 - Vercel MCP yoksa Dashboard log; sitemap 500’de önce `api/sitemap.js` modül init
 
 ## Anahtar kelime silosu
 
-Pillar: `/` marka · `/online-diyetisyen` · `/online-kocluk` · `/membership` tüm paketler.
+GSC gerçeği ve sahiplik tablosu: [gsc-playbook.md](gsc-playbook.md). İhlal etme.
 
-Küme: `/kilo-verme` · `/online-diyetisyen/fiyat` (yalnız diyet fiyat) · `/online-kocluk/ev-antrenman` · `/beslenme/sporcu-beslenmesi`.
+Pillar: `/` marka · `/online-diyetisyen` (hizmet, fiyat yok) · `/online-kocluk` · `/membership` (paket karşılaştır; title’da `fiyatları` yok).
 
-PCOS / insülin / hamilelik / şehir: sonraki sprint.
+Küme: `/kilo-verme` · `/online-diyetisyen/fiyat` (yalnız diyet fiyat) · `/online-kocluk/ev-antrenman` · `/beslenme/sporcu-beslenmesi` · `/beslenme/pcos` · `/beslenme/insulin-direnci` · `/beslenme/hamilelik` · `/kalori-hesaplama` (public BMR/TDEE; `/calorie` üye, rakip değil).
+
+Şehir doorway yok.
 
 Detay: [docs/SEO_KEYWORDS.md](../../../docs/SEO_KEYWORDS.md) · [docs/SEO_MASTER_PLAN.md](../../../docs/SEO_MASTER_PLAN.md)

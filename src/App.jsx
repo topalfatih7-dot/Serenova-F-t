@@ -46,6 +46,7 @@ const CorporateApplicationPage = lazy(() => import('./pages/CorporateApplication
 const StaffApplicationPage = lazy(() => import('./pages/StaffApplicationPage'))
 const TeamListPage = lazy(() => import('./pages/TeamListPage'))
 const ServiceLandingPage = lazy(() => import('./pages/services/ServiceLandingPage'))
+const KaloriHesaplamaPage = lazy(() => import('./pages/public/KaloriHesaplamaPage'))
 const LegalDocumentPage = lazy(() => import('./pages/legal/LegalDocumentPage'))
 const DeleteAccountPage = lazy(() => import('./pages/account/DeleteAccountPage'))
 
@@ -127,6 +128,8 @@ export default function App() {
               <Route path="beslenme/sporcu-beslenmesi" element={<ServiceLandingPage path="/beslenme/sporcu-beslenmesi" />} />
               <Route path="beslenme/pcos" element={<ServiceLandingPage path="/beslenme/pcos" />} />
               <Route path="beslenme/insulin-direnci" element={<ServiceLandingPage path="/beslenme/insulin-direnci" />} />
+              <Route path="beslenme/hamilelik" element={<ServiceLandingPage path="/beslenme/hamilelik" />} />
+              <Route path="kalori-hesaplama" element={<KaloriHesaplamaPage />} />
               <Route path="online-wellness" element={<ServiceLandingPage path="/online-wellness" />} />
               <Route path="hakkimizda" element={<AboutPage />} />
               <Route path="about" element={<Navigate to="/hakkimizda" replace />} />

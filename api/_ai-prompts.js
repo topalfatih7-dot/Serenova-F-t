@@ -79,7 +79,7 @@ Her makale sonunda kısa bir "Bu içerik genel bilgilendirme amaçlıdır" notu 
 
 export function buildBlogInstruction({ category, topicHint, recentTitles = [] }) {
   const avoid = recentTitles.length
-    ? `\nSon yazı başlıkları (tekrarlama): ${recentTitles.slice(0, 8).join(' | ')}`
+    ? `\nSon yazı başlıkları (TEKRARLAMA, aynı kökte yazma — uyku, kortizol, alışkanlık, lif, motivasyon düşüşü): ${recentTitles.slice(0, 30).join(' | ')}`
     : ''
   return `Kategori: ${category}
 Konu ipucu: ${topicHint}
@@ -92,7 +92,7 @@ Yapı (zorunlu):
 1. Giriş — 2-3 paragraf (konuyu bağlamla tanıt, okuyucuyu çek)
 2. En az 4 alt başlık (## ile başlasın) — her bölümde 2-3 paragraf
 3. En az bir madde işaretli pratik ipuçları listesi
-4. Özet/kapanış — 1-2 paragraf; burada doğal şekilde şu sayfalardan EN AZ BİRİNE metin içi referans ver (URL'yi olduğu gibi yaz): https://www.yeniform.com/online-diyetisyen veya https://www.yeniform.com/online-kocluk veya https://www.yeniform.com/kilo-verme veya https://www.yeniform.com/online-diyetisyen/fiyat veya https://www.yeniform.com/online-kocluk/ev-antrenman veya https://www.yeniform.com/beslenme/sporcu-beslenmesi veya https://www.yeniform.com/membership
+4. Özet/kapanış — 1-2 paragraf; burada doğal şekilde şu sayfalardan EN AZ BİRİNE metin içi referans ver (URL'yi olduğu gibi yaz): https://www.yeniform.com/online-diyetisyen veya https://www.yeniform.com/online-kocluk veya https://www.yeniform.com/kilo-verme veya https://www.yeniform.com/online-diyetisyen/fiyat veya https://www.yeniform.com/online-kocluk/ev-antrenman veya https://www.yeniform.com/beslenme/sporcu-beslenmesi veya https://www.yeniform.com/beslenme/pcos veya https://www.yeniform.com/beslenme/insulin-direnci veya https://www.yeniform.com/beslenme/hamilelik veya https://www.yeniform.com/kalori-hesaplama veya https://www.yeniform.com/membership
 5. "Bu içerik genel bilgilendirme amaçlıdır" notu
 
 Paragraflar arasında boş satır bırak. Kısa özet yazma; okuyucuya gerçek değer sun.
@@ -115,7 +115,7 @@ export const BLOG_CONFIG = {
   responseMimeType: 'application/json',
 }
 
-/** Günlük konu rotasyonu — pillar (online diyetisyen/koçluk) + cluster */
+/** Günlük konu rotasyonu — pillar + küme; tekrarlayan uyku/kortizol/lif/alışkanlık kökleri yok */
 export const BLOG_TOPIC_ROTATION = [
   {
     category: 'Beslenme',
@@ -123,10 +123,13 @@ export const BLOG_TOPIC_ROTATION = [
       'online diyetisyen ile kilo verme süreci nasıl işler',
       'online diyet fiyatlarını etkileyen faktörler ve paket seçimi',
       'video görüşmeli diyetisyen desteğinin avantajları',
-      'protein alımı ve kas onarımı',
-      'öğün zamanlaması ve kan şekeri dengesi',
-      'lifli beslenmenin metabolizma etkisi',
+      'BMR ve TDEE nedir günlük kalori ihtiyacı nasıl hesaplanır',
+      'kalori açığı nedir sürdürülebilir kilo vermede güvenli sınır',
+      'online diyetisyen ile yüz yüze diyetisyen farkı kim için hangisi',
+      'glisemik indeks ve öğün sırası pratikte ne işe yarar',
+      'kahvaltı atlamak metabolizmayı yavaşlatır mı bilimsel bakış',
       'online beslenme danışmanlığı kimler için uygundur',
+      'protein alımını gün içine nasıl yayarsınız sporcu ve masa başı',
     ],
   },
   {
@@ -135,37 +138,104 @@ export const BLOG_TOPIC_ROTATION = [
       'online koçluk nedir ve yüz yüze koçluktan farkı',
       'online spor koçu ile evde antrenman programı',
       'online fitness koçu seçerken dikkat edilecekler',
-      'kuvvet antrenmanının metabolik faydaları',
-      'evde vücut ağırlığı antrenmanı',
-      'toparlanma ve dinlenme günleri',
+      'progressive overload evde nasıl uygulanır',
+      'NEAT nedir günlük hareket enerji harcamasına etkisi',
       'video koçluk seansına nasıl hazırlanılır',
+      'kuvvet antrenmanı yeni başlayanlar için ilk 8 hafta',
+      'toparlanma gününde ne yapılır aşırı antrenman belirtileri',
+      'evde vücut ağırlığı antrenmanında ilerleme nasıl ölçülür',
+      'antrenman saatiyle sporcu öğünü nasıl hizalanır',
     ],
   },
   {
     category: 'Motivasyon',
     topics: [
       'online diyetisyen ve koçla hesap verebilirlik',
-      'alışkanlık oluşturma bilimi',
-      'motivasyon düşüşüyle başa çıkma',
+      'çevre tasarımı irade yerine ortamı düzenlemek',
+      'implementation intention ile randevuyu takvime bağlamak',
       'küçük kazanımları kutlama',
       'öz disiplin ve öz şefkat dengesi',
       'sürdürülebilir dönüşüm zihniyeti',
       'hedef belirleme ve SMART kriterler',
+      'plato döneminde kilo vermede ne yapılır',
+      'sosyal medya karşılaştırması ve beden algısı',
+      'seans kaçırmamak için randevu ritüeli',
     ],
   },
   {
     category: 'Yaşam',
     topics: [
       'masa başı çalışanlar için online koçluk ve hareket',
-      'uyku kalitesi ve kilo yönetimi',
-      'stres ve kortizol ilişkisi',
-      'mevsimsel beslenme',
+      'circadian ritim ve öğün saatleri',
+      'mevsimsel beslenme Türkiye mutfağı',
       'sosyal yaşamda sağlıklı seçimler',
-      'work-life balance ve wellness',
+      'iş yaşam dengesi ve wellness',
       'online wellness platformunda ilk 30 gün',
+      'ofiste mikro mola ve merdiven kullanımı',
+      'ekran molası boyun ve omuz rahatlatma',
+      'seyahatte öğün düzeni pratik çerçeve',
+      'hidrasyon mitleri vs günlük pratik',
     ],
   },
 ]
+
+const TOPIC_STOPWORDS = new Set([
+  'nedir', 'nasil', 'nasıl', 'icin', 'için', 'ile', 'veya', 'gibi', 'daha',
+  'olan', 'olarak', 'uzerine', 'üzerine', 'hakkinda', 'hakkında', 'yeni',
+  'form', 'bir', 'bu',
+])
+
+function foldTr(text) {
+  return String(text || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+}
+
+function topicTokens(text) {
+  const keep = new Set(['bmr', 'tdee', 'pcos', 'neat'])
+  return foldTr(text)
+    .split(/[^a-z0-9]+/)
+    .filter((w) => keep.has(w) || (w.length >= 4 && !TOPIC_STOPWORDS.has(w)))
+}
+
+export function topicOverlapsRecent(topicHint, recentTitles = []) {
+  const topicWords = topicTokens(topicHint)
+  const recentWords = new Set(topicTokens((recentTitles || []).join(' ')))
+  const seen = new Set()
+  let hits = 0
+  for (const w of topicWords) {
+    if (seen.has(w)) continue
+    seen.add(w)
+    if (recentWords.has(w)) hits += 1
+  }
+  return hits >= 2
+}
+
+/** Günlük slot; son başlıklarla ≥2 anlamlı kelime örtüşen konuyu atlar (28 deneme). */
+export function pickBlogTopic(recentTitles = [], now = new Date()) {
+  const dayOfYear = Math.floor(
+    (now - new Date(now.getFullYear(), 0, 0)) / 86400000,
+  )
+  const n = BLOG_TOPIC_ROTATION.length
+  let fallback = null
+  for (let offset = 0; offset < 28; offset += 1) {
+    const d = dayOfYear + offset
+    const rotation = BLOG_TOPIC_ROTATION[d % n]
+    const topicIndex = Math.floor(d / n) % rotation.topics.length
+    const candidate = {
+      category: rotation.category,
+      topicHint: rotation.topics[topicIndex],
+    }
+    if (!fallback) fallback = candidate
+    if (!topicOverlapsRecent(candidate.topicHint, recentTitles)) return candidate
+  }
+  return fallback
+}
 
 // ─── Günün İpucu (Dashboard — günlük motivasyon) ───────────────────
 export const DAILY_TIP_SYSTEM = `Sen Yeni Form (yeniform.com) wellness platformunun motivasyon koçusun.
