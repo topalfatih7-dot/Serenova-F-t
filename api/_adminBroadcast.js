@@ -7,10 +7,10 @@
 import { requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
-import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
+import { sendExpoPushBatch, sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
 import { sendMail, adminBroadcastEmail, isMailConfigured } from './_mailer.js'
 
-const MAX_RECIPIENTS = 50
+const MAX_RECIPIENTS = 200
 const MAX_TITLE = 80
 const MAX_BODY = 1500
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -63,12 +63,28 @@ async function handleMeta(admin, res) {
     console.warn('[admin-broadcast] history', histErr.message)
   }
 
+  const [{ count: memberCount }, { count: staffCount }] = await Promise.all([
+    admin.from('members').select('id', { count: 'exact', head: true }),
+    admin.from('staff').select('id', { count: 'exact', head: true }),
+  ])
+
+  const tokenSet = new Set(tokenUserIds)
+  const { data: staffRows } = await admin.from('staff').select('id')
+  const staffWithToken = (staffRows || []).filter((s) => tokenSet.has(String(s.id))).length
+
   return res.status(200).json({
     ok: true,
     tokenUserIds,
     mailConfigured: isMailConfigured(),
     maxRecipients: MAX_RECIPIENTS,
     messages: history,
+    coverage: {
+      members: memberCount || 0,
+      staff: staffCount || 0,
+      tokens: tokenUserIds.length,
+      staffWithToken,
+      staffWithoutToken: Math.max(0, (staffCount || 0) - staffWithToken),
+    },
   })
 }
 
@@ -124,7 +140,7 @@ async function loadRecipients(admin, rawList) {
   return { ok: true, recipients: resolved }
 }
 
-async function sendPushOne(admin, recipient, notification) {
+async function sendPushOne(admin, recipient, notification, opts = {}) {
   if (recipient.missing) {
     return {
       id: recipient.id,
@@ -152,6 +168,18 @@ async function sendPushOne(admin, recipient, notification) {
       reason: null,
       inbox: false,
       error: inboxErr.message,
+    }
+  }
+
+  if (opts.skipExpo) {
+    return {
+      id: recipient.id,
+      audience: recipient.audience,
+      name: recipient.name,
+      email: recipient.email,
+      status: 'queued',
+      reason: null,
+      inbox: true,
     }
   }
 
@@ -304,11 +332,61 @@ async function handleSend(admin, req, res, auth, body) {
   }
 
   const results = []
+  const pushJobs = []
+  const pushIndex = []
+
   for (const recipient of loaded.recipients) {
-    if (channel === 'push') {
-      results.push(await sendPushOne(admin, recipient, notification))
-    } else {
+    if (channel !== 'push') {
       results.push(await sendEmailOne(recipient, title, message))
+      continue
+    }
+    const inbox = await sendPushOne(admin, recipient, notification, { skipExpo: true })
+    results.push(inbox)
+    if (inbox.status !== 'failed' && inbox.inbox) {
+      pushJobs.push({
+        userId: recipient.id,
+        audience: recipient.audience,
+        notification,
+      })
+      pushIndex.push(results.length - 1)
+    }
+  }
+
+  if (pushJobs.length) {
+    const expoMap = await sendExpoPushBatch(admin, pushJobs)
+    for (let i = 0; i < pushJobs.length; i += 1) {
+      const recipient = loaded.recipients.find((r) => r.id === pushJobs[i].userId && r.audience === pushJobs[i].audience)
+        || { id: pushJobs[i].userId, audience: pushJobs[i].audience, name: '', email: '' }
+      const expo = expoMap.get(pushJobs[i].userId) || { ok: false, error: 'Expo sonucu yok' }
+      const idx = pushIndex[i]
+      if (!expo?.ok) {
+        results[idx] = {
+          ...results[idx],
+          status: 'failed',
+          error: expo?.error || 'Expo gönderilemedi',
+        }
+        continue
+      }
+      if (expo.skipped) {
+        const reason = expo.reason === 'push_prefs_off' ? 'push_prefs_off' : 'no_token'
+        results[idx] = {
+          ...results[idx],
+          status: 'skipped',
+          reason,
+        }
+        if (reason === 'no_token' && isMailConfigured() && String(recipient.email || '').includes('@')) {
+          const mailed = await sendEmailOne(recipient, title, message)
+          if (mailed.status === 'sent') {
+            results[idx] = { ...results[idx], emailFallback: true }
+          }
+        }
+        continue
+      }
+      results[idx] = {
+        ...results[idx],
+        status: 'sent',
+        reason: null,
+      }
     }
   }
 

@@ -22,6 +22,7 @@ describe('auth/notification hardening contracts (2026-08-31)', () => {
     assert.equal(src.includes("auth.role === 'cron'"), false)
     assert.ok(src.includes('canNotifyStaff'))
     assert.ok(src.includes('canNotifyMember'))
+    assert.ok(src.includes('limit: 600'))
   })
 
   it('expo push selects silent android channel from soundNotifs', () => {

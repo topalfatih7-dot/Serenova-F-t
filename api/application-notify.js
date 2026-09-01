@@ -284,7 +284,7 @@ export default async function handler(req, res) {
   const rl = await enforceRateLimit({
     req,
     prefix: 'notify-outbound',
-    limit: 120,
+    limit: 600,
     windowMs: 60 * 60 * 1000,
     extraKey: auth.user.id,
   })

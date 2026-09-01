@@ -6,6 +6,7 @@ import assert from 'node:assert/strict'
 import { runSessionRemindersBatch } from '../api/_sessionReminders.js'
 
 function createAdminMock(store) {
+  const memberPages = { n: 0 }
   return {
     rpc: async (name, params) => {
       if (name === 'append_outbound_notification' && params?.p_audience === 'staff' && store.staffRow) {
@@ -31,6 +32,15 @@ function createAdminMock(store) {
         neq() {
           return builder
         },
+        or() {
+          return builder
+        },
+        order() {
+          return builder
+        },
+        range() {
+          return builder
+        },
         limit() {
           return builder
         },
@@ -54,10 +64,12 @@ function createAdminMock(store) {
           }
         },
         then(resolve, reject) {
-          return Promise.resolve({
-            data: ctx.table === 'members' ? [store.memberRow] : [],
-            error: null,
-          }).then(resolve, reject)
+          if (ctx.table === 'members') {
+            memberPages.n += 1
+            const data = memberPages.n === 1 ? [store.memberRow] : []
+            return Promise.resolve({ data, error: null }).then(resolve, reject)
+          }
+          return Promise.resolve({ data: [], error: null }).then(resolve, reject)
         },
       }
       return builder
@@ -115,6 +127,35 @@ describe('session reminders in-app (no WhatsApp)', () => {
     const session = store.memberRow.data.coachSessions[0]
     assert.ok(session.waReminders.t24)
     assert.equal(session.waReminders.t1, undefined)
+  })
+
+  it('does not mark waReminders when Expo push fails', async () => {
+    const now = new Date('2026-08-30T12:00:00.000+03:00')
+    const startsAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const store = {
+      memberRow: {
+        id: 'member-1',
+        name: 'Ayşe',
+        assigned_coach_id: 'staff-1',
+        data: {
+          coachSessions: [{ id: 'bk-1', status: 'scheduled', date: startsAt.toISOString() }],
+          notifications: [],
+        },
+      },
+      staffRow: { id: 'staff-1', data: { notifications: [] } },
+    }
+    const failPush = async () => ({ ok: false, error: 'Expo down' })
+    const result = await runSessionRemindersBatch(createAdminMock(store), {
+      now,
+      pushMember: failPush,
+      pushStaff: failPush,
+    })
+    assert.equal(result.ok, false)
+    assert.equal(result.marked, 0)
+    assert.equal(result.sent, 0)
+    assert.ok(result.errors.length >= 1)
+    assert.equal(store.memberRow.data.notifications.length, 0)
+    assert.equal(store.memberRow.data.coachSessions[0].waReminders, undefined)
   })
 
   it('skips a window already marked in waReminders', async () => {

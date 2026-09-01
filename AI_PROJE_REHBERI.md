@@ -89,7 +89,9 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 | `ai-health-analysis` | GPT-5.4 (`OPENAI_HEALTH_MODEL`) | HT tamamlanınca 1× (ücretli); 8 skor + `staffBrief`; force yalnız ücretli; program/diyet yok |
 | `ai-blog-generate` default | Gemini | cron 05:00 |
 | `?task=daily-tip` | Gemini | cron 04:00 · `site_content` |
-| `?task=membership-expiry` | — | cron 03:00 · `api/_membershipExpiry.js` |
+| `?task=membership-expiry` | — | cron 03:00 · `api/_membershipExpiry.js` + Expo receipts piggyback |
+| `?task=session-reminders` | — | GitHub Actions saatlik · `api/_sessionReminders.js` |
+| `?task=push-receipts` | — | Expo getReceipts · `api/_expoReceipts.js` |
 
 ### 5.2 Sağlık testi + staff AI rapor
 
@@ -112,7 +114,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 **Multiplex özet:**
 
 - `auth` — signup/login/reset · book-session · session-attendance · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
-- `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry
+- `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry · session-reminders · push-receipts
 - `stripe-checkout` — Checkout (recurring → Subscription; doktor → payment) · Portal: `create-portal-session` (`intent: manage|cancel`, `mode: at_period_end|immediately`) · `api/_stripePortal.js`
 
 ---

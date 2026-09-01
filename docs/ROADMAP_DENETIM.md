@@ -13,7 +13,7 @@
 - [ ] **Google OAuth markalama** — Consent Screen + Custom Domain (`auth.yeniform.com`). Adım adım: [`OPS_GOOGLE_OAUTH.md`](OPS_GOOGLE_OAUTH.md)  
 - [ ] **Facebook OAuth** — Meta app (Login) + Supabase Providers; Development smoke → Live. Kod hazır. Adım adım: [`OPS_FACEBOOK_OAUTH.md`](OPS_FACEBOOK_OAUTH.md)  
 - [x] **WhatsApp Cloud API** — kaldırıldı (2026-08-30). Expo + in-app kaldı.  
-- [ ] **GitHub `CRON_SECRET`** — Session reminders saatlik workflow (`session-reminders.yml`) health check ile aynı secret’ı kullanır; yoksa job fail. Custom domain: `www.yeniform.com`. [`OPS_NOTIFICATIONS.md`](OPS_NOTIFICATIONS.md)  
+- [x] **GitHub `CRON_SECRET`** — Session reminders saatlik workflow health check ile aynı secret’ı kullanır (supabase-health 704 başarılı koşu). Canlı `task=session-reminders` 200. Workflow henüz 0 koşu — ilk saatlik tetik beklenir. [`OPS_NOTIFICATIONS.md`](OPS_NOTIFICATIONS.md)  
 - [ ] **Supabase Leaked Password Protection** — Dashboard HaveIBeenPwned. [`SECURITY_OPS.md`](SECURITY_OPS.md)  
 - [x] GSC mülk + sitemap — `yeniform.com` doğrulu, sitemap **Başarılı** (67 sayfa)
 

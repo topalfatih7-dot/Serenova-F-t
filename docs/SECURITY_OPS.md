@@ -80,6 +80,7 @@ Signup HIBP'yi service-role RPC ile bilinçli atlıyoruz (`register_email_user`)
 Vercel Hobby günde 1 cron. Saatlik işler GitHub Actions + **www.yeniform.com** (SSO'suz custom domain):
 
 - [`.github/workflows/supabase-health.yml`](../.github/workflows/supabase-health.yml)
-- [`.github/workflows/session-reminders.yml`](../.github/workflows/session-reminders.yml) — randevu T-24s/T-1s
+- [`.github/workflows/session-reminders.yml`](../.github/workflows/session-reminders.yml) — randevu T-24s/T-1s (`ok: false` → job kırmızı)
+- Expo receipts: `push_receipts` (service_role only) · `?task=push-receipts` · membership-expiry cron piggyback
 
 Ayrıntı: [`docs/OPS_NOTIFICATIONS.md`](OPS_NOTIFICATIONS.md)

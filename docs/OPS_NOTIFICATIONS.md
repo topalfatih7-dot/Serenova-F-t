@@ -1,6 +1,45 @@
 # Auth & Notification düzeltmeleri (2026-08-31)
 
-Analiz sonrası uygulanan düzeltmeler. Mobil native rebuild **gerekmez** — değişiklikler web API, DB RLS ve GitHub Actions üzerindedir. Mevcut Android/iOS uygulama zaten `yeniform-alerts-v3` / `-silent` kanallarını kaydeder; backend artık sessiz tercihte doğru kanalı gönderir.
+Analiz sonrası uygulanan düzeltmeler.
+
+## Cron (P0-2) — doğrulandı 2026-08-31
+
+- Vercel `CRON_SECRET` canlı endpoint ile eşleşiyor: `GET /api/ai-blog-generate?task=session-reminders` → **HTTP 200** `{ ok, scanned: 1, sent: 0, marked: 0 }` (pencerede oturum yoktu).
+- GitHub `CRON_SECRET` aynı secret’ı kullanıyor: `supabase-health.yml` **704** başarılı `schedule` koşusu (son: 2026-08-31 16:51 UTC).
+- `session-reminders.yml` workflow **active** ama henüz 0 koşu — dosya yeni commit edildi; saatlik cron ilk saatte tetiklenir. `workflow_dispatch` bu ortamda GH token olmadığı için elle atılamadı; secret yoksa health check de fail ederdi.
+- Custom domain: `https://www.yeniform.com` (SSO yok).
+
+Canlı cihaz T-1s doğrulaması: personel uygulaması dağıtıldıktan sonra bir gelecek randevuyu T-1s penceresine sokup lock-screen push’u kontrol et.
+
+## Personel Expo (P0-1)
+
+Personel `device_push_tokens` satırı üretimde 0 — uygulama henüz personele dağıtılmamış. Dağıtım öncesi:
+
+- iOS `app/staff/_layout.tsx` + Android `app/(staff)/_layout.tsx`: üye ile aynı ön-Alert; kalıcı redde `StaffPushPermissionBanner` → Ayarlar.
+- `StaffProfileEditor`: `pushNotifs` / `soundNotifs`.
+- Native rebuild **gerekir**.
+
+## Expo receipts (P1-1)
+
+Tablo `push_receipts`. Ticket kaydı `_expoPush.js`; tarama `?task=push-receipts` ve membership-expiry cron piggyback. `DeviceNotRegistered` token siler; `InvalidCredentials` Telegram ops.
+
+## Hatırlatıcı (P1-2)
+
+`waReminders` yalnızca Expo (veya skip) başarısından sonra yazılır. `errors.length > 0` → `ok: false` (Actions kırmızı). Sayfalama 200; `membership` NULL atlanmaz.
+
+## Admin yayın (P2)
+
+`MAX_RECIPIENTS` 200; Expo 100’lük batch; listede **Cihaz yok** rozeti; token yoksa e-posta yedeği.
+
+## Mobil build
+
+Personel izin UX + `DAILY` su/tavsiye + billing/announcement rota + ikon rozeti → **iOS ve Android native rebuild**. Cihaz kontrol listesi aşağıda.
+
+---
+
+## Önceki (2026-08-31 kod)
+
+Mobil native rebuild **gerekmezdi** — o tur yalnızca web API / DB / Actions. Mevcut Android/iOS uygulama zaten `yeniform-alerts-v3` / `-silent` kanallarını kaydeder.
 
 ## Doğrulanan (kod değişikliği yok)
 
@@ -58,12 +97,15 @@ Migration: [`supabase/migrations/20260904_auth_notify_hardening.sql`](../supabas
 **Leaked Password Protection** hâlâ kapalı. Supabase Dashboard → Authentication → Attack Protection → HaveIBeenPwned açılmalı.  
 Rehber: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
-## Mobil build
+## Mobil build (bu tur)
 
-Gerekmez. Token kaydı, kanal isimleri ve navigate map değişmedi.
+Personel izin UX + `DAILY` su/tavsiye + billing/announcement rota + ikon rozeti için **iOS ve Android native rebuild** gerekir.
 
-Deploy sonrası kontrol:
+Dağıtım sonrası cihaz kontrolü (personel Expo):
 
-1. GitHub Actions → Session reminders → Run workflow (CRON_SECRET yoksa job fail — secret ekle).
-2. Üye `soundNotifs: false` iken Android remote push sessiz kanal.
-3. Doktor staff web panelinde collab thread realtime.
+1. Personel uygulamaya giriş → `device_push_tokens` satırı (`user_id` = `staff.id`).
+2. Kalıcı izin reddi → banner “Ayarları aç”; izin verince token yazılır.
+3. Profil → Push / ses anahtarları `staff.data.settings` içine kaydolur.
+4. Üye randevu talebi + sohbet mesajı kilit ekranına düşer.
+5. GitHub Actions → Session reminders ilk saatlik koşu: `ok`, `scanned`, `sent`, `errors`.
+6. Üye `soundNotifs: false` iken Android remote push sessiz kanal.

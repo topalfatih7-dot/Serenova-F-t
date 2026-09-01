@@ -9,6 +9,7 @@
  *   Vercel Hobby günde 1 cron; saatlik tetikleyici GitHub Actions
  *   (.github/workflows/session-reminders.yml) → www.yeniform.com (custom domain, SSO yok).
  * ?task=session-attendance — açık görüşme attendance finalize + şişmiş hakediş denetimi (CRON_SECRET, cron 02:20; Hobby günlük)
+ * ?task=push-receipts — Expo teslimat receipt'leri; membership-expiry cron'una piggyback (CRON_SECRET)
  */
 
 import {
@@ -133,6 +134,13 @@ export default async function handler(req, res) {
   ) {
     return handleSessionAttendanceFinalize(req, res)
   }
+  if (
+    task === 'push-receipts'
+    || task === 'push_receipts'
+    || task === 'expo-receipts'
+  ) {
+    return handlePushReceipts(req, res)
+  }
   return handleBlogGenerate(req, res)
 }
 
@@ -189,6 +197,32 @@ async function handleSessionReminders(req, res) {
   }
 }
 
+async function handlePushReceipts(req, res) {
+  setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
+  if (handleOptions(req, res)) return
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Yalnızca GET/POST desteklenir' })
+  }
+
+  const cronGuard = requireCronSecret(req)
+  if (!cronGuard.ok) {
+    return res.status(cronGuard.status).json({ ok: false, error: cronGuard.error })
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
+  }
+
+  try {
+    const { runPushReceiptsBatch } = await import('./_expoReceipts.js')
+    const admin = getSupabaseAdmin()
+    const result = await runPushReceiptsBatch(admin)
+    return res.status(200).json(result)
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err?.message || 'Receipt tarama hatası' })
+  }
+}
+
 async function handleMembershipExpiry(req, res) {
   setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
   if (handleOptions(req, res)) return
@@ -229,7 +263,16 @@ async function handleMembershipExpiry(req, res) {
       catalog = { ok: false, error: catalogErr.message }
     }
 
-    return res.status(200).json({ ok: true, expiry, catalog })
+    let receipts = { skipped: true }
+    try {
+      const { runPushReceiptsBatch } = await import('./_expoReceipts.js')
+      receipts = await runPushReceiptsBatch(admin)
+    } catch (receiptErr) {
+      console.warn('[membership-expiry] receipts', receiptErr)
+      receipts = { ok: false, error: receiptErr.message }
+    }
+
+    return res.status(200).json({ ok: true, expiry, catalog, receipts })
   } catch (e) {
     console.error('[membership-expiry]', e)
     return res.status(500).json({ ok: false, error: e.message || 'Üyelik süre dolumu hatası' })

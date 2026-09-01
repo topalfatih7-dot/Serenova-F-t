@@ -13,7 +13,7 @@ import { staffRoleLabel } from '../../utils/staffRoles'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 
-const CART_MAX = 50
+const CART_MAX = 200
 const TITLE_MAX = 80
 const BODY_MAX = 1500
 
@@ -29,6 +29,7 @@ function cartKey(audience, id) {
 }
 
 function statusLabel(row) {
+  if (row.emailFallback) return 'Kutuya yazıldı · e-posta yedeği'
   if (row.status === 'sent') return 'Gönderildi'
   if (row.status === 'failed') return 'Hata'
   if (row.inbox && row.reason === 'no_token') return 'Kutuya yazıldı · telefon yok'
@@ -62,6 +63,7 @@ export default function AdminBroadcastPage() {
   const [sending, setSending] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [lastResults, setLastResults] = useState(null)
+  const [coverage, setCoverage] = useState(null)
 
   const loadMeta = useCallback(async () => {
     try {
@@ -79,6 +81,7 @@ export default function AdminBroadcastPage() {
       setTokenIds(new Set((json.tokenUserIds || []).map(String)))
       setMailConfigured(json.mailConfigured !== false)
       setHistory(Array.isArray(json.messages) ? json.messages : [])
+      setCoverage(json.coverage && typeof json.coverage === 'object' ? json.coverage : null)
     } catch {
       toast('Gönderici bilgisi alınamadı', 'error')
     } finally {
@@ -218,6 +221,13 @@ export default function AdminBroadcastPage() {
         <p className="mt-1 text-sm text-cream-800/60">
           Danışan veya personeli sepete ekleyin, kanal seçin, yazın, gönderin. Telefon bildirimi veya e-posta — ikisi birden değil.
         </p>
+        {coverage ? (
+          <p className="mt-1 text-xs text-cream-800/50">
+            Kayıtlı cihaz: {coverage.tokens || 0}
+            {' · '}
+            Personel tokensız: {coverage.staffWithoutToken || 0}/{coverage.staff || 0}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -287,12 +297,16 @@ export default function AdminBroadcastPage() {
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5">
                         {hasToken ? (
-                          <span title="Uygulama var" className="rounded-lg bg-sage-50 p-1.5 text-sage-600">
+                          <span title="Kayıtlı cihaz var" className="rounded-lg bg-sage-50 p-1.5 text-sage-600">
                             <Smartphone className="h-3.5 w-3.5" />
                           </span>
                         ) : (
-                          <span title="Uygulama yok" className="rounded-lg bg-cream-100 p-1.5 text-cream-800/40">
+                          <span
+                            title="Kayıtlı cihaz yok"
+                            className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800"
+                          >
                             <PhoneOff className="h-3.5 w-3.5" />
+                            Cihaz yok
                           </span>
                         )}
                         <span
@@ -351,6 +365,9 @@ export default function AdminBroadcastPage() {
                         <span className="ml-1 opacity-60">
                           {c.audience === 'staff' ? 'personel' : 'danışan'}
                         </span>
+                        {warn && channel === 'push' ? (
+                          <span className="ml-1 font-medium">· cihaz yok</span>
+                        ) : null}
                       </span>
                       <button
                         type="button"
