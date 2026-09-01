@@ -1,12 +1,13 @@
 /**
- * Saatlik randevu hatırlatmaları — T-24s ve T-1s (±30 dk pencere).
- * In-app liste (üye + personel) + Expo. Idempotency: session.waReminders.{ t24, t1 }
- * (alan adı tarihî; yeniden adlandırma aynı pencereyi tekrar tetikler).
+ * Randevu hatırlatmaları — T-24s (yarın) ve T-30dk (30 dakika önce).
+ * In-app liste (üye + personel) + Expo. Idempotency: session.waReminders.{ t24, t30 }
+ * (alan adı tarihî — "wa" WhatsApp'tan kaldı; artık yalnız Expo/in-app).
  *
  * Dedup işareti yalnızca Expo (veya bilinçli skip) başarısından sonra yazılır.
- * Hata varsa ok:false — GitHub Actions yeşil boyamaz.
+ * Hata varsa ok:false — cron yeşil boyamaz.
  *
- * Tetikleyici: GitHub Actions saatlik (Hobby Vercel cron günde 1 kez; T-1s yakalanmaz).
+ * Tetikleyici: pg_cron (Supabase) + GitHub Actions yedeği, her 10 dk.
+ *   T-30dk için ≤10 dk periyot gerekir (Hobby Vercel cron günde 1 kez yetmez).
  * Endpoint: GET /api/ai-blog-generate?task=session-reminders  (CRON_SECRET)
  */
 
@@ -19,9 +20,10 @@ const SESSION_KEYS = {
 }
 
 const ACTIVE = new Set(['scheduled', 'rescheduled'])
-const WINDOW_MS = 30 * 60 * 1000
+// ±10 dk yakalama penceresi; cron her 10 dk çalıştığı için her hedef bir kez düşer.
+const WINDOW_MS = 10 * 60 * 1000
 const T24_MS = 24 * 60 * 60 * 1000
-const T1_MS = 60 * 60 * 1000
+const T30_MS = 30 * 60 * 1000
 const PAGE_SIZE = 200
 
 const ROLE_LABELS = {
@@ -93,7 +95,7 @@ function queueReminder({
   const pending = []
 
   if (memberId) {
-    const title = windowKey === 't1' ? 'Randevunuz 1 saat sonra' : 'Randevunuz yarın'
+    const title = windowKey === 't30' ? 'Randevunuz 30 dakika sonra' : 'Randevunuz yarın'
     const memberNotif = buildNotif(
       'appointment',
       title,
@@ -113,7 +115,7 @@ function queueReminder({
   if (staffId) {
     const staffNotif = buildNotif(
       'appointment',
-      windowKey === 't1' ? 'Görüşme 1 saat sonra' : 'Görüşme yarın',
+      windowKey === 't30' ? 'Görüşme 30 dakika sonra' : 'Görüşme yarın',
       `${memberName || 'Danışan'} — ${when}`,
       { memberId, sessionId, sessionType, startsAt, reminder: windowKey },
     )
@@ -239,7 +241,7 @@ export async function runSessionRemindersBatch(admin, {
           scanned += 1
           const waReminders = { ...(session.waReminders || {}) }
 
-          for (const [windowKey, offsetMs] of [['t24', T24_MS], ['t1', T1_MS]]) {
+          for (const [windowKey, offsetMs] of [['t24', T24_MS], ['t30', T30_MS]]) {
             if (waReminders[windowKey]) continue
             if (!inWindow(startsAt, offsetMs, nowMs)) continue
             pendingFanout.push(...queueReminder({

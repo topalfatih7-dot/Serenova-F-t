@@ -5,9 +5,9 @@
  * ?task=daily-tip — dashboard günün ipucu (üye GET veya CRON_SECRET, cron 04:00)
  * ?task=supabase-health — Supabase kota/erişim kontrolü + Telegram (CRON_SECRET, saatlik)
  * ?task=membership-expiry — süresi dolan ücretli üyeleri free fallback'e indirger + katalog fiyat hizalama / T-7 (CRON_SECRET, cron 03:00)
- * ?task=session-reminders — randevu T-24s / T-1s in-app + Expo (CRON_SECRET).
- *   Vercel Hobby günde 1 cron; saatlik tetikleyici GitHub Actions
- *   (.github/workflows/session-reminders.yml) → www.yeniform.com (custom domain, SSO yok).
+ * ?task=session-reminders — randevu T-24s / T-30dk in-app + Expo (CRON_SECRET).
+ *   pg_cron (Supabase, 10 dk) → www.yeniform.com; GitHub Actions yedeği.
+ * ?task=habit-reminders — öğün/antrenman 30 dk önce + günlük sabit saat Expo (CRON_SECRET, pg_cron 10 dk).
  * ?task=session-attendance — açık görüşme attendance finalize + şişmiş hakediş denetimi (CRON_SECRET, cron 02:20; Hobby günlük)
  * ?task=push-receipts — Expo teslimat receipt'leri; membership-expiry cron'una piggyback (CRON_SECRET)
  */
@@ -128,6 +128,13 @@ export default async function handler(req, res) {
     return handleSessionReminders(req, res)
   }
   if (
+    task === 'habit-reminders'
+    || task === 'habit_reminders'
+    || task === 'habits'
+  ) {
+    return handleHabitReminders(req, res)
+  }
+  if (
     task === 'session-attendance'
     || task === 'session_attendance'
     || task === 'attendance-finalize'
@@ -194,6 +201,32 @@ async function handleSessionReminders(req, res) {
     return res.status(200).json(result)
   } catch (err) {
     return res.status(500).json({ ok: false, error: err?.message || 'Hatırlatma hatası' })
+  }
+}
+
+async function handleHabitReminders(req, res) {
+  setCorsHeaders(res, 'GET, POST, OPTIONS', 'Content-Type, Authorization, X-Cron-Secret')
+  if (handleOptions(req, res)) return
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Yalnızca GET/POST desteklenir' })
+  }
+
+  const cronGuard = requireCronSecret(req)
+  if (!cronGuard.ok) {
+    return res.status(cronGuard.status).json({ ok: false, error: cronGuard.error })
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return res.status(503).json({ ok: false, error: 'Supabase admin yapılandırması eksik' })
+  }
+
+  try {
+    const { runHabitRemindersBatch } = await import('./_habitReminders.js')
+    const admin = getSupabaseAdmin()
+    const result = await runHabitRemindersBatch(admin)
+    return res.status(200).json(result)
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err?.message || 'Habit hatırlatma hatası' })
   }
 }
 
