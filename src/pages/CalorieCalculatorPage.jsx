@@ -14,35 +14,53 @@ import { analyzeFoodPhoto } from '../services/aiVision'
 import {
   analyzeFoodText,
   formatAnalysisReply,
+  SOURCE_LABELS,
+  CONFIDENCE_LABELS,
 } from '../services/calorieChat'
+import { assessImageQuality } from '../utils/imageQuality'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
 import UnpaidMemberGate from '../components/membership/UnpaidMemberGate'
 import { PANEL_IMAGES } from '../utils/panelImages'
-
-function estimateMacros(totalCal) {
-  return {
-    protein: Math.round((totalCal * 0.25) / 4),
-    carb: Math.round((totalCal * 0.45) / 4),
-    fat: Math.round((totalCal * 0.30) / 9),
-  }
-}
 
 function itemsTotalCal(items = []) {
   return items.reduce((sum, i) => sum + (Number(i.cal) || 0), 0)
 }
 
+function analysisTotals(analysis) {
+  const totalCal = Number(analysis?.totalCal)
+  const mid = Number.isFinite(totalCal) && totalCal > 0 ? totalCal : itemsTotalCal(analysis?.items)
+  const low = analysis?.totalCalLow
+  const high = analysis?.totalCalHigh
+  return {
+    totalCal: mid,
+    totalCalLow: low != null && Number.isFinite(Number(low)) ? Number(low) : Math.round(mid * 0.85),
+    totalCalHigh: high != null && Number.isFinite(Number(high)) ? Number(high) : Math.round(mid * 1.15),
+    macros: analysis?.macros || { protein: 0, carb: 0, fat: 0 },
+  }
+}
+
 function buildCalorieLogEntry({ mode, input, analysis }) {
+  const totals = analysisTotals(analysis)
   return {
     id: `cal-${Date.now()}`,
     mode,
     input: input?.slice(0, 500) || '',
-    totalCal: itemsTotalCal(analysis?.items),
+    totalCal: totals.totalCal,
+    calLow: totals.totalCalLow,
+    calHigh: totals.totalCalHigh,
+    macros: totals.macros,
+    source: analysis?.pipeline?.sources?.[0] || analysis?.source,
+    confidence: analysis?.confidence,
+    confidenceScore: analysis?.confidenceScore,
     items: (analysis?.items || []).slice(0, 20).map((i) => ({
       name: i.name || i.label,
       cal: i.cal,
+      calLow: i.calLow,
+      calHigh: i.calHigh,
       protein: i.protein,
       carb: i.carb,
       fat: i.fat,
+      source: i.source,
     })),
     createdAt: new Date().toISOString(),
   }
@@ -50,6 +68,12 @@ function buildCalorieLogEntry({ mode, input, analysis }) {
 
 function appendCalorieHistory(existing = [], entry) {
   return [entry, ...existing].slice(0, 100)
+}
+
+const PIPELINE_STEP_LABEL = {
+  quality: 'Görüntü kalitesi kontrol ediliyor…',
+  barcode: 'Barkod taranıyor…',
+  analyze: 'Besinler analiz ediliyor…',
 }
 
 const MODE_OPTIONS = [
@@ -106,6 +130,8 @@ export default function CalorieCalculatorPage() {
   const [pendingFile, setPendingFile] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [photoResult, setPhotoResult] = useState(null)
+  const [photoQuality, setPhotoQuality] = useState(null)
+  const [pipelineStep, setPipelineStep] = useState(null)
 
   useEffect(() => {
     return () => {
@@ -158,7 +184,7 @@ export default function CalorieCalculatorPage() {
     setChatProcessing(false)
   }
 
-  const handlePhotoSelect = (e) => {
+  const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (photo?.startsWith('blob:')) URL.revokeObjectURL(photo)
@@ -166,14 +192,28 @@ export default function CalorieCalculatorPage() {
     setPhoto(URL.createObjectURL(file))
     setPhotoResult(null)
     setAnalyzing(false)
+    setPipelineStep(null)
+    const quality = await assessImageQuality(file)
+    setPhotoQuality(quality)
+    if (quality.block) {
+      toast(quality.message || 'Fotoğraf analiz için uygun değil.', 'warning')
+    } else if (quality.message && quality.issues?.length) {
+      toast(quality.message, 'info')
+    }
   }
 
   const handlePhotoAnalyze = async () => {
     if (!pendingFile || analyzing) return
+    if (photoQuality?.block) {
+      toast(photoQuality.message || 'Daha net bir fotoğraf çekin.', 'warning')
+      return
+    }
     setAnalyzing(true)
     setPhotoResult(null)
-    const result = await analyzeFoodPhoto(pendingFile)
+    setPipelineStep('quality')
+    const result = await analyzeFoodPhoto(pendingFile, { onStep: setPipelineStep })
     setAnalyzing(false)
+    setPipelineStep(null)
     if (result.ok && result.items?.length > 0) {
       setPhotoResult(result)
       setLastAnalysis(result)
@@ -193,14 +233,18 @@ export default function CalorieCalculatorPage() {
     setPendingFile(null)
     setPhotoResult(null)
     setAnalyzing(false)
+    setPhotoQuality(null)
+    setPipelineStep(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const activeTotal = mode === 'photo' && photoResult?.items?.length
-    ? itemsTotalCal(photoResult.items)
+  const summaryAnalysis = mode === 'photo' && photoResult?.items?.length
+    ? photoResult
     : lastAnalysis?.items?.length
-      ? itemsTotalCal(lastAnalysis.items)
-      : 0
+      ? lastAnalysis
+      : null
+  const summary = summaryAnalysis ? analysisTotals(summaryAnalysis) : null
+  const activeTotal = summary?.totalCal || 0
 
   const visibleModes = MODE_OPTIONS.filter((m) => m.id === 'chat' || isPlatinum)
 
@@ -309,8 +353,16 @@ export default function CalorieCalculatorPage() {
         })}
       </div>
 
-      {activeTotal > 0 && (
-        <CalorieSummaryCard totalCal={activeTotal} macros={estimateMacros(activeTotal)} />
+      {activeTotal > 0 && summary && (
+        <CalorieSummaryCard
+          totalCal={summary.totalCal}
+          totalCalLow={summary.totalCalLow}
+          totalCalHigh={summary.totalCalHigh}
+          macros={summary.macros}
+          confidence={summaryAnalysis.confidence}
+          confidenceScore={summaryAnalysis.confidenceScore}
+          reasons={summaryAnalysis.confidenceReasons}
+        />
       )}
 
       <AnimatePresence mode="wait">
@@ -414,24 +466,33 @@ export default function CalorieCalculatorPage() {
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sage-500 to-teal-500">
                         <ScanLine className="h-8 w-8 text-white" />
                       </motion.div>
-                      <p className="mt-4 font-semibold text-white">Analiz ediliyor…</p>
+                      <p className="mt-4 font-semibold text-white">
+                        {PIPELINE_STEP_LABEL[pipelineStep] || 'Analiz ediliyor…'}
+                      </p>
                     </div>
                   )}
                 </div>
 
                 {!photoResult && !analyzing && (
                   <div className="space-y-3 border-t border-sage-100 p-4 sm:space-y-4 sm:p-5">
-                    <div className="flex items-start gap-2 rounded-xl border border-sage-200 bg-sage-50 px-3 py-2.5">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
-                      <p className="text-xs leading-relaxed text-sage-800">
-                        Fotoğraf yüklendi. Analizi başlatmadan önce görseli kontrol edin; isterseniz silebilirsiniz.
+                    <div className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 ${
+                      photoQuality?.block
+                        ? 'border-amber-200 bg-amber-50'
+                        : 'border-sage-200 bg-sage-50'
+                    }`}>
+                      <AlertCircle className={`mt-0.5 h-4 w-4 shrink-0 ${photoQuality?.block ? 'text-amber-600' : 'text-sage-600'}`} />
+                      <p className={`text-xs leading-relaxed ${photoQuality?.block ? 'text-amber-800' : 'text-sage-800'}`}>
+                        {photoQuality?.block
+                          ? (photoQuality.message || 'Fotoğraf analiz için uygun değil. Yeni bir kare çekin.')
+                          : (photoQuality?.message || 'Fotoğraf yüklendi. Analizi başlatmadan önce görseli kontrol edin; isterseniz silebilirsiniz.')}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         type="button"
                         onClick={handlePhotoAnalyze}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sage-500 to-teal-500 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105"
+                        disabled={Boolean(photoQuality?.block)}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sage-500 to-teal-500 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ScanLine className="h-4 w-4" /> Analiz Et
                       </button>
@@ -460,20 +521,61 @@ export default function CalorieCalculatorPage() {
                       </div>
                       <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
                         <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                        <p className="text-xs text-amber-700">Tahmini değerlerdir; gerçek kalori farklılık gösterebilir.</p>
+                        <p className="text-xs text-amber-700">
+                          Tahmini aralıktır
+                          {photoResult.totalCalLow != null && photoResult.totalCalHigh != null
+                            ? ` (${photoResult.totalCalLow}–${photoResult.totalCalHigh} kcal)`
+                            : ''}
+                          ; gerçek kalori farklılık gösterebilir.
+                        </p>
                       </div>
+                      {photoResult.confidence && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                            photoResult.confidence === 'high'
+                              ? 'bg-sage-100 text-sage-800'
+                              : photoResult.confidence === 'low'
+                                ? 'bg-red-50 text-red-700'
+                                : 'bg-amber-50 text-amber-800'
+                          }`}>
+                            {CONFIDENCE_LABELS[photoResult.confidence] || photoResult.confidence}
+                            {Number.isFinite(photoResult.confidenceScore)
+                              ? ` · ${Math.round(photoResult.confidenceScore * 100)}%`
+                              : ''}
+                          </span>
+                          {(photoResult.pipeline?.sources || []).map((src) => (
+                            <span key={src} className="rounded-full bg-cream-100 px-2.5 py-1 text-[11px] font-medium text-cream-800">
+                              {SOURCE_LABELS[src] || src}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {photoResult.items?.length > 0 && (
                         <div className="divide-y divide-cream-100 rounded-2xl border border-cream-200">
                           {photoResult.items.map((item, i) => (
                             <div key={i} className="flex items-center justify-between gap-3 px-3.5 py-3 sm:px-4">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-medium text-cream-900">{item.name}</p>
-                                <p className="text-xs text-cream-800/50">{item.amount} {item.unit}</p>
+                                <p className="text-xs text-cream-800/50">
+                                  {item.amount} {item.unit}
+                                  {item.grams ? ` · ~${item.grams}g` : ''}
+                                  {item.source ? ` · ${SOURCE_LABELS[item.source] || item.source}` : ''}
+                                </p>
                               </div>
-                              <span className="shrink-0 font-bold text-sage-600">{item.cal} kcal</span>
+                              <span className="shrink-0 text-right">
+                                <span className="block font-bold text-sage-600">{item.cal} kcal</span>
+                                {item.calLow != null && item.calHigh != null && item.calLow !== item.calHigh && (
+                                  <span className="text-[10px] text-cream-800/45">{item.calLow}–{item.calHigh}</span>
+                                )}
+                              </span>
                             </div>
                           ))}
                         </div>
+                      )}
+                      {photoResult.unmatched?.length > 0 && (
+                        <p className="text-xs text-amber-700">
+                          Veritabanında yok: {photoResult.unmatched.map((u) => u.name).join(', ')}
+                        </p>
                       )}
                     </motion.div>
                   )}
@@ -488,8 +590,17 @@ export default function CalorieCalculatorPage() {
   )
 }
 
-function CalorieSummaryCard({ totalCal, macros }) {
+function CalorieSummaryCard({
+  totalCal,
+  totalCalLow,
+  totalCalHigh,
+  macros,
+  confidence,
+  confidenceScore,
+  reasons,
+}) {
   const level = totalCal < 300 ? 'Az' : totalCal < 600 ? 'Orta' : totalCal < 900 ? 'Yüksek' : 'Çok Yüksek'
+  const showRange = Number.isFinite(totalCalLow) && Number.isFinite(totalCalHigh) && totalCalLow !== totalCalHigh
 
   return (
     <motion.div layout className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-500/30 sm:rounded-3xl">
@@ -498,16 +609,27 @@ function CalorieSummaryCard({ totalCal, macros }) {
           <div>
             <p className="text-sm font-medium text-white/75">Toplam Kalori</p>
             <p className="font-display text-4xl font-bold sm:text-5xl">{totalCal}</p>
-            <p className="text-sm text-white/75">kcal · {level}</p>
+            <p className="text-sm text-white/75">
+              {showRange ? `${totalCalLow}–${totalCalHigh} kcal` : 'kcal'} · {level}
+            </p>
+            {confidence && (
+              <p className="mt-1 text-xs text-white/70">
+                {CONFIDENCE_LABELS[confidence] || confidence}
+                {Number.isFinite(confidenceScore) ? ` · ${Math.round(confidenceScore * 100)}%` : ''}
+              </p>
+            )}
           </div>
           <Flame className="h-9 w-9 text-white/30 sm:h-10 sm:w-10" />
         </div>
+        {reasons?.length > 0 && (
+          <p className="mt-2 text-[11px] text-white/60">{reasons.join(' · ')}</p>
+        )}
         {totalCal > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-2">
             {[
-              { label: 'Protein', value: macros.protein, unit: 'g' },
-              { label: 'Karb.', value: macros.carb, unit: 'g' },
-              { label: 'Yağ', value: macros.fat, unit: 'g' },
+              { label: 'Protein', value: Math.round(macros?.protein || 0), unit: 'g' },
+              { label: 'Karb.', value: Math.round(macros?.carb || 0), unit: 'g' },
+              { label: 'Yağ', value: Math.round(macros?.fat || 0), unit: 'g' },
             ].map((m) => (
               <div key={m.label} className="rounded-xl bg-white/15 px-2 py-2 text-center sm:px-3">
                 <p className="text-base font-bold sm:text-lg">{m.value}{m.unit}</p>

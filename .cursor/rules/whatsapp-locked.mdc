@@ -1,0 +1,23 @@
+---
+description: KİLİTLİ — WhatsApp yok; entegrasyon, bildirim, CTA veya ops çalışması yapma
+alwaysApply: true
+---
+
+# KİLİTLİ — WhatsApp yok (2026-09-01)
+
+Üründe WhatsApp **yok**. Cloud API, Meta webhook, şablon mesaj, `wa.me` CTA, env (`WHATSAPP_*`) veya ops aktivasyonu **şu an yapılmayacak**. Kullanıcı açıkça “WhatsApp’ı geri aç” demedikçe önerme, planlama, kod yazma.
+
+Bildirim SoT: in-app + Expo (`/api/application-notify`). Eski `whatsapp-event` isteği **410**.
+
+## Yasak
+
+- `api/_whatsapp*`, Meta Graph WhatsApp, şablon/webhook, `docs/OPS_WHATSAPP.md`
+- Landing / üyelik / ayarlarda WhatsApp ürün kopyası veya butonu
+- Kaldırılmış kodu geri getirme
+
+## Kalır (ürün değil — silme / “temizle” diye dokunma)
+
+- Sohbet sızıntı koruması: `contactInfoGuard` + chat DB regex (`whatsapp` / `wa.me` **engeller**)
+- Influencer JSON strip: `whatsapp` anahtarını siler
+- `tests/whatsapp-removal-contract.test.js`
+- Geçmiş migration (`whatsapp_delivery_log` create + drop)

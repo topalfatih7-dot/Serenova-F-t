@@ -1,27 +1,19 @@
 /**
- * Fotoğraflı Kalori Tespiti — frontend servisi.
+ * Fotoğraflı kalori — kalite + barkod + vision API.
  */
 
 import { formatAiError } from '../utils/aiErrors.js'
 import { getApiAuthHeaders } from './apiAuth.js'
+import { assessImageQuality } from '../utils/imageQuality.js'
+import { scanBarcode } from '../utils/barcodeScan.js'
 
 const MAX_DIMENSION = 1024
 const JPEG_QUALITY = 0.8
 
-/**
- * AI fotoğraf analizinin açık olup olmadığını gösteren ipucu (UI için).
- * Gerçek anahtar sunucuda olduğundan, bu yalnızca arayüz kararı içindir.
- * VITE_AI_VISION_ENABLED=true ise UI gerçek analiz dener; değilse demo moda düşer.
- */
-/** AI vision — varsayılan açık; yalnızca VITE_AI_VISION_ENABLED=false ile kapatılır. */
 export function isAiVisionEnabled() {
   return import.meta.env.VITE_AI_VISION_ENABLED !== 'false'
 }
 
-/**
- * File/Blob'u küçültülmüş JPEG base64'e çevirir.
- * @returns {Promise<{dataUrl: string, mimeType: string}>}
- */
 export function downscaleImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -53,17 +45,41 @@ export function downscaleImage(file) {
 }
 
 /**
- * Yemek fotoğrafını analiz eder.
- * @param {File} file - kullanıcının yüklediği görsel
- * @returns {Promise<{ok: boolean, label?, items?, confidence?, error?}>}
+ * @param {File} file
+ * @param {{ onStep?: (step: 'quality' | 'barcode' | 'analyze') => void }} [opts]
  */
-export async function analyzeFoodPhoto(file) {
+export async function analyzeFoodPhoto(file, opts = {}) {
+  const onStep = opts.onStep || (() => {})
   try {
+    onStep('quality')
+    const clientQuality = await assessImageQuality(file)
+    if (clientQuality.block) {
+      return {
+        ok: false,
+        code: 'unusable_image',
+        error: clientQuality.message || formatAiError('Fotoğraf analiz için uygun değil.', 'unusable_image'),
+        issues: clientQuality.issues,
+        clientQuality,
+      }
+    }
+
+    onStep('barcode')
+    const scanned = await scanBarcode(file).catch(() => null)
+
+    onStep('analyze')
     const { dataUrl, mimeType } = await downscaleImage(file)
     const res = await fetch('/api/ai-food-vision', {
       method: 'POST',
       headers: await getApiAuthHeaders(),
-      body: JSON.stringify({ image: dataUrl, mimeType }),
+      body: JSON.stringify({
+        image: dataUrl,
+        mimeType,
+        barcode: scanned?.barcode || undefined,
+        clientQuality: {
+          score: clientQuality.score,
+          issues: clientQuality.issues,
+        },
+      }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok || !data.ok) {
@@ -71,9 +87,15 @@ export async function analyzeFoodPhoto(file) {
         ok: false,
         code: data.code,
         error: formatAiError(data.error, data.code),
+        issues: data.issues,
       }
     }
-    return { ok: true, label: data.label, items: data.items, confidence: data.confidence }
+    return {
+      ok: true,
+      ...data,
+      clientQuality,
+      scannedBarcode: scanned?.barcode || null,
+    }
   } catch (e) {
     return { ok: false, code: 'network_error', error: formatAiError(e.message, 'network_error') }
   }

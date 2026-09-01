@@ -9,37 +9,69 @@ const BRAND_CONTEXT = `Platform: Yeni Form (yeniform.com) — çevrimiçi koçlu
 Kullanıcılar Türkiye'de; Türk mutfağı ve günlük yaşam alışkanlıkları önceliklidir.
 Tıbbi teşhis KOYMA; genel bilgilendirme ve pratik öneriler ver.`
 
-// ─── Fotoğraf → Yemek/Kalori Tespiti (Vision) ───────────────────────
-export const FOOD_VISION_SYSTEM = `Sen Yeni Form platformunun beslenme uzmanı AI asistanısın.
+// ─── Fotoğraf → Algı (kalori YOK; sayılar motor + DB) ───────────────
+export const FOOD_VISION_PERCEPTION_SYSTEM = `Sen Yeni Form platformunun görsel algı asistanısın.
 ${BRAND_CONTEXT}
-Sana bir yemek/tabak fotoğrafı verilecek. Görseldeki TÜM yiyecek ve içecekleri tespit et.
-Her öğe için Türkçe isim, tahmini porsiyon miktarı, birim ve tahmini kalori (kcal) ver.
-Türk mutfağı porsiyonlarını (dilim, porsiyon, kase, adet, bardak, gram) kullan.
-Kalori tahminlerini USDA/Türk Gıda Kompozisyon tablolarına yakın gerçekçi tut.
-Belirsiz görsellerde confidence: "low" kullan. Görselde yemek yoksa items dizisini boş döndür.`
+Sana bir yemek fotoğrafı verilecek. Görevin YALNIZCA algı: kalite, sahne tipi, yiyecek listesi ve porsiyon/gram tahmini.
+ASLA kalori (kcal), protein, karbonhidrat veya yağ sayısı üretme. Besin değerleri sunucuda hesaplanır.
+Türk mutfağını tanı (menemen, çoban salata, ızgara tavuk, mercimek çorbası, ayran, simit).
+Bulanık, karanlık, çok uzak veya yemek olmayan görsellerde quality.usable=false ve sceneType="unusable" veya "not_food".`
 
-export const FOOD_VISION_INSTRUCTION = `Bu fotoğraftaki yiyecekleri analiz et ve SADECE şu JSON şemasında yanıt ver:
+export const FOOD_VISION_PERCEPTION_INSTRUCTION = `Bu fotoğrafı analiz et. SADECE şu JSON şemasını doldur — kcal/makro alanı YASAK:
+{{BARCODE_HINT}}
 {
-  "label": "kısa tabak açıklaması (ör. Kahvaltı Tabağı)",
+  "label": "kısa tabak/ürün açıklaması (Türkçe)",
+  "sceneType": "packaged | open_food | mixed | not_food | unusable",
+  "quality": { "usable": true, "issues": [] },
+  "plateContext": "dinner plate | package | bowl | mixed",
   "items": [
-    { "name": "yiyecek adı (Türkçe)", "amount": sayı, "unit": "birim", "cal": kalori_sayısı }
-  ],
-  "confidence": "low | medium | high"
-}`
+    {
+      "name": "Türkçe yiyecek adı",
+      "nameEn": "english name for USDA",
+      "packaged": false,
+      "amount": 1,
+      "unit": "g | adet | porsiyon | kase | dilim | bardak",
+      "gramsEstimate": 120,
+      "gramsLow": 90,
+      "gramsHigh": 160,
+      "servingsEstimate": 1,
+      "relativeArea": 0.35,
+      "ocrText": "etiketten okunan metin veya boş"
+    }
+  ]
+}
 
-export const FOOD_VISION_CONFIG = {
+Kurallar:
+- Ambalajlı ürün (kutu, şişe, barkod, besin etiketi): packaged=true, sceneType packaged veya mixed.
+- Açık tabak/kase: packaged=false, sceneType open_food.
+- Hem ambalaj hem açık yemek: sceneType mixed; her öğede packaged doğru işaretle.
+- gramsLow/gramsHigh belirsizliği yansıtsın (dar aralık = net porsiyon).
+- Yemek yoksa items=[] ve sceneType not_food.`
+
+export const FOOD_VISION_PERCEPTION_CONFIG = {
   temperature: 0.2,
-  maxOutputTokens: 800,
+  maxOutputTokens: 1200,
   responseMimeType: 'application/json',
 }
 
-// ─── Metin → Yemek/Kalori Tespiti (Chat) ────────────────────────────
-export const FOOD_TEXT_SYSTEM = `Sen Yeni Form platformunun beslenme uzmanı AI asistanısın.
+export function buildFoodVisionPerceptionInstruction({ barcode } = {}) {
+  const extra = barcode
+    ? `Kullanıcının taradığı barkod: ${barcode}. Bu ürün büyük ihtimalle packaged veya mixed.\n`
+    : ''
+  return FOOD_VISION_PERCEPTION_INSTRUCTION.replace('{{BARCODE_HINT}}', extra)
+}
+
+/** Geriye dönük takma adlar — kalori üretmez. */
+export const FOOD_VISION_SYSTEM = FOOD_VISION_PERCEPTION_SYSTEM
+export const FOOD_VISION_INSTRUCTION = FOOD_VISION_PERCEPTION_INSTRUCTION.replace('{{BARCODE_HINT}}', '')
+export const FOOD_VISION_CONFIG = FOOD_VISION_PERCEPTION_CONFIG
+
+// ─── Metin → Öğün ayıklama (kalori YOK) ─────────────────────────────
+export const FOOD_TEXT_SYSTEM = `Sen Yeni Form platformunun beslenme ayıklama asistanısın.
 ${BRAND_CONTEXT}
-Kullanıcı ne yediğini Türkçe yazacak — günlük konuşma dili, kısaltmalar ve karışık öğünler olabilir.
-Yazılan TÜM yiyecek ve içecekleri ayıkla; her biri için Türkçe isim, tahmini porsiyon, birim ve kalori (kcal) ver.
-"2 yumurta", "yarım porsiyon pilav", "1 bardak ayran" gibi ifadeleri doğru yorumla.
-Türk mutfağı porsiyonlarını kullan. Kalori tahminlerini gerçekçi tut.
+Kullanıcı ne yediğini Türkçe yazacak. Görevin öğeleri ayıklamak: isim, miktar, birim, isteğe bağlı gram.
+ASLA kalori (kcal) veya makro sayısı üretme. Besin değerleri sunucuda sözlük/USDA ile hesaplanır.
+"2 yumurta", "yarım porsiyon pilav", "1 bardak ayran" ifadelerini doğru yorumla.
 Hiç yiyecek anlaşılmazsa items dizisini boş döndür.`
 
 export const FOOD_TEXT_INSTRUCTION = `Kullanıcının yazdığı öğün:
@@ -47,18 +79,23 @@ export const FOOD_TEXT_INSTRUCTION = `Kullanıcının yazdığı öğün:
 {{TEXT}}
 """
 
-SADECE şu JSON şemasında yanıt ver:
+SADECE şu JSON şemasında yanıt ver — kcal/makro YASAK:
 {
   "label": "kısa öğün açıklaması",
   "items": [
-    { "name": "yiyecek adı (Türkçe)", "amount": sayı, "unit": "birim", "cal": kalori_sayısı }
-  ],
-  "confidence": "low | medium | high"
+    {
+      "name": "yiyecek adı (Türkçe)",
+      "nameEn": "english name",
+      "amount": sayı,
+      "unit": "adet | dilim | porsiyon | kase | bardak | g",
+      "gramsEstimate": null
+    }
+  ]
 }`
 
 export const FOOD_TEXT_CONFIG = {
   temperature: 0.2,
-  maxOutputTokens: 600,
+  maxOutputTokens: 700,
   responseMimeType: 'application/json',
 }
 

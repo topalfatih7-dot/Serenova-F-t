@@ -29,6 +29,7 @@ RLS: member own threads; `staff_manages_member`; admin. Realtime via `useRealtim
 - In-app: `members.data.notifications` via `append_member_notification`
 - Browser: `pushNotifs` + Notification API (`browserNotifications.js`)
 - Expo: `/api/application-notify` (member / staff outbound)
+- WhatsApp yok — kilitli; geri getirme / yeni çalışma yok (`.cursor/rules/whatsapp-locked.mdc`)
 
 ## Checklist
 

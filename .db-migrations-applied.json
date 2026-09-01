@@ -99,5 +99,7 @@
   "20260903_admin_outbound_messages.sql",
   "20260904_auth_notify_hardening.sql",
   "20260905_push_receipts.sql",
-  "20260906_device_push_tokens_multi_device.sql"
+  "20260906_device_push_tokens_multi_device.sql",
+  "20260908_nutrition_lookup_cache.sql",
+  "20260909_drop_unused_session_recordings.sql"
 ]

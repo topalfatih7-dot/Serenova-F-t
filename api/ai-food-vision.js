@@ -1,23 +1,23 @@
 /**
- * Vercel Serverless Function — Fotoğraflı Kalori Tespiti (Platinum).
+ * Vercel Serverless Function — Fotoğraflı kalori (hibrit boru hattı).
  *
- * Frontend, küçültülmüş yemek fotoğrafını base64 olarak gönderir;
- * bu fonksiyon GPT-4o (vision) ile analiz edip yapılandırılmış
- * JSON döndürür. API anahtarı yalnızca sunucuda tutulur.
- *
- * İstek gövdesi: { image: "data:image/jpeg;base64,..." veya saf base64", mimeType?: "image/jpeg" }
- * Yanıt: { ok: true, label, items: [{name, amount, unit, cal}], confidence }
+ * GPT yalnızca algı (sahne, öğe, porsiyon). Kalori OFF / sözlük / USDA + motor.
+ * İstek: { image, mimeType?, barcode?, clientQuality? }
  */
 
 import {
-  FOOD_VISION_SYSTEM,
-  FOOD_VISION_INSTRUCTION,
-  FOOD_VISION_CONFIG,
+  FOOD_VISION_PERCEPTION_SYSTEM,
+  FOOD_VISION_PERCEPTION_CONFIG,
+  buildFoodVisionPerceptionInstruction,
 } from './_ai-prompts.js'
 import { setCorsHeaders, handleOptions, requireAuth } from './_guards.js'
 import { checkAiDailyQuota } from './_aiQuota.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { requireMemberCalorieAccess } from './_memberEntitlements.js'
+import { runFoodVisionPipeline } from './_foodVisionPipeline.js'
+import { normalizeBarcode } from './_openFoodFacts.js'
+
+export const config = { maxDuration: 30 }
 
 async function loadOpenAi() {
   const href = new URL('./_openai.js', import.meta.url).href
@@ -73,45 +73,49 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const { image, mimeType: bodyMime } = body || {}
+    const { image, mimeType: bodyMime, barcode: bodyBarcode, clientQuality } = body || {}
     if (!image) {
       return res.status(400).json({ ok: false, error: 'Fotoğraf (image) gerekli' })
     }
 
+    const barcode = normalizeBarcode(bodyBarcode)
     const { mimeType: parsedMime, data } = stripDataUrl(image)
     const mimeType = bodyMime || parsedMime || 'image/jpeg'
     const dataUrl = `data:${mimeType};base64,${data}`
 
     const { text: raw } = await callOpenAi({
       messages: [
-        { role: 'system', content: FOOD_VISION_SYSTEM },
+        { role: 'system', content: FOOD_VISION_PERCEPTION_SYSTEM },
         {
           role: 'user',
           content: [
-            { type: 'text', text: FOOD_VISION_INSTRUCTION },
-            { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
+            { type: 'text', text: buildFoodVisionPerceptionInstruction({ barcode }) },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
           ],
         },
       ],
-      config: FOOD_VISION_CONFIG,
+      config: FOOD_VISION_PERCEPTION_CONFIG,
       endpoint: 'food-vision',
       userId: auth.user?.id,
     })
-    const result = parseJsonResponse(raw)
+    const perception = parseJsonResponse(raw)
 
-    const items = Array.isArray(result.items) ? result.items.map((it) => ({
-      name: String(it.name || 'Bilinmeyen').slice(0, 60),
-      amount: Number(it.amount) || 1,
-      unit: String(it.unit || 'porsiyon').slice(0, 20),
-      cal: Math.max(0, Math.round(Number(it.cal) || 0)),
-    })) : []
-
-    return res.status(200).json({
-      ok: true,
-      label: String(result.label || 'Tespit Edilen Öğün').slice(0, 60),
-      items,
-      confidence: result.confidence || 'medium',
+    const result = await runFoodVisionPipeline({
+      perceptionRaw: perception,
+      barcode,
+      clientQuality,
     })
+
+    if (!result.ok) {
+      return res.status(result.status || 422).json({
+        ok: false,
+        code: result.code,
+        error: result.error,
+        issues: result.issues || [],
+      })
+    }
+
+    return res.status(200).json(result)
   } catch (e) {
     if (e?.code || e?.name === 'OpenAiApiError') {
       logAiUsage({

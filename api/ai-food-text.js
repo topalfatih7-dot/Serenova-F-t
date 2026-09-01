@@ -1,6 +1,5 @@
 /**
- * Metin tabanlı kalori analizi — cache → sözlük → GPT-4o.
- * Fotoğraf analizi ile aynı JSON şemasını döndürür.
+ * Metin tabanlı kalori — cache → sözlük → GPT ayıklama + motor (kcal GPT'den değil).
  */
 
 import {
@@ -19,8 +18,10 @@ import {
   parseMealItemsNaive,
   lookupFoodItems,
   composeFromDictionary,
-  upsertFoodItems,
 } from './_foodCache.js'
+import { assembleMealResult } from './_calorieEngine.js'
+import { resolvePerceptionItems } from './_foodNutritionLookup.js'
+import { normalizePerceptionItem } from './_foodVisionPipeline.js'
 
 async function loadOpenAi() {
   const href = new URL('./_openai.js', import.meta.url).href
@@ -28,14 +29,36 @@ async function loadOpenAi() {
   return import(url)
 }
 
-function normalizeItems(items) {
-  if (!Array.isArray(items)) return []
-  return items.map((it) => ({
-    name: String(it.name || 'Bilinmeyen').slice(0, 60),
-    amount: Number(it.amount) || 1,
-    unit: String(it.unit || 'porsiyon').slice(0, 20),
-    cal: Math.max(0, Math.round(Number(it.cal) || 0)),
-  }))
+function jsonMeal(result, extra = {}) {
+  return {
+    ok: true,
+    label: result.label,
+    sceneType: result.sceneType || 'open_food',
+    items: result.items,
+    unmatched: result.unmatched || [],
+    totalCal: result.totalCal,
+    totalCalLow: result.totalCalLow,
+    totalCalHigh: result.totalCalHigh,
+    macros: result.macros,
+    confidence: result.confidence,
+    confidenceScore: result.confidenceScore,
+    confidenceReasons: result.confidenceReasons || [],
+    pipeline: result.pipeline,
+    ...extra,
+  }
+}
+
+function mealFromItems(label, items, unmatched = [], extra = {}) {
+  const assembled = assembleMealResult({
+    label,
+    sceneType: 'open_food',
+    items,
+    unmatched,
+    qualityScore: 1,
+    qualityIssues: [],
+    barcode: null,
+  })
+  return jsonMeal(assembled, extra)
 }
 
 export default async function handler(req, res) {
@@ -86,7 +109,6 @@ export default async function handler(req, res) {
 
     const queryNormalized = normalizeMealQuery(text)
 
-    // 1) Tam öğün cache
     const cached = await lookupMealCache(queryNormalized)
     if (cached?.items?.length) {
       logAiUsage({
@@ -102,30 +124,30 @@ export default async function handler(req, res) {
         meta: { queryNormalized },
       }).catch(() => {})
 
-      return res.status(200).json({
-        ok: true,
-        label: String(cached.label || 'Kayıtlı Öğün').slice(0, 60),
-        items: normalizeItems(cached.items),
-        confidence: cached.confidence || 'medium',
-        cached: true,
-        source: 'cache',
-      })
+      return res.status(200).json(
+        mealFromItems(cached.label || 'Kayıtlı Öğün', cached.items, [], {
+          cached: true,
+          source: 'cache',
+        }),
+      )
     }
 
-    // 2) Sözlük hibrit (tüm parçalar bulunduysa AI yok)
     const parsed = parseMealItemsNaive(text)
     if (parsed.length > 0) {
       const { found, missing } = await lookupFoodItems(parsed)
       if (found.length > 0 && missing.length === 0) {
         const composed = composeFromDictionary(found)
         if (composed?.items?.length) {
-          const items = normalizeItems(composed.items)
+          const payload = mealFromItems(composed.label, composed.items, [], {
+            cached: true,
+            source: 'dictionary',
+          })
           await upsertMealCache({
             queryNormalized,
             queryRaw: text,
-            label: composed.label,
-            items,
-            confidence: composed.confidence,
+            label: payload.label,
+            items: payload.items,
+            confidence: payload.confidence,
             userId: auth.user?.id,
           })
 
@@ -139,22 +161,14 @@ export default async function handler(req, res) {
             totalTokens: 0,
             costUsd: 0,
             success: true,
-            meta: { queryNormalized, itemCount: items.length },
+            meta: { queryNormalized, itemCount: payload.items.length },
           }).catch(() => {})
 
-          return res.status(200).json({
-            ok: true,
-            label: String(composed.label || 'Sözlük Öğünü').slice(0, 60),
-            items,
-            confidence: composed.confidence || 'medium',
-            cached: true,
-            source: 'dictionary',
-          })
+          return res.status(200).json(payload)
         }
       }
     }
 
-    // 3) GPT-4o
     if (!isOpenAiConfigured()) {
       return res.status(503).json({ ok: false, error: 'AI yapılandırması eksik (OPENAI_API_KEY)' })
     }
@@ -169,34 +183,45 @@ export default async function handler(req, res) {
       endpoint: 'food-text',
       userId: auth.user?.id,
     })
-    const result = parseJsonResponse(raw)
+    const extracted = parseJsonResponse(raw)
+    const perceptionItems = (Array.isArray(extracted.items) ? extracted.items : [])
+      .map((it) => normalizePerceptionItem({
+        ...it,
+        packaged: false,
+        cal: undefined,
+      }))
+      .filter(Boolean)
 
-    const items = normalizeItems(result.items)
-    const label = String(result.label || 'Yazılan Öğün').slice(0, 60)
-    const confidence = result.confidence || 'medium'
+    const { items, unmatched } = await resolvePerceptionItems(perceptionItems, {
+      barcode: null,
+      sceneType: 'open_food',
+    })
 
-    if (items.length) {
-      await Promise.all([
-        upsertFoodItems(items, 'ai'),
-        upsertMealCache({
-          queryNormalized,
-          queryRaw: text,
-          label,
-          items,
-          confidence,
-          userId: auth.user?.id,
+    const label = String(extracted.label || 'Yazılan Öğün').slice(0, 60)
+    if (!items.length) {
+      return res.status(200).json(
+        mealFromItems(label, [], unmatched, {
+          cached: false,
+          source: 'openai',
         }),
-      ])
+      )
     }
 
-    return res.status(200).json({
-      ok: true,
-      label,
-      items,
-      confidence,
+    const payload = mealFromItems(label, items, unmatched, {
       cached: false,
       source: 'openai',
     })
+
+    await upsertMealCache({
+      queryNormalized,
+      queryRaw: text,
+      label: payload.label,
+      items: payload.items,
+      confidence: payload.confidence,
+      userId: auth.user?.id,
+    })
+
+    return res.status(200).json(payload)
   } catch (e) {
     if (e?.code || e?.name === 'OpenAiApiError') {
       logAiUsage({

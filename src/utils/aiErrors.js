@@ -7,8 +7,16 @@ export function formatAiError(error, code) {
   if (c === 'rate_limit' || c === 'quota_exceeded' || raw.includes('429') || lower.includes('quota') || lower.includes('limitine')) {
     return 'Analiz limitine ulaşıldı. Birkaç dakika bekleyip tekrar deneyin.'
   }
-  if (c === 'network_error' || raw === 'Failed to fetch' || lower.includes('fetch failed')) {
-    return 'Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
+  if (c === 'unusable_image') {
+    return raw && !/(api[_ ]?key|openai)/i.test(raw)
+      ? raw.slice(0, 180)
+      : 'Fotoğraf analiz için uygun değil. Daha net ve aydınlık bir kare çekin.'
+  }
+  if (c === 'not_food') {
+    return 'Fotoğrafta yemek tespit edilemedi. Tabağı veya ürünü net çekin.'
+  }
+  if (c === 'unmatched_food') {
+    return raw && raw.length < 180 ? raw : 'Bu yiyecek için besin değeri bulunamadı.'
   }
   if (
     c === 'invalid_api_key'

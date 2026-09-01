@@ -4,6 +4,10 @@
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
+import { scaleDictionaryItem, ensureItemShape } from './_calorieEngine.js'
+
+const COOKING_PREFIX = /^(haslanmis|izgara|firin|suzme|kizarmis|bugulama|zeytinyagli|sebzeli)\s+/
+const DICT_COLUMNS = 'id, name, name_normalized, cal_per_unit, unit, amount_default, usage_count, protein_g, fat_g, carb_g'
 
 const TR_MAP = {
   İ: 'i', I: 'ı', Ş: 'ş', Ğ: 'ğ', Ü: 'ü', Ö: 'ö', Ç: 'ç',
@@ -87,12 +91,7 @@ export function parseMealItemsNaive(text) {
 
 function normalizeAnalysisItems(items) {
   if (!Array.isArray(items)) return []
-  return items.map((it) => ({
-    name: String(it.name || 'Bilinmeyen').slice(0, 60),
-    amount: Number(it.amount) || 1,
-    unit: String(it.unit || 'porsiyon').slice(0, 20),
-    cal: Math.max(0, Math.round(Number(it.cal) || 0)),
-  }))
+  return items.map((it) => ensureItemShape(it))
 }
 
 export async function lookupMealCache(queryNormalized) {
@@ -183,7 +182,7 @@ export async function lookupFoodItems(parsedItems) {
   try {
     const { data, error } = await admin
       .from('food_dictionary')
-      .select('id, name, name_normalized, cal_per_unit, unit, amount_default, usage_count')
+      .select(DICT_COLUMNS)
       .in('name_normalized', norms)
 
     if (error) return { found: [], missing: parsedItems }
@@ -219,22 +218,87 @@ export async function lookupFoodItems(parsedItems) {
   }
 }
 
+function bumpDictionaryUsage(admin, row) {
+  if (!admin || !row?.id) return
+  admin
+    .from('food_dictionary')
+    .update({
+      usage_count: (Number(row.usage_count) || 0) + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id)
+    .then(() => {})
+    .catch(() => {})
+}
+
 /**
- * Sözlükten tam öğün sonucu üret.
+ * Tek yiyecek adı → sözlük satırı (tam eşleşme, pişirme öneki, ilike).
+ */
+export async function lookupFoodByName(name) {
+  const admin = getSupabaseAdmin()
+  if (!admin || !name) return null
+  const primary = normalizeFoodName(name)
+  if (!primary) return null
+
+  const candidates = [primary]
+  const stripped = primary.replace(COOKING_PREFIX, '').trim()
+  if (stripped && stripped !== primary && stripped.length >= 3) candidates.push(stripped)
+
+  try {
+    const { data, error } = await admin
+      .from('food_dictionary')
+      .select(DICT_COLUMNS)
+      .in('name_normalized', candidates)
+
+    if (!error && data?.length) {
+      const byNorm = new Map(data.map((row) => [row.name_normalized, row]))
+      for (const c of candidates) {
+        const row = byNorm.get(c)
+        if (row) {
+          bumpDictionaryUsage(admin, row)
+          return row
+        }
+      }
+    }
+
+    if (primary.length >= 5) {
+      const safe = primary.replace(/[%_,]/g, '')
+      if (safe.length >= 5) {
+        const { data: fuzzy } = await admin
+          .from('food_dictionary')
+          .select(DICT_COLUMNS)
+          .ilike('name_normalized', `%${safe}%`)
+          .order('usage_count', { ascending: false })
+          .limit(3)
+        const row = fuzzy?.[0]
+        if (row) {
+          bumpDictionaryUsage(admin, row)
+          return row
+        }
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+/**
+ * Sözlükten tam öğün sonucu üret (motor ile aralık + makro).
  * @returns {{ label: string, items: object[], confidence: string } | null}
  */
 export function composeFromDictionary(foundPairs) {
   if (!foundPairs?.length) return null
   const items = foundPairs.map(({ parsed, row }) => {
-    const amount = Number(parsed.amount) || Number(row.amount_default) || 1
-    const calPer = Number(row.cal_per_unit) || 0
-    const baseAmount = Number(row.amount_default) || 1
-    const cal = Math.max(0, Math.round((calPer / baseAmount) * amount))
+    const scaled = scaleDictionaryItem({
+      name: row.name,
+      amount: Number(parsed.amount) || Number(row.amount_default) || 1,
+      unit: row.unit,
+    }, row)
     return {
       name: String(row.name || parsed.nameHint).slice(0, 60),
-      amount,
-      unit: String(row.unit || 'porsiyon').slice(0, 20),
-      cal,
+      ...scaled,
+      source: 'food_dictionary',
     }
   })
   const names = items.map((i) => i.name).slice(0, 3).join(', ')
