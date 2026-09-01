@@ -1,16 +1,18 @@
-# Saatlik randevu hatırlatmaları (T-24s / T-1s) → Vercel API → in-app + Expo
-# Vercel Hobby yalnızca günlük cron’a izin verdiği için tetikleyici burada.
+# Randevu + habit hatırlatmaları — YEDEK tetikleyici.
+# Birincil: Supabase pg_cron (her 10 dk) → /api/ai-blog-generate. Bu iş yalnızca
+# pg_cron/pg_net kesintisinde devreye giren yedektir; idempotency (waReminders /
+# pushLog) çift bildirim atmaz.
 # Custom domain zorunlu: *.vercel.app SSO korumalı, cron 401 alır.
 #
 # Gerekli GitHub Secrets:
 #   CRON_SECRET          — Vercel’deki CRON_SECRET ile aynı
 #   HEALTH_CHECK_URL     — opsiyonel; varsayılan https://www.yeniform.com
 
-name: Session reminders
+name: Reminders (backup)
 
 on:
   schedule:
-    - cron: '15 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -18,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Run session reminders
+      - name: Run reminder tasks
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
@@ -30,17 +32,26 @@ jobs:
           fi
           BASE="${HEALTH_CHECK_URL:-https://www.yeniform.com}"
           BASE="${BASE%/}"
-          URL="${BASE}/api/ai-blog-generate?task=session-reminders"
-          echo "GET $URL"
-          curl -fsS -X GET "$URL" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Accept: application/json" \
-            -o /tmp/reminders.json
-          python3 - <<'PY'
-          import json, sys
-          with open("/tmp/reminders.json") as f:
-              data = json.load(f)
-          print(json.dumps(data, indent=2, ensure_ascii=False)[:2000])
-          if not data.get("ok"):
-              sys.exit(1)
-          PY
+          fail=0
+          for TASK in session-reminders habit-reminders; do
+            URL="${BASE}/api/ai-blog-generate?task=${TASK}"
+            echo "GET $URL"
+            if curl -fsS -X GET "$URL" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Accept: application/json" \
+              -o "/tmp/${TASK}.json"; then
+              python3 - "$TASK" <<'PY'
+import json, sys
+task = sys.argv[1]
+with open(f"/tmp/{task}.json") as f:
+    data = json.load(f)
+print(task, json.dumps(data, ensure_ascii=False)[:1000])
+if not data.get("ok"):
+    sys.exit(2)
+PY
+            else
+              echo "::warning::${TASK} isteği başarısız"
+              fail=1
+            fi
+          done
+          exit $fail
