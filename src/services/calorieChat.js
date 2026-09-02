@@ -12,19 +12,12 @@ export function isCalorieAiEnabled() {
   return chat !== 'false' || vision !== 'false'
 }
 
-export const SOURCE_LABELS = {
-  open_food_facts: 'Ürün veritabanı',
-  food_dictionary: 'Sözlük',
-  usda: 'USDA',
-  cache: 'Kayıtlı öğün',
-  dictionary: 'Sözlük',
-  openai: 'AI ayıklama',
+function roundG(n) {
+  return Math.round(Number(n) || 0)
 }
 
-export const CONFIDENCE_LABELS = {
-  high: 'Yüksek güven',
-  medium: 'Orta güven',
-  low: 'Düşük güven',
+export function formatMacros(macros = {}) {
+  return `Protein ${roundG(macros.protein)}g · Karb. ${roundG(macros.carb)}g · Yağ ${roundG(macros.fat)}g`
 }
 
 export async function analyzeFoodText(text) {
@@ -53,46 +46,27 @@ export async function analyzeFoodText(text) {
   }
 }
 
-function rangeText(low, mid, high) {
-  const lo = Math.round(Number(low) || 0)
-  const hi = Math.round(Number(high) || 0)
-  const m = Math.round(Number(mid) || 0)
-  if (lo && hi && lo !== hi) return `${m} kcal (${lo}–${hi})`
-  return `~${m} kcal`
-}
-
 export function formatAnalysisReply(result) {
   if (!result?.items?.length) {
     const unmatched = (result?.unmatched || []).map((u) => u.name).filter(Boolean)
     if (unmatched.length) {
-      return `Yiyecek ayrıştırıldı ancak besin değeri bulunamadı: ${unmatched.join(', ')}.\nDaha açık yazın: 2 yumurta, 1 dilim tam buğday ekmeği, 1 kase yoğurt`
+      return `Kalori hesaplanamadı: ${unmatched.join(', ')}.\nDaha açık yazın: 2 yumurta, 1 dilim tam buğday ekmeği, 1 kase yoğurt`
     }
     return 'Yiyecek tespit edilemedi. Lütfen ne yediğinizi daha açık yazın.\nÖrnek: 2 yumurta, 1 dilim tam buğday ekmeği, 1 kase yoğurt'
   }
   const lines = [`🍽 ${result.label}`, '']
   result.items.forEach((item) => {
-    const src = SOURCE_LABELS[item.source]
-    const calBit = rangeText(item.calLow, item.cal, item.calHigh)
-    lines.push(`• ${item.name} — ${item.amount} ${item.unit} · ${calBit}${src ? ` · ${src}` : ''}`)
+    const kcal = Math.round(Number(item.cal) || 0)
+    lines.push(`• ${item.name} — ${item.amount} ${item.unit} · ${kcal} kcal`)
+    lines.push(`  ${formatMacros(item)}`)
   })
-  const total = result.totalCal ?? result.items.reduce((s, i) => s + (i.cal || 0), 0)
-  lines.push('', `📊 Toplam: ${rangeText(result.totalCalLow, total, result.totalCalHigh)}`)
+  const total = Math.round(result.totalCal ?? result.items.reduce((s, i) => s + (i.cal || 0), 0))
+  lines.push('', `📊 Toplam: ${total} kcal`)
   if (result.macros) {
-    lines.push(`🥩 P ${Math.round(result.macros.protein)}g · 🌾 K ${Math.round(result.macros.carb)}g · 🧈 Y ${Math.round(result.macros.fat)}g`)
-  }
-  const band = result.confidence || 'medium'
-  lines.push('', `${band === 'low' ? '⚠️' : '✓'} ${CONFIDENCE_LABELS[band] || band}`)
-  if (result.confidenceReasons?.length) {
-    lines.push(result.confidenceReasons.join(' · '))
+    lines.push(formatMacros(result.macros))
   }
   if (result.unmatched?.length) {
-    lines.push('', `Bulunamayan: ${result.unmatched.map((u) => u.name).join(', ')}`)
-  }
-  if (result.source === 'cache' || result.source === 'dictionary' || result.cached) {
-    const tip = result.source === 'dictionary'
-      ? '💾 Kayıtlı yiyecek sözlüğünden hesaplandı (AI çağrılmadı).'
-      : '💾 Kayıtlı öğünden getirildi (AI çağrılmadı).'
-    lines.push('', tip)
+    lines.push('', `Hesaplanamadı: ${result.unmatched.map((u) => u.name).join(', ')}`)
   }
   return lines.join('\n')
 }

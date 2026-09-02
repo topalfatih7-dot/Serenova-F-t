@@ -9,10 +9,13 @@ import {
   portionScoreFromGrams,
   assembleMealResult,
   typicalGramsForDictionaryRow,
+  inferPerceptionGrams,
+  isPlausibleScaledFood,
 } from '../api/_calorieEngine.js'
 import { mapOffNutriments, parseServingGrams, mapOffProduct } from '../api/_openFoodFacts.js'
 import { mapFdcNutrients } from '../api/_usdaFood.js'
-import { normalizePerception, runFoodVisionPipeline } from '../api/_foodVisionPipeline.js'
+import { normalizePerception, normalizePerceptionItem, runFoodVisionPipeline } from '../api/_foodVisionPipeline.js'
+import { normalizeFoodName, parseMealItemsNaive } from '../api/_foodCache.js'
 
 describe('scalePer100g', () => {
   it('scales 100g chicken at 165 kcal/100g', () => {
@@ -75,6 +78,24 @@ describe('scaleDictionaryItem', () => {
     assert.equal(r.cal, 200)
     assert.equal(r.calLow, 167)
     assert.equal(r.calHigh, 233)
+  })
+
+  it('treats 200 g chicken as grams not 200 portions', () => {
+    const row = {
+      name: 'Izgara tavuk göğüs (120g)',
+      cal_per_unit: 200,
+      amount_default: 1,
+      unit: 'porsiyon',
+      protein_g: 38,
+      fat_g: 4,
+      carb_g: 0,
+    }
+    const r = scaleDictionaryItem({ amount: 200, unit: 'g' }, row)
+    assert.equal(r.grams, 200)
+    assert.equal(r.cal, 333)
+    assert.equal(r.protein, 63.3)
+    assert.equal(r.fat, 6.7)
+    assert.equal(r.cal < 500, true)
   })
 })
 
@@ -201,5 +222,38 @@ describe('runFoodVisionPipeline gates', () => {
     })
     assert.equal(r.ok, false)
     assert.equal(r.code, 'not_food')
+  })
+})
+
+describe('gram inference and name matching', () => {
+  it('fills gramsEstimate from amount + unit g', () => {
+    assert.equal(inferPerceptionGrams({ amount: 200, unit: 'g' }), 200)
+    const item = normalizePerceptionItem({ name: 'tavuk', amount: 200, unit: 'g' })
+    assert.equal(item.gramsEstimate, 200)
+  })
+
+  it('rejects the 40000 kcal chicken cache shape', () => {
+    assert.equal(isPlausibleScaledFood({
+      cal: 40000, grams: 24000, protein: 7600, fat: 800, carb: 0,
+    }), false)
+    assert.equal(isPlausibleScaledFood({
+      cal: 333, grams: 200, protein: 63.3, fat: 6.7, carb: 0,
+    }), true)
+    assert.equal(isPlausibleScaledFood({
+      cal: 80, grams: 30, protein: 0, fat: 0, carb: 0,
+    }), false)
+  })
+
+  it('folds yoğurt to dictionary yogurt key', () => {
+    assert.equal(normalizeFoodName('yoğurt'), 'yogurt')
+    assert.equal(normalizeFoodName('süzme yoğurt'), 'suzme yogurt')
+  })
+
+  it('parses 200 gram tavuk as grams not portions', () => {
+    const parsed = parseMealItemsNaive('200 gram tavuk')
+    assert.equal(parsed.length, 1)
+    assert.equal(parsed[0].amount, 200)
+    assert.equal(parsed[0].unit, 'g')
+    assert.equal(parsed[0].nameNormalized, 'tavuk')
   })
 })

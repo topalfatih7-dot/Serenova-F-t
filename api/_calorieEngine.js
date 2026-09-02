@@ -16,9 +16,63 @@ export function roundMacro(n) {
 }
 
 const COUNT_UNITS = new Set([
-  'adet', 'dilim', 'porsiyon', 'kase', 'bardak', 'fincan',
+  'adet', 'tane', 'dilim', 'porsiyon', 'kase', 'bardak', 'fincan',
   'kasik', 'kaşık', 'avuc', 'avuç', 'yarim', 'yarım',
 ])
+
+const MASS_VOLUME_UNITS = new Set([
+  'g', 'gr', 'gram', 'grams', 'grami', 'gramı',
+  'kg', 'kilo',
+  'ml', 'mililitre',
+  'cl',
+  'l', 'lt', 'litre', 'liter',
+])
+
+export function normalizePortionUnit(unit) {
+  return String(unit || '').toLocaleLowerCase('tr-TR').trim()
+}
+
+/** 200 g / 250 ml / 0.2 kg → gram. Porsiyon birimlerinde 0. */
+export function gramsFromAmountAndUnit(amount, unit) {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  const u = normalizePortionUnit(unit)
+  if (u === 'kg' || u === 'kilo') return n * 1000
+  if (u === 'cl') return n * 10
+  if (u === 'l' || u === 'lt' || u === 'litre' || u === 'liter') return n * 1000
+  if (MASS_VOLUME_UNITS.has(u)) return n
+  return 0
+}
+
+/** GPT bazen amount=200, unit=g yazar ama gramsEstimate bırakır. */
+export function inferPerceptionGrams(perception = {}) {
+  const explicit = Number(perception.gramsEstimate) || 0
+  if (explicit > 0) return explicit
+  return gramsFromAmountAndUnit(perception.amount, perception.unit)
+}
+
+export function dictionaryRowHasMacros(row = {}) {
+  return (Number(row.protein_g) || 0) + (Number(row.fat_g) || 0) + (Number(row.carb_g) || 0) > 0
+}
+
+/**
+ * Tek öğün satırı için imkânsız değerler (200 porsiyon tavuk gibi).
+ * Şişirilmiş gram (24 kg tavuk) kcal/g oranını normal gösterebilir; tavan şart.
+ */
+export function isPlausibleScaledFood(item = {}) {
+  const cal = Number(item.cal) || 0
+  const grams = Number(item.grams) || 0
+  const protein = Number(item.protein) || 0
+  const carb = Number(item.carb) || 0
+  const fat = Number(item.fat) || 0
+  if (cal <= 0) return false
+  if (cal > 2500) return false
+  if (grams > 2000) return false
+  if (protein > 250) return false
+  if (grams > 0 && cal > grams * 9.5 + 8) return false
+  if (cal >= 20 && protein + carb + fat <= 0) return false
+  return true
+}
 
 /**
  * 100g başına besin × gram aralığı.
@@ -106,39 +160,72 @@ export function typicalGramsForDictionaryRow(row = {}) {
 }
 
 export function isCountUnit(unit) {
-  return COUNT_UNITS.has(String(unit || '').toLowerCase())
+  return COUNT_UNITS.has(normalizePortionUnit(unit))
+}
+
+function rangeFromGrams(grams, gramsLow, gramsHigh) {
+  const g = Math.max(0, Number(grams) || 0)
+  const lo = Number(gramsLow) > 0 ? Number(gramsLow) : g * 0.85
+  const hi = Number(gramsHigh) > 0 ? Number(gramsHigh) : g * 1.15
+  return { grams: g, gramsLow: lo, gramsHigh: Math.max(lo, hi) }
 }
 
 /**
  * Perception öğesini sözlük satırına bağla (adet vs gram).
+ * Gram/ml asla porsiyon sayısı değildir — 200 g tavuk ≠ 200 porsiyon.
  */
 export function scaleDictionaryItem(perception = {}, row = {}) {
   const unit = String(perception.unit || row.unit || 'porsiyon').slice(0, 20)
-  const grams = Number(perception.gramsEstimate) || 0
-  const gramsLow = Number(perception.gramsLow) || 0
-  const gramsHigh = Number(perception.gramsHigh) || 0
+  const typical = typicalGramsForDictionaryRow(row) || 100
+  const def = Number(row.amount_default) > 0 ? Number(row.amount_default) : 1
   const countAmount = Number(perception.amount)
-  const useCount = isCountUnit(unit) && Number.isFinite(countAmount) && countAmount > 0 && !grams
+  const inferredGrams = inferPerceptionGrams(perception)
+  const gramsLowIn = Number(perception.gramsLow) || 0
+  const gramsHighIn = Number(perception.gramsHigh) || 0
 
   let amount
   let amountLow
   let amountHigh
+  let gMid
+  let gLo
+  let gHi
 
-  if (useCount) {
-    amount = countAmount
-    const ratioLo = grams && gramsLow ? gramsLow / grams : 0.9
-    const ratioHi = grams && gramsHigh ? gramsHigh / grams : 1.1
-    amountLow = amount * (grams ? ratioLo : 0.9)
-    amountHigh = amount * (grams ? ratioHi : 1.1)
-  } else if (grams > 0) {
-    const typical = typicalGramsForDictionaryRow(row)
-    amount = grams / typical
-    amountLow = (gramsLow || grams * 0.8) / typical
-    amountHigh = (gramsHigh || grams * 1.2) / typical
-  } else {
-    amount = Number.isFinite(countAmount) && countAmount > 0 ? countAmount : (Number(row.amount_default) || 1)
+  if (inferredGrams > 0) {
+    const ranged = rangeFromGrams(inferredGrams, gramsLowIn, gramsHighIn)
+    gMid = ranged.grams
+    gLo = ranged.gramsLow
+    gHi = ranged.gramsHigh
+    amount = gMid / typical
+    amountLow = gLo / typical
+    amountHigh = gHi / typical
+  } else if (isCountUnit(unit) && Number.isFinite(countAmount) && countAmount > 0) {
+    amount = Math.min(countAmount, 40)
     amountLow = amount * 0.9
     amountHigh = amount * 1.1
+    gMid = typical * (amount / def)
+    gLo = gMid * 0.9
+    gHi = gMid * 1.1
+  } else {
+    const raw = Number.isFinite(countAmount) && countAmount > 0
+      ? countAmount
+      : def
+    // Birimsiz 200 → gram; 2 → porsiyon.
+    if (raw >= 20) {
+      const ranged = rangeFromGrams(raw, gramsLowIn, gramsHighIn)
+      gMid = ranged.grams
+      gLo = ranged.gramsLow
+      gHi = ranged.gramsHigh
+      amount = gMid / typical
+      amountLow = gLo / typical
+      amountHigh = gHi / typical
+    } else {
+      amount = raw
+      amountLow = amount * 0.9
+      amountHigh = amount * 1.1
+      gMid = typical * (amount / def)
+      gLo = gMid * 0.9
+      gHi = gMid * 1.1
+    }
   }
 
   const scaled = scalePortion({
@@ -152,14 +239,16 @@ export function scaleDictionaryItem(perception = {}, row = {}) {
     carb_g: row.carb_g,
   })
 
-  const typical = typicalGramsForDictionaryRow(row)
-  const gMid = grams > 0 ? grams : typical * (amount / (Number(row.amount_default) || 1))
-  const gLo = gramsLow > 0 ? gramsLow : gMid * (amountLow / amount)
-  const gHi = gramsHigh > 0 ? gramsHigh : gMid * (amountHigh / amount)
+  const percUnit = normalizePortionUnit(perception.unit)
+  const displayAmount = inferredGrams > 0 ? inferredGrams : amount
+  const displayUnit = inferredGrams > 0
+    ? (MASS_VOLUME_UNITS.has(percUnit) ? percUnit : 'g')
+    : unit
 
   return {
     ...scaled,
-    unit,
+    amount: displayAmount,
+    unit: displayUnit,
     grams: Math.round(gMid),
     gramsLow: Math.round(Math.min(gLo, gHi)),
     gramsHigh: Math.round(Math.max(gLo, gHi)),

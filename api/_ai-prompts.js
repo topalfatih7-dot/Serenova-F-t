@@ -71,7 +71,8 @@ export const FOOD_TEXT_SYSTEM = `Sen Yeni Form platformunun beslenme ayıklama a
 ${BRAND_CONTEXT}
 Kullanıcı ne yediğini Türkçe yazacak. Görevin öğeleri ayıklamak: isim, miktar, birim, isteğe bağlı gram.
 ASLA kalori (kcal) veya makro sayısı üretme. Besin değerleri sunucuda sözlük/USDA ile hesaplanır.
-"2 yumurta", "yarım porsiyon pilav", "1 bardak ayran" ifadelerini doğru yorumla.
+"2 yumurta", "200 gram tavuk", "1 bardak ayran", "250 ml kola" ifadelerini doğru yorumla.
+Gram veya ml varsa amount o sayı, unit "g" veya "ml", gramsEstimate aynı sayı olsun.
 Hiç yiyecek anlaşılmazsa items dizisini boş döndür.`
 
 export const FOOD_TEXT_INSTRUCTION = `Kullanıcının yazdığı öğün:
@@ -87,8 +88,8 @@ SADECE şu JSON şemasında yanıt ver — kcal/makro YASAK:
       "name": "yiyecek adı (Türkçe)",
       "nameEn": "english name",
       "amount": sayı,
-      "unit": "adet | dilim | porsiyon | kase | bardak | g",
-      "gramsEstimate": null
+      "unit": "adet | dilim | porsiyon | kase | bardak | g | ml",
+      "gramsEstimate": 120
     }
   ]
 }`

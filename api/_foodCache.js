@@ -4,7 +4,7 @@
  */
 
 import { getSupabaseAdmin } from './_supabaseAdmin.js'
-import { scaleDictionaryItem, ensureItemShape } from './_calorieEngine.js'
+import { scaleDictionaryItem, ensureItemShape, isPlausibleScaledFood, dictionaryRowHasMacros } from './_calorieEngine.js'
 
 const COOKING_PREFIX = /^(haslanmis|izgara|firin|suzme|kizarmis|bugulama|zeytinyagli|sebzeli)\s+/
 const DICT_COLUMNS = 'id, name, name_normalized, cal_per_unit, unit, amount_default, usage_count, protein_g, fat_g, carb_g'
@@ -17,6 +17,16 @@ function toTrLower(s) {
   return String(s || '')
     .replace(/[İIŞĞÜÖÇ]/g, (ch) => TR_MAP[ch] || ch)
     .toLocaleLowerCase('tr-TR')
+}
+
+function foldTrAscii(s) {
+  return String(s || '')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ı/g, 'i')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
 }
 
 /** Öğün / yiyecek adı normalize — eşleşme için. */
@@ -42,6 +52,7 @@ export function normalizeFoodName(name) {
     .replace(/[^\wğüşıöç\s-]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+  s = foldTrAscii(s)
   // Yaygın çoğul / ek sadeleştirme
   if (s.endsWith('lar') || s.endsWith('ler')) s = s.slice(0, -3)
   else if (s.endsWith('ları') || s.endsWith('leri')) s = s.slice(0, -4)
@@ -69,11 +80,20 @@ export function parseMealItemsNaive(text) {
     else if (amountRaw) amount = Number(String(amountRaw).replace(',', '.')) || 1
 
     let rest = (m[2] || '').trim()
-    // "2 dilim ekmek" → amount 2 zaten; birim kelimesini isimde bırak
     const leadingNum = rest.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/)
     if (!m[1] && leadingNum) {
       amount = Number(String(leadingNum[1]).replace(',', '.')) || amount
       rest = leadingNum[2]
+    }
+
+    let unit = ''
+    const unitLead = rest.match(/^(gram(?:ı|i)?|gr|g|kg|ml|mililitre|dilim|kase|adet|porsiyon|bardak|tane)\s+(.+)$/i)
+    if (unitLead) {
+      const rawUnit = unitLead[1].toLocaleLowerCase('tr-TR')
+      rest = unitLead[2]
+      if (/^g(ram)?s?$/.test(rawUnit) || rawUnit.startsWith('gram')) unit = 'g'
+      else if (rawUnit === 'mililitre') unit = 'ml'
+      else unit = rawUnit
     }
 
     const nameNormalized = normalizeFoodName(rest)
@@ -81,6 +101,7 @@ export function parseMealItemsNaive(text) {
     items.push({
       raw: part,
       amount,
+      unit,
       nameHint: rest.slice(0, 60),
       nameNormalized,
     })
@@ -105,6 +126,12 @@ export async function lookupMealCache(queryNormalized) {
       .maybeSingle()
     if (error || !data) return null
 
+    const items = normalizeAnalysisItems(data.items)
+    if (items.length && !items.every((it) => isPlausibleScaledFood(it))) {
+      await admin.from('meal_analysis_cache').delete().eq('id', data.id).then(() => {}).catch(() => {})
+      return null
+    }
+
     await admin
       .from('meal_analysis_cache')
       .update({
@@ -118,7 +145,7 @@ export async function lookupMealCache(queryNormalized) {
 
     return {
       label: data.label || 'Kayıtlı Öğün',
-      items: normalizeAnalysisItems(data.items),
+      items,
       confidence: data.confidence || 'medium',
     }
   } catch {
@@ -136,11 +163,13 @@ export async function upsertMealCache({
 }) {
   const admin = getSupabaseAdmin()
   if (!admin || !queryNormalized) return
+  const shaped = normalizeAnalysisItems(items)
+  if (shaped.length && !shaped.every((it) => isPlausibleScaledFood(it))) return
   const payload = {
     query_normalized: queryNormalized,
     query_raw: String(queryRaw || '').slice(0, 500),
     label: String(label || 'Yazılan Öğün').slice(0, 60),
-    items: normalizeAnalysisItems(items),
+    items: shaped,
     confidence: confidence || 'medium',
     updated_at: new Date().toISOString(),
     last_hit_at: new Date().toISOString(),
@@ -193,7 +222,7 @@ export async function lookupFoodItems(parsedItems) {
 
     for (const parsed of parsedItems) {
       const row = byNorm.get(parsed.nameNormalized)
-      if (row) found.push({ parsed, row })
+      if (row && dictionaryRowHasMacros(row)) found.push({ parsed, row })
       else missing.push(parsed)
     }
 
@@ -254,23 +283,35 @@ export async function lookupFoodByName(name) {
       const byNorm = new Map(data.map((row) => [row.name_normalized, row]))
       for (const c of candidates) {
         const row = byNorm.get(c)
-        if (row) {
+        if (row && dictionaryRowHasMacros(row)) {
           bumpDictionaryUsage(admin, row)
           return row
         }
       }
     }
 
-    if (primary.length >= 5) {
+    if (primary.length >= 3) {
       const safe = primary.replace(/[%_,]/g, '')
-      if (safe.length >= 5) {
+      if (safe.length >= 3) {
         const { data: fuzzy } = await admin
           .from('food_dictionary')
           .select(DICT_COLUMNS)
           .ilike('name_normalized', `%${safe}%`)
           .order('usage_count', { ascending: false })
-          .limit(3)
-        const row = fuzzy?.[0]
+          .limit(8)
+        const complete = (fuzzy || []).filter((row) => dictionaryRowHasMacros(row))
+        complete.sort((a, b) => {
+          const rank = (row) => {
+            const n = String(row.name_normalized || '')
+            if (n === safe) return 0
+            if (n.endsWith(` ${safe}`) || n.startsWith(`${safe} `)) return 1
+            return 2
+          }
+          const d = rank(a) - rank(b)
+          if (d !== 0) return d
+          return (Number(b.usage_count) || 0) - (Number(a.usage_count) || 0)
+        })
+        const row = complete[0]
         if (row) {
           bumpDictionaryUsage(admin, row)
           return row
@@ -293,7 +334,7 @@ export function composeFromDictionary(foundPairs) {
     const scaled = scaleDictionaryItem({
       name: row.name,
       amount: Number(parsed.amount) || Number(row.amount_default) || 1,
-      unit: row.unit,
+      unit: parsed.unit || row.unit,
     }, row)
     return {
       name: String(row.name || parsed.nameHint).slice(0, 60),
@@ -325,33 +366,44 @@ export async function upsertFoodItems(items, source = 'ai') {
     const calPerUnit = cal
     const amountDefault = amount > 0 ? amount : 1
 
+    const protein = Number(it.protein)
+    const fat = Number(it.fat)
+    const carb = Number(it.carb)
+    const hasMacros = [protein, fat, carb].some((n) => Number.isFinite(n) && n > 0)
+
     try {
       const { data: existing } = await admin
         .from('food_dictionary')
-        .select('id, usage_count')
+        .select('id, usage_count, protein_g, fat_g, carb_g')
         .eq('name_normalized', nameNormalized)
         .maybeSingle()
 
       if (existing?.id) {
-        await admin
-          .from('food_dictionary')
-          .update({
-            name: name.slice(0, 60),
-            cal_per_unit: calPerUnit,
-            unit,
-            amount_default: amountDefault,
-            source,
-            usage_count: (Number(existing.usage_count) || 0) + 1,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id)
-      } else {
+        const patch = {
+          usage_count: (Number(existing.usage_count) || 0) + 1,
+          updated_at: new Date().toISOString(),
+        }
+        if (hasMacros) {
+          patch.name = name.slice(0, 60)
+          patch.cal_per_unit = calPerUnit
+          patch.unit = unit
+          patch.amount_default = amountDefault
+          patch.source = source
+          patch.protein_g = protein
+          patch.fat_g = fat
+          patch.carb_g = carb
+        }
+        await admin.from('food_dictionary').update(patch).eq('id', existing.id)
+      } else if (hasMacros) {
         await admin.from('food_dictionary').insert({
           name: name.slice(0, 60),
           name_normalized: nameNormalized,
           cal_per_unit: calPerUnit,
           unit,
           amount_default: amountDefault,
+          protein_g: protein,
+          fat_g: fat,
+          carb_g: carb,
           source,
           usage_count: 1,
         })

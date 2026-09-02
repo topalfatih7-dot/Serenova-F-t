@@ -6,6 +6,10 @@
 import {
   scalePer100g,
   scaleDictionaryItem,
+  inferPerceptionGrams,
+  isPlausibleScaledFood,
+  typicalGramsForDictionaryRow,
+  isCountUnit,
 } from './_calorieEngine.js'
 import { lookupFoodByName } from './_foodCache.js'
 import { lookupProductByBarcode, searchProductByName } from './_openFoodFacts.js'
@@ -13,11 +17,12 @@ import { lookupUsdaFood } from './_usdaFood.js'
 
 function gramsFromOff(off, item, servings) {
   const s = Number(servings) > 0 ? Number(servings) : 1
-  if (Number(item.gramsEstimate) > 0) {
+  const inferred = inferPerceptionGrams(item)
+  if (inferred > 0) {
     return {
-      grams: Number(item.gramsEstimate),
-      gramsLow: Number(item.gramsLow) || Number(item.gramsEstimate) * 0.85,
-      gramsHigh: Number(item.gramsHigh) || Number(item.gramsEstimate) * 1.15,
+      grams: inferred,
+      gramsLow: Number(item.gramsLow) || inferred * 0.85,
+      gramsHigh: Number(item.gramsHigh) || inferred * 1.15,
     }
   }
   const serving = Number(off.servingGrams) > 0 ? Number(off.servingGrams) : 100
@@ -97,18 +102,37 @@ export async function resolvePerceptionItem(item, opts = {}) {
   const row = await lookupFoodByName(name)
   if (row) {
     const scaled = scaleDictionaryItem(item, row)
+    if (isPlausibleScaledFood(scaled)) {
+      return {
+        item: {
+          name: String(row.name || name).slice(0, 60),
+          ...scaled,
+          source: 'food_dictionary',
+        },
+      }
+    }
+  }
+
+  const offName = await searchProductByName(String(item.ocrText || name).trim())
+  if (offName?.per100g?.kcal > 0) {
+    const g = gramsFromOff(offName, item, servings)
     return {
-      item: {
-        name: String(row.name || name).slice(0, 60),
-        ...scaled,
-        source: 'food_dictionary',
-      },
+      item: itemFromPer100g({
+        name: offName.productName || name,
+        amount: Number(item.amount) || servings,
+        unit,
+        ...g,
+        per100g: offName.per100g,
+        source: 'open_food_facts',
+      }),
     }
   }
 
   const usda = await lookupUsdaFood(item.nameEn || name)
   if (usda?.per100g?.kcal > 0) {
-    const grams = Number(item.gramsEstimate) > 0 ? Number(item.gramsEstimate) : 100
+    const grams = inferPerceptionGrams(item)
+      || (isCountUnit(unit) ? typicalGramsForDictionaryRow({ name, unit }) : 0)
+      || 100
     const gramsLow = Number(item.gramsLow) || grams * 0.75
     const gramsHigh = Number(item.gramsHigh) || grams * 1.25
     return {

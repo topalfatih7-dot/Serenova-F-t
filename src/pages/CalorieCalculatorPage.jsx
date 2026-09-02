@@ -14,8 +14,7 @@ import { analyzeFoodPhoto } from '../services/aiVision'
 import {
   analyzeFoodText,
   formatAnalysisReply,
-  SOURCE_LABELS,
-  CONFIDENCE_LABELS,
+  formatMacros,
 } from '../services/calorieChat'
 import { assessImageQuality } from '../utils/imageQuality'
 import PanelPageHeader, { PanelPageShell } from '../components/layout/PanelPageHeader'
@@ -49,18 +48,12 @@ function buildCalorieLogEntry({ mode, input, analysis }) {
     calLow: totals.totalCalLow,
     calHigh: totals.totalCalHigh,
     macros: totals.macros,
-    source: analysis?.pipeline?.sources?.[0] || analysis?.source,
-    confidence: analysis?.confidence,
-    confidenceScore: analysis?.confidenceScore,
     items: (analysis?.items || []).slice(0, 20).map((i) => ({
       name: i.name || i.label,
       cal: i.cal,
-      calLow: i.calLow,
-      calHigh: i.calHigh,
       protein: i.protein,
       carb: i.carb,
       fat: i.fat,
-      source: i.source,
     })),
     createdAt: new Date().toISOString(),
   }
@@ -356,12 +349,7 @@ export default function CalorieCalculatorPage() {
       {activeTotal > 0 && summary && (
         <CalorieSummaryCard
           totalCal={summary.totalCal}
-          totalCalLow={summary.totalCalLow}
-          totalCalHigh={summary.totalCalHigh}
           macros={summary.macros}
-          confidence={summaryAnalysis.confidence}
-          confidenceScore={summaryAnalysis.confidenceScore}
-          reasons={summaryAnalysis.confidenceReasons}
         />
       )}
 
@@ -519,37 +507,6 @@ export default function CalorieCalculatorPage() {
                           <RefreshCw className="h-3.5 w-3.5" /> Yeni Fotoğraf
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                        <p className="text-xs text-amber-700">
-                          Tahmini aralıktır
-                          {photoResult.totalCalLow != null && photoResult.totalCalHigh != null
-                            ? ` (${photoResult.totalCalLow}–${photoResult.totalCalHigh} kcal)`
-                            : ''}
-                          ; gerçek kalori farklılık gösterebilir.
-                        </p>
-                      </div>
-                      {photoResult.confidence && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                            photoResult.confidence === 'high'
-                              ? 'bg-sage-100 text-sage-800'
-                              : photoResult.confidence === 'low'
-                                ? 'bg-red-50 text-red-700'
-                                : 'bg-amber-50 text-amber-800'
-                          }`}>
-                            {CONFIDENCE_LABELS[photoResult.confidence] || photoResult.confidence}
-                            {Number.isFinite(photoResult.confidenceScore)
-                              ? ` · ${Math.round(photoResult.confidenceScore * 100)}%`
-                              : ''}
-                          </span>
-                          {(photoResult.pipeline?.sources || []).map((src) => (
-                            <span key={src} className="rounded-full bg-cream-100 px-2.5 py-1 text-[11px] font-medium text-cream-800">
-                              {SOURCE_LABELS[src] || src}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                       {photoResult.items?.length > 0 && (
                         <div className="divide-y divide-cream-100 rounded-2xl border border-cream-200">
                           {photoResult.items.map((item, i) => (
@@ -558,15 +515,12 @@ export default function CalorieCalculatorPage() {
                                 <p className="truncate text-sm font-medium text-cream-900">{item.name}</p>
                                 <p className="text-xs text-cream-800/50">
                                   {item.amount} {item.unit}
-                                  {item.grams ? ` · ~${item.grams}g` : ''}
-                                  {item.source ? ` · ${SOURCE_LABELS[item.source] || item.source}` : ''}
+                                  {item.grams ? ` · ${item.grams}g` : ''}
                                 </p>
+                                <p className="mt-0.5 text-[11px] text-cream-800/55">{formatMacros(item)}</p>
                               </div>
                               <span className="shrink-0 text-right">
                                 <span className="block font-bold text-sage-600">{item.cal} kcal</span>
-                                {item.calLow != null && item.calHigh != null && item.calLow !== item.calHigh && (
-                                  <span className="text-[10px] text-cream-800/45">{item.calLow}–{item.calHigh}</span>
-                                )}
                               </span>
                             </div>
                           ))}
@@ -574,7 +528,7 @@ export default function CalorieCalculatorPage() {
                       )}
                       {photoResult.unmatched?.length > 0 && (
                         <p className="text-xs text-amber-700">
-                          Veritabanında yok: {photoResult.unmatched.map((u) => u.name).join(', ')}
+                          Hesaplanamadı: {photoResult.unmatched.map((u) => u.name).join(', ')}
                         </p>
                       )}
                     </motion.div>
@@ -592,16 +546,8 @@ export default function CalorieCalculatorPage() {
 
 function CalorieSummaryCard({
   totalCal,
-  totalCalLow,
-  totalCalHigh,
   macros,
-  confidence,
-  confidenceScore,
-  reasons,
 }) {
-  const level = totalCal < 300 ? 'Az' : totalCal < 600 ? 'Orta' : totalCal < 900 ? 'Yüksek' : 'Çok Yüksek'
-  const showRange = Number.isFinite(totalCalLow) && Number.isFinite(totalCalHigh) && totalCalLow !== totalCalHigh
-
   return (
     <motion.div layout className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-500/30 sm:rounded-3xl">
       <div className="p-4 sm:p-5">
@@ -609,21 +555,10 @@ function CalorieSummaryCard({
           <div>
             <p className="text-sm font-medium text-white/75">Toplam Kalori</p>
             <p className="font-display text-4xl font-bold sm:text-5xl">{totalCal}</p>
-            <p className="text-sm text-white/75">
-              {showRange ? `${totalCalLow}–${totalCalHigh} kcal` : 'kcal'} · {level}
-            </p>
-            {confidence && (
-              <p className="mt-1 text-xs text-white/70">
-                {CONFIDENCE_LABELS[confidence] || confidence}
-                {Number.isFinite(confidenceScore) ? ` · ${Math.round(confidenceScore * 100)}%` : ''}
-              </p>
-            )}
+            <p className="text-sm text-white/75">kcal</p>
           </div>
           <Flame className="h-9 w-9 text-white/30 sm:h-10 sm:w-10" />
         </div>
-        {reasons?.length > 0 && (
-          <p className="mt-2 text-[11px] text-white/60">{reasons.join(' · ')}</p>
-        )}
         {totalCal > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-2">
             {[

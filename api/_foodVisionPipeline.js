@@ -2,7 +2,7 @@
  * Fotoğraf algısı → besin çözümleme → kalori motoru.
  */
 
-import { assembleMealResult, qualityScoreFromClient } from './_calorieEngine.js'
+import { assembleMealResult, inferPerceptionGrams, qualityScoreFromClient } from './_calorieEngine.js'
 import { resolvePerceptionItems } from './_foodNutritionLookup.js'
 import { normalizeBarcode } from './_openFoodFacts.js'
 
@@ -16,15 +16,22 @@ function num(v, fallback = 0) {
 export function normalizePerceptionItem(raw = {}) {
   const name = String(raw.name || '').trim().slice(0, 60)
   if (!name) return null
-  const gramsEstimate = num(raw.gramsEstimate, 0)
-  const gramsLow = num(raw.gramsLow, gramsEstimate ? gramsEstimate * 0.8 : 0)
-  const gramsHigh = num(raw.gramsHigh, gramsEstimate ? gramsEstimate * 1.2 : 0)
+  const amount = num(raw.amount, 1) || 1
+  const unit = String(raw.unit || '').slice(0, 20)
+  const inferred = inferPerceptionGrams({
+    amount,
+    unit,
+    gramsEstimate: raw.gramsEstimate,
+  })
+  const gramsEstimate = inferred || num(raw.gramsEstimate, 0)
+  const gramsLow = num(raw.gramsLow, gramsEstimate ? gramsEstimate * 0.85 : 0)
+  const gramsHigh = num(raw.gramsHigh, gramsEstimate ? gramsEstimate * 1.15 : 0)
   return {
     name,
     nameEn: String(raw.nameEn || '').trim().slice(0, 80),
     packaged: Boolean(raw.packaged),
-    amount: num(raw.amount, 1) || 1,
-    unit: String(raw.unit || (gramsEstimate ? 'g' : 'porsiyon')).slice(0, 20),
+    amount,
+    unit: unit || (gramsEstimate ? 'g' : 'porsiyon'),
     gramsEstimate: gramsEstimate || undefined,
     gramsLow: gramsLow || undefined,
     gramsHigh: gramsHigh || undefined,
