@@ -18,7 +18,7 @@ import { buildFaqSchema } from '../config/seo'
 
 const comparisonRows = [
   { feature: 'Yeniform Kişisel Sağlık Analizi', free: true, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
-  { feature: 'Doktor tarafından kan tahlili analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true },
+  { feature: 'Kan Tahlili Testi Analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true },
   { feature: 'Manuel Kalori Hesaplama', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
   { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
   { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko_diyet: '1', diyet: '2', eko_spor: false, spor: false, vip: '2' },
@@ -31,13 +31,12 @@ const comparisonRows = [
 ]
 
 const MEMBERSHIP_FAQ = [
-  { q: 'Hangi paketlerle başlayabilirim?', a: 'Tamamen ücretsiz başlayın, paneli keşfedin. Hedefinize uygun paketi — Eko Diyet, Diyet, Eko Spor, Spor, Doktor veya VIP — seçerek yolculuğunuza devam edin. Programlarınız koç ve diyetisyen tarafından hazırlanır; ödemeler Stripe ile güvenle alınır.' },
+  { q: 'Hangi paketlerle başlayabilirim?', a: 'Tamamen ücretsiz başlayın, paneli keşfedin. Hedefinize uygun paketi — Eko Diyet, Diyet, Eko Spor, Spor veya VIP — seçerek yolculuğunuza devam edin. Programlarınız koç ve diyetisyen tarafından hazırlanır; ödemeler Stripe ile güvenle alınır.' },
   { q: 'Eko paketler ne fark eder?', a: 'Eko Diyet ve Eko Spor, ana paketlerle aynı özellikleri sunar; fark yalnızca ayda 1 görüşme hakkıdır (Diyet/Spor’da 2).' },
   { q: 'Online diyetisyen hangi pakette?', a: 'Ayda 1 görüşme Eko Diyet’te, ayda 2 Diyet ve VIP’tedir. Süreç online diyetisyen sayfasında; 2026 liste fiyatı online diyetisyen fiyat sayfasındadır.' },
   { q: 'Online koçluk hangi pakette?', a: 'Ayda 1 görüşme Eko Spor’da, ayda 2 Spor ve VIP’tedir. Ayrıntılar online koçluk hizmet sayfasında.' },
   { q: 'VIP paket neden öneriliyor?', a: 'VIP paket koç ve diyetisyen desteğini tek planda birleştirir. 6 aylık seçimde en yüksek tasarruf oranına ulaşırsınız.' },
-  { q: 'Doktor görüşmesi hangi pakette?', a: 'Online doktor görüşmesi yalnızca Doktor Paketi ile sunulur; abonelik planlarına dahil değildir. Mevcut üyeliğinize ek paket olarak satın alabilirsiniz.' },
-  { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilir veya ek paket (ör. Doktor) satın alabilirsiniz.' },
+  { q: 'Planımı sonradan değiştirebilir miyim?', a: 'Evet. Giriş yaptıktan sonra üyelik sayfasından planınızı yükseltebilirsiniz.' },
 ]
 
 export default function MembershipComparisonPage() {
@@ -45,7 +44,7 @@ export default function MembershipComparisonPage() {
   const allPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const isMember = isAuthenticated && !isAdmin && !isStaff
   const displayPlans = isMember ? allPlans.filter((p) => p.id !== membership) : allPlans
-  const comparisonPlans = displayPlans.filter((p) => p.id !== 'doktor')
+  const comparisonPlans = displayPlans
   const [selectedPlanId, setSelectedPlanId] = useState(() => displayPlans[0]?.id || null)
 
   const ctaForPlan = (plan) => getPlanCtaLabel(plan, {
@@ -60,11 +59,11 @@ export default function MembershipComparisonPage() {
       <div aria-hidden className="membership-page-dots" />
       <JsonLd data={buildFaqSchema(MEMBERSHIP_FAQ)} />
       <MembershipHero
-        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Üyelik paketleri: Diyet, Spor, Doktor ve VIP'}
+        title={isMember ? 'Planınızı güncelleyin veya paket ekleyin' : 'Üyelik paketleri: Diyet, Spor ve VIP'}
         subtitle={
           isMember
             ? 'Planı seçin, süreyi belirleyin ve ödemeye geçin. Yeni kayıt gerekmez.'
-            : 'Paketleri karşılaştırın. Diyetisyen liste fiyatı ayrı sayfadadır; burada Diyet, Spor, Doktor ve VIP yan yana durur.'
+            : 'Paketleri karşılaştırın. Diyetisyen liste fiyatı ayrı sayfadadır; burada Diyet, Spor ve VIP yan yana durur.'
         }
       />
 

@@ -11,7 +11,7 @@ export function isPanelChatPath(pathname = '') {
 
 /** Mobilde tam ekran sohbet (inbox değil). */
 export function isPanelChatThreadPath(pathname = '') {
-  if (/^\/messages\/(coach|dietitian|doctor)\/?$/.test(pathname)) return true
+  if (/^\/messages\/(coach|dietitian)\/?$/.test(pathname)) return true
   if (/^\/staff\/messages\/[^/]+\/?$/.test(pathname)) return true
   if (pathname === '/staff/admin-messages') return true
   if (/^\/staff\/collab-messages\/[^/]+\/?$/.test(pathname)) return true

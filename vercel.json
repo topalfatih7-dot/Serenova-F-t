@@ -15,7 +15,9 @@
   ],
   "redirects": [
     { "source": "/index.asp", "destination": "/", "permanent": true },
-    { "source": "/Index.asp", "destination": "/", "permanent": true }
+    { "source": "/Index.asp", "destination": "/", "permanent": true },
+    { "source": "/team/doctors", "destination": "/hakkimizda", "permanent": true },
+    { "source": "/team/doktor-:slug*", "destination": "/hakkimizda", "permanent": true }
   ],
   "crons": [
     {

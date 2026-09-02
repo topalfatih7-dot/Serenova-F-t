@@ -147,7 +147,7 @@ export default function App() {
               <Route path="blog/:id" element={<BlogPostPage />} />
               <Route path="team/coaches" element={<TeamListPage role="coaches" />} />
               <Route path="team/dietitians" element={<TeamListPage role="dietitians" />} />
-              <Route path="team/doctors" element={<TeamListPage role="doctors" />} />
+              <Route path="team/doctors" element={<Navigate to="/hakkimizda" replace />} />
               <Route path="team/apply" element={<StaffApplicationPage />} />
               <Route path="corporate" element={<CorporatePage />} />
               <Route path="corporate/apply" element={<CorporateApplicationPage />} />
@@ -174,9 +174,10 @@ export default function App() {
                 <Route path="schedule" element={<AppointmentsPage />} />
                 <Route path="schedule/coach" element={<Navigate to="/schedule?tab=coach" replace />} />
                 <Route path="schedule/dietitian" element={<Navigate to="/schedule?tab=dietitian" replace />} />
-                <Route path="schedule/doctor" element={<Navigate to="/schedule?tab=doctor" replace />} />
+                <Route path="schedule/doctor" element={<Navigate to="/schedule" replace />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="messages" element={<MessagesPage />} />
+                <Route path="messages/doctor" element={<Navigate to="/messages" replace />} />
                 <Route path="messages/:role" element={<MessagesPage />} />
                 <Route path="support" element={<SupportPage />} />
                 <Route path="programs" element={<ProgramsPage />} />

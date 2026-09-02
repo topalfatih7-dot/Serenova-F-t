@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowRight, Sparkles, HeartHandshake, Target, Eye, ShieldCheck, FlaskConical,
-  Fingerprint, Globe, Leaf, Users, Dumbbell, Apple, Stethoscope, Lock, MessageCircle,
+  Fingerprint, Globe, Leaf, Users, Dumbbell, Apple, Lock, MessageCircle,
   BadgeCheck, Video, Star, ClipboardList,
 } from 'lucide-react'
 import TrustStrip from '../components/landing/TrustStrip'
@@ -40,10 +40,6 @@ const ABOUT_IMAGES = {
     url: unsplash('photo-1546069901-ba9599a7e63c', 900),
     alt: 'Renkli ve dengeli bir beslenme tabağı',
   },
-  teamDoctor: {
-    url: unsplash('photo-1559839734-2b71ea197ec2', 900),
-    alt: 'Gülümseyen uzman doktor',
-  },
 }
 
 const VALUES = [
@@ -71,7 +67,7 @@ const VALUES = [
   {
     icon: Globe,
     title: 'Erişilebilirlik',
-    desc: 'Nerede yaşarsanız yaşayın — uzman koç, diyetisyen ve doktor desteği tek tık uzağınızda.',
+    desc: 'Nerede yaşarsanız yaşayın — uzman koç ve diyetisyen desteği tek tık uzağınızda.',
     accent: 'from-brand-300 to-sage-500',
     card: 'from-brand-50/60 to-white hover:border-brand-200',
   },
@@ -107,7 +103,7 @@ const GUARANTEES = [
   {
     icon: BadgeCheck,
     title: 'Uzman Onaylı Kadro',
-    desc: 'Koç, diyetisyen ve doktorlarımız diploma ve deneyim kontrolünden geçerek kadromuza katılır.',
+    desc: 'Koç ve diyetisyenlerimiz diploma ve deneyim kontrolünden geçerek kadromuza katılır.',
     accent: 'from-warm-400 to-warm-500',
   },
   {
@@ -142,15 +138,6 @@ const TEAM_LINKS = [
     accent: 'from-sage-400 to-sage-600',
     image: 'teamDietitian',
     prefetchRole: 'dietitians',
-  },
-  {
-    to: '/team/doctors',
-    icon: Stethoscope,
-    title: 'Doktorlarımız',
-    desc: 'Sağlık sürecinizde uzman hekim desteği',
-    accent: 'from-warm-400 to-warm-500',
-    image: 'teamDoctor',
-    prefetchRole: 'doctors',
   },
 ]
 
@@ -249,7 +236,7 @@ export default function AboutPage() {
               kılıyoruz
             </h1>
             <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
-              {BRAND.name} ({BRAND.domain}); uzman koç, diyetisyen ve doktorları tek çatı altında buluşturan
+              {BRAND.name} ({BRAND.domain}); uzman koç ve diyetisyenleri tek çatı altında buluşturan
               Türkiye'nin çevrimiçi wellness platformudur. Amacımız basit: nerede olursanız olun,
               size özel programlar ve gerçek uzman desteğiyle sağlıklı yaşamı sürdürülebilir kılmak.
             </p>
@@ -456,8 +443,8 @@ export default function AboutPage() {
                   görüşmeler ve ilerleme grafikleriyle motivasyonunuz hiç düşmüyor.
                 </p>
                 <p>
-                  Diyet, Spor, Doktor veya VIP paketleriyle uzman desteği
-                  içeren paketlerle koç, diyetisyen ve doktor eşleşmenizi güçlendirebilirsiniz.
+                  Diyet, Spor veya VIP paketleriyle uzman desteği
+                  içeren paketlerle koç ve diyetisyen eşleşmenizi güçlendirebilirsiniz.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
@@ -557,11 +544,11 @@ export default function AboutPage() {
             <span className="section-badge">Ekibimiz</span>
             <h2 className="section-title mt-4">Uzman Kadromuzla Tanışın</h2>
             <p className="section-subtitle mx-auto max-w-2xl">
-              Alanında deneyimli, özenle seçilmiş koç, diyetisyen ve doktorlarımız her adımda yanınızda.
+              Alanında deneyimli, özenle seçilmiş koç ve diyetisyenlerimiz her adımda yanınızda.
             </p>
           </motion.div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2">
             {TEAM_LINKS.map((t, i) => (
               <motion.div
                 key={t.to}

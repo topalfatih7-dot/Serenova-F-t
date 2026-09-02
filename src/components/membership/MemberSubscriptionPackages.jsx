@@ -120,7 +120,7 @@ export default function MemberSubscriptionPackages({ user, onRefresh, toast }) {
 
                 {oneTime ? (
                   <p className="mt-3 text-sm leading-relaxed text-cream-800">
-                    {copy.doctorBody}{' '}
+                    {copy.oneTimeBody}{' '}
                     <a
                       className="font-semibold text-brand-700 underline-offset-2 hover:underline"
                       href={`mailto:${MEMBERSHIP_CANCEL_SUPPORT_EMAIL}`}

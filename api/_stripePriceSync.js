@@ -160,7 +160,7 @@ export async function syncPlanCatalogToSubscriptions(stripe, admin, {
   if (!mapped?.id) return { ok: false, error: 'Plan yok' }
   invalidatePlanCache()
 
-  const oneTime = mapped.billingType === 'one_time' || mapped.id === 'doktor'
+  const oneTime = mapped.billingType === 'one_time'
   const tiers = catalogTiersFromPlan(mapped)
   const prices = []
   const errors = []

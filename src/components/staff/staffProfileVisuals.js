@@ -1,6 +1,6 @@
 import {
   Activity, Apple, Award, Baby, Dumbbell, Flame, HeartPulse, Medal, Salad, Sparkles,
-  Stethoscope, Users, Video,
+  Users, Video,
 } from 'lucide-react'
 import { COACH_SPECIALTY_GROUPS, DIETITIAN_SPECIALTY_GROUPS, OTHER_OPTION } from '../../data/staffApplication'
 
@@ -157,6 +157,5 @@ export function certificateVisual(cert, index) {
 
 export function expertiseIconForRole(role) {
   if (role === 'dietitian') return Apple
-  if (role === 'doctor') return Stethoscope
   return Flame
 }

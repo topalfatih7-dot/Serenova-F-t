@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Dumbbell, Apple, Stethoscope } from 'lucide-react'
+import { ArrowLeft, Dumbbell, Apple } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import JsonLd from '../components/seo/JsonLd'
 import StaffMemberCard from '../components/staff/StaffMemberCard'
@@ -31,17 +31,6 @@ const roleConfig = {
     light: 'from-sage-50 to-white',
     badge: 'bg-sage-500',
     accent: 'text-sage-600',
-  },
-  doctors: {
-    key: 'doctor',
-    label: 'Doktorlarımız',
-    sub: 'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktorlar',
-    icon: Stethoscope,
-    placeholder: 'from-cream-800 to-cream-950',
-    gradient: 'from-cream-950/80 via-cream-900/60 to-cream-800/70',
-    light: 'from-cream-50 to-white',
-    badge: 'bg-cream-800',
-    accent: 'text-cream-700',
   },
 }
 

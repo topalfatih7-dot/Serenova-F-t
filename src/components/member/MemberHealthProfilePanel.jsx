@@ -23,7 +23,6 @@ function sectionVisibleForRole(sectionAudience, viewerRole) {
   if (aud === 'shared') return true
   if (role === 'coach') return aud === 'coach'
   if (role === 'dietitian') return aud === 'dietitian'
-  if (role === 'doctor') return aud === 'shared' // doktor-specific section yok; shared
   return true
 }
 
@@ -33,7 +32,6 @@ export function briefKeysForRole(viewerRole) {
   if (!role || role === 'admin') return ['general', 'nutrition', 'movement', 'risks', 'actions']
   if (role === 'coach') return ['general', 'movement', 'risks', 'actions']
   if (role === 'dietitian') return ['general', 'nutrition', 'risks', 'actions']
-  if (role === 'doctor') return ['general', 'nutrition', 'movement', 'risks', 'actions']
   return ['general', 'risks', 'actions']
 }
 

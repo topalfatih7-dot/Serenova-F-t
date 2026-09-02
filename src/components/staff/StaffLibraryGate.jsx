@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext'
 import ExerciseLibraryPage from '../../pages/ExerciseLibraryPage'
 import { normalizeStaffRole } from '../../utils/staffRoles'
 
-/** Tam hareket kütüphanesi yalnızca koçlar için; diyetisyen ve doktor yönlendirilir. */
+/** Tam hareket kütüphanesi yalnızca koçlar için; diyetisyen listelere yönlendirilir. */
 export default function StaffLibraryGate() {
   const { staffUser } = useApp()
   const role = normalizeStaffRole(staffUser?.role)

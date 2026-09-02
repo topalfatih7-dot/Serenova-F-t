@@ -61,11 +61,11 @@ async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
   if (threadId) {
     const { data: collab } = await admin
       .from('staff_collab_threads')
-      .select('coach_id, dietitian_id, doctor_id')
+      .select('coach_id, dietitian_id')
       .eq('id', threadId)
       .maybeSingle()
     if (collab) {
-      const party = [collab.coach_id, collab.dietitian_id, collab.doctor_id]
+      const party = [collab.coach_id, collab.dietitian_id]
         .filter(Boolean)
         .map((id) => String(id))
       if (party.includes(String(authUser.id)) && party.includes(String(staffId))) {
@@ -76,14 +76,13 @@ async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
 
   const { data: member } = await admin
     .from('members')
-    .select('assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .select('assigned_coach_id, assigned_dietitian_id')
     .eq('id', authUser.id)
     .maybeSingle()
   if (member) {
     if (
       member.assigned_coach_id === staffId
       || member.assigned_dietitian_id === staffId
-      || member.assigned_doctor_id === staffId
     ) {
       return true
     }
@@ -125,7 +124,7 @@ async function canNotifyMember(admin, authUser, memberId, hint = {}) {
 
   const { data: member } = await admin
     .from('members')
-    .select('assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .select('assigned_coach_id, assigned_dietitian_id')
     .eq('id', memberId)
     .maybeSingle()
   if (!member) return false
@@ -133,7 +132,6 @@ async function canNotifyMember(admin, authUser, memberId, hint = {}) {
   if (
     member.assigned_coach_id === authUser.id
     || member.assigned_dietitian_id === authUser.id
-    || member.assigned_doctor_id === authUser.id
   ) {
     return true
   }

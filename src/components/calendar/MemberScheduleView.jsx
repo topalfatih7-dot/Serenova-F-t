@@ -42,9 +42,8 @@ export default function MemberScheduleView({
 
   const staffId = useMemo(() => {
     if (type === 'coach') return user.assignedCoachId
-    if (type === 'doctor') return user.assignedDoctorId
     return user.assignedDietitianId
-  }, [type, user.assignedCoachId, user.assignedDietitianId, user.assignedDoctorId])
+  }, [type, user.assignedCoachId, user.assignedDietitianId])
 
   const assignedStaff = useMemo(
     () => (staff || []).find((s) => s.id === staffId) || null,
@@ -125,7 +124,7 @@ export default function MemberScheduleView({
         subtitle={subtitle}
         icon={Icon}
         accent={accent}
-        image={type === 'coach' ? PANEL_IMAGES.scheduleCoach : type === 'doctor' ? PANEL_IMAGES.scheduleDoctor : PANEL_IMAGES.scheduleDietitian}
+        image={type === 'coach' ? PANEL_IMAGES.scheduleCoach : PANEL_IMAGES.scheduleDietitian}
         actions={canBook ? (
           <button
             type="button"

@@ -37,7 +37,7 @@ function activePlanIdsFromRow(row) {
     active = [{
       planId: membership,
       status: 'active',
-      expiresAt: membership === 'doktor' ? null : (data.premiumExpiresAt || null),
+      expiresAt: data.premiumExpiresAt || null,
       packageConfig: data.packageConfig || null,
     }]
   }

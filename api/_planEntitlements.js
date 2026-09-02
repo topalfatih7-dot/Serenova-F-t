@@ -4,30 +4,23 @@
  */
 
 const LEGACY_PACKAGE = {
-  eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0 },
-  eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  doktor: {
-    coachMeetingsPerMonth: 0,
-    dietitianMeetingsPerMonth: 0,
-    doctorMeetingsPerMonth: 0,
-    doctorSessionsTotal: 1,
-    billingType: 'one_time',
-  },
-  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
-  altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
-  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 3 },
-  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
+  eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
+  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1 },
+  eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0 },
+  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
+  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
+  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
+  altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
+  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
 }
 
 const LEGACY_PHOTO = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
+const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'kurucu'])
 const LEGACY_PAID = new Set([
-  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip',
+  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip',
   'gumus', 'altin', 'platinum', 'premium', 'kurucu',
 ])
 
@@ -38,8 +31,6 @@ export function normalizeEntitlements(raw = {}) {
   return {
     coachMeetingsPerMonth: Math.max(0, Number(raw.coachMeetingsPerMonth) || 0),
     dietitianMeetingsPerMonth: Math.max(0, Number(raw.dietitianMeetingsPerMonth) || 0),
-    doctorMeetingsPerMonth: Math.max(0, Number(raw.doctorMeetingsPerMonth) || 0),
-    doctorSessionsTotal: Math.max(0, Number(raw.doctorSessionsTotal) || 0),
     photoCalorie: Boolean(raw.photoCalorie),
     manualCalorie: Boolean(raw.manualCalorie),
   }
@@ -47,7 +38,6 @@ export function normalizeEntitlements(raw = {}) {
 
 function mapPlanRow(row) {
   if (!row) return null
-  // is_sellable kolonu yoksa (migration öncesi) undefined bırak — checkout legacy fallback kullanır
   const isSellable = row.is_sellable == null ? undefined : row.is_sellable === true
   const ent = row.entitlements
   const hasEnt = ent && typeof ent === 'object' && !Array.isArray(ent) && Object.keys(ent).length > 0
@@ -87,7 +77,6 @@ export function invalidatePlanCache() {
 
 export function isOneTimePlanId(planId, plan = null) {
   if (plan?.billingType === 'one_time') return true
-  if (planId === 'doktor') return true
   if (plan?.period === 'Tek Seferlik') return true
   return Boolean(LEGACY_PACKAGE[planId]?.billingType === 'one_time')
 }
@@ -100,27 +89,11 @@ export function defaultPackageForPlan(planId, durationMonths = 1, plan = null) {
     return {
       coachMeetingsPerMonth: e.coachMeetingsPerMonth,
       dietitianMeetingsPerMonth: e.dietitianMeetingsPerMonth,
-      doctorMeetingsPerMonth: e.doctorMeetingsPerMonth,
       coachMeetingsPerWeek: 0,
       addOns: [],
-      ...(e.doctorSessionsTotal > 0 ? { doctorSessionsTotal: e.doctorSessionsTotal } : {}),
       ...(oneTime
         ? { billingType: 'one_time', durationMonths: 0, durationWeeks: 0 }
         : { durationMonths: months, durationWeeks: months * 4 }),
-    }
-  }
-
-  if (planId === 'doktor' || LEGACY_PACKAGE[planId]?.billingType === 'one_time') {
-    return {
-      coachMeetingsPerMonth: 0,
-      dietitianMeetingsPerMonth: 0,
-      doctorMeetingsPerMonth: 0,
-      doctorSessionsTotal: 1,
-      billingType: 'one_time',
-      coachMeetingsPerWeek: 0,
-      durationMonths: 0,
-      durationWeeks: 0,
-      addOns: [],
     }
   }
 
@@ -128,7 +101,6 @@ export function defaultPackageForPlan(planId, durationMonths = 1, plan = null) {
   const base = LEGACY_PACKAGE[planId] || {
     coachMeetingsPerMonth: 0,
     dietitianMeetingsPerMonth: 0,
-    doctorMeetingsPerMonth: 0,
   }
   return {
     coachMeetingsPerWeek: 0,
@@ -149,7 +121,6 @@ export function planHasManualCalorie(planId, plan = null) {
   if (LEGACY_MANUAL_EXCLUDE.has(planId)) return false
   return planId !== 'free'
 }
-
 
 export function isLegacyPaidPlanId(id) {
   return LEGACY_PAID.has(id)

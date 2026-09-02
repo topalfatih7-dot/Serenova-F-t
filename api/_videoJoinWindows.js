@@ -6,7 +6,6 @@
 const DEFAULTS = {
   coach: { before: 10, after: 20 },
   dietitian: { before: 15, after: 30 },
-  doctor: { before: 15, after: 30 },
 }
 
 function envInt(name, fallback) {
@@ -17,7 +16,7 @@ function envInt(name, fallback) {
 }
 
 export function normalizeVideoSessionType(sessionType) {
-  if (sessionType === 'dietitian' || sessionType === 'doctor') return sessionType
+  if (sessionType === 'dietitian') return sessionType
   return 'coach'
 }
 

@@ -9,7 +9,7 @@ import MemberPlanCheckout from '../components/membership/MemberPlanCheckout'
 
 const comparisonRows = [
   { feature: 'Yeniform Kişisel Sağlık Analizi', free: true, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
-  { feature: 'Doktor tarafından kan tahlili analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true },
+  { feature: 'Kan Tahlili Testi Analizi', free: false, eko_diyet: true, diyet: true, eko_spor: false, spor: false, vip: true },
   { feature: 'Manuel Kalori Hesaplama', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
   { feature: 'Fotoğraflı Kalori Tespiti', free: false, eko_diyet: true, diyet: true, eko_spor: true, spor: true, vip: true },
   { feature: 'Diyetisyen Görüşmesi / Ay', free: false, eko_diyet: '1', diyet: '2', eko_spor: false, spor: false, vip: '2' },
@@ -26,7 +26,7 @@ export default function MemberPlansPage() {
   const [searchParams] = useSearchParams()
   const allPlans = sortPlansForDisplay(plans?.length ? plans : ALL_PLANS)
   const selectable = allPlans.filter((p) => p.id !== membership)
-  const comparisonPlans = selectable.filter((p) => p.id !== 'doktor')
+  const comparisonPlans = selectable
   const queryPlan = searchParams.get('plan')
   const [selectedPlanId, setSelectedPlanId] = useState(() => {
     if (queryPlan && selectable.some((p) => p.id === queryPlan)) return queryPlan

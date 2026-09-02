@@ -1,13 +1,16 @@
-import { Dumbbell, Apple, Stethoscope } from 'lucide-react'
+import { Dumbbell, Apple } from 'lucide-react'
 
 export const STAFF_ROLES = [
   { value: 'coach', label: 'Koç', icon: Dumbbell, color: 'brand' },
   { value: 'dietitian', label: 'Diyetisyen', icon: Apple, color: 'sage' },
-  { value: 'doctor', label: 'Doktor', icon: Stethoscope, color: 'cream' },
 ]
 
+export function isKnownStaffRole(role) {
+  return role === 'coach' || role === 'dietitian'
+}
+
 export function normalizeStaffRole(role) {
-  if (role === 'dietitian' || role === 'doctor') return role
+  if (role === 'dietitian') return 'dietitian'
   return 'coach'
 }
 
@@ -27,36 +30,23 @@ export function isDietitianRole(role) {
   return normalizeStaffRole(role) === 'dietitian'
 }
 
-export function isDoctorRole(role) {
-  return normalizeStaffRole(role) === 'doctor'
-}
-
-/** coachSessions | dietitianSessions | doctorSessions */
+/** coachSessions | dietitianSessions */
 export function sessionsKeyForRole(role) {
-  const r = normalizeStaffRole(role)
-  if (r === 'dietitian') return 'dietitianSessions'
-  if (r === 'doctor') return 'doctorSessions'
-  return 'coachSessions'
+  return normalizeStaffRole(role) === 'dietitian' ? 'dietitianSessions' : 'coachSessions'
 }
 
-/** assignedCoachId | assignedDietitianId | assignedDoctorId */
+/** assignedCoachId | assignedDietitianId */
 export function assignedKeyForRole(role) {
-  const r = normalizeStaffRole(role)
-  if (r === 'dietitian') return 'assignedDietitianId'
-  if (r === 'doctor') return 'assignedDoctorId'
-  return 'assignedCoachId'
+  return normalizeStaffRole(role) === 'dietitian' ? 'assignedDietitianId' : 'assignedCoachId'
 }
 
-/** Video / randevu sessionType: coach | dietitian | doctor */
+/** Video / randevu sessionType: coach | dietitian */
 export function sessionTypeForRole(role) {
   return normalizeStaffRole(role)
 }
 
 export function panelTitleForRole(role) {
-  const r = normalizeStaffRole(role)
-  if (r === 'dietitian') return 'Diyetisyen paneli'
-  if (r === 'doctor') return 'Doktor paneli'
-  return 'Koç paneli'
+  return normalizeStaffRole(role) === 'dietitian' ? 'Diyetisyen paneli' : 'Koç paneli'
 }
 
 export function fallbackNameForRole(role) {
@@ -65,6 +55,6 @@ export function fallbackNameForRole(role) {
 
 /** URL / route param → sessionType */
 export function normalizeSessionType(sessionType) {
-  if (sessionType === 'dietitian' || sessionType === 'doctor') return sessionType
+  if (sessionType === 'dietitian') return 'dietitian'
   return 'coach'
 }

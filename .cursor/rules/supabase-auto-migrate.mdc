@@ -13,4 +13,4 @@ alwaysApply: true
 4. Komut sonrası çıktıyı doğrula; hata varsa düzelt ve tekrar çalıştır.
 5. Opsiyonel ham SQL için `.env.local` içine `DATABASE_URL` veya `SUPABASE_DB_URL` eklenebilir.
 
-Sıra (satılan): Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` yalnızca süre-bitmiş fallback; eski `eko` yeni satış kapalı.
+Sıra (satılan): Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Vip(4). `free` yalnızca süre-bitmiş fallback; eski `eko` yeni satış kapalı.

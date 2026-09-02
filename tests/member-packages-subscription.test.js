@@ -23,7 +23,6 @@ function memberWithPackages(packages, extra = {}) {
     membershipStatus: 'active',
     stripeSubscriptionId: extra.stripeSubscriptionId || null,
     activePackages: packages,
-    doctorSessions: [],
     coachSessions: [],
     dietitianSessions: [],
   }

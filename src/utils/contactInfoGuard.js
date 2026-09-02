@@ -1,7 +1,7 @@
 /**
  * Sohbet / destek mesajlarında platform dışı iletişim bilgisi paylaşımını
  * (telefon, e-posta, WhatsApp/Telegram/Instagram vb.) tespit eder.
- * Amaç: üye ↔ koç/diyetisyen/doktor iletişiminin uygulama dışına taşınmasını
+ * Amaç: üye ↔ koç/diyetisyen iletişiminin uygulama dışına taşınmasını
  * zorlaştırmak (bkz. güvenlik denetimi 2026-07-08).
  */
 

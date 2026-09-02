@@ -48,7 +48,7 @@ export function resolvePostLoginPath(returnPath, role) {
   return isSafeReturnPath(returnPath, role) ? returnPath : homePathForRole(role)
 }
 
-const HANDOFF_PLAN_IDS = new Set(['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip'])
+const HANDOFF_PLAN_IDS = new Set(['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip'])
 const HANDOFF_PATHS = new Set(['/plans', '/hesap-silme'])
 
 /**

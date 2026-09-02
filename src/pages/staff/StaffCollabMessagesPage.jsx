@@ -31,7 +31,7 @@ export default function StaffCollabMessagesPage() {
   } = useApp()
 
   const role = normalizeStaffRole(staffUser?.role)
-  const isAllowedRole = role === 'coach' || role === 'dietitian' || role === 'doctor'
+  const isAllowedRole = role === 'coach' || role === 'dietitian'
 
   const [query, setQuery] = useState('')
   const [sending, setSending] = useState(false)
@@ -187,7 +187,6 @@ export default function StaffCollabMessagesPage() {
           memberName={active.member.name}
           coachName={active.thread?.coachName}
           dietitianName={active.thread?.dietitianName}
-          doctorName={active.thread?.doctorName}
         />
       </ChatThreadBody>
     </>
@@ -201,7 +200,7 @@ export default function StaffCollabMessagesPage() {
         <PanelPageHeader
           className="shrink-0"
           title="Ekip Mesajları"
-          subtitle="Ortak danışanlarınız için koç–diyetisyen–doktor koordinasyonu"
+          subtitle="Ortak danışanlarınız için koç–diyetisyen koordinasyonu"
           icon={MessageCircle}
           accent="sage"
         />
@@ -211,7 +210,7 @@ export default function StaffCollabMessagesPage() {
         <div className="flex items-start gap-2 rounded-xl border border-sage-100 bg-sage-50/50 px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3">
           <Shield className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
           <p className="text-[11px] leading-relaxed text-sage-900/75 sm:text-xs">
-            Bu kanal aynı danışanı paylaşan koç, diyetisyen ve doktor arasındadır. Tüm mesajlar denetim için kayıt altına alınır.
+            Bu kanal aynı danışanı paylaşan koç ve diyetisyen arasındadır. Tüm mesajlar denetim için kayıt altına alınır.
           </p>
         </div>
       )}

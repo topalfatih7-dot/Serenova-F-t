@@ -13,7 +13,6 @@ function memberFromRowForExpiry(row) {
   const {
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = data
   return {
@@ -24,7 +23,6 @@ function memberFromRowForExpiry(row) {
     membershipStatus: row.membership_status,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
-    assignedDoctorId: row.assigned_doctor_id ?? null,
     ...rest,
   }
 }
@@ -38,7 +36,6 @@ function memberDataPayloadForExpiry(member, data) {
     membershipStatus: _ms,
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = member
   return { ...data, ...rest }
@@ -47,7 +44,7 @@ function memberDataPayloadForExpiry(member, data) {
 export async function runMembershipExpiryBatch(admin, { limit = 100 } = {}) {
   const { data: members, error } = await admin
     .from('members')
-    .select('id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+    .select('id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, data')
     .neq('membership', 'free')
     .limit(500)
 
@@ -72,7 +69,6 @@ export async function runMembershipExpiryBatch(admin, { limit = 100 } = {}) {
         membership_status: after.membershipStatus || 'active',
         assigned_coach_id: after.assignedCoachId || null,
         assigned_dietitian_id: after.assignedDietitianId || null,
-        assigned_doctor_id: after.assignedDoctorId || null,
         data: newData,
         updated_at: new Date().toISOString(),
       })

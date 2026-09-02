@@ -10,7 +10,6 @@ import { normalizeStaffRole } from '../utils/staffRoles'
 function assignedColumnForRole(role) {
   const r = normalizeStaffRole(role)
   if (r === 'dietitian') return 'assigned_dietitian_id'
-  if (r === 'doctor') return 'assigned_doctor_id'
   return 'assigned_coach_id'
 }
 
@@ -167,7 +166,6 @@ export function subscribeRealtimeSync({
           if (
             String(thread.coachId) !== sid
             && String(thread.dietitianId) !== sid
-            && String(thread.doctorId) !== sid
           ) return
         }
         onStaffCollabThreadChange?.(thread)

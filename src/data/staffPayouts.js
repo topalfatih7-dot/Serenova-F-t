@@ -44,7 +44,6 @@ export const STAFF_EARNING_STATUS = {
 export const STAFF_SESSION_TYPE_LABELS = {
   coach_session: 'Koç görüşmesi',
   dietitian_session: 'Diyetisyen görüşmesi',
-  doctor_session: 'Doktor görüşmesi',
 }
 
 const DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
@@ -161,7 +160,7 @@ export function formatIstanbulDateTime(iso) {
   }).format(date)
 }
 
-const SESSION_LIST_KEYS = ['coachSessions', 'dietitianSessions', 'doctorSessions']
+const SESSION_LIST_KEYS = ['coachSessions', 'dietitianSessions']
 
 export function findMemberSession(member, sessionId) {
   if (!member || !sessionId) return null

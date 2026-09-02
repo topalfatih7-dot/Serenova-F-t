@@ -24,7 +24,7 @@ describe('stripe catalog lookup', () => {
     assert.equal(catalogLookupKey('vip', 6), 'yeniform_vip_6m')
   })
 
-  it('lists recurring tiers and one-time doktor', () => {
+  it('lists recurring tiers and generic one-time billing', () => {
     const rec = catalogTiersFromPlan({
       id: 'diyet',
       price: 2499,
@@ -37,14 +37,14 @@ describe('stripe catalog lookup', () => {
     assert.equal(rec.length, 3)
     assert.equal(rec[1].price, 6499)
 
-    const doc = catalogTiersFromPlan({
-      id: 'doktor',
+    const oneShot = catalogTiersFromPlan({
+      id: 'addon',
       billingType: 'one_time',
       price: 1500,
       pricingTiers: [{ months: 1, price: 1500 }],
     })
-    assert.equal(doc.length, 1)
-    assert.equal(doc[0].oneTime, true)
+    assert.equal(oneShot.length, 1)
+    assert.equal(oneShot[0].oneTime, true)
   })
 
   it('matches stripe price amount, currency and interval', () => {
@@ -139,7 +139,7 @@ describe('amount change and T-7 window', () => {
 })
 
 describe('member stripe refs and interval', () => {
-  it('collects stripe packages and skips revenuecat / doktor', () => {
+  it('collects stripe packages and skips revenuecat / one-time', () => {
     const refs = collectMemberStripeSubscriptionRefs({
       id: 'm1',
       membership: 'vip',
@@ -154,7 +154,7 @@ describe('member stripe refs and interval', () => {
           },
           {
             status: 'active',
-            planId: 'doktor',
+            planId: 'addon',
             provider: 'stripe',
             stripeSubscriptionId: 'sub_doc',
             packageConfig: { billingType: 'one_time' },

@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Stethoscope, Building2, Compass, Trophy, HeartHandshake, ChevronDown } from 'lucide-react'
+import { UserRound, LayoutDashboard, LogIn, UserPlus, Home, Sparkles, BookOpen, LifeBuoy, Menu, X, Users, Dumbbell, Apple, Building2, Compass, Trophy, HeartHandshake, ChevronDown } from 'lucide-react'
 import PromoBanner from '../landing/PromoBanner'
 import ConsentBanner from '../ui/ConsentBanner'
 import BrandLogo from '../ui/BrandLogo'
@@ -51,13 +51,6 @@ const teamSubLinks = [
     icon: Apple,
     color: 'text-sage-600 bg-sage-50',
     onPrefetch: () => preloadTeamHero('dietitians'),
-  },
-  {
-    to: '/team/doctors',
-    label: 'Doktorlar',
-    icon: Stethoscope,
-    color: 'text-cream-700 bg-cream-100',
-    onPrefetch: () => preloadTeamHero('doctors'),
   },
 ]
 
@@ -434,7 +427,7 @@ export default function PublicLayout() {
                           Kadromuz
                         </span>
                         <span className={`block text-[11px] font-medium ${mobileSections.team ? 'text-white/80' : 'text-cream-800/55'}`}>
-                          Koç, diyetisyen & doktor
+                          Koç ve diyetisyen
                         </span>
                       </span>
                     </span>

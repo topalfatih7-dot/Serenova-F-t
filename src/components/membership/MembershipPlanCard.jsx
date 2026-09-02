@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
+import { Check, X, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatPlanPrice, getPlanBadge, getPlanDurationLabel, isOneTimeBillingPlan, RECOMMENDED_PLAN } from '../../data/membershipPlans'
 import { getPlanTheme, planVisual } from './planTheme'
 
@@ -86,11 +86,10 @@ export default function MembershipPlanCard({
       {planBadge && (
         <span
           className={`absolute left-1/2 top-3 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-md ${
-            theme.customHex ? '' : (plan.id === 'doktor' ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-cream-900/90')
+            theme.customHex ? '' : 'bg-cream-900/90'
           }`}
           style={theme.customHex ? { backgroundColor: theme.customHex } : undefined}
         >
-          {plan.id === 'doktor' && <Sparkles className="mr-1 inline h-2.5 w-2.5" />}
           {planBadge}
         </span>
       )}
@@ -120,9 +119,6 @@ export default function MembershipPlanCard({
             {planVisual(plan, 'h-6 w-6', 'text-2xl leading-none')}
           </span>
           <h3 className={`mt-3 font-display text-lg font-bold text-cream-900 ${theme.label}`}>{plan.name}</h3>
-          {isOneTime && (
-            <p className="mt-1 text-xs font-medium text-teal-700/90">Uzman doktor ile online sağlık danışmanlığı</p>
-          )}
           <p className="mt-1 font-display text-xl font-extrabold text-cream-900">
             {formatPlanPrice(plan)}
           </p>

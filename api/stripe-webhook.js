@@ -178,7 +178,7 @@ function isYeniFormCheckoutMetadata(meta = {}) {
   return Boolean(meta.memberId && meta.planId)
 }
 
-const MEMBER_LOOKUP_COLUMNS = 'id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, stripe_customer_id, data'
+const MEMBER_LOOKUP_COLUMNS = 'id, name, email, membership, membership_status, assigned_coach_id, assigned_dietitian_id, stripe_customer_id, data'
 
 async function findMemberForStripeEvent(admin, { memberId, subscriptionId, customerId }) {
   if (memberId) {
@@ -291,7 +291,6 @@ function memberFromRow(row) {
   const {
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = data
   return syncMemberPackages({
@@ -302,7 +301,6 @@ function memberFromRow(row) {
     membershipStatus: row.membership_status,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
-    assignedDoctorId: row.assigned_doctor_id ?? null,
     ...rest,
   })
 }
@@ -316,7 +314,6 @@ function memberDataPayload(member, data) {
     membershipStatus: _ms,
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = member
   const newData = { ...data, ...rest }
@@ -333,7 +330,6 @@ async function persistMemberDraft(admin, row, draft, { stripeCustomerId = null }
       membership_status: draft.membershipStatus || 'active',
       assigned_coach_id: draft.assignedCoachId || null,
       assigned_dietitian_id: draft.assignedDietitianId || null,
-      assigned_doctor_id: draft.assignedDoctorId || null,
       data: newData,
       updated_at: nowISO(),
       ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
@@ -427,7 +423,6 @@ async function activateMembership(admin, meta, session) {
       membership_status: draft.membershipStatus || 'active',
       assigned_coach_id: draft.assignedCoachId || null,
       assigned_dietitian_id: draft.assignedDietitianId || null,
-      assigned_doctor_id: draft.assignedDoctorId || null,
       ...(customerId ? { stripe_customer_id: customerId } : {}),
       data: newData,
       updated_at: nowISO(),
@@ -766,7 +761,6 @@ export default async function handler(req, res) {
           membershipStatus: row.membership_status,
           assignedCoachId: row.assigned_coach_id ?? null,
           assignedDietitianId: row.assigned_dietitian_id ?? null,
-          assignedDoctorId: row.assigned_doctor_id ?? null,
           ...data,
           stripeSubscriptionId: data.stripeSubscriptionId || subscription.id,
         }

@@ -6,13 +6,13 @@ import { isPaidMembership } from '../../data/membershipPlans'
 import { sessionsKeyForRole } from '../../utils/staffRoles'
 import { Calendar, Video, CheckCircle, AlertTriangle, Loader2, Ban } from 'lucide-react'
 
-const TYPE_LABEL = { coach: 'Koç', dietitian: 'Diyetisyen', doctor: 'Doktor' }
+const TYPE_LABEL = { coach: 'Koç', dietitian: 'Diyetisyen' }
 
 function collectAdminCancelPending(members) {
   const now = new Date()
   const out = []
   ;(members || []).forEach((m) => {
-    ;['coach', 'dietitian', 'doctor'].forEach((type) => {
+    ;['coach', 'dietitian'].forEach((type) => {
       const key = sessionsKeyForRole(type)
       ;(m[key] || []).forEach((s) => {
         if (s.status === 'admin_cancel_pending' && new Date(s.date) >= now) {
@@ -173,12 +173,12 @@ export default function AdminSessionsPage() {
             </thead>
             <tbody>
               {sessions.map((s) => {
-                const typeKey = s.sessionType === 'Koç' ? 'coach' : s.sessionType === 'Doktor' ? 'doctor' : 'dietitian'
+                const typeKey = s.sessionType === 'Koç' ? 'coach' : 'dietitian'
                 const active = !['cancelled', 'completed', 'rejected'].includes(s.status)
                 return (
                   <tr key={s.id} className="border-b border-cream-50">
                     <td className="px-4 py-3 font-medium">{s.memberName}</td>
-                    <td className="px-4 py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : s.sessionType === 'Doktor' ? 'text-teal-600' : 'text-sage-600'}>{s.sessionType}</span></td>
+                    <td className="px-4 py-3"><span className={s.sessionType === 'Koç' ? 'text-brand-600' : 'text-sage-600'}>{s.sessionType}</span></td>
                     <td className="px-4 py-3">{s.title}</td>
                     <td className="px-4 py-3 text-cream-800/70">{s.coach}</td>
                     <td className="px-4 py-3">

@@ -10,20 +10,21 @@ description: >-
 
 ## Locked model
 
-- **Web:** Stripe Checkout — recurring planlar **Subscription** (`mode: subscription`, 1/3/6 ay `interval_count`); `doktor` one-shot `payment`. Katalog Price `lookup_key` `yeniform_{planId}_{months}m`. Yeni checkout ve mevcut abonelikler **ödeme günündeki katalog fiyatı** (dönem içi proration yok). Webhook: `checkout.session.completed` + `invoice.paid` (yenileme) + `customer.subscription.updated` (dönem sonu iptal) + `customer.subscription.deleted` (hemen kapat / bitiş). Portal: `action: 'create-portal-session'` (`intent` manage/cancel). Admin fiyat kaydı: `action: 'sync-plan-catalog'`. Cron `membership-expiry`: katalog hizalama + T-7 hatırlatma.
+- **Web:** Stripe Checkout — recurring planlar **Subscription** (`mode: subscription`, 1/3/6 ay `interval_count`). Katalog Price `lookup_key` `yeniform_{planId}_{months}m`. Yeni checkout ve mevcut abonelikler **ödeme günündeki katalog fiyatı** (dönem içi proration yok). Webhook: `checkout.session.completed` + `invoice.paid` (yenileme) + `customer.subscription.updated` (dönem sonu iptal) + `customer.subscription.deleted` (hemen kapat / bitiş). Portal: `action: 'create-portal-session'` (`intent` manage/cancel). Admin fiyat kaydı: `action: 'sync-plan-catalog'`. Cron `membership-expiry`: katalog hizalama + T-7 hatırlatma.
 - **Source of truth:** Supabase `members.membership`, `membership_status`, `stripe_customer_id`, `data.stripeSubscriptionId`, package/expiry in `members.data`.
 - **Plan catalog (DB):** `public.plans` — marketing + `is_sellable` + `billing_type` + `entitlements` jsonb + `emoji`/`icon`/`color`. Admin CRUD: `/admin/plans`.
 - **Freemium:** Ücretsiz kayıt + site gezintisi. `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Profil + `/membership` + `/health-test` açık. Süre bitmiş ücretli → `free` fallback.
 - **Ücretsiz kayıt:** onboarding → `register(profile, 'free')` / OAuth `completeOAuthMember(..., 'free')`. İsteğe bağlı “Paketle başla” → Stripe.
+- **Doktor ürünü yok (2026-09-02):** staff rolü `doctor`, plan `doktor` ve satış kapalı. Eski Stripe `yeniform_doktor_1m` arşivlenir. Üye kendi hekimi / AI “doktor değildir” / KVKK doktor raporları / eğitim “Doktora” kalır.
 
 ## Plan IDs
 
-**Seed / fallback satılan:** `eko_diyet` | `diyet` | `eko_spor` | `spor` | `doktor` | `vip` (`SELLABLE_PLAN_IDS`)  
+**Seed / fallback satılan:** `eko_diyet` | `diyet` | `eko_spor` | `spor` | `vip` (`SELLABLE_PLAN_IDS`)  
 **Runtime satış:** `plans.is_active && plans.is_sellable`  
 **Fallback:** `free`  
-**Eski (yeni satış yok):** `eko`
+**Eski (yeni satış yok):** `eko`, `doktor`
 
-Durations: 1 / 3 / 6 months (`billing_type === 'one_time'` için tek seferlik).
+Durations: 1 / 3 / 6 months.
 
 ## Entitlements (DB)
 
@@ -31,8 +32,6 @@ Durations: 1 / 3 / 6 months (`billing_type === 'one_time'` için tek seferlik).
 {
   "coachMeetingsPerMonth": 0,
   "dietitianMeetingsPerMonth": 0,
-  "doctorMeetingsPerMonth": 0,
-  "doctorSessionsTotal": 0,
   "photoCalorie": false,
   "manualCalorie": false
 }

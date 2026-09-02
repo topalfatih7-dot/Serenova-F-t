@@ -11,7 +11,7 @@ description: >-
 
 ## Three chat systems
 
-1. **Member ↔ staff:** `chat_threads` / `chat_messages` — unique `(member_id, staff_role)`; roles coach|dietitian|doctor
+1. **Member ↔ staff:** `chat_threads` / `chat_messages` — unique `(member_id, staff_role)`; roles coach|dietitian
 2. **Admin ↔ staff:** `admin_staff_*`
 3. **Coach ↔ dietitian collab:** `staff_collab_*` (member context)
 

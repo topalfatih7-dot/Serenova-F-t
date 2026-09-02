@@ -36,10 +36,10 @@ const JUST_REGISTERED_KEY = 'yf-just-registered'
 const LEGACY_PLAN_MAP = {
   eko: 'eko_diyet',
   gumus: 'eko_diyet',
-  altin: 'doktor',
+  altin: 'vip',
   platinum: 'vip',
   premium: 'vip',
-  kurucu: 'doktor',
+  kurucu: 'vip',
   basic: RECOMMENDED_PLAN,
 }
 

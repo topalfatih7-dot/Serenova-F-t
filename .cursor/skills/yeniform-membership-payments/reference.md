@@ -2,20 +2,18 @@
 
 ## Quotas (seed / `plans.entitlements`)
 
-| Plan | Coach/mo | Dietitian/mo | Doctor | photo | manual |
-|------|----------|--------------|--------|-------|--------|
-| eko_diyet | 0 | 1 | 0 | yes | yes |
-| diyet | 0 | 2 | 0 | yes | yes |
-| eko_spor | 1 | 0 | 0 | yes | yes |
-| spor | 2 | 0 | 0 | yes | yes |
-| doktor | 0 | 0 | `doctorSessionsTotal: 1`, `billing_type: one_time` | no | no |
-| vip | 2 | 2 | 0 | yes | yes |
-| eko (legacy) | 0 | 0 | 0 | no | yes |
+| Plan | Coach/mo | Dietitian/mo | photo | manual |
+|------|----------|--------------|-------|--------|
+| eko_diyet | 0 | 1 | yes | yes |
+| diyet | 0 | 2 | yes | yes |
+| eko_spor | 1 | 0 | yes | yes |
+| spor | 2 | 0 | yes | yes |
+| vip | 2 | 2 | yes | yes |
+| eko (legacy) | 0 | 0 | no | yes |
 
 Video erişimi program-scoped (üyenin kendi programındaki hareketler); ayrı video entitlement yok.
 
-Doktor görüşmesi yalnızca `doktor` paketinde (ek paket / tek seferlik). Abonelik planlarında `doctorMeetingsPerMonth: 0`.
-Marketing: Eko Diyet / Diyet / VIP feature listesinde “kan tahlili analizi” yazısı olabilir; bu doktor randevu hakkı vermez.
+Marketing: Eko Diyet / Diyet / VIP feature listesinde “Kan Tahlili Testi Analizi” yazısı olabilir; bu bir doktor randevu hakkı vermez.
 
 Admin may create additional plan IDs with custom entitlements.
 
@@ -27,7 +25,6 @@ Admin may create additional plan IDs with custom entitlements.
 | diyet | 2499 | 6499 | 9999 |
 | eko_spor | 1299 | 2999 | 3999 |
 | spor | 2499 | 6499 | 9999 |
-| doktor | 1500 one-time | — | — |
 | vip | 4999 | 12999 | 19999 |
 
 ## Key web files

@@ -35,7 +35,6 @@ const STATIC_ROUTES = [
   { loc: '/blog', changefreq: 'daily', priority: '0.8', lastmod: DEPLOY },
   { loc: '/team/coaches', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
   { loc: '/team/dietitians', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
-  { loc: '/team/doctors', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
   { loc: '/corporate', changefreq: 'monthly', priority: '0.7', lastmod: DEPLOY },
   { loc: '/corporate/apply', changefreq: 'monthly', priority: '0.6', lastmod: DEPLOY },
   { loc: '/team/apply', changefreq: 'monthly', priority: '0.6', lastmod: DEPLOY },
@@ -71,7 +70,7 @@ function slugifyTurkish(text) {
     .replace(/^-+|-+$/g, '')
 }
 
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen', doctor: 'doktor' }
+const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
 
 function staffPublicSlug(member) {
   const namePart = slugifyTurkish(member?.name)
@@ -193,6 +192,7 @@ async function fetchDynamicUrls() {
       console.error('[sitemap] staff', error.message)
     } else {
       for (const member of staff || []) {
+        if (member.role !== 'coach' && member.role !== 'dietitian') continue
         const specialty = member.data?.specialty || member.data?.title || ''
         urls.push({
           path: `/team/${staffPublicSlug({ ...member, specialty, title: specialty })}`,

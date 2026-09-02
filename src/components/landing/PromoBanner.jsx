@@ -58,7 +58,7 @@ export default function PromoBanner() {
               <p className="truncate text-xs font-medium sm:text-sm">
                 <span className="font-semibold">Paketini seç</span>
                 <span className="mx-1.5 hidden text-white/50 sm:inline">·</span>
-                <span className="hidden text-white/90 sm:inline">Diyet, Spor, Doktor veya VIP</span>
+                <span className="hidden text-white/90 sm:inline">Diyet, Spor veya VIP</span>
                 <CreditCard className="ml-1 inline h-3.5 w-3.5 text-white/70 sm:hidden" />
               </p>
             </div>

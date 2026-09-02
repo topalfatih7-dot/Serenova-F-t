@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import {
   Crown, Search, Dumbbell, Apple, Calendar, Clock,
-  UserCheck, ChevronRight, AlertTriangle, Package, Stethoscope, X, DollarSign,
+  UserCheck, ChevronRight, AlertTriangle, Package, X, DollarSign,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
@@ -9,7 +9,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import ManualSessionEditor from '../../components/admin/ManualSessionEditor'
 import {
-  isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian, packageIncludesDoctor,
+  isPaidMembership, PAID_MEMBERSHIPS, packageIncludesCoach, packageIncludesDietitian,
   memberNeedsStaffAssignment, getAdminAssignablePlanIds, PLAN_LABELS, DURATION_OPTIONS, getDefaultPackageForPlan,
   getPlanLabel,
 } from '../../data/membershipPlans'
@@ -41,12 +41,6 @@ function activePackagesOf(member) {
   return migrateLegacyToPackages(member).filter((p) => isPackageEntryActive(p))
 }
 
-function memberShowsDoctorStaff(member) {
-  return packageIncludesDoctor(member?.packageConfig)
-    || Boolean(member?.assignedDoctorId)
-    || migrateLegacyToPackages(member).some((p) => isOneTimePlan(p.planId))
-}
-
 function PlanChip({ planId, expiresAt, oneTime, onRemove, removable, themePlan }) {
   const theme = getPlanTheme(themePlan || planId)
   return (
@@ -76,11 +70,9 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
   const isFree = !isPaidMembership(member.membership)
   const showCoach = packageIncludesCoach(member.packageConfig)
   const showDiet = packageIncludesDietitian(member.packageConfig)
-  const showDoctor = memberShowsDoctorStaff(member)
   const missingCoach = showCoach && !member.assignedCoachId
   const missingDiet = showDiet && !member.assignedDietitianId
-  const missingDoctor = showDoctor && !member.assignedDoctorId
-  const staffCols = [showCoach, showDiet, showDoctor].filter(Boolean).length
+  const staffCols = [showCoach, showDiet].filter(Boolean).length
   const pkgs = activePackagesOf(member)
   const planById = (id) => plans?.find((p) => p.id === id)
 
@@ -138,7 +130,7 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
           Henüz paket yok — yükseltmek için tıklayın
         </p>
       ) : (
-      <div className={`mt-4 grid gap-2 ${staffCols === 0 ? 'grid-cols-2' : staffCols === 1 ? 'grid-cols-3' : staffCols === 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-5'}`}>
+      <div className={`mt-4 grid gap-2 ${staffCols === 0 ? 'grid-cols-2' : staffCols === 1 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
         <div className="rounded-xl bg-cream-50 px-3 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Kalan</p>
           <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-cream-900">
@@ -168,19 +160,10 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
             </p>
           </div>
         )}
-        {showDoctor && (
-          <div className="rounded-xl bg-cream-50 px-3 py-2">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-cream-800/45">Doktor</p>
-            <p className="mt-0.5 flex items-center gap-1 truncate text-sm font-medium text-cream-900">
-              <Stethoscope className={`h-3.5 w-3.5 shrink-0 ${missingDoctor ? 'text-amber-500' : 'text-teal-600'}`} />
-              {staffName(member.assignedDoctorId)}
-            </p>
-          </div>
-        )}
       </div>
       )}
 
-      {(missingCoach || missingDiet || missingDoctor || info.premiumExpiringSoon) && (
+      {(missingCoach || missingDiet || info.premiumExpiringSoon) && (
         <div className="mt-3 flex flex-wrap gap-2">
           {info.premiumExpiringSoon && (
             <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-semibold text-orange-700">
@@ -197,11 +180,6 @@ function PremiumMemberCard({ member, plans, staffName, onEdit }) {
               Diyetisyen atanmadı
             </span>
           )}
-          {missingDoctor && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
-              Doktor atanmadı
-            </span>
-          )}
         </div>
       )}
     </button>
@@ -213,7 +191,6 @@ function EditPremiumModal({
 }) {
   const coaches = staff.filter((s) => s.role === 'coach' && s.active !== false)
   const dietitians = staff.filter((s) => s.role === 'dietitian' && s.active !== false)
-  const doctors = staff.filter((s) => s.role === 'doctor' && s.active !== false)
 
   const pkgs = activePackagesOf(member)
   const subscriptionPkgs = pkgs.filter((p) => !isOneTimePlan(p.planId))
@@ -232,10 +209,8 @@ function EditPremiumModal({
   const [extendDays, setExtendDays] = useState('')
   const [coachId, setCoachId] = useState(member?.assignedCoachId || '')
   const [dietitianId, setDietitianId] = useState(member?.assignedDietitianId || '')
-  const [doctorId, setDoctorId] = useState(member?.assignedDoctorId || '')
   const [coachSessions, setCoachSessions] = useState([])
   const [dietitianSessions, setDietitianSessions] = useState([])
-  const [doctorSessions, setDoctorSessions] = useState([])
   const [sessionsLoading, setSessionsLoading] = useState(true)
 
   useEffect(() => {
@@ -246,7 +221,6 @@ function EditPremiumModal({
         if (!active) return
         setCoachSessions(sessions.coachSessions)
         setDietitianSessions(sessions.dietitianSessions)
-        setDoctorSessions(sessions.doctorSessions)
       })
       .finally(() => {
         if (active) setSessionsLoading(false)
@@ -265,20 +239,15 @@ function EditPremiumModal({
   const planById = (id) => plans?.find((p) => p.id === id)
   const selectedPlan = planById(membership)
   const previewPackage = getDefaultPackageForPlan(membership, durationMonths, selectedPlan)
-  const selectedOneTime = selectedPlan?.billingType === 'one_time' || membership === 'doktor'
+  const selectedOneTime = selectedPlan?.billingType === 'one_time'
   const showCoach = packageIncludesCoach(previewPackage)
   const showDiet = packageIncludesDietitian(previewPackage)
-  const showDoctor = packageIncludesDoctor(previewPackage) || selectedOneTime || memberShowsDoctorStaff(member)
-  const editorPackage = showDoctor && !packageIncludesDoctor(previewPackage)
-    ? { ...previewPackage, doctorSessionsTotal: Number(member.packageConfig?.doctorSessionsTotal) || 1 }
-    : previewPackage
-  const assignmentTitle = [showCoach && 'Koç', showDiet && 'Diyetisyen', showDoctor && 'Doktor'].filter(Boolean).join(' & ') || null
+  const assignmentTitle = [showCoach && 'Koç', showDiet && 'Diyetisyen'].filter(Boolean).join(' & ') || null
 
   const remaining = getRemainingDays(member.premiumExpiresAt)
   const info = enrichMemberPremium(member)
   const coachName = coaches.find((s) => s.id === coachId)?.name || ''
   const dietitianName = dietitians.find((s) => s.id === dietitianId)?.name || ''
-  const doctorName = doctors.find((s) => s.id === doctorId)?.name || ''
   const planChanged = membership !== member.membership
   const willAssignPaid = (planChanged || addPackage) && isPaidMembership(membership)
   const extendFilled = extendDays !== '' && !Number.isNaN(Number(extendDays)) && Number(extendDays) !== 0
@@ -287,7 +256,7 @@ function EditPremiumModal({
   const suggestAmount = () => {
     const plan = planById(membership)
     if (!plan) return ''
-    const months = membership === 'doktor' ? 1 : durationMonths
+    const months = selectedOneTime ? 1 : durationMonths
     const tier = (plan.pricingTiers || []).find((t) => Number(t.months) === Number(months))
     if (tier?.price != null) return String(tier.price)
     return plan.price != null ? String(plan.price) : ''
@@ -297,10 +266,8 @@ function EditPremiumModal({
     const payload = {
       assignedCoachId: showCoach ? (coachId || null) : null,
       assignedDietitianId: showDiet ? (dietitianId || null) : null,
-      assignedDoctorId: showDoctor ? (doctorId || null) : (member.assignedDoctorId ?? null),
       coachSessions: showCoach ? coachSessions.map((s) => ({ ...s, coach: coachName || s.coach })) : [],
       dietitianSessions: showDiet ? dietitianSessions.map((s) => ({ ...s, coach: dietitianName || s.coach })) : [],
-      doctorSessions,
     }
 
     if (targetPackageId) payload.targetPackageId = targetPackageId
@@ -386,7 +353,7 @@ function EditPremiumModal({
                   const id = e.target.value
                   setMembership(id)
                   const p = plans?.find((x) => x.id === id)
-                  if (id === 'doktor' || p?.billingType === 'one_time') setDurationMonths(0)
+                  if (p?.billingType === 'one_time') setDurationMonths(0)
                   else if (durationMonths === 0) setDurationMonths(1)
                 }}
                 className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm"
@@ -491,8 +458,8 @@ function EditPremiumModal({
               {addPackage
                 ? 'Yeni paket mevcut haklara eklenir; birleşik erişim uygulanır. Ödeme kaydı yazılır.'
                 : membership === 'free'
-                  ? 'Abonelik paketleri kaldırılır; tek seferlik doktor paketleri korunur (chip ile çıkarılabilir).'
-                  : 'Paket değişince abonelik paketleri yenilenir; tek seferlik doktor paketleri korunur. Ödeme kaydı yazılır.'}
+                  ? 'Abonelik paketleri kaldırılır; tek seferlik paketler chip ile ayrıca çıkarılabilir.'
+                  : 'Paket değişince abonelik paketleri yenilenir. Ödeme kaydı yazılır.'}
             </p>
           )}
         </section>
@@ -557,17 +524,6 @@ function EditPremiumModal({
                   </select>
                 </label>
               )}
-              {showDoctor && (
-                <label className="block">
-                  <span className="mb-1 flex items-center gap-1 text-xs text-cream-800/55"><Stethoscope className="h-3 w-3" /> Doktor</span>
-                  <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} className="w-full rounded-xl border border-cream-200 px-3 py-2.5 text-sm">
-                    <option value="">— Atanmadı —</option>
-                    {doctors.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
             </div>
           </section>
         )}
@@ -576,16 +532,13 @@ function EditPremiumModal({
           <p className="text-sm text-cream-800/50">Randevular yükleniyor…</p>
         ) : (
           <ManualSessionEditor
-            member={{ ...member, membership, packageConfig: editorPackage }}
+            member={{ ...member, membership, packageConfig: previewPackage }}
             coachName={coachName}
             dietitianName={dietitianName}
-            doctorName={doctorName}
             coachSessions={coachSessions}
             dietitianSessions={dietitianSessions}
-            doctorSessions={doctorSessions}
             onCoachChange={setCoachSessions}
             onDietitianChange={setDietitianSessions}
-            onDoctorChange={setDoctorSessions}
           />
         )}
 

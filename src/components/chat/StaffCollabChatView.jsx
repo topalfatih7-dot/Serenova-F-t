@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, Dumbbell, Apple, Radio, Stethoscope } from 'lucide-react'
+import { Send, Dumbbell, Apple, Radio } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import useStickChatToBottom from '../../hooks/useStickChatToBottom'
@@ -18,12 +18,6 @@ const SENDER_META = {
     label: 'Diyetisyen',
     icon: Apple,
   },
-  doctor: {
-    own: 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md shadow-teal-200/40',
-    other: 'bg-gradient-to-br from-teal-50 to-cyan-50 text-cream-900 ring-1 ring-teal-100',
-    label: 'Doktor',
-    icon: Stethoscope,
-  },
 }
 
 export default function StaffCollabChatView({
@@ -37,7 +31,6 @@ export default function StaffCollabChatView({
   memberName = '',
   coachName = '',
   dietitianName = '',
-  doctorName = '',
 }) {
   const [text, setText] = useState('')
   const { scrollRef, onScroll } = useStickChatToBottom(messages)
@@ -52,7 +45,6 @@ export default function StaffCollabChatView({
   const labelFor = (m) => {
     if (m.senderType === 'coach') return coachName || 'Koç'
     if (m.senderType === 'dietitian') return dietitianName || 'Diyetisyen'
-    if (m.senderType === 'doctor') return doctorName || 'Doktor'
     return 'Sistem'
   }
 
@@ -76,7 +68,7 @@ export default function StaffCollabChatView({
                   ? `${remoteName} ile danışan koordinasyonuna başlayın`
                   : 'İlk mesajınızı yazın'}
             </p>
-            <p className="mt-1 text-xs text-cream-800/45">Bu kanal atanmış koç, diyetisyen ve doktor arasındadır.</p>
+            <p className="mt-1 text-xs text-cream-800/45">Bu kanal atanmış koç ve diyetisyen arasındadır.</p>
           </div>
         )}
         {messages.map((m) => {

@@ -53,10 +53,6 @@ export const PANEL_IMAGES = {
     url: unsplash('photo-1498837167922-ddd27525d352'),
     alt: 'Beslenme danışmanlığı',
   },
-  scheduleDoctor: {
-    url: unsplash('photo-1576091160399-112ba8d25d1d'),
-    alt: 'Online doktor görüşmesi',
-  },
   messages: {
     url: unsplash('photo-1522202176988-66273c2fd55f'),
     alt: 'Uzmanlarınızla iletişim',

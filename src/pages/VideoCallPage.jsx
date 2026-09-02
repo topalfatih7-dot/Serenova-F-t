@@ -45,7 +45,7 @@ export default function VideoCallPage({ audience = 'member' }) {
   const navigate = useNavigate()
   const {
     user, staffUser, isStaff, platform,
-    coachSessions, dietitianSessions, doctorSessions,
+    coachSessions, dietitianSessions,
   } = useApp()
 
   const [, tick] = useState(0)
@@ -68,8 +68,7 @@ export default function VideoCallPage({ audience = 'member' }) {
     platformMembers: platform?.members,
     coachSessions,
     dietitianSessions,
-    doctorSessions,
-  }), [audience, sessionType, sessionId, user, staffUser, isStaff, platform, coachSessions, dietitianSessions, doctorSessions])
+  }), [audience, sessionType, sessionId, user, staffUser, isStaff, platform, coachSessions, dietitianSessions])
 
   const roomUrl = buildRoomUrl(context.sessionType, sessionId)
   const configured = isVideoCallConfigured()
@@ -175,7 +174,7 @@ export default function VideoCallPage({ audience = 'member' }) {
 
   const backPath = audience === 'staff'
     ? '/staff'
-    : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : sessionType === 'doctor' ? '/schedule?tab=doctor' : '/schedule?tab=coach'
+    : sessionType === 'dietitian' ? '/schedule?tab=dietitian' : '/schedule?tab=coach'
 
   const handleExit = () => {
     reportLeave({ keepalive: true })

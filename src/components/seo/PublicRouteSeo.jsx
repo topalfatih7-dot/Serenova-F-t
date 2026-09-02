@@ -3,7 +3,7 @@ import SeoHead from './SeoHead'
 import { PAGE_SEO } from '../../config/seo'
 
 /** Blog yazısı ve kadro profili gibi dinamik sayfalar kendi SeoHead'lerini render eder. */
-const TEAM_LIST = new Set(['/team/coaches', '/team/dietitians', '/team/doctors'])
+const TEAM_LIST = new Set(['/team/coaches', '/team/dietitians'])
 
 function isDynamicPublicRoute(pathname) {
   if (pathname.startsWith('/blog/') && pathname !== '/blog') return true

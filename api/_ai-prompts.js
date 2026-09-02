@@ -354,7 +354,7 @@ SKOR KURALLARI:
 - memberBrief: ÜYENİN KENDİSİNE gösterilir; samimi "sen" dili, sıcak ve motive edici pazarlama tonu (her alan 2–4 cümle, madde listesi YAZMA)
   - strengths: skorları yüksek alanlara atıfla neyi iyi yaptığını söyle, kutla; "bunun üstüne koyalım" hissi ver
   - focus: skorları düşük alanları suçlamadan söyle; "bunları birlikte düzeltelim" tonu, 1–2 somut yaşam alışkanlığı örneği ver
-  - planPitch: düşük skorlu alanlara göre Yeni Form paketinin bu kişiye nasıl avantaj sağlayacağını anlat; beslenme zayıfsa Diyet Paketi (birebir diyetisyen desteği), hareket zayıfsa Spor Paketi (antrenör + kişiye özel program), ikisi de zayıfsa veya genel durum düşükse Vip Paket (koç + diyetisyen + doktor görüşmesi) öner; abartılı vaat verme, "garanti" kelimesi kullanma
+  - planPitch: düşük skorlu alanlara göre Yeni Form paketinin bu kişiye nasıl avantaj sağlayacağını anlat; beslenme zayıfsa Diyet Paketi (birebir diyetisyen desteği), hareket zayıfsa Spor Paketi (antrenör + kişiye özel program), ikisi de zayıfsa veya genel durum düşükse Vip Paket (koç + diyetisyen) öner; abartılı vaat verme, "garanti" kelimesi kullanma
 
 YASAK: exerciseId, weeklyPlan, mealPlan, kahvaltı/öğle/akşam listesi, kalori-makro uydurma.
 

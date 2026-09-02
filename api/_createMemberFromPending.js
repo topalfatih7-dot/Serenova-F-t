@@ -14,7 +14,6 @@ function memberDataPayload(member, data = {}) {
     membershipStatus: _ms,
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = member
   return { ...data, ...rest }
@@ -52,7 +51,6 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     packageConfig: {
       coachMeetingsPerMonth: 0,
       dietitianMeetingsPerMonth: 0,
-      doctorMeetingsPerMonth: 0,
       coachMeetingsPerWeek: 0,
       durationMonths: 0,
       durationWeeks: 0,
@@ -62,7 +60,6 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     lastActiveAt: joined,
     coachSessions: [],
     dietitianSessions: [],
-    doctorSessions: [],
     notifications: [
       {
         id: `n-welcome-${Date.now()}`,
@@ -103,7 +100,6 @@ export async function createMemberFromPendingRegistration(admin, userId) {
     membership_status: 'active',
     assigned_coach_id: null,
     assigned_dietitian_id: null,
-    assigned_doctor_id: null,
     data,
     updated_at: nowISO(),
   })

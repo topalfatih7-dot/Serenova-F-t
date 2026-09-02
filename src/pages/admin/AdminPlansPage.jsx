@@ -579,7 +579,7 @@ function ViewMode({ plan }) {
 
       <div className="rounded-xl border border-cream-100 bg-cream-50/80 p-3 text-xs text-cream-800 space-y-1">
         <p className="font-semibold uppercase tracking-wide text-cream-800/50">Kota & erişim</p>
-        <p>Koç: {e.coachMeetingsPerMonth}/ay · Diyetisyen: {e.dietitianMeetingsPerMonth}/ay · Doktor: {e.doctorMeetingsPerMonth}/ay{e.doctorSessionsTotal ? ` (+${e.doctorSessionsTotal} tek sefer)` : ''}</p>
+        <p>Koç: {e.coachMeetingsPerMonth}/ay · Diyetisyen: {e.dietitianMeetingsPerMonth}/ay</p>
         <p>
           Kalori: {e.manualCalorie ? 'manuel' : '—'}{e.photoCalorie ? ' + foto' : ''}
         </p>
@@ -743,8 +743,6 @@ function EditForm({
           {[
             { key: 'coachMeetingsPerMonth', label: 'Koç / ay' },
             { key: 'dietitianMeetingsPerMonth', label: 'Diyet / ay' },
-            { key: 'doctorMeetingsPerMonth', label: 'Doktor / ay' },
-            { key: 'doctorSessionsTotal', label: 'Doktor tek sefer' },
           ].map(({ key, label }) => (
             <div key={key}>
               <label className="mb-0.5 block text-[11px] text-cream-800/55">{label}</label>

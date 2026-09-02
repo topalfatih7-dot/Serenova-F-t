@@ -1,13 +1,13 @@
 /**
- * Self-servis randevu — book_staff_session RPC ile aynı kurallar + doktor tek seferlik limiti.
+ * Self-servis randevu — book_staff_session RPC ile aynı kurallar.
  * HTTP handler: POST /api/auth { action: 'book-session', ... }
  */
-import { countUsedDoctorSessions, syncMemberPackages, doctorBookingLimit } from './_memberPackages.js'
+import { syncMemberPackages } from './_memberPackages.js'
 import { sendExpoPushToStaff } from './_expoPush.js'
 
 const TZ = 'Europe/Istanbul'
-const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
-const TITLES = { coach: 'Koç Görüşmesi', dietitian: 'Diyetisyen Görüşmesi', doctor: 'Doktor Görüşmesi' }
+const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions' }
+const TITLES = { coach: 'Koç Görüşmesi', dietitian: 'Diyetisyen Görüşmesi' }
 
 function istanbulParts(date) {
   const fmt = new Intl.DateTimeFormat('en-GB', {
@@ -49,7 +49,7 @@ function monthKey(date) {
 function resolveStaffId(type, memberRow) {
   if (type === 'coach') return memberRow.assigned_coach_id ?? null
   if (type === 'dietitian') return memberRow.assigned_dietitian_id ?? null
-  return memberRow.assigned_doctor_id ?? null
+  return null
 }
 
 function bookingLimit(type, pkg) {
@@ -58,12 +58,7 @@ function bookingLimit(type, pkg) {
     if (!limit) limit = (Number(pkg.coachMeetingsPerWeek) || 0) * 4
     return { limit, oneTime: false }
   }
-  if (type === 'doctor') {
-    const oneTimeTotal = Number(pkg.doctorSessionsTotal) || 0
-    if (oneTimeTotal > 0) return { limit: oneTimeTotal, oneTime: true }
-    return { limit: Number(pkg.doctorMeetingsPerMonth) || 0, oneTime: false }
-  }
-  return { limit: Number(pkg.dietitianMeetingsPerMonth) || 0, oneTime: false }
+  return { limit: Number(pkg.dietitianMeetingsPerMonth) || 0 }
 }
 
 function memberFromRow(row) {
@@ -71,7 +66,6 @@ function memberFromRow(row) {
   const {
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...rest
   } = data
   return syncMemberPackages({
@@ -79,14 +73,13 @@ function memberFromRow(row) {
     membership: row.membership,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
-    assignedDoctorId: row.assigned_doctor_id ?? null,
     ...rest,
   })
 }
 
 export async function bookSessionForMember(admin, userId, type, startsAtISO, duration = 30) {
   const sessionType = String(type || '').toLowerCase()
-  if (!['coach', 'dietitian', 'doctor'].includes(sessionType)) {
+  if (!['coach', 'dietitian'].includes(sessionType)) {
     return { ok: false, error: 'Geçersiz randevu türü.' }
   }
 
@@ -119,9 +112,7 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
 
   const assignColumn = sessionType === 'coach'
     ? 'assigned_coach_id'
-    : sessionType === 'dietitian'
-      ? 'assigned_dietitian_id'
-      : 'assigned_doctor_id'
+    : 'assigned_dietitian_id'
 
   const { data: peerRows, error: peerErr } = await admin
     .from('members')
@@ -144,34 +135,21 @@ export async function bookSessionForMember(admin, userId, type, startsAtISO, dur
   }
   if (slotTaken) return { ok: false, error: 'Bu saat dolu, lütfen başka bir slot seçin.' }
 
-  const { limit, oneTime } = bookingLimit(sessionType, pkg)
+  const { limit } = bookingLimit(sessionType, pkg)
   const mySessions = memberRow.data?.[key] || []
 
   if (limit <= 0) {
-    return {
-      ok: false,
-      error: sessionType === 'doctor'
-        ? 'Doktor görüşme hakkınız bulunmuyor.'
-        : 'Bu randevu türü paketinizde yok.',
-    }
+    return { ok: false, error: 'Bu randevu türü paketinizde yok.' }
   }
 
-  if (oneTime) {
-    const remaining = doctorBookingLimit(pkg, member)
-    if (remaining <= 0) {
-      const used = countUsedDoctorSessions(member)
-      return { ok: false, error: `Doktor görüşme hakkınız kullanıldı (${used}/${limit}).` }
-    }
-  } else {
-    const targetMonth = monthKey(startsAt)
-    const used = mySessions.filter((s) => {
-      if (!activeStatuses().has(s?.status || 'scheduled')) return false
-      const d = parseSessionDate(s)
-      return d && monthKey(d) === targetMonth
-    }).length
-    if (used >= limit) {
-      return { ok: false, error: `Bu ay için randevu hakkınız doldu (${used}/${limit}).` }
-    }
+  const targetMonth = monthKey(startsAt)
+  const used = mySessions.filter((s) => {
+    if (!activeStatuses().has(s?.status || 'scheduled')) return false
+    const d = parseSessionDate(s)
+    return d && monthKey(d) === targetMonth
+  }).length
+  if (used >= limit) {
+    return { ok: false, error: `Bu ay için randevu hakkınız doldu (${used}/${limit}).` }
   }
 
   const session = {

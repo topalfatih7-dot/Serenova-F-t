@@ -12,7 +12,7 @@ import { requestNotificationPermission, unlockNotificationAudio } from '../utils
 import {
   User, Bell, LogOut, Edit, CalendarDays,
   Dumbbell, Apple, ClipboardList, MapPin, Mail, Phone, Camera,
-  Flame, Shield, Stethoscope, Clock, Loader2, HeartPulse, AlertTriangle,
+  Flame, Shield, Clock, Loader2, HeartPulse, AlertTriangle,
 } from 'lucide-react'
 import PersonalInfoSection from '../components/profile/PersonalInfoSection'
 import HealthSummarySection from '../components/profile/HealthSummarySection'
@@ -29,7 +29,6 @@ import {
 import { isHealthTestComplete } from '../data/healthTest'
 import { collectHealthLabFiles, memberOptedInToHealthLab, patchHealthTestLabFiles } from '../utils/healthLabFiles'
 import {
-  countUsedDoctorSessions,
   isOneTimePlan,
   isPackageEntryActive,
   migrateLegacyToPackages,
@@ -53,7 +52,6 @@ export default function ProfilePage() {
   } = useApp()
   const assignedCoach = (staff || []).find((s) => s.id === user.assignedCoachId)
   const assignedDietitian = (staff || []).find((s) => s.id === user.assignedDietitianId)
-  const assignedDoctor = (staff || []).find((s) => s.id === user.assignedDoctorId)
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -112,27 +110,11 @@ export default function ProfilePage() {
         iconClass: 'text-sage-500',
       })
     }
-    const offersDoctor = (
-      (Number(packageConfig?.doctorSessionsTotal) || 0) > 0
-      || (Number(packageConfig?.doctorMeetingsPerMonth) || 0) > 0
-      || Boolean(user.assignedDoctorId)
-    )
-    if (offersDoctor) {
-      cards.push({
-        icon: Stethoscope,
-        label: 'Doktor',
-        name: assignedDoctor?.name,
-        to: '/schedule?tab=doctor',
-        iconClass: 'text-teal-600',
-      })
-    }
     return cards
   }, [
     packageConfig,
     assignedCoach?.name,
     assignedDietitian?.name,
-    assignedDoctor?.name,
-    user.assignedDoctorId,
   ])
 
   const handleSave = async () => {
@@ -451,13 +433,8 @@ export default function ProfilePage() {
                         <>
                           <p className="mt-1 font-display text-3xl font-bold">
                             <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                              {Math.max(
-                                0,
-                                (Number(selectedPackage.packageConfig?.doctorSessionsTotal) || 1)
-                                  - countUsedDoctorSessions(user)
-                              )}
+                              Aktif
                             </span>
-                            <span className="ml-1 text-base font-semibold text-violet-700/80">görüşme</span>
                           </p>
                           <p className="mt-1 text-xs text-cream-800/55">Tek seferlik paket — süre sınırı yok</p>
                         </>

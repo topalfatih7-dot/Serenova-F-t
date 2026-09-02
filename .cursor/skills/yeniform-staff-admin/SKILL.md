@@ -1,7 +1,7 @@
 ---
 name: yeniform-staff-admin
 description: >-
-  Handles Yeni Form staff (coach/dietitian/doctor) and admin panels. Use when
+  Handles Yeni Form staff (coach/dietitian) and admin panels. Use when
   working on staff panel, koç program builder, diyetisyen listeler, danışanlar,
   admin premium, başvurular, seanslar, or admin CRUD operations.
 ---
@@ -14,7 +14,8 @@ description: >-
 |------|-----------|------------|
 | coach | Programs, Library, Collab | Haftalık gün şablonu → send modal (`scheduleType: weekly`) |
 | dietitian | Lists (not programs/library), Collab | Full-page nutrition list builder |
-| doctor | Base + messages | Clients, health notes, calls |
+
+`doctor` rolü yoktur (2026-09-02). Admin ekleyemez / atayamaz; giriş kapalı.
 
 Force password when `tempPasswordIssued`. Clients via `getStaffClients()` (assignment + package).
 
@@ -37,11 +38,11 @@ Zamanlama: `cycle14` | `weekly` | `date` (süresiz her gün yok). Başlık `buil
 
 ## Assignment (üye ↔ personel)
 
-- Atama **yalnızca admin** (`AdminPremiumPage`). Koç/diyet `autoAssign` var; **doktor her zaman manuel**.
+- Atama **yalnızca admin** (`AdminPremiumPage`). Koç/diyet `autoAssign` var.
 - Ücretli + eksik atama → üye dashboard “Uzmanınız atanıyor” (`memberNeedsStaffAssignment`).
 - Profil uzman kartları: yalnızca pakette olan roller (`packageIncludes*`).
 - Assignment bildirimi → `/profile`.
-- İleri faz (claim, kuyruk, lab RLS, adherence UI, doktor nav): [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)
+- İleri faz (claim, kuyruk, lab RLS, adherence UI): [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)
 
 ## Related
 

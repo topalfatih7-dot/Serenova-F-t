@@ -157,7 +157,7 @@ export const SEO = {
 export function teamListPathForRole(role) {
   if (role === 'coach') return '/team/coaches'
   if (role === 'dietitian') return '/team/dietitians'
-  return '/team/doctors'
+  return '/hakkimizda'
 }
 
 /** Türkçe karakter destekli URL slug (ör. "Koç Ahmet Yılmaz" → "koc-ahmet-yilmaz") */
@@ -176,14 +176,13 @@ export function slugifyTurkish(text) {
     .replace(/^-+|-+$/g, '')
 }
 
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen', doctor: 'doktor' }
+const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
 
 /** SEO dostu profil slug — "koç ahmet yeniform" aramaları için rol öneki eklenir */
 export function staffPublicSlug(member) {
   const namePart = slugifyTurkish(member?.name)
   if (!namePart) return member?.id || ''
   const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
-  // "Doktor" gibi isimlerde doktor-doktor oluşmasını engelle
   if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
     const specialty = slugifyTurkish(member?.specialty || member?.title || '')
     if (specialty && specialty !== namePart && specialty !== rolePrefix) {
@@ -261,7 +260,6 @@ export const STATIC_PUBLIC_ROUTES = [
   { path: '/blog', changefreq: 'daily', priority: '0.8' },
   { path: '/team/coaches', changefreq: 'monthly', priority: '0.7' },
   { path: '/team/dietitians', changefreq: 'monthly', priority: '0.7' },
-  { path: '/team/doctors', changefreq: 'monthly', priority: '0.7' },
   { path: '/corporate', changefreq: 'monthly', priority: '0.7' },
   { path: '/corporate/apply', changefreq: 'monthly', priority: '0.6' },
   { path: '/team/apply', changefreq: 'monthly', priority: '0.6' },
@@ -273,7 +271,7 @@ export const PAGE_SEO = {
   '/': {
     title: `${BRAND.name} — Online Koçluk ve Online Diyetisyen Platformu`,
     description:
-      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor, Doktor ve VIP paketleriyle başlayın.',
+      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor ve VIP paketleriyle başlayın.',
     keywords: buildBrandKeywords('online koçluk, online diyetisyen, fitness koçu, spor salonu programı, evde antrenman, wellness, beslenme programı'),
   },
   '/hakkimizda': {
@@ -349,15 +347,15 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('online wellness, wellness platformu, dijital wellness, online sağlık koçluğu, online sağlıklı yaşam, wellness Türkiye, online wellness programı'),
   },
   '/membership': {
-    title: 'Üyelik Paketleri — Diyet, Spor, Doktor ve VIP',
+    title: 'Üyelik Paketleri — Diyet, Spor ve VIP',
     description:
-      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
-    keywords: buildBrandKeywords('üyelik paketleri, yeni form üyelik, diyet paketi, spor paketi, vip paket, doktor paketi, paket karşılaştırma'),
+      'Diyet, Spor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
+    keywords: buildBrandKeywords('üyelik paketleri, yeni form üyelik, diyet paketi, spor paketi, vip paket, paket karşılaştırma'),
   },
   '/onboarding': {
     title: 'Kayıt Ol — Paket Seç ve Başla',
     description:
-      'Yeni Form\'a birkaç dakikada kayıt olun. Diyet, Spor, Doktor veya VIP planıyla kişisel wellness yolculuğunuza başlayın.',
+      'Yeni Form\'a birkaç dakikada kayıt olun. Diyet, Spor veya VIP planıyla kişisel wellness yolculuğunuza başlayın.',
     keywords: buildBrandKeywords('kayıt ol, online koçluk kayıt, wellness üyelik, diyet paket kayıt'),
   },
   '/login': {
@@ -393,12 +391,6 @@ export const PAGE_SEO = {
     description:
       'Yeni Form diyetisyen kadrosu: lisanslı beslenme uzmanları, video görüşme ve kişiye özel program. Hizmet akışı online diyetisyen sayfasında.',
     keywords: buildBrandKeywords('diyetisyen kadrosu, lisanslı diyetisyen, beslenme uzmanı ekibi, yeni form diyetisyen'),
-  },
-  '/team/doctors': {
-    title: 'Doktorlarımız — Sağlık Sürecinizde Yanınızda',
-    description:
-      'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktor kadromuz.',
-    keywords: buildBrandKeywords('wellness doktor, sağlık danışmanlığı, online sağlık'),
   },
   '/corporate': {
     title: 'Kurumsal Wellness Programları',
@@ -621,9 +613,7 @@ export function buildPersonSchema(member, { profilePath } = {}) {
     '@type': 'Person',
     name: profile.name,
     jobTitle: publicStaffTitle(profile)
-      || (profile.role === 'dietitian' ? 'Online Diyetisyen'
-        : profile.role === 'doctor' ? 'Doktor'
-        : 'Online Fitness Koçu'),
+      || (profile.role === 'dietitian' ? 'Online Diyetisyen' : 'Online Fitness Koçu'),
     description: profile.bio || profile.description,
     image: profile.photo ? absoluteUrl(profile.photo) : undefined,
     sameAs: [profile.instagram, profile.linkedin, profile.website, profile.youtube]

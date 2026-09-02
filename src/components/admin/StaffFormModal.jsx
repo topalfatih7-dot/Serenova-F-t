@@ -174,7 +174,7 @@ export default function StaffFormModal({ open, onClose, onSubmit, initial, isEdi
                   {form.listedOnTeam ? 'Kadro sayfasında göster' : 'Kadro listesinde gizli'}
                 </span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-cream-800/65">
-                  Kapalıysa /team/coaches, diyetisyen ve doktor kartlarında görünmez. Profil linki, atama ve panel aynı kalır.
+                  Kapalıysa /team/coaches ve diyetisyen kartlarında görünmez. Profil linki, atama ve panel aynı kalır.
                 </span>
               </span>
             </button>

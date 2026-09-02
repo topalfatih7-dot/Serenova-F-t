@@ -4,7 +4,7 @@
  * Daily.co hesabı: https://dashboard.daily.co
  * Domain örneği: yourteam.daily.co
  *
- * Katılma pencereleri (varsayılan): koç 10/20 · diyetisyen 15/30 · doktor 15/30
+ * Katılma pencereleri (varsayılan): koç 10/20 · diyetisyen 15/30
  * api/_videoJoinWindows.js ile aynı sayılar.
  */
 
@@ -14,7 +14,6 @@ import { normalizeSessionType } from '../utils/staffRoles'
 const JOIN_WINDOW_DEFAULTS = {
   coach: { before: 10, after: 20 },
   dietitian: { before: 15, after: 30 },
-  doctor: { before: 15, after: 30 },
 }
 
 function envMinutes(name, fallback) {
@@ -27,7 +26,7 @@ function envMinutes(name, fallback) {
 export const VIDEO_CALL_CONFIG = {
   /** Daily.co subdomain (https://DOMAIN/room-name) */
   domain: (import.meta.env.VITE_DAILY_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, ''),
-  /** Oda adı öneki: {prefix}-{coach|dietitian|doctor}-{sessionId} */
+  /** Oda adı öneki: {prefix}-{coach|dietitian}-{sessionId} */
   roomPrefix: import.meta.env.VITE_DAILY_ROOM_PREFIX || 'donusum',
 }
 
@@ -115,16 +114,5 @@ export const SESSION_TYPE_META = {
     text: 'text-sage-700',
     ring: 'ring-sage-200',
     btn: 'bg-sage-500 hover:bg-sage-600',
-  },
-  doctor: {
-    label: 'Doktor Görüşmesi',
-    roleLabel: 'Doktor',
-    memberLabel: 'Danışan',
-    accent: 'amber',
-    gradient: 'from-amber-600 to-orange-800',
-    lightBg: 'bg-amber-50',
-    text: 'text-amber-700',
-    ring: 'ring-amber-200',
-    btn: 'bg-amber-500 hover:bg-amber-600',
   },
 }

@@ -14,10 +14,8 @@ export const MEMBERSHIP_CANCEL_COPY = {
   buyCta: 'Web’den paket ekle',
   manageNote:
     'Satın alma web üzerinden yapılır. İptal için aşağıdaki uyarıları okuyup Stripe Müşteri Portalı’nda onaylarsınız.',
-  doctorTitle: 'Doktor Paketi tek seferliktir',
-  doctorBody:
+  oneTimeBody:
     'Bu paket abonelik değildir; self-servis iptal yoktur. İptal veya iade için info@yeniform.com adresine yazın.',
-  doctorMail: 'info@yeniform.com adresine yaz',
   renewalOffBadge: 'Yenileme kapalı',
   renewalOffBanner: (dateLabel, planLabel) =>
     `${planLabel}: yenileme kapalı · ${dateLabel} tarihine kadar erişiminiz sürer.`,

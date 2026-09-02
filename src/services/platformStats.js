@@ -62,7 +62,6 @@ const PLAN_COLORS = {
   eko_spor: '#0284c7',
   diyet: '#059669',
   spor: '#2563eb',
-  doktor: '#d97706',
   vip: '#4a8aad',
   gumus: '#64748b',
   altin: '#d97706',
@@ -91,7 +90,6 @@ export function computeOnboardingFunnel(db) {
   const withSession = members.filter((m) => {
     const n = (m.coachSessions || []).length
       + (m.dietitianSessions || []).length
-      + (m.doctorSessions || []).length
     return n > 0
   }).length
 
@@ -150,7 +148,7 @@ export function computeAdminStats(db) {
 
 export function computeMembershipBreakdown(db) {
   const members = db.members
-  const planIds = ['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip'].includes(id))]
+  const planIds = ['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', ...PAID_MEMBERSHIPS.filter((id) => !['eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip'].includes(id))]
   const breakdown = []
 
   planIds.forEach((planId) => {

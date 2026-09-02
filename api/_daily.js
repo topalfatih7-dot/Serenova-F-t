@@ -15,7 +15,7 @@ export function getDailyRoomPrefix() {
 
 export function buildDailyRoomName(sessionType, sessionId) {
   const safeId = String(sessionId || '').replace(/[^a-zA-Z0-9-_]/g, '')
-  const type = sessionType === 'dietitian' || sessionType === 'doctor' ? sessionType : 'coach'
+  const type = sessionType === 'dietitian' ? sessionType : 'coach'
   return `${getDailyRoomPrefix()}-${type}-${safeId}`.toLowerCase()
 }
 
@@ -24,7 +24,7 @@ export function parseDailyRoomName(roomName) {
   const prefix = `${getDailyRoomPrefix().toLowerCase()}-`
   if (!raw.startsWith(prefix)) return null
   const rest = raw.slice(prefix.length)
-  const m = rest.match(/^(coach|dietitian|doctor)-(.+)$/)
+  const m = rest.match(/^(coach|dietitian)-(.+)$/)
   if (!m) return null
   return { sessionType: m[1], sessionId: m[2] }
 }

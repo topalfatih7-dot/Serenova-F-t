@@ -33,7 +33,6 @@ export const config = { api: { bodyParser: false } }
 const SESSION_KEYS = {
   coach: 'coachSessions',
   dietitian: 'dietitianSessions',
-  doctor: 'doctorSessions',
 }
 
 async function createToken(roomName, { userName, isOwner, userId, expUnix }) {
@@ -74,7 +73,7 @@ async function findSessionAsAdmin(admin, sessionId, sessionType) {
   const key = SESSION_KEYS[type]
   const { data: members, error } = await admin
     .from('members')
-    .select('id, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+    .select('id, assigned_coach_id, assigned_dietitian_id, data')
     .limit(500)
   if (error) return { ok: false, error: error.message }
 
@@ -95,7 +94,7 @@ async function findSessionAsAdmin(admin, sessionId, sessionType) {
 }
 
 function normalizeStaffRole(role) {
-  if (role === 'dietitian' || role === 'doctor') return role
+  if (role === 'dietitian') return role
   return 'coach'
 }
 

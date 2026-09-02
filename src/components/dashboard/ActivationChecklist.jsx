@@ -28,7 +28,6 @@ export default function ActivationChecklist({
   myPrograms = [],
   coachSessions = [],
   dietitianSessions = [],
-  doctorSessions = [],
 }) {
   const userId = user?.id
   const [dismissed, setDismissed] = useState(() => wasDismissed(userId))
@@ -42,8 +41,7 @@ export default function ActivationChecklist({
     const paid = isPaidMembership(membership)
     const hasProgram = (myPrograms || []).length > 0
     const hasSession = (coachSessions || []).length
-      + (dietitianSessions || []).length
-      + (doctorSessions || []).length > 0
+      + (dietitianSessions || []).length > 0
 
     const list = [
       {
@@ -69,7 +67,7 @@ export default function ActivationChecklist({
       list.push({
         id: 'session',
         label: 'İlk randevunu al',
-        hint: 'Koç, diyetisyen veya doktor görüşmesi',
+        hint: 'Koç veya diyetisyen görüşmesi',
         done: hasSession,
         to: '/schedule',
         icon: CalendarCheck,
@@ -87,7 +85,7 @@ export default function ActivationChecklist({
     return list
   }, [
     user, membership, packageConfig, myPrograms,
-    coachSessions, dietitianSessions, doctorSessions,
+    coachSessions, dietitianSessions,
   ])
 
   const allDone = steps.every((s) => s.done)

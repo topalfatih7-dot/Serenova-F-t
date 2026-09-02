@@ -8,11 +8,10 @@ import { isWithinCancelNoticeWindow } from '../../utils/sessionCancelRules'
 const AVATAR_STYLES = {
   coach: { live: 'bg-red-100 text-red-600', idle: 'bg-brand-100 text-brand-600' },
   dietitian: { live: 'bg-red-100 text-red-600', idle: 'bg-sage-100 text-sage-600' },
-  doctor: { live: 'bg-red-100 text-red-600', idle: 'bg-amber-100 text-amber-700' },
 }
 
 /**
- * Koç / diyetisyen / doktor panelinde randevu + görüntülü görüşme satırı.
+ * Koç / diyetisyen panelinde randevu + görüntülü görüşme satırı.
  */
 export default function StaffAppointmentRow({
   memberName,
@@ -32,7 +31,7 @@ export default function StaffAppointmentRow({
   onCancel,
   responding = false,
 }) {
-  const role = normalizeStaffRole(accentRole || (isCoach ? 'coach' : sessionType === 'doctor' ? 'doctor' : 'dietitian'))
+  const role = normalizeStaffRole(accentRole || (isCoach ? 'coach' : 'dietitian'))
   const styles = AVATAR_STYLES[role] || AVATAR_STYLES.coach
   const date = new Date(dateISO)
   const dateLabel = isToday(date) ? 'Bugün' : format(date, 'd MMMM yyyy', { locale: tr })

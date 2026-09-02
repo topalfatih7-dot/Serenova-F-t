@@ -5,7 +5,7 @@ import { staffCollabMembersSignature } from '../services/staffCollabChatDb'
 
 export const CHAT_CONSENT_KEY = 'yeniform-chat-consent-v1'
 
-export const CHAT_CONSENT_TEXT = `Bu mesajlaşma alanı, atanmış koçunuz, diyetisyeniniz ve/veya doktorunuzla paketiniz kapsamında iletişim kurmanız içindir.
+export const CHAT_CONSENT_TEXT = `Bu mesajlaşma alanı, atanmış koçunuz ve/veya diyetisyeninizle paketiniz kapsamında iletişim kurmanız içindir.
 
 Gönderdiğiniz ve aldığınız tüm mesajlar güvenli şekilde kaydedilir; hizmet kalitesi, uyumluluk ve olası süreç takipleri için saklanabilir.
 
@@ -42,19 +42,6 @@ export function getMemberChatContacts(member, staffList = []) {
     }
   }
 
-  if (member.assignedDoctorId) {
-    const doctor = staffList.find((s) => String(s.id) === String(member.assignedDoctorId))
-    if (doctor) {
-      contacts.push({
-        role: 'doctor',
-        staffId: doctor.id,
-        name: doctor.name,
-        title: publicStaffTitle(doctor) || 'Doktorunuz',
-        photo: doctor.photo,
-      })
-    }
-  }
-
   return contacts
 }
 
@@ -64,15 +51,12 @@ export function getStaffClients(members, role, staffId) {
   const normalizedRole = normalizeStaffRole(role)
   const assignmentKey = normalizedRole === 'coach'
     ? 'assignedCoachId'
-    : normalizedRole === 'doctor'
-      ? 'assignedDoctorId'
-      : 'assignedDietitianId'
+    : 'assignedDietitianId'
 
   return (members || []).filter((m) => {
     const status = m.membershipStatus || 'active'
     if (status !== 'active' && status !== 'expiring') return false
     if (String(m[assignmentKey] || '') !== sid) return false
-    if (normalizedRole === 'doctor') return true
     if (!isPaidMembership(m.membership)) return false
     if (normalizedRole === 'coach') {
       return packageIncludesCoach(m.packageConfig) || Boolean(m.assignedCoachId)
@@ -126,9 +110,6 @@ export function memberChatHydrationSignature(member) {
   if (packageIncludesDietitian(pkg) && member.assignedDietitianId) {
     parts.push(`diet:${member.assignedDietitianId}`)
   }
-  if (member.assignedDoctorId) {
-    parts.push(`doctor:${member.assignedDoctorId}`)
-  }
   return parts.join('|')
 }
 
@@ -165,8 +146,7 @@ export function memberHasChatAccess(member) {
   const pkg = member?.packageConfig || {}
   return Boolean(
     (packageIncludesCoach(pkg) && member?.assignedCoachId)
-    || (packageIncludesDietitian(pkg) && member?.assignedDietitianId)
-    || Boolean(member?.assignedDoctorId),
+    || (packageIncludesDietitian(pkg) && member?.assignedDietitianId),
   )
 }
 
@@ -213,26 +193,17 @@ export function sortAdminStaffThreads(threads, perspective = 'admin') {
 export function staffRoleLabel(role) {
   if (role === 'dietitian') return 'Diyetisyen'
   if (role === 'coach') return 'Koç'
-  if (role === 'doctor') return 'Doktor'
   return 'Personel'
 }
 
 export function staffCollabThreadUnreadCount(thread, perspective = 'coach') {
   if (!thread) return 0
-  const key = perspective === 'dietitian'
-    ? 'dietitianUnread'
-    : perspective === 'doctor'
-      ? 'doctorUnread'
-      : 'coachUnread'
+  const key = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
   return Number(thread[key] ?? thread.data?.[key] ?? 0)
 }
 
 export function sortStaffCollabThreads(threads, perspective = 'coach') {
-  const unreadKey = perspective === 'dietitian'
-    ? 'dietitianUnread'
-    : perspective === 'doctor'
-      ? 'doctorUnread'
-      : 'coachUnread'
+  const unreadKey = perspective === 'dietitian' ? 'dietitianUnread' : 'coachUnread'
   return [...threads].sort((a, b) => {
     const aUnread = Number(a[unreadKey] || a.data?.[unreadKey] || 0) > 0 ? 1 : 0
     const bUnread = Number(b[unreadKey] || b.data?.[unreadKey] || 0) > 0 ? 1 : 0
@@ -250,11 +221,9 @@ export function buildStaffCollabInbox(members, threads, staffUser) {
     const thread = threadByMember.get(String(member.id)) || null
     let peerName = ''
     if (role === 'coach') {
-      peerName = [thread?.dietitianName, thread?.doctorName].filter(Boolean).join(' · ')
+      peerName = thread?.dietitianName || ''
     } else if (role === 'dietitian') {
-      peerName = [thread?.coachName, thread?.doctorName].filter(Boolean).join(' · ')
-    } else if (role === 'doctor') {
-      peerName = [thread?.coachName, thread?.dietitianName].filter(Boolean).join(' · ')
+      peerName = thread?.coachName || ''
     }
     return { member, thread, peerName }
   })

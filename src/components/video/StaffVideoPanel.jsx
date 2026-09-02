@@ -6,7 +6,7 @@ import { isCoachRole, sessionTypeForRole, sessionsKeyForRole } from '../../utils
 import { VIDEO_ACTIVE_STATUSES } from '../../utils/sessionCancelRules'
 
 /**
- * Koç / diyetisyen / doktor paneli için "Görüntülü Görüşme" alanı.
+ * Koç / diyetisyen paneli için "Görüntülü Görüşme" alanı.
  */
 export default function StaffVideoPanel({ clients, role }) {
   const sessionType = sessionTypeForRole(role)

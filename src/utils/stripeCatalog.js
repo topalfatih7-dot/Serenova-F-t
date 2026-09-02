@@ -146,7 +146,7 @@ export function markNoticeSent(notices, { subId, periodEnd, amount, kind }) {
 
 export function catalogTiersFromPlan(plan) {
   if (!plan || plan.id === 'free') return []
-  const oneTime = plan.billingType === 'one_time' || plan.id === 'doktor'
+  const oneTime = plan.billingType === 'one_time'
   const tiers = Array.isArray(plan.pricingTiers || plan.pricing_tiers)
     ? (plan.pricingTiers || plan.pricing_tiers)
     : []
@@ -216,7 +216,7 @@ export function collectMemberStripeSubscriptionRefs(memberRow = {}) {
   const packages = Array.isArray(data.activePackages) ? data.activePackages : []
   for (const pkg of packages) {
     if (pkg?.status && pkg.status !== 'active') continue
-    if (pkg?.packageConfig?.billingType === 'one_time' || pkg?.planId === 'doktor') continue
+    if (pkg?.packageConfig?.billingType === 'one_time') continue
     const provider = String(pkg?.provider || 'stripe').trim()
     if (provider === 'revenuecat' || provider === 'admin') continue
     const sid = String(pkg?.stripeSubscriptionId || '').trim()
@@ -236,7 +236,6 @@ export function collectMemberStripeSubscriptionRefs(memberRow = {}) {
     && !refs.some((r) => r.subscriptionId === legacySid)
     && membership
     && membership !== 'free'
-    && membership !== 'doktor'
   ) {
     refs.push({
       subscriptionId: legacySid,

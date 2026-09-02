@@ -6,7 +6,7 @@ import { sendExpoPushToStaff } from './_expoPush.js'
 
 const TZ = 'Europe/Istanbul'
 const CANCEL_NOTICE_MS = 24 * 60 * 60 * 1000
-const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
+const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions' }
 
 function sessionKey(type) {
   return SESSION_KEYS[type] || 'dietitianSessions'
@@ -18,7 +18,6 @@ function defaultDays(type) {
 
 function assignColumn(type) {
   if (type === 'coach') return 'assigned_coach_id'
-  if (type === 'doctor') return 'assigned_doctor_id'
   return 'assigned_dietitian_id'
 }
 
@@ -40,14 +39,14 @@ export async function rescheduleSessionForMember(admin, userId, {
   days,
 }) {
   const type = String(sessionType || '').toLowerCase()
-  if (!['coach', 'dietitian', 'doctor'].includes(type)) {
+  if (!['coach', 'dietitian'].includes(type)) {
     return { ok: false, error: 'Geçersiz randevu türü.' }
   }
   if (!sessionId) return { ok: false, error: 'Eksik parametre.' }
 
   const { data: memberRow, error } = await admin
     .from('members')
-    .select('id, name, data, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .select('id, name, data, assigned_coach_id, assigned_dietitian_id')
     .eq('id', userId)
     .maybeSingle()
   if (error || !memberRow) return { ok: false, error: 'Üye kaydı bulunamadı.' }

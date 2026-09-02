@@ -47,7 +47,7 @@
 - `/membership` — Fiyatlandırma
 - `/hakkimizda` — Hakkında
 - `/blog` + `/blog/:slug` — Blog
-- `/team/coaches`, `/team/dietitians`, `/team/doctors` — Ekip
+- `/team/coaches`, `/team/dietitians` — Ekip (`/team/doctors` → `/hakkimizda`)
 - `/stories` — Başarı hikayeleri
 - `/corporate` — Kurumsal
 

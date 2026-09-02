@@ -25,7 +25,7 @@ import { scrollToContactSection } from '../../utils/scrollToContact'
 
 const FEATURE_ICONS = {
   'Yeniform Kişisel Sağlık Analizi': { Icon: HeartPulse, className: 'text-rose-500 bg-rose-50' },
-  'Doktor tarafından kan tahlili analizi': { Icon: Droplets, className: 'text-red-500 bg-red-50' },
+  'Kan Tahlili Testi Analizi': { Icon: Droplets, className: 'text-red-500 bg-red-50' },
   'Manuel Kalori Hesaplama': { Icon: Calculator, className: 'text-sky-600 bg-sky-50' },
   'Fotoğraflı Kalori Tespiti': { Icon: Camera, className: 'text-violet-600 bg-violet-50' },
   'Diyetisyen Görüşmesi / Ay': { Icon: UserRound, className: 'text-emerald-600 bg-emerald-50' },
@@ -108,7 +108,7 @@ export default function MembershipComparisonSection({
             yan yana
           </h2>
           <p className="section-subtitle mx-auto mt-2 max-w-xl text-sm">
-            Abonelik planlarında 1, 3 veya 6 aylık süre; Doktor Paketi tek seferliktir.
+            Abonelik planlarında 1, 3 veya 6 aylık süre seçebilirsiniz.
           </p>
         </div>
 

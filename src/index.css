@@ -236,7 +236,7 @@ html.dark .wellness-mesh-bg {
     linear-gradient(165deg, var(--yf-page) 0%, var(--color-brand-50) 45%, var(--color-sage-50) 100%);
 }
 
-/* Kadro profili — koç / diyetisyen / doktor hero */
+/* Kadro profili — koç / diyetisyen hero */
 .staff-profile-hero {
   position: relative;
   overflow: hidden;
@@ -251,9 +251,6 @@ html.dark .wellness-mesh-bg {
   background: linear-gradient(118deg, #2d6242 0%, #357a50 34%, #449664 64%, #5fad7f 100%);
 }
 
-.staff-profile-hero--doctor {
-  background: linear-gradient(118deg, #1a2332 0%, #1d526f 36%, #2d8fc4 70%, #357a50 100%);
-}
 
 .staff-profile-hero-wash {
   pointer-events: none;
@@ -301,7 +298,7 @@ html.dark .wellness-mesh-bg {
   mask-image: linear-gradient(to bottom left, #000 10%, transparent 78%);
 }
 
-/* Kadro listesi — koç / diyetisyen / doktor */
+/* Kadro listesi — koç / diyetisyen */
 .team-list-page {
   position: relative;
   isolation: isolate;
@@ -326,18 +323,9 @@ html.dark .wellness-mesh-bg {
     linear-gradient(180deg, #e0f0e6 0%, #f4fbf7 48%, #f7fbf9 100%);
 }
 
-.team-list-page--doctors {
-  background-color: #eef3f7;
-  background-image:
-    radial-gradient(ellipse 85% 55% at -8% 18%, color-mix(in srgb, var(--color-brand-300) 32%, transparent), transparent 58%),
-    radial-gradient(ellipse 60% 48% at 108% 8%, color-mix(in srgb, var(--color-cream-300) 55%, transparent), transparent 52%),
-    radial-gradient(ellipse 70% 42% at 62% 108%, color-mix(in srgb, var(--color-sage-200) 40%, transparent), transparent 56%),
-    linear-gradient(180deg, #e4eaef 0%, #f3f7fa 46%, #f7faf8 100%);
-}
 
 html.dark .team-list-page--coaches,
-html.dark .team-list-page--dietitians,
-html.dark .team-list-page--doctors {
+html.dark .team-list-page--dietitians {
   background-color: var(--yf-page);
   background-image:
     radial-gradient(ellipse 85% 55% at -8% 18%, color-mix(in srgb, var(--color-brand-700) 38%, transparent), transparent 58%),
@@ -369,9 +357,6 @@ html.dark .team-list-page--doctors {
   background-image: radial-gradient(circle, color-mix(in srgb, var(--color-sage-500) 24%, transparent) 1.1px, transparent 1.25px);
 }
 
-.team-list-page--doctors .team-list-board__dots {
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--color-brand-700) 16%, transparent) 1.1px, transparent 1.25px);
-}
 
 .team-list-board__blob--a {
   left: -8rem;
@@ -401,13 +386,6 @@ html.dark .team-list-page--doctors {
   background: color-mix(in srgb, var(--color-mint-400) 28%, transparent);
 }
 
-.team-list-page--doctors .team-list-board__blob--a {
-  background: color-mix(in srgb, var(--color-brand-400) 28%, transparent);
-}
-
-.team-list-page--doctors .team-list-board__blob--b {
-  background: color-mix(in srgb, var(--color-cream-300) 70%, transparent);
-}
 
 .team-list-board__ring {
   right: 8%;
@@ -447,9 +425,6 @@ html.dark .team-list-page--doctors {
   background: linear-gradient(180deg, color-mix(in srgb, white 92%, var(--color-sage-50)) 0%, white 38%);
 }
 
-.team-member-card--doctor {
-  background: linear-gradient(180deg, color-mix(in srgb, white 92%, var(--color-cream-100)) 0%, white 38%);
-}
 
 .team-member-card::before {
   content: "";
@@ -465,9 +440,6 @@ html.dark .team-list-page--doctors {
   background: linear-gradient(90deg, var(--color-sage-500), var(--color-mint-400) 60%, var(--color-brand-400));
 }
 
-.team-member-card--doctor::before {
-  background: linear-gradient(90deg, var(--color-cream-800), var(--color-brand-500) 55%, var(--color-sage-500));
-}
 
 .team-member-card:hover {
   transform: translateY(-6px);
@@ -481,9 +453,6 @@ html.dark .team-list-page--doctors {
   border-color: color-mix(in srgb, var(--color-sage-300) 60%, white);
 }
 
-.team-member-card--doctor:hover {
-  border-color: color-mix(in srgb, var(--color-cream-300) 70%, white);
-}
 
 .team-member-card:focus-visible {
   outline: 2px solid var(--color-brand-500);
@@ -524,11 +493,6 @@ html.dark .team-list-page--doctors {
     linear-gradient(180deg, rgba(45, 98, 66, 0.16) 0%, transparent 34%, transparent 42%, rgba(45, 98, 66, 0.88) 100%);
 }
 
-.team-member-card--doctor .team-member-card__shade {
-  background:
-    radial-gradient(ellipse 70% 55% at 88% 0%, rgba(29, 82, 111, 0.32), transparent 58%),
-    linear-gradient(180deg, rgba(26, 35, 50, 0.2) 0%, transparent 34%, transparent 42%, rgba(26, 35, 50, 0.9) 100%);
-}
 
 .team-member-card__orb {
   position: absolute;
@@ -604,20 +568,6 @@ html.dark .team-list-page--doctors {
   border-color: color-mix(in srgb, var(--color-sage-400) 28%, transparent);
 }
 
-.team-member-card--doctor .team-member-card__tag {
-  border-color: color-mix(in srgb, var(--color-cream-500) 22%, transparent);
-  background: color-mix(in srgb, var(--color-cream-100) 42%, rgb(255 255 255 / 0.82));
-  color: var(--color-cream-800);
-}
-
-.team-member-card--doctor .team-member-card__tag::before {
-  background: var(--color-cream-700);
-}
-
-.team-member-card--doctor:hover .team-member-card__tag {
-  background: color-mix(in srgb, var(--color-cream-100) 62%, white);
-  border-color: color-mix(in srgb, var(--color-cream-500) 32%, transparent);
-}
 
 .team-member-card__certs {
   display: inline-flex;
@@ -664,19 +614,6 @@ html.dark .team-list-page--doctors {
   color: var(--color-sage-600);
 }
 
-.team-member-card--doctor .team-member-card__certs {
-  border-color: color-mix(in srgb, var(--color-cream-300) 70%, white);
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, white 90%, var(--color-cream-100)) 0%,
-      color-mix(in srgb, white 74%, var(--color-cream-100)) 100%);
-  color: var(--color-cream-800);
-}
-
-.team-member-card--doctor .team-member-card__certs-icon {
-  background: color-mix(in srgb, var(--color-cream-700) 12%, white);
-  color: var(--color-cream-800);
-}
 
 .team-member-card__cta {
   display: inline-flex;
@@ -708,14 +645,6 @@ html.dark .team-list-page--doctors {
   background: linear-gradient(90deg, var(--color-sage-500), var(--color-mint-400));
 }
 
-.team-member-card--doctor .team-member-card__cta {
-  border-color: color-mix(in srgb, var(--color-cream-300) 80%, white);
-  color: var(--color-cream-800);
-}
-
-.team-member-card--doctor:hover .team-member-card__cta {
-  background: linear-gradient(90deg, var(--color-cream-800), var(--color-brand-600));
-}
 
 @media (max-width: 639px) {
   .team-list-board__ring {

@@ -333,7 +333,7 @@ export const ONLINE_DIYETISYEN_FIYAT = {
       h2: 'Online diyetisyen fiyatları 2026 ne kadar?',
       paragraphs: [
         'Yeni Form liste fiyatı: Eko Diyet **1.299 TL**, Diyet **2.499 TL**, VIP **4.999 TL** (aylık). Bireysel klinikler 2026’da çoğu zaman **2.000–6.000 TL/ay** bandında, çoğu zaman seans başı veya gizli teklifle çalışır.',
-        'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor ve Doktor satırları üyelik tablosundadır — bu sayfa diyetisyen ücretine odaklanır.',
+        'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor satırları üyelik tablosundadır — bu sayfa diyetisyen ücretine odaklanır.',
       ],
     },
     {
@@ -355,7 +355,7 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     {
       h2: 'Neden fiyat sayfası üyelikten ayrı?',
       paragraphs: [
-        'Üyelik sayfası Diyet + Spor + Doktor + VIP karşılaştırmasıdır. “Online diyetisyen fiyatları” niyeti tüm wellness tablosunu değil, **diyetisyen ücretini** ister. Bu URL yalnızca o niyete cevap verir.',
+        'Üyelik sayfası Diyet + Spor + VIP karşılaştırmasıdır. “Online diyetisyen fiyatları” niyeti tüm wellness tablosunu değil, **diyetisyen ücretini** ister. Bu URL yalnızca o niyete cevap verir.',
         'Rakip klinikler fiyatı DM’de gizleyebilir. Liste fiyatını burada açık yazarız; kampanya varsa üyelik tablosunda görünür.',
       ],
     },
@@ -369,7 +369,7 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     { q: 'Online diyetisyen ücretleri klinikten neden farklı?', a: 'Video altyapısı, panel programı ve ölçek listededir. Klinik teklifi muayene, şehir ve uzmanlıkla kişiye özel kalabilir.' },
     { q: 'Seans başı mı aylık mı?', a: 'Paket aylıktır; seans hakkı pakete dahildir.' },
     { q: '3 veya 6 aylık indirim var mı?', a: 'Çok aylık katmanlar üyelik sayfasındaki fiyat tablosunda yer alır.' },
-    { q: 'Sadece bir seans alınır mı?', a: 'Hayır. Paket modelidir. Doktor paketi ayrı ve tek seferliktir; diyetisyen hizmeti değildir.' },
+    { q: 'Sadece bir seans alınır mı?', a: 'Hayır. Paket modelidir; diyetisyen hizmeti aylık aboneliktir.' },
     { q: 'Koçluk fiyata dahil mi?', a: 'Diyet paketinde hayır. VIP’de koç + diyetisyen birliktedir.' },
     { q: 'İptal nasıl olur?', a: 'Stripe Müşteri Portalı ve iptal politikası yasal metinlerde açıklanır.' },
   ],
@@ -670,7 +670,7 @@ export const ONLINE_WELLNESS = {
       h2: 'Hangi hizmetler dahildir?',
       paragraphs: [
         'Platform içinde **online diyetisyenlik**, **online spor koçluğu**, kişisel sağlık analizi, kalori takibi ve video görüşme yer alır. Paket kapsamına göre birini veya ikisini birden kullanabilirsiniz.',
-        'Doktor paketi; tek seferlik sağlık danışmanlığı görüşmesidir. VIP paket ise koç ve diyetisyeni bir arada sunar — Türkiye\'de bu entegrasyonu online sunan az sayıda platformdan biriyiz.',
+        'VIP paket koç ve diyetisyeni bir arada sunar — Türkiye\'de bu entegrasyonu online sunan az sayıda platformdan biriyiz.',
       ],
     },
   ],

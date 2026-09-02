@@ -18,7 +18,7 @@ function productNameFor({ planName, months, oneTime }) {
 
 function productDescriptionFor({ planName, months, oneTime }) {
   const name = String(planName || '').trim() || 'Paket'
-  if (oneTime) return `${name} — 1 online doktor görüşmesi`
+  if (oneTime) return `${name} — tek seferlik ödeme`
   const durationLabel = Number(months) === 1 ? '1 ay' : `${months} ay`
   return `${name} — ${durationLabel} üyelik · süre sonunda güncel katalog fiyatıyla yenilenir`
 }

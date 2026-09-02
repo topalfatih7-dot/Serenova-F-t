@@ -36,7 +36,7 @@
 ## 2026-07-28 / 29 delta (ürün)
 
 - AI Basic/Eko program+diyet üretimi kaldırıldı; koç/diyetisyen builder + admin program CRUD.
-- Freemium: ücretsiz kayıt + soft-lock; eski tek `eko` yeni satış kapalı. Satılan: `eko_diyet` / `diyet` / `eko_spor` / `spor` / `doktor` / `vip`.
+- Freemium: ücretsiz kayıt + soft-lock; eski tek `eko` yeni satış kapalı. Satılan: `eko_diyet` / `diyet` / `eko_spor` / `spor` / `vip`.
 - Staff GPT-5.4 sağlık skoru + `staffBrief`; üye dashboard `HealthScoreCard` (brief yok).
 - Pazarlama / legal copy paid-only modele hizalandı (2026-07-28).
 - Faz 2–3: `UnpaidMemberGate`, Stripe Portal (`stripe_customer_id`), `staff_earnings` + video attendance.
@@ -128,7 +128,7 @@ Kararlar: istatistik floor **kilitli (2026-08-13, 750+ / 20–25)**; kütüphane
 ### Faz 5 + eko cleanup (2026-07-29)
 
 - Recurring checkout → Stripe Subscription (`interval_count` = 1/3/6 ay); `invoice.paid` süre uzatır
-- Doktor paketi → `mode: payment` (tek seferlik)
+- Doktor paketi kaldırıldı (2026-09-02); satış ve staff rolü yok.
 - Webhook: `customer.subscription.deleted` → `stripeSubscriptionId` temizliği
 - **Ops:** Stripe Dashboard webhook’a `invoice.paid` + `customer.subscription.deleted` eklendi (Live, 2026-08-14; mevcut `checkout.session.*` kaldı)
 - `eko` plan pasif / satış kapalı; üye 0

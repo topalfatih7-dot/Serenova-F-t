@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Uzman Kadro',
-    desc: 'Diyetisyen, koç ve doktor desteği',
+    desc: 'Diyetisyen ve koç desteği',
   },
   {
     icon: CalendarDays,

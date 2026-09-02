@@ -22,7 +22,7 @@ const GUARANTEES = [
   {
     icon: BadgeCheck,
     title: 'Doğrulanmış uzman kadro',
-    desc: 'Koç, diyetisyen ve doktor eşleşmeleri diploma ve deneyim kontrolüyle yapılır; rastgele atama yoktur.',
+    desc: 'Koç ve diyetisyen eşleşmeleri diploma ve deneyim kontrolüyle yapılır; rastgele atama yoktur.',
     accent: 'from-sage-500 to-sage-600',
     rail: 'bg-sage-500',
   },

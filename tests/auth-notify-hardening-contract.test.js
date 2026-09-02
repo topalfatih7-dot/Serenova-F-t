@@ -11,9 +11,11 @@ function read(rel) {
 }
 
 describe('auth/notification hardening contracts (2026-08-31)', () => {
-  it('web collab realtime includes doctorId', () => {
+  it('web collab realtime matches assigned coach and dietitian ids', () => {
     const src = read('src/hooks/useRealtimeSync.js')
-    assert.ok(src.includes('thread.doctorId'))
+    assert.ok(src.includes('thread.coachId'))
+    assert.ok(src.includes('thread.dietitianId'))
+    assert.equal(src.includes('thread.doctorId'), false)
   })
 
   it('application-notify has no cron role bypass', () => {

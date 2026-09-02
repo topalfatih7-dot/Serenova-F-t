@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { unlockNotificationAudio } from '../../utils/browserNotifications'
 import { motion } from 'framer-motion'
 import useStickChatToBottom from '../../hooks/useStickChatToBottom'
-import { Send, Dumbbell, Apple, UserRound, Info, Radio, Stethoscope } from 'lucide-react'
+import { Send, Dumbbell, Apple, UserRound, Info, Radio } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -18,12 +18,6 @@ const ROLE_META = {
     other: 'bg-gradient-to-br from-sage-50 to-emerald-50 text-cream-900 ring-1 ring-sage-100',
     icon: Apple,
     staffLabel: 'Diyetisyen',
-  },
-  doctor: {
-    own: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-200/40',
-    other: 'bg-gradient-to-br from-amber-50 to-orange-50 text-cream-900 ring-1 ring-amber-100',
-    icon: Stethoscope,
-    staffLabel: 'Doktor',
   },
 }
 

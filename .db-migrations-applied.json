@@ -97,6 +97,7 @@
   "20260901_influencer_keep_instagram.sql",
   "20260902_influencer_subscription_earnings.sql",
   "20260903_admin_outbound_messages.sql",
+  "20260902_remove_doctor_role_and_plan.sql",
   "20260904_auth_notify_hardening.sql",
   "20260905_push_receipts.sql",
   "20260906_device_push_tokens_multi_device.sql",

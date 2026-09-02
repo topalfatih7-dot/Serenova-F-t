@@ -309,7 +309,7 @@ export function AppProvider({ children }) {
 
   const staffCollabUnreadCount = useMemo(() => {
     const role = normalizeStaffRole(currentStaff?.role)
-    if (role !== 'coach' && role !== 'dietitian' && role !== 'doctor') return 0
+    if (role !== 'coach' && role !== 'dietitian') return 0
     return staffCollabThreads.reduce((sum, t) => sum + staffCollabThreadUnreadCount(t, role), 0)
   }, [staffCollabThreads, currentStaff?.role])
 
@@ -1489,7 +1489,6 @@ export function AppProvider({ children }) {
 
   const sessionKey = (type) => {
     if (type === 'coach') return 'coachSessions'
-    if (type === 'doctor') return 'doctorSessions'
     return 'dietitianSessions'
   }
 
@@ -1839,7 +1838,6 @@ export function AppProvider({ children }) {
     supportSchedule: currentMember?.supportSchedule || null,
     coachSessions: currentMember?.coachSessions || [],
     dietitianSessions: currentMember?.dietitianSessions || [],
-    doctorSessions: currentMember?.doctorSessions || [],
     notifications: isStaff
       ? (currentStaff?.notifications || EMPTY_LIST)
       : (currentMember?.notifications || EMPTY_LIST),
@@ -1887,7 +1885,6 @@ export function AppProvider({ children }) {
     currentMember?.supportSchedule,
     currentMember?.coachSessions,
     currentMember?.dietitianSessions,
-    currentMember?.doctorSessions,
     currentMember?.notifications,
     isStaff,
     currentStaff?.notifications,

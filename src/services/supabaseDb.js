@@ -15,7 +15,7 @@ import { computePremiumExpiresAt, syncMembershipExpiryStatus, getDurationMonths 
 import { notifyTelegram } from './telegramNotify'
 import { notifyMemberProgram, pushMemberNotification, buildMemberNotification } from './memberNotifications'
 import { buildInitialMemberNotifications } from '../data/memberNotificationTemplates'
-import { normalizeStaffRole, staffRoleLabel } from '../utils/staffRoles'
+import { normalizeStaffRole, staffRoleLabel, isKnownStaffRole } from '../utils/staffRoles'
 import { normalizeStaffProfile, staffProfileDataPayload } from '../data/staffProfile'
 import { rowToInfluencer } from '../utils/influencerAccount'
 import { BLOG_AUTHOR } from '../data/blogPosts'
@@ -69,7 +69,7 @@ const today = () => new Date().toISOString().split('T')[0]
 const nowISO = () => new Date().toISOString()
 
 // --------------------------- map: row <-> object ---------------------------
-const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'assignedDoctorId', 'role', 'password', '_contactHidden']
+const MEMBER_COLUMN_KEYS = ['id', 'email', 'name', 'phone', 'membership', 'membershipStatus', 'assignedCoachId', 'assignedDietitianId', 'role', 'password', '_contactHidden']
 
 function memberData(member) {
   const data = {}
@@ -94,7 +94,6 @@ function memberToRow(member) {
     membership_status: member.membershipStatus || 'active',
     assigned_coach_id: member.assignedCoachId || null,
     assigned_dietitian_id: member.assignedDietitianId || null,
-    assigned_doctor_id: member.assignedDoctorId || null,
     data: memberData(member),
     updated_at: nowISO(),
   }
@@ -110,7 +109,6 @@ function rowToMember(row, { contactHidden = false } = {}) {
   const {
     assignedCoachId: _c,
     assignedDietitianId: _d,
-    assignedDoctorId: _doc,
     ...dataRest
   } = data
   const hideContact = contactHidden || !Object.prototype.hasOwnProperty.call(row, 'email')
@@ -124,7 +122,6 @@ function rowToMember(row, { contactHidden = false } = {}) {
     membershipStatus: row.membership_status,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
-    assignedDoctorId: row.assigned_doctor_id ?? null,
     role: row.role || dataRest.role || 'member',
   }
   if (hideContact) {
@@ -172,9 +169,12 @@ function rowToPayment(row) {
 function findStaffMatch(user, staffList) {
   if (!user) return null
   const email = (user.email || '').toLowerCase()
-  return staffList.find((s) => (s.email || '').toLowerCase() === email)
+  const match = staffList.find((s) => (s.email || '').toLowerCase() === email)
     || staffList.find((s) => s.id === user.id)
     || null
+  if (!match) return null
+  if (!isKnownStaffRole(match.role)) return null
+  return match
 }
 
 function findInfluencerMatch(user, influencerRow) {
@@ -558,7 +558,7 @@ export async function fetchMemberSessions(memberId) {
     ;({ data, error } = await supabase.from('members_staff_safe').select('data').eq('id', memberId).maybeSingle())
   }
   if (error || !data) {
-    return { coachSessions: [], dietitianSessions: [], doctorSessions: [] }
+    return { coachSessions: [], dietitianSessions: [] }
   }
   return extractSessionsFromMemberData(data.data || {})
 }
@@ -576,7 +576,6 @@ export async function fetchAdminSessionSummaries() {
     return [
       ...(sessions.coachSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Koç' })),
       ...(sessions.dietitianSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Diyetisyen' })),
-      ...(sessions.doctorSessions || []).map((s) => ({ ...s, memberId: row.id, memberName: name, sessionType: 'Doktor' })),
     ]
   })
 }
@@ -658,7 +657,7 @@ function rowToContactInquiry(row) {
 }
 
 function rowToPlan(row) {
-  const knownSellable = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
+  const knownSellable = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'vip']
   // Kolon yoksa: bilinen satılanlar veya fiyatı olan dinamik paketler satılabilir
   const isSellable = row.is_sellable == null
     ? (knownSellable.includes(row.id) || (row.id !== 'free' && Number(row.price) > 0))
@@ -681,7 +680,7 @@ function rowToPlan(row) {
     isSellable,
     billingType: row.billing_type === 'one_time'
       ? 'one_time'
-      : (row.id === 'doktor' ? 'one_time' : 'recurring'),
+      : 'recurring',
     entitlements: hasEnt ? normalizeEntitlements(entRaw) : normalizeEntitlements({}),
     sortOrder: row.sort_order || 0,
   }
@@ -1013,10 +1012,8 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
   const schedule = profile.supportSchedule || null
   const assignedCoachId = null
   const assignedDietitianId = null
-  const assignedDoctorId = null
   const coachSessions = []
   const dietitianSessions = []
-  const doctorSessions = []
 
   // Koç/diyetisyen ve randevular admin panelinden elle atanır
 
@@ -1048,7 +1045,6 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     lastActiveAt: today(),
     coachSessions,
     dietitianSessions,
-    doctorSessions,
     notifications: buildInitialMemberNotifications(),
     tasks: [
       { id: `t1-${Date.now()}`, type: 'checkin', title: 'Günlük check-in', done: false, due: 'Bugün' },
@@ -1059,7 +1055,6 @@ async function buildAndPersistMember(profile, membership, packageConfig, opts = 
     availability: profile.availability || {},
     assignedCoachId,
     assignedDietitianId,
-    assignedDoctorId,
     settings: { theme: 'light', language: 'tr', emailNotifs: true, pushNotifs: true, soundNotifs: true, reminderNotifs: true },
     emailVerifiedAt: null,
     phoneVerifiedAt: null,
@@ -2860,12 +2855,11 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
   const staffList = (staffRows || []).map(rowToStaff)
   const { data: allMemberRows } = await supabase
     .from('members')
-    .select('id, membership, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+    .select('id, membership, assigned_coach_id, assigned_dietitian_id, data')
   const members = (allMemberRows || []).map((row) => rowToMember(row))
 
   const prevCoachId = member.assignedCoachId
   const prevDietitianId = member.assignedDietitianId
-  const prevDoctorId = member.assignedDoctorId
   const prevMembership = member.membership
   const schedule = options.supportSchedule ?? member.supportSchedule
 
@@ -2887,7 +2881,7 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
     const cfg = getDefaultPackageForPlan(planId, months)
 
     if (targetingFree) {
-      // Abonelik paketlerini kaldır; aktif tek seferlik (doktor) korunur
+      // Abonelik paketlerini kaldır; aktif tek seferlik paketler ayrıca korunur.
       activePackages = activePackages.filter((p) => isOneTimePlan(p.planId) && isPackageEntryActive(p))
     } else {
       const amount = await resolveAdminAssignPrice(planId, months || 1, options.amount)
@@ -2943,10 +2937,8 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
     supportSchedule: schedule,
     assignedCoachId: options.assignedCoachId !== undefined ? options.assignedCoachId : member.assignedCoachId,
     assignedDietitianId: options.assignedDietitianId !== undefined ? options.assignedDietitianId : member.assignedDietitianId,
-    assignedDoctorId: options.assignedDoctorId !== undefined ? options.assignedDoctorId : member.assignedDoctorId,
     coachSessions: options.coachSessions !== undefined ? options.coachSessions : (member.coachSessions || []),
     dietitianSessions: options.dietitianSessions !== undefined ? options.dietitianSessions : (member.dietitianSessions || []),
-    doctorSessions: options.doctorSessions !== undefined ? options.doctorSessions : (member.doctorSessions || []),
   }
 
   const activeAfter = activePackages.filter((p) => isPackageEntryActive(p))
@@ -3023,17 +3015,6 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
       type: 'assignment',
       title: 'Diyetisyeniniz atandı',
       message: `${dietitian?.name || 'Diyetisyeniniz'} artık sizinle çalışacak.`,
-      read: false,
-      createdAt: nowISO(),
-    })
-  }
-  if (updated.assignedDoctorId && updated.assignedDoctorId !== prevDoctorId) {
-    const doctor = staffList.find((s) => s.id === updated.assignedDoctorId)
-    notifications.unshift({
-      id: `n-${Date.now()}-doc`,
-      type: 'assignment',
-      title: 'Doktorunuz atandı',
-      message: `${doctor?.name || 'Doktorunuz'} ile görüşme planlayabilirsiniz.`,
       read: false,
       createdAt: nowISO(),
     })

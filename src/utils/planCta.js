@@ -1,5 +1,5 @@
 import { isPaidMembership } from '../data/membershipPlans'
-import { isOneTimePlan, memberHasActivePaidPackages } from './memberPackages'
+import { memberHasActivePaidPackages } from './memberPackages'
 
 const PLAN_RANK = {
   free: 0,
@@ -8,8 +8,7 @@ const PLAN_RANK = {
   eko_spor: 3,
   diyet: 4,
   spor: 5,
-  doktor: 6,
-  vip: 7,
+  vip: 6,
 }
 
 /** Plan kartı / karşılaştırma CTA metni */
@@ -19,7 +18,6 @@ export function getPlanCtaLabel(plan, { forMember = false, member = null, curren
   }
 
   if (plan.price === 0) return 'Paketsiz moda geç'
-  if (isOneTimePlan(plan.id)) return 'Doktor Paketi Ekle'
 
   const hasPaid = member
     ? memberHasActivePaidPackages(member)

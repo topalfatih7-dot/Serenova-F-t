@@ -57,29 +57,17 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-const PLAN_SORT = { eko_diyet: 0, diyet: 1, eko_spor: 2, spor: 3, doktor: 4, vip: 5 }
-const LEGACY_INACTIVE = ['free', 'eko', 'kurucu', 'gumus', 'altin', 'platinum', 'premium']
-
-const DOKTOR_PACKAGE_CONFIG = {
-  coachMeetingsPerMonth: 0,
-  dietitianMeetingsPerMonth: 0,
-  doctorMeetingsPerMonth: 0,
-  doctorSessionsTotal: 1,
-  billingType: 'one_time',
-  coachMeetingsPerWeek: 0,
-  durationMonths: 0,
-  durationWeeks: 0,
-  addOns: [],
-}
+const PLAN_SORT = { eko_diyet: 0, diyet: 1, eko_spor: 2, spor: 3, vip: 4 }
+const LEGACY_INACTIVE = ['free', 'eko', 'kurucu', 'gumus', 'altin', 'platinum', 'premium', 'doktor']
 
 /** Seed / eksik plan insert — admin marketing alanlarını ezmez */
 const ACTIVE_PLANS = [
   {
     id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage', icon: 'Salad',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, photoCalorie: true, manualCalorie: true },
     features: [
-      { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+      { text: 'Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
       { text: 'Ayda 1 Diyetisyen ile Online Görüşme', included: true },
@@ -99,9 +87,9 @@ const ACTIVE_PLANS = [
   {
     id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald', icon: 'Apple',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
+    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, photoCalorie: true, manualCalorie: true },
     features: [
-      { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+      { text: 'Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
       { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
@@ -121,7 +109,7 @@ const ACTIVE_PLANS = [
   {
     id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sky', icon: 'Footprints',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
+    entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -142,7 +130,7 @@ const ACTIVE_PLANS = [
   {
     id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue', icon: 'Dumbbell',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
       { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
@@ -161,21 +149,9 @@ const ACTIVE_PLANS = [
     ],
   },
   {
-    id: 'doktor', name: 'Doktor Paketi', price: 1500, period: 'Tek Seferlik', badge: 'Tek Seferlik', color: 'violet', icon: 'Stethoscope',
-    billing_type: 'one_time',
-    entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, photoCalorie: false, manualCalorie: false },
-    features: [
-      { text: '1 Online Doktor Görüşmesi', included: true },
-      { text: 'Görüntülü Görüşme', included: true },
-      { text: 'Mevcut üyeliğe ek paket olarak eklenebilir', included: true },
-    ],
-    limits: ['İhtiyaç duyduğunuz anda uzman desteği alın'],
-    pricing_tiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
-  },
-  {
     id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'gold', icon: 'Crown',
     billing_type: 'recurring',
-    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0, photoCalorie: true, manualCalorie: true },
+    entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, photoCalorie: true, manualCalorie: true },
     features: [
       { text: 'Kan Tahlili Testi Analizi', included: true },
       { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
@@ -254,9 +230,6 @@ async function ensurePlan(plan) {
   if (!existing.billing_type && plan.billing_type) {
     patch.billing_type = plan.billing_type
     need = true
-  } else if (plan.id === 'doktor' && existing.billing_type !== 'one_time') {
-    patch.billing_type = 'one_time'
-    need = true
   }
   if (plan.icon && existing.icon !== plan.icon) {
     patch.icon = plan.icon
@@ -294,15 +267,57 @@ async function migrateKurucuMembers() {
     console.log('  · kurucu üye yok')
     return
   }
+  const vipPkg = {
+    coachMeetingsPerMonth: 2,
+    dietitianMeetingsPerMonth: 2,
+    coachMeetingsPerWeek: 0,
+    durationMonths: 1,
+    durationWeeks: 4,
+    addOns: [],
+  }
   for (const m of data) {
     const merged = {
       ...(m.data || {}),
-      packageConfig: DOKTOR_PACKAGE_CONFIG,
+      packageConfig: vipPkg,
     }
-    const { error: upErr } = await supabase.from('members').update({ membership: 'doktor', data: merged }).eq('id', m.id)
+    const { error: upErr } = await supabase.from('members').update({ membership: 'vip', data: merged }).eq('id', m.id)
     if (upErr) throw new Error(`member ${m.id}: ${upErr.message}`)
-    console.log(`  ✓ üye ${m.id}: kurucu → doktor`)
+    console.log(`  ✓ üye ${m.id}: kurucu → vip`)
   }
+}
+
+async function archiveDoktorStripeCatalog() {
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) {
+    console.log('  · STRIPE_SECRET_KEY yok — doktor fiyat arşivi atlandı')
+    return
+  }
+  const { default: Stripe } = await import('stripe')
+  const stripe = new Stripe(key, { apiVersion: '2024-06-20' })
+  const lookupKeys = ['yeniform_doktor_1m']
+  const listed = await stripe.prices.list({ lookup_keys: lookupKeys, limit: 20, active: true })
+  const extra = await stripe.prices.list({ lookup_keys: lookupKeys, limit: 20, active: false })
+  const prices = [...listed.data, ...extra.data]
+  const productIds = new Set()
+  for (const p of prices) {
+    if (p.active) {
+      await stripe.prices.update(p.id, { active: false })
+      console.log(`  ✓ Stripe price pasif: ${p.id}`)
+    } else {
+      console.log(`  · Stripe price zaten pasif: ${p.id}`)
+    }
+    const pid = typeof p.product === 'string' ? p.product : p.product?.id
+    if (pid) productIds.add(pid)
+  }
+  for (const pid of productIds) {
+    try {
+      await stripe.products.update(pid, { active: false })
+      console.log(`  ✓ Stripe product pasif: ${pid}`)
+    } catch (e) {
+      console.warn(`  ⚠ product ${pid}: ${e.message}`)
+    }
+  }
+  if (!prices.length) console.log('  · yeniform_doktor_1m lookup bulunamadı')
 }
 
 async function runSqlFile(path) {
@@ -367,6 +382,12 @@ async function syncPlans() {
   for (const plan of ACTIVE_PLANS) await ensurePlan(plan)
   await deactivateLegacyPlans()
   await migrateKurucuMembers()
+  try {
+    console.log('Stripe doktor katalog arşivi…')
+    await archiveDoktorStripeCatalog()
+  } catch (e) {
+    console.warn('  ⚠ Stripe arşiv:', e.message)
+  }
 }
 
 async function verify() {

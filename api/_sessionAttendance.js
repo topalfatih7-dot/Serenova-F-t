@@ -18,19 +18,16 @@ import { buildDailyRoomName, deleteDailyRoom, isDailyWebhookConfigured } from '.
 const SESSION_KEYS = {
   coach: 'coachSessions',
   dietitian: 'dietitianSessions',
-  doctor: 'doctorSessions',
 }
 
 const EARNING_TYPE = {
   coach: 'coach_session',
   dietitian: 'dietitian_session',
-  doctor: 'doctor_session',
 }
 
 const ASSIGN_COL = {
   coach: 'assigned_coach_id',
   dietitian: 'assigned_dietitian_id',
-  doctor: 'assigned_doctor_id',
 }
 
 const BILLABLE_TYPES = new Set(['coach_session', 'dietitian_session'])
@@ -75,13 +72,13 @@ function foundPayload(row, type, idx, list, staffId) {
 export async function findSessionById(admin, sessionId, sessionTypeHint) {
   const types = sessionTypeHint && SESSION_KEYS[sessionTypeHint]
     ? [sessionTypeHint]
-    : ['coach', 'dietitian', 'doctor']
+    : ['coach', 'dietitian']
 
   let from = 0
   for (;;) {
     const { data: members, error } = await admin
       .from('members')
-      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, data')
       .range(from, from + MEMBER_SCAN_PAGE - 1)
     if (error) return { ok: false, error: error.message }
     if (!members?.length) break
@@ -102,12 +99,12 @@ export async function findSessionById(admin, sessionId, sessionTypeHint) {
 export async function findSessionContext(admin, sessionId, sessionTypeHint, caller) {
   const types = sessionTypeHint && SESSION_KEYS[sessionTypeHint]
     ? [sessionTypeHint]
-    : ['coach', 'dietitian', 'doctor']
+    : ['coach', 'dietitian']
 
   if (caller.kind === 'member') {
     const { data: row, error } = await admin
       .from('members')
-      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, data')
       .eq('id', caller.memberId)
       .maybeSingle()
     if (error || !row) return { ok: false, error: 'Üye bulunamadı.' }
@@ -124,7 +121,7 @@ export async function findSessionContext(admin, sessionId, sessionTypeHint, call
     const assignCol = ASSIGN_COL[type]
     const { data: members, error } = await admin
       .from('members')
-      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, data')
       .eq(assignCol, caller.staffId)
       .limit(300)
     if (error) return { ok: false, error: error.message }
@@ -327,14 +324,14 @@ export async function finalizeExpiredSessionAttendances(admin, now = new Date())
   for (;;) {
     const { data: members, error } = await admin
       .from('members')
-      .select('id, name, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+      .select('id, name, assigned_coach_id, assigned_dietitian_id, data')
       .range(from, from + MEMBER_SCAN_PAGE - 1)
     if (error) return { ok: false, error: error.message }
     if (!members?.length) break
 
     for (const row of members) {
       scanned += 1
-      for (const type of ['coach', 'dietitian', 'doctor']) {
+      for (const type of ['coach', 'dietitian']) {
         const list = row.data?.[SESSION_KEYS[type]] || []
         for (let idx = 0; idx < list.length; idx += 1) {
           const session = list[idx]

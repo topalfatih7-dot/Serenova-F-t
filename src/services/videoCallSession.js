@@ -108,33 +108,29 @@ export function canJoinSession(session, now = new Date(), sessionType = 'coach')
 const SESSION_LIST_KEYS = {
   coach: 'coachSessions',
   dietitian: 'dietitianSessions',
-  doctor: 'doctorSessions',
 }
 
 function remoteStaffLabel(sessionType) {
   if (sessionType === 'dietitian') return 'Diyetisyeniniz'
-  if (sessionType === 'doctor') return 'Doktorunuz'
   return 'Koçunuz'
 }
 
 /** Üye için oturum bilgisi */
 export function findMemberSession(
-  { coachSessions, dietitianSessions, doctorSessions },
+  { coachSessions, dietitianSessions },
   sessionType,
   sessionId,
 ) {
   const type = normalizeSessionType(sessionType)
   const list = type === 'coach'
     ? coachSessions
-    : type === 'dietitian'
-      ? dietitianSessions
-      : doctorSessions
+    : dietitianSessions
   const session = (list || []).find((s) => s.id === sessionId)
   if (!session) return null
   return { session, sessionType: type, key: SESSION_LIST_KEYS[type] }
 }
 
-/** Koç / diyetisyen / doktor için danışan oturumu */
+/** Koç / diyetisyen için danışan oturumu */
 export function findStaffSession(members, staffId, staffRole, sessionType, sessionId) {
   const role = normalizeStaffRole(staffRole)
   const type = normalizeSessionType(sessionType)
@@ -163,7 +159,6 @@ export function resolveCallContext({
   platformMembers,
   coachSessions,
   dietitianSessions,
-  doctorSessions,
 }) {
   const type = normalizeSessionType(sessionType)
 
@@ -187,7 +182,7 @@ export function resolveCallContext({
   }
 
   const found = findMemberSession(
-    { coachSessions, dietitianSessions, doctorSessions },
+    { coachSessions, dietitianSessions },
     type,
     sessionId,
   )

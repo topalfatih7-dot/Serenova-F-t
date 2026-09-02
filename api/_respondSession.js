@@ -6,7 +6,7 @@ import { getSessionJoinTiming } from './_videoJoinWindows.js'
 import { sendExpoPushToMember } from './_expoPush.js'
 
 const TZ = 'Europe/Istanbul'
-const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions', doctor: 'doctorSessions' }
+const SESSION_KEYS = { coach: 'coachSessions', dietitian: 'dietitianSessions' }
 
 function sessionKey(type) {
   return SESSION_KEYS[type] || 'dietitianSessions'
@@ -14,7 +14,6 @@ function sessionKey(type) {
 
 function assignColumn(type) {
   if (type === 'coach') return 'assigned_coach_id'
-  if (type === 'doctor') return 'assigned_doctor_id'
   return 'assigned_dietitian_id'
 }
 
@@ -26,7 +25,7 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
 }) {
   const type = String(sessionType || '').toLowerCase()
   const dec = String(decision || '').toLowerCase()
-  if (!['coach', 'dietitian', 'doctor'].includes(type)) {
+  if (!['coach', 'dietitian'].includes(type)) {
     return { ok: false, error: 'Geçersiz randevu türü.' }
   }
   if (!['approve', 'reject'].includes(dec)) {
@@ -49,7 +48,7 @@ export async function respondSessionForStaff(admin, staffAuthUser, {
   const col = assignColumn(type)
   const { data: memberRow, error: memberErr } = await admin
     .from('members')
-    .select('id, name, data, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id')
+    .select('id, name, data, assigned_coach_id, assigned_dietitian_id')
     .eq('id', memberId)
     .maybeSingle()
   if (memberErr || !memberRow) return { ok: false, error: 'Üye bulunamadı.' }

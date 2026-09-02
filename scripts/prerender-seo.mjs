@@ -41,16 +41,16 @@ const STATIC_SHELLS = {
   '/': {
     title: 'Yeni Form — Online Koçluk ve Online Diyetisyen Platformu',
     description:
-      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor, Doktor veya VIP paketini seçin.',
+      'Yeni Form ile online koçluk ve online diyetisyen desteği: video görüşme, kişisel sağlık analizi, beslenme ve antrenman programları. Diyet, Spor veya VIP paketini seçin.',
     h1: 'Online koçluk ve diyetisyen ile size özel program',
     body: `<p>Online diyetisyen ve online spor koçunuz hedefinize göre programınızı hazırlar, video görüşmelerle yanınızda olur.</p>
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-diyetisyen/fiyat">Diyetisyen fiyatları</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a> · <a href="/kalori-hesaplama">Kalori hesaplama</a> · <a href="/beslenme/hamilelik">Hamilelikte beslenme</a> · <a href="/membership">Üyelik paketleri</a></p>`,
   },
   '/membership': {
-    title: 'Üyelik Paketleri — Diyet, Spor, Doktor ve VIP | Yeni Form',
+    title: 'Üyelik Paketleri — Diyet, Spor ve VIP | Yeni Form',
     description:
-      'Diyet, Spor, Doktor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
-    h1: 'Üyelik paketleri: Diyet, Spor, Doktor ve VIP',
+      'Diyet, Spor ve VIP paketlerini karşılaştırın. Video görüşme, kişisel program, şeffaf liste fiyatı. Diyetisyen ücretleri ayrı fiyat sayfasında.',
+    h1: 'Üyelik paketleri: Diyet, Spor ve VIP',
     body: `<p>Video görüşmeli diyetisyen ve koç paketlerini karşılaştırın. Online diyetisyen fiyat listesi ayrı sayfadadır.</p>
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-diyetisyen/fiyat">Diyetisyen fiyatları 2026</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a></p>`,
   },
@@ -91,13 +91,6 @@ const STATIC_SHELLS = {
     h1: 'Sağlıklı ekip',
     body: `<p>Çalışan sağlığı için online koçluk ve online diyetisyen.</p>
 <p><a href="/corporate/apply">Kurumsal başvuru</a> · <a href="/membership">Paketler</a></p>`,
-  },
-  '/team/doctors': {
-    title: 'Doktorlarımız — Sağlık Sürecinizde Yanınızda | Yeni Form',
-    description: 'Wellness yolculuğunuzda sağlık sürecinizi destekleyen uzman doktor kadromuz.',
-    h1: 'Doktorlarımız',
-    body: `<p>Doktor kadromuz wellness sürecinizi destekler.</p>
-<p><a href="/membership">Üyelik paketleri</a></p>`,
   },
   '/blog': {
     title: 'Blog — Sağlık, Beslenme ve Motivasyon | Yeni Form',
@@ -194,7 +187,7 @@ function slugifyTurkish(text) {
     .replace(/^-+|-+$/g, '')
 }
 
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen', doctor: 'doktor' }
+const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
 
 function staffPublicSlug(member) {
   const namePart = slugifyTurkish(member?.name)
@@ -248,6 +241,7 @@ async function fetchDynamicShells() {
       .eq('active', true)
     if (staffErr) console.error('[prerender-seo] staff', staffErr.message)
     for (const member of staff || []) {
+      if (member.role !== 'coach' && member.role !== 'dietitian') continue
       const specialty = member.data?.specialty || member.data?.title || ''
       const slug = staffPublicSlug({ ...member, specialty, title: specialty })
       const roleLabel = member.role === 'dietitian' ? 'Online Diyetisyen' : member.role === 'coach' ? 'Online Fitness Koçu' : 'Uzman'

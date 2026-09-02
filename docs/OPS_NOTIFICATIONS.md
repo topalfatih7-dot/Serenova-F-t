@@ -46,13 +46,13 @@ Mobil native rebuild **gerekmezdi** — o tur yalnızca web API / DB / Actions. 
 | Madde | Sonuç |
 |---|---|
 | KRIK 7 — staff `call-join` `sessionType` | Android `/(staff)/call/...` ve iOS `/staff/call/...` içinde `callJoinSessionType(data.sessionType)` tanımlı. |
-| KRIK 8 — mobil collab thread kanalı | `subscribeStaffCollabChat` `doctor_id` filtresi ile `app/(staff)/_layout` ve collab inbox'ta abone. |
+| KRIK 8 — mobil collab thread kanalı | `subscribeStaffCollabChat` koç/diyetisyen filtresi ile collab inbox'ta abone. |
 
 ## Uygulanan düzeltmeler
 
-### KRIK 2 — Web collab thread doktor filtresi
+### KRIK 2 — Web collab thread filtresi
 
-[`src/hooks/useRealtimeSync.js`](../src/hooks/useRealtimeSync.js): staff collab thread realtime artık `thread.doctorId` ile de eşleşir. Doktor kendi ekip sohbet güncellemesini kaçırmaz.
+[`src/hooks/useRealtimeSync.js`](../src/hooks/useRealtimeSync.js): staff collab thread realtime `thread.coachId` / `thread.dietitianId` ile eşleşir. Doktor personel rolü yoktur.
 
 ### KRIK 1 + Hobby cron — saatlik hatırlatma
 

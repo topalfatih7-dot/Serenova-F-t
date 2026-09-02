@@ -20,7 +20,7 @@ export function getDurationMonthsLabel(months = 1) {
 export function getPlanDurationLabel(plan) {
   if (!plan) return ''
   if (plan.price === 0) return 'Süresiz'
-  if (plan.period === 'Tek Seferlik' || plan.id === 'doktor') return 'Tek seferlik'
+  if (plan.period === 'Tek Seferlik') return 'Tek seferlik'
   return getDurationMonthsLabel(1)
 }
 
@@ -28,7 +28,6 @@ export function getPlanDurationLabel(plan) {
 export function isOneTimeBillingPlan(plan) {
   if (!plan) return false
   if (plan.billingType === 'one_time') return true
-  if (plan.id === 'doktor') return true
   return plan.period === 'Tek Seferlik'
 }
 
@@ -85,8 +84,6 @@ export function emptyEntitlements() {
   return {
     coachMeetingsPerMonth: 0,
     dietitianMeetingsPerMonth: 0,
-    doctorMeetingsPerMonth: 0,
-    doctorSessionsTotal: 0,
     photoCalorie: false,
     manualCalorie: false,
   }
@@ -97,8 +94,6 @@ export function normalizeEntitlements(raw = {}) {
   if (!raw || typeof raw !== 'object') return e
   e.coachMeetingsPerMonth = Math.max(0, Number(raw.coachMeetingsPerMonth) || 0)
   e.dietitianMeetingsPerMonth = Math.max(0, Number(raw.dietitianMeetingsPerMonth) || 0)
-  e.doctorMeetingsPerMonth = Math.max(0, Number(raw.doctorMeetingsPerMonth) || 0)
-  e.doctorSessionsTotal = Math.max(0, Number(raw.doctorSessionsTotal) || 0)
   e.photoCalorie = Boolean(raw.photoCalorie)
   e.manualCalorie = Boolean(raw.manualCalorie)
   return e
@@ -112,8 +107,6 @@ export function entitlementsToPackageConfig(entitlements, billingType = 'recurri
     ...DEFAULT_PACKAGE,
     coachMeetingsPerMonth: e.coachMeetingsPerMonth,
     dietitianMeetingsPerMonth: e.dietitianMeetingsPerMonth,
-    doctorMeetingsPerMonth: e.doctorMeetingsPerMonth,
-    ...(e.doctorSessionsTotal > 0 ? { doctorSessionsTotal: e.doctorSessionsTotal } : {}),
     ...(oneTime
       ? { billingType: 'one_time', durationMonths: 0, durationWeeks: 0 }
       : { durationMonths: months, durationWeeks: months * 4 }),
@@ -136,18 +129,18 @@ export function formatPlanPrice(plan) {
 }
 
 export const PAID_MEMBERSHIPS = [
-  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip',
+  'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip',
   // geriye dönük uyumluluk (mevcut üyeler)
   'kurucu', 'gumus', 'altin', 'platinum', 'premium',
 ]
 
 /** Satışa açık planlar (eski tek `eko` kapalı) */
-export const SELLABLE_PLAN_IDS = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
+export const SELLABLE_PLAN_IDS = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'vip']
 
 /** Admin atama dropdown — eski `eko` yeni atanmaz; free = süre bitmiş fallback */
-export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
+export const ADMIN_ASSIGNABLE_PLAN_IDS = ['free', 'eko_diyet', 'diyet', 'eko_spor', 'spor', 'vip']
 
-export const PLAN_IDS = ['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'doktor', 'vip']
+export const PLAN_IDS = ['free', 'eko', 'eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip']
 
 export const PLAN_LABELS = {
   free: 'Ücretsiz',
@@ -156,7 +149,6 @@ export const PLAN_LABELS = {
   eko_spor: 'Eko Spor Paketi',
   diyet: 'Diyet Paketi',
   spor: 'Spor Paketi',
-  doktor: 'Doktor Paketi',
   vip: 'Vip Paket',
   kurucu: '100 Kurucu Üye',
   gumus: 'Gümüş',
@@ -172,7 +164,7 @@ export function getPlanBadge(plan) {
 }
 
 /** Landing / onboarding için önerilen sıra (yalnızca satılan paketler) */
-export const PLAN_DISPLAY_ORDER = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'doktor', 'vip']
+export const PLAN_DISPLAY_ORDER = ['eko_diyet', 'diyet', 'eko_spor', 'spor', 'vip']
 
 export function sortPlansForDisplay(plans = []) {
   const sellable = (plans || []).filter((p) => {
@@ -242,7 +234,7 @@ export function getMembershipBadgeTier(membership) {
   if (membership === 'eko' || membership === 'eko_diyet' || membership === 'eko_spor' || membership === 'gumus') {
     return 'silver'
   }
-  if (membership === 'doktor' || membership === 'kurucu') return 'silver'
+  if (membership === 'kurucu') return 'silver'
   if (membership === 'diyet' || membership === 'spor' || membership === 'altin') return 'gold'
   if (membership === 'vip' || membership === 'platinum' || membership === 'premium') {
     return 'platinum'
@@ -257,7 +249,6 @@ export const PLAN_PRICING = {
   eko_spor: { 1: 1299, 3: 2999, 6: 3999 },
   diyet: { 1: 2499, 3: 6499, 6: 9999 },
   spor: { 1: 2499, 3: 6499, 6: 9999 },
-  doktor: { 1: 1500 },
   vip: { 1: 4999, 3: 12999, 6: 19999 },
 }
 
@@ -366,12 +357,12 @@ export const EKO_DIYET_PLAN = {
   billingType: 'recurring',
   sortOrder: 0,
   entitlements: {
-    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1,
     photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('eko_diyet'),
   features: [
-    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+    { text: 'Kan Tahlili Testi Analizi', included: true },
     { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
     { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
     { text: 'Ayda 1 Diyetisyen ile Online Görüşme', included: true },
@@ -396,12 +387,12 @@ export const DIYET_PLAN = {
   billingType: 'recurring',
   sortOrder: 1,
   entitlements: {
-    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2,
     photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('diyet'),
   features: [
-    { text: 'Doktor Tarafından Kan Tahlili Testi Analizi', included: true },
+    { text: 'Kan Tahlili Testi Analizi', included: true },
     { text: 'Yeniform Kişisel Sağlık Analizi', included: true },
     { text: 'Fotoğraflı ve Manuel Kalori Hesaplama', included: true },
     { text: 'Ayda 2 Diyetisyen ile Online Görüşme', included: true },
@@ -427,7 +418,7 @@ export const EKO_SPOR_PLAN = {
   billingType: 'recurring',
   sortOrder: 2,
   entitlements: {
-    coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0,
     photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('eko_spor'),
@@ -456,7 +447,7 @@ export const SPOR_PLAN = {
   billingType: 'recurring',
   sortOrder: 3,
   entitlements: {
-    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0,
     photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('spor'),
@@ -473,31 +464,6 @@ export const SPOR_PLAN = {
   limits: ['Spor yapanlar için profesyonel takip', 'Kişisel spor programı', 'Sınırsız video'],
 }
 
-export const DOKTOR_PLAN = {
-  id: 'doktor',
-  name: 'Doktor Paketi',
-  price: 1500,
-  period: 'Tek Seferlik',
-  color: 'violet',
-  icon: 'Stethoscope',
-  badge: 'Tek Seferlik',
-  isSellable: true,
-  isActive: true,
-  billingType: 'one_time',
-  sortOrder: 4,
-  entitlements: {
-    coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1,
-    photoCalorie: false, manualCalorie: false,
-  },
-  pricingTiers: [{ months: 1, label: 'Tek Seferlik', price: 1500 }],
-  features: [
-    { text: '1 Online Doktor Görüşmesi', included: true },
-    { text: 'Görüntülü Görüşme', included: true },
-    { text: 'Mevcut üyeliğe ek paket olarak eklenebilir', included: true },
-  ],
-  limits: ['İhtiyaç duyduğunuz anda uzman desteği alın'],
-}
-
 export const VIP_PLAN = {
   id: 'vip',
   name: 'Vip Paket',
@@ -509,9 +475,9 @@ export const VIP_PLAN = {
   isSellable: true,
   isActive: true,
   billingType: 'recurring',
-  sortOrder: 5,
+  sortOrder: 4,
   entitlements: {
-    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 0,
+    coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2,
     photoCalorie: true, manualCalorie: true,
   },
   pricingTiers: buildPricingTiers('vip'),
@@ -534,7 +500,7 @@ export const VIP_PLAN = {
 
 // Geriye dönük uyumluluk
 
-export const ALL_PLANS = [EKO_DIYET_PLAN, DIYET_PLAN, EKO_SPOR_PLAN, SPOR_PLAN, DOKTOR_PLAN, VIP_PLAN]
+export const ALL_PLANS = [EKO_DIYET_PLAN, DIYET_PLAN, EKO_SPOR_PLAN, SPOR_PLAN, VIP_PLAN]
 
 export const ADD_ONS = [
   { id: 'group', name: 'Grup Koçluğu', price: 450, desc: 'Haftalık canlı grup seansları' },
@@ -547,7 +513,6 @@ export const ADD_ONS = [
 export const DEFAULT_PACKAGE = {
   coachMeetingsPerMonth: 0,
   dietitianMeetingsPerMonth: 0,
-  doctorMeetingsPerMonth: 0,
   coachMeetingsPerWeek: 0,
   durationMonths: 1,
   durationWeeks: 4,
@@ -555,23 +520,21 @@ export const DEFAULT_PACKAGE = {
 }
 
 const PACKAGE_BY_PLAN = {
-  eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0 },
-  eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 },
-  doktor: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0, doctorSessionsTotal: 1, billingType: 'one_time' },
-  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0 },
-  // legacy
-  gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 1 },
-  altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
-  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 3 },
-  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, doctorMeetingsPerMonth: 0, coachMeetingsPerWeek: 2 },
+  eko: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 },
+  eko_diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1 },
+  eko_spor: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0 },
+  diyet: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2 },
+  spor: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0 },
+  vip: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  kurucu: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2 },
+  gumus: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, coachMeetingsPerWeek: 1 },
+  altin: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
+  platinum: { coachMeetingsPerMonth: 4, dietitianMeetingsPerMonth: 4, coachMeetingsPerWeek: 3 },
+  premium: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, coachMeetingsPerWeek: 2 },
 }
 
 const LEGACY_PHOTO_CALORIE = new Set(['eko_diyet', 'eko_spor', 'diyet', 'spor', 'vip', 'platinum', 'premium'])
-const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'doktor', 'kurucu'])
+const LEGACY_MANUAL_EXCLUDE = new Set(['free', 'kurucu'])
 
 function planHasEntitlementFlags(plan) {
   const e = plan?.entitlements
@@ -580,8 +543,6 @@ function planHasEntitlementFlags(plan) {
   return (
     Number(e.coachMeetingsPerMonth) > 0
     || Number(e.dietitianMeetingsPerMonth) > 0
-    || Number(e.doctorMeetingsPerMonth) > 0
-    || Number(e.doctorSessionsTotal) > 0
     || e.photoCalorie === true
     || e.manualCalorie === true
   )
@@ -591,20 +552,11 @@ function planHasEntitlementFlags(plan) {
 export function getDefaultPackageForPlan(planId, durationMonths = 1, planRow = null) {
   const plan = planRow || getPlanFromCatalog(planId)
   if (plan && planHasEntitlementFlags(plan)) {
-    const billing = plan.billingType || (planId === 'doktor' || plan.period === 'Tek Seferlik' ? 'one_time' : 'recurring')
+    const billing = plan.billingType || (plan.period === 'Tek Seferlik' ? 'one_time' : 'recurring')
     return entitlementsToPackageConfig(plan.entitlements, billing, durationMonths)
   }
-  if (planId === 'doktor') {
-    return {
-      ...DEFAULT_PACKAGE,
-      ...PACKAGE_BY_PLAN.doktor,
-      durationMonths: 0,
-      durationWeeks: 0,
-      addOns: [],
-    }
-  }
   const months = Number(durationMonths) || 1
-  const base = PACKAGE_BY_PLAN[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0, doctorMeetingsPerMonth: 0 }
+  const base = PACKAGE_BY_PLAN[planId] || { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 0 }
   return {
     ...DEFAULT_PACKAGE,
     ...base,
@@ -646,39 +598,27 @@ export function packageIncludesDietitian(packageConfig = {}) {
   return (Number(packageConfig.dietitianMeetingsPerMonth) || 0) > 0
 }
 
-/** Pakette doktor görüşmesi var mı (tek seferlik veya aylık). Remaining kota için kullanılmaz. */
-export function packageIncludesDoctor(packageConfig = {}) {
-  return (Number(packageConfig.doctorSessionsTotal) || 0) > 0
-    || (Number(packageConfig.doctorMeetingsPerMonth) || 0) > 0
-}
-
-/** Koç görüşme limitini aylık olarak döndürür */
 export function getCoachMeetingsPerMonth(packageConfig = {}) {
   return Number(packageConfig.coachMeetingsPerMonth) || (Number(packageConfig.coachMeetingsPerWeek) || 0) * 4
 }
 
-/** Üyenin paketine göre eksik koç/diyetisyen ataması var mı */
 export function memberNeedsStaffAssignment(member) {
   const pkg = member?.packageConfig || {}
   const needsCoach = packageIncludesCoach(pkg) && !member?.assignedCoachId
   const needsDiet = packageIncludesDietitian(pkg) && !member?.assignedDietitianId
-  const needsDoctor = packageIncludesDoctor(pkg) && !member?.assignedDoctorId
-  return needsCoach || needsDiet || needsDoctor
+  return needsCoach || needsDiet
 }
 
-/** Paket kapsamı dışındaki koç/diyet atamalarını temizler. Doktor ataması yalnız admin ile kalkar. */
+/** Paket kapsamı dışındaki koç/diyet atamalarını temizler. */
 export function sanitizeStaffForPackage(packageConfig, data = {}) {
   const includeCoach = packageIncludesCoach(packageConfig)
   const includeDiet = packageIncludesDietitian(packageConfig)
-  const includeDoctor = packageIncludesDoctor(packageConfig)
   return {
     ...data,
     assignedCoachId: includeCoach ? (data.assignedCoachId ?? null) : null,
     assignedDietitianId: includeDiet ? (data.assignedDietitianId ?? null) : null,
-    assignedDoctorId: data.assignedDoctorId ?? null,
     coachSessions: sanitizeSessionsForRole(data.coachSessions, includeCoach),
     dietitianSessions: sanitizeSessionsForRole(data.dietitianSessions, includeDiet),
-    doctorSessions: sanitizeSessionsForRole(data.doctorSessions, includeDoctor),
   }
 }
 

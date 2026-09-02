@@ -17,7 +17,7 @@
 5. AI üretim yüzeyleri: kalori (`ai-food-text` / `ai-food-vision`), günlük blog, günlük tüyo, **sağlık skoru + staff brief** (`ai-health-analysis`, GPT-5.4 — ücretli üyelikte). Program / diyet listesi / öğün menüsü AI **yok**. Üye: dashboard’da skorlar (`HealthScoreCard`); `staffBrief` personelde yalnızca ücretli üyelikte.
 6. `exercise-videos` **private**; imzalı URL ≤15 dk; kapak `exercise-thumbs` public webp; DB’de `video_url` = storage path.
 7. Migration / plan değişince: `npm run db:migrate` (kullanıcıya SQL yapıştır deme) — `.cursor/rules/supabase-auto-migrate.mdc`.
-8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Doktor(4) → Vip(5). `free` = ücretsiz kayıt + soft-lock + süresi bitmiş fallback; eski `eko` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`.
+8. Satılan plan sırası: Eko Diyet(0) → Diyet(1) → Eko Spor(2) → Spor(3) → Vip(4). `free` = ücretsiz kayıt + soft-lock + süresi bitmiş fallback; eski `eko` ve `doktor` yeni satış kapalı. Aktif ID’ler: `SELLABLE_PLAN_IDS` in `membershipPlans.js`. Doktor personel rolü yok.
 9. **İletişim gizliliği:** Personel ↔ üye e-posta/telefon **görülmez** (`members_staff_safe` + UI). Admin kendi panellerinde görür. Platform dışı iletişim sohbette `contactInfoGuard` ile engellenir.
 10. **Paketsiz üye (freemium):** `membership === 'free'` → mesajlar/program/takvim/kütüphane/kalori `UnpaidMemberGate`. Dashboard + profil + `/membership` + `/health-test` açık. Süresi bitmiş ücretli → `free` fallback. Stripe Portal: `POST /api/stripe-checkout` · `action: create-portal-session`. Hakediş: video attendance → `staff_earnings`.
 11. **KİLİTLİ — public üye/çevrimiçi sayıları** (`displayPlatformStats.js`): üye <750 → **750+**; ≥750 → gerçek. Çevrimiçi <20 → oturumda **20–25** rastgele; ≥20 → gerçek. Floor’u kaldırma / gerçek sayıya çevirme. Admin paneli gerçek sayıyı gösterir.
@@ -31,7 +31,7 @@
 | App | Vite 8 + React 19 + RR7 + Tailwind 4 · `src/main.jsx` → `App.jsx` |
 | State | `AppContext` dilimleri: `useAuth` / `useData` / `useActions` (+ `useApp`) |
 | DB/Auth/Storage | Supabase · `setup.sql` + `migrations/` |
-| Ödeme | Stripe Checkout **Subscription** (recurring) + one-shot doktor · Portal · webhook. |
+| Ödeme | Stripe Checkout **Subscription** (recurring) · Portal · webhook. |
 | Video | Daily.co · `api/daily-room.js` |
 | AI | Kalori GPT-4o · Staff sağlık GPT-5.4 · Blog/ipucu Gemini flash-lite |
 | Deploy | `vercel.json` SPA rewrite + cron + `sitemap.xml` → `api/sitemap` · build: `vite` + `prerender-seo.mjs` |
@@ -72,8 +72,7 @@ Browser → Supabase Auth
 | `diyet` | evet | diyetisyen (2/ay) | |
 | `eko_spor` | evet | koç (1/ay) | Spor’un ekonomik versiyonu; kan tahlili yok |
 | `spor` | evet | koç (2/ay) | Kan tahlili yok |
-| `doktor` | evet | tek sefer doktor | Add-on; VIP iptalinde kalır; 2 alım = 2 seans; tüketince 1:1 chat açık, yeni randevu kapalı |
-| `vip` | evet | koç+diyet | Doktor hakkı yok |
+| `vip` | evet | koç+diyet | |
 
 Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket panelden / `?plan=` sonrası PlanChangeView → Stripe. Fiyat/atama: `src/data/membershipPlans.js` · `src/services/staffAssignment.js`.
 
@@ -115,7 +114,7 @@ Onboarding: tek adım ücretsiz kayıt (`free` + soft-lock); ücretli paket pane
 
 - `auth` — signup/login/reset · book-session · session-attendance · exercise-video-url(s) · ga4 · ai-usage · single-session · Turnstile
 - `ai-blog-generate` — blog · daily-tip · supabase-health · membership-expiry · session-reminders · push-receipts
-- `stripe-checkout` — Checkout (recurring → Subscription; doktor → payment) · Portal: `create-portal-session` (`intent: manage|cancel`, `mode: at_period_end|immediately`) · `api/_stripePortal.js`
+- `stripe-checkout` — Checkout (recurring → Subscription) · Portal: `create-portal-session` (`intent: manage|cancel`, `mode: at_period_end|immediately`) · `api/_stripePortal.js`
 
 ---
 
@@ -177,7 +176,7 @@ Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret
 
 - **Freemium:** ücretsiz kayıt; ücretli özellikler paketle; süre bitince soft-lock.
 - Paket kataloğu: `eko_diyet` / `eko_spor` satışa açıldı (1299/2999/3999; ayda 1 görüşme).
-- Spor / Eko Spor: kan tahlili (doktor hakkı) kaldırıldı; Diyet / Eko Diyet / Vip’te kaldı.
+- Spor / Eko Spor: kan tahlili yok; Diyet / Eko Diyet / Vip’te “Kan Tahlili Testi Analizi” (doktor randevu hakkı değil).
 - Özellik satırı: “Yeniform Kişisel Sağlık Analizi” (diyet/spor/vip + eko’lar).
 - GPT-5.4 sağlık skoru + `staffBrief` (`api/ai-health-analysis.js`); program/diyet AI yok.
 - Üye panel: `HealthScoreCard` (genel /100 + boyutlar); brief personelde (ücretli).
@@ -186,9 +185,12 @@ Sosyal giriş = Supabase `signInWithOAuth` (Google / Facebook); Client ID/Secret
 - Hobby serverless 12/12 (`ai-health-analysis` slotu kullanıldı).
 - Faz 2–3: `UnpaidMemberGate` (`membership === 'free'`), Stripe Portal (`stripe_customer_id`), video attendance → `staff_earnings`, `aiAnalysis` orphan silindi.
 
+## 11e. Delta (2026-09-02)
+
+- Doktor personel rolü, Doktor Paketi satışı ve `/team/doctors` kaldırıldı. Tahlil satırı “Kan Tahlili Testi Analizi” olarak kaldı.
+
 ## 11d. Delta (2026-08-20)
 
-- **Doktor add-on:** FIFO tüketim (2 alım = 2 seans); Stripe abonelik iptali one-time doktoru düşürmez; tüketince atama+1:1 chat kalır, book API kota 0 reddeder; `rescheduled` video join.
 - **Stripe iptal stacking:** paket başına dönem sonu / hemen kapat; Portal config kodda; admin pause paneli kaldırıldı. Dashboard `customer.subscription.updated` **tamam** (2026-08-20).
 - Kadro başvurusu: profil fotoğrafı RPC’de zorunlu.
 

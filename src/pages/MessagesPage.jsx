@@ -24,24 +24,21 @@ import { relatedChatNotificationIds } from '../utils/notificationRead'
 import { staffRoleMeta } from '../utils/staffRoles'
 import { PANEL_IMAGES } from '../utils/panelImages'
 
-const CHAT_ROLES = ['coach', 'dietitian', 'doctor']
+const CHAT_ROLES = ['coach', 'dietitian']
 
 const AVATAR_IDLE = {
   coach: 'bg-brand-100 text-brand-700',
   dietitian: 'bg-sage-100 text-sage-700',
-  doctor: 'bg-teal-100 text-teal-700',
 }
 
 const CONTACT_ACTIVE = {
   coach: 'border-brand-400 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-200/50',
   dietitian: 'border-sage-400 bg-gradient-to-br from-sage-500 to-emerald-600 text-white shadow-lg shadow-sage-200/50',
-  doctor: 'border-teal-400 bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-200/50',
 }
 
 const CONTACT_IDLE = {
   coach: 'border-brand-100 bg-gradient-to-br from-brand-50/90 via-white to-sky-50/50 hover:border-brand-300 hover:shadow-md',
   dietitian: 'border-sage-100 bg-gradient-to-br from-sage-50/90 via-white to-emerald-50/50 hover:border-sage-300 hover:shadow-md',
-  doctor: 'border-teal-100 bg-gradient-to-br from-teal-50/90 via-white to-cyan-50/50 hover:border-teal-300 hover:shadow-md',
 }
 
 export default function MessagesPage() {
@@ -60,7 +57,6 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false)
 
   const contacts = useMemo(() => getMemberChatContacts(user, staff), [user, staff])
-  const doctorFollowUpChat = Boolean(user?.assignedDoctorId)
   const sortedThreads = useMemo(() => sortThreadsForInbox(chatThreads, 'member'), [chatThreads])
   const peerIds = useMemo(() => contacts.map((c) => c.staffId).filter(Boolean), [contacts])
   const { isOnline, lastSeenAt } = useChatPresence(peerIds)
@@ -107,7 +103,7 @@ export default function MessagesPage() {
     navigate(`/messages/${role}`)
   }, [navigate, sortedThreads])
 
-  if (isUnpaidMember && !doctorFollowUpChat) {
+  if (isUnpaidMember) {
     return (
       <PanelPageShell>
         <PanelPageHeader title="Mesajlar" subtitle="Uzmanlarınızla iletişim" icon={MessageCircle} accent="brand" image={PANEL_IMAGES.messages} />
@@ -207,7 +203,7 @@ export default function MessagesPage() {
       </span>
       <p className="mt-4 font-display text-base font-bold text-cream-900">Bir sohbet seçin</p>
       <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-cream-800/55">
-        Soldaki listeden koç, diyetisyen veya doktorunuzla mesajlaşmaya başlayın
+        Soldaki listeden koç veya diyetisyeninizle mesajlaşmaya başlayın
       </p>
     </div>
   ) : (

@@ -208,7 +208,7 @@ export function buildFallbackMemberBrief(scores = {}, overallScore = 50) {
   const movementWeak = (s.movement ?? 50) < 55
   let planPitch
   if (nutritionWeak && movementWeak) {
-    planPitch = 'Hem beslenme hem hareket tarafında destek almak için Vip Paket senin için çok avantajlı: koç, diyetisyen ve doktor görüşmesi tek pakette — iki alanı aynı anda, birbirini destekleyecek şekilde toparlarsın.'
+    planPitch = 'Hem beslenme hem hareket tarafında destek almak için Vip Paket senin için çok avantajlı: koç ve diyetisyen tek pakette — iki alanı aynı anda, birbirini destekleyecek şekilde toparlarsın.'
   } else if (nutritionWeak) {
     planPitch = 'Beslenme skorunu en hızlı yükseltecek şey birebir diyetisyen desteği. Diyet Paketi ile sana özel beslenme planı ve düzenli takip alırsın — tek başına deneme-yanılma yapmana gerek kalmaz.'
   } else if (movementWeak) {

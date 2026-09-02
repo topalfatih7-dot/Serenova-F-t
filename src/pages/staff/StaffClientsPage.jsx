@@ -18,7 +18,6 @@ import StaffAppointmentRow from '../../components/video/StaffAppointmentRow'
 import {
   isCoachRole,
   isDietitianRole,
-  isDoctorRole,
   sessionTypeForRole,
   staffRoleMeta,
 } from '../../utils/staffRoles'
@@ -173,7 +172,6 @@ export default function StaffClientsPage() {
   const role = staffUser.role
   const isCoach = isCoachRole(role)
   const isDietitian = isDietitianRole(role)
-  const isDoctor = isDoctorRole(role)
   const RoleIcon = staffRoleMeta(role).icon
   const sessionType = sessionTypeForRole(role)
 
@@ -216,7 +214,7 @@ export default function StaffClientsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream-900">Danışanlarım</h1>
-        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · {isDoctor ? 'bilgileri ve randevu taleplerini görüntüleyin' : 'bilgileri görüntüleyin veya program oluşturun'}</p>
+        <p className="mt-1 text-sm text-cream-800/60">{clients.length} danışan · bilgileri görüntüleyin veya program oluşturun</p>
       </div>
 
       <div className="relative">

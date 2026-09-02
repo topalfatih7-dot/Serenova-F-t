@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { List, Apple, User, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -16,10 +16,6 @@ export default function StaffListsPage() {
     () => (programs || []).filter((p) => p.staffId === staffUser.id && p.type === 'nutrition'),
     [programs, staffUser.id]
   )
-
-  if (normalizeStaffRole(staffUser?.role) === 'doctor') {
-    return <Navigate to="/staff" replace />
-  }
 
   return (
     <div className="space-y-6">

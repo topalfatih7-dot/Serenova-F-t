@@ -10,11 +10,6 @@ export const TEAM_HERO_IMAGES = {
     srcSm: '/team/dietitians-sm.webp',
     alt: 'Sağlıklı beslenme ve diyetisyen danışmanlığı',
   },
-  doctors: {
-    src: '/team/doctors.webp',
-    srcSm: '/team/doctors-sm.webp',
-    alt: 'Sağlık danışmanlığı yapan uzman doktor',
-  },
 }
 
 const preloaded = new Set()

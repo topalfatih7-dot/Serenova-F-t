@@ -87,7 +87,6 @@ describe('session reminders in-app (no WhatsApp)', () => {
         name: 'Ayşe',
         assigned_coach_id: 'staff-1',
         assigned_dietitian_id: null,
-        assigned_doctor_id: null,
         data: {
           coachSessions: [
             {

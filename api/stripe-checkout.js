@@ -108,7 +108,6 @@ async function memberDraftFromRow(row) {
     membershipStatus: row.membership_status,
     assignedCoachId: row.assigned_coach_id ?? null,
     assignedDietitianId: row.assigned_dietitian_id ?? null,
-    assignedDoctorId: row.assigned_doctor_id ?? null,
     ...data,
   }
 }
@@ -122,7 +121,6 @@ async function persistPortalMember(admin, row, draft) {
     membershipStatus,
     assignedCoachId,
     assignedDietitianId,
-    assignedDoctorId,
     ...rest
   } = draft
   const newData = { ...(row.data || {}), ...rest }
@@ -134,7 +132,6 @@ async function persistPortalMember(admin, row, draft) {
       membership_status: membershipStatus || 'active',
       assigned_coach_id: assignedCoachId || null,
       assigned_dietitian_id: assignedDietitianId || null,
-      assigned_doctor_id: assignedDoctorId || null,
       data: newData,
       updated_at: new Date().toISOString(),
     })
@@ -211,7 +208,7 @@ async function handleResumeSubscription(req, res, admin, body = {}) {
   const stripe = getStripe()
   const { data: memberRow } = await admin
     .from('members')
-    .select('id, email, name, membership, membership_status, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, stripe_customer_id, data')
+    .select('id, email, name, membership, membership_status, assigned_coach_id, assigned_dietitian_id, stripe_customer_id, data')
     .eq('id', auth.user.id)
     .maybeSingle()
 

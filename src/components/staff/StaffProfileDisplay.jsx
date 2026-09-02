@@ -70,7 +70,6 @@ export default function StaffProfileDisplay({ member }) {
   const heroClass = {
     coach: 'staff-profile-hero--coach',
     dietitian: 'staff-profile-hero--dietitian',
-    doctor: 'staff-profile-hero--doctor',
   }[member.role] || 'staff-profile-hero--coach'
 
   const secondaryCount = [education.length, experiences.length].filter(Boolean).length

@@ -20,9 +20,6 @@ export default function StaffProgramsPage() {
   if (role === 'dietitian') {
     return <Navigate to="/staff/lists" replace />
   }
-  if (role === 'doctor') {
-    return <Navigate to="/staff" replace />
-  }
 
   return (
     <div className="space-y-6">

@@ -96,7 +96,6 @@ export default function AdminStaffPage() {
           <option value="all">Tüm roller</option>
           <option value="coach">Koç</option>
           <option value="dietitian">Diyetisyen</option>
-          <option value="doctor">Doktor</option>
         </select>
         <select value={filterListed} onChange={(e) => setFilterListed(e.target.value)} className="rounded-xl border border-cream-200 px-4 py-2.5 text-sm">
           <option value="all">Tüm görünürlük</option>
@@ -111,7 +110,7 @@ export default function AdminStaffPage() {
           title={staff.length === 0 ? 'Henüz uzman eklenmedi' : 'Eşleşen uzman yok'}
           description={
             staff.length === 0
-              ? 'Koç, diyetisyen veya doktor ekleyerek detaylı kadro profillerini yayınlayın.'
+              ? 'Koç veya diyetisyen ekleyerek detaylı kadro profillerini yayınlayın.'
               : 'Arama veya görünürlük filtresini değiştirin.'
           }
           action={staff.length === 0 ? <button type="button" onClick={() => setAddOpen(true)} className="rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white">Yeni Uzman</button> : null}
@@ -127,7 +126,6 @@ export default function AdminStaffPage() {
             const roleColors = {
               coach: 'bg-brand-100 text-brand-600',
               dietitian: 'bg-sage-100 text-sage-600',
-              doctor: 'bg-cream-200 text-cream-900',
             }
             return (
               <div key={s.id} className={`flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${listed ? 'border-cream-200' : 'border-amber-200/80'}`}>

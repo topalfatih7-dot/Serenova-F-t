@@ -41,4 +41,4 @@ Shell: `src/components/layout/AdminShell.jsx` → `PanelSidebar` + `TopBar` + `P
 
 ## İleri faz
 
-Hâlâ sonraya: staff adherence, doktor hakediş, lab UI, pazarlama copy — [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)
+Hâlâ sonraya: staff adherence, lab UI, pazarlama copy — [`docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md`](../../../docs/STAFF_MEMBER_FLOWS_ILERI_FAZ.md)

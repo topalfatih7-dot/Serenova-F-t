@@ -15,13 +15,28 @@ import {
 } from '../config/seo'
 import { normalizeStaffProfile, formatStaffDisplayName } from '../data/staffProfile'
 
+function isRetiredDoctorTeamPath(id) {
+  const param = String(id || '').toLowerCase()
+  return param === 'doctors' || param.startsWith('doktor-')
+}
+
 export default function StaffProfilePage() {
   const { id } = useParams()
   const { staff } = useApp()
+
+  // Eski /team/doktor-* URL'leri `team/:id` ile de eşleşir; RR6 tek segmentte prefix param tutmaz.
+  if (isRetiredDoctorTeamPath(id)) {
+    return <Navigate to="/hakkimizda" replace />
+  }
+
   const member = findStaffMember(staff, id)
 
   if (!member) {
     return <Navigate to="/" replace />
+  }
+
+  if (member.role === 'doctor') {
+    return <Navigate to="/hakkimizda" replace />
   }
 
   const profile = normalizeStaffProfile(member)

@@ -23,7 +23,6 @@ import {
   sessionsKeyForRole,
   staffRoleMeta,
   isCoachRole,
-  isDoctorRole,
 } from '../../utils/staffRoles'
 
 export default function StaffOverviewPage() {
@@ -31,7 +30,6 @@ export default function StaffOverviewPage() {
   const { toast } = useToast()
   const role = staffUser.role
   const isCoach = isCoachRole(role)
-  const isDoctor = isDoctorRole(role)
   const RoleIcon = staffRoleMeta(role).icon
   const sessionType = sessionTypeForRole(role)
   const [respondingId, setRespondingId] = useState(null)
@@ -262,9 +260,7 @@ export default function StaffOverviewPage() {
         <EmptyState
           icon={Users}
           title="Henüz danışan yok"
-          description={isDoctor
-            ? 'Admin sizi bir üyeye atadıktan sonra danışanlarınız burada görünür.'
-            : 'Premium üyeler kayıt oldukça ve paketlerinde destek seçtikçe burada görünecekler.'}
+          description="Premium üyeler kayıt oldukça ve paketlerinde destek seçtikçe burada görünecekler."
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import { getStaffClients } from './chatAccess'
 
-export const MEMBER_SESSION_KEYS = ['coachSessions', 'dietitianSessions', 'doctorSessions']
+export const MEMBER_SESSION_KEYS = ['coachSessions', 'dietitianSessions']
 
 /** Bellek/context yükünü azaltmak için randevu dizilerini boşaltır (DB'de kalır). */
 export function stripMemberSessions(member) {
@@ -9,7 +9,6 @@ export function stripMemberSessions(member) {
     ...member,
     coachSessions: [],
     dietitianSessions: [],
-    doctorSessions: [],
   }
 }
 
@@ -65,6 +64,5 @@ export function extractSessionsFromMemberData(data = {}) {
   return {
     coachSessions: data.coachSessions || [],
     dietitianSessions: data.dietitianSessions || [],
-    doctorSessions: data.doctorSessions || [],
   }
 }

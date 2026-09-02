@@ -16,7 +16,6 @@ import { sendExpoPushToMember, sendExpoPushToStaff } from './_expoPush.js'
 const SESSION_KEYS = {
   coach: 'coachSessions',
   dietitian: 'dietitianSessions',
-  doctor: 'doctorSessions',
 }
 
 const ACTIVE = new Set(['scheduled', 'rescheduled'])
@@ -29,7 +28,6 @@ const PAGE_SIZE = 200
 const ROLE_LABELS = {
   coach: 'Koç',
   dietitian: 'Diyetisyen',
-  doctor: 'Doktor',
 }
 
 function sessionTypeLabel(type) {
@@ -172,7 +170,6 @@ function inWindow(startsAt, targetOffsetMs, nowMs) {
 function resolveStaffId(row, sessionType) {
   if (sessionType === 'coach') return row.assigned_coach_id
   if (sessionType === 'dietitian') return row.assigned_dietitian_id
-  if (sessionType === 'doctor') return row.assigned_doctor_id
   return null
 }
 
@@ -194,7 +191,7 @@ async function fetchPaidMembersPage(admin, from, size) {
   // NULL membership <> 'free' SQL'de düşer; IS DISTINCT FROM ile al.
   const { data, error } = await admin
     .from('members')
-    .select('id, name, membership, assigned_coach_id, assigned_dietitian_id, assigned_doctor_id, data')
+    .select('id, name, membership, assigned_coach_id, assigned_dietitian_id, data')
     .or('membership.is.null,membership.neq.free')
     .order('id', { ascending: true })
     .range(from, from + size - 1)
