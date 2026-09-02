@@ -24,7 +24,7 @@ import {
 } from '../../config/seo'
 import { BRAND } from '../../config/brand'
 import { SERVICE_PAGES } from '../../data/seoServiceContent'
-import { ALL_PLANS } from '../../data/membershipPlans'
+import { ALL_PLANS, getTierPrice } from '../../data/membershipPlans'
 import FAQAccordion from '../../components/landing/FAQAccordion'
 
 /** Bu sayfalara özel hero görselleri — kadro / About görselleriyle paylaşılmaz */
@@ -202,13 +202,13 @@ export default function ServiceLandingPage({ path }) {
               name: isCoach ? 'Spor Paketi' : 'Diyet Paketi',
               path: '/membership',
               description: page.lead.replace(/\*\*/g, ''),
-              price: isCoach ? 2499 : 2499,
+              price: isCoach ? getTierPrice('spor', 1) : getTierPrice('diyet', 1),
             },
             {
               name: 'VIP Paket',
               path: '/membership',
               description: 'Koç ve diyetisyen desteğini birleştiren paket',
-              price: 4999,
+              price: getTierPrice('vip', 1),
             },
           ],
     }),

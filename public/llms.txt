@@ -22,11 +22,11 @@
 
 ## Liste fiyat (aylık, TRY)
 
-- Eko Diyet: 1299 (ayda 1 diyetisyen seansı)
-- Diyet: 2499 (ayda 2 diyetisyen seansı)
-- Eko Spor: 1299 (ayda 1 koç seansı)
-- Spor: 2499 (ayda 2 koç seansı)
-- VIP: 4999 (ayda 2 koç + 2 diyetisyen)
+- Eko Diyet: 2700 (ayda 1 diyetisyen seansı)
+- Diyet: 4050 (ayda 2 diyetisyen seansı)
+- Eko Spor: 2700 (ayda 1 koç seansı)
+- Spor: 4050 (ayda 2 koç seansı)
+- VIP: 7425 (ayda 2 koç + 2 diyetisyen)
 
 ## Kategoriler
 

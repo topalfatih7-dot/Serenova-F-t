@@ -299,9 +299,9 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('kilo verme diyetisyen, online zayıflama, zayıflama programı, kilo vermek için diyetisyen, online kilo verme, online diyet ve zayıflama, kilo verme programı'),
   },
   '/online-diyetisyen/fiyat': {
-    title: 'Online Diyetisyen Fiyatları 2026 — 1.299 TL\'den',
+    title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL\'den',
     description:
-      'Online diyetisyen fiyatları 2026: Eko Diyet 1.299 TL, Diyet 2.499 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
+      'Online diyetisyen fiyatları 2026: Eko Diyet 2.700 TL, Diyet 4.050 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
     keywords: buildBrandKeywords('online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları, diyetisyen seans ücretleri'),
   },
   '/online-kocluk/ev-antrenman': {

@@ -244,12 +244,12 @@ export function getMembershipBadgeTier(membership) {
 
 /** Plan + süre için fiyat (TL) */
 export const PLAN_PRICING = {
-  eko: { 1: 1299, 3: 2999, 6: 3999 },
-  eko_diyet: { 1: 1299, 3: 2999, 6: 3999 },
-  eko_spor: { 1: 1299, 3: 2999, 6: 3999 },
-  diyet: { 1: 2499, 3: 6499, 6: 9999 },
-  spor: { 1: 2499, 3: 6499, 6: 9999 },
-  vip: { 1: 4999, 3: 12999, 6: 19999 },
+  eko: { 1: 2700, 3: 7425, 6: 13500 },
+  eko_diyet: { 1: 2700, 3: 7425, 6: 13500 },
+  eko_spor: { 1: 2700, 3: 7425, 6: 13500 },
+  diyet: { 1: 4050, 3: 10125, 6: 20250 },
+  spor: { 1: 4050, 3: 10125, 6: 20250 },
+  vip: { 1: 7425, 3: 18900, 6: 40500 },
 }
 
 /** Plan + süre fiyatı — önce DB/katalog pricingTiers, yoksa PLAN_PRICING fallback */
@@ -328,7 +328,7 @@ export const FREE_PLAN = {
 export const EKO_PLAN = {
   id: 'eko',
   name: 'Eko Paket (eski)',
-  price: 1299,
+  price: 2700,
   period: 'Aylık',
   color: 'sage',
   pricingTiers: buildPricingTiers('eko'),
@@ -347,7 +347,7 @@ export const EKO_PLAN = {
 export const EKO_DIYET_PLAN = {
   id: 'eko_diyet',
   name: 'Eko Diyet Paketi',
-  price: 1299,
+  price: 2700,
   period: 'Aylık',
   color: 'sage',
   icon: 'Salad',
@@ -378,7 +378,7 @@ export const EKO_DIYET_PLAN = {
 export const DIYET_PLAN = {
   id: 'diyet',
   name: 'Diyet Paketi',
-  price: 2499,
+  price: 4050,
   period: 'Aylık',
   color: 'emerald',
   icon: 'Apple',
@@ -408,7 +408,7 @@ export const DIYET_PLAN = {
 export const EKO_SPOR_PLAN = {
   id: 'eko_spor',
   name: 'Eko Spor Paketi',
-  price: 1299,
+  price: 2700,
   period: 'Aylık',
   color: 'sky',
   icon: 'Footprints',
@@ -438,7 +438,7 @@ export const EKO_SPOR_PLAN = {
 export const SPOR_PLAN = {
   id: 'spor',
   name: 'Spor Paketi',
-  price: 2499,
+  price: 4050,
   period: 'Aylık',
   color: 'blue',
   icon: 'Dumbbell',
@@ -467,7 +467,7 @@ export const SPOR_PLAN = {
 export const VIP_PLAN = {
   id: 'vip',
   name: 'Vip Paket',
-  price: 4999,
+  price: 7425,
   period: 'Aylık',
   color: 'gold',
   icon: 'Crown',

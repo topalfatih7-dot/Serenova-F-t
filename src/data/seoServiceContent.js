@@ -86,7 +86,7 @@ export const ONLINE_DIYETISYEN = {
     },
     {
       q: 'Online diyetisyen paketi ne kadar?',
-      a: 'Liste fiyatı online diyetisyen fiyat sayfasındadır: Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay (2026). Bu sayfa hizmet sürecini anlatır.',
+      a: 'Liste fiyatı online diyetisyen fiyat sayfasındadır: Eko Diyet 2.700 TL, Diyet 4.050 TL, VIP 7.425 TL/ay (2026). Bu sayfa hizmet sürecini anlatır.',
     },
     {
       q: 'Sadece diyetisyen mi, yoksa koç da var mı?',
@@ -253,7 +253,7 @@ export const KILO_VERME = {
     'kilo verme diyetisyen, kilo vermek için diyetisyen, online kilo verme, online zayıflama, zayıflama programı, kilo verme programı, online diyet ve zayıflama',
   h1: 'Kilo verme diyetisyeni ile sürdürülebilir program',
   lead:
-    'Kilo vermek için diyetisyen desteği; yasak listesi değil, **video görüşme**, kişiye özel program ve takip demektir. Yeni Form’da Diyet paketi **ayda 2 diyetisyen seansı** (1.299–2.499 TL/ay aralığı) sunar. Bu içerik tıbbi teşhis veya tedavi yerine geçmez.',
+    'Kilo vermek için diyetisyen desteği; yasak listesi değil, **video görüşme**, kişiye özel program ve takip demektir. Yeni Form’da Eko Diyet ve Diyet paketleri **2.700–4.050 TL/ay** aralığında; Diyet paketinde **ayda 2 diyetisyen seansı** vardır. Bu içerik tıbbi teşhis veya tedavi yerine geçmez.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet Paketi ile Başla' },
   secondaryCta: { to: '/membership', label: 'Paketleri Karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadromuzu inceleyin' },
@@ -309,14 +309,14 @@ export const ONLINE_DIYETISYEN_FIYAT = {
   heroFallback: '/online-diyetisyen',
   pillarPath: '/online-diyetisyen',
   pillarName: 'Online Diyetisyen',
-  title: 'Online Diyetisyen Fiyatları 2026 — 1.299 TL\'den',
+  title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL\'den',
   description:
-    'Online diyetisyen fiyatları 2026: Eko Diyet 1.299 TL, Diyet 2.499 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
+    'Online diyetisyen fiyatları 2026: Eko Diyet 2.700 TL, Diyet 4.050 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
   keywords:
     'online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları',
-  h1: 'Online diyetisyen fiyatları 2026 — 1.299 TL\'den',
+  h1: 'Online diyetisyen fiyatları 2026 — 2.700 TL\'den',
   lead:
-    '**Online diyetisyen fiyatları** (2026) Yeni Form’da şeffaftır: **Eko Diyet 1.299 TL/ay** (ayda 1 seans), **Diyet 2.499 TL/ay** (ayda 2 seans), **VIP 4.999 TL/ay** (2 diyetisyen + 2 koç). Hizmetin nasıl işlediği pillar sayfadadır; bu sayfa yalnızca ücrettir.',
+    '**Online diyetisyen fiyatları** (2026) Yeni Form’da şeffaftır: **Eko Diyet 2.700 TL/ay** (ayda 1 seans), **Diyet 4.050 TL/ay** (ayda 2 seans), **VIP 7.425 TL/ay** (2 diyetisyen + 2 koç). Hizmetin nasıl işlediği pillar sayfadadır; bu sayfa yalnızca ücrettir.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet ile Başla' },
   secondaryCta: { to: '/membership', label: 'Tüm paketleri karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
@@ -332,16 +332,16 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     {
       h2: 'Online diyetisyen fiyatları 2026 ne kadar?',
       paragraphs: [
-        'Yeni Form liste fiyatı: Eko Diyet **1.299 TL**, Diyet **2.499 TL**, VIP **4.999 TL** (aylık). Bireysel klinikler 2026’da çoğu zaman **2.000–6.000 TL/ay** bandında, çoğu zaman seans başı veya gizli teklifle çalışır.',
+        'Yeni Form liste fiyatı: Eko Diyet **2.700 TL**, Diyet **4.050 TL**, VIP **7.425 TL** (aylık). Bireysel klinikler 2026’da çoğu zaman **2.000–6.000 TL/ay** bandında, çoğu zaman seans başı veya gizli teklifle çalışır.',
         'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor satırları üyelik tablosundadır — bu sayfa diyetisyen ücretine odaklanır.',
       ],
     },
     {
       h2: 'Diyetisyen paket fiyatları ve seans hakları',
       steps: [
-        { title: 'Eko Diyet — 1.299 TL/ay', text: 'Ayda 1 online diyetisyen görüşmesi; giriş seviyesi takip.' },
-        { title: 'Diyet — 2.499 TL/ay', text: 'Ayda 2 video seans; kilo yönetimi ve alışkanlık değişimi için standart paket.' },
-        { title: 'VIP — 4.999 TL/ay', text: 'Ayda 2 diyetisyen + 2 koç; beslenme ve antrenman birlikte.' },
+        { title: 'Eko Diyet — 2.700 TL/ay', text: 'Ayda 1 online diyetisyen görüşmesi; giriş seviyesi takip.' },
+        { title: 'Diyet — 4.050 TL/ay', text: 'Ayda 2 video seans; kilo yönetimi ve alışkanlık değişimi için standart paket.' },
+        { title: 'VIP — 7.425 TL/ay', text: 'Ayda 2 diyetisyen + 2 koç; beslenme ve antrenman birlikte.' },
         { title: 'Ödeme', text: 'Stripe; aylık veya 3–6 aylık katmanlar üyelik sayfasında. Gizli uygulama ücreti yok.' },
       ],
     },
@@ -361,8 +361,8 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     },
   ],
   faqs: [
-    { q: 'Online diyetisyen fiyatları 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 1.299 TL, Diyet 2.499 TL, VIP 4.999 TL/ay (liste). 3–6 aylık katman üyelik sayfasındadır.' },
-    { q: 'Diyetisyen fiyatları neden pakete göre değişir?', a: 'Seans hakkı ve koçluk dahil olup olmamasına göre. Yalnız diyetisyen: 1.299 veya 2.499 TL/ay. Koç + diyetisyen: VIP 4.999 TL/ay.' },
+    { q: 'Online diyetisyen fiyatları 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 2.700 TL, Diyet 4.050 TL, VIP 7.425 TL/ay (liste). 3–6 aylık katman üyelik sayfasındadır.' },
+    { q: 'Diyetisyen fiyatları neden pakete göre değişir?', a: 'Seans hakkı ve koçluk dahil olup olmamasına göre. Yalnız diyetisyen: 2.700 veya 4.050 TL/ay. Koç + diyetisyen: VIP 7.425 TL/ay.' },
     { q: 'Diyetisyen paket fiyatları nasıl hesaplanır?', a: 'Aylık listedir; seans hakkı dahildir (Eko 1, Diyet 2). Seans başı ek ücret yoktur. Çok aylık birim fiyat üyelik tablosunda düşer.' },
     { q: 'Online diyet ücretleri gizli mi?', a: 'Hayır. Bu sayfadaki liste + üyelik tablosu geçerlidir. Ödeme Stripe iledir; ayrı uygulama ücreti yoktur.' },
     { q: 'Diyetisyen seans ücretleri pakete dahil mi?', a: 'Evet. Paketteki video seans hakkı fiyata dahildir. Platform tek seanslık klinik satışı yapmaz.' },
@@ -679,7 +679,7 @@ export const ONLINE_WELLNESS = {
     { q: 'Online wellness platformu güvenilir mi?', a: 'Yeni Form\'da tüm koç ve diyetisyenler lisanslı uzmanlar; görüşmeler platform içi şifreli video, veriler KVKK uyumlu işlenir.' },
     { q: 'Online wellness ile kilo verilir mi?', a: 'Online diyetisyen ve spor koçluğuyla kilo yönetimi mümkündür. Sonuçlar kişiden kişiye değişir; sürdürülebilir hedefler için koç/diyetisyeninizle birlikte plan yaparsınız.' },
     { q: 'Yeni Form\'da online wellness kapsamı ne?', a: 'Online diyetisyen (diyet, PCOS, sporcu beslenmesi vb.), online spor koçluğu, AI sağlık analizi, kalori takibi ve video görüşme tek platformda sunulur.' },
-    { q: 'Online wellness fiyatları nasıl?', a: 'Eko Diyet 1.299 TL/ay\'dan başlar; VIP (koç + diyetisyen) 4.999 TL/ay\'dır. Güncel tablo üyelik sayfasındadır.' },
+    { q: 'Online wellness fiyatları nasıl?', a: 'Eko Diyet 2.700 TL/ay\'dan başlar; VIP (koç + diyetisyen) 7.425 TL/ay\'dır. Güncel tablo üyelik sayfasındadır.' },
     { q: 'Hangi wellness hizmetini seçmeliyim?', a: 'Yalnızca beslenme → Diyet paketi; yalnızca spor → Spor paketi; ikisi birlikte → VIP. Paket karşılaştırma sayfamıza bakın.' },
     { q: 'Online wellness programı ne kadar sürer?', a: 'Hedefe bağlı değişir. Çoğu üye 3–6 ay düzenli takipte alışkanlık değişimi sağlar; paket süresi boyunca uzman desteği devam eder.' },
     { q: 'Şehir dışında yaşıyorum, online wellness işe yarar mı?', a: 'Evet. Platform tüm Türkiye\'ye hizmet verir; randevu saatinde internet bağlantısı yeterlidir.' },

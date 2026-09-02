@@ -63,7 +63,7 @@ const LEGACY_INACTIVE = ['free', 'eko', 'kurucu', 'gumus', 'altin', 'platinum', 
 /** Seed / eksik plan insert — admin marketing alanlarını ezmez */
 const ACTIVE_PLANS = [
   {
-    id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sage', icon: 'Salad',
+    id: 'eko_diyet', name: 'Eko Diyet Paketi', price: 2700, period: 'Aylık', badge: 'Eko', color: 'sage', icon: 'Salad',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 1, photoCalorie: true, manualCalorie: true },
     features: [
@@ -79,13 +79,13 @@ const ACTIVE_PLANS = [
     ],
     limits: ['Uzman diyetisyen desteğiyle sürdürülebilir beslenme', 'Kişisel diyet programı', 'Sınırsız destek'],
     pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 1299 },
-      { months: 3, label: '3 Aylık', price: 2999 },
-      { months: 6, label: '6 Aylık', price: 3999 },
+      { months: 1, label: 'Aylık', price: 2700 },
+      { months: 3, label: '3 Aylık', price: 7425 },
+      { months: 6, label: '6 Aylık', price: 13500 },
     ],
   },
   {
-    id: 'diyet', name: 'Diyet Paketi', price: 2499, period: 'Aylık', badge: null, color: 'emerald', icon: 'Apple',
+    id: 'diyet', name: 'Diyet Paketi', price: 4050, period: 'Aylık', badge: null, color: 'emerald', icon: 'Apple',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 0, dietitianMeetingsPerMonth: 2, photoCalorie: true, manualCalorie: true },
     features: [
@@ -101,13 +101,13 @@ const ACTIVE_PLANS = [
     ],
     limits: ['Uzman diyetisyen desteğiyle sürdürülebilir beslenme', 'Kişisel diyet programı', 'Sınırsız destek'],
     pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 2499 },
-      { months: 3, label: '3 Aylık', price: 6499 },
-      { months: 6, label: '6 Aylık', price: 9999 },
+      { months: 1, label: 'Aylık', price: 4050 },
+      { months: 3, label: '3 Aylık', price: 10125 },
+      { months: 6, label: '6 Aylık', price: 20250 },
     ],
   },
   {
-    id: 'eko_spor', name: 'Eko Spor Paketi', price: 1299, period: 'Aylık', badge: 'Eko', color: 'sky', icon: 'Footprints',
+    id: 'eko_spor', name: 'Eko Spor Paketi', price: 2700, period: 'Aylık', badge: 'Eko', color: 'sky', icon: 'Footprints',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 1, dietitianMeetingsPerMonth: 0, photoCalorie: true, manualCalorie: true },
     features: [
@@ -122,13 +122,13 @@ const ACTIVE_PLANS = [
     ],
     limits: ['Spor yapanlar için profesyonel takip', 'Kişisel spor programı', 'Sınırsız video'],
     pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 1299 },
-      { months: 3, label: '3 Aylık', price: 2999 },
-      { months: 6, label: '6 Aylık', price: 3999 },
+      { months: 1, label: 'Aylık', price: 2700 },
+      { months: 3, label: '3 Aylık', price: 7425 },
+      { months: 6, label: '6 Aylık', price: 13500 },
     ],
   },
   {
-    id: 'spor', name: 'Spor Paketi', price: 2499, period: 'Aylık', badge: null, color: 'blue', icon: 'Dumbbell',
+    id: 'spor', name: 'Spor Paketi', price: 4050, period: 'Aylık', badge: null, color: 'blue', icon: 'Dumbbell',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 0, photoCalorie: true, manualCalorie: true },
     features: [
@@ -143,13 +143,13 @@ const ACTIVE_PLANS = [
     ],
     limits: ['Spor yapanlar için profesyonel takip', 'Kişisel spor programı', 'Sınırsız video'],
     pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 2499 },
-      { months: 3, label: '3 Aylık', price: 6499 },
-      { months: 6, label: '6 Aylık', price: 9999 },
+      { months: 1, label: 'Aylık', price: 4050 },
+      { months: 3, label: '3 Aylık', price: 10125 },
+      { months: 6, label: '6 Aylık', price: 20250 },
     ],
   },
   {
-    id: 'vip', name: 'Vip Paket', price: 4999, period: 'Aylık', badge: 'VIP', color: 'gold', icon: 'Crown',
+    id: 'vip', name: 'Vip Paket', price: 7425, period: 'Aylık', badge: 'VIP', color: 'gold', icon: 'Crown',
     billing_type: 'recurring',
     entitlements: { coachMeetingsPerMonth: 2, dietitianMeetingsPerMonth: 2, photoCalorie: true, manualCalorie: true },
     features: [
@@ -168,9 +168,9 @@ const ACTIVE_PLANS = [
     ],
     limits: ['İşbirliği içerisindeki uzmanlarımıza en kapsamlı sağlık deneyimi', 'Sınırsız destek', 'VIP rozeti'],
     pricing_tiers: [
-      { months: 1, label: 'Aylık', price: 4999 },
-      { months: 3, label: '3 Aylık', price: 12999 },
-      { months: 6, label: '6 Aylık', price: 19999 },
+      { months: 1, label: 'Aylık', price: 7425 },
+      { months: 3, label: '3 Aylık', price: 18900 },
+      { months: 6, label: '6 Aylık', price: 40500 },
     ],
   },
 ]

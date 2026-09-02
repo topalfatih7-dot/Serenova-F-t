@@ -21,11 +21,11 @@ Admin may create additional plan IDs with custom entitlements.
 
 | Plan | 1 ay | 3 ay | 6 ay |
 |------|------|------|------|
-| eko_diyet | 1299 | 2999 | 3999 |
-| diyet | 2499 | 6499 | 9999 |
-| eko_spor | 1299 | 2999 | 3999 |
-| spor | 2499 | 6499 | 9999 |
-| vip | 4999 | 12999 | 19999 |
+| eko_diyet | 2700 | 7425 | 13500 |
+| diyet | 4050 | 10125 | 20250 |
+| eko_spor | 2700 | 7425 | 13500 |
+| spor | 4050 | 10125 | 20250 |
+| vip | 7425 | 18900 | 40500 |
 
 ## Key web files
 

@@ -102,5 +102,6 @@
   "20260905_push_receipts.sql",
   "20260906_device_push_tokens_multi_device.sql",
   "20260908_nutrition_lookup_cache.sql",
-  "20260909_drop_unused_session_recordings.sql"
+  "20260909_drop_unused_session_recordings.sql",
+  "20260910_plan_price_increase_35.sql"
 ]

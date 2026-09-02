@@ -54,19 +54,19 @@ export function mapStripeCheckoutError(err) {
 
 // membershipPlans.js ile aynı varsayılan fiyatlar (TL, aylık).
 export const PLAN_FALLBACK = {
-  eko_diyet: { name: 'Eko Diyet Paketi', price: 1299, durationMonths: 1 },
-  diyet: { name: 'Diyet Paketi', price: 2499, durationMonths: 1 },
-  eko_spor: { name: 'Eko Spor Paketi', price: 1299, durationMonths: 1 },
-  spor: { name: 'Spor Paketi', price: 2499, durationMonths: 1 },
-  vip: { name: 'Vip Paket', price: 4999, durationMonths: 1 },
+  eko_diyet: { name: 'Eko Diyet Paketi', price: 2700, durationMonths: 1 },
+  diyet: { name: 'Diyet Paketi', price: 4050, durationMonths: 1 },
+  eko_spor: { name: 'Eko Spor Paketi', price: 2700, durationMonths: 1 },
+  spor: { name: 'Spor Paketi', price: 4050, durationMonths: 1 },
+  vip: { name: 'Vip Paket', price: 7425, durationMonths: 1 },
 }
 
 export const TIER_PRICES = {
-  eko_diyet: { 1: 1299, 3: 2999, 6: 3999 },
-  diyet: { 1: 2499, 3: 6499, 6: 9999 },
-  eko_spor: { 1: 1299, 3: 2999, 6: 3999 },
-  spor: { 1: 2499, 3: 6499, 6: 9999 },
-  vip: { 1: 4999, 3: 12999, 6: 19999 },
+  eko_diyet: { 1: 2700, 3: 7425, 6: 13500 },
+  diyet: { 1: 4050, 3: 10125, 6: 20250 },
+  eko_spor: { 1: 2700, 3: 7425, 6: 13500 },
+  spor: { 1: 4050, 3: 10125, 6: 20250 },
+  vip: { 1: 7425, 3: 18900, 6: 40500 },
 }
 
 export function getTierPrice(planId, months = 1) {
