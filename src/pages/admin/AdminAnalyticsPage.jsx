@@ -6,7 +6,7 @@ import { useChartColors } from '../../context/ThemeContext'
 import { fetchGa4Report } from '../../services/ga4Report'
 
 export default function AdminAnalyticsPage() {
-  const { adminStats, monthlyGrowth, platform, onboardingFunnel } = useApp()
+  const { adminStats, monthlyGrowth, onboardingFunnel } = useApp()
   const colors = useChartColors()
   const conversionRate = adminStats.totalMembers ? Math.round((adminStats.premium / adminStats.totalMembers) * 100) : 0
 
@@ -38,7 +38,7 @@ export default function AdminAnalyticsPage() {
           <p className="mt-1 font-display text-3xl font-bold text-brand-600">%{conversionRate}</p>
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-5 text-center">
-          <p className="text-xs text-cream-800/50">MRR</p>
+          <p className="text-xs text-cream-800/50">MRR (Stripe)</p>
           <p className="mt-1 font-display text-2xl font-bold text-sage-600">{adminStats.mrr.toLocaleString('tr-TR')}₺</p>
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-5 text-center">
@@ -46,8 +46,8 @@ export default function AdminAnalyticsPage() {
           <p className="mt-1 font-display text-3xl font-bold text-gold-500">+{adminStats.newThisMonth}</p>
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-5 text-center">
-          <p className="text-xs text-cream-800/50">Ödeme Sayısı</p>
-          <p className="mt-1 font-display text-3xl font-bold text-cream-900">{platform.payments.length}</p>
+          <p className="text-xs text-cream-800/50">Stripe Ödeme</p>
+          <p className="mt-1 font-display text-3xl font-bold text-cream-900">{adminStats.stripePaymentCount ?? 0}</p>
         </div>
       </div>
 

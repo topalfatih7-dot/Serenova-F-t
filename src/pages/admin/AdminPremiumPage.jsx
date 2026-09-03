@@ -397,7 +397,7 @@ function EditPremiumModal({
                       className="w-full rounded-xl border border-cream-200 bg-white py-2.5 pl-7 pr-3 text-sm"
                     />
                   </div>
-                  <p className="mt-1 text-[10px] text-cream-800/45">Boş bırakılırsa plan fiyatı / 0₺ admin kaydı yazılır</p>
+                  <p className="mt-1 text-[10px] text-cream-800/45">Boş = 0₺. Banka/hediye tutarı yazılabilir; Stripe gelirine dahil edilmez.</p>
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs text-cream-800/55">Ödeme notu</span>
@@ -456,10 +456,10 @@ function EditPremiumModal({
             <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-700">
               <AlertTriangle className="h-3.5 w-3.5" />
               {addPackage
-                ? 'Yeni paket mevcut haklara eklenir; birleşik erişim uygulanır. Ödeme kaydı yazılır.'
+                ? 'Yeni paket mevcut haklara eklenir; birleşik erişim uygulanır. Audit kaydı yazılır, Stripe gelirine eklenmez.'
                 : membership === 'free'
                   ? 'Abonelik paketleri kaldırılır; tek seferlik paketler chip ile ayrıca çıkarılabilir.'
-                  : 'Paket değişince abonelik paketleri yenilenir. Ödeme kaydı yazılır.'}
+                  : 'Paket değişince abonelik paketleri yenilenir. Audit kaydı yazılır, Stripe gelirine eklenmez.'}
             </p>
           )}
         </section>

@@ -1,6 +1,6 @@
 import { useApp } from '../../context/AppContext'
 import EmptyState from '../../components/ui/EmptyState'
-import { formatRelativeTime } from '../../utils/relativeTime'
+import { formatRelativeTimeWithClock } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 import { Activity, ArrowUpCircle, UserPlus, CreditCard, MessageSquare, LogIn, LogOut, Shield } from 'lucide-react'
 
@@ -41,7 +41,7 @@ export default function AdminActivityPage() {
                 <div className="flex-1">
                   <p className="font-medium text-cream-900">{a.text}</p>
                   <p className="mt-0.5 text-xs text-cream-800/40">
-                    {config.label} · {formatRelativeTime(a.createdAt)}
+                    {config.label} · {formatRelativeTimeWithClock(a.createdAt)}
                   </p>
                 </div>
               </div>

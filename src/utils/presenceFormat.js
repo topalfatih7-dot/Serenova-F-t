@@ -20,8 +20,8 @@ export function sessionDurationSeconds(sessionStartedAt) {
 
 export function formatSessionStart(iso) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return `${format(d, 'HH:mm', { locale: tr })} (${formatDistanceToNow(d, { addSuffix: true, locale: tr })})`
+  const clock = format(new Date(iso), 'HH:mm', { locale: tr })
+  return `${clock} (${formatDistanceToNow(new Date(iso), { addSuffix: true, locale: tr })})`
 }
 
 export function roleLabel(role) {

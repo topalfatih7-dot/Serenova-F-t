@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Activity, Circle } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
-import { formatActiveDuration, formatSessionStart, roleLabel, sessionDurationSeconds } from '../../utils/presenceFormat'
+import { formatActiveDuration, roleLabel, sessionDurationSeconds } from '../../utils/presenceFormat'
+import { formatClock, formatRelativeTime } from '../../utils/relativeTime'
 
 export default function AdminActiveUsersPanel() {
   const { activeUsers } = useApp()
@@ -63,7 +64,10 @@ export default function AdminActiveUsersPanel() {
                       {roleLabel(u.role)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-cream-800/70">{formatSessionStart(u.session_started_at)}</td>
+                  <td className="px-4 py-3 text-cream-800/70">
+                    <p className="tabular-nums font-medium text-cream-900">{formatClock(u.session_started_at) || '—'}</p>
+                    <p className="text-xs text-cream-800/45">{formatRelativeTime(u.session_started_at)}</p>
+                  </td>
                   <td className="px-4 py-3 font-medium tabular-nums text-sage-700">
                     {formatActiveDuration(sessionDurationSeconds(u.session_started_at))}
                   </td>

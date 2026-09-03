@@ -554,6 +554,7 @@ function AdminPayments() {
         <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
           <p className="text-xs text-brand-800/70">Aylık Tekrarlayan Gelir</p>
           <p className="mt-1 font-display text-2xl font-bold text-brand-900">{formatTry(adminStats?.mrr)}</p>
+          <p className="mt-1 text-xs text-brand-800/55">Yalnızca Stripe abonelikleri</p>
         </div>
         <div className="rounded-2xl border border-sage-100 bg-sage-50/50 p-5">
           <p className="text-xs text-sage-800/70">Ücretli Üye</p>
@@ -561,12 +562,14 @@ function AdminPayments() {
           <p className="mt-1 text-xs text-sage-700">%{conversionRate} dönüşüm</p>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
-          <p className="text-xs text-amber-800/70">Toplam Gelir</p>
+          <p className="text-xs text-amber-800/70">Stripe Gelir</p>
           <p className="mt-1 font-display text-2xl font-bold text-amber-900">{formatTry(adminStats?.totalRevenue)}</p>
+          <p className="mt-1 text-xs text-amber-800/60">Admin paket atamaları dahil değil</p>
         </div>
         <div className="rounded-2xl border border-cream-200 bg-white p-5">
-          <p className="text-xs text-cream-800/60">Kayıtlı Ödeme</p>
-          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{platform?.payments?.length ?? 0}</p>
+          <p className="text-xs text-cream-800/60">Stripe Ödeme</p>
+          <p className="mt-1 font-display text-2xl font-bold text-cream-900">{adminStats?.stripePaymentCount ?? 0}</p>
+          <p className="mt-1 text-xs text-cream-800/45">{platform?.payments?.length ?? 0} kayıt (audit dahil)</p>
         </div>
       </div>
 
@@ -608,7 +611,7 @@ function AdminPayments() {
           <ArrowDownLeft className="h-5 w-5 text-brand-500" /> Son Üye Ödemeleri
         </h2>
         {recent.length === 0 ? (
-          <EmptyState icon={History} title="Ödeme kaydı yok" description="Stripe veya manuel plan değişimlerinde kayıtlar burada görünür." />
+          <EmptyState icon={History} title="Ödeme kaydı yok" description="Stripe tahsilatları ve admin paket atamaları (gelire yazılmaz) burada görünür." />
         ) : (
           <div className="space-y-2">
             {recent.map((t) => (
@@ -653,7 +656,7 @@ function AdminPayments() {
                   />
                   <Legend />
                   <Bar yAxisId="left" dataKey="premium" name="Premium" fill="#4a8aad" radius={[4, 4, 0, 0]} />
-                  <Bar yAxisId="right" dataKey="gelir" name="Gelir (₺)" fill="#b8924f" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="right" dataKey="gelir" name="Stripe gelir (₺)" fill="#b8924f" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -697,7 +700,7 @@ export default function PaymentManagementPage({ audience = 'member' }) {
   }, [audience])
 
   const subtitle = useMemo(() => {
-    if (audience === 'admin') return 'Gelir, üye ödemeleri, personel ve influencer IBAN’ları ile hakediş onayları'
+    if (audience === 'admin') return 'Stripe geliri, üye ödemeleri, personel ve influencer IBAN’ları ile hakediş onayları'
     if (audience === 'staff') return 'IBAN ve Cuma hakediş ödemesi'
     return 'Ödeme geçmişiniz ve Stripe kart yönetimi'
   }, [audience])

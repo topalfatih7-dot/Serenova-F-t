@@ -2825,20 +2825,11 @@ export async function sendTicketReply(id, from, text) {
   return { ...ticket, messages, status, success: true }
 }
 
-async function resolveAdminAssignPrice(planId, durationMonths, amountOverride) {
+/** Admin atamasında katalog fiyatı gelire yazılmaz. Tutar yalnızca operatör girerse audit kaydına gider. */
+async function resolveAdminAssignPrice(_planId, _durationMonths, amountOverride) {
   if (amountOverride !== undefined && amountOverride !== null && amountOverride !== '') {
     const n = Number(amountOverride)
     return Number.isFinite(n) && n >= 0 ? n : 0
-  }
-  const months = Number(durationMonths) || 1
-  const { data: planRow } = await supabase.from('plans').select('price, pricing_tiers').eq('id', planId).maybeSingle()
-  if (planRow) {
-    const tiers = planRow.pricing_tiers
-    if (Array.isArray(tiers)) {
-      const tier = tiers.find((t) => Number(t.months) === months)
-      if (tier?.price != null) return Number(tier.price) || 0
-    }
-    if (typeof planRow.price === 'number' && planRow.price >= 0) return planRow.price
   }
   return 0
 }
@@ -3023,7 +3014,7 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
 
   await upsertMember(updated)
 
-  // Ücretli admin paket ataması → payments (Stripe webhook şekliyle uyumlu)
+  // Ücretli admin paket ataması → audit kaydı (gelire yazılmaz)
   if (assignedPaidPlan && assignedCfg) {
     const amount = assignedAmount ?? 0
     const note = String(options.paymentNote || '').trim()
@@ -3038,15 +3029,12 @@ export async function adminUpdatePremiumMembership(memberId, options = {}) {
         durationMonths: assignedMonths,
         status: 'completed',
         provider: 'admin',
+        kind: 'admin_grant',
+        countsAsRevenue: false,
         note: note || null,
         createdAt: nowISO(),
       },
     })
-    await addActivity(
-      'payment',
-      `${updated.name} admin paket ataması (${getPlanLabel(assignedPaidPlan)}, ${Number(amount).toLocaleString('tr-TR')}₺)`,
-      updated.id,
-    )
   }
 
   const activityParts = []

@@ -1,7 +1,7 @@
-import { DEFAULT_PACKAGE, PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership, memberNeedsStaffAssignment } from '../data/membershipPlans'
-import { calculatePackagePrice } from './packagePricing'
+import { PAID_MEMBERSHIPS, getPlanLabel, isPaidMembership, memberNeedsStaffAssignment } from '../data/membershipPlans'
 import { getRemainingDays } from './premiumMembership'
 import { memberIdSet, filterByMemberIds } from '../utils/memberScopedData'
+import { computeStripeMrr, filterStripeRevenuePayments, sumStripeRevenue } from '../utils/stripeRevenue'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -114,13 +114,8 @@ export function computeAdminStats(db) {
   const free = members.filter((m) => m.membership === 'free')
   const thisMonth = today().slice(0, 7)
 
-  const activePaid = paid.filter((m) => m.membershipStatus === 'active')
-  const mrr = activePaid.reduce((sum, m) => {
-    // Ücretsiz plan üyeleri için ödeme hesaplanmaz
-    if (!isPaidMembership(m.membership)) return sum
-    // Aylık ödeme tutarı plan fiyatından alınır veya paket hesabından
-    return sum + (m.planPrice || calculatePackagePrice(m.packageConfig || DEFAULT_PACKAGE).monthly)
-  }, 0)
+  const stripePayments = filterStripeRevenuePayments(payments)
+  const mrr = computeStripeMrr(members)
 
   const expiringSoon = paid.filter((m) => {
     const r = getRemainingDays(m.premiumExpiresAt)
@@ -134,8 +129,9 @@ export function computeAdminStats(db) {
     active: members.filter((m) => m.membershipStatus === 'active').length,
     expiring: members.filter((m) => m.membershipStatus === 'expiring').length || expiringSoon,
     newThisMonth: members.filter((m) => m.joinedAt?.startsWith(thisMonth)).length,
-    mrr,
-    totalRevenue: payments.reduce((s, p) => s + (p.amount || 0), 0),
+    mrr: Math.round(mrr),
+    totalRevenue: Math.round(sumStripeRevenue(stripePayments)),
+    stripePaymentCount: stripePayments.length,
     openTickets: tickets.filter((t) => t.status !== 'closed').length,
     avgStreak: members.length
       ? Math.round(members.reduce((s, m) => s + (m.streak || 0), 0) / members.length)
@@ -171,8 +167,8 @@ export function computeMonthlyGrowth(db) {
   const year = new Date().getFullYear()
   return months.map((month, i) => {
     const monthStr = `${year}-${String(i + 1).padStart(2, '0')}`
-    const monthPayments = payments.filter((p) => p.createdAt?.startsWith(monthStr))
-    const gelir = monthPayments.reduce((s, p) => s + (p.amount || 0), 0)
+    const monthPayments = filterStripeRevenuePayments(payments).filter((p) => p.createdAt?.startsWith(monthStr))
+    const gelir = Math.round(sumStripeRevenue(monthPayments))
     return {
       month,
       uye: db.members.filter((m) => m.joinedAt <= `${monthStr}-31`).length,

@@ -7,6 +7,7 @@ import AdminActiveUsersPanel from '../../components/admin/AdminActiveUsersPanel'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { getRemainingDays } from '../../services/premiumMembership'
+import { formatLastActiveAt } from '../../utils/relativeTime'
 import { getPlanLabel, packageIncludesCoach, packageIncludesDietitian } from '../../data/membershipPlans'
 import { GOAL_LABELS, FITNESS_LABELS, NUTRITION_LABELS } from '../../services/health'
 import AvailabilityView from '../../components/package/AvailabilityView'
@@ -50,6 +51,13 @@ export default function AdminMembersPage() {
   const selected = useMemo(() => members.find((m) => m.id === selectedId) || null, [members, selectedId])
   const staffName = (id) => staff.find((s) => s.id === id)?.name || '—'
   const onlineIds = useMemo(() => new Set(activeUsers.map((u) => u.user_id)), [activeUsers])
+  const lastSeenById = useMemo(() => {
+    const map = {}
+    for (const u of activeUsers) {
+      if (u.user_id && u.last_seen_at) map[u.user_id] = u.last_seen_at
+    }
+    return map
+  }, [activeUsers])
   const isOnline = (memberId) => onlineIds.has(memberId)
 
   const filtered = useMemo(() => members.filter((m) => {
@@ -143,7 +151,9 @@ export default function AdminMembersPage() {
                   <td className="px-4 py-3 text-cream-800/70">{m.city || '—'}</td>
                   <td className="px-4 py-3">{m.streak || 0} gün</td>
                   <td className="px-4 py-3 text-cream-800/60">{m.joinedAt}</td>
-                  <td className="px-4 py-3 text-cream-800/60">{m.lastActiveAt}</td>
+                  <td className="px-4 py-3 text-cream-800/60">
+                    {formatLastActiveAt(lastSeenById[m.id] || m.lastActiveAt)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -182,6 +192,10 @@ export default function AdminMembersPage() {
               <InfoRow label="Bel çevresi" value={selected.waist ? `${selected.waist} cm` : '—'} />
               <InfoRow label="Spor seviyesi" value={FITNESS_LABELS[selected.fitnessLevel] || '—'} />
               <InfoRow label="Kayıt tarihi" value={selected.joinedAt} />
+              <InfoRow
+                label="Son aktif"
+                value={formatLastActiveAt(lastSeenById[selected.id] || selected.lastActiveAt)}
+              />
             </div>
 
             {selected.membership !== 'free' && (

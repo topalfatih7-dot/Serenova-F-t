@@ -9,7 +9,7 @@ import StatsCard from '../../components/ui/StatsCard'
 import EmptyState from '../../components/ui/EmptyState'
 import { useApp } from '../../context/AppContext'
 import { useChartColors } from '../../context/ThemeContext'
-import { formatRelativeTime } from '../../utils/relativeTime'
+import { formatClock, formatRelativeTime } from '../../utils/relativeTime'
 import useRelativeTimeTick from '../../hooks/useRelativeTimeTick'
 
 const ACTIVITY_COLORS = { upgrade: 'text-brand-600', signup: 'text-sage-600', payment: 'text-gold-500', ticket: 'text-purple-600', login: 'text-cream-800' }
@@ -48,7 +48,7 @@ export default function AdminOverviewPage() {
         <StatsCard label="Toplam Üye" value={adminStats.totalMembers} sub={`+${adminStats.newThisMonth} bu ay`} icon={Users} accent="brand" />
         <StatsCard label="Premium Üye" value={adminStats.premium} sub={hasMembers ? `%${pct} oran` : '—'} icon={Crown} accent="gold" />
         <StatsCard label="Paketsiz Üye" value={adminStats.free} sub="Süre bitmiş" icon={UserCheck} accent="sage" />
-        <StatsCard label="MRR" value={adminStats.mrr ? `${(adminStats.mrr / 1000).toFixed(1)}K₺` : '0₺'} sub={`Toplam gelir: ${adminStats.totalRevenue.toLocaleString('tr-TR')}₺`} icon={TrendingUp} accent="brand" />
+        <StatsCard label="Stripe MRR" value={adminStats.mrr ? `${(adminStats.mrr / 1000).toFixed(1)}K₺` : '0₺'} sub={`Stripe gelir: ${adminStats.totalRevenue.toLocaleString('tr-TR')}₺`} icon={TrendingUp} accent="brand" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -116,12 +116,24 @@ export default function AdminOverviewPage() {
             <p className="mt-6 text-center text-sm text-cream-800/50">Henüz aktivite yok</p>
           ) : (
             <div className="mt-4 space-y-3">
-              {activities.slice(0, 6).map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded-xl bg-cream-50 px-4 py-3">
+              {activities.slice(0, 6).map((a) => {
+                const clock = formatClock(a.createdAt)
+                return (
+                <div key={a.id} className="flex items-center justify-between gap-3 rounded-xl bg-cream-50 px-4 py-3">
                   <p className={`text-sm font-medium ${ACTIVITY_COLORS[a.type] || 'text-cream-800'}`}>{a.text}</p>
-                  <span className="text-xs text-cream-800/40">{formatRelativeTime(a.createdAt)}</span>
+                  <span className="shrink-0 text-right text-xs text-cream-800/40">
+                    {clock ? (
+                      <>
+                        <span className="block tabular-nums font-medium text-cream-800/70">{clock}</span>
+                        <span>{formatRelativeTime(a.createdAt)}</span>
+                      </>
+                    ) : (
+                      formatRelativeTime(a.createdAt)
+                    )}
+                  </span>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
