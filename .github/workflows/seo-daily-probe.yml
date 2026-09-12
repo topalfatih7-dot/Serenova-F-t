@@ -1,0 +1,24 @@
+# Canlı www SEO taraması — her gün 21:00 Türkiye (UTC 18:00).
+# Sitemap 500, eksik title/canonical veya sayfa 200 değilse job düşer.
+# İçerik/title kararı yok; o iş Cursor Automation + PR (merge insan).
+
+name: SEO daily probe
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parser + nav contract
+        run: node --test tests/seo-daily-probe.test.js
+      - name: Live Googlebot probe
+        run: node scripts/seo-daily-probe.mjs

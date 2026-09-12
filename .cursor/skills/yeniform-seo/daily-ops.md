@@ -56,6 +56,8 @@ Hamilelik sayfasında kalori açığı / kilo verdirme iddiası yok. YMYL’de t
 
 ## Cursor Automation (21:00 TR)
 
+Teknik tarama ayrıca GitHub Actions `SEO daily probe` ile her gün 21:00 TR çalışır (`0 18 * * *`). Sitemap/title kırığı orada kırmızı olur; içerik PR’si yine bu ajan.
+
 Tetik: her gün 21:00 Türkiye = cron `0 18 * * *` (UTC+3). Dal: `main`. Araçlar: git (PR aç). `main`’e push/merge yok.
 
 Ajan prompt’u (editöre yapıştır):
