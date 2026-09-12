@@ -3,7 +3,13 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { parsePageHtml, parseSitemapLocs, evaluateFindings } from '../scripts/seo-daily-probe.mjs'
+import {
+  parsePageHtml,
+  parseSitemapLocs,
+  evaluateFindings,
+  selectDynamicProbePaths,
+  HOME_TITLE,
+} from '../scripts/seo-daily-probe.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -69,5 +75,56 @@ describe('seo-daily-probe parser', () => {
       'https://www.yeniform.com/',
       'https://www.yeniform.com/kilo-verme',
     ])
+  })
+
+  it('samples blog and staff profile paths from sitemap', () => {
+    const locs = [
+      'https://www.yeniform.com/blog',
+      'https://www.yeniform.com/blog/kas-onarimi',
+      'https://www.yeniform.com/team/dietitians',
+      'https://www.yeniform.com/team/diyetisyen-pelinay-tohumcu',
+      'https://www.yeniform.com/team/koc-ahmet-yilmaz',
+    ]
+    assert.deepEqual(selectDynamicProbePaths(locs, { blog: 2, team: 2 }), [
+      '/blog/kas-onarimi',
+      '/team/diyetisyen-pelinay-tohumcu',
+      '/team/koc-ahmet-yilmaz',
+    ])
+  })
+
+  it('flags homepage title and duplicate sitemap locs on dynamic pages', () => {
+    const loc = 'https://www.yeniform.com/blog/kas-onarimi'
+    const findings = evaluateFindings({
+      robots: { ok: true },
+      sitemap: { status: 200, contentType: 'application/xml', locs: [loc, loc] },
+      pages: [{
+        path: '/blog/kas-onarimi',
+        status: 200,
+        title: HOME_TITLE,
+        canonical: loc,
+        h1: 'Kas',
+        jsonLdTypes: [],
+      }],
+    })
+    assert.ok(findings.some((f) => f.id === 'duplicate_sitemap_loc'))
+    assert.ok(findings.some((f) => f.id === 'homepage_title' && f.path === '/blog/kas-onarimi'))
+    assert.ok(findings.some((f) => f.id === 'missing_jsonld' && f.severity === 'warn'))
+  })
+
+  it('does not require noindex UUID shells in the sitemap', () => {
+    const findings = evaluateFindings({
+      robots: { ok: true },
+      sitemap: { status: 200, contentType: 'application/xml', locs: ['https://www.yeniform.com/blog/kas-onarimi'] },
+      pages: [{
+        path: '/blog/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        status: 200,
+        title: 'Kas | Yeni Form',
+        canonical: 'https://www.yeniform.com/blog/kas-onarimi',
+        robots: 'noindex, follow',
+        h1: 'Kas',
+        jsonLdTypes: [],
+      }],
+    })
+    assert.equal(findings.some((f) => f.id === 'not_in_sitemap'), false)
   })
 })

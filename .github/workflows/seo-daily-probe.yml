@@ -19,6 +19,6 @@ jobs:
         with:
           node-version: '22'
       - name: Parser + nav contract
-        run: node --test tests/seo-daily-probe.test.js
+        run: node --test tests/seo-daily-probe.test.js tests/public-slugs.test.js
       - name: Live Googlebot probe
         run: node scripts/seo-daily-probe.mjs

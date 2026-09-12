@@ -2,6 +2,8 @@
  * Dinamik sitemap.xml — blog + kadro + static.
  * Modül init asla throw etmez (production 500 önlemi).
  */
+import { slugifyTurkish, staffPublicSlug, dedupeUrlsByPath, isoDay } from '../src/utils/publicSlugs.js'
+
 function getDeployDate() {
   try {
     const envDate = process.env.DEPLOY_DATE
@@ -55,38 +57,6 @@ const STATIC_ROUTES = [
   { loc: '/legal/diyetisyen-hizmet-standartlari', changefreq: 'yearly', priority: '0.4' },
   { loc: '/hesap-silme', changefreq: 'yearly', priority: '0.5' },
 ]
-
-function slugifyTurkish(text) {
-  return String(text || '')
-    .toLocaleLowerCase('tr-TR')
-    .replace(/ı/g, 'i')
-    .replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u')
-    .replace(/ş/g, 's')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
-
-function staffPublicSlug(member) {
-  const namePart = slugifyTurkish(member?.name)
-  if (!namePart) return member?.id || ''
-  const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
-  if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
-    const specialty = slugifyTurkish(member?.specialty || member?.title || '')
-    if (specialty && specialty !== namePart && specialty !== rolePrefix) {
-      return `${rolePrefix}-${specialty}`
-    }
-    const shortId = String(member?.id || '').replace(/-/g, '').slice(0, 8)
-    return shortId ? `${rolePrefix}-${shortId}` : rolePrefix
-  }
-  return `${rolePrefix}-${namePart}`
-}
 
 function siteBase() {
   return (
@@ -168,14 +138,18 @@ async function fetchDynamicUrls() {
     if (error) {
       console.error('[sitemap] posts', error.message)
     } else {
-      for (const post of posts || []) {
+      const published = [...(posts || [])].sort((a, b) =>
+        String(b.data?.updatedAt || b.created_at || '').localeCompare(String(a.data?.updatedAt || a.created_at || '')),
+      )
+      for (const post of published) {
         const title = post.data?.title || ''
         const slug = post.data?.slug || slugifyTurkish(title) || post.id
+        if (!slug) continue
         urls.push({
           path: `/blog/${slug}`,
           changefreq: 'monthly',
           priority: '0.6',
-          lastmod: (post.created_at || '').slice(0, 10),
+          lastmod: isoDay(post.data?.updatedAt || post.updated_at || post.created_at),
         })
       }
     }
@@ -194,12 +168,12 @@ async function fetchDynamicUrls() {
     } else {
       for (const member of staff || []) {
         if (member.role !== 'coach' && member.role !== 'dietitian') continue
-        const specialty = member.data?.specialty || member.data?.title || ''
+        if (member.data?.listedOnTeam === false) continue
         urls.push({
-          path: `/team/${staffPublicSlug({ ...member, specialty, title: specialty })}`,
+          path: `/team/${staffPublicSlug(member)}`,
           changefreq: 'monthly',
-          priority: '0.6',
-          lastmod: (member.created_at || '').slice(0, 10),
+          priority: '0.65',
+          lastmod: isoDay(member.data?.updatedAt || member.updated_at || member.created_at),
         })
       }
     }
@@ -238,7 +212,7 @@ export default async function handler(req, res) {
       console.error('[sitemap] dynamic', err?.message || err)
     }
 
-    const body = buildXml(base, [...STATIC_ROUTES, ...dynamic])
+    const body = buildXml(base, [...STATIC_ROUTES, ...dedupeUrlsByPath(dynamic)])
     return sendXml(res, body, 'public, s-maxage=3600, stale-while-revalidate=86400', req.method)
   } catch (err) {
     console.error('[sitemap] fatal', err?.message || err)

@@ -84,3 +84,27 @@ export function parseBlogContent(content) {
   flushList()
   return blocks
 }
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Googlebot ilk HTML için görünür gövde — React ile aynı blok modeli. */
+export function blogContentToSeoHtml(content, { maxBlocks = 16 } = {}) {
+  const blocks = parseBlogContent(content).slice(0, maxBlocks)
+  return blocks.map((block) => {
+    if (block.type === 'h1' || block.type === 'h2') return `<h2>${escapeHtml(block.text)}</h2>`
+    if (block.type === 'h3') return `<h3>${escapeHtml(block.text)}</h3>`
+    if (block.type === 'ul') {
+      return `<ul>${block.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    }
+    if (block.type === 'ol') {
+      return `<ol>${block.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ol>`
+    }
+    return `<p>${escapeHtml(block.text)}</p>`
+  }).join('')
+}

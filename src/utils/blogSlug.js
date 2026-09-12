@@ -1,4 +1,4 @@
-import { slugifyTurkish } from '../config/seo'
+import { slugifyTurkish } from './publicSlugs'
 
 /** Blog yazısı için benzersiz slug üretir veya mevcut slug'ı döner. */
 export function blogPostSlug(post) {

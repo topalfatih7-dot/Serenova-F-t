@@ -36,6 +36,21 @@ const { SERVICE_PAGES, servicePagePlainHtml } = await import(
 const { KALORI_HESAPLAMA, caloriePagePlainHtml } = await import(
   pathToFileURL(join(root, 'src/data/seoCalorieCalculator.js')).href
 )
+const { blogContentToSeoHtml } = await import(
+  pathToFileURL(join(root, 'src/utils/blogContent.js')).href
+)
+const { slugifyTurkish, staffPublicSlug, isUuidParam } = await import(
+  pathToFileURL(join(root, 'src/utils/publicSlugs.js')).href
+)
+const { formatStaffDisplayName } = await import(
+  pathToFileURL(join(root, 'src/data/staffProfile.js')).href
+)
+const { BLOG_AUTHOR } = await import(
+  pathToFileURL(join(root, 'src/data/blogPosts.js')).href
+)
+const { blogServiceCta } = await import(
+  pathToFileURL(join(root, 'src/utils/blogServiceCta.js')).href
+)
 
 const STATIC_SHELLS = {
   '/': {
@@ -66,7 +81,7 @@ const STATIC_SHELLS = {
     title: 'Diyetisyen Kadromuz — Lisanslı Beslenme Uzmanları | Yeni Form',
     description:
       'Yeni Form diyetisyen kadrosu: lisanslı beslenme uzmanları, video görüşme ve kişiye özel program. Hizmet akışı online diyetisyen sayfasında.',
-    h1: 'Diyetisyen kadromuz',
+    h1: 'Online Diyetisyenlerimiz',
     body: `<p>Lisanslı diyetisyen kadromuzla tanışın. Süreç ve paketler hizmet sayfasında; ücretler fiyat sayfasındadır.</p>
 <p><a href="/online-diyetisyen">Online diyetisyen nasıl çalışır?</a> · <a href="/online-diyetisyen/fiyat">Fiyatlar</a> · <a href="/membership">Üyelik paketleri</a></p>`,
   },
@@ -124,8 +139,8 @@ function escapeAttr(str) {
     .replace(/</g, '&lt;')
 }
 
-function injectMeta(html, { title, description, path }) {
-  const canonical = `${site}${path === '/' ? '/' : path}`
+function injectMeta(html, { title, description, path, canonicalPath, robots, jsonLd }) {
+  const canonical = `${site}${canonicalPath || (path === '/' ? '/' : path)}`
   let out = html
   out = out.replace(/<title>[^<]*<\/title>/i, `<title>${escapeAttr(title)}</title>`)
   out = out.replace(
@@ -156,6 +171,39 @@ function injectMeta(html, { title, description, path }) {
     /<link rel="canonical" href="[^"]*"\s*\/?>/i,
     `<link rel="canonical" href="${escapeAttr(canonical)}" />`,
   )
+  if (robots) {
+    if (/<meta name="robots"/i.test(out)) {
+      out = out.replace(
+        /<meta name="robots" content="[^"]*"\s*\/?>/i,
+        `<meta name="robots" content="${escapeAttr(robots)}" />`,
+      )
+    } else {
+      out = out.replace(
+        /<link rel="canonical"[^>]*>/i,
+        (m) => `${m}\n    <meta name="robots" content="${escapeAttr(robots)}" />`,
+      )
+    }
+  }
+  const nodes = (Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : []).filter(Boolean)
+  if (nodes.length) {
+    const scripts = nodes
+      .map((node) => `<script type="application/ld+json">${JSON.stringify(node)}</script>`)
+      .join('\n    ')
+    out = out.replace(/<\/head>/i, `    ${scripts}\n  </head>`)
+  }
+  return out
+}
+
+function stripPrerender(html) {
+  let out = String(html || '')
+  out = out.replace(/<style id="seo-prerender-style">[\s\S]*?<\/style>/i, '')
+  out = out.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>\s*/gi, '')
+  if (/id="seo-static-content"/.test(out)) {
+    out = out.replace(
+      /<div id="root">[\s\S]*id="seo-static-content"[\s\S]*?<\/article>\s*<\/div>/i,
+      '<div id="root"></div>',
+    )
+  }
   return out
 }
 
@@ -163,7 +211,10 @@ function injectBody(html, { h1, body }) {
   // Görsel olarak gizle (FOUC yok); botlar ilk HTML'de H1+metni okur. React mount edilince #root değişir.
   const style = '<style id="seo-prerender-style">#seo-static-content{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}</style>'
   const shell = `${style}<div id="root"><noscript><article data-seo-prerender="1"><h1>${escapeAttr(h1)}</h1>${body}</article></noscript><article data-seo-prerender="1" id="seo-static-content"><h1>${escapeAttr(h1)}</h1>${body}</article></div>`
-  return html.replace(/<div id="root"><\/div>/i, shell)
+  if (!/<div id="root">\s*<\/div>/i.test(html)) {
+    throw new Error('[prerender-seo] boş #root bulunamadı — şablon prerender kalıntısı içeriyor olabilir')
+  }
+  return html.replace(/<div id="root">\s*<\/div>/i, shell)
 }
 
 function destPath(routePath) {
@@ -172,36 +223,74 @@ function destPath(routePath) {
   return join(dir, 'index.html')
 }
 
-function slugifyTurkish(text) {
-  return String(text || '')
-    .toLocaleLowerCase('tr-TR')
-    .replace(/ı/g, 'i')
-    .replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u')
-    .replace(/ş/g, 's')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+function pillarLinks() {
+  return `<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a> · <a href="/membership">Paketler</a></p>`
 }
 
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
-
-function staffPublicSlug(member) {
-  const namePart = slugifyTurkish(member?.name)
-  if (!namePart) return member?.id || ''
-  const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
-  if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
-    const specialty = slugifyTurkish(member?.specialty || member?.title || '')
-    if (specialty && specialty !== namePart && specialty !== rolePrefix) {
-      return `${rolePrefix}-${specialty}`
-    }
-    const shortId = String(member?.id || '').replace(/-/g, '').slice(0, 8)
-    return shortId ? `${rolePrefix}-${shortId}` : rolePrefix
+function articleJsonLd({ title, description, slug, datePublished, dateModified }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title,
+    description,
+    author: { '@type': 'Organization', name: BLOG_AUTHOR || 'Yeni Form Ekibi' },
+    datePublished: datePublished || undefined,
+    dateModified: dateModified || datePublished || undefined,
+    inLanguage: 'tr',
+    publisher: {
+      '@type': 'Organization',
+      name: 'Yeni Form',
+      logo: { '@type': 'ImageObject', url: `${site}/brand-logo.png` },
+    },
+    mainEntityOfPage: `${site}/blog/${slug}`,
   }
-  return `${rolePrefix}-${namePart}`
+}
+
+function breadcrumbJsonLd(items) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      item: `${site}${item.path}`,
+    })),
+  }
+}
+
+function itemListJsonLd(name, path, items) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    url: `${site}${path}`,
+    numberOfItems: items.length,
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.label,
+      url: `${site}${item.href}`,
+    })),
+  }
+}
+
+function ctaHtml(post) {
+  const cta = blogServiceCta(post)
+  return `<p>${escapeAttr(cta.text)} <a href="${cta.primary.to}">${escapeAttr(cta.primary.label)}</a> · <a href="${cta.secondary.to}">${escapeAttr(cta.secondary.label)}</a></p>`
+}
+
+function personJsonLd({ name, roleLabel, bio, slug, image }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name,
+    jobTitle: roleLabel,
+    description: bio || undefined,
+    image: image || undefined,
+    url: `${site}/team/${slug}`,
+    worksFor: { '@type': 'Organization', name: 'Yeni Form' },
+  }
 }
 
 async function fetchDynamicShells() {
@@ -212,8 +301,9 @@ async function fetchDynamicShells() {
     process.env.VITE_SUPABASE_ANON_KEY
   if (!url || !key) {
     console.warn('[prerender-seo] Supabase env yok — blog/kadro shell atlandı')
-    return
+    return { posts: [], staff: [] }
   }
+  const collected = { posts: [], staff: [] }
   try {
     const { createClient } = await import('@supabase/supabase-js')
     const client = createClient(url, key)
@@ -222,50 +312,188 @@ async function fetchDynamicShells() {
       .select('id, data, created_at')
       .eq('published', true)
     if (postsErr) console.error('[prerender-seo] posts', postsErr.message)
-    for (const post of posts || []) {
+    const published = [...(posts || [])].sort((a, b) =>
+      String(b.data?.updatedAt || b.created_at || '').localeCompare(String(a.data?.updatedAt || a.created_at || '')),
+    )
+    collected.posts = published
+    const seenBlog = new Set()
+    for (const post of published) {
       const title = post.data?.title || 'Blog yazısı'
       const slug = post.data?.slug || slugifyTurkish(title) || post.id
+      if (seenBlog.has(slug)) continue
+      seenBlog.add(slug)
       const excerpt = post.data?.excerpt || ''
-      const author = 'Yeni Form Ekibi'
-      STATIC_SHELLS[`/blog/${slug}`] = {
+      const description = (excerpt || title).slice(0, 160)
+      const articleHtml = blogContentToSeoHtml(post.data?.content || '')
+      const canonicalPath = `/blog/${slug}`
+      const jsonLd = [
+        articleJsonLd({
+          title,
+          description,
+          slug,
+          datePublished: post.data?.createdAt || post.created_at,
+          dateModified: post.data?.updatedAt || post.created_at,
+        }),
+        breadcrumbJsonLd([
+          { name: 'Ana Sayfa', path: '/' },
+          { name: 'Blog', path: '/blog' },
+          { name: title, path: canonicalPath },
+        ]),
+      ]
+      STATIC_SHELLS[canonicalPath] = {
         title: `${title} | Yeni Form`,
-        description: excerpt.slice(0, 160) || title,
+        description,
         h1: title,
-        body: `<p>${escapeAttr(excerpt)}</p><p>Yazar: ${escapeAttr(author)}</p>
-<p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a> · <a href="/kilo-verme">Kilo verme</a> · <a href="/membership">Paketler</a></p>`,
+        jsonLd,
+        body: `${articleHtml || `<p>${escapeAttr(excerpt)}</p>`}${ctaHtml({
+          title,
+          slug,
+          category: post.data?.category,
+        })}<p>Yazar: ${escapeAttr(BLOG_AUTHOR)}</p>${pillarLinks()}`,
+      }
+      if (post.id && post.id !== slug && isUuidParam(post.id)) {
+        STATIC_SHELLS[`/blog/${post.id}`] = {
+          title: `${title} | Yeni Form`,
+          description,
+          h1: title,
+          canonicalPath,
+          robots: 'noindex, follow',
+          body: `<p>Bu yazının kalıcı adresi: <a href="${canonicalPath}">${escapeAttr(title)}</a>.</p>${pillarLinks()}`,
+        }
       }
     }
+
     const { data: staff, error: staffErr } = await client
       .from('staff')
       .select('id, name, role, data')
       .eq('active', true)
     if (staffErr) console.error('[prerender-seo] staff', staffErr.message)
+    const coaches = []
+    const dietitians = []
+    const seenStaff = new Set()
     for (const member of staff || []) {
       if (member.role !== 'coach' && member.role !== 'dietitian') continue
-      const specialty = member.data?.specialty || member.data?.title || ''
-      const slug = staffPublicSlug({ ...member, specialty, title: specialty })
-      const roleLabel = member.role === 'dietitian' ? 'Online Diyetisyen' : member.role === 'coach' ? 'Online Fitness Koçu' : 'Uzman'
-      const bio = (member.data?.bio || member.data?.description || '').slice(0, 400)
-      STATIC_SHELLS[`/team/${slug}`] = {
-        title: `${member.name} — ${roleLabel} | Yeni Form`,
-        description: bio || `${member.name}, Yeni Form ${roleLabel.toLowerCase()} kadrosu.`,
-        h1: `${roleLabel} ${member.name}`,
-        body: `<p>${escapeAttr(bio)}</p><p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/online-kocluk">Online koçluk</a></p>`,
+      if (member.data?.listedOnTeam === false) continue
+      const slug = staffPublicSlug(member)
+      if (!slug || seenStaff.has(slug)) continue
+      seenStaff.add(slug)
+      const displayName = formatStaffDisplayName(member.name)
+      const roleLabel = member.role === 'dietitian' ? 'Online Diyetisyen' : 'Online Fitness Koçu'
+      const bio = String(member.data?.bio || member.data?.description || '').trim()
+      const specialties = []
+        .concat(member.data?.specialties || [])
+        .concat(member.data?.specialty ? [member.data.specialty] : [])
+        .map((s) => String(s || '').trim())
+        .filter(Boolean)
+      const uniqueSpecs = [...new Set(specialties)].slice(0, 8)
+      const specHtml = uniqueSpecs.length
+        ? `<p>Uzmanlık: ${uniqueSpecs.map((s) => escapeAttr(s)).join(', ')}</p>`
+        : ''
+      const photo = member.data?.photo
+      const image = typeof photo === 'string' && photo.startsWith('http') ? photo : undefined
+      const canonicalPath = `/team/${slug}`
+      const description = (bio || `${displayName}, Yeni Form ${roleLabel.toLowerCase()} kadrosu.`).slice(0, 160)
+      STATIC_SHELLS[canonicalPath] = {
+        title: `${displayName} — ${roleLabel} | Yeni Form`,
+        description,
+        h1: `${roleLabel} ${displayName}`,
+        jsonLd: [
+          personJsonLd({ name: displayName, roleLabel, bio: bio.slice(0, 400), slug, image }),
+          breadcrumbJsonLd([
+            { name: 'Ana Sayfa', path: '/' },
+            { name: roleLabel, path: member.role === 'dietitian' ? '/team/dietitians' : '/team/coaches' },
+            { name: displayName, path: canonicalPath },
+          ]),
+        ],
+        body: `<p>${escapeAttr(bio.slice(0, 800))}</p>${specHtml}${pillarLinks()}`,
+      }
+      if (member.id && member.id !== slug && isUuidParam(member.id)) {
+        STATIC_SHELLS[`/team/${member.id}`] = {
+          title: `${displayName} — ${roleLabel} | Yeni Form`,
+          description,
+          h1: `${roleLabel} ${displayName}`,
+          canonicalPath,
+          robots: 'noindex, follow',
+          body: `<p>Profilin kalıcı adresi: <a href="${canonicalPath}">${escapeAttr(displayName)}</a>.</p>${pillarLinks()}`,
+        }
+      }
+      const link = { href: canonicalPath, label: displayName }
+      if (member.role === 'coach') coaches.push(link)
+      else dietitians.push(link)
+    }
+    collected.staff = { coaches, dietitians }
+
+    if (published.length && STATIC_SHELLS['/blog']) {
+      const latest = []
+      const listed = new Set()
+      for (const post of published) {
+        const title = post.data?.title || 'Blog yazısı'
+        const slug = post.data?.slug || slugifyTurkish(title) || post.id
+        if (!slug || listed.has(slug)) continue
+        listed.add(slug)
+        latest.push({ href: `/blog/${slug}`, label: title })
+        if (latest.length >= 24) break
+      }
+      STATIC_SHELLS['/blog'] = {
+        ...STATIC_SHELLS['/blog'],
+        jsonLd: itemListJsonLd('Yeni Form Blog', '/blog', latest),
+        body: `${STATIC_SHELLS['/blog'].body}<ul>${latest.map((m) => `<li><a href="${m.href}">${escapeAttr(m.label)}</a></li>`).join('')}</ul>`,
+      }
+    }
+    if (dietitians.length && STATIC_SHELLS['/team/dietitians']) {
+      STATIC_SHELLS['/team/dietitians'] = {
+        ...STATIC_SHELLS['/team/dietitians'],
+        jsonLd: itemListJsonLd('Online Diyetisyenlerimiz', '/team/dietitians', dietitians),
+        body: `${STATIC_SHELLS['/team/dietitians'].body}<ul>${dietitians.map((m) => `<li><a href="${m.href}">${escapeAttr(m.label)}</a></li>`).join('')}</ul>`,
+      }
+    }
+    if (coaches.length && STATIC_SHELLS['/team/coaches']) {
+      STATIC_SHELLS['/team/coaches'] = {
+        ...STATIC_SHELLS['/team/coaches'],
+        jsonLd: itemListJsonLd('Online Fitness Koçlarımız', '/team/coaches', coaches),
+        body: `${STATIC_SHELLS['/team/coaches'].body}<ul>${coaches.map((m) => `<li><a href="${m.href}">${escapeAttr(m.label)}</a></li>`).join('')}</ul>`,
       }
     }
   } catch (err) {
     console.error('[prerender-seo] dynamic', err?.message || err)
   }
+  return collected
 }
 
-await fetchDynamicShells()
+function writeLlmsTxt(collected) {
+  const src = join(root, 'public', 'llms.txt')
+  if (!existsSync(src)) return
+  let text = readFileSync(src, 'utf8').trimEnd()
+  const dietitians = collected?.staff?.dietitians || []
+  const coaches = collected?.staff?.coaches || []
+  const posts = collected?.posts || []
+  if (dietitians.length || coaches.length) {
+    text += '\n\n## Kadro\n'
+    for (const m of [...dietitians, ...coaches]) {
+      text += `\n- ${m.label}: ${site}${m.href}`
+    }
+  }
+  if (posts.length) {
+    text += '\n\n## Blog\n'
+    for (const post of posts.slice(0, 20)) {
+      const title = post.data?.title || 'Yazı'
+      const slug = post.data?.slug || slugifyTurkish(title) || post.id
+      text += `\n- ${title}: ${site}/blog/${slug}`
+    }
+  }
+  text += '\n'
+  writeFileSync(join(dist, 'llms.txt'), text, 'utf8')
+  console.log('[prerender-seo] llms.txt kadro+blog satırları yazıldı')
+}
+
+const collected = await fetchDynamicShells()
 
 if (!existsSync(join(dist, 'index.html'))) {
   console.error('[prerender-seo] dist/index.html yok — önce vite build çalıştırın')
   process.exit(1)
 }
 
-const template = readFileSync(join(dist, 'index.html'), 'utf8')
+const template = stripPrerender(readFileSync(join(dist, 'index.html'), 'utf8'))
 let count = 0
 
 for (const [path, meta] of Object.entries(STATIC_SHELLS)) {
@@ -278,4 +506,5 @@ for (const [path, meta] of Object.entries(STATIC_SHELLS)) {
   console.log('[prerender-seo]', path, '→', outFile.replace(root, ''))
 }
 
+writeLlmsTxt(collected)
 console.log(`[prerender-seo] ${count} sayfa yazıldı`)

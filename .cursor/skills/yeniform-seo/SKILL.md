@@ -32,7 +32,8 @@ Tam adımlar: [checklist.md](checklist.md) ve [docs/SEO_SAYFA_EKLEME.md](../../.
 | `src/config/seo.js` | PAGE_SEO, schema builder, slug |
 | `src/data/seoServiceContent.js` | Hizmet + küme copy (H1, FAQ, CTA) |
 | `src/components/seo/*` | SeoHead, JsonLd, PublicRouteSeo, NoIndexHead |
-| `scripts/prerender-seo.mjs` | Googlebot HTML shell |
+| `src/utils/publicSlugs.js` | Blog + kadro slug, sitemap dedupe |
+| `scripts/prerender-seo.mjs` | Googlebot HTML shell (static + blog/kadro) |
 | `api/sitemap.js` | Dinamik sitemap (blog + kadro + static) |
 | `public/robots.txt` | Crawl |
 | `public/llms.txt` | GEO / AI crawler |

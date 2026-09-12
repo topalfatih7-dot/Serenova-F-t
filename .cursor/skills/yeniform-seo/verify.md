@@ -13,3 +13,5 @@ curl -sS https://www.yeniform.com/llms.txt | head
 - PageSpeed: `/`, `/online-diyetisyen`, `/kilo-verme` — LCP < 2.5s
 - GSC: Coverage sitemap hatası; Performance pozisyon 11–20 quick win
 - Prerender H1 = React H1
+- Sitemap’te aynı blog slug iki kez olmasın; UUID URL sitemap’te yok
+- Googlebot `/blog` ve `/team/dietitians` ilk HTML’de yazı/profil `<a href>` görsün

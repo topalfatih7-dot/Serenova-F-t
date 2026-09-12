@@ -2,6 +2,9 @@ import { BRAND } from './brand'
 import { blogPostPath } from '../utils/blogSlug'
 import { publicCertificates, publicStaffTitle } from '../data/staffProfile'
 import { BLOG_AUTHOR } from '../data/blogPosts'
+import { staffPublicSlug, staffProfilePath, slugifyTurkish } from '../utils/publicSlugs'
+
+export { slugifyTurkish, staffPublicSlug, staffProfilePath }
 
 const LEGAL_SEO_SLUGS = [
   'kvkk', 'kvkk-acik-riza-metni', 'gizlilik-politikasi', 'cerez-politikasi',
@@ -158,45 +161,6 @@ export function teamListPathForRole(role) {
   if (role === 'coach') return '/team/coaches'
   if (role === 'dietitian') return '/team/dietitians'
   return '/hakkimizda'
-}
-
-/** Türkçe karakter destekli URL slug (ör. "Koç Ahmet Yılmaz" → "koc-ahmet-yilmaz") */
-export function slugifyTurkish(text) {
-  return String(text || '')
-    .toLocaleLowerCase('tr-TR')
-    .replace(/ı/g, 'i')
-    .replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u')
-    .replace(/ş/g, 's')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-const STAFF_ROLE_SLUG = { coach: 'koc', dietitian: 'diyetisyen' }
-
-/** SEO dostu profil slug — "koç ahmet yeniform" aramaları için rol öneki eklenir */
-export function staffPublicSlug(member) {
-  const namePart = slugifyTurkish(member?.name)
-  if (!namePart) return member?.id || ''
-  const rolePrefix = STAFF_ROLE_SLUG[member?.role] || 'uzman'
-  if (namePart === rolePrefix || namePart.startsWith(`${rolePrefix}-`)) {
-    const specialty = slugifyTurkish(member?.specialty || member?.title || '')
-    if (specialty && specialty !== namePart && specialty !== rolePrefix) {
-      return `${rolePrefix}-${specialty}`
-    }
-    const shortId = String(member?.id || '').replace(/-/g, '').slice(0, 8)
-    return shortId ? `${rolePrefix}-${shortId}` : rolePrefix
-  }
-  return `${rolePrefix}-${namePart}`
-}
-
-export function staffProfilePath(member) {
-  const slug = staffPublicSlug(member)
-  return slug ? `/team/${slug}` : '/'
 }
 
 /** UUID veya slug ile kadro üyesi bul */

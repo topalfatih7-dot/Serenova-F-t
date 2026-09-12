@@ -10,6 +10,8 @@ const SITE = (process.env.SEO_PROBE_SITE || 'https://www.yeniform.com').replace(
 const UA = process.env.SEO_PROBE_UA || 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 const TIMEOUT_MS = Number(process.env.SEO_PROBE_TIMEOUT_MS || 20000)
 
+export const HOME_TITLE = 'Yeni Form — Online Koçluk ve Online Diyetisyen Platformu'
+
 export const PROBE_PATHS = [
   '/',
   '/online-diyetisyen',
@@ -25,8 +27,30 @@ export const PROBE_PATHS = [
   '/beslenme/sporcu-beslenmesi',
   '/hakkimizda',
   '/blog',
+  '/team/dietitians',
+  '/team/coaches',
   '/indir',
 ]
+
+export function selectDynamicProbePaths(locs, { blog = 5, team = 5 } = {}) {
+  const blogPaths = []
+  const teamPaths = []
+  const skipTeam = new Set(['coaches', 'dietitians', 'apply', 'doctors'])
+  for (const loc of locs || []) {
+    let path
+    try {
+      path = new URL(loc).pathname.replace(/\/$/, '') || '/'
+    } catch {
+      continue
+    }
+    if (path.startsWith('/blog/') && blogPaths.length < blog) blogPaths.push(path)
+    if (path.startsWith('/team/')) {
+      const last = path.split('/').pop()
+      if (!skipTeam.has(last) && teamPaths.length < team) teamPaths.push(path)
+    }
+  }
+  return [...blogPaths, ...teamPaths]
+}
 
 function attr(html, name) {
   const re = new RegExp(`${name}\\s*=\\s*["']([^"']+)["']`, 'i')
@@ -97,6 +121,10 @@ export function evaluateFindings({ robots, sitemap, pages }) {
   if (sitemap.status === 200 && type && !/xml|text\/plain/i.test(type)) {
     findings.push({ severity: 'warn', id: 'sitemap_content_type', detail: type })
   }
+  const locs = sitemap.locs || []
+  if (locs.length && new Set(locs).size < locs.length) {
+    findings.push({ severity: 'warn', id: 'duplicate_sitemap_loc', detail: `${locs.length - new Set(locs).size} tekrar` })
+  }
   for (const page of pages) {
     if (page.status !== 200) {
       findings.push({ severity: 'error', id: 'page_status', path: page.path, detail: String(page.status) })
@@ -105,13 +133,23 @@ export function evaluateFindings({ robots, sitemap, pages }) {
     if (!page.title) findings.push({ severity: 'error', id: 'missing_title', path: page.path })
     if (!page.canonical) findings.push({ severity: 'error', id: 'missing_canonical', path: page.path })
     if (!page.h1) findings.push({ severity: 'warn', id: 'missing_h1', path: page.path })
+    const isDynamicDetail = /^\/(blog|team)\//.test(page.path)
+      && !['/team/coaches', '/team/dietitians', '/team/apply'].includes(page.path)
+    if (isDynamicDetail && page.title === HOME_TITLE) {
+      findings.push({ severity: 'error', id: 'homepage_title', path: page.path })
+    }
+    const robots = String(page.robots || '').toLowerCase()
+    if (isDynamicDetail && !robots.includes('noindex') && !(page.jsonLdTypes || []).length) {
+      findings.push({ severity: 'warn', id: 'missing_jsonld', path: page.path })
+    }
     if (page.canonical && !page.canonical.startsWith(`${SITE}`)) {
       findings.push({ severity: 'warn', id: 'canonical_host', path: page.path, detail: page.canonical })
     }
-    if (sitemap.locs?.length && !sitemap.locs.includes(`${SITE}${page.path === '/' ? '/' : page.path}`)) {
+    if (robots.includes('noindex')) continue
+    if (locs.length && !locs.includes(`${SITE}${page.path === '/' ? '/' : page.path}`)) {
       const expected = `${SITE}${page.path}`
       const slashVariants = [expected, `${SITE}${page.path}/`, `${SITE}${page.path === '/' ? '' : page.path}`]
-      if (!sitemap.locs.some((loc) => slashVariants.includes(loc))) {
+      if (!locs.some((loc) => slashVariants.includes(loc))) {
         findings.push({ severity: 'warn', id: 'not_in_sitemap', path: page.path })
       }
     }
@@ -149,8 +187,9 @@ export async function runProbe() {
   const sitemapRes = await fetchText(`${SITE}/sitemap.xml`)
   const llmsRes = await fetchText(`${SITE}/llms.txt`)
   const locs = parseSitemapLocs(sitemapRes.text)
+  const probePaths = [...PROBE_PATHS, ...selectDynamicProbePaths(locs)]
   const pages = []
-  for (const path of PROBE_PATHS) {
+  for (const path of probePaths) {
     const res = await fetchText(`${SITE}${path}`)
     const parsed = parsePageHtml(res.text)
     pages.push({

@@ -7,7 +7,7 @@ Site: `https://www.yeniform.com`. GSC API yok — son playbook + varsa `docs/seo
 ## Koşu sırası
 
 1. Bu dosya, [gsc-playbook.md](gsc-playbook.md) silosu, [DAILY_LOG.md](../../../docs/seo/DAILY_LOG.md) son 14 gün, varsa yeni GSC export.
-2. `npm run seo:probe` (veya `node scripts/seo-daily-probe.mjs`).
+2. `npm run seo:probe` (veya `node scripts/seo-daily-probe.mjs`). Pillar + sitemap’ten 5 blog + 5 kadro profili.
 3. Öncelik: teknik kırık → GSC kuyruğu snippet/CTR → mevcut sayfada iç link.
 4. **Tek iş, tek URL, tek sınıf** (title/desc **veya** görünür FAQ **veya** iç link **veya** teknik).
 5. Değişiklik varsa `seo/daily-YYYY-MM-DD` dalı + PR. Yoksa koşu özeti; boş PR yok.
