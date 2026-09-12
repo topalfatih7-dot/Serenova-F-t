@@ -74,20 +74,38 @@ function localApiPlugin() {
 
           const query = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams)
 
-          const vercelReq = { method: req.method, headers: req.headers, body, query }
+          const vercelReq = { method: req.method, headers: req.headers, body, query, rawBody: raw }
           const vercelRes = {
             statusCode: 200,
             headers: {},
             setHeader(k, v) { this.headers[k.toLowerCase()] = v },
             status(code) { this.statusCode = code; return this },
             json(obj) {
-              this.setHeader('Content-Type', 'application/json')
-              res.writeHead(this.statusCode, this.headers)
-              res.end(JSON.stringify(obj))
+              if (res.writableEnded) return
+              this.setHeader('Content-Type', 'application/json; charset=utf-8')
+              try {
+                for (const [k, v] of Object.entries(this.headers)) {
+                  if (v != null && v !== '') res.setHeader(k, v)
+                }
+                res.statusCode = this.statusCode || 200
+                res.end(JSON.stringify(obj))
+              } catch (err) {
+                console.error('[local-api] json', apiPath, err)
+                if (!res.writableEnded) res.end()
+              }
             },
             end(msg = '') {
-              res.writeHead(this.statusCode, this.headers)
-              res.end(msg)
+              if (res.writableEnded) return
+              try {
+                for (const [k, v] of Object.entries(this.headers)) {
+                  if (v != null && v !== '') res.setHeader(k, v)
+                }
+                res.statusCode = this.statusCode || 200
+                res.end(msg)
+              } catch (err) {
+                console.error('[local-api] end', apiPath, err)
+                if (!res.writableEnded) res.end()
+              }
             },
             send(msg) {
               this.end(msg)

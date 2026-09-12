@@ -8,7 +8,7 @@ Shell: `src/components/layout/StaffShell.jsx` → `PanelSidebar` + `TopBar` + `P
 ## Admin nav source
 
 `src/config/adminNav.js` → `ADMIN_NAV` / `buildAdminNavItems`  
-(overview, members, plans, premium, programs, applications, library, staff, payments, sessions, messages, support, blog, content, analytics, ai-costs, activity, account)  
+(overview, members, plans, premium, programs, applications, library, staff, payments, sessions, messages, broadcast, mail, support, blog, content, analytics, ai-costs, activity, account)  
 Shell: `src/components/layout/AdminShell.jsx` → `PanelSidebar` + `TopBar` + `PanelMobileMenu`
 
 ## Shared panel chrome

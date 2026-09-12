@@ -44,6 +44,8 @@ Custom Domain ücretli add-on’dur (Pro+).
   - `https://yeniform.com/**`
   - `http://localhost:5173/**`
   - `http://localhost:3000/**`
+  - `yeniform://auth/callback`
+  - `yeniform://auth/callback?**`
 
 Uygulama OAuth `redirectTo` için **sekme origin’ini** kullanır (`window.location.origin`); apex/www karışıklığında PKCE verifier kaybolmasın diye.
 
@@ -103,6 +105,21 @@ Publishable / anon key ve service role **değişmez**. Redeploy şart.
 - [ ] Domain satırı `auth.yeniform.com` (artık `….supabase.co` değil)
 - [ ] Incognito: `https://yeniform.com` ve `https://www.yeniform.com` → Google giriş **ilk denemede** oturum / onboarding
 - [ ] Localhost Google giriş (redirect allowlist + JS origin)
+
+---
+
+## 7) Android native (Yeni Form uygulaması)
+
+Web client **aynı kalır**. Ayrıca:
+
+1. Google Auth Platform → **Create client → Android**
+   - Package: `com.yeniform.app` (ve dev: `com.yeniform.app.dev`)
+   - SHA-1: EAS/Play App Signing (mobil `SETUP_REQUIRED.md`)
+2. Supabase Providers → Google Client ID: `WEB_ID,ANDROID_ID,...` (Web **ilk**)
+3. Mobil `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` = bu Web client ID
+4. Redirect allowlist (Facebook Custom Tab + şifre sıfırlama): `yeniform://auth/callback`, `yeniform://auth/callback?**`
+
+Kod: mobil `src/services/oauthAuth.ts` — `signInWithIdToken` (Google).
 
 ---
 

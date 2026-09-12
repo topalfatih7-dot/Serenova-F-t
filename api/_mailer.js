@@ -26,34 +26,73 @@ export function getMailReplyTo() {
   return extractEmailAddress(getMailFrom()) || 'info@yeniform.com'
 }
 
+export function buildResendSendBody({
+  to,
+  cc,
+  subject,
+  html,
+  text,
+  replyTo,
+  from,
+  attachments,
+  headers,
+}) {
+  const recipients = (Array.isArray(to) ? to : [to])
+    .map((e) => String(e || '').trim().toLowerCase())
+    .filter((e) => e.includes('@'))
+  const ccList = (Array.isArray(cc) ? cc : cc ? [cc] : [])
+    .map((e) => String(e || '').trim().toLowerCase())
+    .filter((e) => e.includes('@') && !recipients.includes(e))
+
+  const body = {
+    from: String(from || getMailFrom()).trim() || getMailFrom(),
+    to: recipients,
+    subject: String(subject || '').slice(0, 200),
+    html,
+    reply_to: extractEmailAddress(replyTo) || extractEmailAddress(from) || getMailReplyTo(),
+  }
+  if (ccList.length) body.cc = ccList
+  if (text) body.text = String(text)
+  if (headers && typeof headers === 'object') {
+    const clean = {}
+    for (const [key, value] of Object.entries(headers)) {
+      if (!key || value == null || value === '') continue
+      clean[String(key)] = String(value)
+    }
+    if (Object.keys(clean).length) body.headers = clean
+  }
+  if (Array.isArray(attachments) && attachments.length) {
+    body.attachments = attachments
+      .filter((item) => item?.filename && item?.content)
+      .map((item) => ({
+        filename: String(item.filename).slice(0, 180),
+        content: item.content,
+        ...(item.contentType ? { content_type: item.contentType } : {}),
+      }))
+  }
+  return { body, recipients }
+}
+
 /**
- * @param {{ to: string|string[], subject: string, html: string, text?: string, replyTo?: string }} opts
+ * @param {{ to: string|string[], cc?: string|string[], subject: string, html: string, text?: string, replyTo?: string, from?: string, attachments?: Array<{ filename: string, content: string, contentType?: string }>, headers?: Record<string, string> }} opts
  * @returns {Promise<{ ok: true, id?: string } | { ok: false, error: string, skipped?: boolean }>}
  */
-export async function sendMail({ to, subject, html, text, replyTo }) {
+export async function sendMail({ to, cc, subject, html, text, replyTo, from, attachments, headers }) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim()
   if (!apiKey) {
     return { ok: false, skipped: true, error: 'RESEND_API_KEY tanımlı değil.' }
   }
 
-  const recipients = (Array.isArray(to) ? to : [to])
-    .map((e) => String(e || '').trim().toLowerCase())
-    .filter((e) => e.includes('@'))
-  if (!recipients.length) {
+  const built = buildResendSendBody({
+    to, cc, subject, html, text, replyTo, from, attachments, headers,
+  })
+  const body = built.body
+  if (!body.to.length) {
     return { ok: false, error: 'Alıcı e-posta gerekli.' }
   }
   if (!subject || !html) {
     return { ok: false, error: 'Konu ve HTML gövde gerekli.' }
   }
-
-  const body = {
-    from: getMailFrom(),
-    to: recipients,
-    subject: String(subject).slice(0, 200),
-    html,
-    reply_to: extractEmailAddress(replyTo) || getMailReplyTo(),
-  }
-  if (text) body.text = String(text)
 
   try {
     const res = await fetch(RESEND_API, {
@@ -430,4 +469,25 @@ export function adminBroadcastEmail({ name, title, body }) {
     html: wrapBrandEmail({ title: heading, bodyHtml }),
     text,
   }
+}
+
+/** Admin kutusundan insan maili — pazarlama kartı değil, sade gövde + imza. */
+export function mailboxPersonalEmail({ body, signature }) {
+  const rawBody = String(body || '').slice(0, 20000)
+  const rawSig = String(signature || '').slice(0, 500)
+  const sigBlock = rawSig
+    ? `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #eee;font-size:13px;line-height:1.6;color:#6b6b6b;">${nl2br(escapeHtml(rawSig))}</p>`
+    : ''
+  const html = `<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:24px;background:#ffffff;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
+  <div style="max-width:640px;font-size:15px;line-height:1.7;color:#222;">
+    ${nl2br(escapeHtml(rawBody))}
+    ${sigBlock}
+  </div>
+</body>
+</html>`
+  const text = rawSig ? `${rawBody}\n\n${rawSig}` : rawBody
+  return { html, text }
 }

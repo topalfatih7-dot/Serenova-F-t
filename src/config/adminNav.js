@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle, Bell,
+  LayoutDashboard, Users, Calendar, MessageSquare, MessageCircle, Bell, Mail,
   BarChart3, Activity, Stethoscope, BookOpen, Library, Sparkles, Crown, Package, Wallet, UserPlus, Shield, Bot, Dumbbell, Megaphone,
 } from 'lucide-react'
 
@@ -19,6 +19,7 @@ export const ADMIN_NAV = [
   { to: '/admin/sessions', icon: Calendar, label: 'Seanslar', iconTone: 'text-teal-600', labelTone: 'text-teal-700/80' },
   { to: '/admin/messages', icon: MessageCircle, label: 'Mesajlar', chatBadge: true, iconTone: 'text-sky-500', labelTone: 'text-sky-700/80' },
   { to: '/admin/broadcast', icon: Bell, label: 'Bildirim & E-posta', iconTone: 'text-amber-500', labelTone: 'text-amber-700/80' },
+  { to: '/admin/mail', icon: Mail, label: 'E-posta yönetimi', mailBadge: true, iconTone: 'text-cyan-600', labelTone: 'text-cyan-800/80' },
   { to: '/admin/support', icon: MessageSquare, label: 'Destek Talepleri', supportBadge: true, iconTone: 'text-sage-600', labelTone: 'text-sage-800/80' },
   { to: '/admin/blog', icon: BookOpen, label: 'Blog', iconTone: 'text-amber-500', labelTone: 'text-amber-700/80' },
   { to: '/admin/content', icon: Sparkles, label: 'İçerik', iconTone: 'text-orange-500', labelTone: 'text-orange-700/80' },
@@ -32,6 +33,7 @@ export function buildAdminNavItems({
   pendingApplicationsCount = 0,
   adminStaffUnreadCount = 0,
   openSupportTicketsCount = 0,
+  mailboxUnreadCount = 0,
 } = {}) {
   return ADMIN_NAV.map((item) => ({
     ...item,
@@ -41,6 +43,8 @@ export function buildAdminNavItems({
         ? adminStaffUnreadCount
         : item.supportBadge
           ? openSupportTicketsCount
-          : 0,
+          : item.mailBadge
+            ? mailboxUnreadCount
+            : 0,
   }))
 }

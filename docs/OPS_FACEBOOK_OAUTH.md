@@ -102,7 +102,7 @@ Meta sık sorar: **Data Deletion Instructions URL** — gizlilik politikası vey
 [URL Configuration](https://supabase.com/dashboard/project/rvzksmyhsgxgrxgeabmi/auth/url-configuration)
 
 - Site URL: `https://www.yeniform.com`
-- Redirect: `https://www.yeniform.com/**`, `https://yeniform.com/**`, `http://localhost:5173/**`, `http://localhost:3000/**`
+- Redirect: `https://www.yeniform.com/**`, `https://yeniform.com/**`, `http://localhost:5173/**`, `http://localhost:3000/**`, `yeniform://auth/callback`, `yeniform://auth/callback?**`
 
 ---
 
@@ -124,6 +124,20 @@ Aynı e-posta önce Google/e-posta ile kayıtlıysa Facebook ikinci kimlik veya 
 - [ ] Incognito www + apex
 - [ ] Live moda alınca rastgele FB hesabı smoke
 - [ ] E-posta vermeyen FB hesabı: hata mesajı anlaşılır mı?
+
+---
+
+## J) Android uygulama
+
+Web Login (Website) durur. Android için:
+
+1. Meta → Settings → Basic → **Add Platform → Android**
+   - Package name: `com.yeniform.app` (dev: `com.yeniform.app.dev`)
+   - Key hashes: upload/debug/Play App Signing SHA-1’in Base64 hali
+2. Supabase Redirect allowlist: `yeniform://auth/callback`, `yeniform://auth/callback?**`
+3. Valid OAuth Redirect URIs **değişmez** (hâlâ Supabase `/auth/v1/callback`)
+
+Mobil Facebook: Chrome Custom Tab; native Facebook SDK yok.
 
 ---
 

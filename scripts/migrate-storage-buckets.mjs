@@ -14,6 +14,7 @@ const BUCKETS = [
   { id: 'exercise-videos', public: false },
   { id: 'exercise-thumbs', public: true },
   { id: 'health-lab-results', public: false },
+  { id: 'mailbox-attachments', public: false },
 ]
 
 function req(name) {

@@ -1,6 +1,7 @@
 /**
  * Public form kapısı — Turnstile + rate limit + service-role DB yazımı + Telegram.
- * action: contact | staff_application | staff_email_precheck | corporate_application | staff_doc_upload | staff_decision_notify | contact_reply
+ * action: contact | staff_application | staff_email_precheck | corporate_application | staff_doc_upload | staff_decision_notify | contact_reply | admin_mailbox
+ * Resend inbound: Svix imzalı POST (action yok).
  *
  * Client asla notify secret göndermez; Telegram yalnızca bu route içinden tetiklenir.
  * staff_decision_notify: admin bearer + Resend mail (onay/red).
@@ -9,6 +10,9 @@
 
 import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
+import { readRawBody } from './_daily.js'
+import { isResendWebhookRequest } from './_resendWebhook.js'
+import { handleAdminMailbox, handleResendInboundWebhook } from './_mailbox.js'
 import { verifyTurnstile } from './_turnstile.js'
 import { enforceRateLimit, applyRateLimitHeaders, getClientIp } from './_rateLimit.js'
 import {
@@ -27,6 +31,8 @@ import {
   isMailConfigured,
 } from './_mailer.js'
 
+export const config = { api: { bodyParser: false } }
+
 const MAX_MESSAGE = 2000
 const MAX_REPLY = 4000
 const MAX_NAME = 120
@@ -39,8 +45,17 @@ const ALLOWED_DOC_MIME = new Set([
   'image/webp',
 ])
 
-function parseBody(req) {
-  return typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+function parseJsonBuffer(raw) {
+  if (!raw || !raw.length) return {}
+  const text = Buffer.isBuffer(raw) ? raw.toString('utf8') : String(raw)
+  return JSON.parse(text)
+}
+
+function parsedObjectBody(req) {
+  const body = req?.body
+  return body && typeof body === 'object' && !Buffer.isBuffer(body) && !Array.isArray(body)
+    ? body
+    : null
 }
 
 function trimStr(v, max = 500) {
@@ -679,7 +694,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = parseBody(req)
+    if (isResendWebhookRequest(req)) {
+      const raw = await readRawBody(req)
+      return handleResendInboundWebhook(req, res, raw)
+    }
+
+    let body = parsedObjectBody(req)
+    if (!body) {
+      const raw = req.rawBody != null ? req.rawBody : await readRawBody(req)
+      try {
+        body = parseJsonBuffer(raw)
+      } catch {
+        return res.status(400).json({ ok: false, error: 'Geçersiz JSON' })
+      }
+    }
     req._formTurnstileToken = body.turnstileToken || body.cfTurnstileResponse || ''
     req._formSessionToken = body.formSessionToken || ''
 
@@ -691,6 +719,7 @@ export default async function handler(req, res) {
     if (action === 'staff_doc_upload') return handleStaffDocUpload(req, res, body)
     if (action === 'staff_decision_notify') return handleStaffDecisionNotify(req, res, body)
     if (action === 'contact_reply') return handleContactReply(req, res, body)
+    if (action === 'admin_mailbox') return handleAdminMailbox(req, res, body)
 
     return res.status(400).json({ ok: false, error: 'Geçersiz form türü' })
   } catch (e) {

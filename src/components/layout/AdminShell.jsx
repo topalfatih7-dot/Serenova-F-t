@@ -10,6 +10,7 @@ import NoIndexHead from '../seo/NoIndexHead'
 import { BRAND } from '../../config/brand'
 import { buildAdminNavItems } from '../../config/adminNav'
 import { isPanelChatPath, isPanelChatThreadPath } from '../../utils/chatLayout'
+import useAdminMailboxUnread from '../../hooks/useAdminMailboxUnread'
 
 const ADMIN_EMOJIS = ['📊', '📈', '⚙️', '👥', '💼', '✅', '🚀', '⭐', '📋', '🔔']
 
@@ -20,12 +21,14 @@ export default function AdminShell() {
   const {
     logout, loggingOut, adminStaffUnreadCount, pendingApplicationsCount, openSupportTicketsCount,
   } = useApp()
+  const { unreadCount: mailboxUnreadCount } = useAdminMailboxUnread()
 
   const navWithBadges = useMemo(() => buildAdminNavItems({
     pendingApplicationsCount,
     adminStaffUnreadCount,
     openSupportTicketsCount,
-  }), [pendingApplicationsCount, adminStaffUnreadCount, openSupportTicketsCount])
+    mailboxUnreadCount,
+  }), [pendingApplicationsCount, adminStaffUnreadCount, openSupportTicketsCount, mailboxUnreadCount])
 
   const adminBadge = (
     <span className="inline-block rounded-full bg-cream-900 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">

@@ -128,4 +128,4 @@ Personel: Admin → Başvurular → Onayla → başvurana şifreli mail; Reddet 
 | Onay maili yok, hesap var | Admin modal’daki uyarı + şifreyi manuel ilet; Resend log’a bak |
 | Spam | DKIM verify + DMARC soft (`p=none`) |
 
-İnsan iletişimi (`info@` gelen kutusu) ayrı: [`docs/SMTP_YAPILACAKLAR.md`](SMTP_YAPILACAKLAR.md).
+İnsan iletişimi artık admin kutusu: [`docs/OPS_MAILBOX.md`](OPS_MAILBOX.md). Eski Gmail/ImprovMX notları: [`docs/SMTP_YAPILACAKLAR.md`](SMTP_YAPILACAKLAR.md).
