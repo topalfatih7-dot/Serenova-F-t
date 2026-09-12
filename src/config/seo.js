@@ -242,6 +242,7 @@ export function buildStaffProfileKeywords(member, roleLabel) {
 /** Statik public rotalar — sitemap ve varsayılan meta eşlemesi */
 export const STATIC_PUBLIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/indir', changefreq: 'weekly', priority: '0.8' },
   { path: '/hakkimizda', changefreq: 'monthly', priority: '0.8' },
   { path: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95' },
   { path: '/online-kocluk', changefreq: 'weekly', priority: '0.95' },
@@ -268,6 +269,12 @@ export const STATIC_PUBLIC_ROUTES = [
 ]
 
 export const PAGE_SEO = {
+  '/indir': {
+    title: 'Android',
+    description:
+      'Yeni Form Android uygulamasını Google Play’den indir. Koç ve diyetisyenle program, mesaj ve görüntülü seans.',
+    keywords: buildBrandKeywords('yeni form android, google play, uygulama indir, yeni form apk'),
+  },
   '/': {
     title: `${BRAND.name} — Online Koçluk ve Online Diyetisyen Platformu`,
     description:

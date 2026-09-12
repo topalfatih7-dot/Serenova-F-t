@@ -48,6 +48,10 @@ function localApiPlugin() {
 
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split('?')[0] || ''
+        if (url === '/indir') {
+          req.url = (req.url || '/indir').replace(/^\/indir(?=\?|$)/, '/indir.html')
+          return next()
+        }
         if (url === '/sitemap.xml') {
           req.url = '/api/sitemap'
         }

@@ -17,6 +17,7 @@ const DEPLOY = getDeployDate()
 /** Canonical public URL'ler — redirect duplicate'ler yok */
 const STATIC_ROUTES = [
   { loc: '/', changefreq: 'weekly', priority: '1.0', lastmod: DEPLOY },
+  { loc: '/indir', changefreq: 'weekly', priority: '0.8', lastmod: DEPLOY },
   { loc: '/hakkimizda', changefreq: 'monthly', priority: '0.8', lastmod: DEPLOY },
   { loc: '/online-diyetisyen', changefreq: 'weekly', priority: '0.95', lastmod: DEPLOY },
   { loc: '/online-diyetisyen/fiyat', changefreq: 'weekly', priority: '0.9', lastmod: DEPLOY },
