@@ -26,8 +26,6 @@ const guestLinks = [
 ]
 
 const discoverSubLinks = [
-  { to: '/online-diyetisyen', label: 'Online Diyetisyen', icon: Apple, color: 'text-sage-600 bg-sage-50' },
-  { to: '/online-kocluk', label: 'Online Koçluk', icon: Dumbbell, color: 'text-brand-600 bg-brand-50' },
   { to: '/hakkimizda', label: 'Hakkımızda', icon: HeartHandshake, color: 'text-sage-600 bg-sage-50' },
   { to: '/stories', label: 'Başarı Hikayeleri', icon: Trophy, color: 'text-warm-500 bg-warm-50' },
   { to: '/blog', label: 'Blog', icon: BookOpen, color: 'text-brand-600 bg-brand-50' },
@@ -244,7 +242,7 @@ export default function PublicLayout() {
               onClose={() => setOpenDropdown(null)}
               layoutId="nav-pill-discover"
               pathname={pathname}
-              activePaths={['/online-diyetisyen', '/online-kocluk', '/hakkimizda', '/stories', '/blog']}
+              activePaths={['/hakkimizda', '/stories', '/blog']}
             />
             <NavDropdown
               label="Kadromuz"
@@ -363,7 +361,7 @@ export default function PublicLayout() {
                           Keşfet
                         </span>
                         <span className={`block text-[11px] font-medium ${mobileSections.discover ? 'text-white/80' : 'text-cream-800/55'}`}>
-                          Hizmetler & içerikler
+                          İçerikler
                         </span>
                       </span>
                     </span>

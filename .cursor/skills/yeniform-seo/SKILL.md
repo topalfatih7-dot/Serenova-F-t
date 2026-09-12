@@ -36,6 +36,8 @@ Tam adımlar: [checklist.md](checklist.md) ve [docs/SEO_SAYFA_EKLEME.md](../../.
 | `api/sitemap.js` | Dinamik sitemap (blog + kadro + static) |
 | `public/robots.txt` | Crawl |
 | `public/llms.txt` | GEO / AI crawler |
+| `daily-ops.md` | Günlük ajan SOP (yeni sayfa yok; tek iş + PR) |
+| `scripts/seo-daily-probe.mjs` | Canlı title/canonical/H1/sitemap taraması |
 
 Prerender `#seo-static-content` görsel olarak gizlenir; React aynı niyeti gösterir. Cloaking değildir — H1 prerender = canlı H1 olmalı.
 
@@ -72,5 +74,7 @@ Pillar: `/` marka · `/online-diyetisyen` (hizmet, fiyat yok) · `/online-kocluk
 Küme: `/kilo-verme` · `/online-diyetisyen/fiyat` (yalnız diyet fiyat) · `/online-kocluk/ev-antrenman` · `/beslenme/sporcu-beslenmesi` · `/beslenme/pcos` · `/beslenme/insulin-direnci` · `/beslenme/hamilelik` · `/kalori-hesaplama` (public BMR/TDEE; `/calorie` üye, rakip değil).
 
 Şehir doorway yok.
+
+Günlük ajan (yeni sayfa yok): [daily-ops.md](daily-ops.md) · log: [`docs/seo/DAILY_LOG.md`](../../../docs/seo/DAILY_LOG.md). Header’a `/online-diyetisyen` / `/online-kocluk` koyma.
 
 Detay: [docs/SEO_KEYWORDS.md](../../../docs/SEO_KEYWORDS.md) · [docs/SEO_MASTER_PLAN.md](../../../docs/SEO_MASTER_PLAN.md)
