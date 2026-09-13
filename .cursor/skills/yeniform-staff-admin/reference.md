@@ -20,7 +20,7 @@ Shell: `src/components/layout/AdminShell.jsx` → `PanelSidebar` + `TopBar` + `P
 ## Key files
 
 - `src/pages/staff/*`, `StaffClientProgramPage.jsx`, `StaffClientNutritionPage.jsx`, `StaffListsPage.jsx`, `StaffProgramEditPage.jsx`
-- `src/components/staff/CoachProgramEditor.jsx`, `CoachProgramSendModal.jsx`, `CoachApplySameProgramModal.jsx`, `NutritionProgramBuilder.jsx`, `StaffHealthBrief.jsx`
+- `src/components/staff/CoachProgramEditor.jsx`, `CoachApplySameProgramModal.jsx`, `NutritionProgramBuilder.jsx`, `StaffHealthBrief.jsx`
 - `src/utils/coachProgram.js` (`buildWeeklyCoachProgramPayload`)
 - `src/pages/admin/AdminPremiumPage.jsx`, `AdminProgramsPage.jsx`, `AdminProgramEditPage.jsx`, `ManualSessionEditor.jsx`
 - `src/pages/payments/PaymentManagementPage.jsx` — staff hakediş (`staff_earnings`)

@@ -21,7 +21,7 @@ Force password when `tempPasswordIssued`. Clients via `getStaffClients()` (assig
 
 ## Coach program builder UX
 
-`StaffClientProgramPage` / `CoachProgramEditor`: üstte yatay gün seçimi → kopyala/temizle → kütüphane %75 + gün akışı %25 (`lg:grid-cols-[3fr_1fr]`; mobilde alt alta) → `CoachProgramSendModal` → `buildWeeklyCoachProgramPayload` → `createProgram`. Kısıtlar: paket penceresi + `member.availability`.
+`StaffClientProgramPage` / `CoachProgramEditor`: üstte yatay gün seçimi → kopyala/temizle → kütüphane %75 + gün akışı %25 (`lg:grid-cols-[3fr_1fr]`; mobilde alt alta) → editör içi gönderim (`buildWeeklyCoachProgramPayload`) → `createProgram`. Kısıtlar: paket penceresi + `member.availability`.
 
 ## Dietitian list builder UX
 
