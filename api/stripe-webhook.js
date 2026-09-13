@@ -32,7 +32,14 @@ import {
 import {
   INFLUENCER_COMMISSION_RATE,
   influencerPayoutPeriodKey,
+  computeInfluencerCommissionTry,
+  normalizeCommissionBase,
+  mergeInfluencerAttribution,
+  applyInfluencerDiscountClaimToData,
+  memberHasClaimedInfluencerDiscount,
 } from '../src/data/influencerPayouts.js'
+import { sendMail, influencerFirstDiscountEmail } from './_mailer.js'
+import { getAppUrl } from './_appUrl.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -61,9 +68,11 @@ async function recordInfluencerEarning(admin, {
   paymentId,
   amountPaid,
   listPrice,
+  isFirstPayment = false,
 }) {
-  const influencerId = String(meta?.influencerId || '').trim()
-  const code = String(meta?.influencerCode || '').trim().toUpperCase()
+  const attributed = mergeInfluencerAttribution(meta, memberRow?.data || memberRow || {})
+  const influencerId = String(attributed.influencerId || '').trim()
+  const code = String(attributed.influencerCode || '').trim().toUpperCase()
   if (!influencerId || !code) return { ok: true, skipped: true }
 
   const sessionId = session?.id || ''
@@ -77,7 +86,24 @@ async function recordInfluencerEarning(admin, {
       : Math.round(Number(amountPaid || 0) * 100)
   if (!Number.isFinite(amountMinor) || amountMinor <= 0) return { ok: true, skipped: true }
 
-  const commissionTry = Math.round(amountMinor * INFLUENCER_COMMISSION_RATE) / 100
+  let commissionBase = isFirstPayment
+    ? normalizeCommissionBase(meta?.influencerCommissionBase)
+    : null
+  if (isFirstPayment && !meta?.influencerCommissionBase) {
+    const { data: inf } = await admin
+      .from('influencers')
+      .select('commission_base')
+      .eq('id', influencerId)
+      .maybeSingle()
+    commissionBase = normalizeCommissionBase(inf?.commission_base)
+  }
+
+  const computed = computeInfluencerCommissionTry({
+    amountPaidTry: amountPaid,
+    listPriceTry: listPrice,
+    commissionBase,
+    isFirstPayment,
+  })
   const periodKey = influencerPayoutPeriodKey(new Date())
   const paymentIntent = stripeObjectId(session?.payment_intent)
     || invoicePaymentIntent(invoice)
@@ -96,7 +122,9 @@ async function recordInfluencerEarning(admin, {
     list_price_try: Number(listPrice) || 0,
     amount_paid_try: Number(amountPaid) || 0,
     commission_rate: INFLUENCER_COMMISSION_RATE,
-    commission_try: commissionTry,
+    commission_try: computed.commissionTry,
+    commission_base: computed.commissionBase,
+    is_first_payment: computed.isFirstPayment,
     period_key: periodKey,
     status: 'pending',
     member_display_name: String(memberRow?.name || meta.memberName || '').trim(),
@@ -218,8 +246,16 @@ function metaFromMemberRow(row, subscriptionId = null) {
     ))
   const planId = stripePkg?.planId
     || (row.membership && row.membership !== 'free' ? row.membership : null)
-  if (!planId) return { memberId: row.id, memberName: row.name || '', email: row.email || '' }
-  return {
+  if (!planId) {
+    const attributed = mergeInfluencerAttribution({}, data)
+    return {
+      memberId: row.id,
+      memberName: row.name || '',
+      email: row.email || '',
+      ...attributed,
+    }
+  }
+  return mergeInfluencerAttribution({
     memberId: row.id,
     memberName: row.name || '',
     email: row.email || '',
@@ -230,7 +266,7 @@ function metaFromMemberRow(row, subscriptionId = null) {
       || data.packageConfig?.durationMonths
       || 1,
     ),
-  }
+  }, data)
 }
 
 function formatTry(amount) {
@@ -274,6 +310,30 @@ async function notifyPaymentTelegram({ ok, meta = {}, amount, email, reason, ses
     await sendTelegramMessage({ chatId, text: lines.filter(Boolean).join('\n') })
   } catch {
     /* Telegram hatası ödeme akışını etkilemesin */
+  }
+}
+
+function formatMailTry(amount) {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return `${n.toLocaleString('tr-TR')}₺`
+}
+
+async function notifyInfluencerFirstDiscountEmail({ memberRow, meta, amountPaid, listPrice }) {
+  const to = memberRow?.email || meta?.email
+  if (!to || !meta?.influencerId) return
+  try {
+    const mail = influencerFirstDiscountEmail({
+      name: memberRow?.name || meta.memberName,
+      planName: meta.planName || meta.planId,
+      amountPaidLabel: formatMailTry(amountPaid),
+      listPriceLabel: formatMailTry(listPrice || meta.planPrice),
+      durationMonths: Number(meta.durationMonths) || 1,
+      paymentsUrl: `${getAppUrl()}/profile/payments`,
+    })
+    await sendMail({ to, ...mail })
+  } catch (e) {
+    console.warn('[stripe-webhook] influencer discount email', e?.message || e)
   }
 }
 
@@ -360,7 +420,17 @@ async function activateMembership(admin, meta, session) {
     .filter('data->>stripeSessionId', 'eq', sessionId)
     .maybeSingle()
   if (existing) {
-    const { data: memberHint } = await admin.from('members').select('id, name').eq('id', memberId).maybeSingle()
+    const { data: memberHint } = await admin
+      .from('members')
+      .select('id, name, email, data')
+      .eq('id', memberId)
+      .maybeSingle()
+    if (memberHint && meta.influencerId && !memberHasClaimedInfluencerDiscount(memberHint.data)) {
+      await admin.from('members').update({
+        data: applyInfluencerDiscountClaimToData(memberHint.data || {}, meta, nowISO()),
+        updated_at: nowISO(),
+      }).eq('id', memberId)
+    }
     await recordInfluencerEarning(admin, {
       meta,
       session,
@@ -368,6 +438,7 @@ async function activateMembership(admin, meta, session) {
       paymentId: existing.id,
       amountPaid: paidAmountFromSession(session, meta),
       listPrice: Number(meta.planPrice) || paidAmountFromSession(session, meta),
+      isFirstPayment: true,
     })
     return { ok: true, duplicate: true }
   }
@@ -414,7 +485,11 @@ async function activateMembership(admin, meta, session) {
   })
 
   draft = sanitizeStaffForPackage(draft.packageConfig, draft)
-  const newData = memberDataPayload(draft, data)
+  const newData = applyInfluencerDiscountClaimToData(
+    memberDataPayload(draft, data),
+    meta,
+    nowISO(),
+  )
 
   const { error: updErr } = await admin
     .from('members')
@@ -459,6 +534,7 @@ async function activateMembership(admin, meta, session) {
     paymentId: payRow?.id || null,
     amountPaid: amount,
     listPrice: listPrice || amount,
+    isFirstPayment: true,
   })
 
   await admin.from('activities').insert({
@@ -469,6 +545,15 @@ async function activateMembership(admin, meta, session) {
       createdAt: nowISO(),
     },
   })
+
+  if (meta.influencerId) {
+    await notifyInfluencerFirstDiscountEmail({
+      memberRow,
+      meta,
+      amountPaid: amount,
+      listPrice: listPrice || amount,
+    })
+  }
 
   return { ok: true }
 }
@@ -490,18 +575,23 @@ async function renewMembership(admin, meta, invoice, subscription) {
     .filter('data->>stripeInvoiceId', 'eq', invoiceId)
     .maybeSingle()
   if (existing) {
-    const { data: memberHint } = await admin.from('members').select('id, name').eq('id', memberId).maybeSingle()
+    const { data: memberHint } = await admin
+      .from('members')
+      .select('id, name, data')
+      .eq('id', memberId)
+      .maybeSingle()
     const paid = invoice.amount_paid
       ? invoice.amount_paid / 100
       : (Number(meta.planPrice) || 0)
     await recordInfluencerEarning(admin, {
-      meta,
+      meta: mergeInfluencerAttribution(meta, memberHint?.data || {}),
       invoice,
       invoiceId,
       memberRow: memberHint || { id: memberId, name: meta.memberName },
       paymentId: existing.id,
       amountPaid: paid,
       listPrice: listPriceFromInvoice(invoice, meta, paid),
+      isFirstPayment: false,
     })
     return { ok: true, duplicate: true }
   }
@@ -509,6 +599,8 @@ async function renewMembership(admin, meta, invoice, subscription) {
   const { data: row, error: fetchErr } = await admin.from('members').select('*').eq('id', memberId).maybeSingle()
   if (fetchErr) return { ok: false, error: fetchErr.message }
   if (!row) return { ok: false, error: 'Üye bulunamadı' }
+
+  meta = mergeInfluencerAttribution(meta, row.data || {})
 
   const amount = invoice.amount_paid
     ? invoice.amount_paid / 100
@@ -578,6 +670,7 @@ async function renewMembership(admin, meta, invoice, subscription) {
     paymentId: payRow?.id || null,
     amountPaid: amount,
     listPrice: listPriceFromInvoice(invoice, meta, amount),
+    isFirstPayment: false,
   })
 
   await admin.from('activities').insert({

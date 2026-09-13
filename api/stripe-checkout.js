@@ -28,8 +28,9 @@ import { requireAdmin } from './_guards.js'
 import { ensureCatalogPrice } from './_stripeCatalog.js'
 import { syncPlanCatalogToSubscriptions, loadPlanRow } from './_stripePriceSync.js'
 import { ensureInfluencerCoupon } from './_influencerCoupon.js'
-import { lookupActiveInfluencerByCode, isSelfInfluencerUse } from './_influencerCode.js'
-import { discountedListPriceTry } from '../src/data/influencerPayouts.js'
+import { lookupActiveInfluencerByCode } from './_influencerCode.js'
+import { influencerDiscountGate } from './_influencerDiscount.js'
+import { discountedListPriceTry, normalizeCommissionBase } from '../src/data/influencerPayouts.js'
 
 function getOrigin(req) {
   return (
@@ -374,11 +375,13 @@ export default async function handler(req, res) {
       || normalizeEmailAddress(user.user_metadata?.email)
 
     let memberName = user.user_metadata?.name || user.user_metadata?.full_name || ''
-    if (!checkoutEmail || !memberName) {
-      const { data: memberRow } = await admin.from('members').select('email, name').eq('id', user.id).maybeSingle()
-      if (!checkoutEmail) checkoutEmail = normalizeEmailAddress(memberRow?.email)
-      if (!memberName) memberName = memberRow?.name || ''
-    }
+    const { data: memberRow } = await admin
+      .from('members')
+      .select('email, name, data')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (!checkoutEmail) checkoutEmail = normalizeEmailAddress(memberRow?.email)
+    if (!memberName) memberName = memberRow?.name || ''
 
     let planName = plan?.name || PLAN_FALLBACK[planId]?.name || planId
     let planPrice = plan
@@ -400,8 +403,13 @@ export default async function handler(req, res) {
       if (!influencerRow) {
         return res.status(400).json({ ok: false, error: 'Geçersiz kod.' })
       }
-      if (isSelfInfluencerUse(user, influencerRow)) {
-        return res.status(400).json({ ok: false, error: 'Kendi kodunuzu kullanamazsınız.' })
+      const gate = influencerDiscountGate({
+        user,
+        influencerRow,
+        memberData: memberRow?.data || {},
+      })
+      if (!gate.ok) {
+        return res.status(400).json({ ok: false, error: gate.error, claimed: gate.claimed === true })
       }
     }
 
@@ -435,6 +443,7 @@ export default async function handler(req, res) {
     if (influencerRow) {
       metadata.influencerId = influencerRow.id
       metadata.influencerCode = influencerRow.code
+      metadata.influencerCommissionBase = normalizeCommissionBase(influencerRow.commission_base)
     }
 
     const useSubscription = !oneTime

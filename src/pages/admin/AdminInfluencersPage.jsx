@@ -42,6 +42,7 @@ const emptyForm = {
   code: '',
   active: true,
   password: '',
+  commissionBase: 'discounted',
 }
 
 function splitStoredPhone(raw) {
@@ -70,6 +71,7 @@ function InfluencerForm({ initial, isEdit, onSubmit, onClose, busy }) {
       ...initial,
       code: initial?.code || suggestInfluencerCode(initial?.name || ''),
       active: initial?.active !== false,
+      commissionBase: initial?.commissionBase === 'list_price' ? 'list_price' : 'discounted',
       password: '',
       phone: phoneParts.national,
       phoneCountry: phoneParts.iso,
@@ -145,6 +147,20 @@ function InfluencerForm({ initial, isEdit, onSubmit, onClose, busy }) {
       <label className="block">
         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">Instagram</span>
         <input type="text" autoComplete="off" value={form.instagram} onChange={(e) => update({ instagram: e.target.value })} className={inputCls} placeholder="@kullanici" />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-cream-800/55">İlk ödeme komisyon tabanı</span>
+        <select
+          value={form.commissionBase === 'list_price' ? 'list_price' : 'discounted'}
+          onChange={(e) => update({ commissionBase: e.target.value })}
+          className={inputCls}
+        >
+          <option value="discounted">İndirimli fiyat (ödenen)</option>
+          <option value="list_price">Ana fiyat (indirim öncesi)</option>
+        </select>
+        <p className="mt-1 text-[11px] text-cream-800/45">
+          Yalnızca kodlu ilk ödemede. Yenilemeler her zaman ödenen (liste) tutarın %20’si. Influencer bu alanı göremez.
+        </p>
       </label>
       {isEdit && (
         <label className="flex items-center gap-2 text-sm text-cream-800">
@@ -235,6 +251,7 @@ export default function AdminInfluencersPage() {
         instagram: form.instagram,
         code: form.code,
         active: true,
+        commission_base: form.commissionBase === 'list_price' ? 'list_price' : 'discounted',
         sendInvite: true,
       })
       if (!r.success) {
@@ -266,6 +283,7 @@ export default function AdminInfluencersPage() {
         instagram: form.instagram,
         code: form.code,
         active: form.active,
+        commission_base: form.commissionBase === 'list_price' ? 'list_price' : 'discounted',
       }
       if (form.password) payload.password = form.password
       const r = await adminUpsertInfluencer(payload)
@@ -293,6 +311,7 @@ export default function AdminInfluencersPage() {
         instagram: row.instagram,
         code: row.code,
         active: !row.active,
+        commission_base: row.commissionBase === 'list_price' ? 'list_price' : 'discounted',
       })
       if (!r.success) {
         toast(r.error, 'error')
@@ -328,7 +347,7 @@ export default function AdminInfluencersPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-cream-900">Influencer yönetimi</h1>
           <p className="mt-1 text-sm text-cream-800/60">
-            {influencers.length} kayıt · tek kod, abonelik süresince %10 indirim, ödenen tutarın %20’si hakediş
+            {influencers.length} kayıt · tek kod, yalnızca ilk ödemede %10 indirim (hesap başına bir kez), hakediş %20
           </p>
         </div>
         <button
@@ -416,6 +435,9 @@ export default function AdminInfluencersPage() {
                   <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-cream-800/40" /> {s.email}</p>
                   <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-cream-800/40" /> {s.phone ? formatE164(s.phone) : '—'}</p>
                   <p className="flex items-center gap-2"><Tag className="h-4 w-4 shrink-0 text-cream-800/40" /> {s.instagram || '—'}</p>
+                  <p className="text-xs text-cream-800/45">
+                    İlk ödeme tabanı: {s.commissionBase === 'list_price' ? 'Ana fiyat' : 'İndirimli (ödenen)'}
+                  </p>
                 </div>
 
                 <button

@@ -84,7 +84,7 @@ export default function InfluencerPaymentsPage() {
             </p>
             <p className="mt-0.5 font-display text-xl font-bold tracking-wide text-cream-900">{code || '—'}</p>
             <p className="mt-0.5 text-xs text-cream-800/55">
-              İlk ödemede %10 · yenilemede de %10 + %20 hakediş · sonraki Cuma: {summary.payoutLabel}
+              İlk ödemede %10 (hesap başına bir kez) · yenilemeler liste fiyatı · hakediş başarılı ödemelerden · sonraki Cuma: {summary.payoutLabel}
             </p>
           </div>
           <button

@@ -222,7 +222,7 @@ export function influencerInviteEmail({ name, email, tempPassword, code, loginUr
       </td></tr>
     </table>
     <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
-      Kodunuzla paket alan müşteriler yüzde 10 indirim alır. İlk girişte şifrenizi değiştirmeniz istenecektir.
+      Kodunuz yalnızca müşterinin ilk ödemesinde yüzde 10 indirim sağlar. Sonraki yenilemeler güncel liste fiyatındandır; indirim her hesapta bir kez kullanılabilir. Her başarılı ödemeden yüzde 20 hakediş yazılır. Üyelik iptalinde veya ödenmeyen faturada hakediş oluşmaz. İlk girişte şifrenizi değiştirmeniz istenecektir.
     </p>
     <p style="margin:0 0 8px;text-align:center;">
       <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
@@ -237,12 +237,70 @@ export function influencerInviteEmail({ name, email, tempPassword, code, loginUr
     tempPassword ? `Geçici şifre: ${tempPassword}` : '',
     `İndirim kodu: ${code}`,
     '',
+    'Kod yalnızca ilk ödemede yüzde 10 indirim sağlar. Sonraki yenilemeler liste fiyatındandır.',
     'İlk girişte şifrenizi değiştirmeniz istenecektir.',
     `Giriş: ${url}`,
   ].filter((line, i, arr) => line !== '' || arr[i - 1] !== '').join('\n')
 
   return {
     subject: 'Yeni Form — Influencer paneliniz',
+    html: wrapBrandEmail({ title, bodyHtml }),
+    text,
+  }
+}
+
+/**
+ * Üye — influencer koduyla başarılı ilk (indirimli) ödeme.
+ */
+export function influencerFirstDiscountEmail({
+  name,
+  planName,
+  amountPaidLabel,
+  listPriceLabel,
+  durationMonths = 1,
+  paymentsUrl,
+}) {
+  const safeName = escapeHtml(name || 'Merhaba')
+  const safePlan = escapeHtml(planName || 'Paketiniz')
+  const safePaid = escapeHtml(amountPaidLabel || '')
+  const safeList = escapeHtml(listPriceLabel || '')
+  const months = Number(durationMonths) || 1
+  const url = paymentsUrl || `${getAppUrl()}/profile/payments`
+  const title = 'İlk ödemenize %10 indirim uygulandı'
+  const prepaidNote = months > 1
+    ? ` Bu ${months} aylık peşin dönemin Checkout tutarına indirim bir kez uygulandı.`
+    : ''
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Merhaba ${safeName}, ${safePlan} için ilk ödemenize yüzde 10 influencer indirimi uygulandı.
+      Bu tahsilat ${safePaid} tutarındadır (liste fiyatı ${safeList}).${prepaidNote}
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a4a4a;">
+      Sonraki yenilemeler güncel liste fiyatından tahsil edilir. Bu indirim hesabınızda yalnızca bir kez kullanılabilir;
+      iptal sonrası yeni paket veya farklı kod ikinci bir indirim sağlamaz.
+    </p>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b6b6b;">
+      Aboneliğinizi Ödeme Yönetimi’nden görüntüleyebilirsiniz.
+    </p>
+    <p style="margin:0 0 8px;text-align:center;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;background:#2d6a4f;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">
+        Ödeme Yönetimi
+      </a>
+    </p>`
+  const text = [
+    `Merhaba ${name || ''},`,
+    '',
+    `${planName || 'Paketiniz'} ilk ödemesine yüzde 10 influencer indirimi uygulandı (${amountPaidLabel}; liste ${listPriceLabel}).`,
+    months > 1
+      ? `${months} aylık peşin Checkout tutarına indirim bir kez uygulandı.`
+      : '',
+    'Sonraki yenilemeler güncel liste fiyatındandır. Bu indirim hesabınızda yalnızca bir kez kullanılabilir.',
+    '',
+    `Yönetim: ${url}`,
+  ].filter((line, i, arr) => line !== '' || arr[i - 1] !== '').join('\n')
+
+  return {
+    subject: 'Yeni Form — İlk ödemenize %10 indirim uygulandı',
     html: wrapBrandEmail({ title, bodyHtml }),
     text,
   }

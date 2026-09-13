@@ -19,7 +19,7 @@ export async function lookupActiveInfluencerByCode(admin, code) {
   if (!CODE_RE.test(normalized)) return null
   const { data, error } = await admin
     .from('influencers')
-    .select('id, email, name, code, active')
+    .select('id, email, name, code, active, commission_base')
     .eq('code', normalized)
     .eq('active', true)
     .maybeSingle()

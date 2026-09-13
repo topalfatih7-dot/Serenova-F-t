@@ -28,7 +28,11 @@ import {
 import {
   discountedListPriceTry,
   INFLUENCER_DISCOUNT_PERCENT,
+  INFLUENCER_DISCOUNT_CHECKOUT_COPY,
+  INFLUENCER_DISCOUNT_PREPAID_COPY,
+  INFLUENCER_DISCOUNT_CLAIMED_ERROR,
   formatInfluencerTry,
+  memberHasClaimedInfluencerDiscount,
 } from '../../data/influencerPayouts'
 
 function defaultDurationMonths(planId) {
@@ -82,6 +86,7 @@ export default function MemberPlanCheckout({
   const skipScrollOnce = useRef(true)
 
   const didAutoApply = useRef(false)
+  const discountAlreadyClaimed = memberHasClaimedInfluencerDiscount(member)
 
   useEffect(() => {
     const fromQuery = captureInfluencerRefFromSearch(searchParams)
@@ -89,6 +94,13 @@ export default function MemberPlanCheckout({
     if (!stored) return
     setCodeInput((prev) => prev || stored)
     if (!isAuthenticated) return
+    if (discountAlreadyClaimed) {
+      storeInfluencerCode('')
+      setCodeStatus('invalid')
+      setCodeError(INFLUENCER_DISCOUNT_CLAIMED_ERROR)
+      setAppliedCode('')
+      return
+    }
     if (didAutoApply.current) return
     didAutoApply.current = true
     let cancelled = false
@@ -100,10 +112,15 @@ export default function MemberPlanCheckout({
         setCodeError('')
         setAppliedCode(stored)
         storeInfluencerCode(stored)
+      } else if (r.claimed || /daha önce kullanıldı/i.test(String(r.error || ''))) {
+        storeInfluencerCode('')
+        setCodeStatus('invalid')
+        setCodeError(r.error || INFLUENCER_DISCOUNT_CLAIMED_ERROR)
+        setAppliedCode('')
       }
     })()
     return () => { cancelled = true }
-  }, [searchParams, isAuthenticated])
+  }, [searchParams, isAuthenticated, discountAlreadyClaimed])
 
   useEffect(() => {
     setDurationMonths(defaultDurationMonths(selected))
@@ -141,11 +158,18 @@ export default function MemberPlanCheckout({
   const selectedPrice = isPaid
     ? getTierPrice(selected, isOneTime ? 1 : durationMonths, selectedPlan)
     : 0
-  const codeValid = codeStatus === 'valid' && appliedCode
+  const codeValid = !discountAlreadyClaimed && codeStatus === 'valid' && appliedCode
   const chargedPrice = codeValid ? discountedListPriceTry(selectedPrice) : selectedPrice
 
   const applyDiscountCode = async (raw = codeInput) => {
     const code = normalizeInfluencerCode(raw)
+    if (discountAlreadyClaimed) {
+      storeInfluencerCode('')
+      setCodeStatus('invalid')
+      setCodeError(INFLUENCER_DISCOUNT_CLAIMED_ERROR)
+      setAppliedCode('')
+      return { valid: false, error: INFLUENCER_DISCOUNT_CLAIMED_ERROR, claimed: true }
+    }
     if (!code) {
       setCodeStatus('idle')
       setCodeError('')
@@ -176,10 +200,13 @@ export default function MemberPlanCheckout({
         setAppliedCode('')
         return { valid: false, stored: true, code }
       }
+      if (r.claimed || /daha önce kullanıldı/i.test(String(r.error || ''))) {
+        storeInfluencerCode('')
+      }
       setCodeStatus('invalid')
       setCodeError(r.error || 'Geçersiz kod.')
       setAppliedCode('')
-      return { valid: false, error: r.error || 'Geçersiz kod.' }
+      return { valid: false, error: r.error || 'Geçersiz kod.', claimed: r.claimed === true }
     } finally {
       setCodeChecking(false)
     }
@@ -196,17 +223,21 @@ export default function MemberPlanCheckout({
       return
     }
     let discountCode = null
-    const typed = normalizeInfluencerCode(codeInput)
-    if (typed) {
-      if (codeValid && appliedCode === typed) {
-        discountCode = appliedCode
-      } else {
-        const checked = await applyDiscountCode(typed)
-        if (!checked.valid) {
-          toast(checked.error || 'Geçersiz kod.', 'error')
-          return
+    if (discountAlreadyClaimed) {
+      storeInfluencerCode('')
+    } else {
+      const typed = normalizeInfluencerCode(codeInput)
+      if (typed) {
+        if (codeValid && appliedCode === typed) {
+          discountCode = appliedCode
+        } else {
+          const checked = await applyDiscountCode(typed)
+          if (!checked.valid) {
+            toast(checked.error || 'Geçersiz kod.', 'error')
+            return
+          }
+          discountCode = checked.code
         }
-        discountCode = checked.code
       }
     }
     const payAmount = discountCode ? discountedListPriceTry(selectedPrice) : selectedPrice
@@ -285,6 +316,9 @@ export default function MemberPlanCheckout({
           <label htmlFor="influencer-code" className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-cream-800/55">
             <Tag className="h-3.5 w-3.5" /> İndirim kodu
           </label>
+          <p className="mb-2 text-[11px] leading-relaxed text-cream-800/50">
+            Kod yalnızca ilk ödemede %{INFLUENCER_DISCOUNT_PERCENT} indirim verir (hesap başına bir kez). Sonraki yenilemeler liste fiyatındandır.
+          </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               id="influencer-code"
@@ -292,6 +326,7 @@ export default function MemberPlanCheckout({
               autoComplete="off"
               spellCheck={false}
               value={codeInput}
+              disabled={discountAlreadyClaimed}
               onChange={(e) => {
                 const next = normalizeInfluencerCode(e.target.value)
                 setCodeInput(next)
@@ -302,11 +337,11 @@ export default function MemberPlanCheckout({
                 }
               }}
               onBlur={() => {
-                if (codeInput) void applyDiscountCode(codeInput)
+                if (codeInput && !discountAlreadyClaimed) void applyDiscountCode(codeInput)
               }}
               placeholder="Kodunuz varsa girin"
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 font-mono text-sm tracking-wide outline-none focus:ring-2 ${
-                codeStatus === 'invalid'
+              className={`w-full rounded-xl border bg-white px-4 py-2.5 font-mono text-sm tracking-wide outline-none focus:ring-2 disabled:bg-cream-50 disabled:text-cream-800/50 ${
+                discountAlreadyClaimed || codeStatus === 'invalid'
                   ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
                   : codeStatus === 'valid'
                     ? 'border-sage-300 focus:border-sage-400 focus:ring-sage-100'
@@ -316,7 +351,7 @@ export default function MemberPlanCheckout({
             <button
               type="button"
               onClick={() => void applyDiscountCode(codeInput)}
-              disabled={codeChecking || !codeInput}
+              disabled={codeChecking || !codeInput || discountAlreadyClaimed}
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-cream-200 bg-cream-50 px-4 py-2.5 text-sm font-semibold text-cream-800 hover:bg-cream-100 disabled:opacity-50"
             >
               {codeChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Uygula'}
@@ -338,13 +373,23 @@ export default function MemberPlanCheckout({
               </button>
             )}
           </div>
-          {codeStatus === 'valid' && (
-            <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-sage-700">
-              <Check className="h-4 w-4" />
-              Bu abonelik yenilendikçe %{INFLUENCER_DISCOUNT_PERCENT} indirim uygulanır. Paketi iptal edince biter; yeni pakette kodu tekrar girin.
+          {discountAlreadyClaimed && (
+            <p className="mt-2 text-sm font-medium text-cream-800/80">
+              {INFLUENCER_DISCOUNT_CLAIMED_ERROR}
             </p>
           )}
-          {codeStatus === 'invalid' && (
+          {!discountAlreadyClaimed && codeStatus === 'valid' && (
+            <p className="mt-2 text-sm font-medium text-sage-700">
+              <span className="inline-flex items-start gap-1.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {INFLUENCER_DISCOUNT_CHECKOUT_COPY}
+                  {!isOneTime && durationMonths > 1 ? ` ${INFLUENCER_DISCOUNT_PREPAID_COPY}` : ''}
+                </span>
+              </span>
+            </p>
+          )}
+          {!discountAlreadyClaimed && codeStatus === 'invalid' && (
             <p className="mt-2 text-sm font-medium text-red-600">{codeError || 'Geçersiz kod.'}</p>
           )}
           {codeValid && selectedPrice > 0 && (

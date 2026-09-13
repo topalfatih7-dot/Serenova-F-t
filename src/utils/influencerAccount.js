@@ -11,6 +11,7 @@ export function rowToInfluencer(row) {
     phone: row.phone || '',
     code: row.code || '',
     active: row.active !== false,
+    commissionBase: row.commission_base === 'list_price' ? 'list_price' : 'discounted',
     instagram: data.instagram || '',
     tempPasswordIssued: data.tempPasswordIssued === true,
     data,

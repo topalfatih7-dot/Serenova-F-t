@@ -14,7 +14,7 @@ export async function ensureInfluencerCoupon(stripe) {
         || percent !== INFLUENCER_DISCOUNT_PERCENT
       ) {
         throw new Error(
-          `Stripe kuponu ${STRIPE_INFLUENCER_COUPON_ID} abonelik süresince %${INFLUENCER_DISCOUNT_PERCENT} olmalı.`,
+          `Stripe kuponu ${STRIPE_INFLUENCER_COUPON_ID} duration=${STRIPE_INFLUENCER_COUPON_DURATION} ve %${INFLUENCER_DISCOUNT_PERCENT} olmalı.`,
         )
       }
       return existing
@@ -28,6 +28,6 @@ export async function ensureInfluencerCoupon(stripe) {
     id: STRIPE_INFLUENCER_COUPON_ID,
     percent_off: INFLUENCER_DISCOUNT_PERCENT,
     duration: STRIPE_INFLUENCER_COUPON_DURATION,
-    name: 'Influencer %10 (abonelik)',
+    name: 'Influencer %10 (ilk ödeme)',
   })
 }

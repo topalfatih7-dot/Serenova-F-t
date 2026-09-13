@@ -601,7 +601,7 @@ function AdminPayments() {
           <Users className="h-5 w-5 text-fuchsia-500" /> Influencer hakedişleri
         </h2>
         <p className="mb-4 text-sm text-cream-800/55">
-          Cuma–Perşembe tahakkuk, ödeme sonraki Cuma. Kodlu abonelik yenilendikçe hakediş yazılır; iptalde durur.
+          Cuma–Perşembe tahakkuk, ödeme sonraki Cuma. Kodlu abonelikte her başarılı ödemede hakediş yazılır; iptal veya ödenmeyen faturada durur. Üye indirimi yalnızca ilk ödemede bir kez geçerlidir.
         </p>
         <AdminInfluencerEarnings accountsByInfluencerId={accountsByInfluencerId} />
       </section>

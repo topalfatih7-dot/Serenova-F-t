@@ -100,7 +100,7 @@ export default function InfluencerOverviewPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-700/70">Paylaşım kodu</p>
         <p className="mt-2 font-display text-3xl font-bold tracking-wide text-cream-900">{code || '—'}</p>
         <p className="mt-2 max-w-prose text-sm text-cream-800/60">
-          Üyeler bu kodu Checkout’ta kullanarak %10 indirim alır. Aynı abonelik yenilendikçe indirim ve hakediş (ödenen tutarın %20’si) devam eder. Üye paketi iptal edince biter; yeni pakette kodu yeniden girmesi gerekir.
+          Üyeler bu kodu Checkout’ta kullanarak yalnızca ilk ödemelerinde %10 indirim alır. Sonraki yenilemeler liste fiyatındandır; indirim her hesapta yalnızca bir kez kullanılabilir. Başarılı ödemelerde hakediş yazılır; iptalde durur.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button

@@ -9,13 +9,14 @@ import { getAppUrl } from './_appUrl.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import {
   lookupActiveInfluencerByCode,
-  isSelfInfluencerUse,
   normalizeInfluencerCodeServer,
   isInfluencerCodeFormat,
 } from './_influencerCode.js'
+import { influencerDiscountGate } from './_influencerDiscount.js'
 import {
   INFLUENCER_DISCOUNT_PERCENT,
   INFLUENCER_COMMISSION_RATE,
+  normalizeCommissionBase,
 } from '../src/data/influencerPayouts.js'
 
 function normalizeEmail(raw) {
@@ -50,19 +51,22 @@ async function handleValidateCode(req, res, admin, body) {
   }
 
   const row = await lookupActiveInfluencerByCode(admin, code)
-  if (!row) {
+  const { data: memberRow } = await admin
+    .from('members')
+    .select('data')
+    .eq('id', auth.user.id)
+    .maybeSingle()
+  const gate = influencerDiscountGate({
+    user: auth.user,
+    influencerRow: row,
+    memberData: memberRow?.data || {},
+  })
+  if (!gate.ok) {
     return res.status(200).json({
       ok: true,
       valid: false,
-      error: 'Geçersiz kod.',
-      discountPercent: INFLUENCER_DISCOUNT_PERCENT,
-    })
-  }
-  if (isSelfInfluencerUse(auth.user, row)) {
-    return res.status(200).json({
-      ok: true,
-      valid: false,
-      error: 'Kendi kodunuzu kullanamazsınız.',
+      error: gate.error,
+      claimed: gate.claimed === true,
       discountPercent: INFLUENCER_DISCOUNT_PERCENT,
     })
   }
@@ -104,6 +108,7 @@ async function handleAdminUpsert(req, res, admin, body) {
   const active = body.active !== false
   const id = body.id ? String(body.id) : null
   const instagram = String(body.instagram || '').trim()
+  const requestedBase = body.commission_base ?? body.commissionBase
 
   if (name.length < 2) return res.status(400).json({ ok: false, error: 'Ad gerekli.' })
   if (!email.includes('@')) return res.status(400).json({ ok: false, error: 'Geçerli e-posta gerekli.' })
@@ -122,6 +127,7 @@ async function handleAdminUpsert(req, res, admin, body) {
   let tempPassword = String(body.password || '')
   let created = false
   let userId = id
+  let existingCommissionBase = 'discounted'
 
   if (!id) {
     if (!tempPassword || tempPassword.length < 8) tempPassword = generateTempPassword()
@@ -142,13 +148,23 @@ async function handleAdminUpsert(req, res, admin, body) {
     created = true
     await admin.from('members').delete().eq('id', userId)
   } else {
-    const { data: existing } = await admin.from('influencers').select('id, data').eq('id', id).maybeSingle()
+    const { data: existing } = await admin
+      .from('influencers')
+      .select('id, data, commission_base')
+      .eq('id', id)
+      .maybeSingle()
     if (!existing) return res.status(404).json({ ok: false, error: 'Influencer bulunamadı.' })
+    existingCommissionBase = existing.commission_base
     const patch = { email, email_confirm: true, user_metadata: { name, influencer: true } }
     if (tempPassword) patch.password = tempPassword
     const { error: updAuth } = await admin.auth.admin.updateUserById(id, patch)
     if (updAuth) return res.status(500).json({ ok: false, error: updAuth.message })
   }
+
+  const commissionBase = normalizeCommissionBase(
+    requestedBase,
+    created ? 'discounted' : existingCommissionBase,
+  )
 
   const { data: current } = await admin.from('influencers').select('data').eq('id', userId).maybeSingle()
   const nextData = {
@@ -165,6 +181,7 @@ async function handleAdminUpsert(req, res, admin, body) {
     phone,
     code,
     active,
+    commission_base: commissionBase,
     data: nextData,
     updated_at: new Date().toISOString(),
   }
