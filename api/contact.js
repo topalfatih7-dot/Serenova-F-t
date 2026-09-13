@@ -8,6 +8,7 @@
  * contact_reply: admin bearer + Resend mail (Bize Ulaşın yanıtı).
  */
 
+import { randomUUID } from 'node:crypto'
 import { setCorsHeaders, handleOptions, requireAdmin } from './_guards.js'
 import { getSupabaseAdmin, getSupabaseUrl, isSupabaseAdminConfigured } from './_supabaseAdmin.js'
 import { readRawBody } from './_daily.js'
@@ -444,7 +445,7 @@ async function handleStaffDocUpload(req, res, body) {
     return res.status(400).json({ ok: false, error: 'Dosya en fazla 8 MB olabilir' })
   }
 
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`
+  const path = `${randomUUID()}.${ext}`
   const admin = getSupabaseAdmin()
   const { error } = await admin.storage.from('staff-application-docs').upload(path, buffer, {
     contentType: contentType || (ext === 'pdf' ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`),
@@ -455,10 +456,12 @@ async function handleStaffDocUpload(req, res, body) {
     return res.status(400).json({ ok: false, error: error.message || 'Yükleme başarısız' })
   }
 
-  const { data: pub } = admin.storage.from('staff-application-docs').getPublicUrl(path)
+  const { data: signed } = await admin.storage
+    .from('staff-application-docs')
+    .createSignedUrl(path, 60 * 60)
   return res.status(200).json({
     ok: true,
-    url: pub?.publicUrl,
+    url: signed?.signedUrl || null,
     path,
     formSessionToken: guard.formSessionToken,
   })

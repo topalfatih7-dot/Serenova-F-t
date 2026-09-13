@@ -38,6 +38,7 @@ import {
 } from './_deleteAccount.js'
 import { handlePasswordChange } from './_changePassword.js'
 import { notifyMemberSignupTelegram } from './_formNotify.js'
+import { assertExerciseVideoAccess } from './_exerciseVideoAccess.js'
 
 const nowISO = () => new Date().toISOString()
 
@@ -960,8 +961,9 @@ async function handleExerciseVideoUrl(req, res, body) {
   }
 
   const { path } = body
-  if (!isExerciseVideoPath(path)) {
-    return res.status(400).json({ ok: false, error: 'Geçersiz video yolu' })
+  const access = await assertExerciseVideoAccess(admin, userData.user, path)
+  if (!access.ok) {
+    return res.status(access.status).json({ ok: false, error: access.error })
   }
 
   const { data, error } = await admin.storage
@@ -994,8 +996,17 @@ async function handleExerciseVideoUrls(req, res, body) {
     return res.status(400).json({ ok: false, error: 'Geçersiz video yolları' })
   }
 
+  const allowed = []
+  for (const path of paths) {
+    const access = await assertExerciseVideoAccess(admin, userData.user, path)
+    if (access.ok) allowed.push(path)
+  }
+  if (!allowed.length) {
+    return res.status(403).json({ ok: false, error: 'Bu videolara erişim yok.' })
+  }
+
   const expiresAt = Date.now() + EXERCISE_VIDEO_EXPIRES * 1000
-  const entries = await Promise.all(paths.map(async (path) => {
+  const entries = await Promise.all(allowed.map(async (path) => {
     const { data, error } = await admin.storage
       .from(EXERCISE_VIDEO_BUCKET)
       .createSignedUrl(path, EXERCISE_VIDEO_EXPIRES)
@@ -1060,8 +1071,19 @@ async function handleDeleteAccount(req, res, body) {
     .eq('id', user.id)
     .maybeSingle()
 
-  const role = String(memberRow?.role || user.user_metadata?.role || '').toLowerCase()
-  if (role === 'admin' || role === 'staff') {
+  const role = String(memberRow?.role || '').toLowerCase()
+  if (role === 'admin') {
+    return res.status(403).json({
+      ok: false,
+      error: 'Personel ve yönetici hesapları bu sayfadan silinemez. Talep için info@yeniform.com adresine yazın.',
+    })
+  }
+  const { data: staffRow } = await admin
+    .from('staff')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (staffRow?.id) {
     return res.status(403).json({
       ok: false,
       error: 'Personel ve yönetici hesapları bu sayfadan silinemez. Talep için info@yeniform.com adresine yazın.',

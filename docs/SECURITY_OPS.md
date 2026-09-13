@@ -26,13 +26,21 @@
 - Login/unlock: Turnstile token **Supabase’e iletilir** (biz siteverify etmeyiz — token tek kullanımlık). Signup API hâlâ kendi siteverify’ını yapar (admin RPC).
 - **Kayıt sonrası oturum:** Signup `authSessionToken` üretir; `password-login` bu oturumla **service-role password grant** kullanır (Turnstile tekrar istenmez — signup token’ı zaten tüketilmiştir).
 
-## Vercel / WAF (manuel)
+## Vercel / WAF
 
-Vercel Dashboard → Project → Firewall / Attack Challenge:
+Hedef path’ler (eşik: IP başına ~20 istek / dakika; aşımda challenge, hard block değil):
 
-1. `/api/contact` — IP başına dakikada ~20 istek üstü challenge veya block.
-2. `/api/auth` — signup/password-reset için benzer eşik.
-3. `/api/ai-*` — authenticated abuse için IP + path rule.
+1. `/api/contact` — public form / başvuru.
+2. `/api/auth` — signup / password-reset.
+3. `/api/ai-*` — authenticated AI abuse (`/api/ai-food-text`, `/api/ai-food-vision`, `/api/ai-health-analysis`, `/api/ai-blog-generate`).
+
+**Yapılandırıldı (2026-09-13)** — proje `serenova-f-t` (`www.yeniform.com`), takım Hobby.
+
+- Canlı kural: `Rate limit contact/auth/ai APIs` (`rule_rate_limit_api_contact_pHBYB5`), WAF config `waf_Mf6KbDl3mGaK` v1.
+- Action: `rate_limit` 20 istek / 60s / IP (`fixed_window`); aşımda `challenge`.
+- Hobby limiti: proje başına **1** WAF rate-limit kuralı (ayrıca en fazla 3 custom rule). Üç path bu yüzden tek kuralda OR ile birleşik; sayaç üç path arasında paylaşılır. Ayrı kural (Pro, 40 rate-limit) için yükseltme gerekir — satın alma yapılmadı.
+- Dashboard: Vercel → `serenova-f-t` → Firewall. CLI: `vercel firewall rules list --expand`.
+- Sayaçlar bölge başına tutulur (`fra1` birincil).
 
 Cloudflare kullanılıyorsa aynı path’lere rate limit rule ekleyin.
 
@@ -57,6 +65,14 @@ Subscription yenileme için endpoint’te şu event’ler **açık olmalı** (ko
 Dashboard → Developers → Webhooks → endpoint → Events to send.  
 Vercel `STRIPE_WEBHOOK_SECRET` = endpoint signing secret.
 
+## Sertleştirme (2026-09-13)
+
+- Checkout e-postası ve Stripe müşteri eşlemesi yalnızca oturumdaki üyeden; dönüş URL’si `APP_URL`.
+- `staff-application-docs` bucket **private**; admin imzalı URL ile açar.
+- Egzersiz videosu imzası program-scoped (personel/admin / `fullLibraryAccess` hariç).
+- Üye JSON: `fullLibraryAccess`, `stripeSubscriptionId`, `waterTracking` tetikleyici ile kilitli.
+- Sohbet insert: gönderen = `auth.uid()`. Ops Telegram metni oturum kimliğinden.
+
 ## Bilinçli advisor istisnaları (2026-07-29)
 
 - `members_staff_safe`: `security_invoker = true` (iletişim strip + `staff_manages_member`). Eski SECURITY DEFINER ERROR kapatıldı.
@@ -64,13 +80,15 @@ Vercel `STRIPE_WEBHOOK_SECRET` = endpoint signing secret.
 - `phone_in_use` → `anon`: kayıt/telefon doğrulama.
 - `get_online_stats` → `anon`: landing canlı sayaç.
 - `admin_*` / `append_*` / `book_staff_session` vb. → `authenticated` EXECUTE: fonksiyon gövdesinde `is_admin()` / staff check vardır; revoke etme.
+- `product_nutrition_cache` / `usda_food_cache`: RLS + açık deny (yazma `service_role`).
 - `tg_chat_message_touch_thread()` → **REVOKE** (2026-08-31): trigger olarak çalışır; REST RPC yüzeyi kapatıldı.
 
-## Leaked Password Protection (Dashboard — 2026-08-31)
+## Leaked Password Protection (AÇIK — 2026-09-13)
 
-Supabase linter WARN: HaveIBeenPwned kapalı. Kod ile açılamaz.
+HaveIBeenPwned / leaked password protection **açık** (2026-09-13). Advisor `auth_leaked_password_protection` uyarısı kalktı.
 
-Dashboard → Authentication → Attack Protection → **Leaked password protection** = on.  
+Dashboard → Authentication → Attack Protection → **Prevent use of leaked passwords** = ENABLED  
+(Email provider: Authentication → Sign In / Providers → Email).  
 https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
 Signup HIBP'yi service-role RPC ile bilinçli atlıyoruz (`register_email_user`); bu ayar doğrudan GoTrue `signUp` / şifre değişimini korur.

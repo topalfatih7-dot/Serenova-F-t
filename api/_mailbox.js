@@ -29,6 +29,29 @@ const RESEND_API = 'https://api.resend.com'
 const BUCKET = 'mailbox-attachments'
 const SIGNED_TTL = 15 * 60
 
+function isPrivateLanHostname(host) {
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]') return true
+  if (host === '169.254.169.254' || host.endsWith('.internal') || host.endsWith('.local')) return true
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)) return true
+  return false
+}
+
+/** Resend ek indirme — özel/loopback adres yok. */
+export function isSafeAttachmentDownloadUrl(url) {
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'https:') return false
+    const host = parsed.hostname.toLowerCase()
+    if (!host || isPrivateLanHostname(host)) return false
+    if (parsed.username || parsed.password) return false
+    return true
+  } catch {
+    return false
+  }
+}
+
 function resendKey() {
   return String(process.env.RESEND_API_KEY || '').trim()
 }
@@ -176,7 +199,7 @@ async function ingestInboundAttachments(admin, messageId, emailId, listed) {
   }
   for (const item of items.slice(0, MAX_ATTACHMENTS)) {
     const url = item.download_url || item.downloadUrl
-    if (!url) continue
+    if (!isSafeAttachmentDownloadUrl(url)) continue
     try {
       const res = await fetch(url)
       if (!res.ok) continue

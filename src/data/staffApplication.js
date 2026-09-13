@@ -687,8 +687,13 @@ export function buildStaffApplicationPayload(form) {
     availability: form.availability && typeof form.availability === 'object' ? form.availability : {},
   }
 
-  const graduationDocFile = form.graduationDocFile?.url
-    ? { name: form.graduationDocFile.name || 'e-Devlet mezuniyet belgesi', url: form.graduationDocFile.url, kind: 'graduation' }
+  const graduationDocFile = (form.graduationDocFile?.url || form.graduationDocFile?.path)
+    ? {
+      name: form.graduationDocFile.name || 'e-Devlet mezuniyet belgesi',
+      url: form.graduationDocFile.url,
+      path: form.graduationDocFile.path || null,
+      kind: 'graduation',
+    }
     : null
 
   const education = (form.education || [])
@@ -708,11 +713,16 @@ export function buildStaffApplicationPayload(form) {
         name: c.name || '',
         issuer: c.issuer || '',
         year: c.year || '',
-        file: c.file?.url ? { name: c.file.name || '', url: c.file.url } : null,
+        file: (c.file?.url || c.file?.path) ? { name: c.file.name || '', url: c.file.url, path: c.file.path || null } : null,
       }))
     const certificateFiles = [
       ...(graduationDocFile ? [graduationDocFile] : []),
-      ...certificates.filter((c) => c.file?.url).map((c) => ({ name: c.file.name || `Sertifika — ${c.name}`, url: c.file.url, kind: 'certificate' })),
+      ...certificates.filter((c) => c.file?.url || c.file?.path).map((c) => ({
+        name: c.file.name || `Sertifika — ${c.name}`,
+        url: c.file.url,
+        path: c.file.path || null,
+        kind: 'certificate',
+      })),
     ]
     return {
       ...common,
@@ -756,6 +766,7 @@ export function buildStaffApplicationPayload(form) {
       ...(form.certificateFiles || []).map((f) => ({
         name: f.name || '',
         url: f.url,
+        path: f.path || null,
         kind: f.kind || 'certificate',
       })),
     ],

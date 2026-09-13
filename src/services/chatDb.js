@@ -127,13 +127,20 @@ export async function sendChatMessage({ thread, senderType, senderId, text }) {
   const value = String(text || '').trim()
   if (!value || !thread?.id) return { success: false, error: 'Mesaj boş.' }
 
+  const { data: authData } = await supabase.auth.getUser()
+  const uid = authData?.user?.id
+  if (!uid) return { success: false, error: 'Oturum bulunamadı.' }
+  if (senderType !== 'system' && senderId && String(senderId) !== String(uid)) {
+    return { success: false, error: 'Gönderen bilgisi oturumla uyuşmuyor.' }
+  }
+
   const guard = detectExternalContactInfo(value)
   if (guard.blocked) return { success: false, error: CONTACT_INFO_BLOCK_MESSAGE, blockedReason: guard.reason }
 
   const { data: msgRow, error: msgErr } = await supabase.from('chat_messages').insert({
     thread_id: thread.id,
     sender_type: senderType,
-    sender_id: senderId || null,
+    sender_id: senderType === 'system' ? (senderId || null) : uid,
     data: { text: value },
   }).select().single()
 

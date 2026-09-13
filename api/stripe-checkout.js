@@ -24,7 +24,8 @@ import { normalizeEmailAddress } from './_email.js'
 import { enforceRateLimit, applyRateLimitHeaders } from './_rateLimit.js'
 import { createBillingPortalSession, assertSubscriptionBelongsToCustomer } from './_stripePortal.js'
 import { applyStripeSubscriptionState } from './_memberPackages.js'
-import { requireAdmin } from './_guards.js'
+import { handleOptions, requireAdmin, setCorsHeaders } from './_guards.js'
+import { checkoutEmailFromAuth, checkoutReturnOrigin } from './_checkoutSecurity.js'
 import { ensureCatalogPrice } from './_stripeCatalog.js'
 import { syncPlanCatalogToSubscriptions, loadPlanRow } from './_stripePriceSync.js'
 import { ensureInfluencerCoupon } from './_influencerCoupon.js'
@@ -32,12 +33,8 @@ import { lookupActiveInfluencerByCode } from './_influencerCode.js'
 import { influencerDiscountGate } from './_influencerDiscount.js'
 import { discountedListPriceTry, normalizeCommissionBase } from '../src/data/influencerPayouts.js'
 
-function getOrigin(req) {
-  return (
-    req.headers.origin ||
-    process.env.APP_URL ||
-    (req.headers.host ? `https://${req.headers.host}` : '')
-  )
+function getOrigin() {
+  return checkoutReturnOrigin()
 }
 
 async function resolveAuthUser(admin, req) {
@@ -75,8 +72,16 @@ async function ensureStripeCustomer(stripe, admin, user, checkoutEmail, memberNa
 
   if (email) {
     const existing = await stripe.customers.list({ email, limit: 1 })
-    if (existing.data?.[0]?.id) {
-      customerId = existing.data[0].id
+    const foundId = existing.data?.[0]?.id || null
+    if (foundId) {
+      const { data: owner } = await admin
+        .from('members')
+        .select('id')
+        .eq('stripe_customer_id', foundId)
+        .maybeSingle()
+      if (!owner || owner.id === user.id) {
+        customerId = foundId
+      }
     }
   }
 
@@ -174,7 +179,7 @@ async function handlePortalSession(req, res, admin, body = {}) {
     })
   }
 
-  const origin = getOrigin(req)
+  const origin = getOrigin()
   const intent = String(body.intent || 'manage')
   const mode = body.mode === 'immediately' ? 'immediately' : 'at_period_end'
   const subscriptionId = String(body.subscriptionId || '').trim() || null
@@ -265,11 +270,9 @@ async function handleSyncPlanCatalog(req, res, admin, body = {}) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (handleOptions(req, res, 'POST, OPTIONS', 'Content-Type, Authorization')) return
+  setCorsHeaders(res, 'POST, OPTIONS', 'Content-Type, Authorization', req)
 
-  if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Yalnızca POST desteklenir' })
 
   if (!isStripeConfigured()) {
@@ -289,7 +292,7 @@ export default async function handler(req, res) {
       limit: 30,
       windowMs: 60 * 60 * 1000,
     })
-    applyRateLimitHeaders(res, rl)
+    applyRateLimitHeaders(res, rl.headers)
     if (!rl.ok) {
       return res.status(429).json({ ok: false, error: 'Çok fazla istek. Lütfen sonra tekrar deneyin.' })
     }
@@ -370,18 +373,17 @@ export default async function handler(req, res) {
     if (auth.error) return res.status(auth.status).json({ ok: false, error: auth.error })
     const user = auth.user
 
-    let checkoutEmail = normalizeEmailAddress(body.email)
-      || normalizeEmailAddress(user.email)
-      || normalizeEmailAddress(user.user_metadata?.email)
-
-    let memberName = user.user_metadata?.name || user.user_metadata?.full_name || ''
     const { data: memberRow } = await admin
       .from('members')
       .select('email, name, data')
       .eq('id', user.id)
       .maybeSingle()
-    if (!checkoutEmail) checkoutEmail = normalizeEmailAddress(memberRow?.email)
-    if (!memberName) memberName = memberRow?.name || ''
+
+    const checkoutEmail = checkoutEmailFromAuth(user, memberRow)
+    let memberName = memberRow?.name
+      || user.user_metadata?.name
+      || user.user_metadata?.full_name
+      || ''
 
     let planName = plan?.name || PLAN_FALLBACK[planId]?.name || planId
     let planPrice = plan
@@ -422,7 +424,7 @@ export default async function handler(req, res) {
     const durationLabel = oneTime
       ? 'Tek Seferlik'
       : (durationMonths === 1 ? '1 ay' : `${durationMonths} ay`)
-    const origin = getOrigin(req)
+    const origin = getOrigin()
     const successPath = flow === 'change' ? '/profile' : '/dashboard'
     const cancelPath = flow === 'change' ? '/plans' : '/onboarding'
 

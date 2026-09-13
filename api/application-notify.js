@@ -96,18 +96,7 @@ async function canNotifyStaff(admin, authUser, staffId, hint = {}) {
     }
   }
 
-  const { data: callerStaff } = await admin
-    .from('staff')
-    .select('id')
-    .eq('id', authUser.id)
-    .maybeSingle()
-  if (!callerStaff) return false
-  const { data: target } = await admin
-    .from('staff')
-    .select('id')
-    .eq('id', staffId)
-    .maybeSingle()
-  return Boolean(target)
+  return false
 }
 
 async function canNotifyMember(admin, authUser, memberId, hint = {}) {

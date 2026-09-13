@@ -102,10 +102,17 @@ export async function sendAdminStaffMessage({ thread, senderType, senderId, text
   const value = String(text || '').trim()
   if (!value || !thread?.id) return { success: false, error: 'Mesaj boş.' }
 
+  const { data: authData } = await supabase.auth.getUser()
+  const uid = authData?.user?.id
+  if (!uid) return { success: false, error: 'Oturum bulunamadı.' }
+  if (senderId && String(senderId) !== String(uid)) {
+    return { success: false, error: 'Gönderen bilgisi oturumla uyuşmuyor.' }
+  }
+
   const { data: msgRow, error: msgErr } = await supabase.from('admin_staff_messages').insert({
     thread_id: thread.id,
     sender_type: senderType,
-    sender_id: senderId || null,
+    sender_id: uid,
     data: { text: value },
   }).select().single()
 

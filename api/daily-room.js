@@ -114,11 +114,6 @@ function parseJsonBuffer(raw) {
 }
 
 async function handleDailyWebhook(req, res, raw) {
-  const payload = parseJsonBuffer(raw)
-  if (payload?.test) {
-    return res.status(200).json({ ok: true, test: true })
-  }
-
   if (!isDailyWebhookConfigured()) {
     return res.status(503).json({ ok: false, error: 'Daily webhook gizli anahtarı yok.', code: 'config' })
   }
@@ -131,6 +126,11 @@ async function handleDailyWebhook(req, res, raw) {
   })
   if (!okSig) {
     return res.status(401).json({ ok: false, error: 'Geçersiz Daily imzası.', code: 'bad_signature' })
+  }
+
+  const payload = parseJsonBuffer(raw)
+  if (payload?.test) {
+    return res.status(200).json({ ok: true, test: true })
   }
 
   const type = String(payload?.type || '')

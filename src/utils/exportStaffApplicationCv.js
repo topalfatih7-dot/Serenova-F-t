@@ -5,10 +5,10 @@ import { staffRoleLabel } from '../utils/staffRoles'
 import { educationLevelLabel, formatEducationEntry, getOfficialCoachingCertLabels } from '../data/staffApplication'
 import { formatAvailabilitySummary } from '../services/availability'
 import { supabase } from '../services/supabaseClient'
+import { staffDocStoragePath, STAFF_DOCS_BUCKET, resolveStaffApplicationDocUrl } from './staffApplicationDocs'
 
 const GENDER_LABELS = { female: 'Kadın', male: 'Erkek' }
 const MAX_PDF_PAGES = 4
-const STAFF_DOCS_BUCKET = 'staff-application-docs'
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -48,32 +48,34 @@ function listItems(items, formatter = (x) => x) {
 /** Başvurudaki tüm ek belge URL'lerini topla (koç + diyetisyen). */
 export function collectApplicationDocuments(d = {}) {
   const docs = []
-  const push = (name, url, kind = 'document') => {
-    if (!url || typeof url !== 'string') return
-    if (docs.some((x) => x.url === url)) return
-    docs.push({ name: name || 'Belge', url, kind })
+  const push = (name, ref, kind = 'document') => {
+    const url = typeof ref === 'string' ? ref : ref?.url
+    const path = typeof ref === 'string' ? null : ref?.path
+    if (!url && !path) return
+    if (docs.some((x) => (url && x.url === url) || (path && x.path === path))) return
+    docs.push({ name: name || 'Belge', url, path, kind })
   }
 
-  if (d.graduationDocFile?.url) {
-    push(d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi', d.graduationDocFile.url, 'graduation')
+  if (d.graduationDocFile?.url || d.graduationDocFile?.path) {
+    push(d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi', d.graduationDocFile, 'graduation')
   }
-  if (d.educationFile?.url) {
-    push(d.educationFile.name || 'Eğitim belgesi', d.educationFile.url, 'education')
+  if (d.educationFile?.url || d.educationFile?.path) {
+    push(d.educationFile.name || 'Eğitim belgesi', d.educationFile, 'education')
   }
   for (const f of d.certificateFiles || []) {
-    push(f.name || 'Sertifika belgesi', f.url, f.kind || 'certificate')
+    push(f.name || 'Sertifika belgesi', f, f.kind || 'certificate')
   }
   for (const [name, url] of Object.entries(d.certDocuments || {})) {
-    push(name, typeof url === 'string' ? url : url?.url, 'certificate')
+    push(name, typeof url === 'string' ? url : url, 'certificate')
   }
   for (const e of d.education || []) {
-    if (e?.file?.url) {
-      push(e.file.name || `Eğitim — ${e.degree || e.school || 'belge'}`, e.file.url, 'education')
+    if (e?.file?.url || e?.file?.path) {
+      push(e.file.name || `Eğitim — ${e.degree || e.school || 'belge'}`, e.file, 'education')
     }
   }
   for (const c of d.certificates || []) {
-    if (c?.file?.url) {
-      push(c.file.name || `Sertifika — ${c.name || 'belge'}`, c.file.url, 'certificate')
+    if (c?.file?.url || c?.file?.path) {
+      push(c.file.name || `Sertifika — ${c.name || 'belge'}`, c.file, 'certificate')
     }
   }
   return docs
@@ -93,21 +95,17 @@ function blobToDataUrl(blob) {
   })
 }
 
-function storagePathFromPublicUrl(url) {
-  const marker = `/object/public/${STAFF_DOCS_BUCKET}/`
-  const idx = String(url || '').indexOf(marker)
-  if (idx === -1) return null
-  return decodeURIComponent(String(url).slice(idx + marker.length).split('?')[0])
-}
-
-async function fetchDocBlob(url) {
-  try {
-    const res = await fetch(url, { mode: 'cors' })
-    if (res.ok) return await res.blob()
-  } catch {
-    /* public fetch başarısız — admin storage download dene */
+async function fetchDocBlob(ref) {
+  const signed = await resolveStaffApplicationDocUrl(ref)
+  if (signed) {
+    try {
+      const res = await fetch(signed, { mode: 'cors' })
+      if (res.ok) return await res.blob()
+    } catch {
+      /* imzalı URL başarısız — storage download */
+    }
   }
-  const path = storagePathFromPublicUrl(url)
+  const path = staffDocStoragePath(ref)
   if (!path || !supabase) return null
   const { data, error } = await supabase.storage.from(STAFF_DOCS_BUCKET).download(path)
   if (error || !data) return null
@@ -154,7 +152,7 @@ export async function resolveDocumentPreviews(docs) {
   const resolved = []
   for (const doc of docs) {
     try {
-      const blob = await fetchDocBlob(doc.url)
+      const blob = await fetchDocBlob(doc)
       if (!blob) {
         resolved.push({
           ...doc,
@@ -164,8 +162,9 @@ export async function resolveDocumentPreviews(docs) {
         continue
       }
       const ct = (blob.type || '').toLowerCase()
-      const asImage = pathLooksLike(doc.url, ['.jpg', '.jpeg', '.png', '.webp', '.gif']) || ct.startsWith('image/')
-      const asPdf = pathLooksLike(doc.url, ['.pdf']) || ct.includes('pdf')
+      const look = `${doc.url || ''} ${doc.path || ''}`
+      const asImage = pathLooksLike(look, ['.jpg', '.jpeg', '.png', '.webp', '.gif']) || ct.startsWith('image/')
+      const asPdf = pathLooksLike(look, ['.pdf']) || ct.includes('pdf')
 
       if (asImage) {
         resolved.push({ ...doc, pages: [await blobToDataUrl(blob)] })

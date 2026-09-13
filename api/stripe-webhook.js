@@ -705,7 +705,8 @@ export default async function handler(req, res) {
       const raw = await readRawBody(req)
       event = stripe.webhooks.constructEvent(raw, sig, webhookSecret)
     } else {
-      if (process.env.STRIPE_WEBHOOK_DEV_BYPASS !== 'true') {
+      const prod = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+      if (prod || process.env.STRIPE_WEBHOOK_DEV_BYPASS !== 'true') {
         return res.status(400).json({ ok: false, error: 'Ham gövde yok; imza doğrulanamıyor.' })
       }
       event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body

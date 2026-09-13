@@ -116,8 +116,12 @@ export async function enforceRateLimit({ req, prefix, limit, windowMs = 60 * 60 
   }
 }
 
-export function applyRateLimitHeaders(res, headers = {}) {
-  for (const [k, v] of Object.entries(headers)) {
-    if (v != null && v !== '') res.setHeader(k, v)
+export function applyRateLimitHeaders(res, headersOrResult = {}) {
+  const headers = headersOrResult?.headers && typeof headersOrResult.headers === 'object'
+    ? headersOrResult.headers
+    : headersOrResult
+  for (const [k, v] of Object.entries(headers || {})) {
+    if (k !== 'Retry-After' && !String(k).startsWith('X-')) continue
+    if (v != null && v !== '') res.setHeader(k, String(v))
   }
 }

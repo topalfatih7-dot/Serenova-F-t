@@ -279,7 +279,7 @@ export default function StaffApplicationPage() {
           session = r.formSessionToken
           setFormSessionToken(r.formSessionToken)
         }
-        uploaded.push({ name: file.name, url: r.url })
+        uploaded.push({ name: file.name, url: r.url, path: r.path })
       }
       if (uploaded.length) toast(`${uploaded.length} belge yüklendi`, 'success')
       else resetTurnstile()

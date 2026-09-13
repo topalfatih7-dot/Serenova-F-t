@@ -10,6 +10,7 @@ import { useApp } from '../../context/AppContext'
 import { useToast } from '../../context/ToastContext'
 import { staffRoleLabel } from '../../utils/staffRoles'
 import { downloadStaffApplicationCvPdf } from '../../utils/exportStaffApplicationCv'
+import { resolveStaffApplicationDocUrl } from '../../utils/staffApplicationDocs'
 import { getOfficialCoachingCertLabels, educationLevelLabel, formatEducationEntry } from '../../data/staffApplication'
 import { formatAvailabilitySummary } from '../../services/availability'
 
@@ -30,6 +31,19 @@ const CORP_STATUS = {
   contacted: { label: 'İletişimde', style: 'bg-brand-50 text-brand-700' },
   approved: { label: 'Onaylandı', style: 'bg-sage-50 text-sage-700' },
   rejected: { label: 'Reddedildi', style: 'bg-red-50 text-red-600' },
+}
+
+function StaffDocLink({ doc, children, className = 'inline-flex items-center gap-1 text-brand-600 hover:underline' }) {
+  const open = async (event) => {
+    event.preventDefault()
+    const url = await resolveStaffApplicationDocUrl(doc)
+    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  }
+  return (
+    <a href={doc?.url || '#'} onClick={open} className={className} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  )
 }
 
 export default function AdminApplicationsPage() {
@@ -446,16 +460,16 @@ function StaffApplicationDetail({ app, d }) {
             {d.competentGroupOther && <p className="mt-1 text-xs text-cream-800/60">Diğer: {d.competentGroupOther}</p>}
             {d.chronicDiseaseExamples && <p className="mt-2 text-xs text-cream-800/60">Kronik hastalık örnekleri: {d.chronicDiseaseExamples}</p>}
           </DetailBlock>
-          {(d.graduationDocFile?.url || d.educationFile?.url) && (
+          {(d.graduationDocFile?.url || d.graduationDocFile?.path || d.educationFile?.url || d.educationFile?.path) && (
             <DetailBlock title="e-Devlet Mezuniyet Belgesi">
-              {d.graduationDocFile?.url ? (
-                <a href={d.graduationDocFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+              {d.graduationDocFile?.url || d.graduationDocFile?.path ? (
+                <StaffDocLink doc={d.graduationDocFile}>
                   {d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi'} <ExternalLink className="h-3 w-3" />
-                </a>
+                </StaffDocLink>
               ) : (
-                <a href={d.educationFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                <StaffDocLink doc={d.educationFile}>
                   {d.educationFile.name || 'Eğitim belgesi'} <ExternalLink className="h-3 w-3" />
-                </a>
+                </StaffDocLink>
               )}
             </DetailBlock>
           )}
@@ -493,16 +507,16 @@ function StaffApplicationDetail({ app, d }) {
               <ul className="space-y-1">
                 {(d.certificateFiles || []).map((f, i) => (
                   <li key={f.url || i}>
-                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                    <StaffDocLink doc={f}>
                       {f.name || `Belge ${i + 1}`}{f.kind === 'graduation' ? ' (mezuniyet)' : ''} <ExternalLink className="h-3 w-3" />
-                    </a>
+                    </StaffDocLink>
                   </li>
                 ))}
                 {Object.entries(d.certDocuments || {}).map(([name, url]) => (
                   <li key={name}>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                    <StaffDocLink doc={typeof url === 'string' ? { url } : url}>
                       {name} <ExternalLink className="h-3 w-3" />
-                    </a>
+                    </StaffDocLink>
                   </li>
                 ))}
               </ul>
@@ -520,11 +534,11 @@ function StaffApplicationDetail({ app, d }) {
       ) : (
         <>
           {d.graduationDepartment && <DetailBlock title="Mezuniyet"><p>{d.graduationDepartment}</p></DetailBlock>}
-          {d.graduationDocFile?.url && (
+          {(d.graduationDocFile?.url || d.graduationDocFile?.path) && (
             <DetailBlock title="e-Devlet Mezuniyet Belgesi">
-              <a href={d.graduationDocFile.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+              <StaffDocLink doc={d.graduationDocFile}>
                 {d.graduationDocFile.name || 'e-Devlet mezuniyet belgesi'} <ExternalLink className="h-3 w-3" />
-              </a>
+              </StaffDocLink>
             </DetailBlock>
           )}
           {(d.education || []).some((e) => e.school || e.level || e.degree) && (
@@ -533,10 +547,10 @@ function StaffApplicationDetail({ app, d }) {
                 {d.education.filter((e) => e.school || e.level || e.degree).map((e, i) => (
                   <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span>{formatEducationEntry(e)}</span>
-                    {e.file?.url && (
-                      <a href={e.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                    {(e.file?.url || e.file?.path) && (
+                      <StaffDocLink doc={e.file} className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
                         Belge <ExternalLink className="h-3 w-3" />
-                      </a>
+                      </StaffDocLink>
                     )}
                   </li>
                 ))}
@@ -549,10 +563,10 @@ function StaffApplicationDetail({ app, d }) {
                 {d.certificates.filter((c) => c.name).map((c, i) => (
                   <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span>{[c.name, c.issuer, c.year].filter(Boolean).join(' · ')}</span>
-                    {c.file?.url && (
-                      <a href={c.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                    {(c.file?.url || c.file?.path) && (
+                      <StaffDocLink doc={c.file} className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
                         Belge <ExternalLink className="h-3 w-3" />
-                      </a>
+                      </StaffDocLink>
                     )}
                   </li>
                 ))}
@@ -564,9 +578,9 @@ function StaffApplicationDetail({ app, d }) {
               <ul className="space-y-1">
                 {(d.certificateFiles || []).map((f, i) => (
                   <li key={f.url || i}>
-                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">
+                    <StaffDocLink doc={f}>
                       {f.name || `Belge ${i + 1}`}{f.kind === 'graduation' ? ' (mezuniyet)' : ''} <ExternalLink className="h-3 w-3" />
-                    </a>
+                    </StaffDocLink>
                   </li>
                 ))}
               </ul>

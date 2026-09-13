@@ -155,13 +155,20 @@ export async function sendStaffCollabMessage({ thread, senderType, senderId, tex
     return { success: false, error: 'Geçersiz gönderici.' }
   }
 
+  const { data: authData } = await supabase.auth.getUser()
+  const uid = authData?.user?.id
+  if (!uid) return { success: false, error: 'Oturum bulunamadı.' }
+  if (senderId && String(senderId) !== String(uid)) {
+    return { success: false, error: 'Gönderen bilgisi oturumla uyuşmuyor.' }
+  }
+
   const guard = detectExternalContactInfo(value)
   if (guard.blocked) return { success: false, error: CONTACT_INFO_BLOCK_MESSAGE, blockedReason: guard.reason }
 
   const { data: msgRow, error: msgErr } = await supabase.from('staff_collab_messages').insert({
     thread_id: thread.id,
     sender_type: senderType,
-    sender_id: senderId || null,
+    sender_id: uid,
     data: { text: value },
   }).select().single()
 
