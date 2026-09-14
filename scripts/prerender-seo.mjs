@@ -42,6 +42,9 @@ const { blogContentToSeoHtml } = await import(
 const { slugifyTurkish, staffPublicSlug, isUuidParam } = await import(
   pathToFileURL(join(root, 'src/utils/publicSlugs.js')).href
 )
+const { PUBLIC_STAFF_RELATION } = await import(
+  pathToFileURL(join(root, 'src/utils/seoPublicShell.js')).href
+)
 const { formatStaffDisplayName } = await import(
   pathToFileURL(join(root, 'src/data/staffProfile.js')).href
 )
@@ -364,9 +367,10 @@ async function fetchDynamicShells() {
     }
 
     const { data: staff, error: staffErr } = await client
-      .from('staff')
-      .select('id, name, role, data')
+      .from(PUBLIC_STAFF_RELATION)
+      .select('id, name, role, created_at, data')
       .eq('active', true)
+      .limit(200)
     if (staffErr) console.error('[prerender-seo] staff', staffErr.message)
     const coaches = []
     const dietitians = []

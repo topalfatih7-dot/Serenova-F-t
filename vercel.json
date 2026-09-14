@@ -48,6 +48,39 @@
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    {
+      "source": "/blog/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(Googlebot|Google-InspectionTool|bingbot|BingPreview).*"
+        }
+      ],
+      "destination": "/api/sitemap?shell=blog&slug=:slug"
+    },
+    {
+      "source": "/team/koc-:rest",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(Googlebot|Google-InspectionTool|bingbot|BingPreview).*"
+        }
+      ],
+      "destination": "/api/sitemap?shell=team&slug=koc-:rest"
+    },
+    {
+      "source": "/team/diyetisyen-:rest",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(Googlebot|Google-InspectionTool|bingbot|BingPreview).*"
+        }
+      ],
+      "destination": "/api/sitemap?shell=team&slug=diyetisyen-:rest"
+    },
     { "source": "/indir", "destination": "/indir.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }

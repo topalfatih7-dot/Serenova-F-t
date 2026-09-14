@@ -3,6 +3,14 @@
  * Modül init asla throw etmez (production 500 önlemi).
  */
 import { slugifyTurkish, staffPublicSlug, dedupeUrlsByPath, isoDay } from '../src/utils/publicSlugs.js'
+import {
+  PUBLIC_STAFF_RELATION,
+  buildBlogShellHtml,
+  buildStaffShellHtml,
+  matchPublishedPost,
+  matchPublicStaff,
+  sanitizePublicSlug,
+} from '../src/utils/seoPublicShell.js'
 
 function getDeployDate() {
   try {
@@ -84,8 +92,18 @@ function urlEntry(base, path, { changefreq = 'weekly', priority = '0.5', lastmod
   </url>`
 }
 
-async function fetchDynamicUrls() {
-  const urls = []
+function queryParam(req, name) {
+  const direct = req.query?.[name]
+  if (direct != null && String(direct).trim()) return String(direct).trim()
+  try {
+    const u = new URL(req.url || '', 'https://www.yeniform.com')
+    return u.searchParams.get(name) || ''
+  } catch {
+    return ''
+  }
+}
+
+async function getSitemapClient() {
   let createClient
   let getSupabaseUrl
   let isSupabaseAdminConfigured
@@ -99,7 +117,7 @@ async function fetchDynamicUrls() {
     } = await import('./_supabaseAdmin.js'))
   } catch (err) {
     console.error('[sitemap] import', err?.message || err)
-    return urls
+    return null
   }
 
   let url
@@ -112,21 +130,70 @@ async function fetchDynamicUrls() {
       process.env.VITE_SUPABASE_ANON_KEY
   } catch (err) {
     console.error('[sitemap] env/url', err?.message || err)
-    return urls
+    return null
   }
 
-  if (!url || !key) return urls
+  if (!url || !key) return null
 
-  let client
   try {
-    client = isSupabaseAdminConfigured()
+    const client = isSupabaseAdminConfigured()
       ? getSupabaseAdmin()
       : createClient(url, key)
+    return client || null
   } catch (err) {
     console.error('[sitemap] client', err?.message || err)
-    return urls
+    return null
+  }
+}
+
+function sendHtml(res, html, method, status = 200) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=86400')
+  if (method === 'HEAD') return res.status(status).end()
+  return res.status(status).end(html)
+}
+
+async function handleSeoShell(req, res) {
+  const kind = queryParam(req, 'shell')
+  const slug = sanitizePublicSlug(queryParam(req, 'slug'))
+  if ((kind !== 'blog' && kind !== 'team') || !slug) {
+    return res.status(404).end()
   }
 
+  const client = await getSitemapClient()
+  if (!client) return res.status(503).end()
+
+  try {
+    if (kind === 'blog') {
+      const { data: posts, error } = await client
+        .from('posts')
+        .select('id, data, created_at')
+        .eq('published', true)
+        .limit(500)
+      if (error) console.error('[sitemap] shell posts', error.message)
+      const post = matchPublishedPost(posts, slug)
+      if (!post) return res.status(404).end()
+      return sendHtml(res, buildBlogShellHtml(post, { requestedSlug: slug }), req.method)
+    }
+
+    const { data: staff, error } = await client
+      .from(PUBLIC_STAFF_RELATION)
+      .select('id, name, role, created_at, data')
+      .eq('active', true)
+      .limit(200)
+    if (error) console.error('[sitemap] shell staff', error.message)
+    const member = matchPublicStaff(staff, slug)
+    if (!member) return res.status(404).end()
+    return sendHtml(res, buildStaffShellHtml(member, { requestedSlug: slug }), req.method)
+  } catch (err) {
+    console.error('[sitemap] shell', err?.message || err)
+    return res.status(503).end()
+  }
+}
+
+async function fetchDynamicUrls() {
+  const urls = []
+  const client = await getSitemapClient()
   if (!client) return urls
 
   try {
@@ -134,6 +201,7 @@ async function fetchDynamicUrls() {
       .from('posts')
       .select('id, data, created_at')
       .eq('published', true)
+      .limit(500)
 
     if (error) {
       console.error('[sitemap] posts', error.message)
@@ -159,9 +227,10 @@ async function fetchDynamicUrls() {
 
   try {
     const { data: staff, error } = await client
-      .from('staff')
+      .from(PUBLIC_STAFF_RELATION)
       .select('id, name, role, created_at, data')
       .eq('active', true)
+      .limit(200)
 
     if (error) {
       console.error('[sitemap] staff', error.message)
@@ -202,6 +271,11 @@ export default async function handler(req, res) {
   try {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return res.status(405).end()
+    }
+
+    const shell = queryParam(req, 'shell')
+    if (shell === 'blog' || shell === 'team') {
+      return handleSeoShell(req, res)
     }
 
     const base = siteBase()
