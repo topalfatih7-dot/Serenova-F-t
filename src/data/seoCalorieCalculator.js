@@ -6,9 +6,9 @@ export const KALORI_HESAPLAMA = {
   path: '/kalori-hesaplama',
   title: 'Kalori Hesaplama — BMR ve Günlük İhtiyaç',
   description:
-    'Kalori hesaplama: Mifflin–St Jeor ile BMR ve günlük kalori ihtiyacı (TDEE). Ücretsiz; tıbbi tanı değildir. Kişiye özel plan için online diyetisyen.',
+    'Kalori hesaplama: Mifflin–St Jeor ile BMR ve günlük kalori ihtiyacı (TDEE). Kilo vermek için kaç kalori ve ideal kilo tahmini değildir; ücretsiz araç. Kişiye özel plan için online diyetisyen.',
   keywords:
-    'kalori hesaplama, günlük kalori ihtiyacı, BMR hesaplama, TDEE, kalori açığı, bazal metabolizma hızı',
+    'kalori hesaplama, günlük kalori ihtiyacı, BMR hesaplama, TDEE, kalori açığı, bazal metabolizma hızı, kilo vermek için kaç kalori, ideal kilo',
   h1: 'Kalori hesaplama — BMR ve günlük ihtiyaç',
   lead:
     '**Kalori hesaplama**, bazal metabolizma hızı (BMR) ile aktiviteye göre günlük enerji ihtiyacını (TDEE) tahmin etmektir. Bu araç Mifflin–St Jeor formülünü kullanır; **tıbbi tanı veya kişiye özel diyet değildir**. Gebelik, hastalık veya 18 yaş altı için kullanmayın.',
@@ -21,6 +21,8 @@ export const KALORI_HESAPLAMA = {
     { q: 'Sonuç kilo verdirir mi?', a: 'Hayır. Sayı bir tahmindir. Sürdürülebilir kilo yönetimi için kilo verme diyetisyeni ve video seans gerekir.' },
     { q: 'Hamileyken kullanayım mı?', a: 'Hayır. Gebelikte kalori kesme bu aracın konusu değildir. Hamilelikte beslenme sayfasına ve hekiminize bakın.' },
     { q: 'Neden online diyetisyen?', a: 'Formül kas, ilaç, uyku ve öğün düzenini bilmez. Yeni Form’da diyetisyen video görüşmeyle programı kişiye yazar.' },
+    { q: 'Kilo vermek için kaç kalori almalıyım?', a: 'Tek bir sayı yoktur. Önce TDEE tahmini çıkar; sürdürülebilir açık genellikle TDEE’den yaklaşık 300 kcal düşüktür ve BMR’nin altına inilmez. Hedef online diyetisyenle yazılır; bu araç reçete değildir.' },
+    { q: 'İdeal kilo nasıl hesaplanır?', a: 'Bu sayfa BMI veya ideal kilo formülü vermez; BMR ve TDEE tahmini verir. Boy-kilo oranı tek başına sağlık kararı değildir. Hedef kilo için kilo verme diyetisyeni ve hekim bağlamı gerekir.' },
   ],
 }
 
@@ -40,6 +42,10 @@ export function caloriePagePlainHtml() {
 <p>Erkek: BMR = 10×kg + 6,25×cm − 5×yaş + 5. Kadın: aynı formül, sonda −161. TDEE = BMR × aktivite (1,2 ile 1,9 arası). Hesaplayıcı tarayıcıda çalışır; kayıt gerekmez.</p>
 <h2>Kalori açığı</h2>
 <p>Hafif açık TDEE’den yaklaşık 300 kcal düşmektir; BMR’nin altına inilmez. Bu bir diyet reçetesi değildir.</p>
+<h2>Kilo vermek için kaç kalori?</h2>
+<p>Kilo vermek için kaç kalori alınacağı kişiye göre değişir. Bu araç TDEE tahmini verir; sürdürülebilir açık yaklaşık 300 kcal’dir ve BMR’nin altına inilmez. Sabit bir hedef yazılmaz.</p>
+<h2>İdeal kilo bu araçta var mı?</h2>
+<p>Hayır. İdeal kilo tek formülle çıkmaz. Boy-kilo oranı sağlık kararı değildir; hedef kilo diyetisyen ve hekim bağlamında konuşulur.</p>
 <h2>Sık sorulan sorular</h2>
 ${faqs}
 <p><a href="/online-diyetisyen">Online diyetisyen</a> · <a href="/kilo-verme">Kilo verme</a> · <a href="/online-diyetisyen/fiyat">Diyetisyen fiyatları</a> · <a href="/beslenme/hamilelik">Hamilelikte beslenme</a></p>`

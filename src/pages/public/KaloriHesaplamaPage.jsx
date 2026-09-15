@@ -224,6 +224,12 @@ export default function KaloriHesaplamaPage() {
               >
                 Kilo verme
               </Link>
+              <Link
+                to="/online-diyetisyen/fiyat"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cream-300 px-5 py-2.5 text-sm font-semibold text-cream-900 hover:bg-cream-50"
+              >
+                Diyetisyen fiyatları
+              </Link>
             </div>
           </div>
         </div>
@@ -238,6 +244,14 @@ export default function KaloriHesaplamaPage() {
           </p>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-cream-800 sm:text-base">
             Üye panelindeki kalori aracı öğün fotoğrafı / metin kaydı içindir ve giriş ister. Bu sayfa herkese açık tahmindir.
+          </p>
+          <h2 className="mt-10 section-title text-left">Kilo vermek için kaç kalori?</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-cream-800 sm:text-base">
+            Kilo vermek için kaç kalori alınacağı kişiye göre değişir. Bu araç TDEE tahmini verir; sürdürülebilir açık yaklaşık 300 kcal’dir ve BMR’nin altına inilmez. Sabit bir hedef yazılmaz.
+          </p>
+          <h2 className="mt-10 section-title text-left">İdeal kilo bu araçta var mı?</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-cream-800 sm:text-base">
+            Hayır. İdeal kilo tek formülle çıkmaz. Boy-kilo oranı sağlık kararı değildir; hedef kilo diyetisyen ve hekim bağlamında konuşulur.
           </p>
         </div>
       </section>

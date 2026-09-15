@@ -270,9 +270,9 @@ export const PAGE_SEO = {
     keywords: buildBrandKeywords('kilo verme diyetisyen, online zayıflama, zayıflama programı, kilo vermek için diyetisyen, online kilo verme, online diyet ve zayıflama, kilo verme programı'),
   },
   '/online-diyetisyen/fiyat': {
-    title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL\'den',
+    title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL/ay, Seans Dahil',
     description:
-      'Online diyetisyen fiyatları 2026: Eko Diyet 2.700 TL, Diyet 4.050 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
+      '2026 online diyetisyen fiyatları: Eko 2.700 TL/ay (1 video seans), Diyet 4.050 TL/ay (2 seans), VIP 7.425 TL. Gizli ücret yok; seans pakete dahil.',
     keywords: buildBrandKeywords('online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları, diyetisyen seans ücretleri'),
   },
   '/online-kocluk/ev-antrenman': {
@@ -308,8 +308,8 @@ export const PAGE_SEO = {
   '/kalori-hesaplama': {
     title: 'Kalori Hesaplama — BMR ve Günlük İhtiyaç',
     description:
-      'Kalori hesaplama: Mifflin–St Jeor ile BMR ve günlük kalori ihtiyacı (TDEE). Ücretsiz; tıbbi tanı değildir. Kişiye özel plan için online diyetisyen.',
-    keywords: buildBrandKeywords('kalori hesaplama, günlük kalori ihtiyacı, BMR hesaplama, TDEE, kalori açığı, bazal metabolizma hızı'),
+      'Kalori hesaplama: Mifflin–St Jeor ile BMR ve günlük kalori ihtiyacı (TDEE). Kilo vermek için kaç kalori ve ideal kilo tahmini değildir; ücretsiz araç. Kişiye özel plan için online diyetisyen.',
+    keywords: buildBrandKeywords('kalori hesaplama, günlük kalori ihtiyacı, BMR hesaplama, TDEE, kalori açığı, bazal metabolizma hızı, kilo vermek için kaç kalori, ideal kilo'),
   },
   '/online-wellness': {
     title: 'Online Wellness — Dijital Sağlık ve Yaşam Koçluğu Platformu',

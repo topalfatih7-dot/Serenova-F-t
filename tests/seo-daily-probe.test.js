@@ -128,3 +128,24 @@ describe('seo-daily-probe parser', () => {
     assert.equal(findings.some((f) => f.id === 'not_in_sitemap'), false)
   })
 })
+
+describe('fiyat snippet and calorie FAQ contract', () => {
+  it('keeps price intent on /online-diyetisyen/fiyat, not membership title', () => {
+    const seo = read('src/config/seo.js')
+    const content = read('src/data/seoServiceContent.js')
+    assert.ok(seo.includes("Online Diyetisyen Fiyatları 2026 — 2.700 TL/ay, Seans Dahil"))
+    assert.ok(content.includes('Online diyetisyen fiyatları 2026 — 2.700 TL/ay, seans dahil'))
+    assert.ok(content.includes('/team/diyetisyen-selin-durmaz'))
+    assert.ok(content.includes('/team/diyetisyen-kubra-ozek'))
+    const membershipBlock = seo.slice(seo.indexOf("'/membership'"), seo.indexOf("'/onboarding'"))
+    assert.equal(membershipBlock.includes('fiyatları'), false)
+    assert.equal(membershipBlock.includes('online diyetisyen fiyat'), false)
+  })
+
+  it('answers kilo vermek için kaç kalori on the existing calculator page', () => {
+    const calorie = read('src/data/seoCalorieCalculator.js')
+    assert.ok(calorie.includes('Kilo vermek için kaç kalori almalıyım?'))
+    assert.ok(calorie.includes('İdeal kilo nasıl hesaplanır?'))
+    assert.ok(calorie.includes('href="/online-diyetisyen/fiyat"'))
+  })
+})

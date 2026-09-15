@@ -342,12 +342,13 @@ export default function ServiceLandingPage({ path }) {
                   viewport={{ once: true, margin: '-40px' }}
                   className="max-w-2xl"
                 >
-                  <span className="section-badge">Süreç</span>
+                  <span className="section-badge">{section.badge || 'Süreç'}</span>
                   <h2 className="section-title mt-4 text-left">{section.h2}</h2>
                   <p className="section-subtitle mt-3 max-w-xl text-left text-base sm:text-lg">
-                    {isCoach
-                      ? 'Kayıttan ilk koç görüşmesine kadar net adımlar — program, hareket videoları ve video seansları tek yerde.'
-                      : 'Kayıttan ilk görüşmeye kadar net adımlar — panel ve video seansları tek yerde.'}
+                    {section.intro
+                      || (isCoach
+                        ? 'Kayıttan ilk koç görüşmesine kadar net adımlar — program, hareket videoları ve video seansları tek yerde.'
+                        : 'Kayıttan ilk görüşmeye kadar net adımlar — panel ve video seansları tek yerde.')}
                   </p>
                 </motion.div>
 
@@ -428,6 +429,19 @@ export default function ServiceLandingPage({ path }) {
                       <EmphasizedText text={p} />
                     </p>
                   ))}
+                  {(section.links || []).length ? (
+                    <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2">
+                      {section.links.map((link) => (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          className="text-sm font-semibold text-brand-700 underline-offset-2 hover:underline sm:text-base"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                 </motion.div>
               </div>
             </div>

@@ -309,20 +309,19 @@ export const ONLINE_DIYETISYEN_FIYAT = {
   heroFallback: '/online-diyetisyen',
   pillarPath: '/online-diyetisyen',
   pillarName: 'Online Diyetisyen',
-  title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL\'den',
+  title: 'Online Diyetisyen Fiyatları 2026 — 2.700 TL/ay, Seans Dahil',
   description:
-    'Online diyetisyen fiyatları 2026: Eko Diyet 2.700 TL, Diyet 4.050 TL/ay. Video seans, gizli ücret yok. Paket ve seans ücretlerini karşılaştırın.',
+    '2026 online diyetisyen fiyatları: Eko 2.700 TL/ay (1 video seans), Diyet 4.050 TL/ay (2 seans), VIP 7.425 TL. Gizli ücret yok; seans pakete dahil.',
   keywords:
     'online diyetisyen fiyatları, online diyetisyen fiyat, diyetisyen fiyatları, diyetisyen fiyat, diyetisyen paket fiyatları, online diyet ücretleri, online diyetisyen ücretleri, online diyet fiyatları',
-  h1: 'Online diyetisyen fiyatları 2026 — 2.700 TL\'den',
+  h1: 'Online diyetisyen fiyatları 2026 — 2.700 TL/ay, seans dahil',
   lead:
-    '**Online diyetisyen fiyatları** (2026) Yeni Form’da şeffaftır: **Eko Diyet 2.700 TL/ay** (ayda 1 seans), **Diyet 4.050 TL/ay** (ayda 2 seans), **VIP 7.425 TL/ay** (2 diyetisyen + 2 koç). Hizmetin nasıl işlediği pillar sayfadadır; bu sayfa yalnızca ücrettir.',
+    '**Online diyetisyen fiyatları** 2026’da Yeni Form’da **aylık 2.700 TL’den** başlar; **video seans pakete dahildir**, gizli ücret yoktur. Liste: **Eko Diyet 2.700 TL/ay** (1 seans), **Diyet 4.050 TL/ay** (2 seans), **VIP 7.425 TL/ay** (2 diyetisyen + 2 koç). Hizmet süreci online diyetisyen sayfasındadır; bu URL yalnızca listedir.',
   primaryCta: { to: '/onboarding?plan=diyet', label: 'Diyet ile Başla' },
   secondaryCta: { to: '/membership', label: 'Tüm paketleri karşılaştır' },
   teamLink: { to: '/team/dietitians', label: 'Diyetisyen kadrosu' },
   relatedService: { to: '/online-diyetisyen', label: 'Hizmet nasıl işler?' },
   relatedLinks: [
-    { to: '/membership', label: 'Üyelik paket tablosu' },
     { to: '/kilo-verme', label: 'Kilo verme programı' },
   ],
   serviceName: 'Online Diyetisyen Paket Fiyatları',
@@ -332,12 +331,14 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     {
       h2: 'Online diyetisyen fiyatları 2026 ne kadar?',
       paragraphs: [
-        'Yeni Form liste fiyatı: Eko Diyet **2.700 TL**, Diyet **4.050 TL**, VIP **7.425 TL** (aylık). Bireysel klinikler 2026’da çoğu zaman **2.000–6.000 TL/ay** bandında, çoğu zaman seans başı veya gizli teklifle çalışır.',
-        'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor satırları üyelik tablosundadır — bu sayfa diyetisyen ücretine odaklanır.',
+        '**Diyetisyen fiyatları 2026** bu listeden okunur: Eko Diyet **2.700 TL/ay**, Diyet **4.050 TL/ay**, VIP **7.425 TL/ay**. Bireysel klinikler çoğu zaman **2.000–6.000 TL/ay** bandında, seans başı veya gizli teklifle çalışır.',
+        'Fark: mesaj-only takip değil; **video görüşme**, panel programı ve isteğe bağlı koçluk aynı hesaptadır. Spor satırları üyelik tablosundadır — bu sayfa yalnızca diyetisyen ücretine odaklanır.',
       ],
     },
     {
       h2: 'Diyetisyen paket fiyatları ve seans hakları',
+      badge: 'Liste fiyatı',
+      intro: 'Aylık paket; video seans hakkı dahildir. Gizli ücret yoktur. Spor satırları üyelik tablosundadır.',
       steps: [
         { title: 'Eko Diyet — 2.700 TL/ay', text: 'Ayda 1 online diyetisyen görüşmesi; giriş seviyesi takip.' },
         { title: 'Diyet — 4.050 TL/ay', text: 'Ayda 2 video seans; kilo yönetimi ve alışkanlık değişimi için standart paket.' },
@@ -353,6 +354,19 @@ export const ONLINE_DIYETISYEN_FIYAT = {
       ],
     },
     {
+      h2: 'Fiyatı yazan diyetisyen kadrosu',
+      paragraphs: [
+        'Paket ücreti lisanslı online diyetisyen video seansını kapsar. Programı kim yazar: kadro listesi ve profiller aşağıda. Süreç online diyetisyen sayfasındadır; ücret bu URL’dedir.',
+      ],
+      links: [
+        { to: '/team/dietitians', label: 'Tüm diyetisyen kadrosu' },
+        { to: '/team/diyetisyen-selin-durmaz', label: 'Selin Durmaz' },
+        { to: '/team/diyetisyen-kubra-ozek', label: 'Kübra Özek' },
+        { to: '/team/diyetisyen-bengisu-ozkan', label: 'Bengisu Özkan' },
+        { to: '/team/diyetisyen-yaren-kosar', label: 'Yaren Koşar' },
+      ],
+    },
+    {
       h2: 'Neden fiyat sayfası üyelikten ayrı?',
       paragraphs: [
         'Üyelik sayfası Diyet + Spor + VIP karşılaştırmasıdır. “Online diyetisyen fiyatları” niyeti tüm wellness tablosunu değil, **diyetisyen ücretini** ister. Bu URL yalnızca o niyete cevap verir.',
@@ -361,7 +375,8 @@ export const ONLINE_DIYETISYEN_FIYAT = {
     },
   ],
   faqs: [
-    { q: 'Online diyetisyen fiyatları 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 2.700 TL, Diyet 4.050 TL, VIP 7.425 TL/ay (liste). 3–6 aylık katman üyelik sayfasındadır.' },
+    { q: 'Online diyetisyen fiyatları 2026’da ne kadar?', a: 'Yeni Form’da Eko Diyet 2.700 TL/ay (1 video seans), Diyet 4.050 TL/ay (2 seans), VIP 7.425 TL/ay (liste). 3–6 aylık katman üyelik sayfasındadır.' },
+    { q: 'Diyetisyen fiyatları 2026’da ne kadar?', a: 'Aynı liste geçerlidir: 2.700 TL/ay’dan başlar, seans dahildir. Diyet 4.050 TL/ay, VIP 7.425 TL/ay. Seans başı ek ücret yoktur.' },
     { q: 'Diyetisyen fiyatları neden pakete göre değişir?', a: 'Seans hakkı ve koçluk dahil olup olmamasına göre. Yalnız diyetisyen: 2.700 veya 4.050 TL/ay. Koç + diyetisyen: VIP 7.425 TL/ay.' },
     { q: 'Diyetisyen paket fiyatları nasıl hesaplanır?', a: 'Aylık listedir; seans hakkı dahildir (Eko 1, Diyet 2). Seans başı ek ücret yoktur. Çok aylık birim fiyat üyelik tablosunda düşer.' },
     { q: 'Online diyet ücretleri gizli mi?', a: 'Hayır. Bu sayfadaki liste + üyelik tablosu geçerlidir. Ödeme Stripe iledir; ayrı uygulama ücreti yoktur.' },
@@ -781,6 +796,12 @@ export function servicePagePlainHtml(page, { includeLead = true } = {}) {
     parts.push(`<h2>${escapeHtml(section.h2)}</h2>`)
     for (const p of section.paragraphs || []) {
       parts.push(`<p>${emphasizeToHtml(p)}</p>`)
+    }
+    if (section.intro) parts.push(`<p>${emphasizeToHtml(section.intro)}</p>`)
+    if (section.links?.length) {
+      parts.push('<p>')
+      parts.push(section.links.map((l) => `<a href="${l.to}">${escapeHtml(l.label)}</a>`).join(' · '))
+      parts.push('</p>')
     }
     if (section.steps) {
       parts.push('<ol>')
